@@ -24,14 +24,28 @@ class AuthRepository {
         email: email,
         password: password,
       );
-    } on FirebaseAuthException catch (e) {
-      print('FIREBASE AUTH ERROR: ${e.code} - ${e.message}');
-      throw _handleFirebaseAuthException(e);
-    } on FirebaseException catch (e) {
-      print('FIREBASE EXCEPTION (${e.plugin}): ${e.code} - ${e.message}');
-      throw AppException('Error de Firebase: ${e.message}', e.code);
     } catch (e) {
-      throw const UnknownException();
+      // MANEJO SEGURO PARA WEB
+      // No intentamos castear a (on FirebaseAuthException catch e) porque falla en JS Interop.
+      final errorString = e.toString();
+      
+      print('🔥 FIREBASE ERROR RAW: $errorString'); // Para ver en consola
+
+      // Detección manual de códigos comunes basada en texto
+      if (errorString.contains('user-not-found') || errorString.contains('invalid-credential') || errorString.contains('wrong-password')) {
+         throw const AppException('Credenciales incorrectas.', 'auth/invalid-credentials');
+      } else if (errorString.contains('invalid-email')) {
+         throw const AppException('El formato del correo es inválido.', 'auth/invalid-email');
+      } else if (errorString.contains('user-disabled')) {
+         throw const AppException('Esta cuenta ha sido deshabilitada.', 'auth/user-disabled');
+      } else if (errorString.contains('network-request-failed')) {
+         throw const AppException('Error de conexión. Verifica tu internet.', 'auth/network-error');
+      } else if (errorString.contains('too-many-requests')) {
+         throw const AppException('Demasiados intentos. Intenta más tarde.', 'auth/too-many-requests');
+      } else {
+        // Error genérico seguro
+        throw AppException('Error de autenticación: $errorString', 'auth-error');
+      }
     }
   }
 
@@ -44,14 +58,24 @@ class AuthRepository {
         email: email,
         password: password,
       );
-    } on FirebaseAuthException catch (e) {
-      print('FIREBASE AUTH ERROR: ${e.code} - ${e.message}');
-      throw _handleFirebaseAuthException(e);
-    } on FirebaseException catch (e) {
-       print('FIREBASE EXCEPTION (${e.plugin}): ${e.code} - ${e.message}');
-       throw AppException('Error de Firebase: ${e.message}', e.code);
     } catch (e) {
-      throw const UnknownException();
+      // MANEJO SEGURO PARA WEB
+      final errorString = e.toString();
+      
+      print('🔥 FIREBASE ERROR RAW: $errorString');
+
+      if (errorString.contains('email-already-in-use')) {
+        throw const AppException('El correo ya está registrado.', 'auth/email-in-use');
+      } else if (errorString.contains('weak-password')) {
+        throw const AppException('La contraseña es muy débil.', 'auth/weak-password');
+      } else if (errorString.contains('invalid-email')) {
+        throw const AppException('El correo no es válido.', 'auth/invalid-email');
+      } else if (errorString.contains('operation-not-allowed')) {
+        throw const AppException('El registro por correo no está habilitado en Firebase Console.', 'auth/config-error');
+      } else {
+        // Error genérico seguro
+        throw AppException('Error de autenticación: $errorString', 'auth-error');
+      }
     }
   }
 
