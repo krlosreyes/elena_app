@@ -735,8 +735,8 @@
     }
   ],
   "generator": "pub",
-  "generatorVersion": "3.10.7",
+  "generatorVersion": "3.10.8",
   "flutterRoot": "file:///opt/homebrew/share/flutter",
-  "flutterVersion": "3.38.7",
+  "flutterVersion": "3.38.9",
   "pubCache": "file:///Users/carlosreyes/.pub-cache"
 }

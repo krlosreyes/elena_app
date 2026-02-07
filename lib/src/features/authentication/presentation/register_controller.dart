@@ -32,8 +32,9 @@ class RegisterController extends _$RegisterController {
       state = const AsyncData(null);
     } catch (e, st) {
       print('❌ ERROR EN REGISTRO (Tipo: ${e.runtimeType})');
-      // No intentamos leer el mensaje si es web para evitar el crash
-      state = AsyncValue.error('No se pudo crear la cuenta. Verifica tu conexión o intenta con otro correo.', st);
+      // MODO DEBUG: Mostrar error exacto de Firebase
+      final errorMsg = e.toString();
+      state = AsyncValue.error(errorMsg, st);
     }
   }
 }

@@ -3,6 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../common_widgets/common_widgets.dart';
 import '../features/authentication/presentation/login_screen.dart';
 import '../features/authentication/presentation/register_screen.dart';
+import '../features/dashboard/dashboard.dart';
 
 part 'app_router.g.dart';
 
@@ -23,6 +24,10 @@ GoRouter goRouter(GoRouterRef ref) {
       GoRoute(
         path: '/placeholder',
         builder: (context, state) => const ScaffoldPlaceholder(),
+      ),
+      GoRoute(
+        path: '/dashboard',
+        builder: (context, state) => const DashboardScreen(),
       ),
     ],
   );

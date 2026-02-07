@@ -65,10 +65,11 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyCUPf0Y4ZKPNiqfyo8oZ9RV2r4svyAi5Qs',
-    appId: '1:193971045461:ios:470ef86aa34cea20cb00dc',
+    appId: '1:193971045461:ios:bf01fe9e9b74ec41cb00dc',
     messagingSenderId: '193971045461',
     projectId: 'elena-app-2026-v1',
     storageBucket: 'elena-app-2026-v1.firebasestorage.app',
-    iosBundleId: 'com.metamorfosis.elena.elenaApp',
+    iosBundleId: 'com.example.elenaApp',
   );
+
 }

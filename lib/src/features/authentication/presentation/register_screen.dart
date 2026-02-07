@@ -51,9 +51,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             SnackBar(content: Text(message), backgroundColor: Colors.red),
           );
         } else if (state.hasValue && !state.isLoading) {
-             // Successful registration could navigate to dashboard or onboarding
-             // For now, staying here or we could navigate to placeholder
-             // context.go('/'); // Logic to be defined by next steps
+             // Successful registration navigates to dashboard
+             context.go('/dashboard'); 
              ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Cuenta creada exitosamente'), backgroundColor: Colors.green),
              );
