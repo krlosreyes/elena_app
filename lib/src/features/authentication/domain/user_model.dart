@@ -33,7 +33,8 @@ class AppUser with _$AppUser {
     @Default(false) bool onboardingCompleted,
   }) = _AppUser;
 
-  factory AppUser.fromJson(Map<String, dynamic> json) => _$AppUserFromJson(json);
+  factory AppUser.fromJson(Map<String, dynamic> json) =>
+      _$AppUserFromJson(json);
 }
 
 /// Medical and physiological profile of the user.
@@ -46,17 +47,16 @@ class MedicalProfile with _$MedicalProfile {
     required double heightCm,
     required double startWeightKg,
     required double currentWeightKg,
-    
+
     /// Critical metric for cardiovascular risk assessment.
     required double waistCircumferenceCm,
-    
     @Default(false) bool hasPrediabetes,
     double? targetWeightKg,
-     
     @Default(MetabolicStage.recovery) MetabolicStage metabolicStage,
     @Default(ActivityLevel.sedentary) ActivityLevel activityLevel,
     @Default(Gender.female) Gender gender,
   }) = _MedicalProfile;
 
-  factory MedicalProfile.fromJson(Map<String, dynamic> json) => _$MedicalProfileFromJson(json);
+  factory MedicalProfile.fromJson(Map<String, dynamic> json) =>
+      _$MedicalProfileFromJson(json);
 }

@@ -18,7 +18,7 @@ class ElenaApp extends ConsumerWidget {
         useMaterial3: true,
         brightness: Brightness.dark,
         // Additional theme customization can go here
-        colorSchemeSeed: Colors.teal, 
+        colorSchemeSeed: Colors.teal,
       ),
     );
   }

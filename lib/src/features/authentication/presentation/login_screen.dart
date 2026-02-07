@@ -44,7 +44,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           if (error is AppException) {
             message = error.message;
           }
-           ScaffoldMessenger.of(context).showSnackBar(
+          ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(message), backgroundColor: Colors.red),
           );
         }
@@ -70,7 +70,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                   const Text(
+                  const Text(
                     'ElenaApp',
                     textAlign: TextAlign.center,
                     style: TextStyle(
@@ -85,7 +85,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     controller: _emailController,
                     decoration: const InputDecoration(
                       labelText: 'Email',
-                      prefixIcon: Icon(Icons.email_outlined, color: Colors.white70),
+                      prefixIcon:
+                          Icon(Icons.email_outlined, color: Colors.white70),
                       border: OutlineInputBorder(),
                     ),
                     keyboardType: TextInputType.emailAddress,
@@ -105,11 +106,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     controller: _passwordController,
                     decoration: InputDecoration(
                       labelText: 'Contraseña',
-                      prefixIcon: const Icon(Icons.lock_outline, color: Colors.white70),
+                      prefixIcon:
+                          const Icon(Icons.lock_outline, color: Colors.white70),
                       border: const OutlineInputBorder(),
                       suffixIcon: IconButton(
                         icon: Icon(
-                          _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                          _isPasswordVisible
+                              ? Icons.visibility
+                              : Icons.visibility_off,
                           color: Colors.white70,
                         ),
                         onPressed: () {
@@ -137,7 +141,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         backgroundColor: primaryColor,
                         foregroundColor: Colors.black,
                         textStyle: const TextStyle(
-                          fontSize: 16, 
+                          fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -148,7 +152,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                   const SizedBox(height: 16),
                   TextButton(
-                    onPressed: isLoading ? null : () => context.push('/register'),
+                    onPressed:
+                        isLoading ? null : () => context.push('/register'),
                     child: const Text('Crear Cuenta Nueva'),
                   ),
                   const SizedBox(height: 32),
@@ -157,7 +162,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       Expanded(child: Divider(color: Colors.white24)),
                       Padding(
                         padding: EdgeInsets.symmetric(horizontal: 16),
-                        child: Text('O inicia con', style: TextStyle(color: Colors.white54)),
+                        child: Text('O inicia con',
+                            style: TextStyle(color: Colors.white54)),
                       ),
                       Expanded(child: Divider(color: Colors.white24)),
                     ],
@@ -165,7 +171,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   const SizedBox(height: 24),
                   OutlinedButton.icon(
                     onPressed: null, // Placeholder action
-                    icon: const Icon(Icons.g_mobiledata, size: 32), // Using generic icon as placeholder
+                    icon: const Icon(Icons.g_mobiledata,
+                        size: 32), // Using generic icon as placeholder
                     label: const Text('Google Sign-In'),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 12),

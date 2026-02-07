@@ -71,5 +71,4 @@ class DefaultFirebaseOptions {
     storageBucket: 'elena-app-2026-v1.firebasestorage.app',
     iosBundleId: 'com.example.elenaApp',
   );
-
 }

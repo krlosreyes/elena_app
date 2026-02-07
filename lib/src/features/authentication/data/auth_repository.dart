@@ -27,23 +27,29 @@ class AuthRepository {
     } catch (e) {
       // 🛑 NUCLEAR FIX: No usamos 'on FirebaseAuthException'. Atrapamos TODO.
       final errorRaw = e.toString();
-      print('🚨 ERROR CRUDO: $errorRaw');
 
       // Búsqueda de texto simple para evitar problemas de tipos
-      if (errorRaw.contains('user-not-found') || errorRaw.contains('invalid-credential') || errorRaw.contains('wrong-password')) {
-         throw AppException('Credenciales incorrectas.', 'auth/invalid-credentials');
+      if (errorRaw.contains('user-not-found') ||
+          errorRaw.contains('invalid-credential') ||
+          errorRaw.contains('wrong-password')) {
+        throw const AppException(
+            'Credenciales incorrectas.', 'auth/invalid-credentials');
       }
       if (errorRaw.contains('invalid-email')) {
-         throw AppException('El formato del correo es inválido.', 'auth/invalid-email');
+        throw const AppException(
+            'El formato del correo es inválido.', 'auth/invalid-email');
       }
       if (errorRaw.contains('user-disabled')) {
-         throw AppException('Esta cuenta ha sido deshabilitada.', 'auth/user-disabled');
+        throw const AppException(
+            'Esta cuenta ha sido deshabilitada.', 'auth/user-disabled');
       }
       if (errorRaw.contains('network-request-failed')) {
-         throw AppException('Error de conexión. Verifica tu internet.', 'auth/network-error');
+        throw const AppException(
+            'Error de conexión. Verifica tu internet.', 'auth/network-error');
       }
       if (errorRaw.contains('too-many-requests')) {
-         throw AppException('Demasiados intentos. Intenta más tarde.', 'auth/too-many-requests');
+        throw const AppException('Demasiados intentos. Intenta más tarde.',
+            'auth/too-many-requests');
       }
 
       // Si no coincide, lanzamos el error genérico limpio
@@ -54,7 +60,8 @@ class AuthRepository {
   /// Creates a new user account with email and password.
   ///
   /// Throws [AppException] with Spanish error messages for common cases.
-  Future<void> createUserWithEmailAndPassword(String email, String password) async {
+  Future<void> createUserWithEmailAndPassword(
+      String email, String password) async {
     try {
       await _firebaseAuth.createUserWithEmailAndPassword(
         email: email,
@@ -63,20 +70,21 @@ class AuthRepository {
     } catch (e) {
       // 🛑 NUCLEAR FIX: No usamos 'on FirebaseAuthException'. Atrapamos TODO.
       final errorRaw = e.toString();
-      print('🚨 ERROR CRUDO: $errorRaw'); 
 
       // Búsqueda de texto simple para evitar problemas de tipos
       if (errorRaw.contains('email-already-in-use')) {
-        throw AppException('Este correo ya está registrado.', 'email-exists');
+        throw const AppException('Este correo ya está registrado.', 'email-exists');
       }
       if (errorRaw.contains('weak-password')) {
-        throw AppException('La contraseña es muy débil (mínimo 6 caracteres).', 'weak-pass');
+        throw const AppException(
+            'La contraseña es muy débil (mínimo 6 caracteres).', 'weak-pass');
       }
       if (errorRaw.contains('invalid-email')) {
-        throw AppException('El correo no es válido.', 'invalid-email');
+        throw const AppException('El correo no es válido.', 'invalid-email');
       }
       if (errorRaw.contains('operation-not-allowed')) {
-        throw AppException('Habilita Email/Password en Firebase Console.', 'config-error');
+        throw const AppException(
+            'Habilita Email/Password en Firebase Console.', 'config-error');
       }
 
       // Si no coincide, lanzamos el error genérico limpio
@@ -98,19 +106,26 @@ class AuthRepository {
       case 'user-not-found':
       case 'wrong-password':
       case 'invalid-credential':
-        return const AppException('Credenciales incorrectas.', 'auth/invalid-credentials');
+        return const AppException(
+            'Credenciales incorrectas.', 'auth/invalid-credentials');
       case 'email-already-in-use':
-        return const AppException('El correo ya está registrado.', 'auth/email-in-use');
+        return const AppException(
+            'El correo ya está registrado.', 'auth/email-in-use');
       case 'invalid-email':
-        return const AppException('El formato del correo es inválido.', 'auth/invalid-email');
+        return const AppException(
+            'El formato del correo es inválido.', 'auth/invalid-email');
       case 'weak-password':
-        return const AppException('La contraseña es muy débil.', 'auth/weak-password');
+        return const AppException(
+            'La contraseña es muy débil.', 'auth/weak-password');
       case 'user-disabled':
-        return const AppException('Esta cuenta ha sido deshabilitada.', 'auth/user-disabled');
+        return const AppException(
+            'Esta cuenta ha sido deshabilitada.', 'auth/user-disabled');
       case 'network-request-failed':
-        return const AppException('Error de conexión. Verifica tu internet.', 'auth/network-error');
+        return const AppException(
+            'Error de conexión. Verifica tu internet.', 'auth/network-error');
       case 'too-many-requests':
-        return const AppException('Demasiados intentos. Intenta más tarde.', 'auth/too-many-requests');
+        return const AppException('Demasiados intentos. Intenta más tarde.',
+            'auth/too-many-requests');
       default:
         return AppException('Error de autenticación: ${e.message}', e.code);
     }

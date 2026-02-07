@@ -47,15 +47,17 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           if (error is AppException) {
             message = error.message;
           }
-           ScaffoldMessenger.of(context).showSnackBar(
+          ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(message), backgroundColor: Colors.red),
           );
         } else if (state.hasValue && !state.isLoading) {
-             // Successful registration navigates to dashboard
-             context.go('/dashboard'); 
-             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Cuenta creada exitosamente'), backgroundColor: Colors.green),
-             );
+          // Successful registration navigates to dashboard
+          context.go('/dashboard');
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+                content: Text('Cuenta creada exitosamente'),
+                backgroundColor: Colors.green),
+          );
         }
       },
     );
@@ -102,7 +104,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     controller: _nameController,
                     decoration: const InputDecoration(
                       labelText: 'Nombre o Apodo',
-                      prefixIcon: Icon(Icons.person_outline, color: Colors.white70),
+                      prefixIcon:
+                          Icon(Icons.person_outline, color: Colors.white70),
                       border: OutlineInputBorder(),
                     ),
                     validator: (value) {
@@ -118,7 +121,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     controller: _emailController,
                     decoration: const InputDecoration(
                       labelText: 'Email',
-                      prefixIcon: Icon(Icons.email_outlined, color: Colors.white70),
+                      prefixIcon:
+                          Icon(Icons.email_outlined, color: Colors.white70),
                       border: OutlineInputBorder(),
                     ),
                     keyboardType: TextInputType.emailAddress,
@@ -138,11 +142,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     controller: _passwordController,
                     decoration: InputDecoration(
                       labelText: 'Contraseña',
-                      prefixIcon: const Icon(Icons.lock_outline, color: Colors.white70),
+                      prefixIcon:
+                          const Icon(Icons.lock_outline, color: Colors.white70),
                       border: const OutlineInputBorder(),
                       suffixIcon: IconButton(
                         icon: Icon(
-                          _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                          _isPasswordVisible
+                              ? Icons.visibility
+                              : Icons.visibility_off,
                           color: Colors.white70,
                         ),
                         onPressed: () {

@@ -13,5 +13,6 @@ class AppException implements Exception {
 
 /// Generic unknown error.
 class UnknownException extends AppException {
-  const UnknownException() : super('Ocurrió un error inesperado', 'unknown-error');
+  const UnknownException()
+      : super('Ocurrió un error inesperado', 'unknown-error');
 }
