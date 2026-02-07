@@ -31,12 +31,12 @@ class RegisterController extends _$RegisterController {
       state = const AsyncData(null);
     } catch (e, st) {
       print('CONTROLLER ERROR: $e');
-      // Revert to formatting error for UI if it's a FirebaseAuthException or unexpected
-       if (e is FirebaseAuthException) {
-         // The repository already converts this to AppException, but if direct access happened:
-         print('Detailed Firebase Error: ${e.message}');
-       }
-      state = AsyncError(e, st);
+      if (e is AppException) {
+        state = AsyncError(e, st);
+      } else {
+        // Wrap unknown errors
+        state = AsyncError(const UnknownException(), st);
+      }
     }
   }
 }

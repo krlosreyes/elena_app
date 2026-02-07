@@ -25,7 +25,11 @@ class AuthRepository {
         password: password,
       );
     } on FirebaseAuthException catch (e) {
+      print('FIREBASE AUTH ERROR: ${e.code} - ${e.message}');
       throw _handleFirebaseAuthException(e);
+    } on FirebaseException catch (e) {
+      print('FIREBASE EXCEPTION (${e.plugin}): ${e.code} - ${e.message}');
+      throw AppException('Error de Firebase: ${e.message}', e.code);
     } catch (e) {
       throw const UnknownException();
     }
@@ -43,6 +47,9 @@ class AuthRepository {
     } on FirebaseAuthException catch (e) {
       print('FIREBASE AUTH ERROR: ${e.code} - ${e.message}');
       throw _handleFirebaseAuthException(e);
+    } on FirebaseException catch (e) {
+       print('FIREBASE EXCEPTION (${e.plugin}): ${e.code} - ${e.message}');
+       throw AppException('Error de Firebase: ${e.message}', e.code);
     } catch (e) {
       throw const UnknownException();
     }
