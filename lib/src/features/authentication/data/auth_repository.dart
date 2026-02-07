@@ -73,7 +73,8 @@ class AuthRepository {
 
       // Búsqueda de texto simple para evitar problemas de tipos
       if (errorRaw.contains('email-already-in-use')) {
-        throw const AppException('Este correo ya está registrado.', 'email-exists');
+        throw const AppException(
+            'Este correo ya está registrado.', 'email-exists');
       }
       if (errorRaw.contains('weak-password')) {
         throw const AppException(

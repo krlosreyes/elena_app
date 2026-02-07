@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "193971045461",
+    "project_id": "elena-app-2026-v1",
+    "storage_bucket": "elena-app-2026-v1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:193971045461:android:7845d31793f02c1ecb00dc",
+        "android_client_info": {
+          "package_name": "com.metamorfosis.elena.elena_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBNicPVkyUeEfiYFZHhqah7ZwOkAEr94tw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
