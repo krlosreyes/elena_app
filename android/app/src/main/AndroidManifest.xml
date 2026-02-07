@@ -1,4 +1,3 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
         android:label="elena_app"
         android:name="${applicationName}"
