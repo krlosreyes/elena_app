@@ -1,0 +1,70 @@
+// **************************************************************************
+// JsonSerializableGenerator
+// **************************************************************************
+
+_$AppUserImpl _$$AppUserImplFromJson(Map<String, dynamic> json) =>
+    _$AppUserImpl(
+      uid: json['uid'] as String,
+      email: json['email'] as String,
+      displayName: json['displayName'] as String,
+      onboardingCompleted: json['onboardingCompleted'] as bool? ?? false,
+    );
+
+Map<String, dynamic> _$$AppUserImplToJson(_$AppUserImpl instance) =>
+    <String, dynamic>{
+      'uid': instance.uid,
+      'email': instance.email,
+      'displayName': instance.displayName,
+      'onboardingCompleted': instance.onboardingCompleted,
+    };
+
+_$MedicalProfileImpl _$$MedicalProfileImplFromJson(Map<String, dynamic> json) =>
+    _$MedicalProfileImpl(
+      birthDate: DateTime.parse(json['birthDate'] as String),
+      heightCm: (json['heightCm'] as num).toDouble(),
+      startWeightKg: (json['startWeightKg'] as num).toDouble(),
+      currentWeightKg: (json['currentWeightKg'] as num).toDouble(),
+      waistCircumferenceCm: (json['waistCircumferenceCm'] as num).toDouble(),
+      hasPrediabetes: json['hasPrediabetes'] as bool? ?? false,
+      targetWeightKg: (json['targetWeightKg'] as num?)?.toDouble(),
+      metabolicStage: $enumDecodeNullable(
+              _$MetabolicStageEnumMap, json['metabolicStage']) ??
+          MetabolicStage.recovery,
+      activityLevel:
+          $enumDecodeNullable(_$ActivityLevelEnumMap, json['activityLevel']) ??
+              ActivityLevel.sedentary,
+      gender:
+          $enumDecodeNullable(_$GenderEnumMap, json['gender']) ?? Gender.female,
+    );
+
+Map<String, dynamic> _$$MedicalProfileImplToJson(
+        _$MedicalProfileImpl instance) =>
+    <String, dynamic>{
+      'birthDate': instance.birthDate.toIso8601String(),
+      'heightCm': instance.heightCm,
+      'startWeightKg': instance.startWeightKg,
+      'currentWeightKg': instance.currentWeightKg,
+      'waistCircumferenceCm': instance.waistCircumferenceCm,
+      'hasPrediabetes': instance.hasPrediabetes,
+      'targetWeightKg': instance.targetWeightKg,
+      'metabolicStage': _$MetabolicStageEnumMap[instance.metabolicStage]!,
+      'activityLevel': _$ActivityLevelEnumMap[instance.activityLevel]!,
+      'gender': _$GenderEnumMap[instance.gender]!,
+    };
+
+const _$MetabolicStageEnumMap = {
+  MetabolicStage.recovery: 'recovery',
+  MetabolicStage.recomposition: 'recomposition',
+  MetabolicStage.longevity: 'longevity',
+};
+
+const _$ActivityLevelEnumMap = {
+  ActivityLevel.sedentary: 'sedentary',
+  ActivityLevel.active: 'active',
+  ActivityLevel.athlete: 'athlete',
+};
+
+const _$GenderEnumMap = {
+  Gender.male: 'male',
+  Gender.female: 'female',
+};
