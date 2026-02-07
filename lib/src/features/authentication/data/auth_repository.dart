@@ -25,27 +25,29 @@ class AuthRepository {
         password: password,
       );
     } catch (e) {
-      // MANEJO SEGURO PARA WEB
-      // No intentamos castear a (on FirebaseAuthException catch e) porque falla en JS Interop.
-      final errorString = e.toString();
-      
-      print('🔥 FIREBASE ERROR RAW: $errorString'); // Para ver en consola
+      // 🛑 NUCLEAR FIX: No usamos 'on FirebaseAuthException'. Atrapamos TODO.
+      final errorRaw = e.toString();
+      print('🚨 ERROR CRUDO: $errorRaw');
 
-      // Detección manual de códigos comunes basada en texto
-      if (errorString.contains('user-not-found') || errorString.contains('invalid-credential') || errorString.contains('wrong-password')) {
-         throw const AppException('Credenciales incorrectas.', 'auth/invalid-credentials');
-      } else if (errorString.contains('invalid-email')) {
-         throw const AppException('El formato del correo es inválido.', 'auth/invalid-email');
-      } else if (errorString.contains('user-disabled')) {
-         throw const AppException('Esta cuenta ha sido deshabilitada.', 'auth/user-disabled');
-      } else if (errorString.contains('network-request-failed')) {
-         throw const AppException('Error de conexión. Verifica tu internet.', 'auth/network-error');
-      } else if (errorString.contains('too-many-requests')) {
-         throw const AppException('Demasiados intentos. Intenta más tarde.', 'auth/too-many-requests');
-      } else {
-        // Error genérico seguro
-        throw AppException('Error de autenticación: $errorString', 'auth-error');
+      // Búsqueda de texto simple para evitar problemas de tipos
+      if (errorRaw.contains('user-not-found') || errorRaw.contains('invalid-credential') || errorRaw.contains('wrong-password')) {
+         throw AppException('Credenciales incorrectas.', 'auth/invalid-credentials');
       }
+      if (errorRaw.contains('invalid-email')) {
+         throw AppException('El formato del correo es inválido.', 'auth/invalid-email');
+      }
+      if (errorRaw.contains('user-disabled')) {
+         throw AppException('Esta cuenta ha sido deshabilitada.', 'auth/user-disabled');
+      }
+      if (errorRaw.contains('network-request-failed')) {
+         throw AppException('Error de conexión. Verifica tu internet.', 'auth/network-error');
+      }
+      if (errorRaw.contains('too-many-requests')) {
+         throw AppException('Demasiados intentos. Intenta más tarde.', 'auth/too-many-requests');
+      }
+
+      // Si no coincide, lanzamos el error genérico limpio
+      throw AppException(errorRaw, 'unknown');
     }
   }
 
