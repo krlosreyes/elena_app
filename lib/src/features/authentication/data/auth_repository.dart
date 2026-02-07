@@ -59,23 +59,26 @@ class AuthRepository {
         password: password,
       );
     } catch (e) {
-      // MANEJO SEGURO PARA WEB
-      final errorString = e.toString();
-      
-      print('🔥 FIREBASE ERROR RAW: $errorString');
+      // 🛑 NUCLEAR FIX: No usamos 'on FirebaseAuthException'. Atrapamos TODO.
+      final errorRaw = e.toString();
+      print('🚨 ERROR CRUDO: $errorRaw'); 
 
-      if (errorString.contains('email-already-in-use')) {
-        throw const AppException('El correo ya está registrado.', 'auth/email-in-use');
-      } else if (errorString.contains('weak-password')) {
-        throw const AppException('La contraseña es muy débil.', 'auth/weak-password');
-      } else if (errorString.contains('invalid-email')) {
-        throw const AppException('El correo no es válido.', 'auth/invalid-email');
-      } else if (errorString.contains('operation-not-allowed')) {
-        throw const AppException('El registro por correo no está habilitado en Firebase Console.', 'auth/config-error');
-      } else {
-        // Error genérico seguro
-        throw AppException('Error de autenticación: $errorString', 'auth-error');
+      // Búsqueda de texto simple para evitar problemas de tipos
+      if (errorRaw.contains('email-already-in-use')) {
+        throw AppException('Este correo ya está registrado.', 'email-exists');
       }
+      if (errorRaw.contains('weak-password')) {
+        throw AppException('La contraseña es muy débil (mínimo 6 caracteres).', 'weak-pass');
+      }
+      if (errorRaw.contains('invalid-email')) {
+        throw AppException('El correo no es válido.', 'invalid-email');
+      }
+      if (errorRaw.contains('operation-not-allowed')) {
+        throw AppException('Habilita Email/Password en Firebase Console.', 'config-error');
+      }
+
+      // Si no coincide, lanzamos el error genérico limpio
+      throw AppException(errorRaw, 'unknown');
     }
   }
 
