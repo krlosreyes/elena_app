@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../data/auth_repository.dart';
 
@@ -16,7 +17,9 @@ class RegisterController extends _$RegisterController {
     required String password,
   }) async {
     state = const AsyncLoading();
-    state = await AsyncValue.guard(() async {
+    
+    // Explicit try-catch to log errors as requested
+    try {
       final repository = ref.read(authRepositoryProvider);
       await repository.createUserWithEmailAndPassword(email, password);
       // Update display name after successful creation
@@ -25,6 +28,15 @@ class RegisterController extends _$RegisterController {
         await user.updateDisplayName(name);
         await user.reload(); // Refresh user data
       }
-    });
+      state = const AsyncData(null);
+    } catch (e, st) {
+      print('CONTROLLER ERROR: $e');
+      // Revert to formatting error for UI if it's a FirebaseAuthException or unexpected
+       if (e is FirebaseAuthException) {
+         // The repository already converts this to AppException, but if direct access happened:
+         print('Detailed Firebase Error: ${e.message}');
+       }
+      state = AsyncError(e, st);
+    }
   }
 }

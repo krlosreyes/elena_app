@@ -41,6 +41,7 @@ class AuthRepository {
         password: password,
       );
     } on FirebaseAuthException catch (e) {
+      print('FIREBASE AUTH ERROR: ${e.code} - ${e.message}');
       throw _handleFirebaseAuthException(e);
     } catch (e) {
       throw const UnknownException();
