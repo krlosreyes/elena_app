@@ -31,13 +31,9 @@ class RegisterController extends _$RegisterController {
       }
       state = const AsyncData(null);
     } catch (e, st) {
-      print('CONTROLLER ERROR: $e');
-      if (e is AppException) {
-        state = AsyncError(e, st);
-      } else {
-        // Wrap unknown errors
-        state = AsyncError(const UnknownException(), st);
-      }
+      print('❌ ERROR EN REGISTRO (Tipo: ${e.runtimeType})');
+      // No intentamos leer el mensaje si es web para evitar el crash
+      state = AsyncValue.error('No se pudo crear la cuenta. Verifica tu conexión o intenta con otro correo.', st);
     }
   }
 }
