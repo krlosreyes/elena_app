@@ -2,7 +2,7 @@
 // RiverpodGenerator
 // **************************************************************************
 
-String _$goRouterHash() => r'71fd749c2fb1ca81bd6caff783b16ba1ad0b31a0';
+String _$goRouterHash() => r'a2f297f390d2d98d78a0e58283be5a70461df8a9';
 
 /// See also [goRouter].
 @ProviderFor(goRouter)

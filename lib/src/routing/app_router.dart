@@ -2,18 +2,23 @@ import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../common_widgets/common_widgets.dart';
 import '../features/authentication/presentation/login_screen.dart';
+import '../features/authentication/presentation/register_screen.dart';
 
 part 'app_router.g.dart';
 
 @riverpod
 GoRouter goRouter(GoRouterRef ref) {
   return GoRouter(
-    initialLocation: '/',
+    initialLocation: '/login',
     debugLogDiagnostics: true,
     routes: [
       GoRoute(
-        path: '/',
+        path: '/login',
         builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: '/register',
+        builder: (context, state) => const RegisterScreen(),
       ),
       GoRoute(
         path: '/placeholder',
