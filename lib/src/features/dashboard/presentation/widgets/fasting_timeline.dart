@@ -39,6 +39,21 @@ class FastingTimeline extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    
+    // Filtramos las etapas que ocurren ANTES de la meta
+    // Y agregamos manualmente la META al final para asegurar que llegue al 100%
+    final List<FastingStage> displayStages = stages.where((s) => s.hour < plannedHours).toList();
+    
+    // Agregar la meta final si no existe una etapa igual
+    if (!displayStages.any((s) => s.hour == plannedHours)) {
+      displayStages.add(FastingStage(
+        hour: plannedHours, 
+        title: 'Meta ($plannedHours h)', 
+        description: '¡Objetivo cumplido! Has alcanzado tu meta de ayuno.', 
+        icon: Icons.flag, // Flag icon for the goal
+      ));
+    }
+
     return Column(
       children: [
         SizedBox(
@@ -51,15 +66,17 @@ class FastingTimeline extends StatelessWidget {
               const double sideMargin = dotRadius;
               
               final double availableWidth = maxWidth - (sideMargin * 2);
-              // Usamos 16h como base para la línea visual, o plannedHours si es mayor.
-              final int visualMaxHours = plannedHours > 16 ? plannedHours : 16;
-              final double pxPerHour = availableWidth / visualMaxHours;
+              
+              // ESCALA DINÁMICA: 
+              // El ancho total (availableWidth) representa exactamente 'plannedHours'
+              // 0h = 0px, plannedHours = 100% width
+              final double pxPerHour = availableWidth / plannedHours;
 
               return Stack(
                 alignment: Alignment.centerLeft,
                 children: [
-                  // 1. Línea Base
-                  Positioned(
+                   // 1. Línea Base (Total width represents planned duration)
+                   Positioned(
                     left: sideMargin,
                     right: sideMargin,
                     child: Container(
@@ -73,16 +90,25 @@ class FastingTimeline extends StatelessWidget {
                     left: sideMargin,
                     child: Container(
                       height: 4,
+                      // El progreso también se escala relativo a plannedHours
                       width: ((elapsed.inMinutes / 60) * pxPerHour).clamp(0.0, availableWidth),
-                      color: Colors.greenAccent, // Changed to green as requested
+                      
+                      // Si el usuario excede la meta, la barra se pone de otro color o se queda llena
+                      // Aquí simplemente se clama al ancho máximo.
+                      color: elapsed.inHours >= plannedHours ? Colors.amber : Colors.greenAccent, 
                     ),
                   ),
 
                   // 3. Hitos (Stages)
-                  ...stages.map((stage) {
-                    final double left = (stage.hour * pxPerHour) + sideMargin;
-                    // Evitar que se salga del borde derecho (margin included logic prevents this mostly)
-                    if (left > maxWidth) return const SizedBox.shrink();
+                  ...displayStages.map((stage) {
+                    // Posición relativa: (stage.hour / plannedHours) * availableWidth
+                    // Si stage.hour > plannedHours (no debería pasar por el filtro), se va fuera
+                    
+                    final double relativePos = (stage.hour * pxPerHour);
+                    final double left = relativePos + sideMargin;
+                    
+                    // Safety check
+                    if (relativePos > availableWidth + 1) return const SizedBox.shrink();
 
                     final bool isReached = elapsed.inHours >= stage.hour;
                     
