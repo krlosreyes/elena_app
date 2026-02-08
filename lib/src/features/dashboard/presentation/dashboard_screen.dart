@@ -52,7 +52,7 @@ class DashboardScreen extends ConsumerWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Flexible(
+                    Expanded(
                       child: Text(
                         'Tu plan para hoy: ',
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(

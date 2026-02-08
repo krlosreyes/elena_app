@@ -12,7 +12,7 @@ class NotificationService {
       print("DEBUG: Timezones initialized");
 
       const AndroidInitializationSettings initializationSettingsAndroid =
-          AndroidInitializationSettings('@mipmap/ic_launcher');
+          AndroidInitializationSettings('@mipmap/launcher_icon'); // Updated to match generated icon
 
       // Ajuste para iOS (Darwin)
       const DarwinInitializationSettings initializationSettingsDarwin =
@@ -118,7 +118,8 @@ class NotificationService {
         iOS: DarwinNotificationDetails(),
       ),
       // Named arguments REQUIRED in v18+
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      // Using inexactAllowWhileIdle to avoid permission crashes on newer Android
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
     );
