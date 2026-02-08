@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../fasting/presentation/fasting_controller.dart';
+import 'fasting_helper.dart';
 import 'fasting_timeline.dart';
 import 'fasting_motivation_card.dart';
 
@@ -261,9 +262,7 @@ class FastingCard extends ConsumerWidget {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () {
-                ref.read(fastingControllerProvider.notifier).stopFast();
-              },
+              onPressed: () => _handleStopFast(context, ref, state),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.redAccent,
                 foregroundColor: Colors.white,
@@ -280,6 +279,107 @@ class FastingCard extends ConsumerWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _handleStopFast(BuildContext context, WidgetRef ref, FastingState state) {
+    final elapsed = state.elapsed;
+    final planned = Duration(hours: state.plannedHours);
+    final isEarlyExit = elapsed < planned;
+
+    if (isEarlyExit) {
+      _showEarlyExitDialog(context, ref, elapsed, planned);
+    } else {
+      _finishFast(context, ref, elapsed);
+    }
+  }
+
+  void _finishFast(BuildContext context, WidgetRef ref, Duration duration) {
+    ref.read(fastingControllerProvider.notifier).stopFast();
+    _showSuccessDialog(context, duration);
+  }
+
+  void _showEarlyExitDialog(BuildContext context, WidgetRef ref, Duration elapsed, Duration plan) {
+    final benefit = FastingHelper.getBenefit(elapsed);
+    final hours = elapsed.inHours;
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('¿Terminar ya?'),
+        content: Text(
+          'Llevas ${hours}h. Hasta ahora has logrado:\n\n$benefit\n\n¿Seguro que quieres detenerte?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Continuar Ayunando'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context); // Close dialog
+              _finishFast(context, ref, elapsed);
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Terminar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showSuccessDialog(BuildContext context, Duration duration) {
+    final benefit = FastingHelper.getBenefit(duration);
+    String formatDuration(Duration d) {
+      String twoDigits(int n) => n.toString().padLeft(2, '0');
+      final h = twoDigits(d.inHours);
+      final m = twoDigits(d.inMinutes.remainder(60));
+      return '$h:$m';
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.emoji_events, size: 64, color: Colors.amber),
+            const SizedBox(height: 16),
+            Text(
+              '¡Ayuno Finalizado!',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Tiempo total: ${formatDuration(duration)}',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            const Text('Logro desbloqueado:', style: TextStyle(color: Colors.grey)),
+            const SizedBox(height: 8),
+            Text(
+              benefit,
+              style: TextStyle(
+                color: Theme.of(context).primaryColor,
+                fontWeight: FontWeight.w500,
+                fontSize: 16,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('¡Excelente!'),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
