@@ -25,7 +25,7 @@ class DashboardScreen extends ConsumerWidget {
       appBar: AppBar(
         automaticallyImplyLeading: false,
         title: Text(
-          'Metamorfosis Real',
+          'ElenaApp',
           style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
         ),
         actions: [
