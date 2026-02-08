@@ -32,12 +32,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     super.initState();
     // Inicializar el controlador con datos del usuario actual
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final authState = ref.read(authRepositoryProvider).getCurrentUser();
-      if (authState != null) {
+      final authUser = ref.read(authRepositoryProvider).currentUser;
+      if (authUser != null) {
         ref.read(onboardingControllerProvider.notifier).init(
-              authState.uid,
-              authState.email ?? '',
-              authState.displayName ?? 'Usuario',
+              authUser.uid,
+              authUser.email ?? '',
+              authUser.displayName ?? 'Usuario',
             );
       }
     });

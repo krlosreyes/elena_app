@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../authentication/presentation/login_screen.dart'; // Reutilizar colores si es posible o usar Theme
-import '../../profile/domain/user_model.dart';
+import '../../../authentication/presentation/login_screen.dart'; // Reutilizar colores si es posible o usar Theme
+import '../../../profile/domain/user_model.dart';
 import '../onboarding_controller.dart';
 
 class StepBio extends ConsumerStatefulWidget {

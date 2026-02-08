@@ -35,7 +35,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<AsyncValue>(
+    ref.listen<AsyncValue<bool>>(
       loginControllerProvider,
       (_, state) {
         if (state.hasError) {
@@ -47,8 +47,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(message), backgroundColor: Colors.red),
           );
-        } else if (state.hasValue) {
-          context.go('/dashboard');
+        } else if (state.hasValue && !state.isLoading) {
+          // Si el valor es true, necesita onboarding
+          if (state.value == true) {
+             context.go('/onboarding');
+          } else {
+             context.go('/dashboard');
+          }
         }
       },
     );

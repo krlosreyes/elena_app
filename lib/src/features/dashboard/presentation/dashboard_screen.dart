@@ -11,7 +11,7 @@ class DashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final authUser = ref.watch(currentUserStreamProvider).value;
+    final authUser = ref.watch(authStateChangesProvider).value;
     
     // Si no hay usuario autenticado, no deberíamos estar aquí, pero por seguridad:
     if (authUser == null) {
@@ -36,7 +36,7 @@ class DashboardScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // 1. Header Personalizado
-                  _buildHeader(user.displayName),
+                  _buildHeader(user.displayName, ref),
                   const SizedBox(height: 30),
 
                   // 2. Estado del Ayuno
@@ -65,26 +65,37 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildHeader(String name) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildHeader(String name, WidgetRef ref) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          'Hola, $name',
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
-          ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Hola, $name',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Día 1 de tu Metamorfosis 🦋',
+              style: TextStyle(
+                color: Color(0xFF009688), // Teal
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 4),
-        const Text(
-          'Día 1 de tu Metamorfosis 🦋',
-          style: TextStyle(
-            color: Color(0xFF009688), // Teal
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-          ),
+        IconButton(
+          onPressed: () {
+            ref.read(authRepositoryProvider).signOut();
+          },
+          icon: const Icon(Icons.logout, color: Colors.white70),
         ),
       ],
     );
