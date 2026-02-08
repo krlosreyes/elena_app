@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../fasting/presentation/fasting_controller.dart';
 import 'fasting_timeline.dart';
+import 'fasting_motivation_card.dart';
 
 class FastingCard extends ConsumerWidget {
   const FastingCard({super.key});
@@ -88,15 +89,34 @@ class FastingCard extends ConsumerWidget {
   }
 
   Widget _buildActiveState(BuildContext context, WidgetRef ref, FastingState state) {
-    // Formato HH:MM:SS para el contador grande
-    String twoDigits(int n) => n.toString().padLeft(2, '0');
-    final hours = twoDigits(state.elapsed.inHours);
-    final minutes = twoDigits(state.elapsed.inMinutes.remainder(60));
-    final seconds = twoDigits(state.elapsed.inSeconds.remainder(60));
-
-    // Cálculos para controles de tiempo
+    // 1. Cálculos de Tiempo
     final startTime = state.startTime!;
-    final endTime = startTime.add(Duration(hours: state.plannedHours));
+    final plannedDuration = Duration(hours: state.plannedHours);
+    final endTime = startTime.add(plannedDuration);
+    final now = DateTime.now();
+    
+    // Countdown Logic: Tiempo Restante
+    final remaining = endTime.difference(now);
+    final isCompleted = remaining.isNegative;
+
+    String timerText;
+    if (isCompleted) {
+      // Si ya terminó, mostramos cuánto tiempo extra lleva (+ HH:MM:SS)
+      final extra = now.difference(endTime);
+      String twoDigits(int n) => n.toString().padLeft(2, '0');
+      final hours = twoDigits(extra.inHours);
+      final minutes = twoDigits(extra.inMinutes.remainder(60));
+      final seconds = twoDigits(extra.inSeconds.remainder(60));
+      timerText = '+ $hours:$minutes:$seconds';
+    } else {
+      // Si falta, mostramos cuenta regresiva (HH:MM:SS)
+      String twoDigits(int n) => n.toString().padLeft(2, '0');
+      final hours = twoDigits(remaining.inHours);
+      final minutes = twoDigits(remaining.inMinutes.remainder(60));
+      final seconds = twoDigits(remaining.inSeconds.remainder(60));
+      timerText = '$hours:$minutes:$seconds';
+    }
+
     final dateFormat = DateFormat('HH:mm');
 
     return Container(
@@ -116,17 +136,21 @@ class FastingCard extends ConsumerWidget {
       ),
       child: Column(
         children: [
-          // 1. Contador Principal
+          // 1. Tarjeta de Motivación
+          FastingMotivationCard(elapsed: state.elapsed),
+          const SizedBox(height: 24),
+
+          // 2. Contador Principal (Countdown)
           Text(
-            '$hours:$minutes:$seconds',
+            timerText,
             style: GoogleFonts.outfit(
               fontSize: 48,
               fontWeight: FontWeight.bold,
-              color: Theme.of(context).primaryColor,
+              color: isCompleted ? Colors.green : Theme.of(context).primaryColor,
             ),
           ),
           Text(
-            'Tiempo Transcurrido',
+            isCompleted ? 'Tiempo Extra' : 'Tiempo Restante',
             style: TextStyle(
               color: Colors.grey[600],
               fontWeight: FontWeight.w500,
@@ -134,7 +158,7 @@ class FastingCard extends ConsumerWidget {
           ),
           const SizedBox(height: 32),
 
-          // 2. Línea de Tiempo Metabólica
+          // 3. Línea de Tiempo Metabólica
           FastingTimeline(
             progress: state.progress,
             elapsed: state.elapsed,
@@ -142,7 +166,7 @@ class FastingCard extends ConsumerWidget {
           ),
           const SizedBox(height: 32),
 
-          // 3. Controles de Tiempo (Inicio / Fin)
+          // 4. Controles de Tiempo (Inicio / Fin)
           Row(
             children: [
               // Botón Inicio (Editable)
@@ -172,9 +196,9 @@ class FastingCard extends ConsumerWidget {
                   },
                   borderRadius: BorderRadius.circular(12),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
                     decoration: BoxDecoration(
-                      color: Colors.grey[50],
+                      color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: Colors.grey[300]!),
                     ),
@@ -183,16 +207,16 @@ class FastingCard extends ConsumerWidget {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.edit, size: 14, color: Theme.of(context).primaryColor),
+                            Icon(Icons.edit, size: 12, color: Theme.of(context).primaryColor),
                             const SizedBox(width: 4),
-                            Text('INICIO', style: TextStyle(color: Colors.grey[600], fontSize: 10, fontWeight: FontWeight.bold)),
+                            Text('INICIO DEL AYUNO', style: TextStyle(color: Colors.grey[600], fontSize: 9, fontWeight: FontWeight.bold)),
                           ],
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 2),
                         Text(
                           dateFormat.format(startTime),
                           style: GoogleFonts.outfit(
-                            fontSize: 18,
+                            fontSize: 16,
                             fontWeight: FontWeight.bold,
                             color: Colors.black87,
                           ),
@@ -207,22 +231,22 @@ class FastingCard extends ConsumerWidget {
               // Botón Fin (Solo Lectura)
               Expanded(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
                   decoration: BoxDecoration(
-                    color: Colors.grey[50],
+                    color: Colors.grey[50], // Fondo gris para denotar no editable
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey[300]!),
+                    border: Border.all(color: Colors.grey[200]!),
                   ),
                   child: Column(
                     children: [
-                      Text('META (${state.plannedHours}h)', style: TextStyle(color: Colors.grey[600], fontSize: 10, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 4),
+                      Text('FIN DEL AYUNO', style: TextStyle(color: Colors.grey[600], fontSize: 9, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 2),
                       Text(
                         dateFormat.format(endTime),
                         style: GoogleFonts.outfit(
-                          fontSize: 18,
+                          fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: Colors.black87,
+                          color: Colors.black54,
                         ),
                       ),
                     ],
@@ -233,18 +257,26 @@ class FastingCard extends ConsumerWidget {
           ),
           const SizedBox(height: 24),
 
-          // 4. Botón Terminar
+          // 5. Botón Terminar (Destacado)
           SizedBox(
             width: double.infinity,
-            child: TextButton(
+            child: ElevatedButton(
               onPressed: () {
                 ref.read(fastingControllerProvider.notifier).stopFast();
               },
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.redAccent,
-                padding: const EdgeInsets.symmetric(vertical: 12),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.redAccent,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 4,
               ),
-              child: const Text('Terminar Ayuno'),
+              child: const Text(
+                'TERMINAR AYUNO',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
             ),
           ),
         ],
