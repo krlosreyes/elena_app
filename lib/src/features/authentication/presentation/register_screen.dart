@@ -65,11 +65,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     final state = ref.watch(registerControllerProvider);
     final isLoading = state.isLoading;
 
-    const backgroundColor = Color(0xFF121212);
-    const primaryColor = Color(0xFF00E676);
-
     return Scaffold(
-      backgroundColor: backgroundColor,
+      // backgroundColor: Use default from Theme (gray/white)
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -80,33 +77,30 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Text(
+                  Text(
                     'ElenaApp',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
-                      color: primaryColor,
+                      color: Theme.of(context).primaryColor, // Use Primary (Blue)
                       letterSpacing: 1.5,
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Text(
+                  Text(
                     'Crea tu cuenta',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.white70,
-                    ),
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: Colors.grey[700],
+                        ),
                   ),
                   const SizedBox(height: 48),
                   TextFormField(
                     controller: _nameController,
                     decoration: const InputDecoration(
                       labelText: 'Nombre o Apodo',
-                      prefixIcon:
-                          Icon(Icons.person_outline, color: Colors.white70),
-                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.person_outline),
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
@@ -121,9 +115,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     controller: _emailController,
                     decoration: const InputDecoration(
                       labelText: 'Email',
-                      prefixIcon:
-                          Icon(Icons.email_outlined, color: Colors.white70),
-                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.email_outlined),
                     ),
                     keyboardType: TextInputType.emailAddress,
                     validator: (value) {
@@ -142,15 +134,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     controller: _passwordController,
                     decoration: InputDecoration(
                       labelText: 'Contraseña',
-                      prefixIcon:
-                          const Icon(Icons.lock_outline, color: Colors.white70),
-                      border: const OutlineInputBorder(),
+                      prefixIcon: const Icon(Icons.lock_outline),
                       suffixIcon: IconButton(
                         icon: Icon(
                           _isPasswordVisible
                               ? Icons.visibility
                               : Icons.visibility_off,
-                          color: Colors.white70,
                         ),
                         onPressed: () {
                           setState(() {
@@ -173,16 +162,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     height: 50,
                     child: ElevatedButton(
                       onPressed: isLoading ? null : _submit,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: primaryColor,
-                        foregroundColor: Colors.black,
-                        textStyle: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
                       child: isLoading
-                          ? const CircularProgressIndicator(color: Colors.black)
+                          ? const CircularProgressIndicator(color: Colors.white)
                           : const Text('COMENZAR MI CAMBIO'),
                     ),
                   ),

@@ -43,20 +43,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     });
   }
 
-  void _nextPage() {
-    if (_currentPage < _steps.length - 1) {
-      _pageController.nextPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
-      setState(() {
-        _currentPage++;
-      });
-    } else {
-      // Finalizar
-      ref.read(onboardingControllerProvider.notifier).submit(context);
-    }
-  }
+  // Se reemplazó en el paso anterior junto con el build,
+  // pero necesito eliminar la definición duplicada antigua si existe.
+  // Actually, I am replacing the `_nextPage` call in `build`, but I need to replace the definition too.
+  // The previous replace covered the build method calling `_nextPage`.
+  // Wait, I replaced the build method body but `_nextPage` definition was mostly ABOVE/BELOW.
+  // My previous replace instruction targeted lines 95-131 (body build), but added `_nextPage` definition at the end.
+  // So I have a duplicate `_nextPage` at lines 46-59. I must delete it.
+
 
   void _prevPage() {
     if (_currentPage > 0) {
@@ -97,7 +91,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           LinearProgressIndicator(
             value: progress,
             backgroundColor: Colors.grey[200],
-            color: const Color(0xFF009688), // Teal
+            color: Theme.of(context).colorScheme.secondary,
             minHeight: 6,
           ),
           Expanded(
@@ -114,13 +108,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               height: 50,
               child: ElevatedButton(
                 onPressed: _nextPage,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1565C0), // Blue
-                  foregroundColor: Colors.white,
-                ),
+                // Style inherited from Theme
                 child: Text(
                   _currentPage == _steps.length - 1 ? 'FINALIZAR' : 'SIGUIENTE',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
             ),
@@ -128,5 +118,31 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _nextPage() async {
+    if (_currentPage < _steps.length - 1) {
+      _pageController.nextPage(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+      setState(() {
+        _currentPage++;
+      });
+    } else {
+      // Finalizar - Fix de navegación
+      try {
+         await ref.read(onboardingControllerProvider.notifier).submit();
+         if (mounted) {
+           context.go('/dashboard');
+         }
+      } catch (e) {
+        if (mounted) {
+           ScaffoldMessenger.of(context).showSnackBar(
+             SnackBar(content: Text('Error guardando datos: $e'), backgroundColor: Colors.red),
+           );
+        }
+      }
+    }
   }
 }

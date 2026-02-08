@@ -21,7 +21,7 @@ class DashboardScreen extends ConsumerWidget {
     final userAsync = ref.watch(userStreamProvider(authUser.uid));
 
     return Scaffold(
-      backgroundColor: const Color(0xFF121212), // Dark background
+      // backgroundColor: Use default from Theme (gray/white)
       body: userAsync.when(
         data: (user) {
           if (user == null) return const Center(child: Text('Usuario no encontrado'));
@@ -36,36 +36,35 @@ class DashboardScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // 1. Header Personalizado
-                  _buildHeader(user.displayName, ref),
+                  _buildHeader(user.displayName, ref, context),
                   const SizedBox(height: 30),
 
                   // 2. Estado del Ayuno
-                  _buildFastingStatus(plan.recommendedFastingProtocol),
+                  _buildFastingStatus(plan.recommendedFastingProtocol, context),
                   const SizedBox(height: 30),
 
                   // 3. Panel de Prescripción
-                  const Text(
+                  Text(
                     'Tu Receta Metabólica de Hoy',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).primaryColor,
+                        ),
                   ),
                   const SizedBox(height: 16),
-                  _buildPrescriptionGrid(plan, user),
+                  _buildPrescriptionGrid(plan, user, context),
                 ],
               ),
             ),
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator(color: Color(0xFF009688))),
+        loading: () => Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.secondary)),
         error: (e, st) => Center(child: Text('Error: $e')),
       ),
     );
   }
 
-  Widget _buildHeader(String name, WidgetRef ref) {
+  Widget _buildHeader(String name, WidgetRef ref, BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -74,20 +73,18 @@ class DashboardScreen extends ConsumerWidget {
           children: [
             Text(
               'Hola, $name',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).primaryColor,
+                  ),
             ),
             const SizedBox(height: 4),
-            const Text(
+            Text(
               'Día 1 de tu Metamorfosis 🦋',
-              style: TextStyle(
-                color: Color(0xFF009688), // Teal
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.secondary,
+                    fontWeight: FontWeight.w500,
+                  ),
             ),
           ],
         ),
@@ -95,26 +92,25 @@ class DashboardScreen extends ConsumerWidget {
           onPressed: () {
             ref.read(authRepositoryProvider).signOut();
           },
-          icon: const Icon(Icons.logout, color: Colors.white70),
+          icon: Icon(Icons.logout, color: Theme.of(context).primaryColor),
         ),
       ],
     );
   }
 
-  Widget _buildFastingStatus(String protocol) {
-    // Lógica simulada de estado (podría mejorarse con la hora real vs ventana)
+  Widget _buildFastingStatus(String protocol, BuildContext context) {
+    // Lógica simulada de estado
     final now = DateTime.now();
-    final isFasting = now.hour < 12; // Ejemplo simplificado: Mañana es ayuno
+    final isFasting = now.hour < 12;
 
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white10),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.3),
+           BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -126,27 +122,27 @@ class DashboardScreen extends ConsumerWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'ESTADO ACTUAL',
-                style: TextStyle(
-                  color: Colors.grey,
-                  fontSize: 12,
-                  letterSpacing: 1.2,
-                ),
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: Colors.grey,
+                      letterSpacing: 1.2,
+                    ),
               ),
               const SizedBox(height: 8),
               Text(
                 isFasting ? 'En Ayuno' : 'Ventana de Alimentación',
-                style: TextStyle(
-                  color: isFasting ? const Color(0xFF00E676) : Colors.orangeAccent,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: isFasting ? const Color(0xFF00E676) : Colors.orangeAccent,
+                      fontWeight: FontWeight.bold,
+                    ),
               ),
               const SizedBox(height: 8),
               Text(
                 'Protocolo $protocol',
-                style: const TextStyle(color: Colors.white70),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Colors.grey[700],
+                    ),
               ),
             ],
           ),
@@ -159,11 +155,11 @@ class DashboardScreen extends ConsumerWidget {
                 child: CircularProgressIndicator(
                   value: 0.7, // Valor dummy
                   strokeWidth: 8,
-                  backgroundColor: Colors.grey[800],
+                  backgroundColor: Colors.grey[200],
                   color: isFasting ? const Color(0xFF00E676) : Colors.orangeAccent,
                 ),
               ),
-              const Icon(Icons.bolt, color: Colors.white, size: 32),
+              Icon(Icons.bolt, color: Theme.of(context).primaryColor, size: 32),
             ],
           ),
         ],
@@ -171,7 +167,7 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildPrescriptionGrid(dynamic plan, dynamic user) {
+  Widget _buildPrescriptionGrid(dynamic plan, dynamic user, BuildContext context) {
     // dynamic plan para no importar el modelo directamente si no es necesario,
     // pero idealmente importar RecommendationPlan.
     // Asumimos que plan tiene los campos.
@@ -248,9 +244,15 @@ class _PrescriptionCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white10),
+        boxShadow: [
+           BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -268,28 +270,26 @@ class _PrescriptionCard extends StatelessWidget {
             children: [
               Text(
                 value,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
               ),
               const SizedBox(height: 4),
               Text(
                 label,
-                style: TextStyle(
-                  color: Colors.grey[400],
-                  fontSize: 12,
-                ),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Colors.grey[600],
+                    ),
               ),
               if (subtext != null) ...[
                 const SizedBox(height: 2),
                  Text(
                   subtext!,
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 10,
-                  ),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Colors.grey[500],
+                        fontSize: 10,
+                      ),
                    maxLines: 1,
                    overflow: TextOverflow.ellipsis,
                 ),
