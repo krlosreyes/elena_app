@@ -48,17 +48,19 @@ class OnboardingController extends _$OnboardingController {
     if (state == null) return;
 
     try {
-      // 1. Generar Plan con ElenaBrain
-      final plan = ElenaBrain.generatePlan(state!);
+      // 1. Generar Plan con ElenaBrain (Modelo Clínico)
+      final clinicalPlan = ElenaBrain.generateHealthPlan(state!);
 
       // 2. Marcar onboarding como completado
       final userCompleted = state!.copyWith(onboardingCompleted: true);
+      final repo = ref.read(userRepositoryProvider);
 
-      // 3. Guardar Usuario en Firestore
-      await ref.read(userRepositoryProvider).saveUser(userCompleted);
+      // 3. Guardar Plan y Usuario en Firestore
+      await repo.saveHealthPlan(userCompleted.uid, clinicalPlan);
+      await repo.saveUser(userCompleted);
 
       // 4. Log debug
-      debugPrint('Plan Generado: $plan');
+      debugPrint('Plan Clínico Generado: $clinicalPlan');
       
       // La navegación la maneja la vista
     } catch (e) {
