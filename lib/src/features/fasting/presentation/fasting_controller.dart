@@ -117,20 +117,30 @@ class FastingController extends StateNotifier<AsyncValue<FastingState>> {
     final uid = ref.read(authRepositoryProvider).currentUser?.uid;
 
     if (uid != null) {
+      // Calcular si se completó la meta (con 15 min de tolerancia)
+      final elapsedMinutes = endTime.difference(currentState.startTime!).inMinutes;
+      final plannedMinutes = currentState.plannedHours * 60;
+      final isSuccess = elapsedMinutes >= (plannedMinutes - 15);
+
       final session = FastingSession(
         uid: uid,
         startTime: currentState.startTime!,
         endTime: endTime,
         plannedDurationHours: currentState.plannedHours,
-        isCompleted: true,
+        isCompleted: isSuccess,
       );
 
       // Guardar en Firestore
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .collection('fasting_history')
-          .add(session.toJson());
+      try {
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(uid)
+            .collection('fasting_history')
+            .add(session.toJson());
+      } catch (e) {
+        // Manejar error de conexión o permisos
+        print('Error saving fasting session: $e');
+      }
     }
 
     // Limpiar local

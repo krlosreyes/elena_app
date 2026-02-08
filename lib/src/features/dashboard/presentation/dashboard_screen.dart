@@ -72,7 +72,7 @@ class DashboardScreen extends ConsumerWidget {
                       ),
                 ),
                 Text(
-                  'Tu plan para hoy (${healthPlan.protocol})',
+                  'Tu plan para hoy (${healthPlan.protocol.replaceAll(':', '/')})',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         color: Colors.grey[600],
                       ),

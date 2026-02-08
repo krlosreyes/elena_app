@@ -16,26 +16,37 @@ class ElenaBrain {
     int fastingHours;
     int eatingWindowHours;
 
-    switch (user.fastingExperience) {
-      case FastingExperience.advanced:
-        protocol = '16:8';
-        fastingHours = 16;
-        eatingWindowHours = 8;
-        fastDescription = 'Ayuno de 16 horas. Ventana de comida de 8 horas.';
-        break;
-      case FastingExperience.intermediate:
-        protocol = '14:10';
-        fastingHours = 14;
-        eatingWindowHours = 10;
-        fastDescription = 'Ayuno de 14 horas. Ventana de comida de 10 horas.';
-        break;
-      case FastingExperience.beginner:
-      default:
-        protocol = '12:12';
-        fastingHours = 12;
-        eatingWindowHours = 12;
-        fastDescription = 'Ayuno básico de 12 horas. Descanso digestivo nocturno.';
-        break;
+    // Regla: Resistencia a la Insulina o Prediabetes -> 16:8
+    // Esto sobreescribe la experiencia si es necesario para tratamiento
+    if (user.pathologies.contains('insulin_resistance') || 
+        user.pathologies.contains('prediabetes') ||
+        user.pathologies.contains('diabetes')) {
+       protocol = '16:8';
+       fastingHours = 16;
+       eatingWindowHours = 8;
+       fastDescription = 'Protocolo terapéutico 16:8. Clave para bajar insulina basal.';
+    } else {
+      switch (user.fastingExperience) {
+        case FastingExperience.advanced:
+          protocol = '16:8';
+          fastingHours = 16;
+          eatingWindowHours = 8;
+          fastDescription = 'Ayuno de 16 horas. Ventana de comida de 8 horas.';
+          break;
+        case FastingExperience.intermediate:
+          protocol = '14:10';
+          fastingHours = 14;
+          eatingWindowHours = 10;
+          fastDescription = 'Ayuno de 14 horas. Ventana de comida de 10 horas.';
+          break;
+        case FastingExperience.beginner:
+        default:
+          protocol = '12:12';
+          fastingHours = 12;
+          eatingWindowHours = 12;
+          fastDescription = 'Ayuno básico de 12 horas. Descanso digestivo nocturno.';
+          break;
+      }
     }
 
     // Cálculo de Ventana de Alimentación
@@ -122,6 +133,11 @@ class ElenaBrain {
     String protocol = '12:12';
     if (user.fastingExperience == FastingExperience.advanced) protocol = '16:8';
     if (user.fastingExperience == FastingExperience.intermediate) protocol = '14:10';
+    
+    // Regla: Si hay resistencia a la insulina, forzar o sugerir 16:8
+    if (_hasPathology(user, 'insulin_resistance') || _hasPathology(user, 'prediabetes')) {
+      protocol = '16:8';
+    }
 
     // 3. Estrategia de Ejercicio
     String exStrategy = 'Caminata en Zona 2';

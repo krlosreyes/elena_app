@@ -45,45 +45,56 @@ class FastingTimeline extends StatelessWidget {
           child: LayoutBuilder(
             builder: (context, constraints) {
               final double maxWidth = constraints.maxWidth;
+              // Margen horizontal para asegurar que los puntos (24px width) no se corten
+              const double dotRadius = 12.0;
+              const double sideMargin = dotRadius;
+              
+              final double availableWidth = maxWidth - (sideMargin * 2);
               // Usamos 16h como base para la línea visual, o plannedHours si es mayor.
               final int visualMaxHours = plannedHours > 16 ? plannedHours : 16;
-              final double pxPerHour = maxWidth / visualMaxHours;
+              final double pxPerHour = availableWidth / visualMaxHours;
 
               return Stack(
                 alignment: Alignment.centerLeft,
                 children: [
                   // 1. Línea Base
-                  Container(
-                    height: 4,
-                    width: maxWidth,
-                    color: Colors.grey[300],
+                  Positioned(
+                    left: sideMargin,
+                    right: sideMargin,
+                    child: Container(
+                      height: 4,
+                      color: Colors.grey[300],
+                    ),
                   ),
 
                   // 2. Línea de Progreso
-                  Container(
-                    height: 4,
-                    width: (elapsed.inMinutes / 60) * pxPerHour,
-                    color: Theme.of(context).primaryColor,
+                  Positioned(
+                    left: sideMargin,
+                    child: Container(
+                      height: 4,
+                      width: ((elapsed.inMinutes / 60) * pxPerHour).clamp(0.0, availableWidth),
+                      color: Theme.of(context).primaryColor,
+                    ),
                   ),
 
                   // 3. Hitos (Stages)
                   ...stages.map((stage) {
-                    final double left = stage.hour * pxPerHour;
-                    // Evitar que se salga del borde derecho
+                    final double left = (stage.hour * pxPerHour) + sideMargin;
+                    // Evitar que se salga del borde derecho (margin included logic prevents this mostly)
                     if (left > maxWidth) return const SizedBox.shrink();
 
                     final bool isReached = elapsed.inHours >= stage.hour;
                     
                     return Positioned(
-                      left: left - 12, // Centrar punto (24px width)
+                      left: left - dotRadius, // Centrar punto
                       child: GestureDetector(
                         onTap: () => _showStageInfo(context, stage),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Container(
-                              width: 24,
-                              height: 24,
+                              width: dotRadius * 2,
+                              height: dotRadius * 2,
                               decoration: BoxDecoration(
                                 color: isReached ? Theme.of(context).primaryColor : Colors.grey[400],
                                 shape: BoxShape.circle,
