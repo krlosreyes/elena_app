@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 import '../../progress/data/progress_service.dart';
 import '../../progress/domain/measurement_log.dart';
 import '../../authentication/data/auth_repository.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 // Provider para el stream de historial
 final measurementHistoryProvider = StreamProvider<List<MeasurementLog>>((ref) {
@@ -195,13 +196,13 @@ class _BioMetricsGrid extends StatelessWidget {
           color: _getBmiColor(bmi),
         ),
         _MetricCard(
-          title: '% Grasa',
+          title: 'Estimado (Marina)',
           value: bodyFat != null ? '${bodyFat.toStringAsFixed(1)}%' : '--',
           icon: Icons.opacity,
           color: Colors.orangeAccent,
         ),
         _MetricCard(
-          title: '% Músculo',
+          title: 'Masa Magra',
           value: muscle != null ? '${muscle.toStringAsFixed(1)}%' : '--',
           icon: Icons.fitness_center,
           color: Colors.redAccent,
@@ -637,14 +638,12 @@ class _AddMeasurementForm extends ConsumerStatefulWidget {
   ConsumerState<_AddMeasurementForm> createState() => _AddMeasurementFormState();
 }
 
-class _AddMeasurementFormState extends ConsumerState<_AddMeasurementForm> {
   final _formKey = GlobalKey<FormState>();
   
   late TextEditingController _weightController;
   late TextEditingController _waistController;
   late TextEditingController _neckController;
   late TextEditingController _hipController;
-  late TextEditingController _muscleController;
   
   bool _isLoading = false;
 
@@ -656,7 +655,6 @@ class _AddMeasurementFormState extends ConsumerState<_AddMeasurementForm> {
     _waistController = TextEditingController(text: widget.user.waistCircumferenceCm.toString());
     _neckController = TextEditingController(text: widget.user.neckCircumferenceCm.toString());
     _hipController = TextEditingController(text: widget.user.hipCircumferenceCm?.toString() ?? '');
-    _muscleController = TextEditingController();
   }
 
   @override
@@ -665,7 +663,6 @@ class _AddMeasurementFormState extends ConsumerState<_AddMeasurementForm> {
     _waistController.dispose();
     _neckController.dispose();
     _hipController.dispose();
-    _muscleController.dispose();
     super.dispose();
   }
 
@@ -679,10 +676,11 @@ class _AddMeasurementFormState extends ConsumerState<_AddMeasurementForm> {
       final waist = double.tryParse(_waistController.text.replaceAll(',', '.'));
       final neck = double.tryParse(_neckController.text.replaceAll(',', '.'));
       final hip = double.tryParse(_hipController.text.replaceAll(',', '.'));
-      final muscle = double.tryParse(_muscleController.text.replaceAll(',', '.'));
 
-      // Auto-calcular Grasa
+      // Auto-calcular Grasa (Navy Method)
       double? calculatedBodyFat;
+      double? calculatedLeanMass;
+      
       if (waist != null && neck != null) {
         calculatedBodyFat = MeasurementLog.calculateBodyFat(
           heightCm: widget.user.heightCm,
@@ -691,38 +689,13 @@ class _AddMeasurementFormState extends ConsumerState<_AddMeasurementForm> {
           hipCm: hip,
           isMale: widget.user.gender == Gender.male,
         );
+        
+        if (calculatedBodyFat != null) {
+          calculatedLeanMass = 100.0 - calculatedBodyFat;
+        }
       }
 
-      await ref.read(progressServiceProvider).addMeasurement(
-        weight: weight,
-        waistCircumference: waist,
-        energyLevel: null, // No pedido en este form simplificado
-        // Pasamos extras
-      );
-      
-      // OJO: ProgressService.addMeasurement básico no recibe todos los campos aún.
-      // Debemos actualizar addMeasurement en el servicio o pasar un log completo.
-      // Vamos a actualizar el servicio en breve, o usar una implementación directa aquí 
-      // si el servicio solo recibe 3 params. 
-      // *Corrección*: El servicio recibe nombrados. Debemos modificar el servicio 
-      // para aceptar los nuevos campos o pasarlos.
-      // Como no puedo modificar 2 archivos en paralelo sin task boundary, asumiré 
-      // que modificaré el servicio también (era parte de "Update Data Model" implícito).
-      // PERO, para no romper, useré un método update en el servicio o lo haré manual.
-      // Mejor: Agregaré los parámetros al servicio en el siguiente paso o en este mismo
-      // si pudiera.
-      // REST: El servicio addMeasurement actual solo acepta weight, waist, energy.
-      // NECESITO MODIFICAR DATA SERVICE PRIMERO para soportar los nuevos campos.
-      
-      // ... Para salvar el paso, haré una llamada manual a Firestore aquí o 
-      // asumiré que el servicio se actualiza. 
-      // CORRECTO: Modificaré el servicio en el siguiente paso y aquí asumiré que existe
-      // o usaré una versión extendida in-place.
-      
-      // HACK TEMPORAL: Crear el objeto y usar firestore directo o modificar servicio.
-      // Voy a modificar el servicio usando `multi_replace` O hacer la llamada aquí.
-      // Haré la llamada aquí para cumplir el UI task, dado que el servicio es simple.
-      
+      // Crear objeto log completo
       final log = MeasurementLog(
         id: '',
         date: DateTime.now(),
@@ -731,9 +704,10 @@ class _AddMeasurementFormState extends ConsumerState<_AddMeasurementForm> {
         neckCircumference: neck,
         hipCircumference: hip,
         bodyFatPercentage: calculatedBodyFat,
-        muscleMassPercentage: muscle,
+        muscleMassPercentage: calculatedLeanMass,
       );
       
+      // Guardar en Firestore
       await FirebaseFirestore.instance
           .collection('users')
           .doc(widget.user.uid)
@@ -741,12 +715,20 @@ class _AddMeasurementFormState extends ConsumerState<_AddMeasurementForm> {
           .add(log.toJson());
 
       // También actualizar User Profile con los nuevos datos actuales
-      // (Opcional pero recomendable)
+      // Esto es importante para que la próxima vez se pre-carguen
+      /*
+      await FirebaseFirestore.instance.collection('users').doc(widget.user.uid).update({
+        'currentWeightKg': weight,
+        'waistCircumferenceCm': waist,
+        'neckCircumferenceCm': neck,
+        'hipCircumferenceCm': hip,
+      });
+      */
       
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Registro guardado correctamente')),
+          const SnackBar(content: Text('Registro guardado y calculado correctamente')),
         );
       }
     } catch (e) {
@@ -780,6 +762,12 @@ class _AddMeasurementFormState extends ConsumerState<_AddMeasurementForm> {
               ),
               textAlign: TextAlign.center,
             ),
+            const SizedBox(height: 8),
+            Text(
+              'Grasa y Masa Magra se calcularán automáticamente.',
+              style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey),
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: 24),
             Row(
               children: [
@@ -787,7 +775,7 @@ class _AddMeasurementFormState extends ConsumerState<_AddMeasurementForm> {
                   child: TextFormField(
                     controller: _weightController,
                     decoration: const InputDecoration(labelText: 'Peso (kg)', border: OutlineInputBorder()),
-                    keyboardType: TextInputType.number,
+                    keyboardType: TextInputType.numberWithOptions(decimal: true),
                     validator: (v) => v!.isEmpty ? 'Requerido' : null,
                   ),
                 ),
@@ -796,7 +784,7 @@ class _AddMeasurementFormState extends ConsumerState<_AddMeasurementForm> {
                   child: TextFormField(
                     controller: _waistController,
                     decoration: const InputDecoration(labelText: 'Cintura (cm)', border: OutlineInputBorder()),
-                    keyboardType: TextInputType.number,
+                    keyboardType: TextInputType.numberWithOptions(decimal: true),
                      validator: (v) => v!.isEmpty ? 'Requerido' : null,
                   ),
                 ),
@@ -809,7 +797,7 @@ class _AddMeasurementFormState extends ConsumerState<_AddMeasurementForm> {
                   child: TextFormField(
                     controller: _neckController,
                     decoration: const InputDecoration(labelText: 'Cuello (cm)', border: OutlineInputBorder()),
-                    keyboardType: TextInputType.number,
+                    keyboardType: TextInputType.numberWithOptions(decimal: true),
                      validator: (v) => v!.isEmpty ? 'Requerido' : null, // Vital para grasa
                   ),
                 ),
@@ -818,20 +806,10 @@ class _AddMeasurementFormState extends ConsumerState<_AddMeasurementForm> {
                   child: TextFormField(
                     controller: _hipController,
                     decoration: const InputDecoration(labelText: 'Cadera (cm)', border: OutlineInputBorder()),
-                    keyboardType: TextInputType.number,
+                    keyboardType: TextInputType.numberWithOptions(decimal: true),
                   ),
                 ),
               ],
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _muscleController,
-              decoration: const InputDecoration(
-                labelText: '% Músculo (Opcional)', 
-                border: OutlineInputBorder(),
-                suffixText: '%',
-              ),
-              keyboardType: TextInputType.number,
             ),
             const SizedBox(height: 24),
             ElevatedButton(
