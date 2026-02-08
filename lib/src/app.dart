@@ -1,3 +1,6 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'routing/routing.dart';
 import 'config/theme/app_theme.dart';
 
 class ElenaApp extends ConsumerWidget {
