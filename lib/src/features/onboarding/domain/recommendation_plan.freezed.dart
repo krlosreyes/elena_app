@@ -27,6 +27,10 @@ mixin _$RecommendationPlan {
       throw _privateConstructorUsedError; // e.g., '14:10'
   String get fastingWindowDescription =>
       throw _privateConstructorUsedError; // e.g., 'Cena antes de las 8pm'
+  String get recommendedEatingWindowStart =>
+      throw _privateConstructorUsedError; // e.g., '12:00'
+  String get recommendedEatingWindowEnd =>
+      throw _privateConstructorUsedError; // e.g., '20:00'
 // 3. Ejercicio (Zona 2 / MAF)
   int get exerciseZoneHeartRate =>
       throw _privateConstructorUsedError; // MAF 180 Formula
@@ -61,6 +65,8 @@ abstract class $RecommendationPlanCopyWith<$Res> {
       {double dailyWaterIntakeLitres,
       String recommendedFastingProtocol,
       String fastingWindowDescription,
+      String recommendedEatingWindowStart,
+      String recommendedEatingWindowEnd,
       int exerciseZoneHeartRate,
       String exerciseFrequency,
       String exerciseDescription,
@@ -87,6 +93,8 @@ class _$RecommendationPlanCopyWithImpl<$Res, $Val extends RecommendationPlan>
     Object? dailyWaterIntakeLitres = null,
     Object? recommendedFastingProtocol = null,
     Object? fastingWindowDescription = null,
+    Object? recommendedEatingWindowStart = null,
+    Object? recommendedEatingWindowEnd = null,
     Object? exerciseZoneHeartRate = null,
     Object? exerciseFrequency = null,
     Object? exerciseDescription = null,
@@ -108,6 +116,14 @@ class _$RecommendationPlanCopyWithImpl<$Res, $Val extends RecommendationPlan>
       fastingWindowDescription: null == fastingWindowDescription
           ? _value.fastingWindowDescription
           : fastingWindowDescription // ignore: cast_nullable_to_non_nullable
+              as String,
+      recommendedEatingWindowStart: null == recommendedEatingWindowStart
+          ? _value.recommendedEatingWindowStart
+          : recommendedEatingWindowStart // ignore: cast_nullable_to_non_nullable
+              as String,
+      recommendedEatingWindowEnd: null == recommendedEatingWindowEnd
+          ? _value.recommendedEatingWindowEnd
+          : recommendedEatingWindowEnd // ignore: cast_nullable_to_non_nullable
               as String,
       exerciseZoneHeartRate: null == exerciseZoneHeartRate
           ? _value.exerciseZoneHeartRate
@@ -157,6 +173,8 @@ abstract class _$$RecommendationPlanImplCopyWith<$Res>
       {double dailyWaterIntakeLitres,
       String recommendedFastingProtocol,
       String fastingWindowDescription,
+      String recommendedEatingWindowStart,
+      String recommendedEatingWindowEnd,
       int exerciseZoneHeartRate,
       String exerciseFrequency,
       String exerciseDescription,
@@ -181,6 +199,8 @@ class __$$RecommendationPlanImplCopyWithImpl<$Res>
     Object? dailyWaterIntakeLitres = null,
     Object? recommendedFastingProtocol = null,
     Object? fastingWindowDescription = null,
+    Object? recommendedEatingWindowStart = null,
+    Object? recommendedEatingWindowEnd = null,
     Object? exerciseZoneHeartRate = null,
     Object? exerciseFrequency = null,
     Object? exerciseDescription = null,
@@ -202,6 +222,14 @@ class __$$RecommendationPlanImplCopyWithImpl<$Res>
       fastingWindowDescription: null == fastingWindowDescription
           ? _value.fastingWindowDescription
           : fastingWindowDescription // ignore: cast_nullable_to_non_nullable
+              as String,
+      recommendedEatingWindowStart: null == recommendedEatingWindowStart
+          ? _value.recommendedEatingWindowStart
+          : recommendedEatingWindowStart // ignore: cast_nullable_to_non_nullable
+              as String,
+      recommendedEatingWindowEnd: null == recommendedEatingWindowEnd
+          ? _value.recommendedEatingWindowEnd
+          : recommendedEatingWindowEnd // ignore: cast_nullable_to_non_nullable
               as String,
       exerciseZoneHeartRate: null == exerciseZoneHeartRate
           ? _value.exerciseZoneHeartRate
@@ -246,6 +274,8 @@ class _$RecommendationPlanImpl implements _RecommendationPlan {
       {required this.dailyWaterIntakeLitres,
       required this.recommendedFastingProtocol,
       required this.fastingWindowDescription,
+      required this.recommendedEatingWindowStart,
+      required this.recommendedEatingWindowEnd,
       required this.exerciseZoneHeartRate,
       required this.exerciseFrequency,
       required this.exerciseDescription,
@@ -268,6 +298,12 @@ class _$RecommendationPlanImpl implements _RecommendationPlan {
   @override
   final String fastingWindowDescription;
 // e.g., 'Cena antes de las 8pm'
+  @override
+  final String recommendedEatingWindowStart;
+// e.g., '12:00'
+  @override
+  final String recommendedEatingWindowEnd;
+// e.g., '20:00'
 // 3. Ejercicio (Zona 2 / MAF)
   @override
   final int exerciseZoneHeartRate;
@@ -296,7 +332,7 @@ class _$RecommendationPlanImpl implements _RecommendationPlan {
 
   @override
   String toString() {
-    return 'RecommendationPlan(dailyWaterIntakeLitres: $dailyWaterIntakeLitres, recommendedFastingProtocol: $recommendedFastingProtocol, fastingWindowDescription: $fastingWindowDescription, exerciseZoneHeartRate: $exerciseZoneHeartRate, exerciseFrequency: $exerciseFrequency, exerciseDescription: $exerciseDescription, requiresGlucometer: $requiresGlucometer, glucoseTargetFasting: $glucoseTargetFasting, glucoseTargetPostMeal: $glucoseTargetPostMeal, monitoringFocusMessage: $monitoringFocusMessage, generatedAt: $generatedAt)';
+    return 'RecommendationPlan(dailyWaterIntakeLitres: $dailyWaterIntakeLitres, recommendedFastingProtocol: $recommendedFastingProtocol, fastingWindowDescription: $fastingWindowDescription, recommendedEatingWindowStart: $recommendedEatingWindowStart, recommendedEatingWindowEnd: $recommendedEatingWindowEnd, exerciseZoneHeartRate: $exerciseZoneHeartRate, exerciseFrequency: $exerciseFrequency, exerciseDescription: $exerciseDescription, requiresGlucometer: $requiresGlucometer, glucoseTargetFasting: $glucoseTargetFasting, glucoseTargetPostMeal: $glucoseTargetPostMeal, monitoringFocusMessage: $monitoringFocusMessage, generatedAt: $generatedAt)';
   }
 
   @override
@@ -310,9 +346,16 @@ class _$RecommendationPlanImpl implements _RecommendationPlan {
                     recommendedFastingProtocol) ||
                 other.recommendedFastingProtocol ==
                     recommendedFastingProtocol) &&
-            (identical(
-                    other.fastingWindowDescription, fastingWindowDescription) ||
+            (identical(other.fastingWindowDescription, fastingWindowDescription) ||
                 other.fastingWindowDescription == fastingWindowDescription) &&
+            (identical(other.recommendedEatingWindowStart,
+                    recommendedEatingWindowStart) ||
+                other.recommendedEatingWindowStart ==
+                    recommendedEatingWindowStart) &&
+            (identical(other.recommendedEatingWindowEnd,
+                    recommendedEatingWindowEnd) ||
+                other.recommendedEatingWindowEnd ==
+                    recommendedEatingWindowEnd) &&
             (identical(other.exerciseZoneHeartRate, exerciseZoneHeartRate) ||
                 other.exerciseZoneHeartRate == exerciseZoneHeartRate) &&
             (identical(other.exerciseFrequency, exerciseFrequency) ||
@@ -338,6 +381,8 @@ class _$RecommendationPlanImpl implements _RecommendationPlan {
       dailyWaterIntakeLitres,
       recommendedFastingProtocol,
       fastingWindowDescription,
+      recommendedEatingWindowStart,
+      recommendedEatingWindowEnd,
       exerciseZoneHeartRate,
       exerciseFrequency,
       exerciseDescription,
@@ -367,6 +412,8 @@ abstract class _RecommendationPlan implements RecommendationPlan {
       {required final double dailyWaterIntakeLitres,
       required final String recommendedFastingProtocol,
       required final String fastingWindowDescription,
+      required final String recommendedEatingWindowStart,
+      required final String recommendedEatingWindowEnd,
       required final int exerciseZoneHeartRate,
       required final String exerciseFrequency,
       required final String exerciseDescription,
@@ -386,6 +433,10 @@ abstract class _RecommendationPlan implements RecommendationPlan {
   @override // e.g., '14:10'
   String get fastingWindowDescription;
   @override // e.g., 'Cena antes de las 8pm'
+  String get recommendedEatingWindowStart;
+  @override // e.g., '12:00'
+  String get recommendedEatingWindowEnd;
+  @override // e.g., '20:00'
 // 3. Ejercicio (Zona 2 / MAF)
   int get exerciseZoneHeartRate;
   @override // MAF 180 Formula

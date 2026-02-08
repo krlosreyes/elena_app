@@ -12,21 +12,48 @@ class ElenaBrain {
     String protocol;
     String fastDescription;
 
+    int fastingHours;
+    int eatingWindowHours;
+
     switch (user.fastingExperience) {
       case FastingExperience.advanced:
         protocol = '16:8';
+        fastingHours = 16;
+        eatingWindowHours = 8;
         fastDescription = 'Ayuno de 16 horas. Ventana de comida de 8 horas.';
         break;
       case FastingExperience.intermediate:
         protocol = '14:10';
+        fastingHours = 14;
+        eatingWindowHours = 10;
         fastDescription = 'Ayuno de 14 horas. Ventana de comida de 10 horas.';
         break;
       case FastingExperience.beginner:
       default:
         protocol = '12:12';
+        fastingHours = 12;
+        eatingWindowHours = 12;
         fastDescription = 'Ayuno básico de 12 horas. Descanso digestivo nocturno.';
         break;
     }
+
+    // Cálculo de Ventana de Alimentación
+    // Última Comida = Hora Dormir - 3 horas
+    final bedTimeParts = user.bedTime.split(':').map(int.parse).toList();
+    final bedDateTime = DateTime(2024, 1, 1, bedTimeParts[0], bedTimeParts[1]);
+    
+    final lastMealTime = bedDateTime.subtract(const Duration(hours: 3));
+    final firstMealTime = lastMealTime.subtract(Duration(hours: eatingWindowHours));
+    
+    // Formateo HH:mm
+    String _formatTime(DateTime dt) {
+      final h = dt.hour.toString().padLeft(2, '0');
+      final m = dt.minute.toString().padLeft(2, '0');
+      return '$h:$m';
+    }
+
+    final windowStart = _formatTime(firstMealTime);
+    final windowEnd = _formatTime(lastMealTime);
 
     // 3. Ejercicio (Fórmula MAF 180)
     final age = DateTime.now().year - user.birthDate.year;
@@ -65,6 +92,8 @@ class ElenaBrain {
       dailyWaterIntakeLitres: double.parse(dailyWaterIntres.toStringAsFixed(1)),
       recommendedFastingProtocol: protocol,
       fastingWindowDescription: fastDescription,
+      recommendedEatingWindowStart: windowStart,
+      recommendedEatingWindowEnd: windowEnd,
       exerciseZoneHeartRate: mafHeartRate,
       exerciseFrequency: 'Caminata 45min diarios o ejercicio suave',
       exerciseDescription: exerciseDesc,

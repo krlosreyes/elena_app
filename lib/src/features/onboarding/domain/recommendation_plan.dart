@@ -12,6 +12,8 @@ class RecommendationPlan with _$RecommendationPlan {
     // 2. Ayuno
     required String recommendedFastingProtocol, // e.g., '14:10'
     required String fastingWindowDescription, // e.g., 'Cena antes de las 8pm'
+    required String recommendedEatingWindowStart, // e.g., '12:00'
+    required String recommendedEatingWindowEnd, // e.g., '20:00'
 
     // 3. Ejercicio (Zona 2 / MAF)
     required int exerciseZoneHeartRate, // MAF 180 Formula

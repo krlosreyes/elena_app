@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/science/science.dart'; // Si MetabolicEngine se usa, aunque ElenaBrain es el principal ahora
+import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../authentication/data/auth_repository.dart';
 import '../../profile/data/user_repository.dart';
 import '../../onboarding/logic/elena_brain.dart';
-// import '../../onboarding/domain/recommendation_plan.dart'; // Lo usaremos vía ElenaBrain por ahora
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -13,290 +13,232 @@ class DashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final authUser = ref.watch(authStateChangesProvider).value;
     
-    // Si no hay usuario autenticado, no deberíamos estar aquí, pero por seguridad:
+    // Si no hay usuario autenticado, main o router deberían manejarlo, 
+    // pero mostramos loading por seguridad.
     if (authUser == null) {
-        return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     final userAsync = ref.watch(userStreamProvider(authUser.uid));
 
     return Scaffold(
-      // backgroundColor: Use default from Theme (gray/white)
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        title: Text(
+          'Metamorfosis Real',
+          style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () => ref.read(authRepositoryProvider).signOut(),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: CircleAvatar(
+              backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
+              child: Text(
+                authUser.displayName != null && authUser.displayName!.isNotEmpty
+                    ? authUser.displayName![0].toUpperCase()
+                    : 'U',
+                style: TextStyle(color: Theme.of(context).primaryColor),
+              ),
+            ),
+          ),
+        ],
+      ),
       body: userAsync.when(
         data: (user) {
-          if (user == null) return const Center(child: Text('Usuario no encontrado'));
+          if (user == null) {
+            return const Center(child: Text('Perfil no encontrado.'));
+          }
           
-          // Generamos el plan al vuelo con los datos frescos
           final plan = ElenaBrain.generatePlan(user);
 
-          return SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // 1. Header Personalizado
-                  _buildHeader(user.displayName, ref, context),
-                  const SizedBox(height: 30),
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 1. Saludo Personalizado
+                Text(
+                  'Hola, ${user.displayName}',
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                ),
+                Text(
+                  'Tu plan para hoy (${plan.recommendedFastingProtocol})',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: Colors.grey[600],
+                      ),
+                ),
+                const SizedBox(height: 24),
 
-                  // 2. Estado del Ayuno
-                  _buildFastingStatus(plan.recommendedFastingProtocol, context),
-                  const SizedBox(height: 30),
-
-                  // 3. Panel de Prescripción
-                  Text(
-                    'Tu Receta Metabólica de Hoy',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).primaryColor,
-                        ),
+                // 2. Anillo de Ayuno (Visualización Principal)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).primaryColor.withOpacity(0.1), // Teal suave
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: Theme.of(context).primaryColor.withOpacity(0.3),
+                    ),
                   ),
-                  const SizedBox(height: 16),
-                  _buildPrescriptionGrid(plan, user, context),
-                ],
-              ),
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.access_time_filled,
+                        size: 48,
+                        color: Theme.of(context).primaryColor,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Ventana de Alimentación',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: Theme.of(context).primaryColor,
+                            ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '${plan.recommendedEatingWindowStart} - ${plan.recommendedEatingWindowEnd}',
+                        style: GoogleFonts.outfit(
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Descanso digestivo el resto del día',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // 3. Grilla de Métricas
+                GridView.count(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
+                  childAspectRatio: 1.1,
+                  children: [
+                    // Card 1: Hidratación
+                    _MetricCard(
+                      icon: Icons.water_drop,
+                      color: Colors.blueAccent,
+                      value: '${plan.dailyWaterIntakeLitres} L',
+                      label: 'Hidratación',
+                      subtext: 'Aprox. ${(plan.dailyWaterIntakeLitres * 4).round()} vasos',
+                    ),
+                    // Card 2: Zona 2
+                    _MetricCard(
+                      icon: Icons.favorite,
+                      color: Colors.redAccent,
+                      value: '< ${plan.exerciseZoneHeartRate} ppm',
+                      label: 'Zona 2 (MAF)',
+                      subtext: 'Quema Grasa',
+                    ),
+                    // Card 3: Sueño / Cena
+                    _MetricCard(
+                      icon: Icons.bedtime,
+                      color: Colors.indigoAccent,
+                      value: plan.recommendedEatingWindowEnd,
+                      label: 'Cena Límite',
+                      subtext: '3h antes de dormir',
+                    ),
+                    // Card 4: Condicional (Glucosa o Peso Ideal)
+                    if (plan.requiresGlucometer)
+                      _MetricCard(
+                        icon: Icons.bloodtype,
+                        color: Colors.purpleAccent,
+                        value: '< 100',
+                        label: 'Glucosa Ayunas',
+                        subtext: 'mg/dL Meta',
+                      )
+                    else
+                         _MetricCard(
+                        icon: Icons.directions_run,
+                        color: Colors.green,
+                        value: '45 min',
+                        label: 'Movimiento',
+                        subtext: 'Diario',
+                      ),
+                  ],
+                ),
+              ],
             ),
           );
         },
-        loading: () => Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.secondary)),
-        error: (e, st) => Center(child: Text('Error: $e')),
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, st) => Center(child: Text('Error cargando perfil: $e')),
       ),
-    );
-  }
-
-  Widget _buildHeader(String name, WidgetRef ref, BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Hola, $name',
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).primaryColor,
-                  ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Día 1 de tu Metamorfosis 🦋',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.secondary,
-                    fontWeight: FontWeight.w500,
-                  ),
-            ),
-          ],
-        ),
-        IconButton(
-          onPressed: () {
-            ref.read(authRepositoryProvider).signOut();
-          },
-          icon: Icon(Icons.logout, color: Theme.of(context).primaryColor),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildFastingStatus(String protocol, BuildContext context) {
-    // Lógica simulada de estado
-    final now = DateTime.now();
-    final isFasting = now.hour < 12;
-
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'ESTADO ACTUAL',
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: Colors.grey,
-                      letterSpacing: 1.2,
-                    ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                isFasting ? 'En Ayuno' : 'Ventana de Alimentación',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: isFasting ? const Color(0xFF00E676) : Colors.orangeAccent,
-                      fontWeight: FontWeight.bold,
-                    ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Protocolo $protocol',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey[700],
-                    ),
-              ),
-            ],
-          ),
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              SizedBox(
-                width: 80,
-                height: 80,
-                child: CircularProgressIndicator(
-                  value: 0.7, // Valor dummy
-                  strokeWidth: 8,
-                  backgroundColor: Colors.grey[200],
-                  color: isFasting ? const Color(0xFF00E676) : Colors.orangeAccent,
-                ),
-              ),
-              Icon(Icons.bolt, color: Theme.of(context).primaryColor, size: 32),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPrescriptionGrid(dynamic plan, dynamic user, BuildContext context) {
-    // dynamic plan para no importar el modelo directamente si no es necesario,
-    // pero idealmente importar RecommendationPlan.
-    // Asumimos que plan tiene los campos.
-
-    final prescriptions = [
-      _PrescriptionCard(
-        icon: Icons.water_drop,
-        color: Colors.blueAccent,
-        label: 'Hidratación',
-        value: '0/${plan.dailyWaterIntakeLitres} L',
-        action: IconButton(
-          icon: const Icon(Icons.add_circle, color: Colors.blueAccent),
-          onPressed: () {}, // TODO: Implement logic
-        ),
-      ),
-      _PrescriptionCard(
-        icon: Icons.favorite,
-        color: Colors.redAccent,
-        label: 'Zona 2 (MAF)',
-        value: '< ${plan.exerciseZoneHeartRate} ppm',
-        subtext: plan.exerciseFrequency,
-      ),
-      if (plan.requiresGlucometer)
-        _PrescriptionCard(
-          icon: Icons.bloodtype,
-          color: Colors.purpleAccent,
-          label: 'Glucosa Ayunas',
-          value: plan.glucoseTargetFasting ?? '-',
-          subtext: 'Meta',
-        ),
-       _PrescriptionCard(
-        icon: Icons.bedtime,
-        color: Colors.indigoAccent,
-        label: 'Dormir',
-        value: user.bedTime,
-        subtext: 'Ritmo Circadiano',
-      ),
-    ];
-
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-        childAspectRatio: 1.1,
-      ),
-      itemCount: prescriptions.length,
-      itemBuilder: (context, index) => prescriptions[index],
     );
   }
 }
 
-class _PrescriptionCard extends StatelessWidget {
+class _MetricCard extends StatelessWidget {
   final IconData icon;
   final Color color;
-  final String label;
   final String value;
+  final String label;
   final String? subtext;
-  final Widget? action;
 
-  const _PrescriptionCard({
+  const _MetricCard({
     required this.icon,
     required this.color,
-    required this.label,
     required this.value,
+    required this.label,
     this.subtext,
-    this.action,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Icon(icon, color: color, size: 28),
-              if (action != null) SizedBox(height: 24, width: 24, child: action),
-            ],
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                value,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: color, size: 28),
+            const Spacer(),
+            Text(
+              value,
+              style: GoogleFonts.outfit(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
               ),
-              const SizedBox(height: 4),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
+            if (subtext != null) ...[
+              const SizedBox(height: 2),
               Text(
-                label,
+                subtext!,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey[600],
+                      color: Colors.grey,
+                      fontSize: 10,
                     ),
               ),
-              if (subtext != null) ...[
-                const SizedBox(height: 2),
-                 Text(
-                  subtext!,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey[500],
-                        fontSize: 10,
-                      ),
-                   maxLines: 1,
-                   overflow: TextOverflow.ellipsis,
-                ),
-              ]
             ],
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -13,6 +13,9 @@ _$RecommendationPlanImpl _$$RecommendationPlanImplFromJson(
           (json['dailyWaterIntakeLitres'] as num).toDouble(),
       recommendedFastingProtocol: json['recommendedFastingProtocol'] as String,
       fastingWindowDescription: json['fastingWindowDescription'] as String,
+      recommendedEatingWindowStart:
+          json['recommendedEatingWindowStart'] as String,
+      recommendedEatingWindowEnd: json['recommendedEatingWindowEnd'] as String,
       exerciseZoneHeartRate: (json['exerciseZoneHeartRate'] as num).toInt(),
       exerciseFrequency: json['exerciseFrequency'] as String,
       exerciseDescription: json['exerciseDescription'] as String,
@@ -29,6 +32,8 @@ Map<String, dynamic> _$$RecommendationPlanImplToJson(
       'dailyWaterIntakeLitres': instance.dailyWaterIntakeLitres,
       'recommendedFastingProtocol': instance.recommendedFastingProtocol,
       'fastingWindowDescription': instance.fastingWindowDescription,
+      'recommendedEatingWindowStart': instance.recommendedEatingWindowStart,
+      'recommendedEatingWindowEnd': instance.recommendedEatingWindowEnd,
       'exerciseZoneHeartRate': instance.exerciseZoneHeartRate,
       'exerciseFrequency': instance.exerciseFrequency,
       'exerciseDescription': instance.exerciseDescription,
