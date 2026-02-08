@@ -51,6 +51,9 @@ class UserModel with _$UserModel {
     String? recommendedProtocol,
     HealthGoal? healthGoal,
     
+    // Configuración
+    int? checkInDay, // 1 = Lunes, 7 = Domingo
+
     // Metadata
     @Default(false) bool onboardingCompleted,
     DateTime? createdAt,

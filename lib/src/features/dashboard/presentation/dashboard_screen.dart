@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../authentication/data/auth_repository.dart';
 import '../../profile/data/user_repository.dart';
+import '../../profile/domain/user_model.dart';
 import '../../onboarding/logic/elena_brain.dart';
 import 'widgets/fasting_card.dart';
 import 'widgets/protocol_selector.dart'; // Import ProtocolSelector
