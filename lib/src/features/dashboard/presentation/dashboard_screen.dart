@@ -25,7 +25,36 @@ class DashboardScreen extends ConsumerWidget {
     final userAsync = ref.watch(userStreamProvider(authUser.uid));
 
     return Scaffold(
-      // ... (appBar)
+      appBar: AppBar(
+        title: Text(
+          'Elena App',
+          style: GoogleFonts.outfit(
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+          ),
+        ),
+        centerTitle: false,
+        backgroundColor: Colors.white,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.black54),
+            onPressed: () {
+               ref.read(authRepositoryProvider).signOut();
+            },
+          ),
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: CircleAvatar(
+              backgroundColor: Theme.of(context).primaryColor,
+              child: Text(
+                authUser?.displayName?.substring(0, 1).toUpperCase() ?? 'U',
+                style: const TextStyle(color: Colors.white),
+              ),
+            ),
+          ),
+        ],
+      ),
       body: SafeArea(
         child: userAsync.when(
         data: (user) {
