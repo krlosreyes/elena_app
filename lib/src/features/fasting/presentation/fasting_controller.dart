@@ -141,6 +141,24 @@ class FastingController extends StateNotifier<AsyncValue<FastingState>> {
     state = AsyncValue.data(FastingState.initial());
   }
 
+  // 5. Actualizar Hora de Inicio
+  Future<void> updateStartTime(DateTime newStartTime) async {
+    final currentState = state.value;
+    if (currentState == null || !currentState.isFasting) return;
+
+    final now = DateTime.now();
+    final elapsed = now.difference(newStartTime);
+    
+    state = AsyncValue.data(currentState.copyWith(
+      startTime: newStartTime,
+      elapsed: elapsed,
+      progress: _calculateProgress(elapsed, currentState.plannedHours),
+    ));
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keyStartTime, newStartTime.toIso8601String());
+  }
+
   // 4. Timer Interno
   void _startTimer() {
     _timer?.cancel();
