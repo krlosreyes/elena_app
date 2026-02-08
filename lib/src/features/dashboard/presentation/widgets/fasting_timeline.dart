@@ -73,7 +73,7 @@ class FastingTimeline extends StatelessWidget {
                     child: Container(
                       height: 4,
                       width: ((elapsed.inMinutes / 60) * pxPerHour).clamp(0.0, availableWidth),
-                      color: Theme.of(context).primaryColor,
+                      color: Colors.greenAccent, // Changed to green as requested
                     ),
                   ),
 

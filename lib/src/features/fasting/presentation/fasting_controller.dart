@@ -209,9 +209,36 @@ class FastingController extends StateNotifier<AsyncValue<FastingState>> {
   }
 
   double _calculateProgress(Duration elapsed, int plannedHours) {
-    final totalSeconds = plannedHours * 3600;
-    if (totalSeconds == 0) return 0;
-    return elapsed.inSeconds / totalSeconds;
+    return elapsed.inSeconds / (plannedHours * 3600);
+  }
+
+  // 6. Cambiar Protocolo (Ej: "16/8", "18/6")
+  Future<void> setProtocol(String protocolString) async {
+    // Extraer horas de ayuno (primer número antes del '/')
+    final parts = protocolString.split('/');
+    if (parts.isEmpty) return;
+    
+    final int newHours = int.tryParse(parts[0]) ?? 16;
+    
+    // Actualizar estado local
+    final currentState = state.value;
+    if (currentState != null) {
+      state = AsyncValue.data(currentState.copyWith(
+        plannedHours: newHours,
+        // Recalcular progreso con nueva meta
+        progress: _calculateProgress(currentState.elapsed, newHours)
+      ));
+
+      // Persistir
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt(_keyPlannedHours, newHours);
+      
+      // Reprogramar notificaciones con nueva meta
+      if (currentState.isFasting && currentState.startTime != null) {
+        await NotificationService.scheduleFastingNotifications(
+            currentState.startTime!, Duration(hours: newHours));
+      }
+    }
   }
 
   @override

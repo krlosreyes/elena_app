@@ -7,38 +7,46 @@ class NotificationService {
       FlutterLocalNotificationsPlugin();
 
   static Future<void> init() async {
-    tz.initializeTimeZones(); // Inicializar base de datos de zonas horarias
+    try {
+      tz.initializeTimeZones(); // Inicializar base de datos de zonas horarias
+      print("DEBUG: Timezones initialized");
 
-    const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+      const AndroidInitializationSettings initializationSettingsAndroid =
+          AndroidInitializationSettings('@mipmap/ic_launcher');
 
-    // Ajuste para iOS (Darwin)
-    const DarwinInitializationSettings initializationSettingsDarwin =
-        DarwinInitializationSettings(
-      requestSoundPermission: true,
-      requestBadgePermission: true,
-      requestAlertPermission: true,
-    );
+      // Ajuste para iOS (Darwin)
+      const DarwinInitializationSettings initializationSettingsDarwin =
+          DarwinInitializationSettings(
+        requestSoundPermission: true,
+        requestBadgePermission: true,
+        requestAlertPermission: true,
+      );
 
-    const InitializationSettings initializationSettings = InitializationSettings(
-      android: initializationSettingsAndroid,
-      iOS: initializationSettingsDarwin,
-    );
+      const InitializationSettings initializationSettings = InitializationSettings(
+        android: initializationSettingsAndroid,
+        iOS: initializationSettingsDarwin,
+      );
 
-    // V18.0.1: initialize takes positional argument for settings
-    await _notificationsPlugin.initialize(
-      initializationSettings,
-      onDidReceiveNotificationResponse: (details) {
-        // Aquí puedes manejar qué pasa al tocar la notificación
-      },
-    );
+      // V18.0.1: initialize takes positional argument for settings
+      await _notificationsPlugin.initialize(
+        initializationSettings,
+        onDidReceiveNotificationResponse: (details) {
+          // Aquí puedes manejar qué pasa al tocar la notificación
+        },
+      );
+      print("DEBUG: Notifications plugin initialized");
 
-    final AndroidFlutterLocalNotificationsPlugin? androidImplementation =
-        _notificationsPlugin.resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>();
+      final AndroidFlutterLocalNotificationsPlugin? androidImplementation =
+          _notificationsPlugin.resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>();
 
-    if (androidImplementation != null) {
-      await androidImplementation.requestNotificationsPermission();
+      if (androidImplementation != null) {
+        await androidImplementation.requestNotificationsPermission();
+        print("DEBUG: Android permissions requested");
+      }
+    } catch (e) {
+      print("ERROR in NotificationService.init: $e");
+      // No re-lanzar para permitir que la app continúe
     }
   }
 

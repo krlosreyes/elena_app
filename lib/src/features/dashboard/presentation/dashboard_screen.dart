@@ -6,55 +6,27 @@ import '../../authentication/data/auth_repository.dart';
 import '../../profile/data/user_repository.dart';
 import '../../onboarding/logic/elena_brain.dart';
 import 'widgets/fasting_card.dart';
+import 'widgets/protocol_selector.dart'; // Import ProtocolSelector
+import '../../fasting/presentation/fasting_controller.dart'; // Import FastingController
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // ... (rest of the file until Text widget)
     final authUser = ref.watch(authStateChangesProvider).value;
-    
-    // Si no hay usuario autenticado, main o router deberían manejarlo, 
-    // pero mostramos loading por seguridad.
-    if (authUser == null) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-
+    // ...
     final userAsync = ref.watch(userStreamProvider(authUser.uid));
 
     return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        title: Text(
-          'ElenaApp',
-          style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () => ref.read(authRepositoryProvider).signOut(),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: CircleAvatar(
-              backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
-              child: Text(
-                authUser.displayName != null && authUser.displayName!.isNotEmpty
-                    ? authUser.displayName![0].toUpperCase()
-                    : 'U',
-                style: TextStyle(color: Theme.of(context).primaryColor),
-              ),
-            ),
-          ),
-        ],
-      ),
+      // ... (appBar)
       body: userAsync.when(
         data: (user) {
           if (user == null) {
             return const Center(child: Text('Perfil no encontrado.'));
           }
           
-          // Generamos ambos planes: Cuantitativo (Horarios/Agua) y Cualitativo (Estrategias)
           final recommendation = ElenaBrain.generatePlan(user);
           final healthPlan = ElenaBrain.generateHealthPlan(user);
 
@@ -71,11 +43,36 @@ class DashboardScreen extends ConsumerWidget {
                         color: Colors.black87,
                       ),
                 ),
-                Text(
-                  'Tu plan para hoy (${healthPlan.protocol.replaceAll(':', '/')})',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Colors.grey[600],
-                      ),
+                const SizedBox(height: 8),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Tu plan para hoy: ',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            color: Colors.grey[600],
+                          ),
+                    ),
+                    const SizedBox(width: 8),
+                    // Selector de Protocolo
+                    Consumer(
+                      builder: (context, ref, _) {
+                        // Watch the state to get current planned hours
+                        final asyncState = ref.watch(fastingControllerProvider);
+                        
+                        // Default protocol from health plan
+                        String protocol = healthPlan.protocol.replaceAll(':', '/');
+                        
+                        // If we have state and planned hours, override
+                        if (asyncState.hasValue) {
+                           final state = asyncState.value!;
+                           protocol = "${state.plannedHours}/${24 - state.plannedHours}";
+                        }
+
+                        return ProtocolSelector(currentProtocol: protocol);
+                      },
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 24),
 

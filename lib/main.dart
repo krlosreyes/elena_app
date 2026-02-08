@@ -13,7 +13,12 @@ void main() async {
   );
 
   // Inicializar Notificaciones Locales
-  await NotificationService.init();
+  try {
+    await NotificationService.init();
+    debugPrint('Notificaciones inicializadas correctamente');
+  } catch (e) {
+    debugPrint('Error inicializando notificaciones: $e');
+  }
 
   runApp(
     const ProviderScope(
