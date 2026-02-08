@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../fasting/presentation/fasting_controller.dart';
-import 'fasting_helper.dart';
+import '../../../fasting/presentation/fasting_helper.dart';
 import 'fasting_timeline.dart';
 import 'fasting_motivation_card.dart';
 

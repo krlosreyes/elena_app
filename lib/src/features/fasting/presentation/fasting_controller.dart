@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../authentication/data/auth_repository.dart';
 import '../domain/fasting_session.dart';
+import '../../../core/services/notification_service.dart';
 
 // Estado del Ayuno
 class FastingState {
@@ -103,12 +104,18 @@ class FastingController extends StateNotifier<AsyncValue<FastingState>> {
     await prefs.setString(_keyStartTime, now.toIso8601String());
     await prefs.setInt(_keyPlannedHours, hours);
 
+    // Programar Notificaciones
+    await NotificationService().scheduleFastingNotifications(now, hours);
+
     _startTimer();
   }
 
   // 3. Terminar Ayuno
   Future<void> stopFast() async {
     _timer?.cancel();
+    
+    // Cancelar Notificaciones
+    await NotificationService().cancelAll();
     
     final currentState = state.value;
     if (currentState == null || !currentState.isFasting || currentState.startTime == null) return;
@@ -167,6 +174,9 @@ class FastingController extends StateNotifier<AsyncValue<FastingState>> {
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keyStartTime, newStartTime.toIso8601String());
+
+    // Reprogramar Notificaciones
+    await NotificationService().scheduleFastingNotifications(newStartTime, currentState.plannedHours);
   }
 
   // 4. Timer Interno
