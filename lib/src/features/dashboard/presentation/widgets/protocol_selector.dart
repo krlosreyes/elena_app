@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../fasting/presentation/fasting_controller.dart';
+import '../../../fasting/presentation/fasting_controller.dart';
 
 class ProtocolSelector extends ConsumerWidget {
   final String currentProtocol;

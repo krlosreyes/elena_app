@@ -15,8 +15,11 @@ class DashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // ... (rest of the file until Text widget)
-    final authUser = ref.watch(authStateChangesProvider).value;
-    // ...
+    // Si no hay usuario, retornamos carga/error antes de intentar usar su ID
+    if (authUser == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+    
     final userAsync = ref.watch(userStreamProvider(authUser.uid));
 
     return Scaffold(
