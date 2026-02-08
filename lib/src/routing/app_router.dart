@@ -4,6 +4,7 @@ import '../common_widgets/common_widgets.dart';
 import '../features/authentication/presentation/login_screen.dart';
 import '../features/authentication/presentation/register_screen.dart';
 import '../features/dashboard/dashboard.dart';
+import '../features/onboarding/presentation/onboarding_screen.dart';
 
 part 'app_router.g.dart';
 
@@ -28,6 +29,10 @@ GoRouter goRouter(GoRouterRef ref) {
       GoRoute(
         path: '/dashboard',
         builder: (context, state) => const DashboardScreen(),
+      ),
+      GoRoute(
+        path: '/onboarding',
+        builder: (context, state) => const OnboardingScreen(),
       ),
     ],
   );
