@@ -53,7 +53,9 @@ class DashboardScreen extends ConsumerWidget {
             return const Center(child: Text('Perfil no encontrado.'));
           }
           
-          final plan = ElenaBrain.generatePlan(user);
+          // Generamos ambos planes: Cuantitativo (Horarios/Agua) y Cualitativo (Estrategias)
+          final recommendation = ElenaBrain.generatePlan(user);
+          final healthPlan = ElenaBrain.generateHealthPlan(user);
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
@@ -69,7 +71,7 @@ class DashboardScreen extends ConsumerWidget {
                       ),
                 ),
                 Text(
-                  'Tu plan para hoy (${plan.recommendedFastingProtocol})',
+                  'Tu plan para hoy (${healthPlan.protocol})',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         color: Colors.grey[600],
                       ),
@@ -104,7 +106,7 @@ class DashboardScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '${plan.recommendedEatingWindowStart} - ${plan.recommendedEatingWindowEnd}',
+                        '${recommendation.recommendedEatingWindowStart} - ${recommendation.recommendedEatingWindowEnd}',
                         style: GoogleFonts.outfit(
                           fontSize: 32,
                           fontWeight: FontWeight.bold,
@@ -119,60 +121,53 @@ class DashboardScreen extends ConsumerWidget {
                     ],
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 32),
 
-                // 3. Grilla de Métricas
-                GridView.count(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                  childAspectRatio: 1.1,
-                  children: [
-                    // Card 1: Hidratación
-                    _MetricCard(
-                      icon: Icons.water_drop,
-                      color: Colors.blueAccent,
-                      value: '${plan.dailyWaterIntakeLitres} L',
-                      label: 'Hidratación',
-                      subtext: 'Aprox. ${(plan.dailyWaterIntakeLitres * 4).round()} vasos',
-                    ),
-                    // Card 2: Zona 2
-                    _MetricCard(
-                      icon: Icons.favorite,
-                      color: Colors.redAccent,
-                      value: '< ${plan.exerciseZoneHeartRate} ppm',
-                      label: 'Zona 2 (MAF)',
-                      subtext: 'Quema Grasa',
-                    ),
-                    // Card 3: Sueño / Cena
-                    _MetricCard(
-                      icon: Icons.bedtime,
-                      color: Colors.indigoAccent,
-                      value: plan.recommendedEatingWindowEnd,
-                      label: 'Cena Límite',
-                      subtext: '3h antes de dormir',
-                    ),
-                    // Card 4: Condicional (Glucosa o Peso Ideal)
-                    if (plan.requiresGlucometer)
-                      _MetricCard(
-                        icon: Icons.bloodtype,
-                        color: Colors.purpleAccent,
-                        value: '< 100',
-                        label: 'Glucosa Ayunas',
-                        subtext: 'mg/dL Meta',
-                      )
-                    else
-                         _MetricCard(
-                        icon: Icons.directions_run,
-                        color: Colors.green,
-                        value: '45 min',
-                        label: 'Movimiento',
-                        subtext: 'Diario',
-                      ),
-                  ],
+                // 3. Título de Estrategia
+                Text(
+                  'TU ESTRATEGIA DE METAMORFOSIS',
+                  style: GoogleFonts.outfit(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    letterSpacing: 1.2,
+                    color: Colors.grey[700],
+                  ),
                 ),
+                const SizedBox(height: 16),
+
+                // 4. Tarjetas de Estrategia
+
+                // TARJETA 1: MOVIMIENTO
+                _StrategyCard(
+                  icon: Icons.directions_run,
+                  color: Colors.orangeAccent,
+                  title: healthPlan.exerciseStrategy,
+                  subtitle: healthPlan.exerciseFrequency,
+                  badge: 'Zona 2: < ${healthPlan.maxHeartRate} ppm',
+                ),
+                const SizedBox(height: 16),
+
+                // TARJETA 2: NUTRICIÓN
+                 _StrategyCard(
+                  icon: Icons.restaurant,
+                  color: Colors.green,
+                  title: healthPlan.nutritionStrategy,
+                  subtitle: 'Romper ayuno: ${healthPlan.breakingFastTip}',
+                  warning: (user.pathologies.contains('prediabetes') || user.pathologies.contains('diabetes'))
+                      ? 'Orden: Fibra > Proteína > Carbohidratos'
+                      : null,
+                ),
+                const SizedBox(height: 16),
+
+                // TARJETA 3: GLUCOSA (Condicional)
+                if (healthPlan.glucoseStrategy != null)
+                   _StrategyCard(
+                    icon: Icons.bloodtype,
+                    color: Colors.redAccent,
+                    title: 'Control de Glucosa',
+                    subtitle: healthPlan.glucoseStrategy!,
+                    badge: 'Vital',
+                  ),
               ],
             ),
           );
@@ -184,19 +179,21 @@ class DashboardScreen extends ConsumerWidget {
   }
 }
 
-class _MetricCard extends StatelessWidget {
+class _StrategyCard extends StatelessWidget {
   final IconData icon;
   final Color color;
-  final String value;
-  final String label;
-  final String? subtext;
+  final String title;
+  final String subtitle;
+  final String? badge;
+  final String? warning;
 
-  const _MetricCard({
+  const _StrategyCard({
     required this.icon,
     required this.color,
-    required this.value,
-    required this.label,
-    this.subtext,
+    required this.title,
+    required this.subtitle,
+    this.badge,
+    this.warning,
   });
 
   @override
@@ -208,33 +205,77 @@ class _MetricCard extends StatelessWidget {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: color, size: 28),
-            const Spacer(),
-            Text(
-              value,
-              style: GoogleFonts.outfit(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(icon, color: color, size: 24),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: GoogleFonts.outfit(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+                if (badge != null)
+                  Chip(
+                    label: Text(
+                      badge!,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                    backgroundColor: color,
+                    padding: EdgeInsets.zero,
+                    visualDensity: VisualDensity.compact,
+                  ),
+              ],
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 12),
             Text(
-              label,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w600,
+              subtitle,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.grey[800],
+                    height: 1.4,
                   ),
             ),
-            if (subtext != null) ...[
-              const SizedBox(height: 2),
-              Text(
-                subtext!,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey,
-                      fontSize: 10,
+            if (warning != null) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.amber.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.amber),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.warning_amber_rounded,
+                        color: Colors.amber, size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        warning!,
+                        style: GoogleFonts.outfit(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.amber[900],
+                        ),
+                      ),
                     ),
+                  ],
+                ),
               ),
             ],
           ],

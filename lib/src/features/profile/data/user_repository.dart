@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../plan/domain/health_plan.dart';
 import '../domain/user_model.dart';
+import '../../../core/exceptions/exceptions.dart';
 
 part 'user_repository.g.dart';
 
@@ -94,7 +95,7 @@ class UserRepository {
           .collection('plans')
           .add(plan.toJson());
     } catch (e) {
-      throw const UnknownException();
+      throw UnknownException();
     }
   }
 }
