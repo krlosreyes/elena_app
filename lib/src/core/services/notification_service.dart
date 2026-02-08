@@ -1,106 +1,122 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
-import 'package:flutter/foundation.dart';
+import 'package:timezone/data/latest.dart' as tz;
 
 class NotificationService {
-  static final NotificationService _instance = NotificationService._internal();
-  factory NotificationService() => _instance;
-  NotificationService._internal();
+  static final FlutterLocalNotificationsPlugin _notificationsPlugin =
+      FlutterLocalNotificationsPlugin();
 
-  final FlutterLocalNotificationsPlugin _notifications = FlutterLocalNotificationsPlugin();
+  static Future<void> init() async {
+    tz.initializeTimeZones(); // Inicializar base de datos de zonas horarias
 
-  Future<void> init() async {
-    tz.initializeTimeZones();
+    const AndroidInitializationSettings initializationSettingsAndroid =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
 
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
-    const iosSettings = DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
+    // Ajuste para iOS (Darwin)
+    const DarwinInitializationSettings initializationSettingsDarwin =
+        DarwinInitializationSettings(
       requestSoundPermission: true,
+      requestBadgePermission: true,
+      requestAlertPermission: true,
     );
 
-    const initSettings = InitializationSettings(android: androidSettings, iOS: iosSettings);
+    const InitializationSettings initializationSettings = InitializationSettings(
+      android: initializationSettingsAndroid,
+      iOS: initializationSettingsDarwin,
+    );
 
-    await _notifications.initialize(
-      initSettings,
-      onDidReceiveNotificationResponse: (details) async {
-        // Handle notification tap
+    // V18.0.1: initialize takes positional argument for settings
+    await _notificationsPlugin.initialize(
+      initializationSettings,
+      onDidReceiveNotificationResponse: (details) {
+        // Aquí puedes manejar qué pasa al tocar la notificación
       },
     );
 
-    if (defaultTargetPlatform == TargetPlatform.android) {
-      final androidImplementation = _notifications.resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>();
-      await androidImplementation?.requestNotificationsPermission();
+    final AndroidFlutterLocalNotificationsPlugin? androidImplementation =
+        _notificationsPlugin.resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
+
+    if (androidImplementation != null) {
+      await androidImplementation.requestNotificationsPermission();
     }
   }
 
-  Future<void> cancelAll() async {
-    await _notifications.cancelAll();
-  }
-
-  Future<void> scheduleFastingNotifications(DateTime startTime, int plannedHours) async {
-    await cancelAll(); // Clear previous schedules
-
-    final now = DateTime.now();
+  static Future<void> scheduleFastingNotifications(
+      DateTime startTime, Duration duration) async {
+    print("DEBUG: scheduleFastingNotifications called. Start: $startTime, Duration: $duration");
     
-    // Milestones
-    final milestones = [
-      {'hour': 12, 'title': '🔥 Quema de Grasa Activada', 'body': 'Tu cuerpo está usando sus reservas de grasa como energía.'},
-      {'hour': 14, 'title': '🧠 Cetosis Detectada', 'body': 'Claridad mental y energía estable. ¡Vas muy bien!'},
-      {'hour': 16, 'title': '♻️ Modo Autofagia', 'body': 'Limpieza celular profunda iniciada.'},
-    ];
+    // Cancelar notificaciones previas para evitar duplicados
+    await cancelAll();
 
-    for (var m in milestones) {
-      final hour = m['hour'] as int;
-      final milestoneTime = startTime.add(Duration(hours: hour));
-      
+    final endTime = startTime.add(duration);
+    final now = DateTime.now();
+
+    // Hitos metabólicos
+    final milestones = {
+      12: "🔥 ¡Quema de Grasa Activada! Tu cuerpo está usando reservas.",
+      14: "🧠 Cetosis Detectada. Disfruta tu claridad mental.",
+      16: "♻️ Modo Autofagia. Limpieza celular profunda.",
+    };
+
+    // Programar Hitos
+    for (var entry in milestones.entries) {
+      final milestoneTime = startTime.add(Duration(hours: entry.key));
       if (milestoneTime.isAfter(now)) {
+        print("DEBUG: Scheduling notification for: $milestoneTime");
         await _scheduleNotification(
-          id: hour,
-          title: m['title'] as String,
-          body: m['body'] as String,
+          id: entry.key,
+          title: "Hito de Ayuno (${entry.key}h)",
+          body: entry.value,
           scheduledTime: milestoneTime,
         );
       }
     }
 
-    // Goal Reached
-    final goalTime = startTime.add(Duration(hours: plannedHours));
-    if (goalTime.isAfter(now)) {
-       await _scheduleNotification(
-          id: 999,
-          title: '🏆 ¡Objetivo Cumplido!',
-          body: 'Has completado tu ayuno de $plannedHours horas. ¡Felicidades!',
-          scheduledTime: goalTime,
-        );
+    // Programar Meta Final
+    if (endTime.isAfter(now)) {
+      print("DEBUG: Scheduling end notification for: $endTime");
+      await _scheduleNotification(
+        id: 999, // ID especial para la meta
+        title: "🏆 ¡Objetivo Cumplido!",
+        body: "Has completado tu plan de ayuno. ¡Felicidades!",
+        scheduledTime: endTime,
+      );
     }
   }
 
-  Future<void> _scheduleNotification({
+  static Future<void> _scheduleNotification({
     required int id,
     required String title,
     required String body,
     required DateTime scheduledTime,
   }) async {
-    await _notifications.zonedSchedule(
+    // V18.0.1: zonedSchedule takes mixed positional and named arguments
+    // Positional: id, title, body, scheduledDate, notificationDetails
+    // Named: uiLocalNotificationDateInterpretation, androidScheduleMode
+    await _notificationsPlugin.zonedSchedule(
       id,
       title,
       body,
       tz.TZDateTime.from(scheduledTime, tz.local),
       const NotificationDetails(
         android: AndroidNotificationDetails(
-          'fasting_channel',
-          'Fasting Alerts',
-          channelDescription: 'Notifications for fasting milestones',
-          importance: Importance.high,
+          'fasting_channel', // id del canal
+          'Notificaciones de Ayuno', // nombre del canal
+          channelDescription: 'Avisos sobre hitos metabólicos',
+          importance: Importance.max,
           priority: Priority.high,
         ),
         iOS: DarwinNotificationDetails(),
       ),
+      // Named arguments REQUIRED in v18+
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
     );
+  }
+
+  static Future<void> cancelAll() async {
+    await _notificationsPlugin.cancelAll();
   }
 }

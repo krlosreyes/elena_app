@@ -13,7 +13,7 @@ void main() async {
   );
 
   // Inicializar Notificaciones Locales
-  await NotificationService().init();
+  await NotificationService.init();
 
   runApp(
     const ProviderScope(

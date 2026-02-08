@@ -55,15 +55,15 @@ class FastingController extends StateNotifier<AsyncValue<FastingState>> {
   static const String _keyPlannedHours = 'fasting_planned_hours';
 
   FastingController(this.ref) : super(const AsyncValue.loading()) {
-    _init();
+    checkCurrentStatus();
   }
 
   // 1. Inicialización y Restauración
-  Future<void> _init() async {
+  Future<void> checkCurrentStatus() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final startTimeIso = prefs.getString(_keyStartTime);
-      final plannedours = prefs.getInt(_keyPlannedHours) ?? 16;
+      final plannedHours = prefs.getInt(_keyPlannedHours) ?? 16;
 
       if (startTimeIso != null) {
         // Restaurar ayuno en progreso
@@ -74,12 +74,12 @@ class FastingController extends StateNotifier<AsyncValue<FastingState>> {
         state = AsyncValue.data(FastingState(
           isFasting: true,
           elapsed: elapsed,
-          progress: _calculateProgress(elapsed, plannedours),
+          progress: _calculateProgress(elapsed, plannedHours),
           startTime: startTime,
-          plannedHours: plannedours,
+          plannedHours: plannedHours,
         ));
         
-        _startTimer();
+        _startTicker();
       } else {
         // No hay ayuno activo
         state = AsyncValue.data(FastingState.initial());
@@ -105,9 +105,9 @@ class FastingController extends StateNotifier<AsyncValue<FastingState>> {
     await prefs.setInt(_keyPlannedHours, hours);
 
     // Programar Notificaciones
-    await NotificationService().scheduleFastingNotifications(now, hours);
+    await NotificationService.scheduleFastingNotifications(now, Duration(hours: hours));
 
-    _startTimer();
+    _startTicker();
   }
 
   // 3. Terminar Ayuno
@@ -115,7 +115,7 @@ class FastingController extends StateNotifier<AsyncValue<FastingState>> {
     _timer?.cancel();
     
     // Cancelar Notificaciones
-    await NotificationService().cancelAll();
+    await NotificationService.cancelAll();
     
     final currentState = state.value;
     if (currentState == null || !currentState.isFasting || currentState.startTime == null) return;
@@ -176,34 +176,35 @@ class FastingController extends StateNotifier<AsyncValue<FastingState>> {
     await prefs.setString(_keyStartTime, newStartTime.toIso8601String());
 
     // Reprogramar Notificaciones
-    await NotificationService().scheduleFastingNotifications(newStartTime, currentState.plannedHours);
+    await NotificationService.scheduleFastingNotifications(newStartTime, Duration(hours: currentState.plannedHours));
   }
 
-  // 4. Timer Interno
-  void _startTimer() {
+  // 4. Timer Interno (Ticker)
+  void _startTicker() {
     _timer?.cancel();
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!mounted) {
-        timer.cancel();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) => _updateState());
+  }
+
+  void _updateState() {
+    if (!mounted) {
+      _timer?.cancel();
+      return;
+    }
+
+    state.whenData((currentState) {
+      if (!currentState.isFasting || currentState.startTime == null) {
+        _timer?.cancel();
         return;
       }
-      
-      state.whenData((currentState) {
-        if (!currentState.isFasting || currentState.startTime == null) {
-          timer.cancel();
-          return;
-        }
 
-        final now = DateTime.now();
-        final elapsed = now.difference(currentState.startTime!);
-        
-        // Actualizamos estado sin reconstruir todo si es posible, 
-        // pero con Riverpod inmutable emitimos nuevo estado.
-        state = AsyncValue.data(currentState.copyWith(
-          elapsed: elapsed,
-          progress: _calculateProgress(elapsed, currentState.plannedHours),
-        ));
-      });
+      final now = DateTime.now();
+      final elapsed = now.difference(currentState.startTime!);
+
+      // Actualizamos estado
+      state = AsyncValue.data(currentState.copyWith(
+        elapsed: elapsed,
+        progress: _calculateProgress(elapsed, currentState.plannedHours),
+      ));
     });
   }
 

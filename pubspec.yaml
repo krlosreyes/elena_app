@@ -34,8 +34,9 @@ dependencies:
   # UI
   flutter_animate: ^4.5.0
   shared_preferences: ^2.5.4
-  flutter_local_notifications: ^20.0.0
+  flutter_local_notifications: ^18.0.1
   timezone: ^0.10.1
+  flutter_local_notifications_platform_interface: ^8.0.0
 
 dev_dependencies:
   flutter_test:
