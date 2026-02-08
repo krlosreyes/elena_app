@@ -115,7 +115,128 @@ class FastingController extends StateNotifier<AsyncValue<FastingState>> {
     }
   }
 
-  // ... (startFast and stopFast remain mostly the same, ensuring plannedHours is used from state)
+  // 2. Iniciar Ayuno
+  Future<void> startFast({int hours = 16}) async {
+    final now = DateTime.now();
+    state = AsyncValue.data(FastingState(
+      isFasting: true,
+      elapsed: Duration.zero,
+      progress: 0.0,
+      startTime: now,
+      plannedHours: hours,
+    ));
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keyStartTime, now.toIso8601String());
+    await prefs.setInt(_keyPlannedHours, hours);
+
+    // Programar Notificaciones
+    await NotificationService.scheduleFastingNotifications(now, Duration(hours: hours));
+
+    _startTicker();
+  }
+
+  // 3. Terminar Ayuno
+  Future<void> stopFast() async {
+    _timer?.cancel();
+    
+    // Cancelar Notificaciones
+    await NotificationService.cancelAll();
+    
+    final currentState = state.value;
+    if (currentState == null || !currentState.isFasting || currentState.startTime == null) return;
+
+    final endTime = DateTime.now();
+    final uid = ref.read(authRepositoryProvider).currentUser?.uid;
+
+    if (uid != null) {
+      // Calcular si se completó la meta (con 15 min de tolerancia)
+      final elapsedMinutes = endTime.difference(currentState.startTime!).inMinutes;
+      final plannedMinutes = currentState.plannedHours * 60;
+      final isSuccess = elapsedMinutes >= (plannedMinutes - 15);
+
+      final session = FastingSession(
+        uid: uid,
+        startTime: currentState.startTime!,
+        endTime: endTime,
+        plannedDurationHours: currentState.plannedHours,
+        isCompleted: isSuccess,
+      );
+
+      // Guardar en Firestore
+      try {
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(uid)
+            .collection('fasting_history')
+            .add(session.toJson());
+      } catch (e) {
+        // Manejar error de conexión o permisos
+        print('Error saving fasting session: $e');
+      }
+    }
+
+    // Limpiar local
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_keyStartTime);
+    await prefs.remove(_keyPlannedHours);
+
+    state = AsyncValue.data(FastingState.initial());
+  }
+
+  // 5. Actualizar Hora de Inicio
+  Future<void> updateStartTime(DateTime newStartTime) async {
+    final currentState = state.value;
+    if (currentState == null || !currentState.isFasting) return;
+
+    final now = DateTime.now();
+    final elapsed = now.difference(newStartTime);
+    
+    state = AsyncValue.data(currentState.copyWith(
+      startTime: newStartTime,
+      elapsed: elapsed,
+      progress: _calculateProgress(elapsed, currentState.plannedHours),
+    ));
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keyStartTime, newStartTime.toIso8601String());
+
+    // Reprogramar Notificaciones
+    await NotificationService.scheduleFastingNotifications(newStartTime, Duration(hours: currentState.plannedHours));
+  }
+
+  // 4. Timer Interno (Ticker)
+  void _startTicker() {
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) => _updateState());
+  }
+
+  void _updateState() {
+    if (!mounted) {
+      _timer?.cancel();
+      return;
+    }
+
+    state.whenData((currentState) {
+      if (!currentState.isFasting || currentState.startTime == null) {
+        _timer?.cancel();
+        return;
+      }
+
+      final now = DateTime.now();
+      final elapsed = now.difference(currentState.startTime!);
+
+      // Actualizamos estado
+      state = AsyncValue.data(currentState.copyWith(
+        elapsed: elapsed,
+        progress: _calculateProgress(elapsed, currentState.plannedHours),
+      ));
+    });
+  }
+
+  double _calculateProgress(Duration elapsed, int plannedHours) {
+    return elapsed.inSeconds / (plannedHours * 3600);
+  }
 
   // 6. Cambiar Protocolo (Ej: "16/8", "18/6")
   Future<void> setProtocol(String protocolString) async {
