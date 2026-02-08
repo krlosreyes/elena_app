@@ -9,21 +9,68 @@ import 'widgets/fasting_card.dart';
 import 'widgets/protocol_selector.dart'; // Import ProtocolSelector
 import '../../fasting/presentation/fasting_controller.dart'; // Import FastingController
 
-class DashboardScreen extends ConsumerWidget {
+import '../../progress/presentation/progress_screen.dart';
+
+class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // ... (rest of the file until Text widget)
-    final authUser = ref.watch(authStateChangesProvider).value;
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
+}
 
-    // Si no hay usuario, retornamos carga/error antes de intentar usar su ID
+class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+  int _selectedIndex = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    // 1. Obtener Usuario
+    final authUser = ref.watch(authStateChangesProvider).value;
     if (authUser == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
     
     final userAsync = ref.watch(userStreamProvider(authUser.uid));
 
+    // 2. Definir Pantallas
+    final List<Widget> screens = [
+      _HomeView(userAsync: userAsync, authUser: authUser),
+      const ProgressScreen(),
+    ];
+
+    return Scaffold(
+      body: SafeArea(
+        child: screens[_selectedIndex],
+      ),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _selectedIndex,
+        onDestinationSelected: (index) {
+          setState(() => _selectedIndex = index);
+        },
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home),
+            label: 'Inicio',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.show_chart),
+            selectedIcon: Icon(Icons.show_chart),
+            label: 'Progreso',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HomeView extends ConsumerWidget {
+  final AsyncValue<UserModel?> userAsync;
+  final dynamic authUser; // User from firebase_auth
+
+  const _HomeView({required this.userAsync, required this.authUser});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -55,8 +102,7 @@ class DashboardScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: SafeArea(
-        child: userAsync.when(
+      body: userAsync.when(
         data: (user) {
           if (user == null) {
             return const Center(child: Text('Perfil no encontrado.'));
@@ -169,7 +215,6 @@ class DashboardScreen extends ConsumerWidget {
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, st) => Center(child: Text('Error cargando perfil: $e')),
-      ),
       ),
     );
   }
