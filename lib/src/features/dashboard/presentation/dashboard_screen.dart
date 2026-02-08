@@ -26,7 +26,8 @@ class DashboardScreen extends ConsumerWidget {
 
     return Scaffold(
       // ... (appBar)
-      body: userAsync.when(
+      body: SafeArea(
+        child: userAsync.when(
         data: (user) {
           if (user == null) {
             return const Center(child: Text('Perfil no encontrado.'));
@@ -139,6 +140,7 @@ class DashboardScreen extends ConsumerWidget {
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, st) => Center(child: Text('Error cargando perfil: $e')),
+      ),
       ),
     );
   }
