@@ -34,6 +34,7 @@ class FastingTimeline extends StatelessWidget {
     FastingStage(hour: 12, title: 'Quema Grasa', description: 'Lipólisis activada, acceso a reservas.', icon: Icons.local_fire_department),
     FastingStage(hour: 14, title: 'Cetosis', description: 'Producción de cuerpos cetónicos, energía mental.', icon: Icons.psychology),
     FastingStage(hour: 16, title: 'Autofagia', description: 'Reciclaje y limpieza celular.', icon: Icons.cleaning_services),
+    FastingStage(hour: 20, title: 'Renovación Profunda', description: 'Pico máximo de hormona de crecimiento. Regeneración de tejidos y sistema inmune.', icon: Icons.auto_awesome),
   ];
 
   @override
