@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../authentication/data/auth_repository.dart';
 import 'onboarding_controller.dart';
 import 'steps/step_bio.dart';

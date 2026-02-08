@@ -43,7 +43,7 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          textStyle: const TextStyle(
+          textStyle: GoogleFonts.outfit(
             fontSize: 16,
             fontWeight: FontWeight.bold,
           ),
