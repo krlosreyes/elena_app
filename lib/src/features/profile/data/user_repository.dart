@@ -86,6 +86,17 @@ class UserRepository {
       return null;
     });
   }
+  // Guardar Plan de Salud
+  Future<void> saveHealthPlan(String uid, HealthPlan plan) async {
+    try {
+      await _usersCollection
+          .doc(uid)
+          .collection('plans')
+          .add(plan.toJson());
+    } catch (e) {
+      throw const UnknownException();
+    }
+  }
 }
 
 @Riverpod(keepAlive: true)

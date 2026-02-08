@@ -73,7 +73,7 @@ class ElenaBrain {
 
     // 4. Monitoreo de Glucosa
     // Riesgo metabólico: Patologías clave o Cintura/Altura > 0.55
-    final isMetabolicRisk = _checkMetabolicRisk(user);
+    final isMetabolicRisk = _hasMetabolicRisk(user);
     final waistToHeightRatio = user.waistCircumferenceCm / user.heightCm;
 
     bool requiresGlucometer = false;
