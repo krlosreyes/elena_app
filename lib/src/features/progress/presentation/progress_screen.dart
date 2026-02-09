@@ -529,13 +529,13 @@ class _WeightChart extends StatelessWidget {
 // -----------------------------------------------------------------------------
 // SECCIÓN 4: Historial - Tabla Simple
 // -----------------------------------------------------------------------------
-class _HistoryTable extends StatelessWidget {
+class _HistoryTable extends ConsumerWidget {
   final List<MeasurementLog> history;
 
   const _HistoryTable({required this.history});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     // Orden inverso para lista (más reciente arriba)
     final reversedList = history.reversed.toList();
 
