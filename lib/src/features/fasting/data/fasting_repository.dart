@@ -44,6 +44,21 @@ class FastingRepository {
             .map((doc) => FastingSession.fromJson(doc.data()))
             .toList());
   }
+
+  // Active Fast Stream (by UID)
+  Stream<FastingSession?> getActiveFastStream(String uid) {
+    return _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('fasting_history') // Consistent with existing usage
+        .where('isCompleted', isEqualTo: false) // Matches FastingSession model
+        .limit(1)
+        .snapshots()
+        .map((snapshot) {
+          if (snapshot.docs.isEmpty) return null;
+          return FastingSession.fromJson(snapshot.docs.first.data());
+        });
+  }
 }
 
 final fastingRepositoryProvider = Provider<FastingRepository>((ref) {
