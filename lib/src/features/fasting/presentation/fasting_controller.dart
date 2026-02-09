@@ -62,6 +62,7 @@ class FastingController extends StateNotifier<AsyncValue<FastingState>> {
   }
 
   // 1. Inicialización y Restauración
+  Future<void> checkCurrentStatus() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       var safePlannedHours = 16;
