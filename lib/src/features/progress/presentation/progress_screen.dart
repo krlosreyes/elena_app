@@ -6,65 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import '../../progress/data/progress_service.dart';
-import '../../progress/domain/measurement_log.dart';
-import '../../coaching/data/coaching_service.dart';
-import '../../authentication/data/auth_repository.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'widgets/fasting_chart_card.dart';
 
-
-// Provider para el stream de historial
-final measurementHistoryProvider = StreamProvider<List<MeasurementLog>>((ref) {
-  final service = ref.watch(progressServiceProvider);
-  return service.getHistory();
-});
-
-class ProgressScreen extends ConsumerWidget {
-  const ProgressScreen({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final historyAsync = ref.watch(measurementHistoryProvider);
-    final authUser = ref.read(authRepositoryProvider).currentUser;
-    // Necesitamos perfil del usuario para altura/género
-    final userAsync = authUser != null 
-        ? ref.watch(userStreamProvider(authUser.uid)) 
-        : const AsyncValue<UserModel?>.loading();
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'Progreso',
-          style: GoogleFonts.outfit(
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
-        ),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: false,
-      ),
-      body: userAsync.when(
-        data: (user) {
-          if (user == null) return const Center(child: Text("Perfil no cargado"));
-          
-          return historyAsync.when(
-            data: (history) {
-              final latest = history.isNotEmpty ? history.last : null;
-              final previous = history.length > 1 ? history[history.length - 2] : null;
-
-              return SingleChildScrollView(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // SECCIÓN 1: Grid de Biometría
-                    _BioMetricsGrid(
-                      latest: latest, 
-                      previous: previous, 
-                      userHeightCm: user.heightCm
-                    ),
-                    const SizedBox(height: 24),
+// ... (existing imports)
 
                     // SECCIÓN 2: Check-in Semanal
                     _CheckInWeekStrip(
@@ -73,10 +17,23 @@ class ProgressScreen extends ConsumerWidget {
                       onCheckInTap: () => _showAddMeasurementModal(context, user),
                     ),
                     const SizedBox(height: 24),
+                    
+                    // SECCIÓN 2.5: Historial de Ayunos
+                    Text(
+                      'Consistencia de Ayuno',
+                      style: GoogleFonts.outfit(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const FastingChartCard(),
+                    const SizedBox(height: 24),
 
                     // SECCIÓN 3: Gráfico
-                     Text(
-                      'Tendencia (Últimas 12 semanas)',
+                    Text(
+                      'Tendencia Peso (Últimas 12 semanas)',
                       style: GoogleFonts.outfit(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,

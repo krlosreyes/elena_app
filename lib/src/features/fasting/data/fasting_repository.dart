@@ -32,6 +32,18 @@ class FastingRepository {
       rethrow;
     }
   }
+  Stream<List<FastingSession>> getHistoryStream() {
+    if (uid == null) return Stream.value([]);
+    return _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('fasting_history')
+        .orderBy('startTime', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => FastingSession.fromJson(doc.data()))
+            .toList());
+  }
 }
 
 final fastingRepositoryProvider = Provider<FastingRepository>((ref) {
