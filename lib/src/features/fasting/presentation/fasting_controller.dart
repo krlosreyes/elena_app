@@ -55,16 +55,28 @@ class FastingController extends StateNotifier<AsyncValue<FastingState>> {
   Timer? _timer;
   static const String _keyStartTime = 'fasting_start_time';
   static const String _keyPlannedHours = 'fasting_planned_hours';
+  static const String _keyUserUid = 'fasting_user_uid';
 
   FastingController(this.ref) : super(const AsyncValue.loading()) {
     checkCurrentStatus();
   }
 
   // 1. Inicialización y Restauración
-  Future<void> checkCurrentStatus() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       var safePlannedHours = 16;
+      
+      // 0. VALIDACIÓN DE USUARIO (Seguridad)
+      final currentUid = ref.read(authRepositoryProvider).currentUser?.uid;
+      final storedUid = prefs.getString(_keyUserUid);
+
+      // Si hay un ayuno guardado pero pertenece a otro usuario -> LIMPIAR TODO
+      if (storedUid != null && storedUid != currentUid) {
+        print("⚠️ Detectado ayuno de usuario anterior ($storedUid vs $currentUid). Limpiando estado...");
+        await prefs.remove(_keyStartTime);
+        await prefs.remove(_keyUserUid);
+        // No borramos plannedHours porque es configuración de dispositivo útil
+      }
       
       // Intentar recuperar protocolo desde Firestore si hay usuario
       final uid = ref.read(authRepositoryProvider).currentUser?.uid;
@@ -133,8 +145,13 @@ class FastingController extends StateNotifier<AsyncValue<FastingState>> {
     
     // 1. Guardar Persistencia Local INMEDIATA
     final prefs = await SharedPreferences.getInstance();
+    final uid = ref.read(authRepositoryProvider).currentUser?.uid;
+    
     await prefs.setString(_keyStartTime, now.toIso8601String());
     await prefs.setInt(_keyPlannedHours, hours);
+    if (uid != null) {
+      await prefs.setString(_keyUserUid, uid);
+    }
 
     // 2. Establecer Estado Activo
     state = AsyncValue.data(FastingState(
@@ -199,6 +216,7 @@ class FastingController extends StateNotifier<AsyncValue<FastingState>> {
     // 4. Limpiar Local Storage
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_keyStartTime);
+    await prefs.remove(_keyUserUid);
     // await prefs.remove(_keyPlannedHours); // Dejamos las horas para la UX de recordatorio
 
     // 5. FORZAR RESETEO DE UI
@@ -248,6 +266,7 @@ class FastingController extends StateNotifier<AsyncValue<FastingState>> {
     // Limpiar y Resetear UI
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_keyStartTime);
+    await prefs.remove(_keyUserUid);
 
     state = AsyncValue.data(FastingState.initial().copyWith(
         plannedHours: state.value?.plannedHours ?? 16

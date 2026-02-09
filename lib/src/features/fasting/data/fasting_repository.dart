@@ -47,6 +47,8 @@ class FastingRepository {
 }
 
 final fastingRepositoryProvider = Provider<FastingRepository>((ref) {
-  final user = ref.watch(authRepositoryProvider).currentUser;
+  // Watch auth state changes to force rebuild when user logs in/out
+  final authState = ref.watch(authStateChangesProvider);
+  final user = authState.value;
   return FastingRepository(FirebaseFirestore.instance, user?.uid);
 });
