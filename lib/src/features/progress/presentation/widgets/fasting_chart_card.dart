@@ -154,7 +154,7 @@ class FastingChartCard extends ConsumerWidget {
                 }).toList(),
                 barTouchData: BarTouchData(
                   touchTooltipData: BarTouchTooltipData(
-                    tooltipBgColor: Colors.black87,
+                    getTooltipColor: (_) => Colors.black87, // Fixed: use getTooltipColor
                     getTooltipItem: (group, groupIndex, rod, rodIndex) {
                        final item = chartData[group.x.toInt()];
                        return BarTooltipItem(
