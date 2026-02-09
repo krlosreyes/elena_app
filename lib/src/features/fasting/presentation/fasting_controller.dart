@@ -250,15 +250,29 @@ class FastingController extends StateNotifier<AsyncValue<FastingState>> {
     final currentState = state.value;
     if (currentState == null || !currentState.isFasting) return;
     
-    // Lógica similar a startFast pero preservando estado
+    // 1. Guardar Persistencia
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keyStartTime, newStartTime.toIso8601String());
     
-    // Reiniciar ticker para recalcular desde nueva hora
-    _updateTickerLogic(); // Force update once
+    // 2. Recalcular Estado Inmediato
+    final now = DateTime.now();
+    final elapsed = now.difference(newStartTime);
     
-    // Reprogramar notificaciones
-    await NotificationService.scheduleFastingNotifications(newStartTime, Duration(hours: currentState.plannedHours));
+    // Actualizamos el estado para que la UI reaccione instantáneamente
+    state = AsyncValue.data(currentState.copyWith(
+      startTime: newStartTime,
+      elapsed: elapsed,
+      progress: _calculateProgress(elapsed, currentState.plannedHours),
+    ));
+    
+    // 3. Reiniciar ticker para asegurar consistencia
+    _startTicker();
+    
+    // 4. Reprogramar notificaciones
+    await NotificationService.scheduleFastingNotifications(
+        newStartTime, Duration(hours: currentState.plannedHours));
+        
+    print("✏️ Hora de inicio actualizada a: $newStartTime");
   }
 
 

@@ -174,25 +174,50 @@ class FastingCard extends ConsumerWidget {
               Expanded(
                 child: InkWell(
                   onTap: () async {
+                    // 1. Seleccionar Fecha (Permitir corrección de días pasados)
+                    final date = await showDatePicker(
+                      context: context,
+                      initialDate: startTime,
+                      firstDate: DateTime.now().subtract(const Duration(days: 7)),
+                      lastDate: DateTime.now(),
+                      builder: (context, child) {
+                        return Theme(
+                          data: Theme.of(context).copyWith(
+                            colorScheme: ColorScheme.light(
+                              primary: Theme.of(context).primaryColor,
+                            ),
+                          ),
+                          child: child!,
+                        );
+                      },
+                    );
+                    
+                    if (date == null) return;
+
+                    // 2. Seleccionar Hora
+                    if (!context.mounted) return;
                     final time = await showTimePicker(
                       context: context,
                       initialTime: TimeOfDay.fromDateTime(startTime),
                     );
+
                     if (time != null) {
-                      final now = DateTime.now();
                       final newStart = DateTime(
-                        now.year,
-                        now.month,
-                        now.day,
+                        date.year,
+                        date.month,
+                        date.day,
                         time.hour,
                         time.minute,
                       );
-                      // Ajuste: Si la hora seleccionada es mayor a la actual, asumimos que fue ayer.
-                      final adjustedStart = newStart.isAfter(now)
-                          ? newStart.subtract(const Duration(days: 1))
-                          : newStart;
-                          
-                      ref.read(fastingControllerProvider.notifier).updateStartTime(adjustedStart);
+                      
+                      if (newStart.isAfter(DateTime.now())) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('La fecha de inicio no puede ser en el futuro')),
+                        );
+                        return;
+                      }
+
+                      ref.read(fastingControllerProvider.notifier).updateStartTime(newStart);
                     }
                   },
                   borderRadius: BorderRadius.circular(12),
