@@ -26,7 +26,10 @@ class BioGaugeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 1. Forzamos que la tarjeta sea CUADRADA. Esto evita que se vea "aplastada".
+    // 1. Forzamos formato limpio: "25.3", "8.0", etc.
+    // Esto evita los números gigantes erróneos.
+    final String formattedValue = value.toStringAsFixed(1);
+
     return AspectRatio(
       aspectRatio: 1.0, 
       child: Container(
@@ -41,18 +44,16 @@ class BioGaugeCard extends StatelessWidget {
             ),
           ],
         ),
-        // 2. Padding interno relativo
         padding: const EdgeInsets.all(12),
         child: LayoutBuilder(
           builder: (context, constraints) {
-            // "size" es el ancho disponible dentro de la tarjeta
             final double size = constraints.maxWidth;
             
-            // 3. MATEMÁTICA PURA (Nada de pixeles fijos)
-            final double titleSize = size * 0.09;  // Título = 9% del ancho
-            final double valueSize = size * 0.20;  // Valor = 20% del ancho
-            final double statusSize = size * 0.08; // Estado = 8% del ancho
-            final double gaugeHeight = size * 0.65; // El arco ocupa 65% de altura
+            // Tamaños proporcionales matemáticos
+            final double titleSize = size * 0.09; 
+            final double valueSize = size * 0.20; 
+            final double statusSize = size * 0.08;
+            final double gaugeHeight = size * 0.65;
 
             return Column(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -70,14 +71,14 @@ class BioGaugeCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
 
-                // ZONA DEL GRÁFICO
+                // GAUGE
                 SizedBox(
                   height: gaugeHeight, 
                   width: size,
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
-                      // CAPA A: El Arco
+                      // El Arco
                       CustomPaint(
                         size: Size(size, gaugeHeight),
                         painter: BioGaugePainter(
@@ -89,14 +90,14 @@ class BioGaugeCard extends StatelessWidget {
                         ),
                       ),
 
-                      // CAPA B: El Texto (Centrado y desplazado hacia abajo)
+                      // El Texto (Formateado)
                       Positioned(
-                        top: gaugeHeight * 0.45, // Justo debajo del centro del arco
+                        top: gaugeHeight * 0.45, 
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              '$value$unit',
+                              '$formattedValue$unit', // <--- AQUÍ ESTÁ EL ARREGLO, más la unidad
                               style: GoogleFonts.poppins(
                                 fontSize: valueSize,
                                 fontWeight: FontWeight.bold,
