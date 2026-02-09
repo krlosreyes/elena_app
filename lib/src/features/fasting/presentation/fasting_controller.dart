@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../authentication/data/auth_repository.dart';
 import '../domain/fasting_session.dart';
 import '../../../core/services/notification_service.dart';
+import '../data/fasting_repository.dart';
 
 // Estado del Ayuno
 class FastingState {
@@ -27,6 +28,7 @@ class FastingState {
       isFasting: false,
       elapsed: Duration.zero,
       progress: 0.0,
+      plannedHours: 16, // Default safety
     );
   }
 
@@ -64,7 +66,7 @@ class FastingController extends StateNotifier<AsyncValue<FastingState>> {
       final prefs = await SharedPreferences.getInstance();
       var safePlannedHours = 16;
       
-      // Intentar recuperar desde Firestore si hay usuario
+      // Intentar recuperar protocolo desde Firestore si hay usuario
       final uid = ref.read(authRepositoryProvider).currentUser?.uid;
       if (uid != null) {
         try {
@@ -99,6 +101,7 @@ class FastingController extends StateNotifier<AsyncValue<FastingState>> {
           final now = DateTime.now();
           final elapsed = now.difference(startTime);
           
+          // ESTADO ACTIVO
           state = AsyncValue.data(FastingState(
             isFasting: true,
             elapsed: elapsed,
@@ -107,6 +110,7 @@ class FastingController extends StateNotifier<AsyncValue<FastingState>> {
             plannedHours: safePlannedHours,
           ));
           
+          // IMPERATIVO: Arrancar el reloj visual
           _startTicker();
           return;
         }
@@ -122,7 +126,17 @@ class FastingController extends StateNotifier<AsyncValue<FastingState>> {
 
   // 2. Iniciar Ayuno
   Future<void> startFast({int hours = 16}) async {
+    // Cancelar timer previo por seguridad
+    _timer?.cancel();
+    
     final now = DateTime.now();
+    
+    // 1. Guardar Persistencia Local INMEDIATA
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keyStartTime, now.toIso8601String());
+    await prefs.setInt(_keyPlannedHours, hours);
+
+    // 2. Establecer Estado Activo
     state = AsyncValue.data(FastingState(
       isFasting: true,
       elapsed: Duration.zero,
@@ -131,31 +145,36 @@ class FastingController extends StateNotifier<AsyncValue<FastingState>> {
       plannedHours: hours,
     ));
 
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_keyStartTime, now.toIso8601String());
-    await prefs.setInt(_keyPlannedHours, hours);
-
-    // Programar Notificaciones
+    // 3. Programar Notificaciones
     await NotificationService.scheduleFastingNotifications(now, Duration(hours: hours));
 
+    // 4. ARRANCAR TICKER
     _startTicker();
+    
+    print("✅ Ayuno iniciado: $now para $hours horas.");
   }
 
   // 3. Terminar Ayuno
   Future<void> stopFast() async {
+    print("🛑 Deteniendo ayuno...");
+    
+    // 1. Detener Timer
     _timer?.cancel();
     
-    // Cancelar Notificaciones
+    // 2. Cancelar Notificaciones
     await NotificationService.cancelAll();
     
     final currentState = state.value;
-    if (currentState == null || !currentState.isFasting || currentState.startTime == null) return;
+    if (currentState == null || !currentState.isFasting || currentState.startTime == null) {
+        print("⚠️ No se puede detener: Estado inválido o no activo.");
+        return;
+    }
 
     final endTime = DateTime.now();
     final uid = ref.read(authRepositoryProvider).currentUser?.uid;
 
+    // 3. Guardar en Repositorio (Firestore)
     if (uid != null) {
-      // Calcular si se completó la meta (con 15 min de tolerancia)
       final elapsedMinutes = endTime.difference(currentState.startTime!).inMinutes;
       final plannedMinutes = currentState.plannedHours * 60;
       final isSuccess = elapsedMinutes >= (plannedMinutes - 15);
@@ -168,116 +187,110 @@ class FastingController extends StateNotifier<AsyncValue<FastingState>> {
         isCompleted: isSuccess,
       );
 
-      // Guardar en Firestore
       try {
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(uid)
-            .collection('fasting_history')
-            .add(session.toJson());
+        final repo = ref.read(fastingRepositoryProvider);
+        await repo.saveCompletedFast(session);
       } catch (e) {
-        // Manejar error de conexión o permisos
-        print('Error saving fasting session: $e');
+        print("❌ Error crítico guardando ayuno: $e");
+        // Aún así continuamos para limpiar la UI
       }
     }
 
-    // Limpiar local
+    // 4. Limpiar Local Storage
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_keyStartTime);
-    await prefs.remove(_keyPlannedHours); // Opcional: mantener horas planeadas
+    // await prefs.remove(_keyPlannedHours); // Dejamos las horas para la UX de recordatorio
 
-    // FORZAR actualización de estado a inicial
-    state = AsyncValue.data(FastingState.initial());
+    // 5. FORZAR RESETEO DE UI
+    state = AsyncValue.data(FastingState.initial().copyWith(
+        plannedHours: currentState.plannedHours // Mantener visualmente la meta anterior
+    ));
+    
+    print("✅ Ayuno detenido y UI reseteada.");
   }
 
-  // 5. Actualizar Hora de Inicio
+  // 4. Timer Interno (Ticker) - Lógica Revisada
+  void _startTicker() {
+    _timer?.cancel(); // Siempre cancelar el anterior
+    
+    // Ejecutar inmediatamente para no esperar 1 segundo
+    _updateTickerLogic();
+    
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+        _updateTickerLogic();
+    });
+  }
+  
+  void _updateTickerLogic() {
+      if (!mounted) {
+          _timer?.cancel();
+          return;
+      }
+      
+      final currentState = state.value;
+      if (currentState == null || !currentState.isFasting || currentState.startTime == null) {
+          _timer?.cancel();
+          return;
+      }
+      
+      // Calcular nueva duración
+      final now = DateTime.now();
+      final newElapsed = now.difference(currentState.startTime!);
+      
+      // Actualizar estado (Copia eficiente)
+      // STATE NOTIFIER TRIGGER: Esto reconstruye la UI
+      state = AsyncValue.data(currentState.copyWith(
+          elapsed: newElapsed,
+          progress: _calculateProgress(newElapsed, currentState.plannedHours)
+      ));
+  }
+
+  // 5. Actualizar Hora de Inicio (Edición Manual)
   Future<void> updateStartTime(DateTime newStartTime) async {
     final currentState = state.value;
     if (currentState == null || !currentState.isFasting) return;
-
-    final now = DateTime.now();
-    final elapsed = now.difference(newStartTime);
     
-    state = AsyncValue.data(currentState.copyWith(
-      startTime: newStartTime,
-      elapsed: elapsed,
-      progress: _calculateProgress(elapsed, currentState.plannedHours),
-    ));
-
+    // Lógica similar a startFast pero preservando estado
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keyStartTime, newStartTime.toIso8601String());
-
-    // Reprogramar Notificaciones
+    
+    // Reiniciar ticker para recalcular desde nueva hora
+    _updateTickerLogic(); // Force update once
+    
+    // Reprogramar notificaciones
     await NotificationService.scheduleFastingNotifications(newStartTime, Duration(hours: currentState.plannedHours));
   }
 
-  // 4. Timer Interno (Ticker)
-  void _startTicker() {
-    _timer?.cancel();
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) => _updateState());
-  }
-
-  void _updateState() {
-    if (!mounted) {
-      _timer?.cancel();
-      return;
-    }
-
-    state.whenData((currentState) {
-      if (!currentState.isFasting || currentState.startTime == null) {
-        _timer?.cancel();
-        return;
-      }
-
-      final now = DateTime.now();
-      final elapsed = now.difference(currentState.startTime!);
-
-      // Actualizamos estado
-      state = AsyncValue.data(currentState.copyWith(
-        elapsed: elapsed,
-        progress: _calculateProgress(elapsed, currentState.plannedHours),
-      ));
-    });
-  }
 
   double _calculateProgress(Duration elapsed, int plannedHours) {
+    if (plannedHours <= 0) return 0.0;
     return elapsed.inSeconds / (plannedHours * 3600);
   }
 
-  // 6. Cambiar Protocolo (Ej: "16/8", "18/6")
+  // 6. Cambiar Protocolo
   Future<void> setProtocol(String protocolString) async {
-    // Extraer horas de ayuno (primer número antes del '/')
     final parts = protocolString.split('/');
     if (parts.isEmpty) return;
     
     final int newHours = int.tryParse(parts[0]) ?? 16;
     
-    // Actualizar estado local
     final currentState = state.value;
     if (currentState != null) {
       state = AsyncValue.data(currentState.copyWith(
         plannedHours: newHours,
-        // Recalcular progreso con nueva meta
         progress: _calculateProgress(currentState.elapsed, newHours)
       ));
 
-      // Persistir Local
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt(_keyPlannedHours, newHours);
       
-      // Persistir en Firestore
       final uid = ref.read(authRepositoryProvider).currentUser?.uid;
       if (uid != null) {
-          try {
-            await FirebaseFirestore.instance.collection('users').doc(uid).update({
-              'fastingProtocol': protocolString
-            });
-          } catch (e) {
-             print('Error updating protocol in Firestore: $e');
-          }
+          FirebaseFirestore.instance.collection('users').doc(uid).update({
+            'fastingProtocol': protocolString
+          }).catchError((e) => print("Error update protocol: $e"));
       }
 
-      // Reprogramar notificaciones con nueva meta
       if (currentState.isFasting && currentState.startTime != null) {
         await NotificationService.scheduleFastingNotifications(
             currentState.startTime!, Duration(hours: newHours));
@@ -298,3 +311,4 @@ final fastingControllerProvider =
   ref.watch(authStateChangesProvider);
   return FastingController(ref);
 });
+
