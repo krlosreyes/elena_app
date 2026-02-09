@@ -11,6 +11,7 @@ import '../../progress/data/progress_service.dart';
 import '../../profile/presentation/widgets/bio_gauge_card.dart';
 import '../../profile/data/user_repository.dart';
 import '../../profile/domain/user_model.dart';
+import '../../progress/presentation/widgets/measurement_bottom_sheet.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -326,183 +327,18 @@ class _BodyMeasurementsSectionState extends State<_BodyMeasurementsSection> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-          left: 16,
-          right: 16,
-          top: 16,
-        ),
-        child: _EditMeasurementsForm(user: widget.userModel),
+      builder: (context) => MeasurementBottomSheet(
+        user: widget.userModel,
+        initialWeight: widget.userModel.currentWeightKg,
+        initialWaist: widget.userModel.waistCircumferenceCm,
+        initialNeck: widget.userModel.neckCircumferenceCm,
+        initialHip: widget.userModel.hipCircumferenceCm,
       ),
     );
   }
 }
 
-class _EditMeasurementsForm extends ConsumerStatefulWidget {
-  final UserModel user;
-  const _EditMeasurementsForm({required this.user});
 
-  @override
-  ConsumerState<_EditMeasurementsForm> createState() => _EditMeasurementsFormState();
-}
-
-class _EditMeasurementsFormState extends ConsumerState<_EditMeasurementsForm> {
-  final _formKey = GlobalKey<FormState>();
-  late TextEditingController _waistController;
-  late TextEditingController _neckController;
-  late TextEditingController _hipController;
-  late TextEditingController _weightController;
-  bool _isLoading = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _waistController = TextEditingController(text: widget.user.waistCircumferenceCm.toString());
-    _neckController = TextEditingController(text: widget.user.neckCircumferenceCm.toString());
-    _hipController = TextEditingController(text: widget.user.hipCircumferenceCm?.toString() ?? '');
-    _weightController = TextEditingController(text: widget.user.currentWeightKg.toString());
-  }
-
-  @override
-  void dispose() {
-    _waistController.dispose();
-    _neckController.dispose();
-    _hipController.dispose();
-    _weightController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
-    setState(() => _isLoading = true);
-
-    try {
-      final waist = double.parse(_waistController.text.replaceAll(',', '.'));
-      final neck = double.parse(_neckController.text.replaceAll(',', '.'));
-      final hip = double.tryParse(_hipController.text.replaceAll(',', '.'));
-      final weight = double.parse(_weightController.text.replaceAll(',', '.'));
-
-      // 1. Calculate Body Fat
-      final bodyFat = MeasurementLog.calculateBodyFat(
-        heightCm: widget.user.heightCm,
-        waistCm: waist,
-        neckCm: neck,
-        hipCm: hip,
-        isMale: widget.user.gender == Gender.male,
-      );
-
-      double? leanMass;
-      if (bodyFat != null) {
-        leanMass = 100.0 - bodyFat;
-      }
-      
-      // 2. Estimate Visceral Fat
-      final visceral = MeasurementLog.estimateVisceralFat(waistCm: waist, isMale: widget.user.gender == Gender.male);
-
-      // 3. Create new Log Entry
-      final newLog = MeasurementLog(
-        id: '',
-        date: DateTime.now(),
-        weight: weight,
-        waistCircumference: waist,
-        neckCircumference: neck,
-        hipCircumference: hip,
-        bodyFatPercentage: bodyFat,
-        muscleMassPercentage: leanMass,
-        visceralFat: visceral,
-      );
-
-      // 4. Update Firestore
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(widget.user.uid)
-          .collection('measurements')
-          .add(newLog.toJson());
-
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(widget.user.uid)
-          .update({
-            'currentWeightKg': weight,
-            'waistCircumferenceCm': waist,
-            'neckCircumferenceCm': neck,
-            'hipCircumferenceCm': hip,
-          });
-
-      if (mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Medidas actualizadas')),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
-      }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Form(
-      key: _formKey,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text('Actualizar Medidas', style: GoogleFonts.outfit(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 16),
-          _buildInput(_weightController, 'Peso (kg)'),
-          const SizedBox(height: 12),
-          _buildInput(_waistController, 'Cintura (cm)'),
-          const SizedBox(height: 12),
-          _buildInput(_neckController, 'Cuello (cm)'),
-          const SizedBox(height: 12),
-          _buildInput(_hipController, 'Cadera (cm) (Opcional)'),
-          const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            height: 50,
-            child: ElevatedButton(
-              onPressed: _isLoading ? null : _submit,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.teal,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              child: _isLoading ? const CircularProgressIndicator(color: Colors.white) : const Text('Guardar'),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInput(TextEditingController controller, String label) {
-    return TextFormField(
-      controller: controller,
-      style: const TextStyle(color: Colors.black),
-      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: TextStyle(color: Colors.grey[600]),
-        enabledBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: Colors.grey[300]!),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderSide: const BorderSide(color: Colors.teal),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        filled: true,
-        fillColor: Colors.grey[50],
-      ),
-      validator: (v) => (v == null || v.isEmpty) && !label.contains('Opcional') ? 'Requerido' : null,
-    );
-  }
-}
 
 class _ActivePlanCard extends StatelessWidget {
   final String? uid;

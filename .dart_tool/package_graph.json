@@ -16,6 +16,7 @@
         "flutter_animate",
         "flutter_local_notifications",
         "flutter_local_notifications_platform_interface",
+        "flutter_localizations",
         "flutter_riverpod",
         "freezed_annotation",
         "go_router",
@@ -307,7 +308,7 @@
     },
     {
       "name": "intl",
-      "version": "0.19.0",
+      "version": "0.20.2",
       "dependencies": [
         "clock",
         "meta",
@@ -377,6 +378,15 @@
         "meta",
         "riverpod",
         "state_notifier"
+      ]
+    },
+    {
+      "name": "flutter_localizations",
+      "version": "0.0.0",
+      "dependencies": [
+        "flutter",
+        "intl",
+        "path"
       ]
     },
     {
