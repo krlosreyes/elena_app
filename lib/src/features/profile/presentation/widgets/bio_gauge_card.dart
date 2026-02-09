@@ -64,10 +64,10 @@ class BioGaugeCard extends StatelessWidget {
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   return Center(
-                    child: SizedBox(
-                      width: constraints.maxWidth * 0.50, // Reduced to 50% to prevent oversized text
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 20),
                       child: Column(
-                        mainAxisAlignment: MainAxisAlignment.end,
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           FittedBox(
                             fit: BoxFit.scaleDown,
@@ -75,28 +75,17 @@ class BioGaugeCard extends StatelessWidget {
                               '${value.toStringAsFixed(1)}$unit',
                               style: GoogleFonts.outfit(
                                 color: Colors.black,
-                                fontSize: 26, // Base size, scales down if needed
+                                fontSize: 26, 
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                           ),
-                          const SizedBox(height: 4),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: statusColor.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: FittedBox( // Also restrain status text just in case
-                              fit: BoxFit.scaleDown,
-                              child: Text(
-                                statusText,
-                                style: GoogleFonts.outfit(
-                                  color: statusColor,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
+                          Text(
+                            statusText,
+                            style: GoogleFonts.outfit(
+                              color: statusColor,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],

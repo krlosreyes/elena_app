@@ -149,66 +149,57 @@ class _BioGaugeGrid extends StatelessWidget {
         final bodyFat = log.bodyFatPercentage ?? 0;
         final muscle = log.muscleMassPercentage ?? 0;
 
-        return Wrap(
-          spacing: 16,
-          runSpacing: 16,
-          alignment: WrapAlignment.center,
+        return GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+          childAspectRatio: 1.4,
           children: [
-            // 1. BMI Gauge (Green -> Red)
-            SizedBox(
-              width: (MediaQuery.of(context).size.width - 60) / 2,
-              child: BioGaugeCard(
-                title: 'IMC',
-                value: bmi,
-                min: 10,
-                max: 40,
-                statusText: _getBmiStatus(bmi),
-                statusColor: _getBmiColor(bmi),
-                gradientColors: [Colors.blue, Colors.green, Colors.orange, Colors.red],
-                unit: '',
-              ),
+            // 1. BMI Gauge
+            BioGaugeCard(
+              title: 'IMC',
+              value: bmi,
+              min: 10,
+              max: 40,
+              statusText: _getBmiStatus(bmi),
+              statusColor: _getBmiColor(bmi),
+              gradientColors: [Colors.blue, Colors.green, Colors.orange, Colors.red],
+              unit: '',
             ),
-            // 2. Body Fat Gauge (Green -> Red)
-            SizedBox(
-              width: (MediaQuery.of(context).size.width - 60) / 2,
-              child: BioGaugeCard(
-                title: '% Grasa',
-                value: bodyFat,
-                min: 5,
-                max: 50,
-                statusText: _getBodyFatStatus(bodyFat, userModel.gender),
-                statusColor: _getBodyFatColor(bodyFat, userModel.gender),
-                gradientColors: [Colors.green, Colors.yellow, Colors.orange, Colors.red],
-                unit: '%',
-              ),
+            // 2. Body Fat Gauge
+            BioGaugeCard(
+              title: '% Grasa',
+              value: bodyFat,
+              min: 5,
+              max: 50,
+              statusText: _getBodyFatStatus(bodyFat, userModel.gender),
+              statusColor: _getBodyFatColor(bodyFat, userModel.gender),
+              gradientColors: [Colors.green, Colors.yellow, Colors.orange, Colors.red],
+              unit: '%',
             ),
-             // 3. Muscle Gauge (Red -> Green : More is better)
-            SizedBox(
-              width: (MediaQuery.of(context).size.width - 60) / 2,
-              child: BioGaugeCard(
-                title: '% Músculo',
-                value: muscle,
-                min: 20,
-                max: 60,
-                statusText: muscle > 30 ? 'Bueno' : 'Bajo',
-                statusColor: muscle > 30 ? Colors.green : Colors.orange,
-                gradientColors: [Colors.red, Colors.orange, Colors.yellow, Colors.green],
-                unit: '%',
-              ),
+            // 3. Muscle Gauge
+            BioGaugeCard(
+              title: '% Músculo',
+              value: muscle,
+              min: 20,
+              max: 60,
+              statusText: muscle > 30 ? 'Bueno' : 'Bajo',
+              statusColor: muscle > 30 ? Colors.green : Colors.orange,
+              gradientColors: [Colors.red, Colors.orange, Colors.yellow, Colors.green],
+              unit: '%',
             ),
-            // 4. Visceral Fat Gauge (Green -> Red)
-            SizedBox(
-              width: (MediaQuery.of(context).size.width - 60) / 2,
-              child: BioGaugeCard(
-                title: 'Grasa Visceral',
-                value: visceral ?? 0,
-                min: 0,
-                max: 20, 
-                statusText: (visceral ?? 0) < 10 ? 'Saludable' : 'Alto',
-                statusColor: (visceral ?? 0) < 10 ? Colors.green : Colors.red,
-                gradientColors: [Colors.green, Colors.yellow, Colors.orange, Colors.red],
-                unit: '',
-              ),
+            // 4. Visceral Fat Gauge
+            BioGaugeCard(
+              title: 'Grasa Visceral',
+              value: visceral ?? 0,
+              min: 0,
+              max: 20, 
+              statusText: (visceral ?? 0) < 10 ? 'Saludable' : 'Alto',
+              statusColor: (visceral ?? 0) < 10 ? Colors.green : Colors.red,
+              gradientColors: [Colors.green, Colors.yellow, Colors.orange, Colors.red],
+              unit: '',
             ),
           ],
         );
