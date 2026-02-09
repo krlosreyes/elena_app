@@ -1,0 +1,128 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../features/authentication/data/auth_repository.dart';
+import '../features/profile/data/user_repository.dart';
+import '../features/profile/domain/user_model.dart';
+
+class ScaffoldWithNavBar extends ConsumerWidget {
+  final Widget child;
+
+  const ScaffoldWithNavBar({required this.child, super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Get current user for Avatar
+    final authUser = ref.watch(authRepositoryProvider).currentUser;
+    final userAsync = authUser != null
+        ? ref.watch(userStreamProvider(authUser.uid))
+        : const AsyncValue<UserModel?>.loading();
+
+    // Calculate current index for BottomNavigationBar based on current location
+    final String location = GoRouterState.of(context).uri.path;
+    
+    // Default to 0 (Home)
+    int currentIndex = 0;
+    if (location.startsWith('/progress')) {
+      currentIndex = 1;
+    } else if (location.startsWith('/profile')) {
+      // Profile usually doesn't have a tab, but if we want to show it as "active" or just valid
+      // For now, let's say it keeps the last tab or creates a phantom state.
+      // Requirements say: "ensure when on profile, avatar doesn't do anything redundant".
+      // We will leave index as is or maybe not highlight any if on profile?
+      // Let's stick to Home/Progress tabs. 
+      // If we are on profile, maybe we don't highlight bottom nav or highlight home?
+      // Let's keep it simple: Home=0, Progress=1. If Profile, maybe unselected?
+      // NavigationBar requires valid index. 
+      // Let's assume Profile is a separate pushed screen usually, BUT user said:
+      // "Mover la lógica de la AppBar... eliminar AppBar de ProfileScreen".
+      // This implies ProfileScreen is INSIDE the shell.
+      // If Profile is inside shell, it needs a way to NOT crash nav bar index.
+      // Let's just default to 0 if unknown, or maybe make index nullable? NavigationBar index must be non-null.
+      // Actually, standard pattern with ShellRoute is that Profile might cover the shell or be part of it.
+      // If part of it, we need a tab for it OR we accept that one tab is selected while unrelated content is shown.
+      // HOWEVER, the user asked for BottomNavBar to be part of GLOBAL Scaffold.
+      // Let's implement it such that:
+      // 0: Dashboard
+      // 1: Progress
+      // If on Profile, we can either hide BottomNav or just let it sit there.
+      // Let's stick to 0/1.
+      currentIndex = location.startsWith('/progress') ? 1 : 0;
+    }
+
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        title: Text(
+          'Elena App',
+          style: GoogleFonts.outfit(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ),
+        ),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.logout, color: Colors.grey[700]),
+            onPressed: () {
+              ref.read(authRepositoryProvider).signOut();
+            },
+          ),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: () {
+              // Navigate to profile if not already there
+              if (location != '/profile') {
+                context.pushNamed('profile');
+              }
+            },
+            child: CircleAvatar(
+              radius: 18,
+              backgroundColor: Theme.of(context).primaryColor.withOpacity(0.2),
+               child: userAsync.when(
+                data: (user) => Text(
+                  user?.displayName?.substring(0, 1).toUpperCase() ?? 'U',
+                  style: GoogleFonts.outfit(
+                      color: Theme.of(context).primaryColor, 
+                      fontWeight: FontWeight.bold
+                  ),
+                ),
+                loading: () => const SizedBox(width: 10, height: 10, child: CircularProgressIndicator(strokeWidth: 2)),
+                 error: (_,__) => const Text('U', style: TextStyle(color: Colors.black)),
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+        ],
+      ),
+      body: child,
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: currentIndex,
+        backgroundColor: Colors.white,
+        elevation: 2,
+        onDestinationSelected: (index) {
+          if (index == 0) {
+            context.go('/dashboard');
+          } else if (index == 1) {
+            context.go('/progress');
+          }
+        },
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home),
+            label: 'Inicio',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.show_chart),
+            selectedIcon: Icon(Icons.show_chart),
+            label: 'Progreso',
+          ),
+        ],
+      ),
+    );
+  }
+}

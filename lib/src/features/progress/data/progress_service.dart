@@ -24,10 +24,11 @@ class ProgressService {
     required double weight,
     double? waistCircumference,
     int? energyLevel,
+    DateTime? date, // Optional date for retroactive logging
   }) async {
     final log = MeasurementLog(
       id: '', // Will be generated
-      date: DateTime.now(),
+      date: date ?? DateTime.now(),
       weight: weight,
       waistCircumference: waistCircumference,
       energyLevel: energyLevel,

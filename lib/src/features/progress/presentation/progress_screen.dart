@@ -39,18 +39,7 @@ class ProgressScreen extends ConsumerWidget {
     // Assuming userModel has logic or is integer.
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'Progreso',
-          style: GoogleFonts.outfit(
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
-        ),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: false,
-      ),
+      backgroundColor: Colors.white,
       body: userAsync.when(
         data: (user) {
           if (user == null) return const Center(child: Text("Perfil no cargado"));
@@ -660,6 +649,7 @@ class _AddMeasurementFormState extends ConsumerState<_AddMeasurementForm> {
   late TextEditingController _neckController;
   late TextEditingController _hipController;
   
+  DateTime _selectedDate = DateTime.now();
   bool _isLoading = false;
 
   @override
@@ -679,6 +669,21 @@ class _AddMeasurementFormState extends ConsumerState<_AddMeasurementForm> {
     _neckController.dispose();
     _hipController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickDate() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2020),
+      lastDate: now,
+    );
+    if (picked != null && picked != _selectedDate) {
+      setState(() {
+        _selectedDate = picked;
+      });
+    }
   }
 
   Future<void> _submit() async {
@@ -711,9 +716,21 @@ class _AddMeasurementFormState extends ConsumerState<_AddMeasurementForm> {
       }
 
       // Crear objeto log temporal (sin ID aún)
+      // Usar fecha seleccionada con hora actual para evitar conflictos de ordenamiento si es "hoy"
+      // O simplemente usar la fecha seleccionada a las 12:00 para ser consistente.
+      // El usuario pidió "usar selectedDate". Si es hoy, mejor mantener la hora si se quiere precisión,
+      // pero para retroactivo, la hora no importa tanto.
+      // Vamos a preservar la hora si es HOY, sino mediodía.
+      DateTime logDate = _selectedDate;
+      if (DateUtils.isSameDay(_selectedDate, DateTime.now())) {
+        logDate = DateTime.now();
+      } else {
+        logDate = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day, 12, 0);
+      }
+
       final tempLog = MeasurementLog(
         id: '',
-        date: DateTime.now(),
+        date: logDate,
         weight: weight,
         waistCircumference: waist,
         neckCircumference: neck,
@@ -790,6 +807,25 @@ class _AddMeasurementFormState extends ConsumerState<_AddMeasurementForm> {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
+            
+            // Date Picker
+            InkWell(
+              onTap: _pickDate,
+              borderRadius: BorderRadius.circular(12),
+              child: InputDecorator(
+                decoration: const InputDecoration(
+                  labelText: 'Fecha del registro',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.calendar_today),
+                ),
+                child: Text(
+                  DateFormat('d MMMM yyyy', 'es').format(_selectedDate), // Formatting requires locale, defaulting to basic if 'es' not initialized, maybe just simple for now
+                  style: GoogleFonts.outfit(fontSize: 16),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
             Row(
               children: [
                 Expanded(

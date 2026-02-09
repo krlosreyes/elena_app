@@ -1,11 +1,13 @@
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import '../common_widgets/common_widgets.dart';
+import '../common_widgets/scaffold_with_navbar.dart';
 import '../features/authentication/presentation/login_screen.dart';
 import '../features/authentication/presentation/register_screen.dart';
 import '../features/dashboard/presentation/dashboard_screen.dart';
 import '../features/onboarding/presentation/onboarding_screen.dart';
 import '../features/profile/presentation/profile_screen.dart';
+import '../features/progress/presentation/progress_screen.dart';
 
 import '../features/authentication/data/auth_repository.dart';
 
@@ -14,14 +16,24 @@ import '../features/profile/domain/user_model.dart';
 
 part 'app_router.g.dart';
 
+// Key for the root navigator - REMOVED to avoid collision
+// Key for the shell navigator - REMOVED to avoid collision
+
 @riverpod
 GoRouter goRouter(GoRouterRef ref) {
   final authState = ref.watch(authStateChangesProvider);
   
   // Si hay usuario autenticado, escuchamos su perfil de Firestore en tiempo real
-  final userValue = authState.valueOrNull != null
-      ? ref.watch(userStreamProvider(authState.value!.uid))
-      : const AsyncValue<UserModel?>.loading();
+  // Usamos .select para evitar reconstruir el Router con cada cambio del usuario (ej. peso),
+  // lo cual regenera el Router y causa conflicto de GlobalKey. Solo nos importa onboarding y loading.
+  final userRedirectionState = authState.valueOrNull != null
+      ? ref.watch(userStreamProvider(authState.value!.uid).select((value) {
+          return (
+            isLoading: value.isLoading,
+            onboardingCompleted: value.valueOrNull?.onboardingCompleted ?? false,
+          );
+        }))
+      : null;
 
   return GoRouter(
     initialLocation: '/login',
@@ -40,14 +52,10 @@ GoRouter goRouter(GoRouterRef ref) {
       }
 
       // 2. Logueado -> Verificar Onboarding
-      // Si estamos cargando el perfil, esperamos (return null suele mantener la pantalla actual, 
-      // pero si venimos de login, idealmente mostraríamos un splash. Por ahora, dejamos pasar 
-      // si es dashboard para que muestre loading allí, o null para esperar).
-      if (userValue.isLoading) return null;
+      // Si el stream de usuario está cargando inicial, esperamos
+      if (userRedirectionState == null || userRedirectionState.isLoading) return null;
 
-      final user = userValue.valueOrNull;
-      // Si no hay doc de usuario (user == null), asumimos que es nuevo y falta onboarding.
-      final onboardingCompleted = user?.onboardingCompleted ?? false;
+      final onboardingCompleted = userRedirectionState.onboardingCompleted;
 
       if (!onboardingCompleted) {
         if (state.uri.path == '/onboarding') return null;
@@ -71,17 +79,29 @@ GoRouter goRouter(GoRouterRef ref) {
         builder: (context, state) => const RegisterScreen(),
       ),
       GoRoute(
-        path: '/dashboard',
-        builder: (context, state) => const DashboardScreen(),
-      ),
-      GoRoute(
         path: '/onboarding',
         builder: (context, state) => const OnboardingScreen(),
       ),
-      GoRoute(
-        path: '/profile',
-        name: 'profile', // Named route for easier navigation
-        builder: (context, state) => const ProfileScreen(),
+      // ShellRoute wraps the main application screens
+      ShellRoute(
+        builder: (context, state, child) {
+          return ScaffoldWithNavBar(child: child);
+        },
+        routes: [
+          GoRoute(
+            path: '/dashboard',
+            pageBuilder: (context, state) => const NoTransitionPage(child: DashboardScreen()),
+          ),
+          GoRoute(
+            path: '/progress',
+            pageBuilder: (context, state) => const NoTransitionPage(child: ProgressScreen()),
+          ),
+          GoRoute(
+            path: '/profile',
+            name: 'profile',
+            pageBuilder: (context, state) => const NoTransitionPage(child: ProfileScreen()),
+          ),
+        ],
       ),
     ],
   );

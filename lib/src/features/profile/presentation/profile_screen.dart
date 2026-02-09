@@ -30,29 +30,6 @@ class ProfileScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: backgroundColor,
-      appBar: AppBar(
-        backgroundColor: backgroundColor,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => context.pop(),
-        ),
-        title: Text(
-          'Tu Perfil',
-          style: GoogleFonts.outfit(
-            color: titleColor,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout, color: Colors.redAccent),
-            onPressed: () {
-              ref.read(authRepositoryProvider).signOut();
-            },
-          ),
-        ],
-      ),
       body: userModelAsync.when(
         data: (userModel) {
           if (userModel == null) return const Center(child: Text("Perfil no encontrado", style: TextStyle(color: Colors.black)));
