@@ -1,10 +1,13 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter/foundation.dart';
 import '../../authentication/data/auth_repository.dart';
 import '../../profile/data/user_repository.dart';
 import '../../profile/domain/user_model.dart';
+import '../../progress/domain/measurement_log.dart';
 import '../logic/elena_brain.dart';
+
 
 part 'onboarding_controller.g.dart';
 
@@ -44,6 +47,7 @@ class OnboardingController extends _$OnboardingController {
     state = newUser;
   }
 
+
   Future<void> submit() async {
     if (state == null) return;
 
@@ -59,7 +63,10 @@ class OnboardingController extends _$OnboardingController {
       await repo.saveHealthPlan(userCompleted.uid, clinicalPlan);
       await repo.saveUser(userCompleted);
 
-      // 4. Log debug
+      // 4. Generar primer MeasurementLog automático
+      await _generateInitialMeasurement(userCompleted);
+
+      // 5. Log debug
       debugPrint('Plan Clínico Generado: $clinicalPlan');
       
       // La navegación la maneja la vista
@@ -68,4 +75,46 @@ class OnboardingController extends _$OnboardingController {
       rethrow; // Para que la vista maneje el error
     }
   }
+
+  Future<void> _generateInitialMeasurement(UserModel user) async {
+    try {
+      // Calcular Grasa (Navy Method)
+      final bodyFat = MeasurementLog.calculateBodyFat(
+            heightCm: user.heightCm,
+            waistCm: user.waistCircumferenceCm,
+            neckCm: user.neckCircumferenceCm,
+            hipCm: user.hipCircumferenceCm,
+            isMale: user.gender == Gender.male,
+          );
+      
+      double? leanMass;
+      if (bodyFat != null) {
+        leanMass = 100.0 - bodyFat;
+      }
+
+      final initialLog = MeasurementLog(
+        id: '', // Se genera al guardar
+        date: DateTime.now(),
+        weight: user.currentWeightKg,
+        waistCircumference: user.waistCircumferenceCm,
+        neckCircumference: user.neckCircumferenceCm,
+        hipCircumference: user.hipCircumferenceCm,
+        bodyFatPercentage: bodyFat,
+        muscleMassPercentage: leanMass,
+        energyLevel: 5, // Default neutral
+      );
+
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('measurements')
+          .add(initialLog.toJson());
+          
+      debugPrint('Initial Measurement Log created.');
+    } catch (e) {
+      debugPrint('Error creating initial measurement: $e');
+      // No rethrow aquí para no bloquear el onboarding si esto falla
+    }
+  }
 }
+
