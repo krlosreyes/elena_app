@@ -58,6 +58,17 @@ class ProgressService {
     }
     return null;
   }
+
+  // Delete Measurement
+  Future<void> deleteMeasurement(String measurementId) async {
+    await _measurementsRef.doc(measurementId).delete();
+  }
+
+  // Update Measurement
+  Future<void> updateMeasurement(MeasurementLog log) async {
+    if (log.id.isEmpty) return; // Should not happen for existing logs
+    await _measurementsRef.doc(log.id).set(log);
+  }
 }
 
 // Providers

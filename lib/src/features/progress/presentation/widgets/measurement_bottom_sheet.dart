@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../../profile/domain/user_model.dart';
 import '../../../progress/domain/measurement_log.dart';
 import '../../../coaching/data/coaching_service.dart';
+import '../../data/progress_service.dart';
 
 class MeasurementBottomSheet extends ConsumerStatefulWidget {
   final UserModel user;
@@ -14,6 +15,7 @@ class MeasurementBottomSheet extends ConsumerStatefulWidget {
   final double? initialNeck;
   final double? initialHip;
   final DateTime? initialDate;
+  final MeasurementLog? existingLog;
 
   const MeasurementBottomSheet({
     super.key,
@@ -23,6 +25,7 @@ class MeasurementBottomSheet extends ConsumerStatefulWidget {
     this.initialNeck,
     this.initialHip,
     this.initialDate,
+    this.existingLog,
   });
 
   @override
@@ -43,11 +46,11 @@ class _MeasurementBottomSheetState extends ConsumerState<MeasurementBottomSheet>
   @override
   void initState() {
     super.initState();
-    _weightController = TextEditingController(text: widget.initialWeight?.toString() ?? widget.user.currentWeightKg?.toString() ?? '');
-    _waistController = TextEditingController(text: widget.initialWaist?.toString() ?? widget.user.waistCircumferenceCm?.toString() ?? '');
-    _neckController = TextEditingController(text: widget.initialNeck?.toString() ?? widget.user.neckCircumferenceCm?.toString() ?? '');
-    _hipController = TextEditingController(text: widget.initialHip?.toString() ?? widget.user.hipCircumferenceCm?.toString() ?? '');
-    _selectedDate = widget.initialDate ?? DateTime.now();
+    _weightController = TextEditingController(text: widget.existingLog?.weight.toString() ?? widget.initialWeight?.toString() ?? widget.user.currentWeightKg?.toString() ?? '');
+    _waistController = TextEditingController(text: widget.existingLog?.waistCircumference?.toString() ?? widget.initialWaist?.toString() ?? widget.user.waistCircumferenceCm?.toString() ?? '');
+    _neckController = TextEditingController(text: widget.existingLog?.neckCircumference?.toString() ?? widget.initialNeck?.toString() ?? widget.user.neckCircumferenceCm?.toString() ?? '');
+    _hipController = TextEditingController(text: widget.existingLog?.hipCircumference?.toString() ?? widget.initialHip?.toString() ?? widget.user.hipCircumferenceCm?.toString() ?? '');
+    _selectedDate = widget.existingLog?.date ?? widget.initialDate ?? DateTime.now();
   }
 
   @override
@@ -122,25 +125,48 @@ class _MeasurementBottomSheetState extends ConsumerState<MeasurementBottomSheet>
         logDate = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day, 12, 0);
       }
 
-      // 4. Create Log Object (Temporary ID)
-      final tempLog = MeasurementLog(
-        id: '',
-        date: logDate,
-        weight: weight,
-        waistCircumference: waist,
-        neckCircumference: neck,
-        hipCircumference: hip,
-        bodyFatPercentage: calculatedBodyFat,
-        muscleMassPercentage: calculatedLeanMass,
-        visceralFat: visceralFat,
-      );
-      
-      // 5. Save to Firestore (Log History)
-      final docRef = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(widget.user.uid)
-          .collection('measurements')
-          .add(tempLog.toJson());
+      // 4. Create or Update Log Object
+      MeasurementLog logToSave;
+
+      if (widget.existingLog != null) {
+        // UPDATE existing log
+        logToSave = widget.existingLog!.copyWith(
+          date: logDate,
+          weight: weight,
+          waistCircumference: waist,
+          neckCircumference: neck,
+          hipCircumference: hip,
+          bodyFatPercentage: calculatedBodyFat,
+          muscleMassPercentage: calculatedLeanMass,
+          visceralFat: visceralFat,
+        );
+        
+        // Update in Firestore
+        await ref.read(progressServiceProvider).updateMeasurement(logToSave);
+      } else {
+        // CREATE new log
+        final tempLog = MeasurementLog(
+          id: '',
+          date: logDate,
+          weight: weight,
+          waistCircumference: waist,
+          neckCircumference: neck,
+          hipCircumference: hip,
+          bodyFatPercentage: calculatedBodyFat,
+          muscleMassPercentage: calculatedLeanMass,
+          visceralFat: visceralFat,
+        );
+        
+        // Save to Firestore (Log History)
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(widget.user.uid)
+            .collection('measurements')
+            .add(tempLog.toJson());
+            
+        // Use tempLog for profile update check
+        logToSave = tempLog; 
+      }
 
       // 6. Update User Profile if the log is recent (same day or after current data)
       // For simplicity in this refactor, we ALWAYS update the profile 'current' stats 
@@ -164,14 +190,17 @@ class _MeasurementBottomSheetState extends ConsumerState<MeasurementBottomSheet>
       }
 
       // 7. Generate Coaching Plan
-      // Re-create log with correct ID/Date for service
-      final logWithId = tempLog.copyWith(id: docRef.id);
+      // Use logToSave w/ correct data for service
+      // Note: If we just created it, it might not have ID here unless we fetch it or pass it. 
+      // For add new, we ignored ID above. For CoahingService, ID matters less than data usually, 
+      // but let's be safe.
+      final logForService = logToSave; // ID might be empty if new, but data is fresh
       
       // Only generate plan if it's a "live" update (today)
       if (DateUtils.isSameDay(_selectedDate, DateTime.now())) {
           // We need to await this potentially? Or let it run in background?
           // It's better to await to show confirmation.
-          await ref.read(coachingProvider).generatePlanFromMeasurement(logWithId, widget.user);
+          await ref.read(coachingProvider).generatePlanFromMeasurement(logForService, widget.user);
       }
 
       if (mounted) {
@@ -209,7 +238,7 @@ class _MeasurementBottomSheetState extends ConsumerState<MeasurementBottomSheet>
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'Registrar Medidas',
+              widget.existingLog != null ? 'Editar Registro' : 'Registrar Medidas',
               style: GoogleFonts.outfit(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,

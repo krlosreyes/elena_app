@@ -570,36 +570,91 @@ class _HistoryTable extends StatelessWidget {
             separatorBuilder: (_, __) => const Divider(height: 1),
             itemBuilder: (context, index) {
               final item = reversedList[index];
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                child: Row(
-                  children: [
-                    Expanded(
-                      flex: 2,
-                       child: Text(
-                        DateFormat('dd MMM').format(item.date),
-                        style: GoogleFonts.outfit(fontSize: 13, color: Colors.grey[700]),
-                      ),
+              return Dismissible(
+                key: Key(item.id),
+                direction: DismissDirection.endToStart,
+                background: Container(
+                  alignment: Alignment.centerRight,
+                  padding: const EdgeInsets.only(right: 20),
+                  color: Colors.red,
+                  child: const Icon(Icons.delete, color: Colors.white),
+                ),
+                confirmDismiss: (direction) async {
+                  return await showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Eliminar registro'),
+                      content: const Text('¿Estás seguro de que deseas eliminar este registro? Esta acción no se puede deshacer.'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text('Cancelar'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          style: TextButton.styleFrom(foregroundColor: Colors.red),
+                          child: const Text('Eliminar'),
+                        ),
+                      ],
                     ),
-                    Expanded(
-                      child: Text(
-                        '${item.weight}', 
-                        style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
-                      ),
+                  );
+                },
+                onDismissed: (direction) {
+                  ref.read(progressServiceProvider).deleteMeasurement(item.id);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Registro eliminado')),
+                  );
+                },
+                child: InkWell(
+                  onTap: () {
+                    // Abrir el modal en modo edición
+                    final user = ref.read(userStreamProvider).valueOrNull;
+                    if (user != null) {
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                        ),
+                        builder: (context) => MeasurementBottomSheet(
+                          user: user,
+                          existingLog: item,
+                        ),
+                      );
+                    }
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          flex: 2,
+                           child: Text(
+                            DateFormat('dd MMM').format(item.date),
+                            style: GoogleFonts.outfit(fontSize: 13, color: Colors.grey[700]),
+                          ),
+                        ),
+                        Expanded(
+                          child: Text(
+                            '${item.weight}', 
+                            style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        Expanded(
+                          child: Text(
+                            item.waistCircumference != null ? '${item.waistCircumference}' : '-',
+                             style: GoogleFonts.outfit(),
+                          ),
+                        ),
+                        Expanded(
+                          child: Text(
+                            item.bodyFatPercentage != null ? '${item.bodyFatPercentage?.toStringAsFixed(1)}%' : '-',
+                            style: GoogleFonts.outfit(color: Colors.grey[600], fontSize: 12),
+                          ),
+                        ),
+                      ],
                     ),
-                    Expanded(
-                      child: Text(
-                        item.waistCircumference != null ? '${item.waistCircumference}' : '-',
-                         style: GoogleFonts.outfit(),
-                      ),
-                    ),
-                    Expanded(
-                      child: Text(
-                        item.bodyFatPercentage != null ? '${item.bodyFatPercentage?.toStringAsFixed(1)}%' : '-',
-                        style: GoogleFonts.outfit(color: Colors.grey[600], fontSize: 12),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               );
             },
