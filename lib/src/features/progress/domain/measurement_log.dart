@@ -11,6 +11,7 @@ class MeasurementLog {
   final int? energyLevel; // 1-10
   final double? bodyFatPercentage;
   final double? muscleMassPercentage;
+  final double? visceralFat;
 
   MeasurementLog({
     required this.id,
@@ -22,6 +23,7 @@ class MeasurementLog {
     this.energyLevel,
     this.bodyFatPercentage,
     this.muscleMassPercentage,
+    this.visceralFat,
   });
 
   // Factory to create from Firestore
@@ -37,6 +39,7 @@ class MeasurementLog {
       energyLevel: data['energyLevel'] as int?,
       bodyFatPercentage: (data['bodyFatPercentage'] as num?)?.toDouble(),
       muscleMassPercentage: (data['muscleMassPercentage'] as num?)?.toDouble(),
+      visceralFat: (data['visceralFat'] as num?)?.toDouble(),
     );
   }
 
@@ -51,6 +54,7 @@ class MeasurementLog {
       'energyLevel': energyLevel,
       'bodyFatPercentage': bodyFatPercentage,
       'muscleMassPercentage': muscleMassPercentage,
+      'visceralFat': visceralFat,
     };
   }
 
@@ -99,4 +103,48 @@ class MeasurementLog {
       return null;
     }
   }
+
+
+  // Estimate Visceral Fat if missing
+  static double? estimateVisceralFat({
+    required double waistCm,
+    required bool isMale,
+  }) {
+    if (waistCm <= 0) return null;
+    // Simple heuristic placeholder
+    // Men > 102cm, Women > 88cm -> High Risk (approx 15)
+    // Else -> Normal (approx 8)
+    if (isMale) {
+      return waistCm > 102 ? 15.0 : 8.0;
+    } else {
+      return waistCm > 88 ? 15.0 : 8.0;
+    }
+  }
+
+  MeasurementLog copyWith({
+    String? id,
+    DateTime? date,
+    double? weight,
+    double? waistCircumference,
+    double? neckCircumference,
+    double? hipCircumference,
+    int? energyLevel,
+    double? bodyFatPercentage,
+    double? muscleMassPercentage,
+    double? visceralFat,
+  }) {
+    return MeasurementLog(
+      id: id ?? this.id,
+      date: date ?? this.date,
+      weight: weight ?? this.weight,
+      waistCircumference: waistCircumference ?? this.waistCircumference,
+      neckCircumference: neckCircumference ?? this.neckCircumference,
+      hipCircumference: hipCircumference ?? this.hipCircumference,
+      energyLevel: energyLevel ?? this.energyLevel,
+      bodyFatPercentage: bodyFatPercentage ?? this.bodyFatPercentage,
+      muscleMassPercentage: muscleMassPercentage ?? this.muscleMassPercentage,
+      visceralFat: visceralFat ?? this.visceralFat,
+    );
+  }
 }
+

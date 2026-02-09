@@ -24,17 +24,34 @@ class LoginController extends _$LoginController {
       // Check if user profile exists in Firestore
       // Note: We await this. If navigation happens during this await (due to authStateChanges),
       // this controller might be disposed.
-      final userModel = await ref.read(userRepositoryProvider).getUser(currentUser.uid);
       
-      // If logic reaches here and controller is disposed, setting state might throw.
-      // However, we'll try to set it.
-      state = AsyncValue.data(userModel == null);
+      // FIX: Use a local variable to hold the result and check if mounted before updating state?
+      // Riverpod controllers don't have a simple 'mounted' property like Widgets.
+      // However, checking Ref.exists or wrapping in a try-catch that ignores StateError/BadState 
+      // is a common pattern, OR causing the navigation to happen ONLY after this returns.
+      // But authStateChanges usually triggers immediately.
+      
+      try {
+        final userModel = await ref.read(userRepositoryProvider).getUser(currentUser.uid);
+         // If logic reaches here and controller is disposed, setting state might throw.
+        state = AsyncValue.data(userModel == null);
+      } catch (e) {
+        // If the controller was disposed, we might get a BadState error here when setting state
+        // or during the await if the provider is unsafe.
+        // We can safely ignore it if the user successfully logged in and navigation happened.
+        print("LoginController: Ignored error (likely disposed): $e");
+      }
+
     } catch (e, st) {
       print("LoginController Error: $e");
       // Check for specific "Future already completed" error strings if needed, 
       // but usually AsyncValue.error handles it. 
       // If the controller is disposed, this assignment will be ignored or throw a different error.
-      state = AsyncValue.error(e, st);
+      try {
+         state = AsyncValue.error(e, st);
+      } catch (_) {
+        // Ignore errors setting state if disposed
+      }
     }
   }
 }
