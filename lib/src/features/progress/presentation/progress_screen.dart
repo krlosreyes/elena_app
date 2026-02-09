@@ -608,9 +608,11 @@ class _HistoryTable extends ConsumerWidget {
                 child: InkWell(
                   onTap: () {
                     // Abrir el modal en modo edición
-                    final user = ref.read(userStreamProvider).valueOrNull;
-                    if (user != null) {
-                      showModalBottomSheet(
+                    final authUser = ref.read(authRepositoryProvider).currentUser;
+                    if (authUser != null) {
+                      final user = ref.read(userStreamProvider(authUser.uid)).valueOrNull;
+                      if (user != null) {
+                        showModalBottomSheet(
                         context: context,
                         isScrollControlled: true,
                         shape: const RoundedRectangleBorder(
