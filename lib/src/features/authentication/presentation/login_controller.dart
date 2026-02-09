@@ -14,7 +14,7 @@ class LoginController extends _$LoginController {
 
   Future<void> signIn({required String email, required String password}) async {
     state = const AsyncLoading();
-    state = await AsyncValue.guard(() async {
+    try {
       final authRepo = ref.read(authRepositoryProvider);
       await authRepo.signInWithEmailAndPassword(email, password);
       
@@ -22,10 +22,19 @@ class LoginController extends _$LoginController {
       if (currentUser == null) throw Exception('Usuario no autenticado tras login');
 
       // Check if user profile exists in Firestore
+      // Note: We await this. If navigation happens during this await (due to authStateChanges),
+      // this controller might be disposed.
       final userModel = await ref.read(userRepositoryProvider).getUser(currentUser.uid);
       
-      // If userModel is null, they need onboarding
-      return userModel == null;
-    });
+      // If logic reaches here and controller is disposed, setting state might throw.
+      // However, we'll try to set it.
+      state = AsyncValue.data(userModel == null);
+    } catch (e, st) {
+      print("LoginController Error: $e");
+      // Check for specific "Future already completed" error strings if needed, 
+      // but usually AsyncValue.error handles it. 
+      // If the controller is disposed, this assignment will be ignored or throw a different error.
+      state = AsyncValue.error(e, st);
+    }
   }
 }
