@@ -65,14 +65,6 @@ class ProgressScreen extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // SECCIÓN 1: Grid de Biometría
-                    _BioMetricsGrid(
-                      latest: latest, 
-                      previous: previous, 
-                      userHeightCm: user.heightCm
-                    ),
-                    const SizedBox(height: 24),
-
                     // SECCIÓN 2: Check-in Semanal
                     _CheckInWeekStrip(
                       checkInDay: user.checkInDay ?? 1, // Default Lunes
@@ -804,7 +796,7 @@ class _AddMeasurementFormState extends ConsumerState<_AddMeasurementForm> {
                   child: TextFormField(
                     controller: _weightController,
                     decoration: const InputDecoration(labelText: 'Peso (kg)', border: OutlineInputBorder()),
-                    keyboardType: TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     validator: (v) => v!.isEmpty ? 'Requerido' : null,
                   ),
                 ),
@@ -813,7 +805,7 @@ class _AddMeasurementFormState extends ConsumerState<_AddMeasurementForm> {
                   child: TextFormField(
                     controller: _waistController,
                     decoration: const InputDecoration(labelText: 'Cintura (cm)', border: OutlineInputBorder()),
-                    keyboardType: TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
                      validator: (v) => v!.isEmpty ? 'Requerido' : null,
                   ),
                 ),
@@ -826,7 +818,7 @@ class _AddMeasurementFormState extends ConsumerState<_AddMeasurementForm> {
                   child: TextFormField(
                     controller: _neckController,
                     decoration: const InputDecoration(labelText: 'Cuello (cm)', border: OutlineInputBorder()),
-                    keyboardType: TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
                      validator: (v) => v!.isEmpty ? 'Requerido' : null, // Vital para grasa
                   ),
                 ),
@@ -835,7 +827,7 @@ class _AddMeasurementFormState extends ConsumerState<_AddMeasurementForm> {
                   child: TextFormField(
                     controller: _hipController,
                     decoration: const InputDecoration(labelText: 'Cadera (cm)', border: OutlineInputBorder()),
-                    keyboardType: TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   ),
                 ),
               ],
