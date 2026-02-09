@@ -70,9 +70,7 @@ class FastingCard extends ConsumerWidget {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () {
-                ref.read(fastingControllerProvider.notifier).startFast(hours: 16);
-              },
+              onPressed: () => _showStartDialog(context, ref),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Theme.of(context).primaryColor,
                 foregroundColor: Colors.white,
@@ -424,6 +422,194 @@ class FastingCard extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  void _showStartDialog(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (context) => _StartFastDialog(ref: ref),
+    );
+  }
+}
+
+class _StartFastDialog extends StatefulWidget {
+  final WidgetRef ref;
+  const _StartFastDialog({required this.ref});
+
+  @override
+  State<_StartFastDialog> createState() => _StartFastDialogState();
+}
+
+class _StartFastDialogState extends State<_StartFastDialog> {
+  DateTime _selectedDate = DateTime.now();
+
+  Future<void> _pickDateTime(BuildContext context) async {
+    final now = DateTime.now();
+    final date = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: now.subtract(const Duration(days: 3)),
+      lastDate: now,
+      builder: (context, child) {
+         return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: Theme.of(context).primaryColor,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (date == null) return;
+    if (!mounted) return;
+
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(_selectedDate),
+    );
+
+    if (time == null) return;
+
+    setState(() {
+      _selectedDate = DateTime(
+        date.year,
+        date.month,
+        date.day,
+        time.hour,
+        time.minute,
+      );
+    });
+  }
+
+  void _confirmStart() {
+    final now = DateTime.now();
+    // 5 min buffer para considerar que es "pasado" y no solo un delay de UX
+    final isRetroactive = _selectedDate.isBefore(now.subtract(const Duration(minutes: 5))); 
+
+    if (isRetroactive) {
+      final diff = now.difference(_selectedDate);
+      final h = diff.inHours;
+      final m = diff.inMinutes.remainder(60);
+      final timeAgo = "${h > 0 ? '$h h ' : ''}${m}m";
+
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('¿Ya estabas ayunando?'),
+          content: Text(
+            'Has seleccionado una hora pasada ($timeAgo atrás).\n\n¿Quieres registrar que tu ayuno comenzó a esa hora?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('No, corregir'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context); // Cerrar alerta
+                _start();
+              },
+              child: const Text('Sí, empezar desde ahí'),
+            ),
+          ],
+        ),
+      );
+    } else {
+      if (_selectedDate.isAfter(now)) {
+         ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('La fecha de inicio no puede ser futura.'))
+         );
+         return;
+      }
+      _start();
+    }
+  }
+
+  void _start() {
+    final state = widget.ref.read(fastingControllerProvider).value;
+    final int hours = state?.plannedHours ?? 16;
+    
+    widget.ref.read(fastingControllerProvider.notifier).startFast(
+      startTime: _selectedDate,
+      hours: hours,
+    );
+    Navigator.pop(context); // Cerrar dialogo principal
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final isToday = _selectedDate.year == now.year && _selectedDate.month == now.month && _selectedDate.day == now.day;
+    final dateStr = isToday ? 'Hoy' : DateFormat('d MMM', 'es').format(_selectedDate);
+    final timeStr = DateFormat('HH:mm').format(_selectedDate);
+    
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      title: const Text('Comenzar Ayuno', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold)),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text(
+            '¿Cuándo empezaste a ayunar?',
+            style: TextStyle(color: Colors.grey),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          InkWell(
+            onTap: () => _pickDateTime(context),
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).primaryColor.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Theme.of(context).primaryColor.withOpacity(0.2)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.access_time_filled, color: Theme.of(context).primaryColor),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(dateStr, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                      Text(
+                        timeStr,
+                        style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 24, color: Colors.black87),
+                      ),
+                    ],
+                  ),
+                  const Spacer(),
+                  const Icon(Icons.edit, size: 16, color: Colors.grey),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+      ),
+      actionsAlignment: MainAxisAlignment.spaceBetween,
+      actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          style: TextButton.styleFrom(foregroundColor: Colors.grey),
+          child: const Text('Cancelar'),
+        ),
+        ElevatedButton(
+          onPressed: _confirmStart,
+          style: ElevatedButton.styleFrom(
+             backgroundColor: Theme.of(context).primaryColor,
+             foregroundColor: Colors.white,
+             padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+          child: const Text('COMENZAR', style: TextStyle(fontWeight: FontWeight.bold)),
+        ),
+      ],
     );
   }
 }

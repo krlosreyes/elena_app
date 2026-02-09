@@ -170,17 +170,19 @@ class FastingController extends StateNotifier<AsyncValue<FastingState>> {
   }
 
   // 2. Iniciar Ayuno
-  Future<void> startFast({int hours = 16}) async {
+  Future<void> startFast({DateTime? startTime, int hours = 16}) async {
     // Cancelar timer previo por seguridad
     _timer?.cancel();
     
     final now = DateTime.now();
-    
+    // Usar la fecha proporcionada o NOW si es nulo
+    final start = startTime ?? now;
+
     // 1. Guardar Persistencia Local INMEDIATA
     final prefs = await SharedPreferences.getInstance();
     final uid = ref.read(authRepositoryProvider).currentUser?.uid;
     
-    await prefs.setString(_keyStartTime, now.toIso8601String());
+    await prefs.setString(_keyStartTime, start.toIso8601String());
     await prefs.setInt(_keyPlannedHours, hours);
     if (uid != null) {
       await prefs.setString(_keyUserUid, uid);
@@ -189,20 +191,20 @@ class FastingController extends StateNotifier<AsyncValue<FastingState>> {
     // 2. Establecer Estado Activo
     state = AsyncValue.data(FastingState(
       isFasting: true,
-      elapsed: Duration.zero,
+      elapsed: Duration.zero, // El ticker lo corregirá inmediatamente
       progress: 0.0,
-      startTime: now,
+      startTime: start,
       plannedHours: hours,
     ));
 
     // 3. Programar Notificaciones
-    await NotificationService.scheduleFastingNotifications(now, Duration(hours: hours));
+    await NotificationService.scheduleFastingNotifications(start, Duration(hours: hours));
 
     // 4. PERSISTIR EN FIRESTORE (Evitar pérdida de estado)
     if (uid != null) {
       final session = FastingSession(
         uid: uid,
-        startTime: now,
+        startTime: start,
         endTime: null, // Aún no termina
         plannedDurationHours: hours,
         isCompleted: false,
@@ -218,7 +220,7 @@ class FastingController extends StateNotifier<AsyncValue<FastingState>> {
     // 5. ARRANCAR TICKER
     _startTicker();
     
-    print("✅ Ayuno iniciado: $now para $hours horas.");
+    print("✅ Ayuno iniciado: $start para $hours horas.");
   }
 
   // 3. Terminar Ayuno
