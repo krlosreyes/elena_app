@@ -209,6 +209,51 @@ class FastingController extends StateNotifier<AsyncValue<FastingState>> {
     print("✅ Ayuno detenido y UI reseteada.");
   }
 
+  // 3.5 Terminar Ayuno con Fecha Manual (Retroactivo)
+  Future<void> saveManualFast(DateTime startTime, DateTime endTime) async {
+    print("💾 Guardando ayuno manual: $startTime -> $endTime");
+
+    _timer?.cancel();
+    await NotificationService.cancelAll();
+
+    final uid = ref.read(authRepositoryProvider).currentUser?.uid;
+    if (uid != null) {
+      // Calcular duración real
+      final duration = endTime.difference(startTime);
+      final elapsedMinutes = duration.inMinutes;
+
+      // Recuperar meta del estado actual o usar default
+      final plannedHours = state.value?.plannedHours ?? 16;
+      final plannedMinutes = plannedHours * 60;
+      
+      // Validar éxito (con margen de 15 min)
+      final isSuccess = elapsedMinutes >= (plannedMinutes - 15);
+
+      final session = FastingSession(
+        uid: uid,
+        startTime: startTime,
+        endTime: endTime,
+        plannedDurationHours: plannedHours,
+        isCompleted: isSuccess,
+      );
+
+      try {
+        final repo = ref.read(fastingRepositoryProvider);
+        await repo.saveCompletedFast(session);
+      } catch (e) {
+        print("❌ Error guardando manual: $e");
+      }
+    }
+
+    // Limpiar y Resetear UI
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_keyStartTime);
+
+    state = AsyncValue.data(FastingState.initial().copyWith(
+        plannedHours: state.value?.plannedHours ?? 16
+    ));
+  }
+
   // 4. Timer Interno (Ticker) - Lógica Revisada
   void _startTicker() {
     _timer?.cancel(); // Siempre cancelar el anterior

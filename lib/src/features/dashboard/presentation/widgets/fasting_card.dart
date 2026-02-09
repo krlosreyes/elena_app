@@ -6,6 +6,7 @@ import '../../../fasting/presentation/fasting_controller.dart';
 import '../../../fasting/presentation/fasting_helper.dart';
 import 'fasting_timeline.dart';
 import 'fasting_motivation_card.dart';
+import 'fast_completion_dialog.dart';
 
 class FastingCard extends ConsumerWidget {
   const FastingCard({super.key});
@@ -321,8 +322,25 @@ class FastingCard extends ConsumerWidget {
   }
 
   void _finishFast(BuildContext context, WidgetRef ref, Duration duration) {
-    ref.read(fastingControllerProvider.notifier).stopFast();
-    _showSuccessDialog(context, duration);
+    final startTime = ref.read(fastingControllerProvider).value?.startTime;
+    if (startTime == null) return;
+
+    showDialog(
+      context: context,
+      builder: (context) => FastCompletionDialog(
+        startTime: startTime,
+        onConfirm: (endTime) async {
+           // Calcular duración real basada en el endTime editado
+           final realDuration = endTime.difference(startTime);
+           
+           await ref.read(fastingControllerProvider.notifier).saveManualFast(startTime, endTime);
+           
+           if (context.mounted) {
+             _showSuccessDialog(context, realDuration);
+           }
+        },
+      ),
+    );
   }
 
   void _showEarlyExitDialog(BuildContext context, WidgetRef ref, Duration elapsed, Duration plan) {
