@@ -613,16 +613,17 @@ class _HistoryTable extends ConsumerWidget {
                       final user = ref.read(userStreamProvider(authUser.uid)).valueOrNull;
                       if (user != null) {
                         showModalBottomSheet(
-                        context: context,
-                        isScrollControlled: true,
-                        shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                        ),
-                        builder: (context) => MeasurementBottomSheet(
-                          user: user,
-                          existingLog: item,
-                        ),
-                      );
+                          context: context,
+                          isScrollControlled: true,
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                          ),
+                          builder: (context) => MeasurementBottomSheet(
+                            user: user,
+                            existingLog: item,
+                          ),
+                        );
+                      }
                     }
                   },
                   child: Padding(
