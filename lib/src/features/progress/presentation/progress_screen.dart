@@ -8,8 +8,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../progress/data/progress_service.dart';
 import '../../progress/domain/measurement_log.dart';
+import '../../coaching/data/coaching_service.dart';
 import '../../authentication/data/auth_repository.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 
 // Provider para el stream de historial
 final measurementHistoryProvider = StreamProvider<List<MeasurementLog>>((ref) {
@@ -638,6 +640,7 @@ class _AddMeasurementForm extends ConsumerStatefulWidget {
   ConsumerState<_AddMeasurementForm> createState() => _AddMeasurementFormState();
 }
 
+class _AddMeasurementFormState extends ConsumerState<_AddMeasurementForm> {
   final _formKey = GlobalKey<FormState>();
   
   late TextEditingController _weightController;
@@ -695,8 +698,8 @@ class _AddMeasurementForm extends ConsumerStatefulWidget {
         }
       }
 
-      // Crear objeto log completo
-      final log = MeasurementLog(
+      // Crear objeto log temporal (sin ID aún)
+      final tempLog = MeasurementLog(
         id: '',
         date: DateTime.now(),
         weight: weight,
@@ -708,27 +711,33 @@ class _AddMeasurementForm extends ConsumerStatefulWidget {
       );
       
       // Guardar en Firestore
-      await FirebaseFirestore.instance
+      final docRef = await FirebaseFirestore.instance
           .collection('users')
           .doc(widget.user.uid)
           .collection('measurements')
-          .add(log.toJson());
+          .add(tempLog.toJson());
 
-      // También actualizar User Profile con los nuevos datos actuales
-      // Esto es importante para que la próxima vez se pre-carguen
-      /*
-      await FirebaseFirestore.instance.collection('users').doc(widget.user.uid).update({
-        'currentWeightKg': weight,
-        'waistCircumferenceCm': waist,
-        'neckCircumferenceCm': neck,
-        'hipCircumferenceCm': hip,
-      });
-      */
-      
+      // Recrear log con ID correcto para el servicio
+      final logWithId = MeasurementLog(
+        id: docRef.id,
+        date: tempLog.date,
+        weight: tempLog.weight,
+        waistCircumference: tempLog.waistCircumference,
+        neckCircumference: tempLog.neckCircumference,
+        hipCircumference: tempLog.hipCircumference,
+        bodyFatPercentage: tempLog.bodyFatPercentage,
+        muscleMassPercentage: tempLog.muscleMassPercentage,
+        energyLevel: tempLog.energyLevel,
+      );
+
+      // Generar Plan Automático
+      // Usamos read porque estamos dentro de una función, no build
+      await ref.read(coachingProvider).generatePlanFromMeasurement(logWithId, widget.user);
+
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Registro guardado y calculado correctamente')),
+          const SnackBar(content: Text('Registro guardado y Plan actualizado')),
         );
       }
     } catch (e) {

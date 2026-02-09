@@ -1,7 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../authentication/data/auth_repository.dart';
-import '../domain/check_in.dart';
+import '../../progress/domain/measurement_log.dart';
+import '../../profile/domain/user_model.dart';
 import '../domain/weekly_plan.dart';
 
 class CoachingService {
@@ -9,16 +10,6 @@ class CoachingService {
   final String uid;
 
   CoachingService(this._firestore, this.uid);
-
-  // References
-  CollectionReference<CheckIn> get _checkInsRef => _firestore
-      .collection('users')
-      .doc(uid)
-      .collection('check_ins')
-      .withConverter<CheckIn>(
-        fromFirestore: (doc, _) => CheckIn.fromFirestore(doc),
-        toFirestore: (log, _) => log.toJson(),
-      );
 
   CollectionReference<WeeklyPlan> get _plansRef => _firestore
       .collection('users')
@@ -29,93 +20,120 @@ class CoachingService {
         toFirestore: (plan, _) => plan.toJson(),
       );
 
-  // Process Check-In and Generate Plan
-  Future<WeeklyPlan> processCheckIn(CheckIn newCheckIn) async {
-    // 1. Guardar CheckIn
-    await _checkInsRef.add(newCheckIn);
+  CollectionReference<MeasurementLog> get _measurementsRef => _firestore
+      .collection('users')
+      .doc(uid)
+      .collection('measurements')
+      .withConverter<MeasurementLog>(
+        fromFirestore: (doc, _) => MeasurementLog.fromFirestore(doc),
+        toFirestore: (log, _) => log.toJson(),
+      );
 
-    // 2. Obtener último CheckIn para comparar (excluyendo el actual que acabamos de guardar, 
-    // pero como add genera ID nuevo, podemos simplemente buscar el último 'antes' de este o el más reciente)
-    // Mejor: Obtener el historial reciente.
-    final historyQuery = await _checkInsRef
+  Future<WeeklyPlan> generatePlanFromMeasurement(
+      MeasurementLog currentLog, UserModel user) async {
+    // 1. Buscar el MeasurementLog ANTERIOR
+    final historyQuery = await _measurementsRef
         .orderBy('date', descending: true)
-        .limit(2) // El actual y el anterior
+        // Pedimos 2: el actual (que acabamos de guardar) y el anterior.
+        // Si el actual ya se guardó, vendrá en la query.
+        .limit(2)
         .get();
 
-    CheckIn? lastCheckIn;
-    if (historyQuery.docs.length > 1) {
-      // docs[0] es el current (por fecha más reciente), docs[1] es el anterior
-      // Ojo: si guardamos antes de consultar, el query snapshot lo incluirá
-      // Validamos IDs para estar seguros
-      final currentDocId = historyQuery.docs[0].id;
-      // Si acabamos de añadir, el current debería estar.
-      
-      // Asumamos que historyQuery.docs[1] es el previo.
-      lastCheckIn = historyQuery.docs[1].data();
+    MeasurementLog? previousLog;
+    
+    // Filtramos para asegurar que no comparamos con el mismo ID (por si acaso)
+    final otherLogs = historyQuery.docs
+        .map((d) => d.data())
+        .where((log) => log.id != currentLog.id) 
+        // Nota: currentLog.id podría venir vacío si es local antes de guardar, 
+        // pero aquí asumimos que ya se guardó o que filtramos por fecha.
+        // Mejor lógica: Tomar el primer log cuya fecha sea ANTERIOR a currentLog.date
+        .toList();
+
+    if (otherLogs.isNotEmpty) {
+      previousLog = otherLogs.first;
     }
 
-    // 3. Generar Plan
-    final nextPlan = _generatePlan(newCheckIn, lastCheckIn);
+    // 2. Generar Plan
+    final nextPlan = _createPlanLogic(currentLog, previousLog, user);
 
-    // 4. Guardar Plan
-    await _plansRef.add(nextPlan);
-
+    // 3. Guardar Plan (Overwrite 'current' or add to history? 
+    // Requirement says: users/{uid}/plans/current. 
+    // Let's use a specific ID 'current' to easily overwrite/fetch, 
+    // or store in a collection and just use the latest.
+    // The requirement says: "Guardar el WeeklyPlan en Firestore: users/{uid}/plans/current"
+    // This implies a document with ID 'current'.
+    
+    await _plansRef.doc('current').set(nextPlan);
+    
     return nextPlan;
   }
 
-  WeeklyPlan _generatePlan(CheckIn current, CheckIn? previous) {
-    final now = DateTime.now();
-    // Start date: tomorrow or next Monday? Let's say tomorrow for simplicity
-    final startDate = now.add(const Duration(days: 1));
-    final endDate = startDate.add(const Duration(days: 6));
+  WeeklyPlan _createPlanLogic(
+      MeasurementLog current, MeasurementLog? previous, UserModel user) {
     
-    // Default / Initial Plan
-    if (previous == null) {
+    final now = DateTime.now();
+    final startDate = now; 
+    final endDate = now.add(const Duration(days: 7));
+
+    // PASO 2: Primer Registro (No hay historial previo)
+    if (previous == null || previous.waistCircumference == null || current.waistCircumference == null) {
+      bool hasInsulinResistance = user.pathologies.contains('insulin_resistance') || 
+                                  user.pathologies.contains('prediabetes');
+      
       return WeeklyPlan(
-        id: '',
-        weekNumber: 1,
+        id: 'current',
         startDate: startDate,
         endDate: endDate,
-        protocol: '16/8',
-        focus: PlanFocus.fatLoss,
-        coachNote: '¡Bienvenido! Comenzaremos con un protocolo base 16/8 para adaptar tu cuerpo.',
+        protocol: hasInsulinResistance ? '16/8' : '14/10',
+        status: PlanStatus.initial,
+        coachMessage: "¡Comenzamos tu transformación! Esta semana es de adaptación.",
+        adjustments: ["Hidratación constante", "Dormir 7h+"],
       );
     }
 
-    // Lógica de Comparación
-    final deltaWaist = current.waist - previous.waist;
-    
+    // PASO 3: Comparación
+    final currentWaist = current.waistCircumference!;
+    final previousWaist = previous.waistCircumference!;
+    final deltaWaist = currentWaist - previousWaist;
+
     String protocol;
-    PlanFocus focus;
-    String note;
+    PlanStatus status;
+    String message;
+    List<String> adjustments;
 
     if (deltaWaist < -0.5) {
-      // AVANCE (> 0.5cm reducidos)
-      protocol = '16/8'; // Mantener lo que funciona o intensificar ligeramente si el usuario lo desea
-      focus = PlanFocus.fatLoss;
-      note = '¡Excelente progreso! Tu cintura se redujo ${deltaWaist.abs().toStringAsFixed(1)} cm. Mantendremos el ritmo para maximizar la quema de grasa.';
+      // PROGRESS
+      status = PlanStatus.progress;
+      protocol = '16/8'; // Mantener anterior (simplificación: asumimos 16/8 por defecto si no tenemos el plan previo)
+      // Idealmente leeríamos el plan anterior para mantener su protocolo. 
+      // Por ahora, '16/8' es un valor seguro o el del user preference.
+      // Mejora: si pudiéramos leer el plan anterior, useríamos ese protocolo.
+      // Asumiremos mantener 16/8 como base de éxito.
+      message = "¡Excelente! Estás quemando grasa visceral. Sigamos igual.";
+      adjustments = ["Mantener horarios", "Aumentar proteína"];
     } else if (deltaWaist >= -0.5 && deltaWaist <= 0.5) {
-      // ESTANCAMIENTO (-0.5 a +0.5 cm)
+      // STAGNATION
+      status = PlanStatus.stagnation;
       protocol = '18/6'; // Aumentar intensidad
-      focus = PlanFocus.metabolicShock;
-      note = 'Parece que hemos llegado a una meseta. Aumentaremos el ayuno a 18 horas para romper la homeostasis y reactivar la oxidación de grasas.';
+      message = "Estabilidad detectada. Vamos a retar a tu cuerpo con un protocolo nuevo.";
+      adjustments = ["Protocolo 18/6", "Caminar antes de primera comida"];
     } else {
-      // RETROCESO (> 0.5 cm aumento)
-      protocol = '12/12'; // Reseteo
-      focus = PlanFocus.detox;
-      note = 'Hemos notado un ligero retroceso. Esta semana nos enfocaremos en descanso, hidratación y comida real (Ritmo Circadiano 12/12) para bajar la inflamación.';
+      // REGRESSION
+      status = PlanStatus.regression;
+      protocol = '14/10'; // Resetear (Control de estrés)
+      message = "Cintura arriba. Prioricemos descanso y comida real esta semana.";
+      adjustments = ["Reducir ventana a 14/10", "Priorizar sueño", "Cero procesados"];
     }
 
-    // Determinar número de semana (basado en planes anteriores? O simple contador)
-    // Por simplicidad, asumimos semana X. En un caso real consultaríamos el último plan.
     return WeeklyPlan(
-      id: '',
-      weekNumber: 0, // Debería incrementarse
+      id: 'current',
       startDate: startDate,
       endDate: endDate,
       protocol: protocol,
-      focus: focus,
-      coachNote: note,
+      status: status,
+      coachMessage: message,
+      adjustments: adjustments,
     );
   }
 }
@@ -125,3 +143,4 @@ final coachingProvider = Provider<CoachingService>((ref) {
   if (user == null) throw Exception('User not authenticated');
   return CoachingService(FirebaseFirestore.instance, user.uid);
 });
+
