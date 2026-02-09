@@ -61,36 +61,46 @@ class BioGaugeCard extends StatelessWidget {
                 max: max,
                 gradientColors: gradientColors ?? [Colors.green, Colors.yellow, Colors.orange, Colors.red],
               ),
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Text(
-                      '${value.toStringAsFixed(1)}$unit',
-                      style: GoogleFonts.outfit(
-                        color: Colors.black,
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return Center(
+                    child: SizedBox(
+                      width: constraints.maxWidth * 0.7,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              '${value.toStringAsFixed(1)}$unit',
+                              style: GoogleFonts.outfit(
+                                color: Colors.black,
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: statusColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              statusText,
+                              style: GoogleFonts.outfit(
+                                color: statusColor,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: statusColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        statusText,
-                        style: GoogleFonts.outfit(
-                          color: statusColor,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                  );
+                },
               ),
             ),
           ),

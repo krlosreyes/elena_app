@@ -268,12 +268,14 @@ class _BodyMeasurementsSectionState extends State<_BodyMeasurementsSection> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              'Medidas Corporales (Editable)',
-              style: GoogleFonts.outfit(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
+            Expanded(
+              child: Text(
+                'Medidas Corporales (Editable)',
+                style: GoogleFonts.outfit(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
               ),
             ),
             TextButton.icon(
