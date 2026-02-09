@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../fasting/domain/fasting_session.dart';
 import '../../fasting/data/fasting_repository.dart';
+import '../../authentication/data/auth_repository.dart';
 
 enum MetricType { week, month, year }
 
@@ -36,14 +37,19 @@ class FastingHistoryState {
 
 class FastingHistoryController extends StateNotifier<FastingHistoryState> {
   final FastingRepository _repository;
+  final String? _uid;
 
-  FastingHistoryController(this._repository)
+  FastingHistoryController(this._repository, this._uid)
       : super(FastingHistoryState(focusedDate: DateTime.now())) {
     _loadHistory();
   }
 
   void _loadHistory() {
-    _repository.getHistoryStream().listen((sessions) {
+    if (_uid == null) {
+       state = state.copyWith(allSessions: [], isLoading: false);
+       return;
+    }
+    _repository.getHistoryStream(_uid!).listen((sessions) {
       if (mounted) {
         state = state.copyWith(allSessions: sessions, isLoading: false);
       }
@@ -220,7 +226,8 @@ class ChartDataPoint {
 }
 
 final fastingHistoryProvider = 
-    StateNotifierProvider<FastingHistoryController, FastingHistoryState>((ref) {
+    StateNotifierProvider.autoDispose<FastingHistoryController, FastingHistoryState>((ref) {
   final repo = ref.watch(fastingRepositoryProvider);
-  return FastingHistoryController(repo);
+  final user = ref.watch(authStateChangesProvider).value;
+  return FastingHistoryController(repo, user?.uid);
 });

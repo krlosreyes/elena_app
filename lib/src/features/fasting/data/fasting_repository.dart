@@ -5,25 +5,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class FastingRepository {
   final FirebaseFirestore _firestore;
-  final String? uid;
 
-  FastingRepository(this._firestore, this.uid);
+  FastingRepository(this._firestore);
 
-  Future<void> saveCompletedFast(FastingSession session) async {
+  Future<void> saveCompletedFast(String uid, FastingSession session) async {
     print('🔥 Intentando guardar ayuno en Firestore...');
     
-    if (uid == null) {
-        print('❌ Error: Usuario no autenticado. No se puede guardar ayuno.');
-        return;
-    }
-
     try {
       await _firestore
           .collection('users')
           .doc(uid)
-          .collection('fasting_history') // 'fasts' or 'fasting_history'? Request said 'users/{uid}/fasts', check existing usage/request. Request said "Verificar la ruta de colección: users/{uid}/fasts". 
-          // Wait, Prompt says: "Verificar la ruta de colección: users/{uid}/fasts". 
-          // Previous controller code used 'fasting_history'. I will use 'fasts' as requested in the specific instructions.
+          .collection('fasting_history') 
           .add(session.toJson());
           
       print('✅ Ayuno guardado correctamente en Firestore.');
@@ -32,8 +24,8 @@ class FastingRepository {
       rethrow;
     }
   }
-  Stream<List<FastingSession>> getHistoryStream() {
-    if (uid == null) return Stream.value([]);
+
+  Stream<List<FastingSession>> getHistoryStream(String uid) {
     return _firestore
         .collection('users')
         .doc(uid)
@@ -50,8 +42,8 @@ class FastingRepository {
     return _firestore
         .collection('users')
         .doc(uid)
-        .collection('fasting_history') // Consistent with existing usage
-        .where('isCompleted', isEqualTo: false) // Matches FastingSession model
+        .collection('fasting_history') 
+        .where('isCompleted', isEqualTo: false) 
         .limit(1)
         .snapshots()
         .map((snapshot) {
@@ -62,8 +54,5 @@ class FastingRepository {
 }
 
 final fastingRepositoryProvider = Provider<FastingRepository>((ref) {
-  // Watch auth state changes to force rebuild when user logs in/out
-  final authState = ref.watch(authStateChangesProvider);
-  final user = authState.value;
-  return FastingRepository(FirebaseFirestore.instance, user?.uid);
+  return FastingRepository(FirebaseFirestore.instance);
 });

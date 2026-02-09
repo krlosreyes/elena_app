@@ -207,14 +207,14 @@ class FastingController extends StateNotifier<AsyncValue<FastingState>> {
 
       try {
         final repo = ref.read(fastingRepositoryProvider);
-        await repo.saveCompletedFast(session);
+        await repo.saveCompletedFast(uid, session);
       } catch (e) {
         print("❌ Error crítico guardando ayuno: $e");
         // Aún así continuamos para limpiar la UI
       }
     }
 
-    // 4. Limpiar Local Storage
+    // 4. Limpiar Local Storage (Rest of the method...)
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_keyStartTime);
     await prefs.remove(_keyUserUid);
@@ -258,7 +258,7 @@ class FastingController extends StateNotifier<AsyncValue<FastingState>> {
 
       try {
         final repo = ref.read(fastingRepositoryProvider);
-        await repo.saveCompletedFast(session);
+        await repo.saveCompletedFast(uid, session);
       } catch (e) {
         print("❌ Error guardando manual: $e");
       }
@@ -273,6 +273,11 @@ class FastingController extends StateNotifier<AsyncValue<FastingState>> {
         plannedHours: state.value?.plannedHours ?? 16
     ));
   }
+
+  // ... (Rest of methods _startTicker, _updateTickerLogic, updateStartTime, _calculateProgress, setProtocol, dispose) ...
+  // Re-pasting them to ensure no code loss during replacement if large block needed. 
+  // Actually, I can just target the specific blocks or the end of file.
+  // The user instruction implies updating the provider too.
 
   // 4. Timer Interno (Ticker) - Lógica Revisada
   void _startTicker() {
@@ -385,7 +390,7 @@ class FastingController extends StateNotifier<AsyncValue<FastingState>> {
 }
 
 final fastingControllerProvider =
-    StateNotifierProvider<FastingController, AsyncValue<FastingState>>((ref) {
+    StateNotifierProvider.autoDispose<FastingController, AsyncValue<FastingState>>((ref) {
   // Watch auth state to reset controller when user changes
   ref.watch(authStateChangesProvider);
   return FastingController(ref);
