@@ -423,6 +423,8 @@ class FastingCard extends ConsumerWidget {
         ),
       ),
     );
+  }
+
   void _showStartDialog(BuildContext context, WidgetRef ref) {
     showDialog(
       context: context,
@@ -431,15 +433,15 @@ class FastingCard extends ConsumerWidget {
   }
 }
 
-class _StartFastDialog extends StatefulWidget {
+class _StartFastDialog extends ConsumerStatefulWidget {
   final WidgetRef ref;
-  const _StartFastDialog({required this.ref});
+  const _StartFastDialog({super.key, required this.ref});
 
   @override
-  State<_StartFastDialog> createState() => _StartFastDialogState();
+  ConsumerState<_StartFastDialog> createState() => _StartFastDialogState();
 }
 
-class _StartFastDialogState extends State<_StartFastDialog> {
+class _StartFastDialogState extends ConsumerState<_StartFastDialog> {
   DateTime _selectedDate = DateTime.now();
 
   Future<void> _pickDateTime(BuildContext context) async {
@@ -528,10 +530,10 @@ class _StartFastDialogState extends State<_StartFastDialog> {
   }
 
   void _start() {
-    final state = widget.ref.read(fastingControllerProvider).value;
+    final state = ref.read(fastingControllerProvider).value;
     final int hours = state?.plannedHours ?? 16;
     
-    widget.ref.read(fastingControllerProvider.notifier).startFast(
+    ref.read(fastingControllerProvider.notifier).startFast(
       startTime: _selectedDate,
       hours: hours,
     );
