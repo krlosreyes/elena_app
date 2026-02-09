@@ -107,7 +107,7 @@ class FastingController extends StateNotifier<AsyncValue<FastingState>> {
       final startTimeIso = prefs.getString(_keyStartTime);
 
       if (startTimeIso != null && startTimeIso.isNotEmpty) {
-        // Restaurar ayuno en progreso
+        // Restaurar ayuno en progreso desde LOCAL
         final startTime = DateTime.tryParse(startTimeIso);
         
         if (startTime != null) {
@@ -126,6 +126,38 @@ class FastingController extends StateNotifier<AsyncValue<FastingState>> {
           // IMPERATIVO: Arrancar el reloj visual
           _startTicker();
           return;
+        }
+      } else if (uid != null) {
+        // FALLBACK: Si no hay local, buscar en FIRESTORE (Recuperación de sesión/dispositivo)
+        try {
+           print("🔍 Buscando ayuno activo en Firestore para recuperar estado...");
+           final activeFast = await ref.read(fastingRepositoryProvider).getActiveFastStream(uid).first;
+           
+           if (activeFast != null) {
+             print("♻️ Ayuno activo recuperado de Firestore!");
+             
+             // 1. Restaurar Local Storage
+             await prefs.setString(_keyStartTime, activeFast.startTime.toIso8601String());
+             await prefs.setString(_keyUserUid, uid);
+             await prefs.setInt(_keyPlannedHours, activeFast.plannedDurationHours);
+             
+             // 2. Restaurar Estado
+             final now = DateTime.now();
+             final elapsed = now.difference(activeFast.startTime);
+             
+             state = AsyncValue.data(FastingState(
+                isFasting: true,
+                elapsed: elapsed,
+                progress: _calculateProgress(elapsed, activeFast.plannedDurationHours),
+                startTime: activeFast.startTime,
+                plannedHours: activeFast.plannedDurationHours,
+             ));
+             
+             _startTicker();
+             return;
+           }
+        } catch (e) {
+           print("Error recuperando ayuno de Firestore: $e");
         }
       }
       
@@ -166,7 +198,24 @@ class FastingController extends StateNotifier<AsyncValue<FastingState>> {
     // 3. Programar Notificaciones
     await NotificationService.scheduleFastingNotifications(now, Duration(hours: hours));
 
-    // 4. ARRANCAR TICKER
+    // 4. PERSISTIR EN FIRESTORE (Evitar pérdida de estado)
+    if (uid != null) {
+      final session = FastingSession(
+        uid: uid,
+        startTime: now,
+        endTime: null, // Aún no termina
+        plannedDurationHours: hours,
+        isCompleted: false,
+      );
+      try {
+        await ref.read(fastingRepositoryProvider).startFast(uid, session);
+        print("✅ Ayuno iniciado sincronizado en Firestore.");
+      } catch (e) {
+        print("⚠️ Error sincronizando inicio de ayuno: $e");
+      }
+    }
+
+    // 5. ARRANCAR TICKER
     _startTicker();
     
     print("✅ Ayuno iniciado: $now para $hours horas.");

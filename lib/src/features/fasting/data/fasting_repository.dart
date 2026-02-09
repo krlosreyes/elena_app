@@ -8,17 +8,43 @@ class FastingRepository {
 
   FastingRepository(this._firestore);
 
-  Future<void> saveCompletedFast(String uid, FastingSession session) async {
-    print('🔥 Intentando guardar ayuno en Firestore...');
-    
+  Future<void> startFast(String uid, FastingSession session) async {
     try {
       await _firestore
           .collection('users')
           .doc(uid)
-          .collection('fasting_history') 
+          .collection('fasting_history')
           .add(session.toJson());
-          
-      print('✅ Ayuno guardado correctamente en Firestore.');
+      print('✅ Ayuno iniciado guardado en Firestore.');
+    } catch (e) {
+      print('❌ Error al iniciar ayuno en Firestore: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> saveCompletedFast(String uid, FastingSession session) async {
+    print('🔥 Intentando guardar/actualizar ayuno en Firestore...');
+    
+    try {
+      final colRef = _firestore.collection('users').doc(uid).collection('fasting_history');
+      
+      // Buscar si hay un ayuno activo para cerrarlo
+      final activeSnapshot = await colRef
+          .where('isCompleted', isEqualTo: false)
+          .limit(1)
+          .get();
+
+      if (activeSnapshot.docs.isNotEmpty) {
+        // ACTUALIZAR el existente
+        final docId = activeSnapshot.docs.first.id;
+        await colRef.doc(docId).update(session.toJson());
+        print('✅ Ayuno existente actualizado a completado.');
+      } else {
+        // Si no existe (ej: ayuno manual retroactivo), CREAR uno nuevo
+         await colRef.add(session.toJson());
+         print('✅ Ayuno completado (nuevo) guardado en Firestore.');
+      }
+
     } catch (e) {
       print('❌ Error al guardar ayuno en Firestore: $e');
       rethrow;
