@@ -155,7 +155,7 @@ class _BioGaugeGrid extends StatelessWidget {
           physics: const NeverScrollableScrollPhysics(),
           crossAxisSpacing: 16,
           mainAxisSpacing: 16,
-          childAspectRatio: 1.0,
+          childAspectRatio: 1.1,
           children: [
             // 1. BMI Gauge
             BioGaugeCard(

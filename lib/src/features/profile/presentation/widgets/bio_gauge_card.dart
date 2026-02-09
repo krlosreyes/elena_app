@@ -30,7 +30,7 @@ class BioGaugeCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -39,78 +39,63 @@ class BioGaugeCard extends StatelessWidget {
           ),
         ],
       ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          // Calculamos tamaños relativos al espacio disponible
-          final double size = constraints.maxWidth;
-          final double fontSizeValue = size * 0.22; // El número será el 22% del ancho
-          final double fontSizeLabel = size * 0.08; // La etiqueta será el 8%
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // 1. TÍTULO
+          Text(
+            title.toUpperCase(),
+            style: GoogleFonts.outfit(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[700],
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 12),
 
-          return Stack(
-            alignment: Alignment.center,
-            children: [
-              // 1. El Arco (CustomPaint)
-              CustomPaint(
-                size: Size(size, size), // Ocupa todo el espacio
-                painter: _GaugePainter(
-                  value: value,
-                  min: min,
-                  max: max,
-                  gradientColors: gradientColors ?? [Colors.green, Colors.yellow, Colors.orange, Colors.red],
-                ), 
+          // 2. GAUGE (ARCO)
+          Expanded(
+            child: CustomPaint(
+              painter: _GaugePainter(
+                value: value,
+                min: min,
+                max: max,
+                gradientColors: gradientColors ?? [Colors.green, Colors.yellow, Colors.orange, Colors.red],
               ),
+              child: Container(),
+            ),
+          ),
+          const SizedBox(height: 12),
 
-              // 2. El Contenido (Texto)
-              Column(
-                mainAxisAlignment: MainAxisAlignment.end, // Empujar hacia abajo
-                children: [
-                   // Espaciador superior para no chocar con el arco de arriba
-                  const Spacer(flex: 4), 
-                  
-                  // El Valor Numérico
-                  Text(
-                    '${value.toStringAsFixed(1)}$unit',
-                    style: GoogleFonts.outfit(
-                      fontSize: fontSizeValue, // TAMAÑO DINÁMICO
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                      height: 1.0, // Reducir interlineado
-                    ),
-                  ),
-                  
-                  // El Estado (ej: Sobrepeso)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 12.0), // Margen inferior
-                    child: Text(
-                      statusText,
-                      style: GoogleFonts.outfit(
-                        fontSize: fontSizeLabel, // TAMAÑO DINÁMICO
-                        color: statusColor,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
+          // 3. VALOR PRINCIPAL
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              '${value.toStringAsFixed(1)}$unit',
+              style: GoogleFonts.outfit(
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+                height: 1.0,
               ),
-
-              // 3. Título (Arriba al centro)
-              Positioned(
-                top: 0,
-                child: Text(
-                  title,
-                  style: GoogleFonts.outfit(
-                    fontSize: size * 0.1, // Dinámico
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ],
-          );
-        },
+            ),
+          ),
+          
+          // 4. ESTADO
+          Text(
+            statusText,
+            style: GoogleFonts.outfit(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: statusColor,
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
       ),
     );
   }
