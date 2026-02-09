@@ -93,11 +93,19 @@ class _HomeView extends ConsumerWidget {
           ),
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
-            child: CircleAvatar(
-              backgroundColor: Theme.of(context).primaryColor,
-              child: Text(
-                authUser?.displayName?.substring(0, 1).toUpperCase() ?? 'U',
-                style: const TextStyle(color: Colors.white),
+            child: InkWell(
+              onTap: () {
+                // Navegar a Perfil Metabólico (ProgressScreen) como pantalla completa
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const ProgressScreen()),
+                );
+              },
+              child: CircleAvatar(
+                backgroundColor: Theme.of(context).primaryColor,
+                child: Text(
+                  authUser?.displayName?.substring(0, 1).toUpperCase() ?? 'U',
+                  style: const TextStyle(color: Colors.white),
+                ),
               ),
             ),
           ),

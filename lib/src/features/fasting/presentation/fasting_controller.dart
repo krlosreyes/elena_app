@@ -91,25 +91,30 @@ class FastingController extends StateNotifier<AsyncValue<FastingState>> {
 
       final startTimeIso = prefs.getString(_keyStartTime);
 
-      if (startTimeIso != null) {
+      if (startTimeIso != null && startTimeIso.isNotEmpty) {
         // Restaurar ayuno en progreso
-        final startTime = DateTime.parse(startTimeIso);
-        final now = DateTime.now();
-        final elapsed = now.difference(startTime);
+        final startTime = DateTime.tryParse(startTimeIso);
         
-        state = AsyncValue.data(FastingState(
-          isFasting: true,
-          elapsed: elapsed,
-          progress: _calculateProgress(elapsed, safePlannedHours),
-          startTime: startTime,
-          plannedHours: safePlannedHours,
-        ));
-        
-        _startTicker();
-      } else {
-        // No hay ayuno activo, pero actualizamos las horas planeadas
-        state = AsyncValue.data(FastingState.initial().copyWith(plannedHours: safePlannedHours));
+        if (startTime != null) {
+          final now = DateTime.now();
+          final elapsed = now.difference(startTime);
+          
+          state = AsyncValue.data(FastingState(
+            isFasting: true,
+            elapsed: elapsed,
+            progress: _calculateProgress(elapsed, safePlannedHours),
+            startTime: startTime,
+            plannedHours: safePlannedHours,
+          ));
+          
+          _startTicker();
+          return;
+        }
       }
+      
+      // Si no hay fecha de inicio válida, aseguramos estado inicial (NO ayunando)
+      state = AsyncValue.data(FastingState.initial().copyWith(plannedHours: safePlannedHours));
+      
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }
@@ -179,8 +184,9 @@ class FastingController extends StateNotifier<AsyncValue<FastingState>> {
     // Limpiar local
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_keyStartTime);
-    await prefs.remove(_keyPlannedHours);
+    await prefs.remove(_keyPlannedHours); // Opcional: mantener horas planeadas
 
+    // FORZAR actualización de estado a inicial
     state = AsyncValue.data(FastingState.initial());
   }
 

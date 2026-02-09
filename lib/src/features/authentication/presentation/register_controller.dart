@@ -26,6 +26,11 @@ class RegisterController extends _$RegisterController {
       if (user != null) {
         await user.updateDisplayName(name);
         await user.reload(); // Refresh user data
+        // Explicitly wait slightly to ensure Firebase auth stream propagates if needed,
+        // though typically the router listens to the stream.
+        // The flicker happens if the stream emits "Authenticated" -> Router goes Home -> Then we try Onboarding.
+        // To fix: The router likely redirects to Home on auth. 
+        // We should handle the onboarding flow via the router possibly, but here we enforce local state success.
       }
       state = const AsyncData(null);
     } catch (e, st) {
