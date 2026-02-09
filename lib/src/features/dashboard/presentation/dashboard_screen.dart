@@ -95,10 +95,8 @@ class _HomeView extends ConsumerWidget {
             padding: const EdgeInsets.only(right: 16.0),
             child: InkWell(
               onTap: () {
-                // Navegar a Perfil Metabólico (ProgressScreen) como pantalla completa
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const ProgressScreen()),
-                );
+                // Navigate to User Profile
+                context.pushNamed('profile');
               },
               child: CircleAvatar(
                 backgroundColor: Theme.of(context).primaryColor,

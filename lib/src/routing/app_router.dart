@@ -5,6 +5,7 @@ import '../features/authentication/presentation/login_screen.dart';
 import '../features/authentication/presentation/register_screen.dart';
 import '../features/dashboard/presentation/dashboard_screen.dart';
 import '../features/onboarding/presentation/onboarding_screen.dart';
+import '../features/profile/presentation/profile_screen.dart';
 
 import '../features/authentication/data/auth_repository.dart';
 
@@ -76,6 +77,11 @@ GoRouter goRouter(GoRouterRef ref) {
       GoRoute(
         path: '/onboarding',
         builder: (context, state) => const OnboardingScreen(),
+      ),
+      GoRoute(
+        path: '/profile',
+        name: 'profile', // Named route for easier navigation
+        builder: (context, state) => const ProfileScreen(),
       ),
     ],
   );
