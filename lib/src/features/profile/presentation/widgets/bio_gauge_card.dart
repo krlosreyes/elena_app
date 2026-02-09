@@ -65,7 +65,7 @@ class BioGaugeCard extends StatelessWidget {
                 builder: (context, constraints) {
                   return Center(
                     child: SizedBox(
-                      width: constraints.maxWidth * 0.7,
+                      width: constraints.maxWidth * 0.50, // Reduced to 50% to prevent oversized text
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
@@ -75,7 +75,7 @@ class BioGaugeCard extends StatelessWidget {
                               '${value.toStringAsFixed(1)}$unit',
                               style: GoogleFonts.outfit(
                                 color: Colors.black,
-                                fontSize: 28,
+                                fontSize: 26, // Base size, scales down if needed
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -87,12 +87,15 @@ class BioGaugeCard extends StatelessWidget {
                               color: statusColor.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            child: Text(
-                              statusText,
-                              style: GoogleFonts.outfit(
-                                color: statusColor,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
+                            child: FittedBox( // Also restrain status text just in case
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                statusText,
+                                style: GoogleFonts.outfit(
+                                  color: statusColor,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
                           ),

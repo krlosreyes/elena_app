@@ -150,8 +150,8 @@ class _BioGaugeGrid extends StatelessWidget {
         final muscle = log.muscleMassPercentage ?? 0;
 
         return Wrap(
-          spacing: 12,
-          runSpacing: 12,
+          spacing: 16,
+          runSpacing: 16,
           alignment: WrapAlignment.center,
           children: [
             // 1. BMI Gauge (Green -> Red)
