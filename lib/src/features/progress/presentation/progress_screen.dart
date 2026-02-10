@@ -17,18 +17,16 @@ import 'widgets/fasting_chart_card.dart';
 import 'widgets/measurement_bottom_sheet.dart';
 
 
-// Provider para el stream de historial
-final measurementHistoryProvider = StreamProvider<List<MeasurementLog>>((ref) {
-  final service = ref.watch(progressServiceProvider);
-  return service.getHistory();
-});
+// Usamos el provider reactivo definido en progress_service.dart
+// final measurementHistoryProvider = ... (YA NO ES NECESARIO RE-DEFINIRLO SI IMPORTAMOS EL DEL SERVICIO)
+
 
 class ProgressScreen extends ConsumerWidget {
   const ProgressScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final historyAsync = ref.watch(measurementHistoryProvider);
+    final historyAsync = ref.watch(userMeasurementsProvider); // Usar el provider del servicio
     final authUser = ref.read(authRepositoryProvider).currentUser;
     // Necesitamos perfil del usuario para altura/género
     final userAsync = authUser != null 
@@ -600,10 +598,13 @@ class _HistoryTable extends ConsumerWidget {
                   );
                 },
                 onDismissed: (direction) {
-                  ref.read(progressServiceProvider).deleteMeasurement(item.id);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Registro eliminado')),
-                  );
+                  final user = ref.read(authRepositoryProvider).currentUser;
+                  if (user != null) {
+                    ref.read(progressServiceProvider).deleteMeasurement(user.uid, item.id);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Registro eliminado')),
+                    );
+                  }
                 },
                 child: InkWell(
                   onTap: () {

@@ -142,7 +142,7 @@ class _MeasurementBottomSheetState extends ConsumerState<MeasurementBottomSheet>
         );
         
         // Update in Firestore
-        await ref.read(progressServiceProvider).updateMeasurement(logToSave);
+        await ref.read(progressServiceProvider).updateMeasurement(widget.user.uid, logToSave);
       } else {
         // CREATE new log
         final tempLog = MeasurementLog(

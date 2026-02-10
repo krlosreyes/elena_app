@@ -86,7 +86,7 @@ class ProfileScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-                _BioGaugeGrid(progressService: progressService, userModel: userModel),
+                _BioGaugeGrid(userModel: userModel),
                 const SizedBox(height: 32),
 
                 // 3. Body Measurements (Editable)
@@ -115,22 +115,18 @@ class ProfileScreen extends ConsumerWidget {
   }
 }
 
-class _BioGaugeGrid extends StatelessWidget {
-  final ProgressService progressService;
+class _BioGaugeGrid extends ConsumerWidget {
   final UserModel userModel;
 
-  const _BioGaugeGrid({required this.progressService, required this.userModel});
+  const _BioGaugeGrid({required this.userModel});
 
   @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<List<MeasurementLog>>(
-      stream: progressService.getHistory(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        
-        final history = snapshot.data ?? [];
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Escuchar el provider reactivo
+    final historyAsync = ref.watch(userMeasurementsProvider);
+
+    return historyAsync.when(
+      data: (history) {
         final log = history.isNotEmpty ? history.last : null;
 
         if (log == null) {
@@ -139,7 +135,6 @@ class _BioGaugeGrid extends StatelessWidget {
 
         // Calculate metrics
         final bmi = log.calculateBmi(userModel.heightCm / 100);
-        final weight = log.weight; // Not currently used in gauges but available
         
         // Use estimated visceral fat if null
         final visceral = log.visceralFat ?? MeasurementLog.estimateVisceralFat(
@@ -204,6 +199,8 @@ class _BioGaugeGrid extends StatelessWidget {
           ],
         );
       },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, s) => Center(child: Text("Error: $e", style: const TextStyle(color: Colors.red))),
     );
   }
 

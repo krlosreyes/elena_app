@@ -7,11 +7,10 @@ import '../domain/weekly_plan.dart';
 
 class CoachingService {
   final FirebaseFirestore _firestore;
-  final String uid;
 
-  CoachingService(this._firestore, this.uid);
+  CoachingService(this._firestore);
 
-  CollectionReference<WeeklyPlan> get _plansRef => _firestore
+  CollectionReference<WeeklyPlan> _plansRef(String uid) => _firestore
       .collection('users')
       .doc(uid)
       .collection('plans')
@@ -20,7 +19,7 @@ class CoachingService {
         toFirestore: (plan, _) => plan.toJson(),
       );
 
-  CollectionReference<MeasurementLog> get _measurementsRef => _firestore
+  CollectionReference<MeasurementLog> _measurementsRef(String uid) => _firestore
       .collection('users')
       .doc(uid)
       .collection('measurements')
@@ -32,7 +31,7 @@ class CoachingService {
   Future<WeeklyPlan> generatePlanFromMeasurement(
       MeasurementLog currentLog, UserModel user) async {
     // 1. Buscar el MeasurementLog ANTERIOR
-    final historyQuery = await _measurementsRef
+    final historyQuery = await _measurementsRef(user.uid)
         .orderBy('date', descending: true)
         // Pedimos 2: el actual (que acabamos de guardar) y el anterior.
         // Si el actual ya se guardó, vendrá en la query.
@@ -64,7 +63,7 @@ class CoachingService {
     // The requirement says: "Guardar el WeeklyPlan en Firestore: users/{uid}/plans/current"
     // This implies a document with ID 'current'.
     
-    await _plansRef.doc('current').set(nextPlan);
+    await _plansRef(user.uid).doc('current').set(nextPlan);
     
     return nextPlan;
   }
@@ -139,8 +138,6 @@ class CoachingService {
 }
 
 final coachingProvider = Provider<CoachingService>((ref) {
-  final user = ref.watch(authRepositoryProvider).currentUser;
-  if (user == null) throw Exception('User not authenticated');
-  return CoachingService(FirebaseFirestore.instance, user.uid);
+  return CoachingService(FirebaseFirestore.instance);
 });
 

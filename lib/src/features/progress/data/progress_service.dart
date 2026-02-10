@@ -5,12 +5,11 @@ import '../domain/measurement_log.dart';
 
 class ProgressService {
   final FirebaseFirestore _firestore;
-  final String uid;
 
-  ProgressService(this._firestore, this.uid);
+  ProgressService(this._firestore);
 
   // Collection Reference
-  CollectionReference<MeasurementLog> get _measurementsRef => _firestore
+  CollectionReference<MeasurementLog> _measurementsRef(String uid) => _firestore
       .collection('users')
       .doc(uid)
       .collection('measurements')
@@ -20,7 +19,7 @@ class ProgressService {
       );
 
   // Add Measurement
-  Future<void> addMeasurement({
+  Future<void> addMeasurement(String uid, {
     required double weight,
     double? waistCircumference,
     int? energyLevel,
@@ -35,20 +34,20 @@ class ProgressService {
     );
     
     // Use standard add to let Firestore generate ID
-    await _measurementsRef.add(log);
+    await _measurementsRef(uid).add(log);
   }
 
   // Get History Stream
-  Stream<List<MeasurementLog>> getHistory() {
-    return _measurementsRef
+  Stream<List<MeasurementLog>> getHistory(String uid) {
+    return _measurementsRef(uid)
         .orderBy('date', descending: false) // Oldest first for charts
         .snapshots()
         .map((snapshot) => snapshot.docs.map((doc) => doc.data()).toList());
   }
 
   // Get Latest Measurement
-  Future<MeasurementLog?> getLatest() async {
-    final snapshot = await _measurementsRef
+  Future<MeasurementLog?> getLatest(String uid) async {
+    final snapshot = await _measurementsRef(uid)
         .orderBy('date', descending: true)
         .limit(1)
         .get();
@@ -60,25 +59,28 @@ class ProgressService {
   }
 
   // Delete Measurement
-  Future<void> deleteMeasurement(String measurementId) async {
-    await _measurementsRef.doc(measurementId).delete();
+  Future<void> deleteMeasurement(String uid, String measurementId) async {
+    await _measurementsRef(uid).doc(measurementId).delete();
   }
 
   // Update Measurement
-  Future<void> updateMeasurement(MeasurementLog log) async {
+  Future<void> updateMeasurement(String uid, MeasurementLog log) async {
     if (log.id.isEmpty) return; // Should not happen for existing logs
-    await _measurementsRef.doc(log.id).set(log);
+    await _measurementsRef(uid).doc(log.id).set(log);
   }
 }
 
 // Providers
 final progressServiceProvider = Provider<ProgressService>((ref) {
-  final user = ref.watch(authRepositoryProvider).currentUser;
-  if (user == null) throw Exception('User not authenticated');
-  return ProgressService(FirebaseFirestore.instance, user.uid);
+  return ProgressService(FirebaseFirestore.instance);
 });
 
-final measurementHistoryProvider = StreamProvider<List<MeasurementLog>>((ref) {
+// Reactive Provider that watches Auth State
+final userMeasurementsProvider = StreamProvider.autoDispose<List<MeasurementLog>>((ref) {
+  final user = ref.watch(authRepositoryProvider).currentUser;
+  if (user == null) {
+    return const Stream.empty();
+  }
   final service = ref.watch(progressServiceProvider);
-  return service.getHistory();
+  return service.getHistory(user.uid);
 });
