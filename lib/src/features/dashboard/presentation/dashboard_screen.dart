@@ -1,27 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../authentication/data/auth_repository.dart';
 import '../../profile/data/user_repository.dart';
-import '../../profile/domain/user_model.dart';
+
 import '../../onboarding/logic/elena_brain.dart';
 import 'widgets/fasting_card.dart';
 import 'widgets/protocol_selector.dart'; // Import ProtocolSelector
 import '../../fasting/presentation/fasting_controller.dart'; // Import FastingController
 
-import '../../progress/presentation/progress_screen.dart';
 
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
-import '../../authentication/data/auth_repository.dart';
-import '../../profile/data/user_repository.dart';
-import '../../profile/domain/user_model.dart';
-import '../../onboarding/logic/elena_brain.dart';
-import 'widgets/fasting_card.dart';
-import 'widgets/protocol_selector.dart';
-import '../../fasting/presentation/fasting_controller.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -42,10 +30,10 @@ class DashboardScreen extends ConsumerWidget {
           return const Center(child: Text('Perfil no encontrado.'));
         }
         
-        final recommendation = ElenaBrain.generatePlan(user); // Keep for reference if needed
         final healthPlan = ElenaBrain.generateHealthPlan(user);
 
         return SingleChildScrollView(
+          key: ValueKey('dashboard-${user.uid}'), // Force rebuild on user switch
           padding: const EdgeInsets.all(16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
