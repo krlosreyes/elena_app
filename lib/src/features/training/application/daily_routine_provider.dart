@@ -11,25 +11,36 @@ part 'daily_routine_provider.g.dart';
 class DailyRoutine extends _$DailyRoutine {
   @override
   Future<List<InteractiveExercise>> build() async {
+    // 1. Listen to Selected Day (1=Mon, 7=Sun)
     final selectedDay = ref.watch(selectedDayProvider);
-    final todayIndex = DateTime.now().weekday;
-
-    // Only show routine if selected day is today
-    if (selectedDay != todayIndex) {
-      return []; 
-    }
-
-    // Get the planned workout for today
-    final plannedWorkout = ref.watch(todayWorkoutProvider);
     
-    // If no plan or not strength, return empty (Nuclear Reset: No Legacy Fallback)
-    if (plannedWorkout == null || plannedWorkout.type != WorkoutType.strength) {
+    // 2. Listen to Weekly Plan (generated based on Profile)
+    final weeklyPlan = ref.watch(weeklyPlanProvider);
+
+    if (weeklyPlan.isEmpty) return [];
+
+    // 3. Find the workout for the selected day
+    // We use a safe lookup. If not found, return empty (Rest day or error).
+    final dailyWorkout = weeklyPlan.firstWhere(
+      (w) => w.dayIndex == selectedDay,
+      orElse: () => DailyWorkout(
+        dayIndex: selectedDay, 
+        type: WorkoutType.rest, 
+        durationMinutes: 0, 
+        description: 'Rest', 
+        details: '', 
+        exercises: [],
+      ),
+    );
+
+    // 4. Ensure it's a Strength workout
+    if (dailyWorkout.type != WorkoutType.strength) {
       return [];
     }
 
-    // Dynamic Routine Construction
-    if (plannedWorkout.exercises.isNotEmpty) {
-      return plannedWorkout.exercises.map((e) {
+    // 5. Map to Interactive Mode
+    if (dailyWorkout.exercises.isNotEmpty) {
+      return dailyWorkout.exercises.map((e) {
         return InteractiveExercise(
           id: e.id,
           name: e.name,
@@ -44,7 +55,6 @@ class DailyRoutine extends _$DailyRoutine {
       }).toList();
     }
 
-    // Fallback? NO. Return empty if generation failed.
     return [];
   }
 

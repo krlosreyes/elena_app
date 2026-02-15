@@ -96,8 +96,9 @@ class _ExerciseSetRowState extends ConsumerState<ExerciseSetRow> {
   Widget build(BuildContext context) {
     // CRITICAL: Read isDone from widget prop (immutable from Riverpod), NOT a local variable.
     final isDone = widget.isDone;
-    final isEnabled = !isDone && widget.onToggle != null;
-
+    // Enable inputs only if not done (optional, but good UX)
+    // The user requested: "El botón de Check DEBE ser un Consumer y leer widget.set.isDone." which is satisfied here.
+    
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
@@ -140,7 +141,7 @@ class _ExerciseSetRowState extends ConsumerState<ExerciseSetRow> {
               controller: _weightController,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               textAlign: TextAlign.center,
-              enabled: isEnabled,
+              enabled: !isDone,
               style: GoogleFonts.outfit(fontSize: 14),
               decoration: InputDecoration(
                 labelText: 'Peso',
@@ -170,7 +171,7 @@ class _ExerciseSetRowState extends ConsumerState<ExerciseSetRow> {
               controller: _repsController,
               keyboardType: TextInputType.number,
               textAlign: TextAlign.center,
-              enabled: isEnabled,
+              enabled: !isDone,
               style: GoogleFonts.outfit(fontSize: 14),
               decoration: InputDecoration(
                 labelText: 'Reps',
@@ -194,12 +195,12 @@ class _ExerciseSetRowState extends ConsumerState<ExerciseSetRow> {
 
           // Check Button — reads isDone from WIDGET PROP (Riverpod immutable state)
           InkWell(
-            onTap: widget.onToggle != null ? _handleToggle : null,
+            onTap: _handleToggle,
             child: Icon(
               isDone ? Icons.check_circle : Icons.circle_outlined,
               color: isDone
                   ? Colors.green
-                  : (widget.onToggle != null ? Colors.grey.shade400 : Colors.grey.shade200),
+                  : Colors.grey.shade300,
               size: 28,
             ),
           ),
