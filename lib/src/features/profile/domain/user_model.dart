@@ -42,6 +42,7 @@ class UserModel with _$UserModel {
     @Default([]) List<String> physicalLimitations,
     required SnackingHabit snackingHabit,
     required DietaryPreference dietaryPreference,
+    @Default(false) bool hasDumbbells, // <--- New Equipment Field
 
     // 4. Cronobiología (Guardado como String 'HH:mm')
     required String wakeUpTime,

@@ -32,6 +32,7 @@ _$UserModelImpl _$$UserModelImplFromJson(Map<String, dynamic> json) =>
       snackingHabit: $enumDecode(_$SnackingHabitEnumMap, json['snackingHabit']),
       dietaryPreference:
           $enumDecode(_$DietaryPreferenceEnumMap, json['dietaryPreference']),
+      hasDumbbells: json['hasDumbbells'] as bool? ?? false,
       wakeUpTime: json['wakeUpTime'] as String,
       bedTime: json['bedTime'] as String,
       usualFirstMealTime: json['usualFirstMealTime'] as String,
@@ -75,6 +76,7 @@ Map<String, dynamic> _$$UserModelImplToJson(_$UserModelImpl instance) =>
       'snackingHabit': _$SnackingHabitEnumMap[instance.snackingHabit]!,
       'dietaryPreference':
           _$DietaryPreferenceEnumMap[instance.dietaryPreference]!,
+      'hasDumbbells': instance.hasDumbbells,
       'wakeUpTime': instance.wakeUpTime,
       'bedTime': instance.bedTime,
       'usualFirstMealTime': instance.usualFirstMealTime,

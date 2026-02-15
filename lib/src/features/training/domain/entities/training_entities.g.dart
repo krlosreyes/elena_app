@@ -54,6 +54,26 @@ Map<String, dynamic> _$$ExerciseSetImplToJson(_$ExerciseSetImpl instance) =>
       'rir': instance.rir,
     };
 
+_$ExerciseImpl _$$ExerciseImplFromJson(Map<String, dynamic> json) =>
+    _$ExerciseImpl(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      sets: (json['sets'] as num).toInt(),
+      targetReps: json['targetReps'] as String,
+      rir: (json['rir'] as num).toInt(),
+      restSeconds: (json['restSeconds'] as num).toInt(),
+    );
+
+Map<String, dynamic> _$$ExerciseImplToJson(_$ExerciseImpl instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'name': instance.name,
+      'sets': instance.sets,
+      'targetReps': instance.targetReps,
+      'rir': instance.rir,
+      'restSeconds': instance.restSeconds,
+    };
+
 _$WeeklyTrainingStatsImpl _$$WeeklyTrainingStatsImplFromJson(
         Map<String, dynamic> json) =>
     _$WeeklyTrainingStatsImpl(

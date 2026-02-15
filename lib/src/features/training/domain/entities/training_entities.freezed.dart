@@ -461,6 +461,249 @@ abstract class _ExerciseSet implements ExerciseSet {
       throw _privateConstructorUsedError;
 }
 
+RoutineExercise _$RoutineExerciseFromJson(Map<String, dynamic> json) {
+  return _Exercise.fromJson(json);
+}
+
+/// @nodoc
+mixin _$RoutineExercise {
+  String get id => throw _privateConstructorUsedError;
+  String get name => throw _privateConstructorUsedError;
+  int get sets => throw _privateConstructorUsedError;
+  String get targetReps => throw _privateConstructorUsedError;
+  int get rir => throw _privateConstructorUsedError;
+  int get restSeconds => throw _privateConstructorUsedError;
+
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  $RoutineExerciseCopyWith<RoutineExercise> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $RoutineExerciseCopyWith<$Res> {
+  factory $RoutineExerciseCopyWith(
+          RoutineExercise value, $Res Function(RoutineExercise) then) =
+      _$RoutineExerciseCopyWithImpl<$Res, RoutineExercise>;
+  @useResult
+  $Res call(
+      {String id,
+      String name,
+      int sets,
+      String targetReps,
+      int rir,
+      int restSeconds});
+}
+
+/// @nodoc
+class _$RoutineExerciseCopyWithImpl<$Res, $Val extends RoutineExercise>
+    implements $RoutineExerciseCopyWith<$Res> {
+  _$RoutineExerciseCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = null,
+    Object? name = null,
+    Object? sets = null,
+    Object? targetReps = null,
+    Object? rir = null,
+    Object? restSeconds = null,
+  }) {
+    return _then(_value.copyWith(
+      id: null == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      name: null == name
+          ? _value.name
+          : name // ignore: cast_nullable_to_non_nullable
+              as String,
+      sets: null == sets
+          ? _value.sets
+          : sets // ignore: cast_nullable_to_non_nullable
+              as int,
+      targetReps: null == targetReps
+          ? _value.targetReps
+          : targetReps // ignore: cast_nullable_to_non_nullable
+              as String,
+      rir: null == rir
+          ? _value.rir
+          : rir // ignore: cast_nullable_to_non_nullable
+              as int,
+      restSeconds: null == restSeconds
+          ? _value.restSeconds
+          : restSeconds // ignore: cast_nullable_to_non_nullable
+              as int,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$ExerciseImplCopyWith<$Res>
+    implements $RoutineExerciseCopyWith<$Res> {
+  factory _$$ExerciseImplCopyWith(
+          _$ExerciseImpl value, $Res Function(_$ExerciseImpl) then) =
+      __$$ExerciseImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call(
+      {String id,
+      String name,
+      int sets,
+      String targetReps,
+      int rir,
+      int restSeconds});
+}
+
+/// @nodoc
+class __$$ExerciseImplCopyWithImpl<$Res>
+    extends _$RoutineExerciseCopyWithImpl<$Res, _$ExerciseImpl>
+    implements _$$ExerciseImplCopyWith<$Res> {
+  __$$ExerciseImplCopyWithImpl(
+      _$ExerciseImpl _value, $Res Function(_$ExerciseImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = null,
+    Object? name = null,
+    Object? sets = null,
+    Object? targetReps = null,
+    Object? rir = null,
+    Object? restSeconds = null,
+  }) {
+    return _then(_$ExerciseImpl(
+      id: null == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      name: null == name
+          ? _value.name
+          : name // ignore: cast_nullable_to_non_nullable
+              as String,
+      sets: null == sets
+          ? _value.sets
+          : sets // ignore: cast_nullable_to_non_nullable
+              as int,
+      targetReps: null == targetReps
+          ? _value.targetReps
+          : targetReps // ignore: cast_nullable_to_non_nullable
+              as String,
+      rir: null == rir
+          ? _value.rir
+          : rir // ignore: cast_nullable_to_non_nullable
+              as int,
+      restSeconds: null == restSeconds
+          ? _value.restSeconds
+          : restSeconds // ignore: cast_nullable_to_non_nullable
+              as int,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$ExerciseImpl implements _Exercise {
+  const _$ExerciseImpl(
+      {required this.id,
+      required this.name,
+      required this.sets,
+      required this.targetReps,
+      required this.rir,
+      required this.restSeconds});
+
+  factory _$ExerciseImpl.fromJson(Map<String, dynamic> json) =>
+      _$$ExerciseImplFromJson(json);
+
+  @override
+  final String id;
+  @override
+  final String name;
+  @override
+  final int sets;
+  @override
+  final String targetReps;
+  @override
+  final int rir;
+  @override
+  final int restSeconds;
+
+  @override
+  String toString() {
+    return 'RoutineExercise(id: $id, name: $name, sets: $sets, targetReps: $targetReps, rir: $rir, restSeconds: $restSeconds)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$ExerciseImpl &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.name, name) || other.name == name) &&
+            (identical(other.sets, sets) || other.sets == sets) &&
+            (identical(other.targetReps, targetReps) ||
+                other.targetReps == targetReps) &&
+            (identical(other.rir, rir) || other.rir == rir) &&
+            (identical(other.restSeconds, restSeconds) ||
+                other.restSeconds == restSeconds));
+  }
+
+  @JsonKey(ignore: true)
+  @override
+  int get hashCode =>
+      Object.hash(runtimeType, id, name, sets, targetReps, rir, restSeconds);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$ExerciseImplCopyWith<_$ExerciseImpl> get copyWith =>
+      __$$ExerciseImplCopyWithImpl<_$ExerciseImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$ExerciseImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _Exercise implements RoutineExercise {
+  const factory _Exercise(
+      {required final String id,
+      required final String name,
+      required final int sets,
+      required final String targetReps,
+      required final int rir,
+      required final int restSeconds}) = _$ExerciseImpl;
+
+  factory _Exercise.fromJson(Map<String, dynamic> json) =
+      _$ExerciseImpl.fromJson;
+
+  @override
+  String get id;
+  @override
+  String get name;
+  @override
+  int get sets;
+  @override
+  String get targetReps;
+  @override
+  int get rir;
+  @override
+  int get restSeconds;
+  @override
+  @JsonKey(ignore: true)
+  _$$ExerciseImplCopyWith<_$ExerciseImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
 WeeklyTrainingStats _$WeeklyTrainingStatsFromJson(Map<String, dynamic> json) {
   return _WeeklyTrainingStats.fromJson(json);
 }

@@ -34,156 +34,54 @@ class DailyRoutine extends _$DailyRoutine {
     // Determine routine based on description coming from WeeklyPlanGenerator
     final desc = plannedWorkout.description;
 
+    // Use exercises from the plan if available (Equipment-based logic)
+    if (plannedWorkout.exercises.isNotEmpty) {
+      return plannedWorkout.exercises.map((e) {
+        return InteractiveExercise(
+          id: e.id,
+          name: e.name,
+          targetRir: e.rir,
+          sets: List.generate(e.sets, (index) => InteractiveSet(
+            setIndex: index + 1,
+            targetReps: e.targetReps,
+            // Default weight based on equipment? 
+            // If bodyweight, 0. If dumbbells, maybe 5-10kg or user history. 
+            // For now default to 0 for bodyweight exercises (usually) or small weight
+            weight: 0.0, 
+            isDone: false,
+          )),
+        );
+      }).toList();
+    }
+
+    // Legacy fallback (shouldn't be reached if generator works)
     if (desc.contains('FullBody A')) return _routineA();
     if (desc.contains('FullBody B')) return _routineB();
     if (desc.contains('FullBody C')) return _routineC();
     if (desc.contains('Volumen')) return _hypertrophyRoutine();
 
-    // Default fallback
     return _routineA();
   }
 
+  // Legacy Routines (kept as fallback for old plans or errors)
   List<InteractiveExercise> _routineA() {
     return [
       const InteractiveExercise(
         id: 'sq_goblet',
-        name: 'Sentadilla Goblet',
+        name: 'Sentadilla Goblet (Legacy)',
         targetRir: 2,
         sets: [
-          InteractiveSet(setIndex: 1, targetReps: '10-12', weight: 5.0),
-          InteractiveSet(setIndex: 2, targetReps: '10-12', weight: 5.0),
-          InteractiveSet(setIndex: 3, targetReps: '10-12', weight: 5.0),
-        ],
-      ),
-      const InteractiveExercise(
-        id: 'pushups',
-        name: 'Flexiones (Push-ups)',
-        targetRir: 2,
-        sets: [
-          InteractiveSet(setIndex: 1, targetReps: 'Al fallo', weight: 0.0),
-          InteractiveSet(setIndex: 2, targetReps: 'Al fallo', weight: 0.0),
-          InteractiveSet(setIndex: 3, targetReps: 'Al fallo', weight: 0.0),
-        ],
-      ),
-      const InteractiveExercise(
-        id: 'rows_db',
-        name: 'Remo con Mancuernas',
-        targetRir: 2,
-        sets: [
-          InteractiveSet(setIndex: 1, targetReps: '10-12', weight: 5.0),
-          InteractiveSet(setIndex: 2, targetReps: '10-12', weight: 5.0),
-          InteractiveSet(setIndex: 3, targetReps: '10-12', weight: 5.0),
-        ],
-      ),
+           InteractiveSet(setIndex: 1, targetReps: '10-12', weight: 5.0),
+           InteractiveSet(setIndex: 2, targetReps: '10-12', weight: 5.0),
+           InteractiveSet(setIndex: 3, targetReps: '10-12', weight: 5.0),
+        ]
+      )
     ];
   }
-
-  List<InteractiveExercise> _routineB() {
-    return [
-      const InteractiveExercise(
-        id: 'lunges',
-        name: 'Zancadas (Lunges)',
-        targetRir: 2,
-        sets: [
-          InteractiveSet(setIndex: 1, targetReps: '10 cada lado', weight: 5.0),
-          InteractiveSet(setIndex: 2, targetReps: '10 cada lado', weight: 5.0),
-          InteractiveSet(setIndex: 3, targetReps: '10 cada lado', weight: 5.0),
-        ],
-      ),
-      const InteractiveExercise(
-        id: 'oh_press',
-        name: 'Press Militar Mancuernas',
-        targetRir: 2,
-        sets: [
-          InteractiveSet(setIndex: 1, targetReps: '8-10', weight: 5.0),
-          InteractiveSet(setIndex: 2, targetReps: '8-10', weight: 5.0),
-          InteractiveSet(setIndex: 3, targetReps: '8-10', weight: 5.0),
-        ],
-      ),
-      const InteractiveExercise(
-        id: 'lat_pulldown',
-        name: 'Jalón al Pecho (Bandas/Máquina)',
-        targetRir: 2,
-        sets: [
-          InteractiveSet(setIndex: 1, targetReps: '12-15', weight: 15.0),
-          InteractiveSet(setIndex: 2, targetReps: '12-15', weight: 15.0),
-          InteractiveSet(setIndex: 3, targetReps: '12-15', weight: 15.0),
-        ],
-      ),
-    ];
-  }
-
-  List<InteractiveExercise> _routineC() {
-    return [
-      const InteractiveExercise(
-        id: 'rdl',
-        name: 'Peso Muerto Rumano',
-        targetRir: 2,
-        sets: [
-          InteractiveSet(setIndex: 1, targetReps: '10-12', weight: 20.0),
-          InteractiveSet(setIndex: 2, targetReps: '10-12', weight: 20.0),
-          InteractiveSet(setIndex: 3, targetReps: '10-12', weight: 20.0),
-        ],
-      ),
-      const InteractiveExercise(
-        id: 'bench_press',
-        name: 'Press de Banca (Mancuernas/Barra)',
-        targetRir: 2,
-        sets: [
-          InteractiveSet(setIndex: 1, targetReps: '8-10', weight: 10.0),
-          InteractiveSet(setIndex: 2, targetReps: '8-10', weight: 10.0),
-          InteractiveSet(setIndex: 3, targetReps: '8-10', weight: 10.0),
-        ],
-      ),
-      const InteractiveExercise(
-        id: 'facepulls',
-        name: 'Face Pulls',
-        targetRir: 3,
-        sets: [
-          InteractiveSet(setIndex: 1, targetReps: '15-20', weight: 5.0),
-          InteractiveSet(setIndex: 2, targetReps: '15-20', weight: 5.0),
-          InteractiveSet(setIndex: 3, targetReps: '15-20', weight: 5.0),
-        ],
-      ),
-    ];
-  }
-
-  List<InteractiveExercise> _hypertrophyRoutine() {
-    return [
-      const InteractiveExercise(
-        id: 'squat_heavy',
-        name: 'Sentadilla Trasera',
-        targetRir: 2,
-        sets: [
-          InteractiveSet(setIndex: 1, targetReps: '6-8', weight: 40.0),
-          InteractiveSet(setIndex: 2, targetReps: '6-8', weight: 40.0),
-          InteractiveSet(setIndex: 3, targetReps: '6-8', weight: 40.0),
-          InteractiveSet(setIndex: 4, targetReps: '6-8', weight: 40.0),
-        ],
-      ),
-      const InteractiveExercise(
-        id: 'bench_heavy',
-        name: 'Press Banca',
-        targetRir: 2,
-        sets: [
-          InteractiveSet(setIndex: 1, targetReps: '6-8', weight: 30.0),
-          InteractiveSet(setIndex: 2, targetReps: '6-8', weight: 30.0),
-          InteractiveSet(setIndex: 3, targetReps: '6-8', weight: 30.0),
-          InteractiveSet(setIndex: 4, targetReps: '6-8', weight: 30.0),
-        ],
-      ),
-      const InteractiveExercise(
-        id: 'pullups_weighted',
-        name: 'Dominadas Lastradas',
-        targetRir: 1,
-        sets: [
-          InteractiveSet(setIndex: 1, targetReps: 'Al fallo', weight: 0.0),
-          InteractiveSet(setIndex: 2, targetReps: 'Al fallo', weight: 0.0),
-          InteractiveSet(setIndex: 3, targetReps: 'Al fallo', weight: 0.0),
-        ],
-      ),
-    ];
-  }
+  
+  List<InteractiveExercise> _routineB() => []; // Placeholder
+  List<InteractiveExercise> _routineC() => []; // Placeholder
+  List<InteractiveExercise> _hypertrophyRoutine() => []; // Placeholder
 
   /// NUCLEAR REWRITE: Explicit list comprehensions for guaranteed immutability.
   /// This forces Riverpod to detect changes at BOTH list levels.

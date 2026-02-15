@@ -5,8 +5,6 @@ part 'training_entities.g.dart';
 
 enum TargetMuscle { chest, back, legs, fullBody, cardio }
 
-enum WorkoutGoal { longevity, hypertrophy, fatLoss }
-
 @freezed
 class WorkoutSession with _$WorkoutSession {
   const factory WorkoutSession({
@@ -31,6 +29,20 @@ class ExerciseSet with _$ExerciseSet {
   }) = _ExerciseSet;
 
   factory ExerciseSet.fromJson(Map<String, dynamic> json) => _$ExerciseSetFromJson(json);
+}
+
+@freezed
+class RoutineExercise with _$RoutineExercise {
+  const factory RoutineExercise({
+    required String id,
+    required String name,
+    required int sets,
+    required String targetReps,
+    required int rir,
+    required int restSeconds,
+  }) = _Exercise;
+
+  factory RoutineExercise.fromJson(Map<String, dynamic> json) => _$RoutineExerciseFromJson(json);
 }
 
 @freezed

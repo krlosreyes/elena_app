@@ -6,7 +6,7 @@ part of 'weekly_plan_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$weeklyPlanHash() => r'72f63d1e959ed2fcfa7cb3d25804c6d517849ff3';
+String _$weeklyPlanHash() => r'b322202b6b2f3bf16a60d19dfb9207c11ebfe399';
 
 /// See also [weeklyPlan].
 @ProviderFor(weeklyPlan)

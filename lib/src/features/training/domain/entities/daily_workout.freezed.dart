@@ -21,7 +21,9 @@ mixin _$DailyWorkout {
   WorkoutType get type => throw _privateConstructorUsedError;
   int get durationMinutes => throw _privateConstructorUsedError;
   String get description => throw _privateConstructorUsedError;
-  String get details => throw _privateConstructorUsedError;
+  String get details =>
+      throw _privateConstructorUsedError; // E.g., "Zona 2" or "FullBody A"
+  List<RoutineExercise> get exercises => throw _privateConstructorUsedError;
 
   @JsonKey(ignore: true)
   $DailyWorkoutCopyWith<DailyWorkout> get copyWith =>
@@ -39,7 +41,8 @@ abstract class $DailyWorkoutCopyWith<$Res> {
       WorkoutType type,
       int durationMinutes,
       String description,
-      String details});
+      String details,
+      List<RoutineExercise> exercises});
 }
 
 /// @nodoc
@@ -60,6 +63,7 @@ class _$DailyWorkoutCopyWithImpl<$Res, $Val extends DailyWorkout>
     Object? durationMinutes = null,
     Object? description = null,
     Object? details = null,
+    Object? exercises = null,
   }) {
     return _then(_value.copyWith(
       dayIndex: null == dayIndex
@@ -82,6 +86,10 @@ class _$DailyWorkoutCopyWithImpl<$Res, $Val extends DailyWorkout>
           ? _value.details
           : details // ignore: cast_nullable_to_non_nullable
               as String,
+      exercises: null == exercises
+          ? _value.exercises
+          : exercises // ignore: cast_nullable_to_non_nullable
+              as List<RoutineExercise>,
     ) as $Val);
   }
 }
@@ -99,7 +107,8 @@ abstract class _$$DailyWorkoutImplCopyWith<$Res>
       WorkoutType type,
       int durationMinutes,
       String description,
-      String details});
+      String details,
+      List<RoutineExercise> exercises});
 }
 
 /// @nodoc
@@ -118,6 +127,7 @@ class __$$DailyWorkoutImplCopyWithImpl<$Res>
     Object? durationMinutes = null,
     Object? description = null,
     Object? details = null,
+    Object? exercises = null,
   }) {
     return _then(_$DailyWorkoutImpl(
       dayIndex: null == dayIndex
@@ -140,6 +150,10 @@ class __$$DailyWorkoutImplCopyWithImpl<$Res>
           ? _value.details
           : details // ignore: cast_nullable_to_non_nullable
               as String,
+      exercises: null == exercises
+          ? _value._exercises
+          : exercises // ignore: cast_nullable_to_non_nullable
+              as List<RoutineExercise>,
     ));
   }
 }
@@ -152,7 +166,9 @@ class _$DailyWorkoutImpl implements _DailyWorkout {
       required this.type,
       required this.durationMinutes,
       required this.description,
-      required this.details});
+      required this.details,
+      final List<RoutineExercise> exercises = const []})
+      : _exercises = exercises;
 
   @override
   final int dayIndex;
@@ -165,10 +181,20 @@ class _$DailyWorkoutImpl implements _DailyWorkout {
   final String description;
   @override
   final String details;
+// E.g., "Zona 2" or "FullBody A"
+  final List<RoutineExercise> _exercises;
+// E.g., "Zona 2" or "FullBody A"
+  @override
+  @JsonKey()
+  List<RoutineExercise> get exercises {
+    if (_exercises is EqualUnmodifiableListView) return _exercises;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_exercises);
+  }
 
   @override
   String toString() {
-    return 'DailyWorkout(dayIndex: $dayIndex, type: $type, durationMinutes: $durationMinutes, description: $description, details: $details)';
+    return 'DailyWorkout(dayIndex: $dayIndex, type: $type, durationMinutes: $durationMinutes, description: $description, details: $details, exercises: $exercises)';
   }
 
   @override
@@ -183,12 +209,14 @@ class _$DailyWorkoutImpl implements _DailyWorkout {
                 other.durationMinutes == durationMinutes) &&
             (identical(other.description, description) ||
                 other.description == description) &&
-            (identical(other.details, details) || other.details == details));
+            (identical(other.details, details) || other.details == details) &&
+            const DeepCollectionEquality()
+                .equals(other._exercises, _exercises));
   }
 
   @override
-  int get hashCode => Object.hash(
-      runtimeType, dayIndex, type, durationMinutes, description, details);
+  int get hashCode => Object.hash(runtimeType, dayIndex, type, durationMinutes,
+      description, details, const DeepCollectionEquality().hash(_exercises));
 
   @JsonKey(ignore: true)
   @override
@@ -203,7 +231,8 @@ abstract class _DailyWorkout implements DailyWorkout {
       required final WorkoutType type,
       required final int durationMinutes,
       required final String description,
-      required final String details}) = _$DailyWorkoutImpl;
+      required final String details,
+      final List<RoutineExercise> exercises}) = _$DailyWorkoutImpl;
 
   @override
   int get dayIndex;
@@ -215,6 +244,8 @@ abstract class _DailyWorkout implements DailyWorkout {
   String get description;
   @override
   String get details;
+  @override // E.g., "Zona 2" or "FullBody A"
+  List<RoutineExercise> get exercises;
   @override
   @JsonKey(ignore: true)
   _$$DailyWorkoutImplCopyWith<_$DailyWorkoutImpl> get copyWith =>

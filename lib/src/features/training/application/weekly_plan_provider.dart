@@ -15,7 +15,7 @@ List<DailyWorkout> weeklyPlan(WeeklyPlanRef ref) {
   final user = authState.value;
 
   if (user == null) {
-    return WeeklyPlanGenerator.generate(WorkoutGoal.fatLoss, age: 30);
+    return WeeklyPlanGenerator.generate(WorkoutGoal.fatLoss, age: 30, hasDumbbells: false);
   }
 
   // Watch the full profile
@@ -27,18 +27,21 @@ List<DailyWorkout> weeklyPlan(WeeklyPlanRef ref) {
   
   return userProfileAsync.when(
     data: (profile) {
-      if (profile == null) return WeeklyPlanGenerator.generate(WorkoutGoal.fatLoss, age: 30);
+      if (profile == null) return WeeklyPlanGenerator.generate(WorkoutGoal.fatLoss, age: 30, hasDumbbells: false);
       
       // Map HealthGoal to WorkoutGoal if needed, or use directly if they match
       // HealthGoal: fat_loss, muscle_gain, metabolic_health
       WorkoutGoal goal = WorkoutGoal.fatLoss;
-      if (profile.healthGoal == HealthGoal.muscle_gain) goal = WorkoutGoal.muscleGain;
       if (profile.healthGoal == HealthGoal.metabolic_health) goal = WorkoutGoal.recomp;
 
-      return WeeklyPlanGenerator.generate(goal, age: profile.age);
+      return WeeklyPlanGenerator.generate(
+        goal, 
+        age: profile.age, 
+        hasDumbbells: profile.hasDumbbells // <--- Passing equipment
+      );
     },
     loading: () => [],
-    error: (_, __) => WeeklyPlanGenerator.generate(WorkoutGoal.fatLoss, age: 30),
+    error: (_, __) => WeeklyPlanGenerator.generate(WorkoutGoal.fatLoss, age: 30, hasDumbbells: false), // Fallback
   );
 }
 
