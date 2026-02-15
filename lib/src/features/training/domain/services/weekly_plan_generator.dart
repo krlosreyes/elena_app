@@ -19,21 +19,19 @@ class WeeklyPlanGenerator {
     // Sort workout days (SAFE: Create mutable copy first)
     final sortedWorkoutDays = List<int>.from(workoutDays)..sort();
 
-    int strengthSessionCount = 0;
+    int cardioSessionCount = 0;
 
     // Generate for all 7 days
     for (int day = 1; day <= 7; day++) {
       if (sortedWorkoutDays.contains(day)) {
-        // It's a strength day
+        // ... (Strength logic remains same)
         String routineType;
-        // Cycle through A, B, C based on session count
         if (strengthSessionCount % 3 == 0) routineType = 'A';
         else if (strengthSessionCount % 3 == 1) routineType = 'B';
         else routineType = 'C';
 
         strengthSessionCount++;
 
-        // Determine goal-specific nuances (RIR, Volume name)
         String description = "FullBody $routineType";
         String rir = "RIR 2";
         
@@ -47,25 +45,24 @@ class WeeklyPlanGenerator {
         plan.add(_strengthDay(day, description, rir, hasDumbbells, routineType));
 
       } else {
-        // It's a non-strength day. Check if it should be cardio or rest.
-        // For simplicity in this iteration:
-        // FatLoss -> Cardio on non-strength days (except 1 full rest)
-        // Others -> Active Recovery or Rest
-        
+        // Non-strength day: Cardio or Rest
         bool isRest = false;
-        // Simple logic: Ensure at least 1 full rest day if possible, preferably Sunday (7)
-        // If user trains 6 days, day 7 is rest.
+        // Logic: Day 7 is Rest unless it's a selected workout day. 
+        // Also if user has > 5 workout days, we might force rest? 
+        // For now respecting the "Sunday Rest" rule if not in preference.
         if (day == 7 && !sortedWorkoutDays.contains(7)) isRest = true; 
         
         if (isRest) {
            plan.add(_restDay(day));
         } else {
-           // Cardio / Active Recovery
-           if (goal == WorkoutGoal.fatLoss) {
-             plan.add(_cardioDay(day, 45, "Cardio LISS", zone2String));
-           } else {
-             plan.add(_cardioDay(day, 30, "Recuperación Activa", "Caminata o Yoga"));
-           }
+           // Progressive Cardio Logic
+           int duration = 30;
+           if (cardioSessionCount == 1) duration = 45;
+           if (cardioSessionCount >= 2) duration = 60;
+           
+           cardioSessionCount++;
+
+           plan.add(_cardioDay(day, duration, "Cardio LISS", zone2String));
         }
       }
     }
@@ -107,7 +104,16 @@ class WeeklyPlanGenerator {
       durationMinutes: mins,
       description: desc,
       details: details,
-      exercises: [],
+      exercises: [
+        RoutineExercise(
+          id: 'cardio_sess_$day',
+          name: '$desc ($mins min)',
+          sets: 1,
+          targetReps: '$mins min',
+          rir: 0,
+          restSeconds: 0,
+        ),
+      ],
     );
   }
 

@@ -45,10 +45,11 @@ class DailyRoutine extends _$DailyRoutine {
       },
     );
 
-    // 4. Ensure it's a Strength workout
-    if (dailyWorkout.type != WorkoutType.strength) {
-      debugPrint("ElenaApp Log: El workout del día $dayIndex no es de Fuerza (${dailyWorkout.type}).");
-      return [];
+    // 4. Ensure it's a Strength OR Cardio workout
+    // Allow Cardio to pass through so we can mark it as done
+    if (dailyWorkout.type == WorkoutType.rest) {
+       debugPrint("ElenaApp Log: Día de descanso (Day $dayIndex). Retornando lista vacía.");
+       return [];
     }
 
     // 5. Map to Interactive Mode
