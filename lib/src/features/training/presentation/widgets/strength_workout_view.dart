@@ -6,6 +6,7 @@ import '../../application/daily_routine_provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../application/workout_submit_controller.dart';
 import '../../domain/entities/training_entities.dart';
+import '../../domain/entities/interactive_routine.dart';
 import '../widgets/exercise_set_row.dart';
 import '../widgets/rir_logging_slider.dart';
 
@@ -32,40 +33,40 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
     widget.mode == WorkoutDisplayMode.readOnly || 
     widget.mode == WorkoutDisplayMode.completed;
 
-  // Fallback Mock Data
-  final List<Map<String, dynamic>> _mockExercises = [
-    {
-      'id': '1',
-      'name': 'Sentadilla con Barra',
-      'sets': [
-        {'setIndex': 1, 'weight': 60.0, 'reps': 12, 'isDone': false},
-        {'setIndex': 2, 'weight': 60.0, 'reps': 12, 'isDone': false},
-        {'setIndex': 3, 'weight': 60.0, 'reps': 12, 'isDone': false},
-      ]
-    },
-    {
-      'id': '2',
-      'name': 'Press Militar',
-      'sets': [
-        {'setIndex': 1, 'weight': 30.0, 'reps': 10, 'isDone': false},
-        {'setIndex': 2, 'weight': 30.0, 'reps': 10, 'isDone': false},
-      ]
-    },
-    {
-      'id': '3',
-      'name': 'Peso Muerto Rumano',
-      'sets': [
-        {'setIndex': 1, 'weight': 80.0, 'reps': 10, 'isDone': false},
-        {'setIndex': 2, 'weight': 80.0, 'reps': 10, 'isDone': false},
-        {'setIndex': 3, 'weight': 80.0, 'reps': 10, 'isDone': false},
-      ]
-    },
+  // Fallback Mock Data using typed models
+  final List<InteractiveExercise> _mockExercises = const [
+    InteractiveExercise(
+      id: '1',
+      name: 'Sentadilla con Barra',
+      sets: [
+        InteractiveSet(setIndex: 1, weight: 60.0, reps: 12),
+        InteractiveSet(setIndex: 2, weight: 60.0, reps: 12),
+        InteractiveSet(setIndex: 3, weight: 60.0, reps: 12),
+      ],
+    ),
+    InteractiveExercise(
+      id: '2',
+      name: 'Press Militar',
+      sets: [
+        InteractiveSet(setIndex: 1, weight: 30.0, reps: 10),
+        InteractiveSet(setIndex: 2, weight: 30.0, reps: 10),
+      ],
+    ),
+    InteractiveExercise(
+      id: '3',
+      name: 'Peso Muerto Rumano',
+      sets: [
+        InteractiveSet(setIndex: 1, weight: 80.0, reps: 10),
+        InteractiveSet(setIndex: 2, weight: 80.0, reps: 10),
+        InteractiveSet(setIndex: 3, weight: 80.0, reps: 10),
+      ],
+    ),
   ];
 
   @override
   Widget build(BuildContext context) {
      final routineState = ref.watch(dailyRoutineProvider);
-     // Use mock if routine is empty (fallback for future/past days where provider might not be hydrated)
+     // Use mock if routine is empty (fallback for future/past days)
      final dailyExercises = routineState.isEmpty ? _mockExercises : routineState;
      
      final submitState = ref.watch(workoutSubmitControllerProvider);
@@ -92,7 +93,6 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
             itemCount: dailyExercises.length,
             itemBuilder: (context, index) {
               final exercise = dailyExercises[index];
-              final sets = exercise['sets'] as List<dynamic>;
 
               return Card(
                 margin: const EdgeInsets.only(bottom: 16),
@@ -103,7 +103,7 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        exercise['name'] as String,
+                        exercise.name,
                         style: GoogleFonts.outfit(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -111,22 +111,20 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
                       ),
                       const SizedBox(height: 12),
                       Column(
-                        children: sets.map((s) {
-                          final set = s as Map<String, dynamic>;
+                        children: exercise.sets.map((set) {
                           return ExerciseSetRow(
-                            setIndex: set['setIndex'] as int,
-                            targetReps: "8-12", // Mock or from data
-                            isDone: set['isDone'] as bool,
-                            initialWeight: (set['weight'] as num?)?.toDouble(),
-                            initialReps: set['reps'] as int?,
+                            setIndex: set.setIndex,
+                            targetReps: set.targetReps,
+                            isDone: set.isDone,
+                            initialWeight: set.weight,
+                            initialReps: set.reps,
                             onToggle: _isReadOnly ? null : (weight, reps) {
-                                // Only toggle if not using mock data (or handle mock toggle separately if needed)
                                 if (routineState.isNotEmpty) {
                                   ref.read(dailyRoutineProvider.notifier).toggleSet(
-                                    exercise['id'] as String,
-                                    set['setIndex'] as int,
+                                    exercise.id,
+                                    set.setIndex,
                                     weight,
-                                    reps
+                                    reps,
                                   );
                                 }
                               },

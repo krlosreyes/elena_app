@@ -2,6 +2,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:uuid/uuid.dart';
 import '../../authentication/data/auth_repository.dart';
 import '../domain/entities/workout_log.dart';
+import '../domain/entities/interactive_routine.dart';
 import '../data/repositories/training_repository.dart';
 import 'daily_routine_provider.dart';
 import 'calendar_state_provider.dart';
@@ -60,14 +61,19 @@ class WorkoutSubmitController extends _$WorkoutSubmitController {
       // Handle Strength Logic
       if (workoutType == 'Strength' || (workoutType == null && exercises.isNotEmpty)) {
          for (final exercise in exercises) {
-          final sets = exercise['sets'] as List<dynamic>;
-          final validSets = sets.where((s) => s['isDone'] == true).toList();
+          final validSets = exercise.sets.where((s) => s.isDone).toList();
 
           if (validSets.isNotEmpty) {
             completedExercises.add({
-              'exerciseId': exercise['id'],
-              'name': exercise['name'],
-              'sets': validSets,
+              'exerciseId': exercise.id,
+              'name': exercise.name,
+              'sets': validSets.map((s) => {
+                'setIndex': s.setIndex,
+                'weight': s.weight,
+                'reps': s.reps,
+                'isDone': s.isDone,
+                'targetReps': s.targetReps,
+              }).toList(),
             });
           }
         }
@@ -77,10 +83,7 @@ class WorkoutSubmitController extends _$WorkoutSubmitController {
         }
 
         // Estimate calories for Strength if not provided (~6 kcal/min)
-        // We calculate duration based on sets or generic if not provided
         if (finalCalories == 0) {
-           // Simple estimation: 3 mins per set? Or just use provided duration?
-           // If duration is 0, let's guess based on sets count * 3 mins
            int calculatedDuration = totalMinutes > 0 ? totalMinutes : completedExercises.fold(0, (sum, ex) => sum + (ex['sets'] as List).length * 3);
            finalCalories = calculatedDuration * 6;
            totalMinutes = calculatedDuration;
