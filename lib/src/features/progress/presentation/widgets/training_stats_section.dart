@@ -110,25 +110,32 @@ class _TrainingStatsSectionState extends ConsumerState<TrainingStatsSection> {
 
     List<BarChartGroupData> barGroups = [];
     final now = DateTime.now();
-    
-    // Find max value for normalization or scaling if needed (optional)
-    // fl_chart auto-scales but good to check.
 
     for (int i = 0; i < daysCount; i++) {
-       double value = 0;
+       double percentage = 0;
        
        if (range == StatsRange.year) {
+           // Year View: Average of the month's active workouts
            final monthDate = DateTime(now.year, now.month - (daysCount - 1 - i));
            final monthlyLogs = logs.where((l) => l.date.year == monthDate.year && l.date.month == monthDate.month);
-           value = monthlyLogs.fold(0, (sum, l) => sum + (l.durationMinutes ?? 0));
+           
+           if (monthlyLogs.isNotEmpty) {
+             final totalPct = monthlyLogs.fold(0.0, (sum, l) => sum + l.completionPercentage);
+             percentage = totalPct / monthlyLogs.length; // Average
+           }
        } else {
+          // Week/Month View: Sum of the day (capped at 100%)
           final date = DateTime(now.year, now.month, now.day).subtract(Duration(days: daysCount - 1 - i));
           final dayLogs = logs.where((l) => 
             l.date.year == date.year && 
             l.date.month == date.month && 
             l.date.day == date.day
           );
-          value = dayLogs.fold(0, (sum, l) => sum + (l.durationMinutes ?? 0));
+          
+          if (dayLogs.isNotEmpty) {
+            final totalPct = dayLogs.fold(0.0, (sum, l) => sum + l.completionPercentage);
+            percentage = totalPct.clamp(0.0, 100.0);
+          }
        }
 
        barGroups.add(
@@ -136,10 +143,15 @@ class _TrainingStatsSectionState extends ConsumerState<TrainingStatsSection> {
            x: i,
            barRods: [
              BarChartRodData(
-               toY: value,
-               color: (touchedIndex == i) ? AppTheme.primaryColor : Colors.grey.shade300,
+               toY: percentage,
+               color: _getSemaphoreColor(percentage),
                width: range == StatsRange.month ? 6 : 12,
                borderRadius: const BorderRadius.only(topLeft: Radius.circular(4), topRight: Radius.circular(4)),
+               backDrawRodData: BackgroundBarChartRodData(
+                 show: true,
+                 toY: 100, // Fixed max
+                 color: Colors.grey.shade100,
+               ),
              )
            ],
          )
@@ -148,11 +160,28 @@ class _TrainingStatsSectionState extends ConsumerState<TrainingStatsSection> {
 
     return BarChart(
       BarChartData(
+        minY: 0,
+        maxY: 100, // Fixed axis
+        alignment: BarChartAlignment.spaceEvenly,
         barGroups: barGroups,
         titlesData: FlTitlesData(
           show: true,
           rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
           topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 32,
+              interval: 25,
+              getTitlesWidget: (value, meta) {
+                if (value % 25 != 0) return const SizedBox.shrink();
+                return Text(
+                  '${value.toInt()}%',
+                  style: GoogleFonts.outfit(color: Colors.grey.shade400, fontSize: 10),
+                );
+              },
+            ) 
+          ),
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
@@ -173,7 +202,15 @@ class _TrainingStatsSectionState extends ConsumerState<TrainingStatsSection> {
             ),
           ),
         ),
-        gridData: const FlGridData(show: false),
+        gridData: FlGridData(
+           show: true,
+           drawVerticalLine: false,
+           horizontalInterval: 25,
+           getDrawingHorizontalLine: (value) => FlLine(
+             color: Colors.grey.shade100,
+             strokeWidth: 1,
+           ),
+        ),
         borderData: FlBorderData(show: false),
         barTouchData: BarTouchData(
           touchCallback: (FlTouchEvent event, barTouchResponse) {
@@ -186,9 +223,25 @@ class _TrainingStatsSectionState extends ConsumerState<TrainingStatsSection> {
                 });
              }
           },
+          touchTooltipData: BarTouchTooltipData(
+             getTooltipColor: (group) => Colors.black87, // Attempting modern API
+             getTooltipItem: (group, groupIndex, rod, rodIndex) {
+               return BarTooltipItem(
+                 '${rod.toY.toInt()}%',
+                 GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold),
+               );
+             },
+          ),
         ),
       ),
     );
+  }
+
+  Color _getSemaphoreColor(double percentage) {
+    if (percentage == 0) return Colors.grey.shade300;
+    if (percentage < 50) return Colors.red;
+    if (percentage < 80) return Colors.amber; // Better than yellow
+    return Colors.green;
   }
 
   Widget _buildDetails(List<WorkoutLog> logs, int index) {
