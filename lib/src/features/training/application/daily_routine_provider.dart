@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../domain/entities/interactive_routine.dart';
+import '../domain/entities/daily_workout.dart'; // Added missing import
 import '../domain/enums/workout_enums.dart';
 import 'selected_day_provider.dart';
 import 'weekly_plan_provider.dart';
