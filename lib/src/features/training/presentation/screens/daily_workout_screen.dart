@@ -35,19 +35,28 @@ class DailyWorkoutScreen extends ConsumerWidget {
         children: [
           _buildRecommendationCard(context, recommendation),
           const SizedBox(height: 24),
+          
+          // Weekly Calendar
+          _buildWeeklyCalendar(context),
+          const SizedBox(height: 24),
+
+          // Exercise List
+          Text(
+            "Tu Circuito de Hoy",
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16),
+          _buildExerciseList(context),
+          const SizedBox(height: 24),
+
+          // RIR Slider
           Text(
             "Registro de Esfuerzo",
             style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
-          // Demo of the slider (in a real app, this would be part of a logging form)
           Consumer(
             builder: (context, ref, _) {
-              // Local state for demo purposes using a StateProvider if needed, 
-              // or just a simple StatefulBuilder would suffice for standalone widget demo.
-              // But prompts asked for a Stateless ConsumerWidget screen. 
-              // Let's us a simple StatefulWidget wrapper for the slider demo or just render it static.
-              // To make it interactive without full implementation, I'll use a StatefulBuilder.
               return StatefulBuilder(
                 builder: (context, setState) {
                   int rirValue = 2; // Default
@@ -61,8 +70,140 @@ class DailyWorkoutScreen extends ConsumerWidget {
               );
             },
           ),
+          const SizedBox(height: 32),
+
+          // CTA Button
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Entrenamiento registrado con éxito")),
+                );
+              },
+              style: FilledButton.styleFrom(
+                backgroundColor: AppTheme.brandBlue,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: Text(
+                "Terminar y Guardar Entrenamiento",
+                style: GoogleFonts.outfit(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 40),
         ],
       ),
+    );
+  }
+
+  Widget _buildWeeklyCalendar(BuildContext context) {
+    final days = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
+    final todayIndex = DateTime.now().weekday - 1; // 1=Mon -> 0
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: List.generate(days.length, (index) {
+        final isToday = index == todayIndex;
+        
+        return Column(
+          children: [
+            Container(
+              width: 40, 
+              height: 40,
+              decoration: BoxDecoration(
+                color: isToday ? AppTheme.brandBlue : Colors.grey.shade200,
+                shape: BoxShape.circle,
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                days[index],
+                style: GoogleFonts.outfit(
+                  fontWeight: FontWeight.bold,
+                  color: isToday ? Colors.white : Colors.grey.shade600,
+                ),
+              ),
+            ),
+            if (isToday) ...[
+              const SizedBox(height: 6),
+              const CircleAvatar(radius: 3, backgroundColor: Colors.orange),
+            ] else 
+               const SizedBox(height: 12), // Placeholder to align
+          ],
+        );
+      }),
+    );
+  }
+
+  Widget _buildExerciseList(BuildContext context) {
+    final mockExercises = [
+      { 'name': 'Sentadilla Goblet', 'sets': '3 series x 10-12 reps' },
+      { 'name': 'Flexiones (Push-ups)', 'sets': '3 series al fallo - RIR 2' },
+      { 'name': 'Remo con mancuernas', 'sets': '3 series x 10 reps' }
+    ];
+
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: mockExercises.length,
+      itemBuilder: (context, index) {
+        final exercise = mockExercises[index];
+        return Card(
+          margin: const EdgeInsets.only(bottom: 12),
+          elevation: 0,
+          color: Colors.grey.shade50,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(color: Colors.grey.shade200),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  exercise['name'] as String,
+                  style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  exercise['sets'] as String,
+                  style: GoogleFonts.outfit(color: Colors.grey.shade600, fontSize: 14),
+                ),
+                const SizedBox(height: 12),
+                // Weight Input
+                SizedBox(
+                  width: 140,
+                  height: 45,
+                  child: TextField(
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: 'Peso (kg)',
+                      labelStyle: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
