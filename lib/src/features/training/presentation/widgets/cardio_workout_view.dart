@@ -1,10 +1,13 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../config/theme/app_theme.dart';
 import '../../domain/entities/daily_workout.dart';
+import 'package:go_router/go_router.dart';
+import '../../application/workout_submit_controller.dart';
 
-class CardioWorkoutView extends StatefulWidget {
+class CardioWorkoutView extends ConsumerStatefulWidget {
   final DailyWorkout plan;
   final bool isCompleted;
 
@@ -15,10 +18,10 @@ class CardioWorkoutView extends StatefulWidget {
   });
 
   @override
-  State<CardioWorkoutView> createState() => _CardioWorkoutViewState();
+  ConsumerState<CardioWorkoutView> createState() => _CardioWorkoutViewState();
 }
 
-class _CardioWorkoutViewState extends State<CardioWorkoutView> {
+class _CardioWorkoutViewState extends ConsumerState<CardioWorkoutView> {
   Timer? _timer;
   int _seconds = 0;
   bool _isRunning = false;
@@ -38,12 +41,20 @@ class _CardioWorkoutViewState extends State<CardioWorkoutView> {
     });
   }
 
-  void _finish() {
+  Future<void> _finish() async {
     _timer?.cancel();
-    // Here we would call controller to save logic
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Sesión de Cardio Guardada (Mock)")),
-    );
+    
+    // Calculate a mock score or just pass 0 for cardio for now
+    final log = await ref.read(workoutSubmitControllerProvider.notifier)
+        .submitWorkout(sessionRir: 0); // 0 or maybe mapped from heart rate in future
+
+    if (mounted && log != null) {
+      context.goNamed('workout_summary', extra: log);
+    } else if (mounted) {
+       ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Error guardando sesión.")),
+      );
+    }
   }
 
   String get _formattedTime {

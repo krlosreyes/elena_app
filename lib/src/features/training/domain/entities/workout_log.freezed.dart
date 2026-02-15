@@ -153,14 +153,15 @@ class __$$WorkoutLogImplCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$WorkoutLogImpl implements _WorkoutLog {
+class _$WorkoutLogImpl extends _WorkoutLog {
   const _$WorkoutLogImpl(
       {required this.id,
       required this.templateId,
       required this.date,
       required this.sessionRirScore,
       required final List<Map<String, dynamic>> completedExercises})
-      : _completedExercises = completedExercises;
+      : _completedExercises = completedExercises,
+        super._();
 
   factory _$WorkoutLogImpl.fromJson(Map<String, dynamic> json) =>
       _$$WorkoutLogImplFromJson(json);
@@ -230,7 +231,7 @@ class _$WorkoutLogImpl implements _WorkoutLog {
   }
 }
 
-abstract class _WorkoutLog implements WorkoutLog {
+abstract class _WorkoutLog extends WorkoutLog {
   const factory _WorkoutLog(
           {required final String id,
           required final String templateId,
@@ -238,6 +239,7 @@ abstract class _WorkoutLog implements WorkoutLog {
           required final int sessionRirScore,
           required final List<Map<String, dynamic>> completedExercises}) =
       _$WorkoutLogImpl;
+  const _WorkoutLog._() : super._();
 
   factory _WorkoutLog.fromJson(Map<String, dynamic> json) =
       _$WorkoutLogImpl.fromJson;

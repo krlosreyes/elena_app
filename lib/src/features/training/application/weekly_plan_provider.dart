@@ -1,4 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import '../../authentication/data/auth_repository.dart';
+import '../../profile/data/user_repository.dart';
+import '../../profile/domain/user_model.dart';
 import '../domain/entities/daily_workout.dart';
 import '../domain/enums/workout_enums.dart';
 import '../domain/services/weekly_plan_generator.dart';
@@ -7,10 +10,36 @@ part 'weekly_plan_provider.g.dart';
 
 @riverpod
 List<DailyWorkout> weeklyPlan(WeeklyPlanRef ref) {
-  // TODO: Retrieve actual user goal from Onboarding/User Provider
-  const userGoal = WorkoutGoal.fatLoss; 
+  // Watch the current user
+  final authState = ref.watch(authStateChangesProvider);
+  final user = authState.value;
 
-  return WeeklyPlanGenerator.generate(userGoal);
+  if (user == null) {
+    return WeeklyPlanGenerator.generate(WorkoutGoal.fatLoss, age: 30);
+  }
+
+  // Watch the full profile
+  // Note: We use existing provider from user_repository
+  // Since this is synchronous/provider-based, we need to handle AsyncValue if using a stream
+  // Or simpler: just watch the stream and return [] when loading, or default.
+  
+  final userProfileAsync = ref.watch(userStreamProvider(user.uid));
+  
+  return userProfileAsync.when(
+    data: (profile) {
+      if (profile == null) return WeeklyPlanGenerator.generate(WorkoutGoal.fatLoss, age: 30);
+      
+      // Map HealthGoal to WorkoutGoal if needed, or use directly if they match
+      // HealthGoal: fat_loss, muscle_gain, metabolic_health
+      WorkoutGoal goal = WorkoutGoal.fatLoss;
+      if (profile.healthGoal == HealthGoal.muscle_gain) goal = WorkoutGoal.muscleGain;
+      if (profile.healthGoal == HealthGoal.metabolic_health) goal = WorkoutGoal.recomp;
+
+      return WeeklyPlanGenerator.generate(goal, age: profile.age);
+    },
+    loading: () => [],
+    error: (_, __) => WeeklyPlanGenerator.generate(WorkoutGoal.fatLoss, age: 30),
+  );
 }
 
 @riverpod

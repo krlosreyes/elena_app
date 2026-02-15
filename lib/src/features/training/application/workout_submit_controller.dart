@@ -14,7 +14,7 @@ class WorkoutSubmitController extends _$WorkoutSubmitController {
     // Initial state is idle (data is null)
   }
 
-  Future<void> submitWorkout({required int sessionRir}) async {
+  Future<WorkoutLog?> submitWorkout({required int sessionRir}) async {
     state = const AsyncLoading();
 
     try {
@@ -25,8 +25,6 @@ class WorkoutSubmitController extends _$WorkoutSubmitController {
       final exercises = ref.read(dailyRoutineProvider);
 
       // 2. Filter valid sets (isDone == true) and map to simpler structure
-      // We need to match the structure expected by WorkoutLog.completedExercises
-      // which is List<Map<String, dynamic>> currently.
       final List<Map<String, dynamic>> completedExercises = [];
 
       for (final exercise in exercises) {
@@ -43,13 +41,15 @@ class WorkoutSubmitController extends _$WorkoutSubmitController {
       }
 
       if (completedExercises.isEmpty) {
+        // Just return null or throw depending on UX preference.
+        // Throwing allows UI to show snackbar error.
         throw Exception("No hay ejercicios completados para guardar.");
       }
 
       // 3. Create DTO
       final log = WorkoutLog(
         id: const Uuid().v4(),
-        templateId: 'generated_daily', // Placeholder as per plan
+        templateId: 'generated_daily',
         date: DateTime.now(),
         sessionRirScore: sessionRir,
         completedExercises: completedExercises,
@@ -59,8 +59,10 @@ class WorkoutSubmitController extends _$WorkoutSubmitController {
       await ref.read(trainingRepositoryProvider).saveWorkoutLog(userId, log);
 
       state = const AsyncData(null);
+      return log; // Return the log for navigation
     } catch (e, st) {
       state = AsyncError(e, st);
+      return null;
     }
   }
 }

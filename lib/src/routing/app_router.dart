@@ -8,7 +8,10 @@ import '../features/dashboard/presentation/dashboard_screen.dart';
 import '../features/onboarding/presentation/onboarding_screen.dart';
 import '../features/profile/presentation/profile_screen.dart';
 import '../features/progress/presentation/progress_screen.dart';
+import '../features/profile/presentation/profile_screen.dart';
 import '../features/training/presentation/screens/daily_workout_screen.dart';
+import '../features/training/presentation/screens/workout_summary_screen.dart';
+import '../features/training/domain/entities/workout_log.dart';
 
 import '../features/authentication/data/auth_repository.dart';
 
@@ -107,6 +110,14 @@ GoRouter goRouter(GoRouterRef ref) {
       GoRoute(
         path: '/daily-workout',
         builder: (context, state) => const DailyWorkoutScreen(),
+      ),
+      GoRoute(
+        path: '/workout-summary',
+        name: WorkoutSummaryScreen.routeName,
+        builder: (context, state) {
+          final log = state.extra as WorkoutLog;
+          return WorkoutSummaryScreen(log: log);
+        },
       ),
     ],
   );

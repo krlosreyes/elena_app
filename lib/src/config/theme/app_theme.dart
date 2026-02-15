@@ -8,6 +8,10 @@ class AppTheme {
   static const Color brandTeal = Color(0xFF009688); // Verde Azulado
 
   static const Color brandLightBlue = Color(0xFFE3F2FD); // Azul muy claro para fondos
+  static const Color surfaceColor = Color(0xFFF5F5F5); // Gris muy claro para fondos de pantalla
+
+  // Alias para compatibilidad si se usaba primaryColor directamente (aunque primaryColor suele ser de Theme)
+  static const Color primaryColor = brandBlue;
 
   static ThemeData get lightTheme {
     return ThemeData(

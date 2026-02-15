@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../config/theme/app_theme.dart';
 import '../../application/daily_routine_provider.dart';
+import 'package:go_router/go_router.dart';
 import '../../application/workout_submit_controller.dart';
 import '../../domain/entities/training_entities.dart';
 import '../widgets/exercise_set_row.dart';
@@ -61,9 +62,13 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
             child: FilledButton(
               onPressed: isSubmitting 
                   ? null 
-                  : () {
-                      ref.read(workoutSubmitControllerProvider.notifier)
+                  : () async {
+                      final log = await ref.read(workoutSubmitControllerProvider.notifier)
                          .submitWorkout(sessionRir: _currentRir);
+                      
+                      if (context.mounted && log != null) {
+                        context.goNamed('workout_summary', extra: log);
+                      }
                     },
               style: FilledButton.styleFrom(
                 backgroundColor: AppTheme.brandBlue,
