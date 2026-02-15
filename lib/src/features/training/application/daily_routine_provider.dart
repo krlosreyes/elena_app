@@ -14,33 +14,42 @@ class DailyRoutine extends _$DailyRoutine {
   Future<List<InteractiveExercise>> build() async {
     // 1. Listen to Selected Day (1=Mon, 7=Sun)
     final selectedDay = ref.watch(selectedDayProvider);
+    debugPrint("ElenaApp Log: Cargando rutina para el día seleccionado: $selectedDay");
     
     // 2. Listen to Weekly Plan (generated based on Profile)
     final weeklyPlan = ref.watch(weeklyPlanProvider);
 
-    if (weeklyPlan.isEmpty) return [];
+    if (weeklyPlan.isEmpty) {
+      debugPrint("ElenaApp Log: WeeklyPlan está vacío.");
+      return [];
+    }
 
     // 3. Find the workout for the selected day
-    // We use a safe lookup. If not found, return empty (Rest day or error).
+    // We use a safe lookup. If not found, return a default Rest day.
     final dailyWorkout = weeklyPlan.firstWhere(
       (w) => w.dayIndex == selectedDay,
-      orElse: () => DailyWorkout(
-        dayIndex: selectedDay, 
-        type: WorkoutType.rest, 
-        durationMinutes: 0, 
-        description: 'Rest', 
-        details: '', 
-        exercises: [],
-      ),
+      orElse: () {
+        debugPrint("ElenaApp Log: No se encontró workout para el día $selectedDay. Retornando Rest.");
+        return DailyWorkout(
+          dayIndex: selectedDay, 
+          type: WorkoutType.rest, 
+          durationMinutes: 0, 
+          description: 'Rest', 
+          details: '', 
+          exercises: [],
+        );
+      },
     );
 
     // 4. Ensure it's a Strength workout
     if (dailyWorkout.type != WorkoutType.strength) {
+      debugPrint("ElenaApp Log: El workout del día $selectedDay no es de Fuerza (${dailyWorkout.type}).");
       return [];
     }
 
     // 5. Map to Interactive Mode
     if (dailyWorkout.exercises.isNotEmpty) {
+      debugPrint("ElenaApp Log: Mapeando ${dailyWorkout.exercises.length} ejercicios a interactivos.");
       return dailyWorkout.exercises.map((e) {
         return InteractiveExercise(
           id: e.id,
@@ -56,14 +65,14 @@ class DailyRoutine extends _$DailyRoutine {
       }).toList();
     }
 
+    debugPrint("ElenaApp Log: Lista de ejercicios vacía para el día $selectedDay.");
     return [];
   }
 
   void toggleSet(String exerciseId, int setIndex, double weight, int reps) {
-    // Nuclear Async Immutable Update
-    // Using state.whenData to ensure we are operating on loaded data
+    // Nuclear Async Immutable Update with Debugging
     state.whenData((routine) {
-      state = AsyncData([
+      final updatedRoutine = [
         for (final ex in routine)
           if (ex.id == exerciseId)
             ex.copyWith(sets: [
@@ -77,7 +86,18 @@ class DailyRoutine extends _$DailyRoutine {
                   : ex.sets[i]
             ])
           else ex
-      ]);
+      ];
+      
+      state = AsyncData(updatedRoutine);
+      
+      // Debug print to confirm reactivity
+      try {
+        final updatedExercise = updatedRoutine.firstWhere((e) => e.id == exerciseId);
+        final updatedSet = updatedExercise.sets[setIndex - 1];
+        debugPrint("ElenaApp Log: Set $setIndex del ejercicio $exerciseId actualizado a isDone: ${updatedSet.isDone}");
+      } catch (e) {
+        debugPrint("ElenaApp Log: Error al imprimir debug del set actualizado: $e");
+      }
     });
   }
 }

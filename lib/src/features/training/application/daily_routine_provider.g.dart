@@ -6,7 +6,7 @@ part of 'daily_routine_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$dailyRoutineHash() => r'de9503396ac3f9ad7768f65e26fde3fbc2fdff79';
+String _$dailyRoutineHash() => r'2c98bc295dbe9fbcd5fe9bb524893cb1600bcf1c';
 
 /// See also [DailyRoutine].
 @ProviderFor(DailyRoutine)

@@ -10,15 +10,35 @@ class WeeklyPlanGenerator {
     final zone2High = (maxHr * 0.70).round();
     final zone2String = "Zona 2 ($zone2Low-$zone2High BPM)";
 
+    List<DailyWorkout> plan = [];
+
     switch (goal) {
       case WorkoutGoal.fatLoss:
-        return _generateFatLossPlan(zone2String, hasDumbbells);
+        plan = _generateFatLossPlan(zone2String, hasDumbbells);
+        break;
       case WorkoutGoal.recomp:
       case WorkoutGoal.metabolic_health:
-        return _generateRecompPlan(zone2String, hasDumbbells);
+        plan = _generateRecompPlan(zone2String, hasDumbbells);
+        break;
       case WorkoutGoal.muscleGain:
-        return _generateMuscleGainPlan(zone2String, hasDumbbells);
+        plan = _generateMuscleGainPlan(zone2String, hasDumbbells);
+        break;
     }
+
+    // Emergency Fallback: If plan is empty, generate a basic plan with Routine A
+    if (plan.isEmpty) {
+      return [
+         _strengthDay(1, "FullBody A (Fallback)", "RIR 2", hasDumbbells, 'A'),
+         _restDay(2),
+         _strengthDay(3, "FullBody B (Fallback)", "RIR 2", hasDumbbells, 'B'),
+         _restDay(4),
+         _strengthDay(5, "FullBody C (Fallback)", "RIR 2", hasDumbbells, 'C'),
+         _restDay(6),
+         _restDay(7),
+      ];
+    }
+
+    return plan;
   }
 
   static List<DailyWorkout> _generateFatLossPlan(String zone2, bool hasDumbbells) {
