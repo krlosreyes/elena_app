@@ -21,6 +21,7 @@ import '../widgets/cardio_workout_view.dart';
 import '../widgets/rest_day_view.dart';
 import '../widgets/weekly_calendar_strip.dart';
 import '../widgets/rest_timer_banner.dart';
+import '../widgets/metabolic_insight_banner.dart';
 
 class DailyWorkoutScreen extends ConsumerWidget {
   const DailyWorkoutScreen({super.key});
@@ -71,6 +72,11 @@ class DailyWorkoutScreen extends ConsumerWidget {
             child: WeeklyCalendarStrip(),
           ),
           const SizedBox(height: 16),
+          // Metabolic Insight (Conditional)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: MetabolicInsightBanner(),
+          ),
           Expanded(
             child: _buildBody(context, orchestratorState),
           ),

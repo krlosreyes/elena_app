@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../authentication/data/auth_repository.dart';
-import '../../fasting/data/fasting_repository.dart';
-import '../../fasting/domain/fasting_session.dart';
+import 'package:elena_app/src/features/authentication/data/auth_repository.dart';
+import 'package:elena_app/src/features/fasting/data/fasting_repository.dart';
+import 'package:elena_app/src/features/fasting/domain/fasting_session.dart';
 
 // STRICT: AutoDispose + Explicit Auth Watch
 // This ensures that when the cached User ID changes, the stream is strictly rebuilt.
