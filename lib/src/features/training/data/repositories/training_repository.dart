@@ -119,8 +119,8 @@ class TrainingRepository {
           .collection('users')
           .doc(userId)
           .collection('workout_logs')
-          .where('date', isGreaterThanOrEqualTo: startOfDay)
-          .where('date', isLessThanOrEqualTo: endOfDay)
+          .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+          .where('date', isLessThanOrEqualTo: Timestamp.fromDate(endOfDay))
           .limit(1)
           .get();
 
@@ -140,8 +140,8 @@ class TrainingRepository {
           .collection('users')
           .doc(userId)
           .collection('workout_logs')
-          .where('date', isGreaterThanOrEqualTo: startDate)
-          .where('date', isLessThanOrEqualTo: endDate)
+          .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
+          .where('date', isLessThanOrEqualTo: Timestamp.fromDate(endDate))
           .orderBy('date')
           .get();
 

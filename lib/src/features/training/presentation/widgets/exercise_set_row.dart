@@ -34,13 +34,34 @@ class _ExerciseSetRowState extends ConsumerState<ExerciseSetRow> {
     super.initState();
     double weight = widget.initialWeight ?? 0;
     if (weight == 0) weight = 5;
-    
+
     _weightController = TextEditingController(
       text: weight.toString().replaceAll(RegExp(r'\.0$'), ''),
     );
     _repsController = TextEditingController(
       text: widget.initialReps?.toString() ?? '',
     );
+  }
+
+  @override
+  void didUpdateWidget(covariant ExerciseSetRow oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // CRITICAL: Sync controller text when Riverpod state changes (e.g. isDone toggled).
+    // Only update if the immutable prop actually changed to avoid cursor jumping.
+    if (oldWidget.initialWeight != widget.initialWeight) {
+      double weight = widget.initialWeight ?? 0;
+      if (weight == 0) weight = 5;
+      final newText = weight.toString().replaceAll(RegExp(r'\.0$'), '');
+      if (_weightController.text != newText) {
+        _weightController.text = newText;
+      }
+    }
+    if (oldWidget.initialReps != widget.initialReps) {
+      final newText = widget.initialReps?.toString() ?? '';
+      if (_repsController.text != newText) {
+        _repsController.text = newText;
+      }
+    }
   }
 
   @override
@@ -55,19 +76,21 @@ class _ExerciseSetRowState extends ConsumerState<ExerciseSetRow> {
 
     final weight = double.tryParse(_weightController.text);
     final reps = int.tryParse(_repsController.text);
-    
-    // Trigger logic
+
+    // Trigger provider update
     widget.onToggle!(weight, reps);
 
-    // If marking as done, start rest timer
+    // If marking as done (currently NOT done), start rest timer
     if (!widget.isDone) {
-       ref.read(restTimerProvider.notifier).startTimer(90);
+      ref.read(restTimerProvider.notifier).startTimer(90);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final isEnabled = !widget.isDone && widget.onToggle != null;
+    // CRITICAL: Read isDone from widget prop (immutable from Riverpod), NOT a local variable.
+    final isDone = widget.isDone;
+    final isEnabled = !isDone && widget.onToggle != null;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -92,7 +115,7 @@ class _ExerciseSetRowState extends ConsumerState<ExerciseSetRow> {
             ),
           ),
           const SizedBox(width: 12),
-          
+
           // Target Reps
           Expanded(
             child: Text(
@@ -103,7 +126,7 @@ class _ExerciseSetRowState extends ConsumerState<ExerciseSetRow> {
               ),
             ),
           ),
-          
+
           // Weight Input
           SizedBox(
             width: 60,
@@ -120,7 +143,7 @@ class _ExerciseSetRowState extends ConsumerState<ExerciseSetRow> {
                 contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
                 isDense: true,
                 filled: true,
-                fillColor: widget.isDone ? Colors.grey.shade100 : Colors.white,
+                fillColor: isDone ? Colors.grey.shade100 : Colors.white,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                   borderSide: BorderSide(color: Colors.grey.shade300),
@@ -136,7 +159,7 @@ class _ExerciseSetRowState extends ConsumerState<ExerciseSetRow> {
 
           // Reps Input
           SizedBox(
-            width: 60, // Sligthly wider
+            width: 60,
             child: TextField(
               controller: _repsController,
               keyboardType: TextInputType.number,
@@ -149,7 +172,7 @@ class _ExerciseSetRowState extends ConsumerState<ExerciseSetRow> {
                 contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
                 isDense: true,
                 filled: true,
-                fillColor: widget.isDone ? Colors.grey.shade100 : Colors.white,
+                fillColor: isDone ? Colors.grey.shade100 : Colors.white,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                   borderSide: BorderSide(color: Colors.grey.shade300),
@@ -163,13 +186,13 @@ class _ExerciseSetRowState extends ConsumerState<ExerciseSetRow> {
           ),
           const SizedBox(width: 12),
 
-          // Check Button
+          // Check Button — reads isDone from WIDGET PROP (Riverpod immutable state)
           InkWell(
             onTap: widget.onToggle != null ? _handleToggle : null,
             child: Icon(
-              widget.isDone ? Icons.check_circle : Icons.circle_outlined,
-              color: widget.isDone 
-                  ? Colors.green 
+              isDone ? Icons.check_circle : Icons.circle_outlined,
+              color: isDone
+                  ? Colors.green
                   : (widget.onToggle != null ? Colors.grey.shade400 : Colors.grey.shade200),
               size: 28,
             ),

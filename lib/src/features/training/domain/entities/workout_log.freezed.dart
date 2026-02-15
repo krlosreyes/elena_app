@@ -22,10 +22,9 @@ WorkoutLog _$WorkoutLogFromJson(Map<String, dynamic> json) {
 mixin _$WorkoutLog {
   String get id => throw _privateConstructorUsedError;
   String get templateId => throw _privateConstructorUsedError;
+  @TimestampConverter()
   DateTime get date => throw _privateConstructorUsedError;
-  int get sessionRirScore =>
-      throw _privateConstructorUsedError; // List of maps is a simplification for now as per instructions
-// In a real app, this might be a list of LoggedExercise objects
+  int get sessionRirScore => throw _privateConstructorUsedError;
   List<Map<String, dynamic>> get completedExercises =>
       throw _privateConstructorUsedError;
   int? get durationMinutes => throw _privateConstructorUsedError;
@@ -46,7 +45,7 @@ abstract class $WorkoutLogCopyWith<$Res> {
   $Res call(
       {String id,
       String templateId,
-      DateTime date,
+      @TimestampConverter() DateTime date,
       int sessionRirScore,
       List<Map<String, dynamic>> completedExercises,
       int? durationMinutes,
@@ -118,7 +117,7 @@ abstract class _$$WorkoutLogImplCopyWith<$Res>
   $Res call(
       {String id,
       String templateId,
-      DateTime date,
+      @TimestampConverter() DateTime date,
       int sessionRirScore,
       List<Map<String, dynamic>> completedExercises,
       int? durationMinutes,
@@ -183,7 +182,7 @@ class _$WorkoutLogImpl extends _WorkoutLog {
   const _$WorkoutLogImpl(
       {required this.id,
       required this.templateId,
-      required this.date,
+      @TimestampConverter() required this.date,
       required this.sessionRirScore,
       required final List<Map<String, dynamic>> completedExercises,
       this.durationMinutes,
@@ -199,14 +198,11 @@ class _$WorkoutLogImpl extends _WorkoutLog {
   @override
   final String templateId;
   @override
+  @TimestampConverter()
   final DateTime date;
   @override
   final int sessionRirScore;
-// List of maps is a simplification for now as per instructions
-// In a real app, this might be a list of LoggedExercise objects
   final List<Map<String, dynamic>> _completedExercises;
-// List of maps is a simplification for now as per instructions
-// In a real app, this might be a list of LoggedExercise objects
   @override
   List<Map<String, dynamic>> get completedExercises {
     if (_completedExercises is EqualUnmodifiableListView)
@@ -274,7 +270,7 @@ abstract class _WorkoutLog extends WorkoutLog {
   const factory _WorkoutLog(
       {required final String id,
       required final String templateId,
-      required final DateTime date,
+      @TimestampConverter() required final DateTime date,
       required final int sessionRirScore,
       required final List<Map<String, dynamic>> completedExercises,
       final int? durationMinutes,
@@ -289,11 +285,11 @@ abstract class _WorkoutLog extends WorkoutLog {
   @override
   String get templateId;
   @override
+  @TimestampConverter()
   DateTime get date;
   @override
   int get sessionRirScore;
-  @override // List of maps is a simplification for now as per instructions
-// In a real app, this might be a list of LoggedExercise objects
+  @override
   List<Map<String, dynamic>> get completedExercises;
   @override
   int? get durationMinutes;
