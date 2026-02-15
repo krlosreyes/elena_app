@@ -75,13 +75,10 @@ class _ExerciseSetRowState extends ConsumerState<ExerciseSetRow> {
   }
 
   void _handleToggle() {
-    // Logic from prompt:
-    // ref.read(dailyRoutineProvider.notifier).toggleSet(widget.exerciseId, widget.setIndex, double.tryParse(_weightController.text) ?? 5.0, int.tryParse(_repsController.text) ?? 0);
-    
-    final weight = double.tryParse(_weightController.text) ?? 5.0;
+    final weight = double.tryParse(_weightController.text) ?? 0.0;
     final reps = int.tryParse(_repsController.text) ?? 0;
 
-    // Call provider directly
+    // Call provider directly to update state
     ref.read(dailyRoutineProvider.notifier).toggleSet(
       widget.exerciseId, 
       widget.setIndex, 
@@ -89,10 +86,7 @@ class _ExerciseSetRowState extends ConsumerState<ExerciseSetRow> {
       reps
     );
 
-    // Legacy callback if needed, though prompt implies direct call is the fix
-    widget.onToggle?.call(weight, reps);
-
-    // If marking as done (currently NOT done), start rest timer
+    // Start rest timer if marking as done
     if (!widget.isDone) {
       ref.read(restTimerProvider.notifier).startTimer(90);
     }
