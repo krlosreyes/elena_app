@@ -1,6 +1,6 @@
 import '../entities/daily_workout.dart';
 import '../entities/training_entities.dart';
-// import '../enums/workout_enums.dart'; // Removed to avoid conflict
+import '../enums/workout_enums.dart';
 
 class WeeklyPlanGenerator {
   static List<DailyWorkout> generate(WorkoutGoal goal, {required int age, required bool hasDumbbells}) {
@@ -95,32 +95,32 @@ class WeeklyPlanGenerator {
   static List<RoutineExercise> _getExercisesFor(String routine, bool hasDumbbells) {
     if (hasDumbbells) {
       switch (routine) {
-        case 'A':
+        case 'A': // Lunes: Empuje/Pierna Dominante
           return [
             const RoutineExercise(id: 'goblet_squat', name: 'Sentadilla Goblet', sets: 3, targetReps: '10-12', rir: 2, restSeconds: 90),
-            const RoutineExercise(id: 'db_press_stand', name: 'Press Militar (Pie)', sets: 3, targetReps: '8-10', rir: 2, restSeconds: 90),
-            const RoutineExercise(id: 'db_row_one', name: 'Remo a una mano', sets: 3, targetReps: '10-12', rir: 2, restSeconds: 60),
-            const RoutineExercise(id: 'lunges_db', name: 'Zancadas c/Mancuernas', sets: 3, targetReps: '10/pierna', rir: 2, restSeconds: 60),
-            const RoutineExercise(id: 'floor_press', name: 'Press de Pecho (Suelo)', sets: 3, targetReps: '10-15', rir: 2, restSeconds: 90),
-            const RoutineExercise(id: 'plank', name: 'Plank Abdominal', sets: 3, targetReps: '45-60s', rir: 0, restSeconds: 45),
+            const RoutineExercise(id: 'floor_press_db', name: 'Press de Pecho (Suelo)', sets: 3, targetReps: '10-12', rir: 2, restSeconds: 90),
+            const RoutineExercise(id: 'one_arm_row', name: 'Remo a una mano', sets: 3, targetReps: '10-12', rir: 2, restSeconds: 60),
+            const RoutineExercise(id: 'lunges_db', name: 'Estocadas con Mancuernas', sets: 3, targetReps: '10/pierna', rir: 2, restSeconds: 60),
+            const RoutineExercise(id: 'shoulder_press_seated', name: 'Press Militar Sentado', sets: 3, targetReps: '8-10', rir: 2, restSeconds: 90),
+            const RoutineExercise(id: 'plank', name: 'Plancha Abdominal', sets: 3, targetReps: '45-60s', rir: 0, restSeconds: 45),
           ];
-        case 'B':
+        case 'B': // Miércoles: Tracción/Cadera Dominante
           return [
             const RoutineExercise(id: 'rdl_db', name: 'Peso Muerto Rumano', sets: 3, targetReps: '10-12', rir: 2, restSeconds: 90),
-            const RoutineExercise(id: 'pushups_weighted', name: 'Flexiones (Lastre/Deficit)', sets: 3, targetReps: 'Al fallo', rir: 1, restSeconds: 90),
-            const RoutineExercise(id: 'db_pullover', name: 'Pullover Mancuerna', sets: 3, targetReps: '12-15', rir: 2, restSeconds: 60),
-            const RoutineExercise(id: 'step_ups', name: 'Subidas al Cajón (Step-Ups)', sets: 3, targetReps: '10/pierna', rir: 2, restSeconds: 60),
-            const RoutineExercise(id: 'lateral_raises', name: 'Elevaciones Laterales', sets: 3, targetReps: '15-20', rir: 1, restSeconds: 45),
-            const RoutineExercise(id: 'leg_raises', name: 'Elevación de Piernas', sets: 3, targetReps: '15-20', rir: 1, restSeconds: 45),
+            const RoutineExercise(id: 'inclined_row_db', name: 'Remo Inclinado (2 manos)', sets: 3, targetReps: '10-12', rir: 2, restSeconds: 60),
+            const RoutineExercise(id: 'step_ups_db', name: 'Step-ups (Silla/Banco)', sets: 3, targetReps: '10/pierna', rir: 2, restSeconds: 60),
+            const RoutineExercise(id: 'inclined_press_db', name: 'Press Inclinado (o Puente)', sets: 3, targetReps: '10-12', rir: 2, restSeconds: 90),
+            const RoutineExercise(id: 'bicep_curl_press', name: 'Curl de Bíceps + Press', sets: 3, targetReps: '10-12', rir: 1, restSeconds: 60),
+            const RoutineExercise(id: 'deadbug', name: 'Deadbug (Core)', sets: 3, targetReps: '12-15', rir: 1, restSeconds: 45),
           ];
-        case 'C':
+        case 'C': // Viernes: Híbrido/Accesorios
           return [
-            const RoutineExercise(id: 'thrusters', name: 'Thrusters (Sentadilla+Press)', sets: 3, targetReps: '10-12', rir: 2, restSeconds: 120),
-            const RoutineExercise(id: 'renegade_row', name: 'Remo Renegado', sets: 3, targetReps: '8-10/lado', rir: 2, restSeconds: 90),
-            const RoutineExercise(id: 'glute_bridge_db', name: 'Puente Glúteo c/Peso', sets: 3, targetReps: '12-15', rir: 1, restSeconds: 60),
-            const RoutineExercise(id: 'push_press_db', name: 'Push Press', sets: 3, targetReps: '8-10', rir: 2, restSeconds: 90),
-            const RoutineExercise(id: 'bicep_curl_hammer', name: 'Curl Martillo', sets: 3, targetReps: '12-15', rir: 1, restSeconds: 45),
-            const RoutineExercise(id: 'russian_twist', name: 'Giros Rusos', sets: 3, targetReps: '20/lado', rir: 1, restSeconds: 45),
+            const RoutineExercise(id: 'sumo_squat_db', name: 'Sentadilla Sumo', sets: 3, targetReps: '12-15', rir: 2, restSeconds: 90),
+            const RoutineExercise(id: 'dips_chair', name: 'Fondos de Tríceps (Silla)', sets: 3, targetReps: 'Al fallo', rir: 1, restSeconds: 60),
+            const RoutineExercise(id: 'lateral_lunges_db', name: 'Zancada Lateral', sets: 3, targetReps: '10/pierna', rir: 2, restSeconds: 60),
+            const RoutineExercise(id: 'lateral_raises', name: 'Pájaros/Vuelos Laterales', sets: 3, targetReps: '15-20', rir: 1, restSeconds: 45),
+            const RoutineExercise(id: 'woodchoppers', name: 'Woodchoppers (Leñador)', sets: 3, targetReps: '15/lado', rir: 1, restSeconds: 45),
+            const RoutineExercise(id: 'mountain_climbers', name: 'Escaladores', sets: 3, targetReps: '45s', rir: 0, restSeconds: 45),
           ];
       }
     } else {
@@ -128,30 +128,30 @@ class WeeklyPlanGenerator {
       switch (routine) {
         case 'A':
           return [
-            const RoutineExercise(id: 'air_squat', name: 'Sentadilla Aire (Air Squat)', sets: 4, targetReps: '20-25', rir: 2, restSeconds: 60),
-            const RoutineExercise(id: 'pushups_std', name: 'Flexiones Estándar', sets: 4, targetReps: 'Al fallo', rir: 1, restSeconds: 90),
-            const RoutineExercise(id: 'superman_pull', name: 'Superman Pull (Suelo)', sets: 3, targetReps: '15-20', rir: 2, restSeconds: 60),
-            const RoutineExercise(id: 'lunges_bw', name: 'Zancadas (Alternas)', sets: 3, targetReps: '15/pierna', rir: 2, restSeconds: 60),
-            const RoutineExercise(id: 'dips_chair', name: 'Fondos en silla/banco', sets: 3, targetReps: '12-15', rir: 1, restSeconds: 60),
-            const RoutineExercise(id: 'bicycle_crunches', name: 'Abdominales Bicicleta', sets: 3, targetReps: '20/lado', rir: 1, restSeconds: 45),
+            const RoutineExercise(id: 'air_squat', name: 'Sentadilla Aire (Bodyweight)', sets: 4, targetReps: '20-25', rir: 2, restSeconds: 60),
+            const RoutineExercise(id: 'pushups_std', name: 'Flexiones (Push-ups)', sets: 4, targetReps: 'Al fallo', rir: 1, restSeconds: 90),
+            const RoutineExercise(id: 'inverted_row_table', name: 'Remo Invertido (Mesa)', sets: 3, targetReps: 'Al fallo', rir: 2, restSeconds: 60),
+            const RoutineExercise(id: 'lunges_bw', name: 'Estocadas (Alternas)', sets: 3, targetReps: '15/pierna', rir: 2, restSeconds: 60),
+            const RoutineExercise(id: 'pike_pushups', name: 'Pike Pushups (Hombro)', sets: 3, targetReps: '8-12', rir: 2, restSeconds: 90),
+            const RoutineExercise(id: 'plank', name: 'Plancha Abdominal', sets: 3, targetReps: '60s', rir: 0, restSeconds: 45),
           ];
         case 'B':
           return [
-            const RoutineExercise(id: 'glute_bridge_bw', name: 'Puente de Glúteo (1 pierna)', sets: 3, targetReps: '12-15/lado', rir: 2, restSeconds: 60),
-            const RoutineExercise(id: 'pike_pushups', name: 'Flexiones Pike (Hombro)', sets: 3, targetReps: '8-12', rir: 2, restSeconds: 90),
-            const RoutineExercise(id: 'door_frame_rows', name: 'Remo en Marco Puerta', sets: 3, targetReps: '12-15', rir: 2, restSeconds: 60),
-            const RoutineExercise(id: 'bulgarian_split', name: 'Sentadilla Búlgara', sets: 3, targetReps: '8-12/lado', rir: 2, restSeconds: 90),
-            const RoutineExercise(id: 'diamond_pushups', name: 'Flexiones Diamante', sets: 3, targetReps: 'Al fallo', rir: 1, restSeconds: 60),
-            const RoutineExercise(id: 'mountain_climbers', name: 'Escaladores', sets: 3, targetReps: '45s', rir: 0, restSeconds: 45),
+            const RoutineExercise(id: 'single_leg_glute_bridge', name: 'Puente Glúteo 1 Pierna', sets: 3, targetReps: '15/lado', rir: 1, restSeconds: 60),
+            const RoutineExercise(id: 'superman', name: 'Superman (Extensiones)', sets: 3, targetReps: '15-20', rir: 1, restSeconds: 45),
+            const RoutineExercise(id: 'step_ups_bw', name: 'Step-ups (Silla/Banco)', sets: 3, targetReps: '15/pierna', rir: 2, restSeconds: 60),
+            const RoutineExercise(id: 'decline_pushups', name: 'Flexiones Pies Elevados', sets: 3, targetReps: 'Al fallo', rir: 2, restSeconds: 90),
+            const RoutineExercise(id: 'backpack_curl', name: 'Curl con Mochila/Resistencia', sets: 3, targetReps: '15-20', rir: 1, restSeconds: 60),
+            const RoutineExercise(id: 'deadbug', name: 'Deadbug (Core)', sets: 3, targetReps: '15-20', rir: 1, restSeconds: 45),
           ];
         case 'C':
           return [
-            const RoutineExercise(id: 'burpees', name: 'Burpees (Sin salto)', sets: 3, targetReps: '10-15', rir: 2, restSeconds: 90),
-            const RoutineExercise(id: 'plank_shoulder_tap', name: 'Plank c/Toque Hombro', sets: 3, targetReps: '20 taps', rir: 1, restSeconds: 60),
-            const RoutineExercise(id: 'single_leg_rdl_bw', name: 'Peso Muerto 1 Pierna (Eq)', sets: 3, targetReps: '10/lado', rir: 1, restSeconds: 60),
-            const RoutineExercise(id: 'bear_crawl', name: 'Caminata de Oso', sets: 3, targetReps: '30s', rir: 1, restSeconds: 60),
-            const RoutineExercise(id: 'tricep_ext_floor', name: 'Extensión Tríceps Suelo', sets: 3, targetReps: '10-12', rir: 1, restSeconds: 60),
-            const RoutineExercise(id: 'hollow_body', name: 'Hollow Body Hold', sets: 3, targetReps: '30-45s', rir: 0, restSeconds: 45),
+            const RoutineExercise(id: 'sumo_squat_bw', name: 'Sentadilla Sumo (BW)', sets: 3, targetReps: '20-25', rir: 2, restSeconds: 60),
+            const RoutineExercise(id: 'dips_chair', name: 'Fondos de Tríceps (Silla)', sets: 3, targetReps: 'Al fallo', rir: 1, restSeconds: 60),
+            const RoutineExercise(id: 'lateral_lunges_bw', name: 'Zancada Lateral', sets: 3, targetReps: '12/pierna', rir: 2, restSeconds: 60),
+            const RoutineExercise(id: 'lateral_raises_bottle', name: 'Elevaciones Laterales (Botellas)', sets: 3, targetReps: '20-25', rir: 1, restSeconds: 45),
+            const RoutineExercise(id: 'trunk_rotations', name: 'Rotaciones de Tronco', sets: 3, targetReps: '20/lado', rir: 0, restSeconds: 45),
+            const RoutineExercise(id: 'mountain_climbers', name: 'Escaladores', sets: 3, targetReps: '60s', rir: 0, restSeconds: 45),
           ];
       }
     }
