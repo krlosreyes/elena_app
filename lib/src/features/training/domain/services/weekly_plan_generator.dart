@@ -19,6 +19,7 @@ class WeeklyPlanGenerator {
     // Sort workout days (SAFE: Create mutable copy first)
     final sortedWorkoutDays = List<int>.from(workoutDays)..sort();
 
+    int strengthSessionCount = 0;
     int cardioSessionCount = 0;
 
     // Generate for all 7 days
