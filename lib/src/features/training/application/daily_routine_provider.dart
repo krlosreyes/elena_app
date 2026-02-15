@@ -1,12 +1,12 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../data/repositories/training_repository.dart';
-import '../../domain/entities/exercise.dart';
-import '../../domain/entities/routine_template.dart';
+import '../data/repositories/training_repository.dart';
+import '../domain/entities/exercise.dart';
+import '../domain/entities/routine_template.dart';
 
-import '../../../authentication/data/auth_repository.dart';
-import '../../../profile/data/user_repository.dart';
+import '../../authentication/data/auth_repository.dart';
+import '../../profile/data/user_repository.dart';
 
 part 'daily_routine_provider.freezed.dart';
 part 'daily_routine_provider.g.dart';

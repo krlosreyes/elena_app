@@ -22,14 +22,14 @@ class DailyWorkoutScreen extends ConsumerWidget {
         title: const Text("Entrenamiento de Hoy"),
       ),
       body: recommendationAsync.when(
-        data: (recommendation) => _buildContent(context, recommendation),
+        data: (recommendation) => _buildContent(context, ref, recommendation),
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(child: Text('Error: $err')),
       ),
     );
   }
 
-  Widget _buildContent(BuildContext context, WorkoutRecommendation recommendation) {
+  Widget _buildContent(BuildContext context, WidgetRef ref, WorkoutRecommendation recommendation) {
     final dailyRoutineAsync = ref.watch(dailyRoutineProvider);
 
     return SingleChildScrollView(

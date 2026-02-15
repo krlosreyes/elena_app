@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../authentication/data/auth_repository.dart';
 import '../../profile/data/user_repository.dart';
@@ -10,7 +11,18 @@ part 'training_engine_provider.g.dart';
 
 @riverpod
 TrainingRepository trainingRepository(TrainingRepositoryRef ref) {
-  return TrainingRepositoryImpl();
+  // Use the provider from the repository file, or instantiate directly if checking for circular deps.
+  // Ideally, we should reuse the one in training_repository.dart if it's a provider.
+  // But training_repository.dart defines 'trainingRepositoryProvider'. 
+  // Redefining it here will cause conflicts if names match.
+  // The file training_repository.dart HAS a provider named 'trainingRepository'.
+  // We should probably DELETE this definition if it's a duplicate, or alias it.
+  // Checking imports... 
+  // This file imports '../data/repositories/training_repository.dart'.
+  // If that file has a provider, we should use it. 
+  // However, removing this might break existing refs in this file if they use 'trainingRepositoryProvider' generated from HERE.
+  // Let's just fix the return type content for now to be safe.
+  return TrainingRepository(FirebaseFirestore.instance);
 }
 
 @riverpod

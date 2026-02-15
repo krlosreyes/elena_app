@@ -69,6 +69,45 @@ class TrainingRepository {
     }
   }
 
+  // 4. Get Last Exercise Log (Progressive Overload)
+  Future<Map<String, dynamic>?> getLastExerciseLog(String userId, String exerciseId) async {
+    try {
+      // Query the last workout log for the user
+      final querySnapshot = await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('workout_logs')
+          .orderBy('date', descending: true)
+          .limit(1) // As requested, check the very last workout. 
+          // Ideally, we'd search deeper if the exercise wasn't in the last workout, 
+          // but strict instructions specify limit(1).
+          .get();
+
+      if (querySnapshot.docs.isEmpty) return null;
+
+      final lastLog = WorkoutLog.fromJson(querySnapshot.docs.first.data());
+
+      // Search for the specific exercise validation in the completed list
+      // We assume the map has keys 'exerciseId' or similar to identify it.
+      // Based on previous context, we know completedExercises is List<Map<String, dynamic>>.
+      // We need to find the map where exerciseId matches.
+      
+      try {
+        final exerciseLog = lastLog.completedExercises.firstWhere(
+          (logMap) => logMap['exerciseId'] == exerciseId,
+        );
+        return exerciseLog;
+      } catch (e) {
+        // Exercise not found in this specific log
+        return null; 
+      }
+
+    } catch (e) {
+      print('Error getting last exercise log: $e');
+      return null;
+    }
+  }
+
   // Existing method stub - Keeping integration
   Future<WeeklyTrainingStats> getWeeklyStats() async {
      // TODO: Implement actual logic

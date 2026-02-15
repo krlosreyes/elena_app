@@ -31,6 +31,8 @@ abstract class $DailyWorkoutStateCopyWith<$Res> {
       _$DailyWorkoutStateCopyWithImpl<$Res, DailyWorkoutState>;
   @useResult
   $Res call({RoutineTemplate? routine, List<Exercise> exercises});
+
+  $RoutineTemplateCopyWith<$Res>? get routine;
 }
 
 /// @nodoc
@@ -60,6 +62,18 @@ class _$DailyWorkoutStateCopyWithImpl<$Res, $Val extends DailyWorkoutState>
               as List<Exercise>,
     ) as $Val);
   }
+
+  @override
+  @pragma('vm:prefer-inline')
+  $RoutineTemplateCopyWith<$Res>? get routine {
+    if (_value.routine == null) {
+      return null;
+    }
+
+    return $RoutineTemplateCopyWith<$Res>(_value.routine!, (value) {
+      return _then(_value.copyWith(routine: value) as $Val);
+    });
+  }
 }
 
 /// @nodoc
@@ -71,6 +85,9 @@ abstract class _$$DailyWorkoutStateImplCopyWith<$Res>
   @override
   @useResult
   $Res call({RoutineTemplate? routine, List<Exercise> exercises});
+
+  @override
+  $RoutineTemplateCopyWith<$Res>? get routine;
 }
 
 /// @nodoc
@@ -127,16 +144,14 @@ class _$DailyWorkoutStateImpl implements _DailyWorkoutState {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is _$DailyWorkoutStateImpl &&
-            const DeepCollectionEquality().equals(other.routine, routine) &&
+            (identical(other.routine, routine) || other.routine == routine) &&
             const DeepCollectionEquality()
                 .equals(other._exercises, _exercises));
   }
 
   @override
   int get hashCode => Object.hash(
-      runtimeType,
-      const DeepCollectionEquality().hash(routine),
-      const DeepCollectionEquality().hash(_exercises));
+      runtimeType, routine, const DeepCollectionEquality().hash(_exercises));
 
   @JsonKey(ignore: true)
   @override
