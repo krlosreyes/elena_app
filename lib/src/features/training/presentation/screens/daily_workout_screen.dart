@@ -6,17 +6,9 @@ import '../../../../config/theme/app_theme.dart';
 
 import '../widgets/rest_timer_banner.dart';
 
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import '../../../../config/theme/app_theme.dart';
-import '../../application/workout_submit_controller.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import '../../../../config/theme/app_theme.dart';
-import '../../application/workout_submit_controller.dart';
+
 import '../../application/daily_orchestrator_provider.dart';
+import '../../application/workout_submit_controller.dart';
 import '../../domain/enums/workout_enums.dart';
 import '../../domain/entities/training_entities.dart';
 import '../../domain/entities/daily_workout.dart';

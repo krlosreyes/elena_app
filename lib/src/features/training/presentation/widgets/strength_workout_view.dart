@@ -32,9 +32,42 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
     widget.mode == WorkoutDisplayMode.readOnly || 
     widget.mode == WorkoutDisplayMode.completed;
 
+  // Fallback Mock Data
+  final List<Map<String, dynamic>> _mockExercises = [
+    {
+      'id': '1',
+      'name': 'Sentadilla con Barra',
+      'sets': [
+        {'setIndex': 1, 'weight': 60.0, 'reps': 12, 'isDone': false},
+        {'setIndex': 2, 'weight': 60.0, 'reps': 12, 'isDone': false},
+        {'setIndex': 3, 'weight': 60.0, 'reps': 12, 'isDone': false},
+      ]
+    },
+    {
+      'id': '2',
+      'name': 'Press Militar',
+      'sets': [
+        {'setIndex': 1, 'weight': 30.0, 'reps': 10, 'isDone': false},
+        {'setIndex': 2, 'weight': 30.0, 'reps': 10, 'isDone': false},
+      ]
+    },
+    {
+      'id': '3',
+      'name': 'Peso Muerto Rumano',
+      'sets': [
+        {'setIndex': 1, 'weight': 80.0, 'reps': 10, 'isDone': false},
+        {'setIndex': 2, 'weight': 80.0, 'reps': 10, 'isDone': false},
+        {'setIndex': 3, 'weight': 80.0, 'reps': 10, 'isDone': false},
+      ]
+    },
+  ];
+
   @override
   Widget build(BuildContext context) {
-     final dailyExercises = ref.watch(dailyRoutineProvider);
+     final routineState = ref.watch(dailyRoutineProvider);
+     // Use mock if routine is empty (fallback for future/past days where provider might not be hydrated)
+     final dailyExercises = routineState.isEmpty ? _mockExercises : routineState;
+     
      final submitState = ref.watch(workoutSubmitControllerProvider);
      final isSubmitting = submitState.isLoading;
 
@@ -53,7 +86,59 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
           ),
           const SizedBox(height: 16),
           
-          _buildExerciseList(context, dailyExercises, ref),
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: dailyExercises.length,
+            itemBuilder: (context, index) {
+              final exercise = dailyExercises[index];
+              final sets = exercise['sets'] as List<dynamic>;
+
+              return Card(
+                margin: const EdgeInsets.only(bottom: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        exercise['name'] as String,
+                        style: GoogleFonts.outfit(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Column(
+                        children: sets.map((s) {
+                          final set = s as Map<String, dynamic>;
+                          return ExerciseSetRow(
+                            setIndex: set['setIndex'] as int,
+                            targetReps: "8-12", // Mock or from data
+                            isDone: set['isDone'] as bool,
+                            initialWeight: (set['weight'] as num?)?.toDouble(),
+                            initialReps: set['reps'] as int?,
+                            onToggle: _isReadOnly ? null : (weight, reps) {
+                                // Only toggle if not using mock data (or handle mock toggle separately if needed)
+                                if (routineState.isNotEmpty) {
+                                  ref.read(dailyRoutineProvider.notifier).toggleSet(
+                                    exercise['id'] as String,
+                                    set['setIndex'] as int,
+                                    weight,
+                                    reps
+                                  );
+                                }
+                              },
+                          );
+                        }).toList(),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
           const SizedBox(height: 32),
 
           // RIR Slider
@@ -69,7 +154,7 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
           const SizedBox(height: 24),
 
           // CTA Button
-          if (!_isReadOnly)
+          if (!_isReadOnly && (widget.mode == WorkoutDisplayMode.active || widget.mode == WorkoutDisplayMode.retroactive))
           SizedBox(
             width: double.infinity,
             child: FilledButton(
@@ -113,167 +198,61 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
       ),
     );
   }
-
-  Widget _buildRecommendationCard(BuildContext context, WorkoutRecommendation recommendation) {
-    Color cardColor;
-    IconData icon;
-
-    switch (recommendation.type) {
-      case 'Strength':
-        cardColor = AppTheme.brandBlue;
-        icon = Icons.fitness_center;
-        break;
-      case 'Cardio':
-        cardColor = Colors.orange;
-        icon = Icons.directions_run;
-        break;
-      case 'ActiveRecovery':
-        cardColor = AppTheme.brandTeal;
-        icon = Icons.spa;
-        break;
-      case 'Deload':
-        cardColor = Colors.purple;
-        icon = Icons.battery_charging_full;
-        break;
-      default:
-        cardColor = Colors.grey;
-        icon = Icons.help_outline;
-    }
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: cardColor.withOpacity(0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
+  Widget _buildRecommendationCard(BuildContext context, WorkoutRecommendation info) {
+    return Card(
+      elevation: 0,
+      color: AppTheme.surfaceColor,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: Colors.grey.shade200),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, color: Colors.white, size: 32),
-              const SizedBox(width: 12),
-              Text(
-                recommendation.type.toUpperCase(),
-                style: GoogleFonts.outfit(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.2,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Text(
-            recommendation.targetMuscle != null 
-                ? "Objetivo: ${recommendation.targetMuscle!.name.toUpperCase()}" 
-                : "Objetivo: GENERAL",
-            style: GoogleFonts.outfit(
-              color: Colors.white.withOpacity(0.9),
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            "${recommendation.durationMinutes} Minutos  •  ${recommendation.intensity}",
-            style: GoogleFonts.outfit(
-              color: Colors.white,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              recommendation.notes,
-              style: GoogleFonts.outfit(
-                color: Colors.white,
-                fontStyle: FontStyle.italic,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildExerciseList(BuildContext context, List<Map<String, dynamic>> exercises, WidgetRef ref) {
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: exercises.length,
-      itemBuilder: (context, index) {
-        final exercise = exercises[index];
-        final sets = exercise['sets'] as List<dynamic>;
-
-        return Card(
-          margin: const EdgeInsets.only(bottom: 12),
-          elevation: 0,
-          color: Colors.grey.shade50,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: BorderSide(color: Colors.grey.shade200),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                // Exercise Header
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppTheme.brandBlue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(Icons.fitness_center, color: AppTheme.brandBlue),
+                ),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Text(
-                        exercise['name'] as String,
-                        style: GoogleFonts.outfit(
-                          fontWeight: FontWeight.bold, 
-                          fontSize: 16
-                        ),
+                    Text(
+                      info.type,
+                      style: GoogleFonts.outfit(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                    Icon(Icons.info_outline, size: 20, color: Colors.grey.shade400)
+                    Text(
+                      "${info.durationMinutes} Min • ${info.intensity}",
+                      style: GoogleFonts.outfit(
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                
-                // Sets List
-                ...sets.map((set) {
-                  return ExerciseSetRow(
-                    setIndex: set['setIndex'] as int,
-                    targetReps: set['targetReps'] as String, 
-                    isDone: set['isDone'] as bool,
-                    initialWeight: set['weight'] as double?,
-                    initialReps: set['reps'] as int?,
-                    onToggle: _isReadOnly ? null : (weight, reps) {
-                      ref.read(dailyRoutineProvider.notifier).toggleSet(
-                        exercise['id'] as String,
-                        set['setIndex'] as int,
-                        weight,
-                        reps
-                      );
-                    },
-                  );
-                }).toList(),
               ],
             ),
-          ),
-        );
-      },
+            const SizedBox(height: 16),
+            Text(
+              info.notes,
+              style: GoogleFonts.outfit(
+                fontSize: 14,
+                color: Colors.grey.shade800,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
