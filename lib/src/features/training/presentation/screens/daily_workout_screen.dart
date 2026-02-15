@@ -11,6 +11,7 @@ import '../../domain/entities/exercise.dart';
 import '../../application/weekly_plan_provider.dart';
 import '../../domain/entities/daily_workout.dart';
 import '../../domain/enums/workout_enums.dart';
+import '../../application/selected_day_provider.dart';
 import '../widgets/rir_logging_slider.dart';
 import '../widgets/exercise_set_row.dart';
 import '../widgets/rest_timer_banner.dart';
@@ -155,64 +156,93 @@ class _DailyWorkoutScreenState extends ConsumerState<DailyWorkoutScreen> {
 
   Widget _buildWeeklyCalendar(BuildContext context, WidgetRef ref) {
     final weeklyPlan = ref.watch(weeklyPlanProvider);
+    final selectedDay = ref.watch(selectedDayProvider);
     final days = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
-    final todayIndex = DateTime.now().weekday - 1; // 0-based for list index
+    final todayIndex = DateTime.now().weekday; // 1=Mon, 7=Sun
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: List.generate(days.length, (index) {
-        final isToday = index == todayIndex;
+        final dayIndex = index + 1; // 1-based index
+        final isToday = dayIndex == todayIndex;
+        final isSelected = dayIndex == selectedDay;
+
         // dayIndex in plan is 1-based (Mon=1)
         final plannedWorkout = weeklyPlan.firstWhere(
-          (w) => w.dayIndex == index + 1, 
-          orElse: () => const DailyWorkout(
-            dayIndex: 0, 
-            type: WorkoutType.rest, 
-            durationMinutes: 0, 
-            description: '', 
-            details: ''
-          )
-        );
-        
-        Color statusColor;
+            (w) => w.dayIndex == dayIndex,
+            orElse: () => const DailyWorkout(
+                dayIndex: 0,
+                type: WorkoutType.rest,
+                durationMinutes: 0,
+                description: '',
+                details: ''));
+
+        Color backgroundColor;
+        Color textColor;
+        BoxBorder? border;
+
+        if (isToday) {
+          backgroundColor = Colors.green; // Requirement: Today always Green
+          textColor = Colors.white;
+        } else if (isSelected) {
+          backgroundColor = AppTheme.brandBlue; // Requirement: Selected = Primary
+          textColor = Colors.white;
+        } else {
+          backgroundColor = Colors.grey.shade100; // Inactive
+          textColor = Colors.grey.shade600;
+        }
+
+        // Indicator dot color (Workout Type)
+        Color indicatorColor;
         switch (plannedWorkout.type) {
           case WorkoutType.strength:
-            statusColor = AppTheme.brandBlue;
+            indicatorColor = AppTheme.brandBlue;
             break;
           case WorkoutType.cardio:
-            statusColor = Colors.orange;
+            indicatorColor = Colors.orange;
             break;
           case WorkoutType.rest:
           default:
-            statusColor = Colors.grey.shade300;
+            indicatorColor = Colors.grey.shade300;
+        }
+        
+        // If the day background is blue, the blue indicator disappears, 
+        // so we might want to adjust logic or just keep it simple as requirement says "highlight backgound".
+        if (isSelected && !isToday && plannedWorkout.type == WorkoutType.strength) {
+             indicatorColor = Colors.white; 
         }
 
-        return Column(
-          children: [
-            Container(
-              width: 40, 
-              height: 40,
-              decoration: BoxDecoration(
-                color: isToday ? statusColor : Colors.grey.shade100,
-                shape: BoxShape.circle,
-                border: isToday ? null : Border.all(color: statusColor.withOpacity(0.5), width: 2),
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                days[index],
-                style: GoogleFonts.outfit(
-                  fontWeight: FontWeight.bold,
-                  color: isToday ? Colors.white : Colors.grey.shade600,
+        return GestureDetector(
+          onTap: () {
+            ref.read(selectedDayProvider.notifier).selectDay(dayIndex);
+          },
+          child: Column(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: backgroundColor,
+                  shape: BoxShape.circle,
+                  border: border,
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  days[index],
+                  style: GoogleFonts.outfit(
+                    fontWeight: FontWeight.bold,
+                    color: textColor,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 6),
-            // Indicator dot
-            CircleAvatar(
-              radius: 3, 
-              backgroundColor: isToday ? statusColor : statusColor.withOpacity(0.7)
-            ),
-          ],
+              const SizedBox(height: 6),
+              // Indicator dot
+              CircleAvatar(
+                  radius: 3,
+                  backgroundColor: indicatorColor
+              ),
+            ],
+          ),
         );
       }),
     );

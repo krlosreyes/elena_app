@@ -1,4 +1,5 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'selected_day_provider.dart';
 
 part 'daily_routine_provider.g.dart';
 
@@ -6,6 +7,16 @@ part 'daily_routine_provider.g.dart';
 class DailyRoutine extends _$DailyRoutine {
   @override
   List<Map<String, dynamic>> build() {
+    final selectedDay = ref.watch(selectedDayProvider);
+    final today = DateTime.now().weekday;
+
+    // For now, only show the routine if the selected day is TODAY.
+    // If selecting another day, show empty or placeholder (to demonstrate interactivity).
+    // In a real implementation, this would fetch from a Repository using the selected day.
+    if (selectedDay != today) {
+      return []; // Or return a specific "Rest" routine or placeholder
+    }
+
     return [
       {
         'id': 'e1',
