@@ -51,99 +51,10 @@ class DailyWorkoutScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 16),
           
-          // Mock Data for UI Debugging
-          Builder(
-            builder: (context) {
-              final mockExercises = [
-                { 'name': 'Sentadilla Goblet', 'sets': '3 series x 10-12 reps' },
-                { 'name': 'Flexiones (Push-ups)', 'sets': '3 series al fallo - RIR 2' },
-                { 'name': 'Remo con mancuernas', 'sets': '3 series x 10 reps' }
-              ];
-
-              return ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: mockExercises.length,
-                itemBuilder: (context, index) {
-                  final exercise = mockExercises[index];
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    elevation: 0,
-                    color: Colors.grey.shade50,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: BorderSide(color: Colors.grey.shade200),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(12.0), // Reduced padding slightly to prevent overflow
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  exercise['name']!,
-                                  style: GoogleFonts.outfit(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  exercise['sets']!,
-                                  style: GoogleFonts.outfit(
-                                    color: Colors.grey.shade600,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          SizedBox(
-                            width: 100, // Fixed width for input
-                            child: TextField(
-                              keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(
-                                labelText: 'Kg / Lb',
-                                isDense: true,
-                                border: OutlineInputBorder(),
-                                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              );
-            }
-          ),
-
-          const SizedBox(height: 24),
-
-          // RIR Slider
-          Text(
-            "Registro de Esfuerzo",
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-          Consumer(
-            builder: (context, ref, _) {
-              return StatefulBuilder(
-                builder: (context, setState) {
-                  int rirValue = 2; // Default
-                  return RirLoggingSlider(
-                    value: rirValue,
-                    onChanged: (val) {
-                       setState(() => rirValue = val);
-                    },
-                  );
-                }
-              );
-            },
+          dailyRoutineAsync.when(
+            data: (exercises) => _buildExerciseList(context, exercises),
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (err, stack) => Text('Error al cargar ejercicios: $err'),
           ),
           const SizedBox(height: 32),
 
@@ -215,82 +126,7 @@ class DailyWorkoutScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildExerciseList(BuildContext context, DailyWorkoutState state) {
-    // Now iterating over DailyExercise objects which contain both definition and specific routine details
-    final dailyExercises = state.exercises;
 
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: dailyExercises.length,
-      itemBuilder: (context, index) {
-        final dailyExercise = dailyExercises[index];
-        final exerciseDef = dailyExercise.exercise;
-        final routineDetails = dailyExercise.routineDetails;
-
-        return Card(
-          margin: const EdgeInsets.only(bottom: 12),
-          elevation: 0,
-          color: Colors.grey.shade50,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: BorderSide(color: Colors.grey.shade200),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  exerciseDef.name,
-                  style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  "${routineDetails.sets} series x ${routineDetails.repsRange} reps",
-                  style: GoogleFonts.outfit(color: Colors.grey.shade600, fontSize: 14),
-                ),
-                const SizedBox(height: 12),
-                // Weight Input
-                SizedBox(
-                  width: double.infinity, // Give it full width or specific width
-                  child: TextField(
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      // Show recommended weight if available
-                      hintText: dailyExercise.recommendedWeight != null 
-                          ? 'Recomendado: ${dailyExercise.recommendedWeight} kg' 
-                          : 'Peso (kg)',
-                      hintStyle: TextStyle(
-                        fontSize: 14, 
-                         // Use a distinct color if recommended
-                        color: dailyExercise.recommendedWeight != null 
-                            ? AppTheme.brandBlue.withOpacity(0.6) 
-                            : Colors.grey[400]
-                      ),
-                      labelText: 'Peso Usado (kg)',
-                      labelStyle: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
 
   Widget _buildRecommendationCard(BuildContext context, WorkoutRecommendation recommendation) {
     Color cardColor;
@@ -386,6 +222,77 @@ class DailyWorkoutScreen extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildExerciseList(BuildContext context, List<Map<String, dynamic>> exercises) {
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: exercises.length,
+      itemBuilder: (context, index) {
+        final exercise = exercises[index];
+        final recommendedWeight = exercise['recommendedWeight'];
+        
+        return Card(
+          margin: const EdgeInsets.only(bottom: 12),
+          elevation: 0,
+          color: Colors.grey.shade50,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(color: Colors.grey.shade200),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        exercise['name'] as String,
+                        style: GoogleFonts.outfit(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        exercise['sets'] as String,
+                        style: GoogleFonts.outfit(
+                          color: Colors.grey.shade600,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                SizedBox(
+                  width: 100,
+                  child: TextField(
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: 'Kg / Lb',
+                      hintText: recommendedWeight != null 
+                          ? 'Rec: $recommendedWeight kg' 
+                          : 'Kg / Lb',
+                      hintStyle: TextStyle(
+                        fontSize: 12,
+                        color: recommendedWeight != null ? AppTheme.brandBlue : Colors.grey,
+                      ),
+                      isDense: true,
+                      border: const OutlineInputBorder(),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

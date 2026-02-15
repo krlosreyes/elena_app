@@ -6,12 +6,12 @@ part of 'daily_routine_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$dailyRoutineHash() => r'10e2ec99d5ec20c8c6aec4228bcd54cd5116af7c';
+String _$dailyRoutineHash() => r'3141c977d4e3d36017cb1d76f177029981086213';
 
 /// See also [dailyRoutine].
 @ProviderFor(dailyRoutine)
 final dailyRoutineProvider =
-    AutoDisposeFutureProvider<DailyWorkoutState>.internal(
+    AutoDisposeFutureProvider<List<Map<String, dynamic>>>.internal(
   dailyRoutine,
   name: r'dailyRoutineProvider',
   debugGetCreateSourceHash:
@@ -20,6 +20,7 @@ final dailyRoutineProvider =
   allTransitiveDependencies: null,
 );
 
-typedef DailyRoutineRef = AutoDisposeFutureProviderRef<DailyWorkoutState>;
+typedef DailyRoutineRef
+    = AutoDisposeFutureProviderRef<List<Map<String, dynamic>>>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member

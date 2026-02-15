@@ -35,25 +35,10 @@ class TrainingPhysiology {
     };
   }
 
-  /// Calculates the next weight for progressive overload.
-  /// 
-  /// Based on the RIR (Reps In Reserve) delta.
   static double calculateNextWeight(double lastWeight, int lastRir, int targetRir) {
     final rirDelta = lastRir - targetRir;
-    
-    if (rirDelta >= 2) {
-      // Very easy: Increase by 2.5kg
-      return lastWeight + 2.5; 
-    } else if (rirDelta == 1) {
-      // Sligthly easy: Micro-load 1.25kg
-      return lastWeight + 1.25;
-    } else if (rirDelta == 0) {
-      // Perfect: Maintain weight to consolidate technique
-      return lastWeight;
-    } else {
-      // Failed or too heavy (RIR negative relative to target): Maintain or deload.
-      // For safety, we maintain.
-      return lastWeight; 
-    }
+    if (rirDelta >= 2) return lastWeight + 2.5; // Muy fácil
+    if (rirDelta == 1) return lastWeight + 1.25; // Ligeramente fácil
+    return lastWeight; // Exacto o fallo: mantener
   }
 }
