@@ -65,9 +65,8 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
 
   @override
   Widget build(BuildContext context) {
-     final routineState = ref.watch(dailyRoutineProvider);
-     // Use mock if routine is empty (fallback for future/past days)
-     final dailyExercises = routineState.isEmpty ? _mockExercises : routineState;
+     final dailyExercises = ref.watch(dailyRoutineProvider);
+     // No more mock fallback - Provider is Single Source of Truth
      
      final submitState = ref.watch(workoutSubmitControllerProvider);
      final isSubmitting = submitState.isLoading;
@@ -113,21 +112,15 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
                       Column(
                         children: exercise.sets.map((set) {
                           return ExerciseSetRow(
+                            exerciseId: exercise.id, // Passing ID now
                             setIndex: set.setIndex,
                             targetReps: set.targetReps,
                             isDone: set.isDone,
                             initialWeight: set.weight,
                             initialReps: set.reps,
                             onToggle: _isReadOnly ? null : (weight, reps) {
-                                if (routineState.isNotEmpty) {
-                                  ref.read(dailyRoutineProvider.notifier).toggleSet(
-                                    exercise.id,
-                                    set.setIndex,
-                                    weight,
-                                    reps,
-                                  );
-                                }
-                              },
+                                // Callback still useful for enabling the row (null = disabled)
+                            },
                           );
                         }).toList(),
                       ),

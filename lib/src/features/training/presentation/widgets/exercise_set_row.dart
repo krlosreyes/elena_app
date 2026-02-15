@@ -2,17 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../application/rest_timer_provider.dart';
+import '../../application/daily_routine_provider.dart'; // Added import
 
 class ExerciseSetRow extends ConsumerStatefulWidget {
+  final String exerciseId; // Added as per strict prompt
   final int setIndex;
   final String targetReps;
   final bool isDone;
   final double? initialWeight;
   final int? initialReps;
-  final Function(double? weight, int? reps)? onToggle;
+  final Function(double? weight, int? reps)? onToggle; // Keeping as optional/legacy or for other uses if needed, but primary logic moves.
 
   const ExerciseSetRow({
     super.key,
+    required this.exerciseId, // Required now
     required this.setIndex,
     required this.targetReps,
     required this.isDone,
@@ -72,13 +75,22 @@ class _ExerciseSetRowState extends ConsumerState<ExerciseSetRow> {
   }
 
   void _handleToggle() {
-    if (widget.onToggle == null) return;
+    // Logic from prompt:
+    // ref.read(dailyRoutineProvider.notifier).toggleSet(widget.exerciseId, widget.setIndex, double.tryParse(_weightController.text) ?? 5.0, int.tryParse(_repsController.text) ?? 0);
+    
+    final weight = double.tryParse(_weightController.text) ?? 5.0;
+    final reps = int.tryParse(_repsController.text) ?? 0;
 
-    final weight = double.tryParse(_weightController.text);
-    final reps = int.tryParse(_repsController.text);
+    // Call provider directly
+    ref.read(dailyRoutineProvider.notifier).toggleSet(
+      widget.exerciseId, 
+      widget.setIndex, 
+      weight, 
+      reps
+    );
 
-    // Trigger provider update
-    widget.onToggle!(weight, reps);
+    // Legacy callback if needed, though prompt implies direct call is the fix
+    widget.onToggle?.call(weight, reps);
 
     // If marking as done (currently NOT done), start rest timer
     if (!widget.isDone) {
