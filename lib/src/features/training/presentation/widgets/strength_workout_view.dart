@@ -65,8 +65,7 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
 
   @override
   Widget build(BuildContext context) {
-     final dailyExercises = ref.watch(dailyRoutineProvider);
-     // No more mock fallback - Provider is Single Source of Truth
+     final dailyExercisesAsync = ref.watch(dailyRoutineProvider);
      
      final submitState = ref.watch(workoutSubmitControllerProvider);
      final isSubmitting = submitState.isLoading;
@@ -86,49 +85,58 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
           ),
           const SizedBox(height: 16),
           
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: dailyExercises.length,
-            itemBuilder: (context, index) {
-              final exercise = dailyExercises[index];
+          dailyExercisesAsync.when(
+            data: (dailyExercises) {
+              if (dailyExercises.isEmpty) {
+                return const Center(child: Text('No hay ejercicios asignados.'));
+              }
+              return ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: dailyExercises.length,
+                itemBuilder: (context, index) {
+                  final exercise = dailyExercises[index];
 
-              return Card(
-                margin: const EdgeInsets.only(bottom: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        exercise.name,
-                        style: GoogleFonts.outfit(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            exercise.name,
+                            style: GoogleFonts.outfit(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Column(
+                            children: exercise.sets.map((set) {
+                              return ExerciseSetRow(
+                                exerciseId: exercise.id, // Passing ID now
+                                setIndex: set.setIndex,
+                                targetReps: set.targetReps,
+                                isDone: set.isDone,
+                                initialWeight: set.weight,
+                                initialReps: set.reps,
+                                onToggle: _isReadOnly ? null : (weight, reps) {
+                                    // Callback still useful for enabling the row (null = disabled)
+                                },
+                              );
+                            }).toList(),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 12),
-                      Column(
-                        children: exercise.sets.map((set) {
-                          return ExerciseSetRow(
-                            exerciseId: exercise.id, // Passing ID now
-                            setIndex: set.setIndex,
-                            targetReps: set.targetReps,
-                            isDone: set.isDone,
-                            initialWeight: set.weight,
-                            initialReps: set.reps,
-                            onToggle: _isReadOnly ? null : (weight, reps) {
-                                // Callback still useful for enabling the row (null = disabled)
-                            },
-                          );
-                        }).toList(),
-                      ),
-                    ],
-                  ),
-                ),
+                    ),
+                  );
+                },
               );
             },
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (err, stack) => Text('Error al cargar rutina: $err'),
           ),
           const SizedBox(height: 32),
 

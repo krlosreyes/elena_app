@@ -10,7 +10,7 @@ part 'daily_routine_provider.g.dart';
 @riverpod
 class DailyRoutine extends _$DailyRoutine {
   @override
-  List<InteractiveExercise> build() {
+  Future<List<InteractiveExercise>> build() async {
     final selectedDay = ref.watch(selectedDayProvider);
     final todayIndex = DateTime.now().weekday;
 
@@ -37,7 +37,7 @@ class DailyRoutine extends _$DailyRoutine {
           sets: List.generate(e.sets, (index) => InteractiveSet(
             setIndex: index + 1,
             targetReps: e.targetReps,
-            weight: 0.0, // Default weight, user will input actuals
+            weight: 5.0, // Default weight 5.0 as requested
             isDone: false,
           )),
         );
@@ -49,26 +49,24 @@ class DailyRoutine extends _$DailyRoutine {
   }
 
   void toggleSet(String exerciseId, int setIndex, double weight, int reps) {
-    // Nuclear Immutable Update
-    // We recreate the entire list structure to guarantee Riverpod detects the change.
-    state = [
-      for (final exercise in state)
-        if (exercise.id == exerciseId)
-          exercise.copyWith(
-            sets: [
-              for (final set in exercise.sets)
-                if (set.setIndex == setIndex)
-                  set.copyWith(
-                    isDone: !set.isDone,
-                    weight: weight,
-                    reps: reps,
-                  )
-                else
-                  set
-            ],
-          )
-        else
-          exercise
-    ];
+    // Nuclear Async Immutable Update
+    // Using state.whenData to ensure we are operating on loaded data
+    state.whenData((routine) {
+      state = AsyncData([
+        for (final ex in routine)
+          if (ex.id == exerciseId)
+            ex.copyWith(sets: [
+              for (int i = 0; i < ex.sets.length; i++)
+                i == setIndex - 1 // setIndex is 1-based, list is 0-based
+                  ? ex.sets[i].copyWith(
+                      isDone: !ex.sets[i].isDone, 
+                      weight: weight, 
+                      reps: reps
+                    )
+                  : ex.sets[i]
+            ])
+          else ex
+      ]);
+    });
   }
 }
