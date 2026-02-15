@@ -43,6 +43,7 @@ class UserModel with _$UserModel {
     required SnackingHabit snackingHabit,
     required DietaryPreference dietaryPreference,
     @Default(false) bool hasDumbbells, // <--- New Equipment Field
+    @Default([1, 3, 5]) List<int> workoutDays, // <--- New flexible planning field
 
     // 4. Cronobiología (Guardado como String 'HH:mm')
     required String wakeUpTime,

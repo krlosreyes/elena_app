@@ -3,7 +3,11 @@ import '../entities/training_entities.dart';
 import '../enums/workout_enums.dart';
 
 class WeeklyPlanGenerator {
-  static List<DailyWorkout> generate(WorkoutGoal goal, {required int age, required bool hasDumbbells}) {
+  static List<DailyWorkout> generate(WorkoutGoal goal, {
+    required int age, 
+    required bool hasDumbbells,
+    List<int> workoutDays = const [1, 3, 5], // Default Mon, Wed, Fri
+  }) {
     // Calculate Max HR
     final maxHr = 220 - age;
     final zone2Low = (maxHr * 0.60).round();
@@ -11,21 +15,62 @@ class WeeklyPlanGenerator {
     final zone2String = "Zona 2 ($zone2Low-$zone2High BPM)";
 
     List<DailyWorkout> plan = [];
+    
+    // Sort workout days just in case
+    workoutDays.sort();
 
-    switch (goal) {
-      case WorkoutGoal.fatLoss:
-        plan = _generateFatLossPlan(zone2String, hasDumbbells);
-        break;
-      case WorkoutGoal.recomp:
-      case WorkoutGoal.metabolic_health:
-        plan = _generateRecompPlan(zone2String, hasDumbbells);
-        break;
-      case WorkoutGoal.muscleGain:
-        plan = _generateMuscleGainPlan(zone2String, hasDumbbells);
-        break;
+    int strengthSessionCount = 0;
+
+    // Generate for all 7 days
+    for (int day = 1; day <= 7; day++) {
+      if (workoutDays.contains(day)) {
+        // It's a strength day
+        String routineType;
+        // Cycle through A, B, C based on session count
+        if (strengthSessionCount % 3 == 0) routineType = 'A';
+        else if (strengthSessionCount % 3 == 1) routineType = 'B';
+        else routineType = 'C';
+
+        strengthSessionCount++;
+
+        // Determine goal-specific nuances (RIR, Volume name)
+        String description = "FullBody $routineType";
+        String rir = "RIR 2";
+        
+        if (goal == WorkoutGoal.muscleGain) {
+           description = "FullBody Volumen $routineType";
+           rir = "RIR 0-1";
+        } else if (goal == WorkoutGoal.recomp) {
+           rir = "RIR 1-2";
+        }
+
+        plan.add(_strengthDay(day, description, rir, hasDumbbells, routineType));
+
+      } else {
+        // It's a non-strength day. Check if it should be cardio or rest.
+        // For simplicity in this iteration:
+        // FatLoss -> Cardio on non-strength days (except 1 full rest)
+        // Others -> Active Recovery or Rest
+        
+        bool isRest = false;
+        // Simple logic: Ensure at least 1 full rest day if possible, preferably Sunday (7)
+        // If user trains 6 days, day 7 is rest.
+        if (day == 7 && !workoutDays.contains(7)) isRest = true; 
+        
+        if (isRest) {
+           plan.add(_restDay(day));
+        } else {
+           // Cardio / Active Recovery
+           if (goal == WorkoutGoal.fatLoss) {
+             plan.add(_cardioDay(day, 45, "Cardio LISS", zone2String));
+           } else {
+             plan.add(_cardioDay(day, 30, "Recuperación Activa", "Caminata o Yoga"));
+           }
+        }
+      }
     }
 
-    // Emergency Fallback: If plan is empty, generate a basic plan with Routine A
+    // Emergency Fallback: If plan is empty (shouldn't happen loop always runs 7 times), return defaults
     if (plan.isEmpty) {
       return [
          _strengthDay(1, "FullBody A (Fallback)", "RIR 2", hasDumbbells, 'A'),
@@ -40,42 +85,9 @@ class WeeklyPlanGenerator {
 
     return plan;
   }
-
-  static List<DailyWorkout> _generateFatLossPlan(String zone2, bool hasDumbbells) {
-    return [
-      _strengthDay(1, "FullBody A", "RIR 2", hasDumbbells, 'A'),
-      _cardioDay(2, 30, "Cardio LISS", zone2),
-      _strengthDay(3, "FullBody B", "RIR 2", hasDumbbells, 'B'),
-      _cardioDay(4, 45, "Cardio LISS", zone2),
-      _strengthDay(5, "FullBody C", "RIR 2", hasDumbbells, 'C'),
-      _cardioDay(6, 60, "Cardio LISS", zone2),
-      _restDay(7),
-    ];
-  }
-
-  static List<DailyWorkout> _generateRecompPlan(String zone2, bool hasDumbbells) {
-    return [
-      _strengthDay(1, "FullBody A", "RIR 1-2", hasDumbbells, 'A'),
-      _cardioDay(2, 45, "Cardio LISS", zone2),
-      _strengthDay(3, "FullBody B", "RIR 1-2", hasDumbbells, 'B'),
-      _cardioDay(4, 36, "HIIT Nórdico", "4x4 min"),
-      _strengthDay(5, "FullBody C", "RIR 1-2", hasDumbbells, 'C'),
-      _cardioDay(6, 45, "Cardio LISS", zone2),
-      _restDay(7),
-    ];
-  }
-
-  static List<DailyWorkout> _generateMuscleGainPlan(String zone2, bool hasDumbbells) {
-    return [
-      _strengthDay(1, "FullBody Volumen A", "RIR 0-1", hasDumbbells, 'A'),
-      _cardioDay(2, 30, "Recuperación Activa", "Zona 1-2"),
-      _strengthDay(3, "FullBody Volumen B", "RIR 0-1", hasDumbbells, 'B'),
-      _cardioDay(4, 30, "Recuperación Activa", "Zona 1-2"),
-      _strengthDay(5, "FullBody Volumen C", "RIR 0-1", hasDumbbells, 'C'),
-      _cardioDay(6, 30, "Recuperación Activa", "Zona 1-2"),
-      _restDay(7),
-    ];
-  }
+  
+  // Removed specific _generateFatLossPlan etc. to use the dynamic loop above.
+  // Keeping helper methods _strengthDay, _cardioDay, _restDay.
 
   static DailyWorkout _strengthDay(int day, String desc, String details, bool hasDumbbells, String routineType) {
     return DailyWorkout(

@@ -44,6 +44,8 @@ mixin _$UserModel {
   DietaryPreference get dietaryPreference => throw _privateConstructorUsedError;
   bool get hasDumbbells =>
       throw _privateConstructorUsedError; // <--- New Equipment Field
+  List<int> get workoutDays =>
+      throw _privateConstructorUsedError; // <--- New flexible planning field
 // 4. Cronobiología (Guardado como String 'HH:mm')
   String get wakeUpTime => throw _privateConstructorUsedError;
   String get bedTime => throw _privateConstructorUsedError;
@@ -97,6 +99,7 @@ abstract class $UserModelCopyWith<$Res> {
       SnackingHabit snackingHabit,
       DietaryPreference dietaryPreference,
       bool hasDumbbells,
+      List<int> workoutDays,
       String wakeUpTime,
       String bedTime,
       String usualFirstMealTime,
@@ -145,6 +148,7 @@ class _$UserModelCopyWithImpl<$Res, $Val extends UserModel>
     Object? snackingHabit = null,
     Object? dietaryPreference = null,
     Object? hasDumbbells = null,
+    Object? workoutDays = null,
     Object? wakeUpTime = null,
     Object? bedTime = null,
     Object? usualFirstMealTime = null,
@@ -234,6 +238,10 @@ class _$UserModelCopyWithImpl<$Res, $Val extends UserModel>
           ? _value.hasDumbbells
           : hasDumbbells // ignore: cast_nullable_to_non_nullable
               as bool,
+      workoutDays: null == workoutDays
+          ? _value.workoutDays
+          : workoutDays // ignore: cast_nullable_to_non_nullable
+              as List<int>,
       wakeUpTime: null == wakeUpTime
           ? _value.wakeUpTime
           : wakeUpTime // ignore: cast_nullable_to_non_nullable
@@ -325,6 +333,7 @@ abstract class _$$UserModelImplCopyWith<$Res>
       SnackingHabit snackingHabit,
       DietaryPreference dietaryPreference,
       bool hasDumbbells,
+      List<int> workoutDays,
       String wakeUpTime,
       String bedTime,
       String usualFirstMealTime,
@@ -371,6 +380,7 @@ class __$$UserModelImplCopyWithImpl<$Res>
     Object? snackingHabit = null,
     Object? dietaryPreference = null,
     Object? hasDumbbells = null,
+    Object? workoutDays = null,
     Object? wakeUpTime = null,
     Object? bedTime = null,
     Object? usualFirstMealTime = null,
@@ -460,6 +470,10 @@ class __$$UserModelImplCopyWithImpl<$Res>
           ? _value.hasDumbbells
           : hasDumbbells // ignore: cast_nullable_to_non_nullable
               as bool,
+      workoutDays: null == workoutDays
+          ? _value._workoutDays
+          : workoutDays // ignore: cast_nullable_to_non_nullable
+              as List<int>,
       wakeUpTime: null == wakeUpTime
           ? _value.wakeUpTime
           : wakeUpTime // ignore: cast_nullable_to_non_nullable
@@ -546,6 +560,7 @@ class _$UserModelImpl extends _UserModel {
       required this.snackingHabit,
       required this.dietaryPreference,
       this.hasDumbbells = false,
+      final List<int> workoutDays = const [1, 3, 5],
       required this.wakeUpTime,
       required this.bedTime,
       required this.usualFirstMealTime,
@@ -563,6 +578,7 @@ class _$UserModelImpl extends _UserModel {
       this.updatedAt})
       : _pathologies = pathologies,
         _physicalLimitations = physicalLimitations,
+        _workoutDays = workoutDays,
         super._();
 
   factory _$UserModelImpl.fromJson(Map<String, dynamic> json) =>
@@ -627,6 +643,17 @@ class _$UserModelImpl extends _UserModel {
   @JsonKey()
   final bool hasDumbbells;
 // <--- New Equipment Field
+  final List<int> _workoutDays;
+// <--- New Equipment Field
+  @override
+  @JsonKey()
+  List<int> get workoutDays {
+    if (_workoutDays is EqualUnmodifiableListView) return _workoutDays;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_workoutDays);
+  }
+
+// <--- New flexible planning field
 // 4. Cronobiología (Guardado como String 'HH:mm')
   @override
   final String wakeUpTime;
@@ -670,7 +697,7 @@ class _$UserModelImpl extends _UserModel {
 
   @override
   String toString() {
-    return 'UserModel(uid: $uid, email: $email, displayName: $displayName, name: $name, photoUrl: $photoUrl, gender: $gender, birthDate: $birthDate, heightCm: $heightCm, currentWeightKg: $currentWeightKg, waistCircumferenceCm: $waistCircumferenceCm, neckCircumferenceCm: $neckCircumferenceCm, hipCircumferenceCm: $hipCircumferenceCm, pathologies: $pathologies, activityLevel: $activityLevel, physicalLimitations: $physicalLimitations, snackingHabit: $snackingHabit, dietaryPreference: $dietaryPreference, hasDumbbells: $hasDumbbells, wakeUpTime: $wakeUpTime, bedTime: $bedTime, usualFirstMealTime: $usualFirstMealTime, usualLastMealTime: $usualLastMealTime, fastingExperience: $fastingExperience, recommendedProtocol: $recommendedProtocol, healthGoal: $healthGoal, targetWeightKg: $targetWeightKg, startWeightKg: $startWeightKg, targetFatPercentage: $targetFatPercentage, targetLBM: $targetLBM, checkInDay: $checkInDay, onboardingCompleted: $onboardingCompleted, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'UserModel(uid: $uid, email: $email, displayName: $displayName, name: $name, photoUrl: $photoUrl, gender: $gender, birthDate: $birthDate, heightCm: $heightCm, currentWeightKg: $currentWeightKg, waistCircumferenceCm: $waistCircumferenceCm, neckCircumferenceCm: $neckCircumferenceCm, hipCircumferenceCm: $hipCircumferenceCm, pathologies: $pathologies, activityLevel: $activityLevel, physicalLimitations: $physicalLimitations, snackingHabit: $snackingHabit, dietaryPreference: $dietaryPreference, hasDumbbells: $hasDumbbells, workoutDays: $workoutDays, wakeUpTime: $wakeUpTime, bedTime: $bedTime, usualFirstMealTime: $usualFirstMealTime, usualLastMealTime: $usualLastMealTime, fastingExperience: $fastingExperience, recommendedProtocol: $recommendedProtocol, healthGoal: $healthGoal, targetWeightKg: $targetWeightKg, startWeightKg: $startWeightKg, targetFatPercentage: $targetFatPercentage, targetLBM: $targetLBM, checkInDay: $checkInDay, onboardingCompleted: $onboardingCompleted, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -710,6 +737,8 @@ class _$UserModelImpl extends _UserModel {
                 other.dietaryPreference == dietaryPreference) &&
             (identical(other.hasDumbbells, hasDumbbells) ||
                 other.hasDumbbells == hasDumbbells) &&
+            const DeepCollectionEquality()
+                .equals(other._workoutDays, _workoutDays) &&
             (identical(other.wakeUpTime, wakeUpTime) ||
                 other.wakeUpTime == wakeUpTime) &&
             (identical(other.bedTime, bedTime) || other.bedTime == bedTime) &&
@@ -763,6 +792,7 @@ class _$UserModelImpl extends _UserModel {
         snackingHabit,
         dietaryPreference,
         hasDumbbells,
+        const DeepCollectionEquality().hash(_workoutDays),
         wakeUpTime,
         bedTime,
         usualFirstMealTime,
@@ -814,6 +844,7 @@ abstract class _UserModel extends UserModel {
       required final SnackingHabit snackingHabit,
       required final DietaryPreference dietaryPreference,
       final bool hasDumbbells,
+      final List<int> workoutDays,
       required final String wakeUpTime,
       required final String bedTime,
       required final String usualFirstMealTime,
@@ -872,6 +903,8 @@ abstract class _UserModel extends UserModel {
   @override
   bool get hasDumbbells;
   @override // <--- New Equipment Field
+  List<int> get workoutDays;
+  @override // <--- New flexible planning field
 // 4. Cronobiología (Guardado como String 'HH:mm')
   String get wakeUpTime;
   @override

@@ -3,6 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../domain/entities/interactive_routine.dart';
 import '../domain/entities/daily_workout.dart'; // Added missing import
 import '../domain/enums/workout_enums.dart';
+import 'calendar_state_provider.dart'; // Added for flexible planning
 import 'selected_day_provider.dart';
 import 'weekly_plan_provider.dart';
 
@@ -12,9 +13,12 @@ part 'daily_routine_provider.g.dart';
 class DailyRoutine extends _$DailyRoutine {
   @override
   Future<List<InteractiveExercise>> build() async {
-    // 1. Listen to Selected Day (1=Mon, 7=Sun)
-    final selectedDay = ref.watch(selectedDayProvider);
-    debugPrint("ElenaApp Log: Cargando rutina para el día seleccionado: $selectedDay");
+    // 1. Listen to Calendar State (DateTime) directly
+    // This fixes the disconnection where UI updates calendar but logic watched selectedDayProvider
+    final selectedDate = ref.watch(calendarStateProvider);
+    final dayIndex = selectedDate.weekday; // 1=Mon, 7=Sun
+    
+    debugPrint("ElenaApp Log: Cargando rutina para FECHA: $selectedDate (Dia: $dayIndex)");
     
     // 2. Listen to Weekly Plan (generated based on Profile)
     final weeklyPlan = ref.watch(weeklyPlanProvider);
@@ -27,11 +31,11 @@ class DailyRoutine extends _$DailyRoutine {
     // 3. Find the workout for the selected day
     // We use a safe lookup. If not found, return a default Rest day.
     final dailyWorkout = weeklyPlan.firstWhere(
-      (w) => w.dayIndex == selectedDay,
+      (w) => w.dayIndex == dayIndex,
       orElse: () {
-        debugPrint("ElenaApp Log: No se encontró workout para el día $selectedDay. Retornando Rest.");
+        debugPrint("ElenaApp Log: No se encontró workout para el día $dayIndex. Retornando Rest.");
         return DailyWorkout(
-          dayIndex: selectedDay, 
+          dayIndex: dayIndex, 
           type: WorkoutType.rest, 
           durationMinutes: 0, 
           description: 'Rest', 
@@ -43,7 +47,7 @@ class DailyRoutine extends _$DailyRoutine {
 
     // 4. Ensure it's a Strength workout
     if (dailyWorkout.type != WorkoutType.strength) {
-      debugPrint("ElenaApp Log: El workout del día $selectedDay no es de Fuerza (${dailyWorkout.type}).");
+      debugPrint("ElenaApp Log: El workout del día $dayIndex no es de Fuerza (${dailyWorkout.type}).");
       return [];
     }
 
@@ -65,7 +69,7 @@ class DailyRoutine extends _$DailyRoutine {
       }).toList();
     }
 
-    debugPrint("ElenaApp Log: Lista de ejercicios vacía para el día $selectedDay.");
+    debugPrint("ElenaApp Log: Lista de ejercicios vacía para el día $dayIndex.");
     return [];
   }
 

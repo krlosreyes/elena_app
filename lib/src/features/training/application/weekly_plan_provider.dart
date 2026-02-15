@@ -37,7 +37,8 @@ List<DailyWorkout> weeklyPlan(WeeklyPlanRef ref) {
       return WeeklyPlanGenerator.generate(
         goal, 
         age: profile.age, 
-        hasDumbbells: profile.hasDumbbells // <--- Passing equipment
+        hasDumbbells: profile.hasDumbbells,
+        workoutDays: profile.workoutDays.isNotEmpty ? profile.workoutDays : [1, 3, 5],
       );
     },
     loading: () => [],
