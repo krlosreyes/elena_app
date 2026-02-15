@@ -9,10 +9,17 @@ import '../../domain/entities/training_entities.dart';
 import '../widgets/exercise_set_row.dart';
 import '../widgets/rir_logging_slider.dart';
 
+import '../../domain/enums/workout_enums.dart';
+
 class StrengthWorkoutView extends ConsumerStatefulWidget {
   final WorkoutRecommendation recommendation;
+  final WorkoutDisplayMode mode;
 
-  const StrengthWorkoutView({super.key, required this.recommendation});
+  const StrengthWorkoutView({
+    super.key, 
+    required this.recommendation,
+    this.mode = WorkoutDisplayMode.active,
+  });
 
   @override
   ConsumerState<StrengthWorkoutView> createState() => _StrengthWorkoutViewState();
@@ -20,6 +27,10 @@ class StrengthWorkoutView extends ConsumerStatefulWidget {
 
 class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
   int _currentRir = 2; 
+
+  bool get _isReadOnly => 
+    widget.mode == WorkoutDisplayMode.readOnly || 
+    widget.mode == WorkoutDisplayMode.completed;
 
   @override
   Widget build(BuildContext context) {
@@ -46,6 +57,7 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
           const SizedBox(height: 32),
 
           // RIR Slider
+          if (!_isReadOnly)
           RirLoggingSlider(
             value: _currentRir,
             onChanged: (val) {
@@ -57,6 +69,7 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
           const SizedBox(height: 24),
 
           // CTA Button
+          if (!_isReadOnly)
           SizedBox(
             width: double.infinity,
             child: FilledButton(
@@ -71,7 +84,9 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
                       }
                     },
               style: FilledButton.styleFrom(
-                backgroundColor: AppTheme.brandBlue,
+                backgroundColor: widget.mode == WorkoutDisplayMode.retroactive 
+                    ? Colors.orange 
+                    : AppTheme.brandBlue,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
@@ -82,7 +97,9 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
                       child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
                     )
                   : Text(
-                      "Terminar y Guardar Entrenamiento",
+                      widget.mode == WorkoutDisplayMode.retroactive
+                          ? "Guardar Registro Pasado"
+                          : "Terminar y Guardar Entrenamiento",
                       style: GoogleFonts.outfit(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -242,7 +259,7 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
                     isDone: set['isDone'] as bool,
                     initialWeight: set['weight'] as double?,
                     initialReps: set['reps'] as int?,
-                    onToggle: (weight, reps) {
+                    onToggle: _isReadOnly ? null : (weight, reps) {
                       ref.read(dailyRoutineProvider.notifier).toggleSet(
                         exercise['id'] as String,
                         set['setIndex'] as int,

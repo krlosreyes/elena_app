@@ -10,3 +10,10 @@ enum WorkoutType {
   cardio,
   rest,
 }
+
+enum WorkoutDisplayMode {
+  active,
+  retroactive,
+  readOnly,
+  completed,
+}

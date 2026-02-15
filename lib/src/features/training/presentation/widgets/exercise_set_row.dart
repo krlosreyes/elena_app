@@ -9,14 +9,14 @@ class ExerciseSetRow extends ConsumerStatefulWidget {
   final bool isDone;
   final double? initialWeight;
   final int? initialReps;
-  final Function(double? weight, int? reps) onToggle;
+  final Function(double? weight, int? reps)? onToggle;
 
   const ExerciseSetRow({
     super.key,
     required this.setIndex,
     required this.targetReps,
     required this.isDone,
-    required this.onToggle,
+    this.onToggle,
     this.initialWeight,
     this.initialReps,
   });
@@ -48,11 +48,13 @@ class _ExerciseSetRowState extends ConsumerState<ExerciseSetRow> {
   }
 
   void _handleToggle() {
+    if (widget.onToggle == null) return;
+
     final weight = double.tryParse(_weightController.text);
     final reps = int.tryParse(_repsController.text);
     
     // Trigger logic
-    widget.onToggle(weight, reps);
+    widget.onToggle!(weight, reps);
 
     // If marking as done, start rest timer
     if (!widget.isDone) {
@@ -62,6 +64,8 @@ class _ExerciseSetRowState extends ConsumerState<ExerciseSetRow> {
 
   @override
   Widget build(BuildContext context) {
+    final isEnabled = !widget.isDone && widget.onToggle != null;
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
@@ -104,7 +108,7 @@ class _ExerciseSetRowState extends ConsumerState<ExerciseSetRow> {
               controller: _weightController,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               textAlign: TextAlign.center,
-              enabled: !widget.isDone,
+              enabled: isEnabled,
               style: GoogleFonts.outfit(fontSize: 14),
               decoration: InputDecoration(
                 hintText: 'Kg',
@@ -133,7 +137,7 @@ class _ExerciseSetRowState extends ConsumerState<ExerciseSetRow> {
               controller: _repsController,
               keyboardType: TextInputType.number,
               textAlign: TextAlign.center,
-              enabled: !widget.isDone,
+              enabled: isEnabled,
               style: GoogleFonts.outfit(fontSize: 14),
               decoration: InputDecoration(
                 hintText: 'Reps',
@@ -157,10 +161,12 @@ class _ExerciseSetRowState extends ConsumerState<ExerciseSetRow> {
 
           // Check Button
           InkWell(
-            onTap: _handleToggle,
+            onTap: widget.onToggle != null ? _handleToggle : null,
             child: Icon(
               widget.isDone ? Icons.check_circle : Icons.circle_outlined,
-              color: widget.isDone ? Colors.green : Colors.grey.shade400,
+              color: widget.isDone 
+                  ? Colors.green 
+                  : (widget.onToggle != null ? Colors.grey.shade400 : Colors.grey.shade200),
               size: 28,
             ),
           ),

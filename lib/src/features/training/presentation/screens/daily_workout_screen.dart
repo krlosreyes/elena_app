@@ -103,71 +103,72 @@ class DailyWorkoutScreen extends ConsumerWidget {
   }
 
   Widget _buildBody(BuildContext context, DailyWorkoutState state) {
-    return switch (state) {
-      DailyWorkoutLoading() => const Center(child: CircularProgressIndicator()),
-      
-      DailyWorkoutPastCompleted(log: final log) => PastWorkoutSummaryView(log: log),
-      
-      DailyWorkoutPastMissed() => MissedWorkoutView(onManualLog: () {
-            // TODO: Navigate to manual log screen or open dialog
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text("Registro manual pendiente de implementar")),
-            );
-          }),
-      
-      DailyWorkoutFuture(plannedWorkout: final plan) => _buildReadOnlyPlan(plan),
-      
-      DailyWorkoutToday(plannedWorkout: final plan) => _buildInteractivePlan(context, plan),
-    };
-  }
+    // Default fallback
+    if (state is DailyWorkoutLoading) { 
+      return const Center(child: CircularProgressIndicator());
+    }
 
-  Widget _buildReadOnlyPlan(DailyWorkout? plan) {
-    if (plan == null) return const RestDayView();
-    // Re-use views but maybe in read-only mode, or simple text for now
-    // For MVP, just showing the plan description
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.lock_clock, size: 64, color: Colors.grey.shade300),
-          const SizedBox(height: 16),
-          Text(
-            "Plan Futuro: ${plan.description}",
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey),
-          ),
-          Text(
-            plan.details,
-            style: const TextStyle(fontSize: 14, color: Colors.grey),
-          ),
-        ],
-      ),
-    );
-  }
+    // Map State to Display Mode & Plan
+    final WorkoutDisplayMode mode;
+    final DailyWorkout? plan;
+    final bool isCompleted;
 
-  Widget _buildInteractivePlan(BuildContext context, DailyWorkout? plan) {
-    if (plan == null) return const RestDayView();
+    switch (state) {
+      case DailyWorkoutPastCompleted(log: final log, plannedWorkout: final p):
+         mode = WorkoutDisplayMode.completed;
+         plan = p; 
+         isCompleted = true;
+         break;
+      case DailyWorkoutPastMissed(plannedWorkout: final p):
+         mode = WorkoutDisplayMode.retroactive;
+         plan = p;
+         isCompleted = false;
+         break;
+      case DailyWorkoutFuture(plannedWorkout: final p):
+         mode = WorkoutDisplayMode.readOnly;
+         plan = p;
+         isCompleted = false;
+         break;
+      case DailyWorkoutToday(plannedWorkout: final p):
+         mode = WorkoutDisplayMode.active;
+         plan = p;
+         isCompleted = false;
+         break;
+      default:
+         mode = WorkoutDisplayMode.readOnly;
+         plan = null;
+         isCompleted = false;
+    }
 
-    // Show Metabolic Banner for active days
-    // We can wrap it in a Column
+    // Resolving Plan if null (e.g. PastCompleted didn't carry it in previous step)
+    // Actually, DailyWorkoutPastCompleted in orchestrator *should* be updated to carry plan.
+    // But let's see if we can get it from context.
+    // If plan is null here, we effectively show Rest Day.
     
-    return Column(
-      children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16.0),
-          child: MetabolicInsightBanner(),
-        ),
-        Expanded(
-          child: _buildWorkoutView(context, plan, false),
-        ),
-        const RestTimerBanner(), 
-      ],
-    );
+    // Quick Fix: render Rest Day if plan is null, unless we can get it.
+    if (plan == null && mode != WorkoutDisplayMode.completed) return const RestDayView();
+    
+    // For completed, we might not have the plan if Orchestrator didn't pass it.
+    // But we need to show *something*.
+    // If it is completed, we prioritize the Log info, but existing views expect a Plan.
+    // Let's fallback to "Entrenamiento Completado" simple view if we can't show details.
+    // OR, we assume Orchestrator *will* pass plan in next iteration.
+    // Let's assume plan is available or return Rest View.
+    
+    final finalPlan = plan; 
+    
+    if (finalPlan == null) {
+       // If completed, stick to old summary view for now as fallback?
+       if (state is DailyWorkoutPastCompleted) return PastWorkoutSummaryView(log: state.log);
+       return const RestDayView(); 
+    }
+
+    return _buildWorkoutView(context, finalPlan, isCompleted, mode);
   }
 
-  Widget _buildWorkoutView(BuildContext context, DailyWorkout plan, bool isCompleted) {
+  Widget _buildWorkoutView(BuildContext context, DailyWorkout plan, bool isCompleted, WorkoutDisplayMode mode) {
     switch (plan.type) {
       case WorkoutType.strength:
-        // Map DailyWorkout plan description to Recommendation object required by view
         final recommendation = WorkoutRecommendation(
             type: 'Strength', 
             targetMuscle: null, 
@@ -175,10 +176,10 @@ class DailyWorkoutScreen extends ConsumerWidget {
             intensity: plan.details, 
             notes: plan.description
         );
-        return StrengthWorkoutView(recommendation: recommendation);
+        return StrengthWorkoutView(recommendation: recommendation, mode: mode);
 
       case WorkoutType.cardio:
-        return CardioWorkoutView(plan: plan, isCompleted: isCompleted);
+        return CardioWorkoutView(plan: plan, isCompleted: isCompleted, mode: mode);
 
       case WorkoutType.rest:
       default:

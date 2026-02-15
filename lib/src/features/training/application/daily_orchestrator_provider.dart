@@ -18,7 +18,8 @@ class DailyWorkoutLoading extends DailyWorkoutState {
 
 class DailyWorkoutPastCompleted extends DailyWorkoutState {
   final WorkoutLog log;
-  const DailyWorkoutPastCompleted(this.log);
+  final DailyWorkout? plannedWorkout;
+  const DailyWorkoutPastCompleted(this.log, this.plannedWorkout);
 }
 
 class DailyWorkoutPastMissed extends DailyWorkoutState {
@@ -82,7 +83,7 @@ Future<DailyWorkoutState> dailyOrchestrator(DailyOrchestratorRef ref) async {
     final log = await repository.getWorkoutLogForDate(user.uid, selected);
 
     if (log != null) {
-      return DailyWorkoutPastCompleted(log);
+      return DailyWorkoutPastCompleted(log, planForDay);
     } else {
       return DailyWorkoutPastMissed(planForDay);
     }
