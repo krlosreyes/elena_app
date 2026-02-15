@@ -7,6 +7,7 @@ import '../../application/daily_routine_provider.dart';
 import '../../domain/entities/training_entities.dart';
 import '../../domain/entities/exercise.dart';
 import '../widgets/rir_logging_slider.dart';
+import '../widgets/exercise_set_row.dart';
 
 class DailyWorkoutScreen extends ConsumerWidget {
   const DailyWorkoutScreen({super.key});
@@ -30,7 +31,7 @@ class DailyWorkoutScreen extends ConsumerWidget {
   }
 
   Widget _buildContent(BuildContext context, WidgetRef ref, WorkoutRecommendation recommendation) {
-    final dailyRoutineAsync = ref.watch(dailyRoutineProvider);
+    final dailyExercises = ref.watch(dailyRoutineProvider);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -51,11 +52,7 @@ class DailyWorkoutScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 16),
           
-          dailyRoutineAsync.when(
-            data: (exercises) => _buildExerciseList(context, exercises),
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (err, stack) => Text('Error al cargar ejercicios: $err'),
-          ),
+          _buildExerciseList(context, dailyExercises, ref),
           const SizedBox(height: 32),
 
           // CTA Button
@@ -225,15 +222,16 @@ class DailyWorkoutScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildExerciseList(BuildContext context, List<Map<String, dynamic>> exercises) {
+
+  Widget _buildExerciseList(BuildContext context, List<Map<String, dynamic>> exercises, WidgetRef ref) {
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: exercises.length,
       itemBuilder: (context, index) {
         final exercise = exercises[index];
-        final recommendedWeight = exercise['recommendedWeight'];
-        
+        final sets = exercise['sets'] as List<dynamic>;
+
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
           elevation: 0,
@@ -243,51 +241,46 @@ class DailyWorkoutScreen extends ConsumerWidget {
             side: BorderSide(color: Colors.grey.shade200),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: Row(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
+                // Exercise Header
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
                         exercise['name'] as String,
                         style: GoogleFonts.outfit(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                          fontWeight: FontWeight.bold, 
+                          fontSize: 16
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        exercise['sets'] as String,
-                        style: GoogleFonts.outfit(
-                          color: Colors.grey.shade600,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 16),
-                SizedBox(
-                  width: 100,
-                  child: TextField(
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: 'Kg / Lb',
-                      hintText: recommendedWeight != null 
-                          ? 'Rec: $recommendedWeight kg' 
-                          : 'Kg / Lb',
-                      hintStyle: TextStyle(
-                        fontSize: 12,
-                        color: recommendedWeight != null ? AppTheme.brandBlue : Colors.grey,
-                      ),
-                      isDense: true,
-                      border: const OutlineInputBorder(),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                     ),
-                  ),
+                    Icon(Icons.info_outline, size: 20, color: Colors.grey.shade400)
+                  ],
                 ),
+                const SizedBox(height: 12),
+                
+                // Sets List
+                ...sets.map((set) {
+                  return ExerciseSetRow(
+                    setIndex: set['setIndex'] as int,
+                    targetReps: set['targetReps'] as String, 
+                    isDone: set['isDone'] as bool,
+                    initialWeight: set['weight'] as double?,
+                    initialReps: set['reps'] as int?,
+                    onToggle: (weight, reps) {
+                      ref.read(dailyRoutineProvider.notifier).toggleSet(
+                        exercise['id'] as String,
+                        set['setIndex'] as int,
+                        weight,
+                        reps
+                      );
+                    },
+                  );
+                }).toList(),
               ],
             ),
           ),

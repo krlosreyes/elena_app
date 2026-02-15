@@ -1,31 +1,86 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import '../../../core/science/training_physiology.dart';
 
 part 'daily_routine_provider.g.dart';
 
 @riverpod
-Future<List<Map<String, dynamic>>> dailyRoutine(DailyRoutineRef ref) async {
-  final baseExercises = [
-    { 'name': 'Sentadilla Goblet', 'sets': '3 series x 10-12 reps', 'targetRir': 2, 'lastWeight': 20.0, 'lastRir': 4 },
-    { 'name': 'Flexiones (Push-ups)', 'sets': '3 series al fallo - RIR 2', 'targetRir': 2, 'lastWeight': 0.0, 'lastRir': 2 },
-    { 'name': 'Remo con mancuernas', 'sets': '3 series x 10 reps', 'targetRir': 2, 'lastWeight': 15.0, 'lastRir': 3 }
-  ];
+class DailyRoutine extends _$DailyRoutine {
+  @override
+  List<Map<String, dynamic>> build() {
+    return [
+      {
+        'id': 'e1',
+        'name': 'Sentadilla Goblet',
+        'targetRir': 2,
+        'sets': [
+          { 'setIndex': 1, 'targetReps': '10-12', 'weight': null, 'reps': null, 'isDone': false },
+          { 'setIndex': 2, 'targetReps': '10-12', 'weight': null, 'reps': null, 'isDone': false },
+          { 'setIndex': 3, 'targetReps': '10-12', 'weight': null, 'reps': null, 'isDone': false },
+        ]
+      },
+      {
+        'id': 'e2',
+        'name': 'Flexiones (Push-ups)',
+        'targetRir': 2,
+        'sets': [
+          { 'setIndex': 1, 'targetReps': 'Al fallo', 'weight': null, 'reps': null, 'isDone': false },
+          { 'setIndex': 2, 'targetReps': 'Al fallo', 'weight': null, 'reps': null, 'isDone': false },
+          { 'setIndex': 3, 'targetReps': 'Al fallo', 'weight': null, 'reps': null, 'isDone': false },
+        ]
+      },
+      {
+        'id': 'e3',
+        'name': 'Remo con Mancuernas',
+        'targetRir': 2,
+        'sets': [
+          { 'setIndex': 1, 'targetReps': '10-12', 'weight': null, 'reps': null, 'isDone': false },
+          { 'setIndex': 2, 'targetReps': '10-12', 'weight': null, 'reps': null, 'isDone': false },
+          { 'setIndex': 3, 'targetReps': '10-12', 'weight': null, 'reps': null, 'isDone': false },
+        ]
+      },
+      {
+        'id': 'e4',
+        'name': 'Peso Muerto Rumano (RDL)',
+        'targetRir': 2,
+        'sets': [
+          { 'setIndex': 1, 'targetReps': '8-10', 'weight': null, 'reps': null, 'isDone': false },
+          { 'setIndex': 2, 'targetReps': '8-10', 'weight': null, 'reps': null, 'isDone': false },
+          { 'setIndex': 3, 'targetReps': '8-10', 'weight': null, 'reps': null, 'isDone': false },
+        ]
+      },
+      {
+        'id': 'e5',
+        'name': 'Elevaciones Laterales',
+        'targetRir': 3,
+        'sets': [
+          { 'setIndex': 1, 'targetReps': '12-15', 'weight': null, 'reps': null, 'isDone': false },
+          { 'setIndex': 2, 'targetReps': '12-15', 'weight': null, 'reps': null, 'isDone': false },
+          { 'setIndex': 3, 'targetReps': '12-15', 'weight': null, 'reps': null, 'isDone': false },
+        ]
+      },
+    ];
+  }
 
-  return baseExercises.map((e) {
-    final lastWeight = (e['lastWeight'] as num).toDouble();
-    final lastRir = e['lastRir'] as int;
-    final targetRir = e['targetRir'] as int;
-
-    // Calculate recommended weight if there's a previous weight
-    double? recommended;
-    if (lastWeight > 0) {
-      recommended = TrainingPhysiology.calculateNextWeight(lastWeight, lastRir, targetRir);
-    }
-
-    // Return new map with recommendation
-    return {
-      ...e,
-      'recommendedWeight': recommended,
-    };
-  }).toList();
+  void toggleSet(String exerciseId, int setIndex, double? weight, int? reps) {
+    state = [
+      for (final exercise in state)
+        if (exercise['id'] == exerciseId)
+          {
+            ...exercise,
+            'sets': [
+              for (final set in exercise['sets'] as List)
+                if (set['setIndex'] == setIndex)
+                  {
+                    ...set,
+                    'isDone': !set['isDone'],
+                    'weight': weight,
+                    'reps': reps,
+                  }
+                else
+                  set
+            ]
+          }
+        else
+          exercise
+    ];
+  }
 }
