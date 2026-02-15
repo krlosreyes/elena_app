@@ -108,6 +108,31 @@ class TrainingRepository {
     }
   }
 
+  // 5. Get Workout Log by Date
+  Future<WorkoutLog?> getWorkoutLogForDate(String userId, DateTime date) async {
+    try {
+      // Create range for the entire day
+      final startOfDay = DateTime(date.year, date.month, date.day);
+      final endOfDay = startOfDay.add(const Duration(days: 1)).subtract(const Duration(milliseconds: 1));
+
+      final querySnapshot = await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('workout_logs')
+          .where('date', isGreaterThanOrEqualTo: startOfDay)
+          .where('date', isLessThanOrEqualTo: endOfDay)
+          .limit(1)
+          .get();
+
+      if (querySnapshot.docs.isEmpty) return null;
+
+      return WorkoutLog.fromJson(querySnapshot.docs.first.data());
+    } catch (e) {
+      print('Error getting workout log for date: $e');
+      return null;
+    }
+  }
+
   // Existing method stub - Keeping integration
   Future<WeeklyTrainingStats> getWeeklyStats() async {
      // TODO: Implement actual logic

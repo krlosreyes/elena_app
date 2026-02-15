@@ -1,52 +1,79 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import '../../../../config/theme/app_theme.dart';
-import '../../application/selected_date_provider.dart';
+import '../../application/calendar_state_provider.dart';
 
 class WeeklyCalendarStrip extends ConsumerWidget {
   const WeeklyCalendarStrip({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final selectedDate = ref.watch(selectedDateProvider);
-    final now = DateTime.now();
+    final selectedDate = ref.watch(calendarStateProvider);
+    final canGoNext = ref.read(calendarStateProvider.notifier).canGoNextWeek;
     
-    // Calculate week start (Monday) based on selected date (or stick to current week if we want that behavior)
-    // Requirement says "date-based calendar", typically allows navigation.
-    // Let's create a strip of 7 days around the *current* view week. 
-    // Simplified: Always show THIS week (Monday to Sunday) for now. Navigation to other weeks would require more UI.
-    // Assuming "current week" for MVP based on context. 
-    
-    final currentWeekDay = now.weekday; // 1=Mon
-    final monday = now.subtract(Duration(days: currentWeekDay - 1));
+    // Calculate start of the visible week (Monday) based on selected date
+    final currentWeekday = selectedDate.weekday; // 1=Mon
+    final monday = selectedDate.subtract(Duration(days: currentWeekday - 1));
     
     final days = List.generate(7, (index) => monday.add(Duration(days: index)));
     
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: days.map((date) {
-        final isToday = date.day == now.day && date.month == now.month && date.year == now.year;
-        final isSelected = date.day == selectedDate.day && date.month == selectedDate.month && date.year == selectedDate.year;
+    return Column(
+      children: [
+        // Navigation Header
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4.0),
+          child: Row(
+            children: [
+              Text(
+                DateFormat('MMMM yyyy', 'es_ES').format(selectedDate).toUpperCase(),
+                style: GoogleFonts.outfit(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                  color: Colors.grey[800],
+                ),
+              ),
+              const Spacer(),
+              IconButton(
+                icon: const Icon(Icons.chevron_left),
+                onPressed: () => ref.read(calendarStateProvider.notifier).prevWeek(),
+              ),
+              IconButton(
+                icon: Icon(Icons.chevron_right, color: canGoNext ? null : Colors.grey[300]),
+                onPressed: canGoNext ? () => ref.read(calendarStateProvider.notifier).nextWeek() : null,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        // Days Row
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: days.map((date) {
+            final now = DateTime.now();
+            final isToday = date.day == now.day && date.month == now.month && date.year == now.year;
+            final isSelected = date.day == selectedDate.day && date.month == selectedDate.month && date.year == selectedDate.year;
 
-        Color backgroundColor;
-        Color textColor;
+            Color backgroundColor;
+            Color textColor;
 
-        if (isToday) {
-          backgroundColor = Colors.green; 
-          textColor = Colors.white;
-        } else if (isSelected) {
-          backgroundColor = AppTheme.brandBlue; 
-          textColor = Colors.white;
-        } else {
-          backgroundColor = Colors.grey.shade100;
-          textColor = Colors.grey.shade600;
-        }
+            if (isToday) {
+              backgroundColor = Colors.green; 
+              textColor = Colors.white;
+            } else if (isSelected) {
+              backgroundColor = AppTheme.brandBlue; 
+              textColor = Colors.white;
+            } else {
+              backgroundColor = Colors.grey.shade100;
+              textColor = Colors.grey.shade600;
+            }
 
-        return GestureDetector(
-          onTap: () {
-            ref.read(selectedDateProvider.notifier).selectDate(date);
-          },
+            return GestureDetector(
+              onTap: () {
+                ref.read(calendarStateProvider.notifier).selectDate(date);
+              },
           child: Container(
             width: 44,
             height: 60,
@@ -79,6 +106,8 @@ class WeeklyCalendarStrip extends ConsumerWidget {
           ),
         );
       }).toList(),
+    ),
+      ],
     );
   }
 
