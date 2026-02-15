@@ -51,15 +51,75 @@ class DailyWorkoutScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 16),
           
-          dailyRoutineAsync.when(
-            data: (state) {
-              if (state.routine == null) {
-                return const Center(child: Text('No hay rutina asignada para hoy.'));
-              }
-              return _buildExerciseList(context, state);
-            },
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (err, stack) => Text('Error al cargar ejercicios: $err'),
+          // Mock Data for UI Debugging
+          Builder(
+            builder: (context) {
+              final mockExercises = [
+                { 'name': 'Sentadilla Goblet', 'sets': '3 series x 10-12 reps' },
+                { 'name': 'Flexiones (Push-ups)', 'sets': '3 series al fallo - RIR 2' },
+                { 'name': 'Remo con mancuernas', 'sets': '3 series x 10 reps' }
+              ];
+
+              return ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: mockExercises.length,
+                itemBuilder: (context, index) {
+                  final exercise = mockExercises[index];
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    elevation: 0,
+                    color: Colors.grey.shade50,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(color: Colors.grey.shade200),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12.0), // Reduced padding slightly to prevent overflow
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  exercise['name']!,
+                                  style: GoogleFonts.outfit(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  exercise['sets']!,
+                                  style: GoogleFonts.outfit(
+                                    color: Colors.grey.shade600,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          SizedBox(
+                            width: 100, // Fixed width for input
+                            child: TextField(
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(
+                                labelText: 'Kg / Lb',
+                                isDense: true,
+                                border: OutlineInputBorder(),
+                                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              );
+            }
           ),
 
           const SizedBox(height: 24),
@@ -156,19 +216,17 @@ class DailyWorkoutScreen extends ConsumerWidget {
   }
 
   Widget _buildExerciseList(BuildContext context, DailyWorkoutState state) {
-    final routineExercises = state.routine!.exercises;
-    final exercises = state.exercises;
+    // Now iterating over DailyExercise objects which contain both definition and specific routine details
+    final dailyExercises = state.exercises;
 
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: routineExercises.length,
+      itemCount: dailyExercises.length,
       itemBuilder: (context, index) {
-        final routineExercise = routineExercises[index];
-        final exerciseDetails = exercises.firstWhere(
-            (e) => e.id == routineExercise.exerciseId, 
-            orElse: () => Exercise(id: 'unknown', name: 'Unknown Exercise', targetMuscle: '', mechanics: '', description: '')
-        );
+        final dailyExercise = dailyExercises[index];
+        final exerciseDef = dailyExercise.exercise;
+        final routineDetails = dailyExercise.routineDetails;
 
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
@@ -184,23 +242,33 @@ class DailyWorkoutScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  exerciseDetails.name,
+                  exerciseDef.name,
                   style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  "${routineExercise.sets} series x ${routineExercise.repsRange} reps",
+                  "${routineDetails.sets} series x ${routineDetails.repsRange} reps",
                   style: GoogleFonts.outfit(color: Colors.grey.shade600, fontSize: 14),
                 ),
                 const SizedBox(height: 12),
                 // Weight Input
                 SizedBox(
-                  width: 140,
-                  height: 45,
+                  width: double.infinity, // Give it full width or specific width
                   child: TextField(
                     keyboardType: TextInputType.number,
                     decoration: InputDecoration(
-                      labelText: 'Peso (kg)',
+                      // Show recommended weight if available
+                      hintText: dailyExercise.recommendedWeight != null 
+                          ? 'Recomendado: ${dailyExercise.recommendedWeight} kg' 
+                          : 'Peso (kg)',
+                      hintStyle: TextStyle(
+                        fontSize: 14, 
+                         // Use a distinct color if recommended
+                        color: dailyExercise.recommendedWeight != null 
+                            ? AppTheme.brandBlue.withOpacity(0.6) 
+                            : Colors.grey[400]
+                      ),
+                      labelText: 'Peso Usado (kg)',
                       labelStyle: TextStyle(fontSize: 12, color: Colors.grey[600]),
                       filled: true,
                       fillColor: Colors.white,
@@ -212,7 +280,7 @@ class DailyWorkoutScreen extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(8),
                         borderSide: BorderSide(color: Colors.grey.shade300),
                       ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     ),
                   ),
                 ),
