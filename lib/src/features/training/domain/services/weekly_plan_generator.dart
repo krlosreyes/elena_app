@@ -16,14 +16,14 @@ class WeeklyPlanGenerator {
 
     List<DailyWorkout> plan = [];
     
-    // Sort workout days just in case
-    workoutDays.sort();
+    // Sort workout days (SAFE: Create mutable copy first)
+    final sortedWorkoutDays = List<int>.from(workoutDays)..sort();
 
     int strengthSessionCount = 0;
 
     // Generate for all 7 days
     for (int day = 1; day <= 7; day++) {
-      if (workoutDays.contains(day)) {
+      if (sortedWorkoutDays.contains(day)) {
         // It's a strength day
         String routineType;
         // Cycle through A, B, C based on session count
@@ -55,7 +55,7 @@ class WeeklyPlanGenerator {
         bool isRest = false;
         // Simple logic: Ensure at least 1 full rest day if possible, preferably Sunday (7)
         // If user trains 6 days, day 7 is rest.
-        if (day == 7 && !workoutDays.contains(7)) isRest = true; 
+        if (day == 7 && !sortedWorkoutDays.contains(7)) isRest = true; 
         
         if (isRest) {
            plan.add(_restDay(day));

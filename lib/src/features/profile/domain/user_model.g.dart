@@ -33,6 +33,10 @@ _$UserModelImpl _$$UserModelImplFromJson(Map<String, dynamic> json) =>
       dietaryPreference:
           $enumDecode(_$DietaryPreferenceEnumMap, json['dietaryPreference']),
       hasDumbbells: json['hasDumbbells'] as bool? ?? false,
+      workoutDays: (json['workoutDays'] as List<dynamic>?)
+              ?.map((e) => (e as num).toInt())
+              .toList() ??
+          const [1, 3, 5],
       wakeUpTime: json['wakeUpTime'] as String,
       bedTime: json['bedTime'] as String,
       usualFirstMealTime: json['usualFirstMealTime'] as String,
@@ -77,6 +81,7 @@ Map<String, dynamic> _$$UserModelImplToJson(_$UserModelImpl instance) =>
       'dietaryPreference':
           _$DietaryPreferenceEnumMap[instance.dietaryPreference]!,
       'hasDumbbells': instance.hasDumbbells,
+      'workoutDays': instance.workoutDays,
       'wakeUpTime': instance.wakeUpTime,
       'bedTime': instance.bedTime,
       'usualFirstMealTime': instance.usualFirstMealTime,
