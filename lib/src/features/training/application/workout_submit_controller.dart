@@ -29,8 +29,14 @@ class WorkoutSubmitController extends _$WorkoutSubmitController {
       final user = ref.read(authRepositoryProvider).currentUser;
       final userId = user?.uid ?? 'current_user_id'; 
 
-      // 1. Get current routine state
-      final routine = ref.read(dailyRoutineProvider);
+      // 1. Get current routine state (AsyncValue)
+      final routineState = ref.read(dailyRoutineProvider);
+      
+      // Ensure data is loaded
+      if (!routineState.hasValue) {
+        throw Exception("La rutina no está cargada o hubo un error.");
+      }
+      final routine = routineState.value ?? [];
       
       log('[WorkoutSubmit] userId=$userId, workoutType=$workoutType');
       log('[WorkoutSubmit] routine has ${routine.length} exercises');
@@ -45,7 +51,6 @@ class WorkoutSubmitController extends _$WorkoutSubmitController {
           DateTime.now().minute,
       );
 
-      // Build completed exercises list
       final List<Map<String, dynamic>> completedExercises = [];
       int finalCalories = calories ?? 0;
       int totalMinutes = durationMinutes ?? 0;
@@ -57,10 +62,10 @@ class WorkoutSubmitController extends _$WorkoutSubmitController {
         for (final exercise in routine) {
           final doneSets = exercise.sets.where((s) => s.isDone).toList();
           
+          if (doneSets.isEmpty) continue;
+
           log('[WorkoutSubmit] Exercise "${exercise.name}" (${exercise.id}): '
               '${doneSets.length}/${exercise.sets.length} sets done');
-
-          if (doneSets.isEmpty) continue;
 
           completedExercises.add({
             'exerciseId': exercise.id,
@@ -68,7 +73,7 @@ class WorkoutSubmitController extends _$WorkoutSubmitController {
             'sets': doneSets.map((s) => {
               'setIndex': s.setIndex,
               'weight': s.weight,
-              'reps': s.reps,
+              'reps': s.reps ?? int.tryParse(s.targetReps.split(RegExp(r'\D')).firstWhere((e) => e.isNotEmpty, orElse: () => '0')),
               'isDone': s.isDone,
               'targetReps': s.targetReps,
             }).toList(),
@@ -78,16 +83,17 @@ class WorkoutSubmitController extends _$WorkoutSubmitController {
         log('[WorkoutSubmit] Total completed exercises: ${completedExercises.length}');
 
         if (completedExercises.isEmpty) {
-          throw Exception("No hay series marcadas como completadas.");
+          throw Exception("No hay series marcadas como completadas.\nMarca al menos una serie (check verde).");
         }
 
-        // Estimate calories (~6 kcal/min)
+        // Estimate calories (~6 kcal/min) if not provided
         if (finalCalories == 0) {
-          int calculatedDuration = totalMinutes > 0 
-              ? totalMinutes 
-              : completedExercises.fold(0, (sum, ex) => sum + (ex['sets'] as List).length * 3);
-          finalCalories = calculatedDuration * 6;
-          totalMinutes = calculatedDuration;
+           // Basic estimation: 3 mins per set * 6 kcal/min? Or simply duration.
+           // If we don't have duration, estimate from sets.
+           final totalSets = completedExercises.fold(0, (sum, ex) => sum + (ex['sets'] as List).length);
+           final estimatedDuration = totalSets * 3; // 3 mins per set roughly
+           finalCalories = estimatedDuration * 5; // Conservative 5 kcal/min
+           if (totalMinutes == 0) totalMinutes = estimatedDuration;
         }
       } 
       // Handle Cardio Logic
@@ -96,12 +102,12 @@ class WorkoutSubmitController extends _$WorkoutSubmitController {
           throw Exception("La duración del cardio debe ser mayor a 0.");
         }
         if (finalCalories == 0) {
-          finalCalories = totalMinutes * 8;
+          finalCalories = totalMinutes * 7;
         }
       }
 
-      // 3. Create DTO
-      final log2 = WorkoutLog(
+      // 3. Create Log Object
+      final newLog = WorkoutLog(
         id: const Uuid().v4(),
         templateId: 'generated_daily',
         date: logDate,
@@ -111,18 +117,15 @@ class WorkoutSubmitController extends _$WorkoutSubmitController {
         caloriesBurned: finalCalories,
       );
 
-      log('[WorkoutSubmit] Saving log: id=${log2.id}, date=${log2.date}, '
-          'exercises=${log2.completedExercises.length}, '
-          'duration=${log2.durationMinutes}min, '
-          'calories=${log2.caloriesBurned}');
+      log('[WorkoutSubmit] Saving log: id=${newLog.id}, exercises=${newLog.completedExercises.length}');
 
       // 4. Save to Firestore
-      await ref.read(trainingRepositoryProvider).saveWorkoutLog(userId, log2);
+      await ref.read(trainingRepositoryProvider).saveWorkoutLog(userId, newLog);
 
       log('[WorkoutSubmit] ✅ Saved successfully');
       
       state = const AsyncData(null);
-      return log2; 
+      return newLog; 
     } catch (e, st) {
       log('[WorkoutSubmit] ❌ Error: $e', error: e, stackTrace: st);
       state = AsyncError(e, st);
