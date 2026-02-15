@@ -3,26 +3,23 @@ import '../../authentication/data/auth_repository.dart';
 import '../../fasting/data/fasting_repository.dart';
 import '../../fasting/domain/fasting_session.dart';
 
-// Provider que maneja el stream del ayuno activo del usuario ACTUAL.
-// Se auto-destruye y recrea cuando cambia la autenticación.
+// STRICT: AutoDispose + Explicit Auth Watch
+// This ensures that when the cached User ID changes, the stream is strictly rebuilt.
+// Prevents exposing Stream data from User A to User B.
 final activeFastProvider = StreamProvider.autoDispose<FastingSession?>((ref) {
-  // PASO 1: VIGILAR AL USUARIO (Esto es lo que faltaba)
-  // Si el usuario cambia (Log out o nuevo Log in), esta línea fuerza
-  // a que todo el provider se reinicie desde cero.
+  // 1. WATCH Auth State
   final authState = ref.watch(authStateChangesProvider);
-  
-  // Obtenemos el usuario actual del estado
   final user = authState.value;
 
-  // PASO 2: SI NO HAY USUARIO, CORTAR EL STREAM
+  // 2. Guard Clause: If no user, return empty stream immediately.
   if (user == null) {
-    return Stream.value(null); // No hay usuario, no hay ayuno.
+    return const Stream.empty(); 
   }
 
-  // PASO 3: SI HAY USUARIO, PEDIR DATOS CON SU UID ESPECÍFICO
-  print("🔄 Cambiando stream de ayuno para usuario: ${user.uid}");
+  // 3. User Active: Watch Repository and subscribe to specific UID stream.
   final repository = ref.watch(fastingRepositoryProvider);
   
-  // Usamos el UID verificado del estado de auth
+  // 4. Return the stream for the SPECIFIC UID. 
+  // Because we watch 'authState', any change in UID creates a new stream.
   return repository.getActiveFastStream(user.uid);
 });

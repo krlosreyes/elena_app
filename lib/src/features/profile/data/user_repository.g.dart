@@ -294,5 +294,20 @@ class _UserStreamProviderElement
   @override
   String get uid => (origin as UserStreamProvider).uid;
 }
+
+String _$currentUserHash() => r'aeff9a913d3a7b6f2287a7794972bfb2e4588d06';
+
+/// See also [currentUser].
+@ProviderFor(currentUser)
+final currentUserProvider = AutoDisposeStreamProvider<UserModel?>.internal(
+  currentUser,
+  name: r'currentUserProvider',
+  debugGetCreateSourceHash:
+      const bool.fromEnvironment('dart.vm.product') ? null : _$currentUserHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+typedef CurrentUserRef = AutoDisposeStreamProviderRef<UserModel?>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member

@@ -3,11 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../authentication/data/auth_repository.dart';
 import '../../profile/data/user_repository.dart';
+import '../../profile/domain/user_model.dart';
 
 import '../../onboarding/logic/elena_brain.dart';
 import 'widgets/fasting_card.dart';
 import 'widgets/protocol_selector.dart'; // Import ProtocolSelector
 import '../../fasting/presentation/fasting_controller.dart'; // Import FastingController
+import '../../glucose/presentation/widgets/glucose_input_sheet.dart';
+import 'widgets/dashboard_header.dart';
 
 
 
@@ -32,21 +35,20 @@ class DashboardScreen extends ConsumerWidget {
         
         final healthPlan = ElenaBrain.generateHealthPlan(user);
 
-        return SingleChildScrollView(
-          key: ValueKey('dashboard-${user.uid}'), // Force rebuild on user switch
-          padding: const EdgeInsets.all(16.0),
+        return Scaffold(
+          backgroundColor: Colors.transparent, // Maintain existing background if any
+          // FAB removed as it is now integrated in GlucoseChartWidget
+          floatingActionButton: null,
+          body: SafeArea(
+            child: SingleChildScrollView(
+            key: ValueKey('dashboard-${user.uid}'), // Force rebuild on user switch
+            padding: const EdgeInsets.all(16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 1. Saludo Personalizado
-              Text(
-                'Hola, ${user.displayName}',
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-              ),
-              const SizedBox(height: 8),
+              // 1. Saludo Personalizado (Nuevo Widget)
+              const DashboardHeader(),
+              const SizedBox(height: 16), // Ajuste de espaciado
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
@@ -133,7 +135,7 @@ class DashboardScreen extends ConsumerWidget {
                 ),
             ],
           ),
-        );
+        )));
       },
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, st) => Center(child: Text('Error cargando perfil: $e')),

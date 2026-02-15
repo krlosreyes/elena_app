@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import '../../authentication/data/auth_repository.dart';
 import '../../plan/domain/health_plan.dart';
 import '../domain/user_model.dart';
 import '../../../core/exceptions/exceptions.dart';
@@ -113,4 +114,17 @@ Future<UserModel?> user(UserRef ref, String uid) {
 @riverpod
 Stream<UserModel?> userStream(UserStreamRef ref, String uid) {
   return ref.watch(userRepositoryProvider).watchUser(uid);
+}
+
+@riverpod
+Stream<UserModel?> currentUser(CurrentUserRef ref) {
+  final authState = ref.watch(authStateChangesProvider);
+  return authState.when(
+    data: (user) {
+      if (user == null) return Stream.value(null);
+      return ref.watch(userRepositoryProvider).watchUser(user.uid);
+    },
+    loading: () => const Stream.empty(),
+    error: (err, stack) => Stream.value(null),
+  );
 }

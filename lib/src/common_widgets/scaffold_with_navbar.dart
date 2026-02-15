@@ -53,51 +53,6 @@ class ScaffoldWithNavBar extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: Text(
-          'Elena App',
-          style: GoogleFonts.outfit(
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
-          ),
-        ),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: Icon(Icons.logout, color: Colors.grey[700]),
-            onPressed: () {
-              ref.read(authRepositoryProvider).signOut();
-            },
-          ),
-          const SizedBox(width: 8),
-          GestureDetector(
-            onTap: () {
-              // Navigate to profile if not already there
-              if (location != '/profile') {
-                context.pushNamed('profile');
-              }
-            },
-            child: CircleAvatar(
-              radius: 18,
-              backgroundColor: Theme.of(context).primaryColor.withOpacity(0.2),
-               child: userAsync.when(
-                data: (user) => Text(
-                  user?.displayName?.substring(0, 1).toUpperCase() ?? 'U',
-                  style: GoogleFonts.outfit(
-                      color: Theme.of(context).primaryColor, 
-                      fontWeight: FontWeight.bold
-                  ),
-                ),
-                loading: () => const SizedBox(width: 10, height: 10, child: CircularProgressIndicator(strokeWidth: 2)),
-                 error: (_,__) => const Text('U', style: TextStyle(color: Colors.black)),
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-        ],
-      ),
       body: child,
       bottomNavigationBar: NavigationBar(
         selectedIndex: currentIndex,

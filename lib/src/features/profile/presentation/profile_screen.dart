@@ -8,7 +8,8 @@ import '../../authentication/data/auth_repository.dart';
 import '../../coaching/domain/weekly_plan.dart';
 import '../../progress/domain/measurement_log.dart';
 import '../../progress/data/progress_service.dart';
-import '../../profile/presentation/widgets/bio_gauge_card.dart';
+import '../../profile/presentation/widgets/biometric_cards.dart';
+import 'widgets/recomposition_progress_card.dart';
 import '../../profile/data/user_repository.dart';
 import '../../profile/domain/user_model.dart';
 import '../../progress/presentation/widgets/measurement_bottom_sheet.dart';
@@ -86,7 +87,7 @@ class ProfileScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-                _BioGaugeGrid(userModel: userModel),
+                _BioControlSection(userModel: userModel),
                 const SizedBox(height: 32),
 
                 // 3. Body Measurements (Editable)
@@ -104,6 +105,28 @@ class ProfileScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 16),
                 _ActivePlanCard(uid: user?.uid),
+                
+                const SizedBox(height: 30), // Espacio separador
+    
+                ListTile(
+                  leading: const Icon(Icons.logout, color: Colors.redAccent),
+                  title: const Text(
+                    "Cerrar Sesión",
+                    style: TextStyle(
+                      color: Colors.redAccent,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  onTap: () async {
+                    // Lógica de cierre de sesión
+                    await ref.read(authRepositoryProvider).signOut();
+                    // El router se encargará del resto
+                  },
+                  tileColor: Colors.red.withOpacity(0.05), // Fondo suave rojo
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+    
+                const SizedBox(height: 20), // Margen final
               ],
             ),
           );
@@ -115,10 +138,10 @@ class ProfileScreen extends ConsumerWidget {
   }
 }
 
-class _BioGaugeGrid extends ConsumerWidget {
+class _BioControlSection extends ConsumerWidget {
   final UserModel userModel;
 
-  const _BioGaugeGrid({required this.userModel});
+  const _BioControlSection({required this.userModel});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -130,77 +153,201 @@ class _BioGaugeGrid extends ConsumerWidget {
         final log = history.isNotEmpty ? history.last : null;
 
         if (log == null) {
-          return const Center(child: Text("Sin datos registrados", style: TextStyle(color: Colors.grey)));
+          return const Center(
+              child: Text("Sin datos registrados",
+                  style: TextStyle(color: Colors.grey)));
         }
 
-        // Calculate metrics
-        final bmi = log.calculateBmi(userModel.heightCm / 100);
-        
-        // Use estimated visceral fat if null
-        final visceral = log.visceralFat ?? MeasurementLog.estimateVisceralFat(
-          waistCm: log.waistCircumference ?? 0, 
-          isMale: userModel.gender == Gender.male
-        );
-        final bodyFat = log.bodyFatPercentage ?? 0;
-        final muscle = log.muscleMassPercentage ?? 0;
+        // --- CALCULATIONS & LOGIC ---
 
-        return GridView.count(
-          crossAxisCount: 2,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-          childAspectRatio: 1.1,
+        // 1. Weight & BMI
+        final weight = log.weight;
+        final bmi = log.calculateBmi(userModel.heightCm / 100);
+        final bmiStatus = _getBmiStatus(bmi);
+        final bmiColor = _getBmiColor(bmi);
+
+        // 2. Body Fat
+        final bodyFat = log.bodyFatPercentage ?? 0;
+        final fatKg = (weight * bodyFat / 100);
+        final fatStatus = _getBodyFatStatus(bodyFat, userModel.gender);
+        final fatColor = _getBodyFatColor(bodyFat, userModel.gender);
+
+        // 3. Muscle Mass
+        final muscle = log.muscleMassPercentage ?? 0;
+        final muscleKg = (weight * muscle / 100);
+
+        // 4. Visceral Fat (1-20 scale)
+        // Use estimated visceral fat if null
+        final double visceral = log.visceralFat ??
+            MeasurementLog.estimateVisceralFat(
+                waistCm: log.waistCircumference ?? 0,
+                isMale: userModel.gender == Gender.male) ?? 0.0;
+        
+        String visceralStatus = 'Normal';
+        Color visceralColor = Colors.green;
+        if (visceral >= 10) {
+          visceralStatus = 'Alto';
+          visceralColor = Colors.orange;
+        }
+        if (visceral >= 15) {
+          visceralStatus = 'Peligro';
+          visceralColor = Colors.red;
+        }
+
+        // 6. Basal Metabolism
+        // Harris-Benedict Equation (Revised)
+        double bmr = 0;
+        if (userModel.gender == Gender.male) {
+           bmr = 88.362 + (13.397 * weight) + (4.799 * userModel.heightCm) - (5.677 * userModel.age);
+        } else {
+           bmr = 447.593 + (9.247 * weight) + (3.098 * userModel.heightCm) - (4.330 * userModel.age);
+        }
+
+        // 7. Active Calories Goal (20% surplus of BMR or 500kcal fallback)
+        final activeCaloriesGoal = bmr > 0 ? (bmr * 0.20) : 500.0;
+
+        // 8. Ideal Weight (Recomposition - LBM based)
+        // LBM = Weight * (1 - BodyFat/100)
+        // Ideal Weight = LBM / (1 - TargetFat/100)
+        double? idealWeightLbm;
+        if (bodyFat > 0) {
+           final lbm = weight * (1 - (bodyFat / 100));
+           // Target Fat: Male 15%, Female 22%, Default 18%
+           double targetFatPercent = 18.0;
+           if (userModel.gender == Gender.male) targetFatPercent = 15.0;
+           if (userModel.gender == Gender.female) targetFatPercent = 22.0;
+
+           idealWeightLbm = lbm / (1 - (targetFatPercent / 100));
+        }
+
+        // Logic for old progress bar (explicit target weight from user model)
+        final targetWeight = userModel.targetWeightKg;
+        // Keep the old calculation variables just in case we want to support explicit targets too,
+        // but user requested LBM method. Let's use IdealWeightProgressCard for LBM method primarily if bodyFat exists.
+        
+        return Column(
           children: [
-            // 1. BMI Gauge
-            BioGaugeCard(
-              title: 'IMC',
-              value: bmi,
-              min: 10,
-              max: 40,
-              statusText: _getBmiStatus(bmi),
-              statusColor: _getBmiColor(bmi),
-              gradientColors: [Colors.blue, Colors.green, Colors.orange, Colors.red],
-              unit: '',
+            // ROW 1: Weight & BMI
+            Row(
+              children: [
+                Expanded(
+                  child: BiometricDetailCard(
+                    title: 'PESO ACTUAL',
+                    value: weight.toStringAsFixed(1),
+                    unit: 'kg',
+                    statusText: bmiStatus, // Weight status linked to BMI roughly
+                    statusColor: bmiColor,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: BiometricDetailCard(
+                    title: 'IMC',
+                    value: bmi.toStringAsFixed(1),
+                    unit: 'pt',
+                    statusText: bmiStatus,
+                    statusColor: bmiColor,
+                  ),
+                ),
+              ],
             ),
-            // 2. Body Fat Gauge
-            BioGaugeCard(
-              title: '% Grasa',
-              value: bodyFat,
-              min: 5,
-              max: 50,
-              statusText: _getBodyFatStatus(bodyFat, userModel.gender),
-              statusColor: _getBodyFatColor(bodyFat, userModel.gender),
-              gradientColors: [Colors.green, Colors.yellow, Colors.orange, Colors.red],
-              unit: '%',
+            const SizedBox(height: 12),
+
+            // ROW 2: Body Fat & Muscle
+            Row(
+              children: [
+                Expanded(
+                  child: BiometricDetailCard(
+                    title: 'GRASA CORP.',
+                    value: bodyFat.toStringAsFixed(1),
+                    unit: '%',
+                    subValue: '${fatKg.toStringAsFixed(1)} kg',
+                    statusText: fatStatus,
+                    statusColor: fatColor,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: BiometricDetailCard(
+                    title: 'MASA MAGRA',
+                    value: (bodyFat > 0 ? (100 - bodyFat) : (log.muscleMassPercentage ?? 0)).toStringAsFixed(1),
+                    unit: '%',
+                    subValue: '${(weight * (bodyFat > 0 ? (100 - bodyFat) : (log.muscleMassPercentage ?? 0)) / 100).toStringAsFixed(1)} kg',
+                    statusText: (bodyFat > 0 ? (100 - bodyFat) : (log.muscleMassPercentage ?? 0)) > 70 ? 'Bueno' : 'Bajo',
+                    statusColor: (bodyFat > 0 ? (100 - bodyFat) : (log.muscleMassPercentage ?? 0)) > 70 ? Colors.green : Colors.orange,
+                  ),
+                ),
+              ],
             ),
-            // 3. Muscle Gauge
-            BioGaugeCard(
-              title: '% Músculo',
-              value: muscle,
-              min: 20,
-              max: 60,
-              statusText: muscle > 30 ? 'Bueno' : 'Bajo',
-              statusColor: muscle > 30 ? Colors.green : Colors.orange,
-              gradientColors: [Colors.red, Colors.orange, Colors.yellow, Colors.green],
-              unit: '%',
+            const SizedBox(height: 12),
+
+            // ROW 3: Basal Metabolism & Active Calories
+             Row(
+              children: [
+                Expanded(
+                  child: BiometricDetailCard(
+                    title: 'METAB. BASAL',
+                    value: bmr.toStringAsFixed(0),
+                    unit: 'Kcal',
+                    statusText: 'Reposo',
+                    statusColor: Colors.blue,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: BiometricDetailCard(
+                    title: 'META EJERCICIO',
+                    value: activeCaloriesGoal.toStringAsFixed(0),
+                    unit: 'Kcal',
+                    statusText: 'Activas',
+                    statusColor: Colors.orange,
+                  ),
+                ),
+              ],
             ),
-            // 4. Visceral Fat Gauge
-            BioGaugeCard(
-              title: 'Grasa Visceral',
-              value: visceral ?? 0,
-              min: 0,
-              max: 20, 
-              statusText: (visceral ?? 0) < 10 ? 'Saludable' : 'Alto',
-              statusColor: (visceral ?? 0) < 10 ? Colors.green : Colors.red,
-              gradientColors: [Colors.green, Colors.yellow, Colors.orange, Colors.red],
-              unit: '',
-            ),
+             const SizedBox(height: 12),
+
+             // BARS: Visceral Fat
+             BiometricBarCard(
+               title: 'GRASA VISCERAL',
+               valueLabel: visceral.toStringAsFixed(1), // 1-20
+               progress: visceral / 20.0, // Scale to 20 max
+               statusText: visceralStatus,
+               statusColor: visceralColor,
+               barColor: visceralColor,
+               notes: 'Nivel saludable: 1 - 9',
+             ),
+             
+             // Recomposition Progress Card
+             if (bodyFat > 0) ...[
+               const SizedBox(height: 12),
+               RecompositionProgressCard(
+                 currentWeight: weight,
+                 currentFatPercentage: bodyFat,
+                 targetFatPercentage: userModel.targetFatPercentage,
+                 targetLBM: userModel.targetLBM,
+               ),
+             ] else if (targetWeight != null) ...[
+               const SizedBox(height: 12),
+               // Fallback to explicit target if no body fat data for Recomposition calculation
+               BiometricBarCard(
+                 title: 'PROGRESO PESO (OBJETIVO MANUAL)',
+                 valueLabel: '${weight.toStringAsFixed(1)} / ${targetWeight.toStringAsFixed(1)} kg',
+                 progress: (userModel.startWeightKg != null && (userModel.startWeightKg! - targetWeight).abs() > 0)
+                     ? (userModel.startWeightKg! - weight).abs() / (userModel.startWeightKg! - targetWeight).abs()
+                     : 0,
+                 statusText: 'Meta Manual',
+                 statusColor: Colors.blueAccent,
+                 barColor: Colors.blueAccent,
+                 notes: 'Calcula tu grasa corporal para una meta más precisa.',
+               ),
+             ]
           ],
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, s) => Center(child: Text("Error: $e", style: const TextStyle(color: Colors.red))),
+      error: (e, s) => Center(child: Text("Error: $e",
+          style: const TextStyle(color: Colors.red))),
     );
   }
 
@@ -208,7 +355,8 @@ class _BioGaugeGrid extends ConsumerWidget {
     if (bmi < 18.5) return 'Bajo Peso';
     if (bmi < 24.9) return 'Normal';
     if (bmi < 29.9) return 'Sobrepeso';
-    return 'Obesidad';
+    if (bmi < 34.9) return 'Obesidad I';
+    return 'Obesidad II+';
   }
 
   Color _getBmiColor(double bmi) {

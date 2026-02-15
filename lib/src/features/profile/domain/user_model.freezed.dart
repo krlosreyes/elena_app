@@ -24,6 +24,9 @@ mixin _$UserModel {
   String get uid => throw _privateConstructorUsedError;
   String get email => throw _privateConstructorUsedError;
   String get displayName => throw _privateConstructorUsedError;
+  @JsonKey(readValue: _readName)
+  String get name =>
+      throw _privateConstructorUsedError; // <--- Added name field with custom reader
   String? get photoUrl => throw _privateConstructorUsedError;
   Gender get gender => throw _privateConstructorUsedError;
   DateTime get birthDate =>
@@ -48,7 +51,13 @@ mixin _$UserModel {
   FastingExperience get fastingExperience => throw _privateConstructorUsedError;
   String? get recommendedProtocol => throw _privateConstructorUsedError;
   HealthGoal? get healthGoal =>
-      throw _privateConstructorUsedError; // Configuración
+      throw _privateConstructorUsedError; // Goals & Progress
+  double? get targetWeightKg => throw _privateConstructorUsedError;
+  double? get startWeightKg => throw _privateConstructorUsedError;
+  double? get targetFatPercentage =>
+      throw _privateConstructorUsedError; // <--- New field
+  double? get targetLBM => throw _privateConstructorUsedError; // <--- New field
+// Configuración
   int? get checkInDay =>
       throw _privateConstructorUsedError; // 1 = Lunes, 7 = Domingo
 // Metadata
@@ -71,6 +80,7 @@ abstract class $UserModelCopyWith<$Res> {
       {String uid,
       String email,
       String displayName,
+      @JsonKey(readValue: _readName) String name,
       String? photoUrl,
       Gender gender,
       DateTime birthDate,
@@ -91,6 +101,10 @@ abstract class $UserModelCopyWith<$Res> {
       FastingExperience fastingExperience,
       String? recommendedProtocol,
       HealthGoal? healthGoal,
+      double? targetWeightKg,
+      double? startWeightKg,
+      double? targetFatPercentage,
+      double? targetLBM,
       int? checkInDay,
       bool onboardingCompleted,
       DateTime? createdAt,
@@ -113,6 +127,7 @@ class _$UserModelCopyWithImpl<$Res, $Val extends UserModel>
     Object? uid = null,
     Object? email = null,
     Object? displayName = null,
+    Object? name = null,
     Object? photoUrl = freezed,
     Object? gender = null,
     Object? birthDate = null,
@@ -133,6 +148,10 @@ class _$UserModelCopyWithImpl<$Res, $Val extends UserModel>
     Object? fastingExperience = null,
     Object? recommendedProtocol = freezed,
     Object? healthGoal = freezed,
+    Object? targetWeightKg = freezed,
+    Object? startWeightKg = freezed,
+    Object? targetFatPercentage = freezed,
+    Object? targetLBM = freezed,
     Object? checkInDay = freezed,
     Object? onboardingCompleted = null,
     Object? createdAt = freezed,
@@ -150,6 +169,10 @@ class _$UserModelCopyWithImpl<$Res, $Val extends UserModel>
       displayName: null == displayName
           ? _value.displayName
           : displayName // ignore: cast_nullable_to_non_nullable
+              as String,
+      name: null == name
+          ? _value.name
+          : name // ignore: cast_nullable_to_non_nullable
               as String,
       photoUrl: freezed == photoUrl
           ? _value.photoUrl
@@ -231,6 +254,22 @@ class _$UserModelCopyWithImpl<$Res, $Val extends UserModel>
           ? _value.healthGoal
           : healthGoal // ignore: cast_nullable_to_non_nullable
               as HealthGoal?,
+      targetWeightKg: freezed == targetWeightKg
+          ? _value.targetWeightKg
+          : targetWeightKg // ignore: cast_nullable_to_non_nullable
+              as double?,
+      startWeightKg: freezed == startWeightKg
+          ? _value.startWeightKg
+          : startWeightKg // ignore: cast_nullable_to_non_nullable
+              as double?,
+      targetFatPercentage: freezed == targetFatPercentage
+          ? _value.targetFatPercentage
+          : targetFatPercentage // ignore: cast_nullable_to_non_nullable
+              as double?,
+      targetLBM: freezed == targetLBM
+          ? _value.targetLBM
+          : targetLBM // ignore: cast_nullable_to_non_nullable
+              as double?,
       checkInDay: freezed == checkInDay
           ? _value.checkInDay
           : checkInDay // ignore: cast_nullable_to_non_nullable
@@ -263,6 +302,7 @@ abstract class _$$UserModelImplCopyWith<$Res>
       {String uid,
       String email,
       String displayName,
+      @JsonKey(readValue: _readName) String name,
       String? photoUrl,
       Gender gender,
       DateTime birthDate,
@@ -283,6 +323,10 @@ abstract class _$$UserModelImplCopyWith<$Res>
       FastingExperience fastingExperience,
       String? recommendedProtocol,
       HealthGoal? healthGoal,
+      double? targetWeightKg,
+      double? startWeightKg,
+      double? targetFatPercentage,
+      double? targetLBM,
       int? checkInDay,
       bool onboardingCompleted,
       DateTime? createdAt,
@@ -303,6 +347,7 @@ class __$$UserModelImplCopyWithImpl<$Res>
     Object? uid = null,
     Object? email = null,
     Object? displayName = null,
+    Object? name = null,
     Object? photoUrl = freezed,
     Object? gender = null,
     Object? birthDate = null,
@@ -323,6 +368,10 @@ class __$$UserModelImplCopyWithImpl<$Res>
     Object? fastingExperience = null,
     Object? recommendedProtocol = freezed,
     Object? healthGoal = freezed,
+    Object? targetWeightKg = freezed,
+    Object? startWeightKg = freezed,
+    Object? targetFatPercentage = freezed,
+    Object? targetLBM = freezed,
     Object? checkInDay = freezed,
     Object? onboardingCompleted = null,
     Object? createdAt = freezed,
@@ -340,6 +389,10 @@ class __$$UserModelImplCopyWithImpl<$Res>
       displayName: null == displayName
           ? _value.displayName
           : displayName // ignore: cast_nullable_to_non_nullable
+              as String,
+      name: null == name
+          ? _value.name
+          : name // ignore: cast_nullable_to_non_nullable
               as String,
       photoUrl: freezed == photoUrl
           ? _value.photoUrl
@@ -421,6 +474,22 @@ class __$$UserModelImplCopyWithImpl<$Res>
           ? _value.healthGoal
           : healthGoal // ignore: cast_nullable_to_non_nullable
               as HealthGoal?,
+      targetWeightKg: freezed == targetWeightKg
+          ? _value.targetWeightKg
+          : targetWeightKg // ignore: cast_nullable_to_non_nullable
+              as double?,
+      startWeightKg: freezed == startWeightKg
+          ? _value.startWeightKg
+          : startWeightKg // ignore: cast_nullable_to_non_nullable
+              as double?,
+      targetFatPercentage: freezed == targetFatPercentage
+          ? _value.targetFatPercentage
+          : targetFatPercentage // ignore: cast_nullable_to_non_nullable
+              as double?,
+      targetLBM: freezed == targetLBM
+          ? _value.targetLBM
+          : targetLBM // ignore: cast_nullable_to_non_nullable
+              as double?,
       checkInDay: freezed == checkInDay
           ? _value.checkInDay
           : checkInDay // ignore: cast_nullable_to_non_nullable
@@ -443,11 +512,12 @@ class __$$UserModelImplCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$UserModelImpl implements _UserModel {
+class _$UserModelImpl extends _UserModel {
   const _$UserModelImpl(
       {required this.uid,
       required this.email,
       required this.displayName,
+      @JsonKey(readValue: _readName) this.name = '',
       this.photoUrl,
       required this.gender,
       required this.birthDate,
@@ -468,12 +538,17 @@ class _$UserModelImpl implements _UserModel {
       this.fastingExperience = FastingExperience.beginner,
       this.recommendedProtocol,
       this.healthGoal,
+      this.targetWeightKg,
+      this.startWeightKg,
+      this.targetFatPercentage,
+      this.targetLBM,
       this.checkInDay,
       this.onboardingCompleted = false,
       this.createdAt,
       this.updatedAt})
       : _pathologies = pathologies,
-        _physicalLimitations = physicalLimitations;
+        _physicalLimitations = physicalLimitations,
+        super._();
 
   factory _$UserModelImpl.fromJson(Map<String, dynamic> json) =>
       _$$UserModelImplFromJson(json);
@@ -485,6 +560,10 @@ class _$UserModelImpl implements _UserModel {
   final String email;
   @override
   final String displayName;
+  @override
+  @JsonKey(readValue: _readName)
+  final String name;
+// <--- Added name field with custom reader
   @override
   final String? photoUrl;
   @override
@@ -546,6 +625,17 @@ class _$UserModelImpl implements _UserModel {
   final String? recommendedProtocol;
   @override
   final HealthGoal? healthGoal;
+// Goals & Progress
+  @override
+  final double? targetWeightKg;
+  @override
+  final double? startWeightKg;
+  @override
+  final double? targetFatPercentage;
+// <--- New field
+  @override
+  final double? targetLBM;
+// <--- New field
 // Configuración
   @override
   final int? checkInDay;
@@ -561,7 +651,7 @@ class _$UserModelImpl implements _UserModel {
 
   @override
   String toString() {
-    return 'UserModel(uid: $uid, email: $email, displayName: $displayName, photoUrl: $photoUrl, gender: $gender, birthDate: $birthDate, heightCm: $heightCm, currentWeightKg: $currentWeightKg, waistCircumferenceCm: $waistCircumferenceCm, neckCircumferenceCm: $neckCircumferenceCm, hipCircumferenceCm: $hipCircumferenceCm, pathologies: $pathologies, activityLevel: $activityLevel, physicalLimitations: $physicalLimitations, snackingHabit: $snackingHabit, dietaryPreference: $dietaryPreference, wakeUpTime: $wakeUpTime, bedTime: $bedTime, usualFirstMealTime: $usualFirstMealTime, usualLastMealTime: $usualLastMealTime, fastingExperience: $fastingExperience, recommendedProtocol: $recommendedProtocol, healthGoal: $healthGoal, checkInDay: $checkInDay, onboardingCompleted: $onboardingCompleted, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'UserModel(uid: $uid, email: $email, displayName: $displayName, name: $name, photoUrl: $photoUrl, gender: $gender, birthDate: $birthDate, heightCm: $heightCm, currentWeightKg: $currentWeightKg, waistCircumferenceCm: $waistCircumferenceCm, neckCircumferenceCm: $neckCircumferenceCm, hipCircumferenceCm: $hipCircumferenceCm, pathologies: $pathologies, activityLevel: $activityLevel, physicalLimitations: $physicalLimitations, snackingHabit: $snackingHabit, dietaryPreference: $dietaryPreference, wakeUpTime: $wakeUpTime, bedTime: $bedTime, usualFirstMealTime: $usualFirstMealTime, usualLastMealTime: $usualLastMealTime, fastingExperience: $fastingExperience, recommendedProtocol: $recommendedProtocol, healthGoal: $healthGoal, targetWeightKg: $targetWeightKg, startWeightKg: $startWeightKg, targetFatPercentage: $targetFatPercentage, targetLBM: $targetLBM, checkInDay: $checkInDay, onboardingCompleted: $onboardingCompleted, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -573,6 +663,7 @@ class _$UserModelImpl implements _UserModel {
             (identical(other.email, email) || other.email == email) &&
             (identical(other.displayName, displayName) ||
                 other.displayName == displayName) &&
+            (identical(other.name, name) || other.name == name) &&
             (identical(other.photoUrl, photoUrl) ||
                 other.photoUrl == photoUrl) &&
             (identical(other.gender, gender) || other.gender == gender) &&
@@ -611,6 +702,14 @@ class _$UserModelImpl implements _UserModel {
                 other.recommendedProtocol == recommendedProtocol) &&
             (identical(other.healthGoal, healthGoal) ||
                 other.healthGoal == healthGoal) &&
+            (identical(other.targetWeightKg, targetWeightKg) ||
+                other.targetWeightKg == targetWeightKg) &&
+            (identical(other.startWeightKg, startWeightKg) ||
+                other.startWeightKg == startWeightKg) &&
+            (identical(other.targetFatPercentage, targetFatPercentage) ||
+                other.targetFatPercentage == targetFatPercentage) &&
+            (identical(other.targetLBM, targetLBM) ||
+                other.targetLBM == targetLBM) &&
             (identical(other.checkInDay, checkInDay) ||
                 other.checkInDay == checkInDay) &&
             (identical(other.onboardingCompleted, onboardingCompleted) ||
@@ -628,6 +727,7 @@ class _$UserModelImpl implements _UserModel {
         uid,
         email,
         displayName,
+        name,
         photoUrl,
         gender,
         birthDate,
@@ -648,6 +748,10 @@ class _$UserModelImpl implements _UserModel {
         fastingExperience,
         recommendedProtocol,
         healthGoal,
+        targetWeightKg,
+        startWeightKg,
+        targetFatPercentage,
+        targetLBM,
         checkInDay,
         onboardingCompleted,
         createdAt,
@@ -668,11 +772,12 @@ class _$UserModelImpl implements _UserModel {
   }
 }
 
-abstract class _UserModel implements UserModel {
+abstract class _UserModel extends UserModel {
   const factory _UserModel(
       {required final String uid,
       required final String email,
       required final String displayName,
+      @JsonKey(readValue: _readName) final String name,
       final String? photoUrl,
       required final Gender gender,
       required final DateTime birthDate,
@@ -693,10 +798,15 @@ abstract class _UserModel implements UserModel {
       final FastingExperience fastingExperience,
       final String? recommendedProtocol,
       final HealthGoal? healthGoal,
+      final double? targetWeightKg,
+      final double? startWeightKg,
+      final double? targetFatPercentage,
+      final double? targetLBM,
       final int? checkInDay,
       final bool onboardingCompleted,
       final DateTime? createdAt,
       final DateTime? updatedAt}) = _$UserModelImpl;
+  const _UserModel._() : super._();
 
   factory _UserModel.fromJson(Map<String, dynamic> json) =
       _$UserModelImpl.fromJson;
@@ -708,6 +818,9 @@ abstract class _UserModel implements UserModel {
   @override
   String get displayName;
   @override
+  @JsonKey(readValue: _readName)
+  String get name;
+  @override // <--- Added name field with custom reader
   String? get photoUrl;
   @override
   Gender get gender;
@@ -747,7 +860,16 @@ abstract class _UserModel implements UserModel {
   String? get recommendedProtocol;
   @override
   HealthGoal? get healthGoal;
-  @override // Configuración
+  @override // Goals & Progress
+  double? get targetWeightKg;
+  @override
+  double? get startWeightKg;
+  @override
+  double? get targetFatPercentage;
+  @override // <--- New field
+  double? get targetLBM;
+  @override // <--- New field
+// Configuración
   int? get checkInDay;
   @override // 1 = Lunes, 7 = Domingo
 // Metadata

@@ -11,12 +11,14 @@ class ElenaApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final goRouter = ref.watch(goRouterProvider);
-
     final authState = ref.watch(authStateChangesProvider);
-    final String appKey = authState.value?.uid ?? 'logged-out';
+    
+    // STRICT MODE: Use UID as Key to force complete rebuild on user switch.
+    // This prevents "Zombie State" in providers and UI widgets.
+    final String appKey = authState.value?.uid ?? 'auth_reset_${DateTime.now().millisecondsSinceEpoch}';
 
     return MaterialApp.router(
-      key: ValueKey(appKey), // Force rebuild on user switch
+      key: ValueKey(appKey), 
       routerConfig: goRouter,
       debugShowCheckedModeBanner: false,
       restorationScopeId: 'elena_app',

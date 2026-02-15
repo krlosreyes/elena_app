@@ -26,61 +26,62 @@ class BioGaugeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 1. Forzamos formato limpio: "25.3", "8.0", etc.
-    // Esto evita los números gigantes erróneos.
+    // Formatting safety
     final String formattedValue = value.toStringAsFixed(1);
 
-    return AspectRatio(
-      aspectRatio: 1.0, 
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        padding: const EdgeInsets.all(12),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final double size = constraints.maxWidth;
-            
-            // Tamaños proporcionales matemáticos
-            final double titleSize = size * 0.09; 
-            final double valueSize = size * 0.20; 
-            final double statusSize = size * 0.08;
-            final double gaugeHeight = size * 0.65;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Enforce square aspect ratio or fit within available space
+        final size = constraints.maxWidth;
+        
+        // Adaptive Metrics
+        final double titleSize = size * 0.08; 
+        final double valueSize = size * 0.18; 
+        final double statusSize = size * 0.07;
+        final double gaugeHeight = size * 0.55; // Controlled height for gauge
 
-            return Column(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                // TÍTULO
-                Text(
-                  title.toUpperCase(),
-                  style: GoogleFonts.poppins(
-                    fontSize: titleSize,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey[500],
-                    letterSpacing: 0.5,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          padding: EdgeInsets.symmetric(
+            horizontal: size * 0.05,
+            vertical: size * 0.05,
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // 1. TITLE
+              Text(
+                title.toUpperCase(),
+                style: GoogleFonts.poppins(
+                  fontSize: titleSize,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey[500],
+                  letterSpacing: 0.5,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
 
-                // GAUGE
-                SizedBox(
-                  height: gaugeHeight, 
-                  width: size,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      // El Arco
-                      CustomPaint(
-                        size: Size(size, gaugeHeight),
+              // 2. GAUGE + VALUE STACK
+              SizedBox(
+                height: gaugeHeight,
+                width: size,
+                child: Stack(
+                  alignment: Alignment.bottomCenter,
+                  children: [
+                    // A. The Arc Painter
+                    Positioned.fill(
+                      child: CustomPaint(
                         painter: BioGaugePainter(
                           value: value,
                           min: min,
@@ -89,41 +90,43 @@ class BioGaugeCard extends StatelessWidget {
                           gradientColors: gradientColors,
                         ),
                       ),
-
-                      // El Texto (Formateado)
-                      Positioned(
-                        top: gaugeHeight * 0.45, 
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              '$formattedValue$unit', // <--- AQUÍ ESTÁ EL ARREGLO, más la unidad
-                              style: GoogleFonts.poppins(
-                                fontSize: valueSize,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black87,
-                                height: 1.0,
-                              ),
+                    ),
+                    
+                    // B. The Value Text (Centered in the "arch" space)
+                    Positioned(
+                      bottom: gaugeHeight * 0.1, // Lift slightly from bottom
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '$formattedValue$unit', 
+                            style: GoogleFonts.poppins(
+                              fontSize: valueSize,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                              height: 1.0,
                             ),
-                            Text(
-                              statusText,
-                              style: GoogleFonts.poppins(
-                                fontSize: statusSize,
-                                fontWeight: FontWeight.w600,
-                                color: statusColor,
-                              ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            statusText,
+                            style: GoogleFonts.poppins(
+                              fontSize: statusSize,
+                              fontWeight: FontWeight.w600,
+                              color: statusColor,
+                              height: 1.0,
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ],
-            );
-          },
-        ),
-      ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
@@ -145,10 +148,21 @@ class BioGaugePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Geometría adaptativa
-    final center = Offset(size.width / 2, size.height * 0.6); // Centro del arco
-    final radius = size.width / 2.2; // Radio un poco menor al ancho total
-    final strokeWidth = size.width * 0.08; // Grosor relativo al tamaño
+    // Robust geometry: 
+    // Arc is a semi-circle (180 deg) at the top part.
+    // We base calculations on the width to ensure it fits.
+    
+    final double strokeWidth = size.width * 0.08;
+    final double w = size.width;
+    // final double h = size.height; // Not strictly needed if we base on width
+    
+    // Center point for the arc. 
+    // We want the arc to arch UPWARDS. 
+    // Center should be roughly at bottom-center of the available draw area.
+    final center = Offset(w / 2, size.height * 0.9); 
+    
+    // Radius: fit within width with padding
+    final radius = (w / 2) - strokeWidth;
 
     final paintBg = Paint()
       ..color = Colors.grey[200]!
@@ -156,37 +170,50 @@ class BioGaugePainter extends CustomPainter {
       ..strokeCap = StrokeCap.round
       ..strokeWidth = strokeWidth;
 
-    // Arco de fondo (180 grados)
+    // Draw Background Arc (180 degrees, from PI to 2PI)
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
-      pi, pi, false, paintBg
+      pi, // Start at 9 o'clock
+      pi, // Sweep 180 deg to 3 o'clock
+      false, 
+      paintBg
     );
 
-    // Gradiente activo
+    // Active Gradient
     final paintActive = Paint()
-      ..shader = LinearGradient(colors: gradientColors ?? [Colors.green, Colors.yellow, Colors.orange, Colors.red])
-          .createShader(Rect.fromCircle(center: center, radius: radius))
+      ..shader = LinearGradient(
+        colors: gradientColors ?? [Colors.green, Colors.yellow, Colors.orange, Colors.red]
+      ).createShader(Rect.fromCircle(center: center, radius: radius))
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
       ..strokeWidth = strokeWidth;
 
-    // Calcular ángulo
-    final double percentage = ((value - min) / (max - min)).clamp(0.0, 1.0);
+    // Calculate progress
+    final double safeValue = value.clamp(min, max);
+    final double range = max - min;
+    // Avoid division by zero
+    final double percentage = range == 0 ? 0 : ((safeValue - min) / range);
+    
     final double sweepAngle = pi * percentage;
 
-    // Dibujar progreso
+    // Draw Active Arc
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
-      pi, sweepAngle, false, paintActive
+      pi, 
+      sweepAngle, 
+      false, 
+      paintActive
     );
 
-    // Indicador (Bolita)
+    // Indicator Dot (Knob)
     final double indicatorAngle = pi + sweepAngle;
     final double dx = center.dx + radius * cos(indicatorAngle);
     final double dy = center.dy + radius * sin(indicatorAngle);
 
+    // White border for contrast
     canvas.drawCircle(Offset(dx, dy), strokeWidth * 0.6, Paint()..color = Colors.white);
-    canvas.drawCircle(Offset(dx, dy), strokeWidth * 0.6, Paint()..color = color..style = PaintingStyle.stroke..strokeWidth = 2);
+    // Colored center
+    canvas.drawCircle(Offset(dx, dy), strokeWidth * 0.4, Paint()..color = color);
   }
 
   @override

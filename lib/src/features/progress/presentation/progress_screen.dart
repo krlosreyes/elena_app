@@ -1,4 +1,3 @@
-
 import 'dart:math';
 
 import 'package:elena_app/src/features/profile/data/user_repository.dart';
@@ -12,13 +11,13 @@ import '../../progress/data/progress_service.dart';
 import '../../progress/domain/measurement_log.dart';
 import '../../coaching/data/coaching_service.dart';
 import '../../authentication/data/auth_repository.dart';
+import '../../glucose/presentation/widgets/glucose_chart_widget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'widgets/fasting_chart_card.dart';
 import 'widgets/measurement_bottom_sheet.dart';
-
-
-// Usamos el provider reactivo definido en progress_service.dart
-// final measurementHistoryProvider = ... (YA NO ES NECESARIO RE-DEFINIRLO SI IMPORTAMOS EL DEL SERVICIO)
+import 'package:elena_app/src/features/progress/presentation/widgets/weight_input_sheet.dart';
+import 'widgets/week_calendar.dart';
+import '../../dashboard/presentation/widgets/dashboard_header.dart';
 
 
 class ProgressScreen extends ConsumerWidget {
@@ -39,95 +38,109 @@ class ProgressScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      body: userAsync.when(
-        data: (user) {
-          if (user == null) return const Center(child: Text("Perfil no cargado"));
-          
-          return historyAsync.when(
-            data: (history) {
-              final latest = history.isNotEmpty ? history.last : null;
-              final previous = history.length > 1 ? history[history.length - 2] : null;
+      body: SafeArea(
+        child: userAsync.when(
+          data: (user) {
+            if (user == null) return const Center(child: Text("Perfil no cargado"));
+            
+            return historyAsync.when(
+              data: (history) {
+                final latest = history.isNotEmpty ? history.last : null;
+                final previous = history.length > 1 ? history[history.length - 2] : null;
 
-              return SingleChildScrollView(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // SECCIÓN 2: Check-in Semanal
-                    _CheckInWeekStrip(
-                      checkInDay: user.checkInDay ?? 1, // Default Lunes
-                      latestLogDate: latest?.date,
-                      onCheckInTap: () => _showAddMeasurementModal(context, user),
-                    ),
-                    const SizedBox(height: 24),
-                    
-                    // SECCIÓN 2.5: Historial de Ayunos
-                    Text(
-                      'Consistencia de Ayuno',
-                      style: GoogleFonts.outfit(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: Colors.black87,
+                return SingleChildScrollView(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const DashboardHeader(), // <-- CABECERA REUTILIZADA
+                      const SizedBox(height: 20),
+
+                      // SECCIÓN 2: Check-in Semanal
+                      WeekCalendar(
+                        checkInDay: user.checkInDay ?? 1, // Default Lunes
+                        onCheckInTap: () => _showAddMeasurementModal(context, user),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    const FastingChartCard(),
-                    const SizedBox(height: 24),
+                      const SizedBox(height: 24),
+                      
+                      // SECCIÓN 2.5: Historial de Ayunos
+                      const FastingChartCard(),
+                      const SizedBox(height: 24),
 
-                    // SECCIÓN 3: Gráfico
-                    Text(
-                      'Tendencia Peso (Últimas 12 semanas)',
-                      style: GoogleFonts.outfit(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: Colors.black87,
+                      // SECCIÓN 2.6: Control de Glucosa (CONDICIONAL)
+                      if (user.shouldTrackGlucose) ...[
+                        const GlucoseChartWidget(),
+                        const SizedBox(height: 24),
+                      ],
+
+                      // SECCIÓN 3: Gráfico
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Tendencia Peso (12 sem)',
+                            style: GoogleFonts.outfit(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          TextButton.icon(
+                            onPressed: () {
+                               showModalBottomSheet(
+                                 context: context,
+                                 isScrollControlled: true,
+                                 shape: const RoundedRectangleBorder(
+                                   borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                                 ),
+                                 builder: (context) => const WeightInputSheet(),
+                               );
+                            },
+                            icon: const Icon(Icons.add_circle_outline, size: 18),
+                            label: const Text("Registrar"),
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              foregroundColor: Colors.blueAccent,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    if (history.isNotEmpty)
-                      SizedBox(
-                        height: 250,
-                        child: _WeightChart(history: history),
-                      )
-                    else 
-                       const Center(child: Text("Sin datos para graficar")),
+                      const SizedBox(height: 16),
+                      if (history.isNotEmpty)
+                        SizedBox(
+                          height: 250,
+                          child: _WeightChart(history: history),
+                        )
+                      else 
+                         const Center(child: Text("Sin datos para graficar")),
 
-                    const SizedBox(height: 32),
+                      const SizedBox(height: 32),
 
-                    // SECCIÓN 4: Tabla Histórica
-                    Text(
-                      'Historial Detallado',
-                      style: GoogleFonts.outfit(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: Colors.black87,
+                      // SECCIÓN 4: Tabla Histórica
+                      Text(
+                        'Historial Detallado',
+                        style: GoogleFonts.outfit(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: Colors.black87,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    _HistoryTable(history: history),
-                     const SizedBox(height: 80), // Espacio para FAB si hubiera
-                  ],
-                ),
-              );
-            },
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, st) => Center(child: Text('Error: $e')),
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, st) => const Center(child: Text("Error cargando perfil")),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-            // Necesitamos el usuario para el formulario... 
-            // Podríamos pasarlo de userAsync si estuviéramos dentro, 
-            // pero aquí userAsync.valueOrNull podría servir
-             final user = userAsync.valueOrNull;
-             if (user != null) _showAddMeasurementModal(context, user);
-        },
-        label: const Text('Registrar'),
-        icon: const Icon(Icons.add),
-        backgroundColor: Theme.of(context).primaryColor,
+                      const SizedBox(height: 8),
+                      _HistoryTable(history: history),
+                       const SizedBox(height: 80), // Espacio para FAB si hubiera
+                    ],
+                  ),
+                );
+              },
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, st) => Center(child: Text('Error: $e')),
+            );
+          },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, st) => const Center(child: Text("Error cargando perfil")),
+        ),
       ),
     );
   }
@@ -316,129 +329,7 @@ class _MetricCard extends StatelessWidget {
 // -----------------------------------------------------------------------------
 // SECCIÓN 2: Check-In Week Strip
 // -----------------------------------------------------------------------------
-class _CheckInWeekStrip extends StatelessWidget {
-  final int checkInDay; // 1 = Monday
-  final DateTime? latestLogDate;
-  final VoidCallback onCheckInTap;
 
-  const _CheckInWeekStrip({
-    required this.checkInDay,
-    this.latestLogDate,
-    required this.onCheckInTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final now = DateTime.now();
-    // Start of current week (Monday)
-    final monday = now.subtract(Duration(days: now.weekday - 1));
-    
-    // Check if check-in done this week
-    bool isCheckInDone = false;
-    if (latestLogDate != null) {
-       // Si el último log es de esta semana (>= lunes)
-       // Simplificación: solo miramos si es después del inicio de la semana
-       final startOfWeek = DateTime(monday.year, monday.month, monday.day);
-       if (latestLogDate!.isAfter(startOfWeek)) {
-         isCheckInDone = true;
-       }
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-      decoration: BoxDecoration(
-        color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey[200]!),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.calendar_today, size: 16, color: Colors.grey),
-              const SizedBox(width: 8),
-              Text(
-                'Semana Actual',
-                style: GoogleFonts.outfit(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey[700],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: List.generate(7, (index) {
-              final dayNum = index + 1; // 1-7 (Mon-Sun)
-              final isCheckInDay = dayNum == checkInDay;
-              final isToday = dayNum == now.weekday;
-              
-              // Estado visual
-              Color bgColor = Colors.transparent;
-              Color textColor = Colors.grey;
-              Widget? icon;
-
-              if (isCheckInDay) {
-                if (isCheckInDone) {
-                  bgColor = Colors.green.withOpacity(0.1);
-                  icon = const Icon(Icons.check_circle, size: 20, color: Colors.green);
-                } else if (isToday) {
-                  // Hoy toca check-in y no está hecho -> Pulsar/Resaltar
-                  bgColor = Theme.of(context).primaryColor;
-                  textColor = Colors.white;
-                  icon = const Icon(Icons.add, size: 20, color: Colors.white);
-                } else if (dayNum < now.weekday) {
-                  // Pasó el día y no se hizo
-                  bgColor = Colors.red.withOpacity(0.1);
-                  icon = const Icon(Icons.close, size: 20, color: Colors.red);
-                } else {
-                  // Futuro
-                  bgColor = Colors.white;
-                  textColor = Colors.black;
-                }
-              }
-
-              return InkWell(
-                 onTap: (isCheckInDay && isToday && !isCheckInDone) ? onCheckInTap : null,
-                 child: Container(
-                  width: 36,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: bgColor,
-                    borderRadius: BorderRadius.circular(8),
-                    border: isToday ? Border.all(color: Theme.of(context).primaryColor) : null,
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        _dayLetter(dayNum),
-                        style: GoogleFonts.outfit(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          color: textColor,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      if (icon != null) icon else const SizedBox(height: 20),
-                    ],
-                  ),
-                ),
-              );
-            }),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _dayLetter(int day) {
-    const letters = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
-    return letters[day - 1];
-  }
-}
 
 // -----------------------------------------------------------------------------
 // SECCIÓN 3: Gráfico (Limitado a 12 semanas)

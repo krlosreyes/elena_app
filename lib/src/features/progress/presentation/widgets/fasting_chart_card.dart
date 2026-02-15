@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../fasting_history_controller.dart';
+import 'package:elena_app/src/features/fasting/presentation/widgets/manual_fast_input_sheet.dart';
 
 class FastingChartCard extends ConsumerWidget {
   const FastingChartCard({super.key});
@@ -30,7 +31,47 @@ class FastingChartCard extends ConsumerWidget {
       ),
       child: Column(
         children: [
-          // 1. Selector de Vista (Segmented Control Simplificado)
+
+
+// ... (existing imports)
+
+          // 1. Header con Título y Botón
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+               Text(
+                'Consistencia',
+                style: GoogleFonts.outfit(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: Colors.black87,
+                ),
+              ),
+              TextButton.icon(
+                onPressed: () {
+                   showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                    ),
+                    builder: (context) => const ManualFastInputSheet(),
+                  );
+                },
+                icon: const Icon(Icons.add_circle_outline, size: 18),
+                label: const Text("Registrar"),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  foregroundColor: Colors.blueAccent,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // 2. Selector de Vista (Segmented Control Simplificado)
           Container(
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
