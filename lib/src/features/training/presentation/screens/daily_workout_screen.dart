@@ -68,12 +68,7 @@ class DailyWorkoutScreen extends ConsumerWidget {
         elevation: 0,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.bar_chart),
-            onPressed: () => context.pushNamed(TrainingStatsScreen.routeName),
-          ),
-        ],
+        actions: const [],
       ),
       backgroundColor: Colors.white,
       body: Column(
@@ -83,6 +78,23 @@ class DailyWorkoutScreen extends ConsumerWidget {
             padding: EdgeInsets.symmetric(horizontal: 16.0),
             child: WeeklyCalendarStrip(),
           ),
+          
+          // Collapsible Stats Section
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 4.0),
+            child: ExpansionTile(
+              title: Text("Mis Estadísticas", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              leading: Icon(Icons.bar_chart, color: Colors.blueAccent),
+              children: [
+                SizedBox(
+                  height: 450, // Constrain height for the chart screen
+                  child: TrainingStatsScreen(), 
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 16),
           const SizedBox(height: 16),
           
           Expanded(

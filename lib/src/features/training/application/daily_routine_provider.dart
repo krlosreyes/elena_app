@@ -44,9 +44,9 @@ class DailyRoutine extends _$DailyRoutine {
         'name': 'Sentadilla Goblet',
         'targetRir': 2,
         'sets': [
-          { 'setIndex': 1, 'targetReps': '10-12', 'weight': null, 'reps': null, 'isDone': false },
-          { 'setIndex': 2, 'targetReps': '10-12', 'weight': null, 'reps': null, 'isDone': false },
-          { 'setIndex': 3, 'targetReps': '10-12', 'weight': null, 'reps': null, 'isDone': false },
+          { 'setIndex': 1, 'targetReps': '10-12', 'weight': 5.0, 'reps': null, 'isDone': false },
+          { 'setIndex': 2, 'targetReps': '10-12', 'weight': 5.0, 'reps': null, 'isDone': false },
+          { 'setIndex': 3, 'targetReps': '10-12', 'weight': 5.0, 'reps': null, 'isDone': false },
         ]
       },
       {
@@ -54,9 +54,9 @@ class DailyRoutine extends _$DailyRoutine {
         'name': 'Flexiones (Push-ups)',
         'targetRir': 2,
         'sets': [
-          { 'setIndex': 1, 'targetReps': 'Al fallo', 'weight': null, 'reps': null, 'isDone': false },
-          { 'setIndex': 2, 'targetReps': 'Al fallo', 'weight': null, 'reps': null, 'isDone': false },
-          { 'setIndex': 3, 'targetReps': 'Al fallo', 'weight': null, 'reps': null, 'isDone': false },
+          { 'setIndex': 1, 'targetReps': 'Al fallo', 'weight': 0.0, 'reps': null, 'isDone': false },
+          { 'setIndex': 2, 'targetReps': 'Al fallo', 'weight': 0.0, 'reps': null, 'isDone': false },
+          { 'setIndex': 3, 'targetReps': 'Al fallo', 'weight': 0.0, 'reps': null, 'isDone': false },
         ]
       },
       {
@@ -64,9 +64,9 @@ class DailyRoutine extends _$DailyRoutine {
         'name': 'Remo con Mancuernas',
         'targetRir': 2,
         'sets': [
-          { 'setIndex': 1, 'targetReps': '10-12', 'weight': null, 'reps': null, 'isDone': false },
-          { 'setIndex': 2, 'targetReps': '10-12', 'weight': null, 'reps': null, 'isDone': false },
-          { 'setIndex': 3, 'targetReps': '10-12', 'weight': null, 'reps': null, 'isDone': false },
+          { 'setIndex': 1, 'targetReps': '10-12', 'weight': 5.0, 'reps': null, 'isDone': false },
+          { 'setIndex': 2, 'targetReps': '10-12', 'weight': 5.0, 'reps': null, 'isDone': false },
+          { 'setIndex': 3, 'targetReps': '10-12', 'weight': 5.0, 'reps': null, 'isDone': false },
         ]
       },
     ];
@@ -79,9 +79,9 @@ class DailyRoutine extends _$DailyRoutine {
         'name': 'Zancadas (Lunges)',
         'targetRir': 2,
         'sets': [
-          { 'setIndex': 1, 'targetReps': '10 cada lado', 'weight': null, 'reps': null, 'isDone': false },
-          { 'setIndex': 2, 'targetReps': '10 cada lado', 'weight': null, 'reps': null, 'isDone': false },
-          { 'setIndex': 3, 'targetReps': '10 cada lado', 'weight': null, 'reps': null, 'isDone': false },
+          { 'setIndex': 1, 'targetReps': '10 cada lado', 'weight': 5.0, 'reps': null, 'isDone': false },
+          { 'setIndex': 2, 'targetReps': '10 cada lado', 'weight': 5.0, 'reps': null, 'isDone': false },
+          { 'setIndex': 3, 'targetReps': '10 cada lado', 'weight': 5.0, 'reps': null, 'isDone': false },
         ]
       },
       {
@@ -89,9 +89,9 @@ class DailyRoutine extends _$DailyRoutine {
         'name': 'Press Militar Mancuernas',
         'targetRir': 2,
         'sets': [
-          { 'setIndex': 1, 'targetReps': '8-10', 'weight': null, 'reps': null, 'isDone': false },
-          { 'setIndex': 2, 'targetReps': '8-10', 'weight': null, 'reps': null, 'isDone': false },
-          { 'setIndex': 3, 'targetReps': '8-10', 'weight': null, 'reps': null, 'isDone': false },
+          { 'setIndex': 1, 'targetReps': '8-10', 'weight': 5.0, 'reps': null, 'isDone': false },
+          { 'setIndex': 2, 'targetReps': '8-10', 'weight': 5.0, 'reps': null, 'isDone': false },
+          { 'setIndex': 3, 'targetReps': '8-10', 'weight': 5.0, 'reps': null, 'isDone': false },
         ]
       },
       {
@@ -99,9 +99,9 @@ class DailyRoutine extends _$DailyRoutine {
         'name': 'Jalón al Pecho (Bandas/Máquina)',
         'targetRir': 2,
         'sets': [
-          { 'setIndex': 1, 'targetReps': '12-15', 'weight': null, 'reps': null, 'isDone': false },
-          { 'setIndex': 2, 'targetReps': '12-15', 'weight': null, 'reps': null, 'isDone': false },
-          { 'setIndex': 3, 'targetReps': '12-15', 'weight': null, 'reps': null, 'isDone': false },
+          { 'setIndex': 1, 'targetReps': '12-15', 'weight': 15.0, 'reps': null, 'isDone': false },
+          { 'setIndex': 2, 'targetReps': '12-15', 'weight': 15.0, 'reps': null, 'isDone': false },
+          { 'setIndex': 3, 'targetReps': '12-15', 'weight': 15.0, 'reps': null, 'isDone': false },
         ]
       },
     ];
@@ -114,9 +114,9 @@ class DailyRoutine extends _$DailyRoutine {
         'name': 'Peso Muerto Rumano',
         'targetRir': 2,
         'sets': [
-          { 'setIndex': 1, 'targetReps': '10-12', 'weight': null, 'reps': null, 'isDone': false },
-          { 'setIndex': 2, 'targetReps': '10-12', 'weight': null, 'reps': null, 'isDone': false },
-          { 'setIndex': 3, 'targetReps': '10-12', 'weight': null, 'reps': null, 'isDone': false },
+          { 'setIndex': 1, 'targetReps': '10-12', 'weight': 20.0, 'reps': null, 'isDone': false },
+          { 'setIndex': 2, 'targetReps': '10-12', 'weight': 20.0, 'reps': null, 'isDone': false },
+          { 'setIndex': 3, 'targetReps': '10-12', 'weight': 20.0, 'reps': null, 'isDone': false },
         ]
       },
       {
@@ -124,9 +124,9 @@ class DailyRoutine extends _$DailyRoutine {
         'name': 'Press de Banca (Mancuernas/Barra)',
         'targetRir': 2,
         'sets': [
-          { 'setIndex': 1, 'targetReps': '8-10', 'weight': null, 'reps': null, 'isDone': false },
-          { 'setIndex': 2, 'targetReps': '8-10', 'weight': null, 'reps': null, 'isDone': false },
-          { 'setIndex': 3, 'targetReps': '8-10', 'weight': null, 'reps': null, 'isDone': false },
+          { 'setIndex': 1, 'targetReps': '8-10', 'weight': 10.0, 'reps': null, 'isDone': false },
+          { 'setIndex': 2, 'targetReps': '8-10', 'weight': 10.0, 'reps': null, 'isDone': false },
+          { 'setIndex': 3, 'targetReps': '8-10', 'weight': 10.0, 'reps': null, 'isDone': false },
         ]
       },
       {
@@ -134,9 +134,9 @@ class DailyRoutine extends _$DailyRoutine {
         'name': 'Face Pulls',
         'targetRir': 3,
         'sets': [
-          { 'setIndex': 1, 'targetReps': '15-20', 'weight': null, 'reps': null, 'isDone': false },
-          { 'setIndex': 2, 'targetReps': '15-20', 'weight': null, 'reps': null, 'isDone': false },
-          { 'setIndex': 3, 'targetReps': '15-20', 'weight': null, 'reps': null, 'isDone': false },
+          { 'setIndex': 1, 'targetReps': '15-20', 'weight': 5.0, 'reps': null, 'isDone': false },
+          { 'setIndex': 2, 'targetReps': '15-20', 'weight': 5.0, 'reps': null, 'isDone': false },
+          { 'setIndex': 3, 'targetReps': '15-20', 'weight': 5.0, 'reps': null, 'isDone': false },
         ]
       },
     ];
@@ -149,10 +149,10 @@ class DailyRoutine extends _$DailyRoutine {
         'name': 'Sentadilla Trasera',
         'targetRir': 2,
         'sets': [
-          { 'setIndex': 1, 'targetReps': '6-8', 'weight': null, 'reps': null, 'isDone': false },
-          { 'setIndex': 2, 'targetReps': '6-8', 'weight': null, 'reps': null, 'isDone': false },
-          { 'setIndex': 3, 'targetReps': '6-8', 'weight': null, 'reps': null, 'isDone': false },
-          { 'setIndex': 4, 'targetReps': '6-8', 'weight': null, 'reps': null, 'isDone': false },
+          { 'setIndex': 1, 'targetReps': '6-8', 'weight': 40.0, 'reps': null, 'isDone': false },
+          { 'setIndex': 2, 'targetReps': '6-8', 'weight': 40.0, 'reps': null, 'isDone': false },
+          { 'setIndex': 3, 'targetReps': '6-8', 'weight': 40.0, 'reps': null, 'isDone': false },
+          { 'setIndex': 4, 'targetReps': '6-8', 'weight': 40.0, 'reps': null, 'isDone': false },
         ]
       },
       {
@@ -160,10 +160,10 @@ class DailyRoutine extends _$DailyRoutine {
         'name': 'Press Banca',
         'targetRir': 2,
         'sets': [
-          { 'setIndex': 1, 'targetReps': '6-8', 'weight': null, 'reps': null, 'isDone': false },
-          { 'setIndex': 2, 'targetReps': '6-8', 'weight': null, 'reps': null, 'isDone': false },
-          { 'setIndex': 3, 'targetReps': '6-8', 'weight': null, 'reps': null, 'isDone': false },
-          { 'setIndex': 4, 'targetReps': '6-8', 'weight': null, 'reps': null, 'isDone': false },
+          { 'setIndex': 1, 'targetReps': '6-8', 'weight': 30.0, 'reps': null, 'isDone': false },
+          { 'setIndex': 2, 'targetReps': '6-8', 'weight': 30.0, 'reps': null, 'isDone': false },
+          { 'setIndex': 3, 'targetReps': '6-8', 'weight': 30.0, 'reps': null, 'isDone': false },
+          { 'setIndex': 4, 'targetReps': '6-8', 'weight': 30.0, 'reps': null, 'isDone': false },
         ]
       },
       {
@@ -171,35 +171,34 @@ class DailyRoutine extends _$DailyRoutine {
         'name': 'Dominadas Lastradas',
         'targetRir': 1,
         'sets': [
-          { 'setIndex': 1, 'targetReps': 'Al fallo', 'weight': null, 'reps': null, 'isDone': false },
-          { 'setIndex': 2, 'targetReps': 'Al fallo', 'weight': null, 'reps': null, 'isDone': false },
-          { 'setIndex': 3, 'targetReps': 'Al fallo', 'weight': null, 'reps': null, 'isDone': false },
+          { 'setIndex': 1, 'targetReps': 'Al fallo', 'weight': 0.0, 'reps': null, 'isDone': false },
+          { 'setIndex': 2, 'targetReps': 'Al fallo', 'weight': 0.0, 'reps': null, 'isDone': false },
+          { 'setIndex': 3, 'targetReps': 'Al fallo', 'weight': 0.0, 'reps': null, 'isDone': false },
         ]
       },
     ];
   }
 
   void toggleSet(String exerciseId, int setIndex, double? weight, int? reps) {
-    state = [
-      for (final exercise in state)
-        if (exercise['id'] == exerciseId)
-          {
-            ...exercise,
-            'sets': [
-              for (final set in exercise['sets'] as List)
-                if (set['setIndex'] == setIndex)
-                  {
-                    ...set,
-                    'isDone': !set['isDone'],
-                    'weight': weight,
-                    'reps': reps,
-                  }
-                else
-                  set
-            ]
-          }
-        else
-          exercise
-    ];
+    // Correct deep copy implementation
+    state = state.map((exercise) {
+      if (exercise['id'] != exerciseId) return exercise;
+
+      final updatedSets = (exercise['sets'] as List).map((set) {
+        if (set['setIndex'] != setIndex) return set;
+        
+        return {
+          ...set,
+          'isDone': !set['isDone'],
+          'weight': weight, // Update with current value
+          'reps': reps,     // Update with current value
+        };
+      }).toList();
+
+      return {
+        ...exercise,
+        'sets': updatedSets,
+      };
+    }).toList();
   }
 }

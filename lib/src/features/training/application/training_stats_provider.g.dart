@@ -6,7 +6,7 @@ part of 'training_stats_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$trainingStatsHash() => r'8a579f6082a2a81b62f21852a37c89dc1c104fe0';
+String _$trainingStatsHash() => r'd04a7b1677a5f448f14f00ac6e0ed03dbbe2c6a5';
 
 /// See also [trainingStats].
 @ProviderFor(trainingStats)
