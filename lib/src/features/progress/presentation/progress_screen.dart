@@ -17,6 +17,7 @@ import 'widgets/fasting_chart_card.dart';
 import 'widgets/measurement_bottom_sheet.dart';
 import 'package:elena_app/src/features/progress/presentation/widgets/weight_input_sheet.dart';
 import 'widgets/week_calendar.dart';
+import 'widgets/training_stats_section.dart';
 import '../../dashboard/presentation/widgets/dashboard_header.dart';
 
 
@@ -72,6 +73,10 @@ class ProgressScreen extends ConsumerWidget {
                         const GlucoseChartWidget(),
                         const SizedBox(height: 24),
                       ],
+                      
+                      // SECCIÓN 2.7: Estadísticas de Entrenamiento
+                      const TrainingStatsSection(),
+                      const SizedBox(height: 24),
 
                       // SECCIÓN 3: Gráfico
                       Row(

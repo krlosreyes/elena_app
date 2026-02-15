@@ -4,8 +4,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../config/theme/app_theme.dart';
 
-import '../widgets/rest_timer_banner.dart';
-
 
 import '../../application/daily_orchestrator_provider.dart';
 import '../../application/workout_submit_controller.dart';
@@ -23,7 +21,7 @@ import '../widgets/rest_timer_banner.dart';
 import '../widgets/metabolic_insight_banner.dart';
 import '../widgets/past_workout_summary_view.dart';
 import '../widgets/missed_workout_view.dart';
-import 'training_stats_screen.dart';
+
 
 class DailyWorkoutScreen extends ConsumerWidget {
   const DailyWorkoutScreen({super.key});
@@ -79,22 +77,6 @@ class DailyWorkoutScreen extends ConsumerWidget {
             child: WeeklyCalendarStrip(),
           ),
           
-          // Collapsible Stats Section
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 4.0),
-            child: ExpansionTile(
-              title: Text("Mis Estadísticas", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-              leading: Icon(Icons.bar_chart, color: Colors.blueAccent),
-              children: [
-                SizedBox(
-                  height: 450, // Constrain height for the chart screen
-                  child: TrainingStatsScreen(), 
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 16),
           const SizedBox(height: 16),
           
           Expanded(

@@ -32,8 +32,11 @@ class _ExerciseSetRowState extends ConsumerState<ExerciseSetRow> {
   @override
   void initState() {
     super.initState();
+    double weight = widget.initialWeight ?? 0;
+    if (weight == 0) weight = 5;
+    
     _weightController = TextEditingController(
-      text: widget.initialWeight?.toString().replaceAll(RegExp(r'\.0$'), '') ?? '',
+      text: weight.toString().replaceAll(RegExp(r'\.0$'), ''),
     );
     _repsController = TextEditingController(
       text: widget.initialReps?.toString() ?? '',

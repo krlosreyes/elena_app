@@ -11,7 +11,7 @@ import '../features/progress/presentation/progress_screen.dart';
 import '../features/profile/presentation/profile_screen.dart';
 import '../features/training/presentation/screens/daily_workout_screen.dart';
 import '../features/training/presentation/screens/workout_summary_screen.dart';
-import '../features/training/presentation/screens/training_stats_screen.dart';
+
 import '../features/training/domain/entities/workout_log.dart';
 
 import '../features/authentication/data/auth_repository.dart';
@@ -119,11 +119,6 @@ GoRouter goRouter(GoRouterRef ref) {
           final log = state.extra as WorkoutLog;
           return WorkoutSummaryScreen(log: log);
         },
-      ),
-      GoRoute(
-        path: '/training-stats',
-        name: TrainingStatsScreen.routeName,
-        builder: (context, state) => const TrainingStatsScreen(),
       ),
     ],
   );
