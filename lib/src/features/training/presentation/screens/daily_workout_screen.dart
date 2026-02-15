@@ -8,6 +8,7 @@ import '../../domain/entities/training_entities.dart';
 import '../../domain/entities/exercise.dart';
 import '../widgets/rir_logging_slider.dart';
 import '../widgets/exercise_set_row.dart';
+import '../widgets/rest_timer_banner.dart';
 
 class DailyWorkoutScreen extends ConsumerWidget {
   const DailyWorkoutScreen({super.key});
@@ -23,7 +24,17 @@ class DailyWorkoutScreen extends ConsumerWidget {
         title: const Text("Entrenamiento de Hoy"),
       ),
       body: recommendationAsync.when(
-        data: (recommendation) => _buildContent(context, ref, recommendation),
+        data: (recommendation) => Stack(
+          children: [
+            _buildContent(context, ref, recommendation),
+            const Positioned(
+              bottom: 80,
+              left: 0,
+              right: 0,
+              child: RestTimerBanner(),
+            ),
+          ],
+        ),
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(child: Text('Error: $err')),
       ),

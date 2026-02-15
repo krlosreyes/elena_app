@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../../config/theme/app_theme.dart';
+import '../../application/rest_timer_provider.dart';
 
-class ExerciseSetRow extends StatefulWidget {
+class ExerciseSetRow extends ConsumerStatefulWidget {
   final int setIndex;
   final String targetReps;
   final bool isDone;
@@ -21,10 +22,10 @@ class ExerciseSetRow extends StatefulWidget {
   });
 
   @override
-  State<ExerciseSetRow> createState() => _ExerciseSetRowState();
+  ConsumerState<ExerciseSetRow> createState() => _ExerciseSetRowState();
 }
 
-class _ExerciseSetRowState extends State<ExerciseSetRow> {
+class _ExerciseSetRowState extends ConsumerState<ExerciseSetRow> {
   late TextEditingController _weightController;
   late TextEditingController _repsController;
 
@@ -49,7 +50,14 @@ class _ExerciseSetRowState extends State<ExerciseSetRow> {
   void _handleToggle() {
     final weight = double.tryParse(_weightController.text);
     final reps = int.tryParse(_repsController.text);
+    
+    // Trigger logic
     widget.onToggle(weight, reps);
+
+    // If marking as done, start rest timer
+    if (!widget.isDone) {
+       ref.read(restTimerProvider.notifier).startTimer(90);
+    }
   }
 
   @override

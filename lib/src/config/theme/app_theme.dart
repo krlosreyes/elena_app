@@ -4,7 +4,9 @@ import 'package:google_fonts/google_fonts.dart';
 class AppTheme {
   // Brand Colors
   static const Color brandBlue = Color(0xFF1565C0); // Azul Prominente
+  static const Color brandDark = Color(0xFF0D47A1); // Azul Oscuro
   static const Color brandTeal = Color(0xFF009688); // Verde Azulado
+
   static const Color brandLightBlue = Color(0xFFE3F2FD); // Azul muy claro para fondos
 
   static ThemeData get lightTheme {
