@@ -57,13 +57,15 @@ class _CardioWorkoutViewState extends ConsumerState<CardioWorkoutView> {
   Future<void> _finish(int durationMinutes) async {
     _timer?.cancel();
     
-    // Calculate a mock score or just pass 0 for cardio for now
-    // In future use durationMinutes to log
     final log = await ref.read(workoutSubmitControllerProvider.notifier)
-        .submitWorkout(sessionRir: 0); 
+        .submitWorkout(
+          sessionRir: 0,
+          durationMinutes: durationMinutes,
+          workoutType: 'Cardio',
+        ); 
 
     if (mounted && log != null) {
-      context.goNamed('workout_summary', extra: log);
+      context.pushNamed('workout_summary', extra: log);
     } else if (mounted) {
        ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Error guardando sesión.")),

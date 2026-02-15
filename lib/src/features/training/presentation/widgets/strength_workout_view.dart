@@ -162,10 +162,13 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
                   ? null 
                   : () async {
                       final log = await ref.read(workoutSubmitControllerProvider.notifier)
-                         .submitWorkout(sessionRir: _currentRir);
+                         .submitWorkout(
+                           sessionRir: _currentRir,
+                           workoutType: 'Strength',
+                         );
                       
                       if (context.mounted && log != null) {
-                        context.goNamed('workout_summary', extra: log);
+                        context.pushNamed('workout_summary', extra: log);
                       }
                     },
               style: FilledButton.styleFrom(

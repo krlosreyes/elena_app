@@ -28,6 +28,8 @@ mixin _$WorkoutLog {
 // In a real app, this might be a list of LoggedExercise objects
   List<Map<String, dynamic>> get completedExercises =>
       throw _privateConstructorUsedError;
+  int? get durationMinutes => throw _privateConstructorUsedError;
+  int? get caloriesBurned => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -46,7 +48,9 @@ abstract class $WorkoutLogCopyWith<$Res> {
       String templateId,
       DateTime date,
       int sessionRirScore,
-      List<Map<String, dynamic>> completedExercises});
+      List<Map<String, dynamic>> completedExercises,
+      int? durationMinutes,
+      int? caloriesBurned});
 }
 
 /// @nodoc
@@ -67,6 +71,8 @@ class _$WorkoutLogCopyWithImpl<$Res, $Val extends WorkoutLog>
     Object? date = null,
     Object? sessionRirScore = null,
     Object? completedExercises = null,
+    Object? durationMinutes = freezed,
+    Object? caloriesBurned = freezed,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -89,6 +95,14 @@ class _$WorkoutLogCopyWithImpl<$Res, $Val extends WorkoutLog>
           ? _value.completedExercises
           : completedExercises // ignore: cast_nullable_to_non_nullable
               as List<Map<String, dynamic>>,
+      durationMinutes: freezed == durationMinutes
+          ? _value.durationMinutes
+          : durationMinutes // ignore: cast_nullable_to_non_nullable
+              as int?,
+      caloriesBurned: freezed == caloriesBurned
+          ? _value.caloriesBurned
+          : caloriesBurned // ignore: cast_nullable_to_non_nullable
+              as int?,
     ) as $Val);
   }
 }
@@ -106,7 +120,9 @@ abstract class _$$WorkoutLogImplCopyWith<$Res>
       String templateId,
       DateTime date,
       int sessionRirScore,
-      List<Map<String, dynamic>> completedExercises});
+      List<Map<String, dynamic>> completedExercises,
+      int? durationMinutes,
+      int? caloriesBurned});
 }
 
 /// @nodoc
@@ -125,6 +141,8 @@ class __$$WorkoutLogImplCopyWithImpl<$Res>
     Object? date = null,
     Object? sessionRirScore = null,
     Object? completedExercises = null,
+    Object? durationMinutes = freezed,
+    Object? caloriesBurned = freezed,
   }) {
     return _then(_$WorkoutLogImpl(
       id: null == id
@@ -147,6 +165,14 @@ class __$$WorkoutLogImplCopyWithImpl<$Res>
           ? _value._completedExercises
           : completedExercises // ignore: cast_nullable_to_non_nullable
               as List<Map<String, dynamic>>,
+      durationMinutes: freezed == durationMinutes
+          ? _value.durationMinutes
+          : durationMinutes // ignore: cast_nullable_to_non_nullable
+              as int?,
+      caloriesBurned: freezed == caloriesBurned
+          ? _value.caloriesBurned
+          : caloriesBurned // ignore: cast_nullable_to_non_nullable
+              as int?,
     ));
   }
 }
@@ -159,7 +185,9 @@ class _$WorkoutLogImpl extends _WorkoutLog {
       required this.templateId,
       required this.date,
       required this.sessionRirScore,
-      required final List<Map<String, dynamic>> completedExercises})
+      required final List<Map<String, dynamic>> completedExercises,
+      this.durationMinutes,
+      this.caloriesBurned})
       : _completedExercises = completedExercises,
         super._();
 
@@ -188,8 +216,13 @@ class _$WorkoutLogImpl extends _WorkoutLog {
   }
 
   @override
+  final int? durationMinutes;
+  @override
+  final int? caloriesBurned;
+
+  @override
   String toString() {
-    return 'WorkoutLog(id: $id, templateId: $templateId, date: $date, sessionRirScore: $sessionRirScore, completedExercises: $completedExercises)';
+    return 'WorkoutLog(id: $id, templateId: $templateId, date: $date, sessionRirScore: $sessionRirScore, completedExercises: $completedExercises, durationMinutes: $durationMinutes, caloriesBurned: $caloriesBurned)';
   }
 
   @override
@@ -204,7 +237,11 @@ class _$WorkoutLogImpl extends _WorkoutLog {
             (identical(other.sessionRirScore, sessionRirScore) ||
                 other.sessionRirScore == sessionRirScore) &&
             const DeepCollectionEquality()
-                .equals(other._completedExercises, _completedExercises));
+                .equals(other._completedExercises, _completedExercises) &&
+            (identical(other.durationMinutes, durationMinutes) ||
+                other.durationMinutes == durationMinutes) &&
+            (identical(other.caloriesBurned, caloriesBurned) ||
+                other.caloriesBurned == caloriesBurned));
   }
 
   @JsonKey(ignore: true)
@@ -215,7 +252,9 @@ class _$WorkoutLogImpl extends _WorkoutLog {
       templateId,
       date,
       sessionRirScore,
-      const DeepCollectionEquality().hash(_completedExercises));
+      const DeepCollectionEquality().hash(_completedExercises),
+      durationMinutes,
+      caloriesBurned);
 
   @JsonKey(ignore: true)
   @override
@@ -233,12 +272,13 @@ class _$WorkoutLogImpl extends _WorkoutLog {
 
 abstract class _WorkoutLog extends WorkoutLog {
   const factory _WorkoutLog(
-          {required final String id,
-          required final String templateId,
-          required final DateTime date,
-          required final int sessionRirScore,
-          required final List<Map<String, dynamic>> completedExercises}) =
-      _$WorkoutLogImpl;
+      {required final String id,
+      required final String templateId,
+      required final DateTime date,
+      required final int sessionRirScore,
+      required final List<Map<String, dynamic>> completedExercises,
+      final int? durationMinutes,
+      final int? caloriesBurned}) = _$WorkoutLogImpl;
   const _WorkoutLog._() : super._();
 
   factory _WorkoutLog.fromJson(Map<String, dynamic> json) =
@@ -255,6 +295,10 @@ abstract class _WorkoutLog extends WorkoutLog {
   @override // List of maps is a simplification for now as per instructions
 // In a real app, this might be a list of LoggedExercise objects
   List<Map<String, dynamic>> get completedExercises;
+  @override
+  int? get durationMinutes;
+  @override
+  int? get caloriesBurned;
   @override
   @JsonKey(ignore: true)
   _$$WorkoutLogImplCopyWith<_$WorkoutLogImpl> get copyWith =>

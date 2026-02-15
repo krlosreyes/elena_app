@@ -108,10 +108,10 @@ class WorkoutSummaryScreen extends StatelessWidget {
                 children: [
                   Expanded(
                     child: _MetricCard(
-                      label: "Ejercicios",
-                      value: "$totalExercises",
-                      unit: "total",
-                      icon: Icons.list_alt,
+                      label: "Calorías",
+                      value: "${log.caloriesBurned ?? 0}",
+                      unit: "kcal",
+                      icon: Icons.local_fire_department,
                       color: Colors.orange,
                     ),
                   ),
