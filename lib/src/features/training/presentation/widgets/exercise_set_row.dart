@@ -111,9 +111,10 @@ class _ExerciseSetRowState extends ConsumerState<ExerciseSetRow> {
               enabled: isEnabled,
               style: GoogleFonts.outfit(fontSize: 14),
               decoration: InputDecoration(
-                hintText: 'Kg',
-                hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 12),
-                contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                labelText: 'Peso',
+                suffixText: 'kg',
+                floatingLabelBehavior: FloatingLabelBehavior.always,
+                contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
                 isDense: true,
                 filled: true,
                 fillColor: widget.isDone ? Colors.grey.shade100 : Colors.white,
@@ -132,7 +133,7 @@ class _ExerciseSetRowState extends ConsumerState<ExerciseSetRow> {
 
           // Reps Input
           SizedBox(
-            width: 50,
+            width: 60, // Sligthly wider
             child: TextField(
               controller: _repsController,
               keyboardType: TextInputType.number,
@@ -140,9 +141,9 @@ class _ExerciseSetRowState extends ConsumerState<ExerciseSetRow> {
               enabled: isEnabled,
               style: GoogleFonts.outfit(fontSize: 14),
               decoration: InputDecoration(
-                hintText: 'Reps',
-                hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 12),
-                contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                labelText: 'Reps',
+                floatingLabelBehavior: FloatingLabelBehavior.always,
+                contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
                 isDense: true,
                 filled: true,
                 fillColor: widget.isDone ? Colors.grey.shade100 : Colors.white,

@@ -23,6 +23,7 @@ import '../widgets/rest_timer_banner.dart';
 import '../widgets/metabolic_insight_banner.dart';
 import '../widgets/past_workout_summary_view.dart';
 import '../widgets/missed_workout_view.dart';
+import 'training_stats_screen.dart';
 
 class DailyWorkoutScreen extends ConsumerWidget {
   const DailyWorkoutScreen({super.key});
@@ -67,6 +68,12 @@ class DailyWorkoutScreen extends ConsumerWidget {
         elevation: 0,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.bar_chart),
+            onPressed: () => context.pushNamed(TrainingStatsScreen.routeName),
+          ),
+        ],
       ),
       backgroundColor: Colors.white,
       body: Column(

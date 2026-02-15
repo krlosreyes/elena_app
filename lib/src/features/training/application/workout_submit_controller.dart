@@ -4,6 +4,7 @@ import '../../authentication/data/auth_repository.dart';
 import '../domain/entities/workout_log.dart';
 import '../data/repositories/training_repository.dart';
 import 'daily_routine_provider.dart';
+import 'calendar_state_provider.dart';
 
 part 'workout_submit_controller.g.dart';
 
@@ -28,6 +29,28 @@ class WorkoutSubmitController extends _$WorkoutSubmitController {
 
       // 1. Get current routine state for Strength
       final exercises = ref.read(dailyRoutineProvider);
+      
+      // Get selected date for the log (support retroactive logging)
+      final selectedDate = ref.read(calendarStateProvider); // Fix for retroactive bug
+      // Normalize to ensure we capture the specific day, time can be current time if preferred 
+      // or just the date. Let's keep the date with current time component or just date.
+      // Requirements say "fecha del día seleccionado". 
+      // Let's combine selected date with current time to preserve ordering if multiple logs?
+      // Or just midnight? Usually workout logs have timestamps. 
+      // Let's use selectedDate (which might be midnight) combined with current time 
+      // OR just selectedDate if we want to strictly bind to that day. 
+      // Let's use start of that day + current time offset? 
+      // Simplest: use selectedDate (which is normalized to 00:00 usually in calendar state?)
+      // CalendarState usually holds midnight. Let's use that but update the hour if it is today?
+      // Actually, for retroactive, midnight is fine or 12:00. 
+      // Let's use selectedDate directly but ensure it's a DateTime.
+      final logDate = DateTime(
+          selectedDate.year, 
+          selectedDate.month, 
+          selectedDate.day, 
+          DateTime.now().hour, 
+          DateTime.now().minute
+      );
       
       // Data to save
       final List<Map<String, dynamic>> completedExercises = [];
@@ -78,7 +101,7 @@ class WorkoutSubmitController extends _$WorkoutSubmitController {
       final log = WorkoutLog(
         id: const Uuid().v4(),
         templateId: 'generated_daily', // Could be dynamic
-        date: DateTime.now(),
+        date: logDate, // Use correct date
         sessionRirScore: sessionRir,
         completedExercises: completedExercises,
         durationMinutes: totalMinutes,

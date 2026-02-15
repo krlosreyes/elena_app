@@ -133,6 +133,27 @@ class TrainingRepository {
     }
   }
 
+  // 6. Get Workout Logs by Range (for Stats)
+  Future<List<WorkoutLog>> getWorkoutLogs(String userId, DateTime startDate, DateTime endDate) async {
+    try {
+      final querySnapshot = await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('workout_logs')
+          .where('date', isGreaterThanOrEqualTo: startDate)
+          .where('date', isLessThanOrEqualTo: endDate)
+          .orderBy('date')
+          .get();
+
+      return querySnapshot.docs
+          .map((doc) => WorkoutLog.fromJson(doc.data()))
+          .toList();
+    } catch (e) {
+      print('Error getting workout logs by range: $e');
+      return [];
+    }
+  }
+
   // Existing method stub - Keeping integration
   Future<WeeklyTrainingStats> getWeeklyStats() async {
      // TODO: Implement actual logic
