@@ -8,6 +8,9 @@ import '../../application/daily_routine_provider.dart';
 import '../../application/workout_submit_controller.dart';
 import '../../domain/entities/training_entities.dart';
 import '../../domain/entities/exercise.dart';
+import '../../application/weekly_plan_provider.dart';
+import '../../domain/entities/daily_workout.dart';
+import '../../domain/enums/workout_enums.dart';
 import '../widgets/rir_logging_slider.dart';
 import '../widgets/exercise_set_row.dart';
 import '../widgets/rest_timer_banner.dart';
@@ -89,7 +92,7 @@ class _DailyWorkoutScreenState extends ConsumerState<DailyWorkoutScreen> {
           const SizedBox(height: 24),
           
           // Weekly Calendar
-          _buildWeeklyCalendar(context),
+          _buildWeeklyCalendar(context, ref),
           const SizedBox(height: 24),
 
           // Exercise List
@@ -150,23 +153,49 @@ class _DailyWorkoutScreenState extends ConsumerState<DailyWorkoutScreen> {
     );
   }
 
-  Widget _buildWeeklyCalendar(BuildContext context) {
+  Widget _buildWeeklyCalendar(BuildContext context, WidgetRef ref) {
+    final weeklyPlan = ref.watch(weeklyPlanProvider);
     final days = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
-    final todayIndex = DateTime.now().weekday - 1; // 1=Mon -> 0
+    final todayIndex = DateTime.now().weekday - 1; // 0-based for list index
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: List.generate(days.length, (index) {
         final isToday = index == todayIndex;
+        // dayIndex in plan is 1-based (Mon=1)
+        final plannedWorkout = weeklyPlan.firstWhere(
+          (w) => w.dayIndex == index + 1, 
+          orElse: () => const DailyWorkout(
+            dayIndex: 0, 
+            type: WorkoutType.rest, 
+            durationMinutes: 0, 
+            description: '', 
+            details: ''
+          )
+        );
         
+        Color statusColor;
+        switch (plannedWorkout.type) {
+          case WorkoutType.strength:
+            statusColor = AppTheme.brandBlue;
+            break;
+          case WorkoutType.cardio:
+            statusColor = Colors.orange;
+            break;
+          case WorkoutType.rest:
+          default:
+            statusColor = Colors.grey.shade300;
+        }
+
         return Column(
           children: [
             Container(
               width: 40, 
               height: 40,
               decoration: BoxDecoration(
-                color: isToday ? AppTheme.brandBlue : Colors.grey.shade200,
+                color: isToday ? statusColor : Colors.grey.shade100,
                 shape: BoxShape.circle,
+                border: isToday ? null : Border.all(color: statusColor.withOpacity(0.5), width: 2),
               ),
               alignment: Alignment.center,
               child: Text(
@@ -177,11 +206,12 @@ class _DailyWorkoutScreenState extends ConsumerState<DailyWorkoutScreen> {
                 ),
               ),
             ),
-            if (isToday) ...[
-              const SizedBox(height: 6),
-              const CircleAvatar(radius: 3, backgroundColor: Colors.orange),
-            ] else 
-               const SizedBox(height: 12), // Placeholder to align
+            const SizedBox(height: 6),
+            // Indicator dot
+            CircleAvatar(
+              radius: 3, 
+              backgroundColor: isToday ? statusColor : statusColor.withOpacity(0.7)
+            ),
           ],
         );
       }),
