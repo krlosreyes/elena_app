@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart'; // Import GoRouter
 import '../../authentication/data/auth_repository.dart';
 import '../../profile/data/user_repository.dart';
 import '../../profile/domain/user_model.dart';
@@ -84,8 +85,72 @@ class DashboardScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 24),
 
+
+
               // 2. Anillo de Ayuno (Motor de Ayuno)
               const FastingCard(),
+              const SizedBox(height: 24),
+
+              // [NEW] Training Module Entry Point
+              InkWell(
+                onTap: () => context.push('/daily-workout'),
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Colors.blue.shade800, Colors.blue.shade600],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.blue.shade200,
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.fitness_center, color: Colors.white, size: 28),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Mi Entrenamiento de Hoy",
+                              style: GoogleFonts.outfit(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              "Consultar recomendación y registrar",
+                              style: GoogleFonts.outfit(
+                                fontSize: 14,
+                                color: Colors.white.withOpacity(0.9),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 16),
+                    ],
+                  ),
+                ),
+              ),
               const SizedBox(height: 32),
 
               // 3. Título de Estrategia

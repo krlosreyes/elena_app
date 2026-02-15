@@ -8,6 +8,7 @@ import '../features/dashboard/presentation/dashboard_screen.dart';
 import '../features/onboarding/presentation/onboarding_screen.dart';
 import '../features/profile/presentation/profile_screen.dart';
 import '../features/progress/presentation/progress_screen.dart';
+import '../features/training/presentation/screens/daily_workout_screen.dart';
 
 import '../features/authentication/data/auth_repository.dart';
 
@@ -102,6 +103,10 @@ GoRouter goRouter(GoRouterRef ref) {
             pageBuilder: (context, state) => const NoTransitionPage(child: ProfileScreen()),
           ),
         ],
+      ),
+      GoRoute(
+        path: '/daily-workout',
+        builder: (context, state) => const DailyWorkoutScreen(),
       ),
     ],
   );
