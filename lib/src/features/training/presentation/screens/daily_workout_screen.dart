@@ -1,22 +1,56 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../config/theme/app_theme.dart';
 import '../../application/training_engine_provider.dart';
 import '../../application/daily_routine_provider.dart';
+import '../../application/workout_submit_controller.dart';
 import '../../domain/entities/training_entities.dart';
 import '../../domain/entities/exercise.dart';
 import '../widgets/rir_logging_slider.dart';
 import '../widgets/exercise_set_row.dart';
 import '../widgets/rest_timer_banner.dart';
 
-class DailyWorkoutScreen extends ConsumerWidget {
+class DailyWorkoutScreen extends ConsumerStatefulWidget {
   const DailyWorkoutScreen({super.key});
 
   static const String routeName = 'daily_workout';
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DailyWorkoutScreen> createState() => _DailyWorkoutScreenState();
+}
+
+class _DailyWorkoutScreenState extends ConsumerState<DailyWorkoutScreen> {
+  int _currentRir = 2; // Default starting value
+
+  @override
+  Widget build(BuildContext context) {
+    // Listen to controller state changes
+    ref.listen(workoutSubmitControllerProvider, (prev, next) {
+      next.when(
+        data: (_) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Entrenamiento registrado con éxito"),
+              backgroundColor: Colors.green,
+            ),
+          );
+          // Navigate back to Dashboard
+          context.go('/dashboard'); 
+        },
+        error: (err, stack) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text("Error: ${err.toString()}"),
+              backgroundColor: Colors.red,
+            ),
+          );
+        },
+        loading: () {}, // Handled by button state
+      );
+    });
+
     final recommendationAsync = ref.watch(trainingEngineProvider);
 
     return Scaffold(
@@ -43,6 +77,8 @@ class DailyWorkoutScreen extends ConsumerWidget {
 
   Widget _buildContent(BuildContext context, WidgetRef ref, WorkoutRecommendation recommendation) {
     final dailyExercises = ref.watch(dailyRoutineProvider);
+    final submitState = ref.watch(workoutSubmitControllerProvider);
+    final isSubmitting = submitState.isLoading;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -66,28 +102,46 @@ class DailyWorkoutScreen extends ConsumerWidget {
           _buildExerciseList(context, dailyExercises, ref),
           const SizedBox(height: 32),
 
+          // RIR Slider
+          RirLoggingSlider(
+            value: _currentRir,
+            onChanged: (val) {
+              setState(() {
+                _currentRir = val;
+              });
+            },
+          ),
+          const SizedBox(height: 24),
+
           // CTA Button
           SizedBox(
             width: double.infinity,
             child: FilledButton(
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Entrenamiento registrado con éxito")),
-                );
-              },
+              onPressed: isSubmitting 
+                  ? null 
+                  : () {
+                      ref.read(workoutSubmitControllerProvider.notifier)
+                         .submitWorkout(sessionRir: _currentRir);
+                    },
               style: FilledButton.styleFrom(
                 backgroundColor: AppTheme.brandBlue,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              child: Text(
-                "Terminar y Guardar Entrenamiento",
-                style: GoogleFonts.outfit(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
+              child: isSubmitting
+                  ? const SizedBox(
+                      height: 20, 
+                      width: 20, 
+                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
+                    )
+                  : Text(
+                      "Terminar y Guardar Entrenamiento",
+                      style: GoogleFonts.outfit(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
             ),
           ),
           const SizedBox(height: 40),
