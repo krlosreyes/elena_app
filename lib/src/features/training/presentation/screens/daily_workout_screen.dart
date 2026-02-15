@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../config/theme/app_theme.dart';
 import '../../application/training_engine_provider.dart';
+import '../../application/daily_routine_provider.dart';
 import '../../domain/entities/training_entities.dart';
+import '../../domain/entities/exercise.dart';
 import '../widgets/rir_logging_slider.dart';
 
 class DailyWorkoutScreen extends ConsumerWidget {
@@ -28,6 +30,8 @@ class DailyWorkoutScreen extends ConsumerWidget {
   }
 
   Widget _buildContent(BuildContext context, WorkoutRecommendation recommendation) {
+    final dailyRoutineAsync = ref.watch(dailyRoutineProvider);
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -46,7 +50,18 @@ class DailyWorkoutScreen extends ConsumerWidget {
             style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
-          _buildExerciseList(context),
+          
+          dailyRoutineAsync.when(
+            data: (state) {
+              if (state.routine == null) {
+                return const Center(child: Text('No hay rutina asignada para hoy.'));
+              }
+              return _buildExerciseList(context, state);
+            },
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (err, stack) => Text('Error al cargar ejercicios: $err'),
+          ),
+
           const SizedBox(height: 24),
 
           // RIR Slider
@@ -140,19 +155,21 @@ class DailyWorkoutScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildExerciseList(BuildContext context) {
-    final mockExercises = [
-      { 'name': 'Sentadilla Goblet', 'sets': '3 series x 10-12 reps' },
-      { 'name': 'Flexiones (Push-ups)', 'sets': '3 series al fallo - RIR 2' },
-      { 'name': 'Remo con mancuernas', 'sets': '3 series x 10 reps' }
-    ];
+  Widget _buildExerciseList(BuildContext context, DailyWorkoutState state) {
+    final routineExercises = state.routine!.exercises;
+    final exercises = state.exercises;
 
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: mockExercises.length,
+      itemCount: routineExercises.length,
       itemBuilder: (context, index) {
-        final exercise = mockExercises[index];
+        final routineExercise = routineExercises[index];
+        final exerciseDetails = exercises.firstWhere(
+            (e) => e.id == routineExercise.exerciseId, 
+            orElse: () => Exercise(id: 'unknown', name: 'Unknown Exercise', targetMuscle: '', mechanics: '', description: '')
+        );
+
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
           elevation: 0,
@@ -167,12 +184,12 @@ class DailyWorkoutScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  exercise['name'] as String,
+                  exerciseDetails.name,
                   style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  exercise['sets'] as String,
+                  "${routineExercise.sets} series x ${routineExercise.repsRange} reps",
                   style: GoogleFonts.outfit(color: Colors.grey.shade600, fontSize: 14),
                 ),
                 const SizedBox(height: 12),
