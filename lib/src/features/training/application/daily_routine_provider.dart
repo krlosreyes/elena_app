@@ -3,6 +3,8 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../domain/entities/interactive_routine.dart';
 import '../domain/entities/daily_workout.dart'; // Added missing import
 import '../domain/enums/workout_enums.dart';
+import '../../authentication/data/auth_repository.dart';
+import '../data/repositories/training_repository.dart';
 import 'calendar_state_provider.dart'; // Added for flexible planning
 import 'selected_day_provider.dart';
 import 'weekly_plan_provider.dart';
@@ -14,11 +16,36 @@ class DailyRoutine extends _$DailyRoutine {
   @override
   Future<List<InteractiveExercise>> build() async {
     // 1. Listen to Calendar State (DateTime) directly
-    // This fixes the disconnection where UI updates calendar but logic watched selectedDayProvider
     final selectedDate = ref.watch(calendarStateProvider);
     final dayIndex = selectedDate.weekday; // 1=Mon, 7=Sun
     
-    debugPrint("ElenaApp Log: Cargando rutina para FECHA: $selectedDate (Dia: $dayIndex)");
+    // 1b. Check for Existing Log (History Priority)
+    final user = ref.watch(authRepositoryProvider).currentUser;
+    if (user != null) {
+      final repository = ref.watch(trainingRepositoryProvider);
+      final log = await repository.getWorkoutLogForDate(user.uid, selectedDate);
+      
+      if (log != null && log.completedExercises.isNotEmpty) {
+        debugPrint("ElenaApp Log: Log encontrado para $selectedDate. Cargando historial.");
+        return log.completedExercises.map((e) {
+             final List<dynamic> setsList = e['sets'] ?? [];
+             return InteractiveExercise(
+               id: e['exerciseId'] ?? 'unknown',
+               name: e['name'] ?? 'Unknown Exercise',
+               targetRir: 0, // Not stored in log item usually, preserving structure
+               sets: setsList.map<InteractiveSet>((s) => InteractiveSet(
+                 setIndex: s['setIndex'] as int,
+                 targetReps: s['targetReps'] as String? ?? '0',
+                 weight: (s['weight'] as num?)?.toDouble() ?? 0.0,
+                 reps: s['reps'] as int? ?? 0,
+                 isDone: s['isDone'] as bool? ?? true, // If in log, it's done-ish
+               )).toList(),
+             );
+        }).toList();
+      }
+    }
+    
+    debugPrint("ElenaApp Log: Cargando rutina PLANIFICADA para FECHA: $selectedDate (Dia: $dayIndex)");
     
     // 2. Listen to Weekly Plan (generated based on Profile)
     final weeklyPlan = ref.watch(weeklyPlanProvider);
@@ -29,7 +56,6 @@ class DailyRoutine extends _$DailyRoutine {
     }
 
     // 3. Find the workout for the selected day
-    // We use a safe lookup. If not found, return a default Rest day.
     final dailyWorkout = weeklyPlan.firstWhere(
       (w) => w.dayIndex == dayIndex,
       orElse: () {
@@ -46,7 +72,6 @@ class DailyRoutine extends _$DailyRoutine {
     );
 
     // 4. Ensure it's a Strength OR Cardio workout
-    // Allow Cardio to pass through so we can mark it as done
     if (dailyWorkout.type == WorkoutType.rest) {
        debugPrint("ElenaApp Log: Día de descanso (Day $dayIndex). Retornando lista vacía.");
        return [];
@@ -63,7 +88,7 @@ class DailyRoutine extends _$DailyRoutine {
           sets: List.generate(e.sets, (index) => InteractiveSet(
             setIndex: index + 1,
             targetReps: e.targetReps,
-            weight: 5.0, // Default weight 5.0 as requested
+            weight: 5.0, // Default weight
             isDone: false,
           )),
         );
