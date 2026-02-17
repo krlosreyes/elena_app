@@ -7,7 +7,7 @@ part of 'workout_submit_controller.dart';
 // **************************************************************************
 
 String _$workoutSubmitControllerHash() =>
-    r'cb24bb00bb414b68b5cb00110c2fb36a1bfb34ec';
+    r'6ae08dd5da08a698d9b113b55da9674c8ebbf1a6';
 
 /// See also [WorkoutSubmitController].
 @ProviderFor(WorkoutSubmitController)

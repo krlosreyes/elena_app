@@ -43,12 +43,13 @@ class WorkoutSubmitController extends _$WorkoutSubmitController {
 
       // Get selected date for the log
       final selectedDate = ref.read(calendarStateProvider);
+      final now = DateTime.now();
       final logDate = DateTime(
           selectedDate.year, 
           selectedDate.month, 
           selectedDate.day, 
-          DateTime.now().hour, 
-          DateTime.now().minute,
+          now.hour, 
+          now.minute,
       );
 
       final List<Map<String, dynamic>> completedExercises = [];
@@ -88,12 +89,12 @@ class WorkoutSubmitController extends _$WorkoutSubmitController {
 
         // Estimate calories (~6 kcal/min) if not provided
         if (finalCalories == 0) {
-           // Basic estimation: 3 mins per set * 6 kcal/min? Or simply duration.
-           // If we don't have duration, estimate from sets.
-           final totalSets = completedExercises.fold(0, (sum, ex) => sum + (ex['sets'] as List).length);
-           final estimatedDuration = totalSets * 3; // 3 mins per set roughly
-           finalCalories = estimatedDuration * 5; // Conservative 5 kcal/min
-           if (totalMinutes == 0) totalMinutes = estimatedDuration;
+           // If duration needs estimation
+           if (totalMinutes == 0) {
+             final totalSets = completedExercises.fold(0, (sum, ex) => sum + (ex['sets'] as List).length);
+             totalMinutes = totalSets * 3; // 3 mins per set roughly
+           }
+           finalCalories = totalMinutes * 5; // Conservative 5 kcal/min
         }
       } 
       // Handle Cardio Logic
