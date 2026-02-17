@@ -40,11 +40,9 @@ class DailyWorkoutScreen extends ConsumerWidget {
               backgroundColor: Colors.green,
             ),
           );
-          // With new logic, maybe we don't go dashboard but stay on date which now becomes PastCompleted
-          // But requirement says go to summary or handled by view. 
-          // WorkoutSubmitController should perform navigation or invalidation.
-          // Invalidating orchestrator updates the view to PastCompleted.
-          ref.invalidate(dailyOrchestratorProvider);
+          // With new logic, navigation is handled by the specific workout view (Strength/Cardio).
+          // We DO NOT invalidate here to avoid unmounting the widget before navigation completes.
+          // Invalidation will happen inside the view *after* pushing the summary route.
         },
         error: (err, stack) {
           ScaffoldMessenger.of(context).showSnackBar(

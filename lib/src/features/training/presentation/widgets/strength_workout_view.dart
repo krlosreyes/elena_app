@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../config/theme/app_theme.dart';
 import '../../application/daily_routine_provider.dart';
+import 'package:elena_app/src/features/training/application/daily_orchestrator_provider.dart' as orchestrator;
 import 'package:go_router/go_router.dart';
 import '../../application/workout_submit_controller.dart';
 import '../../domain/entities/training_entities.dart';
@@ -167,7 +168,12 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
                          );
                       
                       if (context.mounted && log != null) {
-                        context.pushNamed('workout_summary', extra: log);
+                        await context.pushNamed('workout_summary', extra: log);
+                        // Invalidate ONLY after navigation allows us to leave this screen safely
+                        // or when we return. Actually, if we push, this widget is still mounted in background.
+                        // But if we want the "Back" button to show the updated state (Completed),
+                        // we should invalidate.
+                        ref.invalidate(orchestrator.dailyOrchestratorProvider);
                       }
                     },
               style: FilledButton.styleFrom(

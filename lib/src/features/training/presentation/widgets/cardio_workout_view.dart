@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../../config/theme/app_theme.dart';
 import '../../domain/entities/daily_workout.dart';
+import 'package:elena_app/src/features/training/application/daily_orchestrator_provider.dart' as orchestrator;
 import 'package:go_router/go_router.dart';
 import '../../application/workout_submit_controller.dart';
 import '../../domain/enums/workout_enums.dart';
@@ -65,7 +66,8 @@ class _CardioWorkoutViewState extends ConsumerState<CardioWorkoutView> {
         ); 
 
     if (mounted && log != null) {
-      context.pushNamed('workout_summary', extra: log);
+      await context.pushNamed('workout_summary', extra: log);
+      ref.invalidate(orchestrator.dailyOrchestratorProvider);
     } else if (mounted) {
        ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Error guardando sesión.")),
