@@ -8,6 +8,7 @@ import '../data/repositories/training_repository.dart';
 import 'calendar_state_provider.dart'; // Added for flexible planning
 import 'selected_day_provider.dart';
 import 'weekly_plan_provider.dart';
+import 'workout_log_provider.dart';
 
 part 'daily_routine_provider.g.dart';
 
@@ -19,14 +20,15 @@ class DailyRoutine extends _$DailyRoutine {
     final selectedDate = ref.watch(calendarStateProvider);
     final dayIndex = selectedDate.weekday; // 1=Mon, 7=Sun
     
-    // 1b. Check for Existing Log (History Priority)
-    final user = ref.watch(authRepositoryProvider).currentUser;
-    if (user != null) {
-      final repository = ref.watch(trainingRepositoryProvider);
-      final log = await repository.getWorkoutLogForDate(user.uid, selectedDate);
-      
+    // 1b. Check for Existing Log (History Priority) - REACTIVE
+    // We watch the specific log provider for this date. If it updates, we update.
+    final logAsync = ref.watch(workoutLogProvider(selectedDate));
+    
+    // Unpack AsyncValue
+    final log = logAsync.valueOrNull;
+
       if (log != null && log.completedExercises.isNotEmpty) {
-        debugPrint("ElenaApp Log: Log encontrado para $selectedDate. Cargando historial.");
+        debugPrint("ElenaApp Log: Log encontrado (Reactive) para $selectedDate. Cargando historial.");
         return log.completedExercises.map((e) {
              final List<dynamic> setsList = e['sets'] ?? [];
              return InteractiveExercise(
@@ -43,7 +45,6 @@ class DailyRoutine extends _$DailyRoutine {
              );
         }).toList();
       }
-    }
     
     debugPrint("ElenaApp Log: Cargando rutina PLANIFICADA para FECHA: $selectedDate (Dia: $dayIndex)");
     

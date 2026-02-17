@@ -62,7 +62,7 @@ class TrainingRepository {
           .doc(userId)
           .collection('workout_logs')
           .doc(log.id)
-          .set(log.toJson());
+          .set(log.toJson(), SetOptions(merge: true));
     } catch (e) {
       print('Error saving workout log: $e');
       throw e;

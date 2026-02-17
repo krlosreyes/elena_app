@@ -7,6 +7,7 @@ import '../domain/entities/interactive_routine.dart';
 import '../data/repositories/training_repository.dart';
 import 'daily_routine_provider.dart';
 import 'calendar_state_provider.dart';
+import 'workout_log_provider.dart';
 
 part 'workout_submit_controller.g.dart';
 
@@ -134,6 +135,23 @@ class WorkoutSubmitController extends _$WorkoutSubmitController {
       log('[WorkoutSubmit] ❌ Error: $e', error: e, stackTrace: st);
       state = AsyncError(e, st);
       return null;
+    } finally {
+       // Force refresh of log data to update UI to "Completed" state
+       if (state.hasValue) {
+          final selectedDate = ref.read(calendarStateProvider);
+          final now = DateTime.now();
+          // We must invalidate the provider for the DATE we just saved to.
+          // workoutLogProvider takes a DateTime. 
+          // We need to match the key logic. selectedDate passed to provider inside DailyRoutine is just 'selectedDate'.
+          // Wait, logDate inside submitWorkout was constructed with NOW time...
+          // But workout_log_provider is family. 
+          // Actually, DailyRoutine watches `calendarStateProvider`.
+          // Let's rely on DailyRoutine implicitly updating if we invalidate `dailyOrchestrator`?
+          // No, plan says explicitly watch `workoutLogProvider`.
+          
+          ref.invalidate(workoutLogProvider(selectedDate));
+          ref.invalidate(dailyRoutineProvider);
+       }
     }
   }
 }
