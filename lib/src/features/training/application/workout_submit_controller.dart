@@ -106,9 +106,12 @@ class WorkoutSubmitController extends _$WorkoutSubmitController {
         }
       }
 
-      // 3. Create Log Object
+      // 3. Upsert Logic: Check if a log already exists for this date to prevent duplicates
+      final existingLog = await ref.read(trainingRepositoryProvider).getWorkoutLogForDate(userId, logDate);
+      final logId = existingLog?.id ?? const Uuid().v4();
+
       final newLog = WorkoutLog(
-        id: const Uuid().v4(),
+        id: logId,
         templateId: 'generated_daily',
         date: logDate,
         sessionRirScore: sessionRir,
