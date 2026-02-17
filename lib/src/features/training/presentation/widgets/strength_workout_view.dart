@@ -70,6 +70,8 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
      
      final submitState = ref.watch(workoutSubmitControllerProvider);
      final isSubmitting = submitState.isLoading;
+     // Check if at least one set is done
+     final hasProgress = dailyExercisesAsync.valueOrNull?.any((ex) => ex.sets.any((s) => s.isDone)) ?? false;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -153,14 +155,17 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
           ),
           const SizedBox(height: 24),
 
-          // CTA Button
-          if (!_isReadOnly && (widget.mode == WorkoutDisplayMode.active || widget.mode == WorkoutDisplayMode.retroactive))
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: isSubmitting 
-                  ? null 
-                  : () async {
+              // Check if at least one set is done
+              // (Moved to top of build)
+
+               // CTA Button
+               if (!_isReadOnly && (widget.mode == WorkoutDisplayMode.active || widget.mode == WorkoutDisplayMode.retroactive))
+               SizedBox(
+                 width: double.infinity,
+                 child: FilledButton(
+                  onPressed: isSubmitting || !hasProgress
+                      ? null 
+                      : () async {
                       final log = await ref.read(workoutSubmitControllerProvider.notifier)
                          .submitWorkout(
                            sessionRir: _currentRir,

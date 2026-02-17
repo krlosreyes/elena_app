@@ -203,26 +203,31 @@ class _CardioWorkoutViewState extends ConsumerState<CardioWorkoutView> {
           ),
         ),
         const SizedBox(height: 32),
-        SizedBox(
-          width: double.infinity,
-          child: FilledButton(
-            onPressed: () {
-              final mins = int.tryParse(_minutesController.text) ?? 0;
-              if (mins > 0) {
-                _finish(mins);
-              }
-            },
-            style: FilledButton.styleFrom(
-              backgroundColor: Colors.orange,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-            ),
-            child: Text("Guardar Registro Pasado", style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-          ),
+        ValueListenableBuilder<TextEditingValue>(
+          valueListenable: _minutesController,
+          builder: (context, value, child) {
+            final mins = int.tryParse(value.text) ?? 0;
+            final isValid = mins > 0;
+            
+            return SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: isValid 
+                    ? () => _finish(mins) 
+                    : null,
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.orange,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+                child: Text("Guardar Registro Pasado", style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+              ),
+            );
+          },
         ),
       ],
     );
   }
-
+  
   Widget _buildReadOnlyView() {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,

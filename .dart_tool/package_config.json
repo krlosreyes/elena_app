@@ -164,6 +164,12 @@
       "languageVersion": "3.4"
     },
     {
+      "name": "confetti",
+      "rootUri": "file:///Users/carlosreyes/.pub-cache/hosted/pub.dev/confetti-0.8.0",
+      "packageUri": "lib/",
+      "languageVersion": "2.17"
+    },
+    {
       "name": "convert",
       "rootUri": "file:///Users/carlosreyes/.pub-cache/hosted/pub.dev/convert-3.1.2",
       "packageUri": "lib/",

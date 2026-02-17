@@ -1,11 +1,13 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:confetti/confetti.dart';
 import '../../../../config/theme/app_theme.dart';
 import '../../domain/entities/workout_log.dart';
 
-class WorkoutSummaryScreen extends StatelessWidget {
+class WorkoutSummaryScreen extends StatefulWidget {
   static const String routeName = 'workout_summary';
   
   final WorkoutLog log;
@@ -13,14 +15,34 @@ class WorkoutSummaryScreen extends StatelessWidget {
   const WorkoutSummaryScreen({super.key, required this.log});
 
   @override
+  State<WorkoutSummaryScreen> createState() => _WorkoutSummaryScreenState();
+}
+
+class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
+  late ConfettiController _confettiController;
+
+  @override
+  void initState() {
+    super.initState();
+    _confettiController = ConfettiController(duration: const Duration(seconds: 3));
+    // Play confetti automatically on entry
+    _confettiController.play();
+  }
+
+  @override
+  void dispose() {
+    _confettiController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     // Calculate stats
-    final duration = log.durationMinutes ?? 0;
-    int totalExercises = log.completedExercises.length;
+    final duration = widget.log.durationMinutes ?? 0;
     int totalSets = 0;
     double totalVolume = 0;
 
-    for (var ex in log.completedExercises) {
+    for (var ex in widget.log.completedExercises) {
       final sets = ex['sets'] as List<dynamic>;
       for (var set in sets) {
         if (set['isDone'] == true) {
@@ -36,128 +58,149 @@ class WorkoutSummaryScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: AppTheme.surfaceColor,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              const SizedBox(height: 40),
-              // Success Icon
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.green.shade100,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.check_rounded,
-                  size: 60,
-                  color: Colors.green.shade700,
-                ),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                "¡Entrenamiento Completado!",
-                textAlign: TextAlign.center,
-                style: GoogleFonts.outfit(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.primaryColor,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                DateFormat('EEEE d, MMMM', 'es_ES').format(DateTime.now()).toUpperCase(),
-                style: GoogleFonts.outfit(
-                  fontSize: 14,
-                  color: Colors.grey,
-                  letterSpacing: 1.2,
-                ),
-              ),
-              const SizedBox(height: 48),
-
-              // Metrics Grid
-              Row(
+      body: Stack(
+        children: [
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Expanded(
-                    child: _MetricCard(
-                      label: "Tiempo",
-                      value: "$duration",
-                      unit: "min",
-                      icon: Icons.timer_outlined,
-                      color: Colors.blue,
+                  const SizedBox(height: 40),
+                  // Success Icon with simple scale animation (could be added)
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade100,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.check_rounded,
+                      size: 60,
+                      color: Colors.green.shade700,
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _MetricCard(
-                      label: "Volumen",
-                      value: totalVolume > 1000 
-                          ? "${(totalVolume/1000).toStringAsFixed(1)}k" 
-                          : "${totalVolume.toInt()}",
-                      unit: "kg",
-                      icon: Icons.fitness_center,
-                      color: Colors.purple,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: _MetricCard(
-                      label: "Calorías",
-                      value: "${log.caloriesBurned ?? 0}",
-                      unit: "kcal",
-                      icon: Icons.local_fire_department,
-                      color: Colors.orange,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _MetricCard(
-                      label: "Series",
-                      value: "$totalSets",
-                      unit: "sets",
-                      icon: Icons.repeat,
-                      color: Colors.teal,
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 60),
-
-              // Action Button
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: () {
-                    context.go('/dashboard');
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryColor,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: Text(
-                    "Volver al Inicio",
+                  const SizedBox(height: 24),
+                  Text(
+                    "¡Entrenamiento Completado!",
+                    textAlign: TextAlign.center,
                     style: GoogleFonts.outfit(
-                      fontSize: 16,
+                      fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: AppTheme.primaryColor,
                     ),
                   ),
-                ),
+                  const SizedBox(height: 8),
+                  Text(
+                    DateFormat('EEEE d, MMMM', 'es_ES').format(widget.log.date).toUpperCase(),
+                    style: GoogleFonts.outfit(
+                      fontSize: 14,
+                      color: Colors.grey,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 48),
+
+                  // Metrics Grid
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _MetricCard(
+                          label: "Tiempo",
+                          value: "$duration",
+                          unit: "min",
+                          icon: Icons.timer_outlined,
+                          color: Colors.blue,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _MetricCard(
+                          label: "Volumen",
+                          value: totalVolume > 1000 
+                              ? "${(totalVolume/1000).toStringAsFixed(1)}k" 
+                              : "${totalVolume.toInt()}",
+                          unit: "kg",
+                          icon: Icons.fitness_center,
+                          color: Colors.purple,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _MetricCard(
+                          label: "Calorías",
+                          value: "${widget.log.caloriesBurned ?? 0}",
+                          unit: "kcal",
+                          icon: Icons.local_fire_department,
+                          color: Colors.orange,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _MetricCard(
+                          label: "Series",
+                          value: "$totalSets",
+                          unit: "sets",
+                          icon: Icons.repeat,
+                          color: Colors.teal,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 60),
+
+                  // Action Button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        // Go back to dashboard or workout screen?
+                        // User story implies gratification then move on.
+                        context.go('/dashboard');
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primaryColor,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: Text(
+                        "Volver al Inicio",
+                        style: GoogleFonts.outfit(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
+          
+          // Confetti Widget Overlay
+          Align(
+            alignment: Alignment.topCenter,
+            child: ConfettiWidget(
+              confettiController: _confettiController,
+              blastDirection: pi / 2, // down
+              maxBlastForce: 5,
+              minBlastForce: 2,
+              emissionFrequency: 0.05,
+              numberOfParticles: 20,
+              gravity: 0.1,
+              colors: const [Colors.green, Colors.blue, Colors.pink, Colors.orange, Colors.purple],
+            ),
+          ),
+        ],
       ),
     );
   }
