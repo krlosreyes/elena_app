@@ -30,20 +30,25 @@ class WorkoutSubmitController extends _$WorkoutSubmitController {
       final user = ref.read(authRepositoryProvider).currentUser;
       final userId = user?.uid ?? 'current_user_id'; 
 
+      // Get selected date early to check for bypass
+      final selectedDate = ref.read(calendarStateProvider);
+      
+      // Check if this is a Retroactive Cardio save (Cardio + Manual Minutes > 0)
+      // We rely on durationMinutes being provided by the UI for past dates.
+      final isCardioRetroactive = workoutType == 'Cardio' && (durationMinutes ?? 0) > 0;
+
       // 1. Get current routine state (AsyncValue)
       final routineState = ref.read(dailyRoutineProvider);
       
-      // Ensure data is loaded
-      if (!routineState.hasValue) {
+      // Ensure data is loaded -> BYPASS if it's retroactive cardio
+      if (!routineState.hasValue && !isCardioRetroactive) {
         throw Exception("La rutina no está cargada o hubo un error.");
       }
-      final routine = routineState.value ?? [];
+      final routine = routineState.valueOrNull ?? [];
       
       log('[WorkoutSubmit] userId=$userId, workoutType=$workoutType');
       log('[WorkoutSubmit] routine has ${routine.length} exercises');
 
-      // Get selected date for the log
-      final selectedDate = ref.read(calendarStateProvider);
       final now = DateTime.now();
       final logDate = DateTime(
           selectedDate.year, 
@@ -83,7 +88,8 @@ class WorkoutSubmitController extends _$WorkoutSubmitController {
         }
         
         log('[WorkoutSubmit] Total completed exercises: ${completedExercises.length}');
-
+        
+        // If Strength, we MUST have exercises. (Unless it's a rest day? But we shouldn't be submitting strength on rest day usually)
         if (completedExercises.isEmpty) {
           throw Exception("No hay series marcadas como completadas.\nMarca al menos una serie (check verde).");
         }
@@ -137,18 +143,8 @@ class WorkoutSubmitController extends _$WorkoutSubmitController {
       return null;
     } finally {
        // Force refresh of log data to update UI to "Completed" state
-       if (state.hasValue) {
+       if (state.hasValue || state.isLoading == false) { // Relaxed check to ensure invalidation happens
           final selectedDate = ref.read(calendarStateProvider);
-          final now = DateTime.now();
-          // We must invalidate the provider for the DATE we just saved to.
-          // workoutLogProvider takes a DateTime. 
-          // We need to match the key logic. selectedDate passed to provider inside DailyRoutine is just 'selectedDate'.
-          // Wait, logDate inside submitWorkout was constructed with NOW time...
-          // But workout_log_provider is family. 
-          // Actually, DailyRoutine watches `calendarStateProvider`.
-          // Let's rely on DailyRoutine implicitly updating if we invalidate `dailyOrchestrator`?
-          // No, plan says explicitly watch `workoutLogProvider`.
-          
           ref.invalidate(workoutLogProvider(selectedDate));
           ref.invalidate(dailyRoutineProvider);
        }
