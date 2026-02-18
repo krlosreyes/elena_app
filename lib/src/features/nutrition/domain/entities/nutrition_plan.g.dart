@@ -29,10 +29,10 @@ Map<String, dynamic> _$$NutritionPlanImplToJson(_$NutritionPlanImpl instance) =>
       'userId': instance.userId,
       'algorithmVersion': instance.algorithmVersion,
       'calculatedAt': const TimestampConverter().toJson(instance.calculatedAt),
-      'baseMetrics': instance.baseMetrics,
-      'macroTargets': instance.macroTargets,
-      'visualPlate': instance.visualPlate,
-      'weeklyAdjustment': instance.weeklyAdjustment,
+      'baseMetrics': instance.baseMetrics.toJson(),
+      'macroTargets': instance.macroTargets.toJson(),
+      'visualPlate': instance.visualPlate.toJson(),
+      'weeklyAdjustment': instance.weeklyAdjustment.toJson(),
     };
 
 _$BaseMetricsImpl _$$BaseMetricsImplFromJson(Map<String, dynamic> json) =>

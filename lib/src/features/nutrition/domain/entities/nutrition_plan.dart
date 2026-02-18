@@ -6,6 +6,8 @@ part 'nutrition_plan.g.dart';
 
 @freezed
 class NutritionPlan with _$NutritionPlan {
+  // Fix for Firestore: Force nested objects to convert to Map
+  @JsonSerializable(explicitToJson: true)
   const factory NutritionPlan({
     required String id,
     required String userId,

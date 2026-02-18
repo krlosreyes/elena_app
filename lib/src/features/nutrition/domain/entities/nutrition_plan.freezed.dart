@@ -235,7 +235,8 @@ class __$$NutritionPlanImplCopyWithImpl<$Res>
 }
 
 /// @nodoc
-@JsonSerializable()
+
+@JsonSerializable(explicitToJson: true)
 class _$NutritionPlanImpl implements _NutritionPlan {
   const _$NutritionPlanImpl(
       {required this.id,

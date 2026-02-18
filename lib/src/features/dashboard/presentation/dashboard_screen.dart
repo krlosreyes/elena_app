@@ -12,6 +12,7 @@ import 'widgets/protocol_selector.dart'; // Import ProtocolSelector
 import '../../fasting/presentation/fasting_controller.dart'; // Import FastingController
 import '../../glucose/presentation/widgets/glucose_input_sheet.dart';
 import 'widgets/dashboard_header.dart';
+import 'widgets/dashboard_action_card.dart';
 
 
 
@@ -91,105 +92,33 @@ class DashboardScreen extends ConsumerWidget {
               const FastingCard(),
               const SizedBox(height: 24),
 
-              // [NEW] Training Module Entry Point
-              InkWell(
+              // 3. Action Cards
+              
+              // Training Module
+              DashboardActionCard(
+                title: "Mi Entrenamiento de Hoy",
+                subtitle: "Consultar recomendación y registrar",
+                icon: Icons.fitness_center,
+                gradientColors: [Colors.blue.shade800, Colors.blue.shade600],
+                shadowColor: Colors.blue.shade200,
                 onTap: () => context.push('/daily-workout'),
-                borderRadius: BorderRadius.circular(16),
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Colors.blue.shade800, Colors.blue.shade600],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.blue.shade200,
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(Icons.fitness_center, color: Colors.white, size: 28),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Mi Entrenamiento de Hoy",
-                              style: GoogleFonts.outfit(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              "Consultar recomendación y registrar",
-                              style: GoogleFonts.outfit(
-                                fontSize: 14,
-                                color: Colors.white.withOpacity(0.9),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 16),
-                    ],
-                  ),
-                ),
               ),
+              
+              const SizedBox(height: 16),
+              
+              // Nutrition Module
+              DashboardActionCard(
+                title: "Mi Nutrición",
+                subtitle: "Consultar plan y macros",
+                icon: Icons.restaurant_menu,
+                gradientColors: [Colors.green.shade700, Colors.green.shade500], // Professional green
+                shadowColor: Colors.green.shade200,
+                onTap: () => context.push('/nutrition'),
+              ),
+
               const SizedBox(height: 32),
-
-              // 3. Título de Estrategia
-              Text(
-                'TU ESTRATEGIA DE METAMORFOSIS',
-                style: GoogleFonts.outfit(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                  letterSpacing: 1.2,
-                  color: Colors.grey[700],
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // 4. Tarjetas de Estrategia
-
-              // TARJETA 1: MOVIMIENTO
-              _StrategyCard(
-                icon: Icons.directions_run,
-                color: Colors.orangeAccent,
-                title: healthPlan.exerciseStrategy,
-                subtitle: healthPlan.exerciseFrequency,
-                badge: 'Zona 2: < ${healthPlan.maxHeartRate} ppm',
-              ),
-              const SizedBox(height: 16),
-
-              // TARJETA 2: NUTRICIÓN
-               _StrategyCard(
-                icon: Icons.restaurant,
-                color: Colors.green,
-                title: healthPlan.nutritionStrategy,
-                subtitle: 'Romper ayuno: ${healthPlan.breakingFastTip}',
-                warning: (user.pathologies.contains('prediabetes') || user.pathologies.contains('diabetes'))
-                    ? 'Orden: Fibra > Proteína > Carbohidratos'
-                    : null,
-              ),
-              const SizedBox(height: 16),
-
-              // TARJETA 3: GLUCOSA (Condicional)
+              
+              // Protocol Information (Simplified)
               if (healthPlan.glucoseStrategy != null)
                  _StrategyCard(
                   icon: Icons.bloodtype,
