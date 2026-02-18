@@ -7,16 +7,22 @@ import '../widgets/macro_metrics_card.dart';
 import '../widgets/visual_plate_widget.dart';
 import '../widgets/science_disclaimer_widget.dart';
 
-// Temporary until authentication provider is properly exposed or passed
-// In a real scenario, we get this from AuthRepository or UserProvider
-const String _tempUserName = "David"; 
+import '../../../profile/data/user_repository.dart'; // Import user repository for name
+import '../../../fasting/presentation/fasting_controller.dart'; // Import fasting controller
 
 class NutritionDashboardScreen extends ConsumerWidget {
   const NutritionDashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // 1. Watch Nutrition Plan
     final nutritionPlanAsync = ref.watch(nutritionPlanProvider);
+    
+    // 2. Watch User Data (for Name)
+    final userAsync = ref.watch(currentUserProvider);
+    
+    // 3. Watch Fasting State (for Contextual Message)
+    final fastingState = ref.watch(fastingControllerProvider).valueOrNull;
 
     return Scaffold(
       appBar: AppBar(
@@ -30,13 +36,29 @@ class NutritionDashboardScreen extends ConsumerWidget {
           if (plan == null) {
             return _buildEmptyState(ref);
           }
+          
+          // Determine Name
+          final String userName = userAsync.valueOrNull?.name ?? "Atleta";
+          
+          // Determine Contextual Message
+          String message = "Este es tu plan metabólico de precisión.";
+          if (fastingState != null) {
+            if (fastingState.isFasting) {
+              message = "Estás en fase de ayuno. Preparando tu metabolismo.";
+            } else {
+              // Simple logic for now: If not fasting, assume feeding window.
+              // Logic for specific meal # can be added later with MealRepository.
+              message = "Estás en ventana de alimentación. Sigue tus macros.";
+            }
+          }
+
           return SingleChildScrollView(
             padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  "Hola $_tempUserName,",
+                  "Hola $userName,",
                    style: GoogleFonts.outfit(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -44,7 +66,7 @@ class NutritionDashboardScreen extends ConsumerWidget {
                   ),
                 ),
                 Text(
-                  "Este es tu plan metabólico de precisión.",
+                  message,
                   style: GoogleFonts.outfit(
                     fontSize: 16,
                     color: Colors.grey.shade600,
@@ -121,9 +143,7 @@ class NutritionDashboardScreen extends ConsumerWidget {
           const SizedBox(height: 24),
           ElevatedButton(
             onPressed: () {
-              // Trigger calculation - usually this would open a form
-              // For now, we simulation generation with static data for prompt purposes if needed,
-              // or just show this state.
+              // Trigger calculation
               ref.read(nutritionServiceProvider.notifier).generateAndSavePlan(
                 weightKg: 80, // Default/Mock for now
                 bodyFatPercentage: 20,

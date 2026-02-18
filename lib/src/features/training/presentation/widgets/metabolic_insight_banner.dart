@@ -1,55 +1,36 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../application/metabolic_insight_provider.dart';
 
-class MetabolicInsightBanner extends ConsumerWidget {
-  const MetabolicInsightBanner({super.key});
+class MetabolicInsightBanner extends StatelessWidget {
+  final String message;
+
+  const MetabolicInsightBanner({required this.message, super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final insight = ref.watch(metabolicInsightProvider);
-
-    if (insight == null) {
-      return const SizedBox.shrink();
-    }
-
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
+  Widget build(BuildContext context) {
+    return Container( // Changed from card to container or just use as is
+       // Actually user requested "Area fija en la tarjeta de entrenamiento"
+       // This widget will be injected into that card.
+      margin: const EdgeInsets.only(top: 16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: insight.backgroundColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: insight.color.withOpacity(0.3)),
+        color: const Color(0xFFE3F2FD), // Light Blue surface
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFBBDEFB)),
       ),
-      child: Row(
+      child: Row( // Using Row for icon + text
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(insight.icon, color: insight.color, size: 28),
-          const SizedBox(width: 12),
+          const Icon(Icons.psychology, color: Color(0xFF1565C0), size: 24),
+          const SizedBox(width: 8),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Insight Metabólico",
-                  style: GoogleFonts.outfit(
-                    color: insight.color,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  insight.message,
-                  style: GoogleFonts.outfit(
-                    color: insight.color.withOpacity(0.8),
-                    fontSize: 14,
-                    height: 1.4,
-                  ),
-                ),
-              ],
+            child: Text(
+              message,
+              style: GoogleFonts.outfit(
+                color: const Color(0xFF0D47A1),
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ],

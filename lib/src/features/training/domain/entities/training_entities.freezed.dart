@@ -473,6 +473,8 @@ mixin _$RoutineExercise {
   String get targetReps => throw _privateConstructorUsedError;
   int get rir => throw _privateConstructorUsedError;
   int get restSeconds => throw _privateConstructorUsedError;
+  String get targetMuscle => throw _privateConstructorUsedError;
+  bool get requiresWeight => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -492,7 +494,9 @@ abstract class $RoutineExerciseCopyWith<$Res> {
       int sets,
       String targetReps,
       int rir,
-      int restSeconds});
+      int restSeconds,
+      String targetMuscle,
+      bool requiresWeight});
 }
 
 /// @nodoc
@@ -514,6 +518,8 @@ class _$RoutineExerciseCopyWithImpl<$Res, $Val extends RoutineExercise>
     Object? targetReps = null,
     Object? rir = null,
     Object? restSeconds = null,
+    Object? targetMuscle = null,
+    Object? requiresWeight = null,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -540,6 +546,14 @@ class _$RoutineExerciseCopyWithImpl<$Res, $Val extends RoutineExercise>
           ? _value.restSeconds
           : restSeconds // ignore: cast_nullable_to_non_nullable
               as int,
+      targetMuscle: null == targetMuscle
+          ? _value.targetMuscle
+          : targetMuscle // ignore: cast_nullable_to_non_nullable
+              as String,
+      requiresWeight: null == requiresWeight
+          ? _value.requiresWeight
+          : requiresWeight // ignore: cast_nullable_to_non_nullable
+              as bool,
     ) as $Val);
   }
 }
@@ -558,7 +572,9 @@ abstract class _$$ExerciseImplCopyWith<$Res>
       int sets,
       String targetReps,
       int rir,
-      int restSeconds});
+      int restSeconds,
+      String targetMuscle,
+      bool requiresWeight});
 }
 
 /// @nodoc
@@ -578,6 +594,8 @@ class __$$ExerciseImplCopyWithImpl<$Res>
     Object? targetReps = null,
     Object? rir = null,
     Object? restSeconds = null,
+    Object? targetMuscle = null,
+    Object? requiresWeight = null,
   }) {
     return _then(_$ExerciseImpl(
       id: null == id
@@ -604,6 +622,14 @@ class __$$ExerciseImplCopyWithImpl<$Res>
           ? _value.restSeconds
           : restSeconds // ignore: cast_nullable_to_non_nullable
               as int,
+      targetMuscle: null == targetMuscle
+          ? _value.targetMuscle
+          : targetMuscle // ignore: cast_nullable_to_non_nullable
+              as String,
+      requiresWeight: null == requiresWeight
+          ? _value.requiresWeight
+          : requiresWeight // ignore: cast_nullable_to_non_nullable
+              as bool,
     ));
   }
 }
@@ -617,7 +643,9 @@ class _$ExerciseImpl implements _Exercise {
       required this.sets,
       required this.targetReps,
       required this.rir,
-      required this.restSeconds});
+      required this.restSeconds,
+      this.targetMuscle = 'Unknown',
+      this.requiresWeight = true});
 
   factory _$ExerciseImpl.fromJson(Map<String, dynamic> json) =>
       _$$ExerciseImplFromJson(json);
@@ -634,10 +662,16 @@ class _$ExerciseImpl implements _Exercise {
   final int rir;
   @override
   final int restSeconds;
+  @override
+  @JsonKey()
+  final String targetMuscle;
+  @override
+  @JsonKey()
+  final bool requiresWeight;
 
   @override
   String toString() {
-    return 'RoutineExercise(id: $id, name: $name, sets: $sets, targetReps: $targetReps, rir: $rir, restSeconds: $restSeconds)';
+    return 'RoutineExercise(id: $id, name: $name, sets: $sets, targetReps: $targetReps, rir: $rir, restSeconds: $restSeconds, targetMuscle: $targetMuscle, requiresWeight: $requiresWeight)';
   }
 
   @override
@@ -652,13 +686,17 @@ class _$ExerciseImpl implements _Exercise {
                 other.targetReps == targetReps) &&
             (identical(other.rir, rir) || other.rir == rir) &&
             (identical(other.restSeconds, restSeconds) ||
-                other.restSeconds == restSeconds));
+                other.restSeconds == restSeconds) &&
+            (identical(other.targetMuscle, targetMuscle) ||
+                other.targetMuscle == targetMuscle) &&
+            (identical(other.requiresWeight, requiresWeight) ||
+                other.requiresWeight == requiresWeight));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, id, name, sets, targetReps, rir, restSeconds);
+  int get hashCode => Object.hash(runtimeType, id, name, sets, targetReps, rir,
+      restSeconds, targetMuscle, requiresWeight);
 
   @JsonKey(ignore: true)
   @override
@@ -681,7 +719,9 @@ abstract class _Exercise implements RoutineExercise {
       required final int sets,
       required final String targetReps,
       required final int rir,
-      required final int restSeconds}) = _$ExerciseImpl;
+      required final int restSeconds,
+      final String targetMuscle,
+      final bool requiresWeight}) = _$ExerciseImpl;
 
   factory _Exercise.fromJson(Map<String, dynamic> json) =
       _$ExerciseImpl.fromJson;
@@ -698,6 +738,10 @@ abstract class _Exercise implements RoutineExercise {
   int get rir;
   @override
   int get restSeconds;
+  @override
+  String get targetMuscle;
+  @override
+  bool get requiresWeight;
   @override
   @JsonKey(ignore: true)
   _$$ExerciseImplCopyWith<_$ExerciseImpl> get copyWith =>
@@ -1142,4 +1186,209 @@ abstract class _WorkoutRecommendation implements WorkoutRecommendation {
   @JsonKey(ignore: true)
   _$$WorkoutRecommendationImplCopyWith<_$WorkoutRecommendationImpl>
       get copyWith => throw _privateConstructorUsedError;
+}
+
+TrainingCycle _$TrainingCycleFromJson(Map<String, dynamic> json) {
+  return _TrainingCycle.fromJson(json);
+}
+
+/// @nodoc
+mixin _$TrainingCycle {
+  int get sessionCount => throw _privateConstructorUsedError;
+  bool get isDeloadActive => throw _privateConstructorUsedError;
+  int get cycleNumber => throw _privateConstructorUsedError;
+  DateTime? get deloadStartDate => throw _privateConstructorUsedError;
+
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  $TrainingCycleCopyWith<TrainingCycle> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $TrainingCycleCopyWith<$Res> {
+  factory $TrainingCycleCopyWith(
+          TrainingCycle value, $Res Function(TrainingCycle) then) =
+      _$TrainingCycleCopyWithImpl<$Res, TrainingCycle>;
+  @useResult
+  $Res call(
+      {int sessionCount,
+      bool isDeloadActive,
+      int cycleNumber,
+      DateTime? deloadStartDate});
+}
+
+/// @nodoc
+class _$TrainingCycleCopyWithImpl<$Res, $Val extends TrainingCycle>
+    implements $TrainingCycleCopyWith<$Res> {
+  _$TrainingCycleCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? sessionCount = null,
+    Object? isDeloadActive = null,
+    Object? cycleNumber = null,
+    Object? deloadStartDate = freezed,
+  }) {
+    return _then(_value.copyWith(
+      sessionCount: null == sessionCount
+          ? _value.sessionCount
+          : sessionCount // ignore: cast_nullable_to_non_nullable
+              as int,
+      isDeloadActive: null == isDeloadActive
+          ? _value.isDeloadActive
+          : isDeloadActive // ignore: cast_nullable_to_non_nullable
+              as bool,
+      cycleNumber: null == cycleNumber
+          ? _value.cycleNumber
+          : cycleNumber // ignore: cast_nullable_to_non_nullable
+              as int,
+      deloadStartDate: freezed == deloadStartDate
+          ? _value.deloadStartDate
+          : deloadStartDate // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$TrainingCycleImplCopyWith<$Res>
+    implements $TrainingCycleCopyWith<$Res> {
+  factory _$$TrainingCycleImplCopyWith(
+          _$TrainingCycleImpl value, $Res Function(_$TrainingCycleImpl) then) =
+      __$$TrainingCycleImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call(
+      {int sessionCount,
+      bool isDeloadActive,
+      int cycleNumber,
+      DateTime? deloadStartDate});
+}
+
+/// @nodoc
+class __$$TrainingCycleImplCopyWithImpl<$Res>
+    extends _$TrainingCycleCopyWithImpl<$Res, _$TrainingCycleImpl>
+    implements _$$TrainingCycleImplCopyWith<$Res> {
+  __$$TrainingCycleImplCopyWithImpl(
+      _$TrainingCycleImpl _value, $Res Function(_$TrainingCycleImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? sessionCount = null,
+    Object? isDeloadActive = null,
+    Object? cycleNumber = null,
+    Object? deloadStartDate = freezed,
+  }) {
+    return _then(_$TrainingCycleImpl(
+      sessionCount: null == sessionCount
+          ? _value.sessionCount
+          : sessionCount // ignore: cast_nullable_to_non_nullable
+              as int,
+      isDeloadActive: null == isDeloadActive
+          ? _value.isDeloadActive
+          : isDeloadActive // ignore: cast_nullable_to_non_nullable
+              as bool,
+      cycleNumber: null == cycleNumber
+          ? _value.cycleNumber
+          : cycleNumber // ignore: cast_nullable_to_non_nullable
+              as int,
+      deloadStartDate: freezed == deloadStartDate
+          ? _value.deloadStartDate
+          : deloadStartDate // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$TrainingCycleImpl implements _TrainingCycle {
+  const _$TrainingCycleImpl(
+      {required this.sessionCount,
+      required this.isDeloadActive,
+      required this.cycleNumber,
+      this.deloadStartDate});
+
+  factory _$TrainingCycleImpl.fromJson(Map<String, dynamic> json) =>
+      _$$TrainingCycleImplFromJson(json);
+
+  @override
+  final int sessionCount;
+  @override
+  final bool isDeloadActive;
+  @override
+  final int cycleNumber;
+  @override
+  final DateTime? deloadStartDate;
+
+  @override
+  String toString() {
+    return 'TrainingCycle(sessionCount: $sessionCount, isDeloadActive: $isDeloadActive, cycleNumber: $cycleNumber, deloadStartDate: $deloadStartDate)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$TrainingCycleImpl &&
+            (identical(other.sessionCount, sessionCount) ||
+                other.sessionCount == sessionCount) &&
+            (identical(other.isDeloadActive, isDeloadActive) ||
+                other.isDeloadActive == isDeloadActive) &&
+            (identical(other.cycleNumber, cycleNumber) ||
+                other.cycleNumber == cycleNumber) &&
+            (identical(other.deloadStartDate, deloadStartDate) ||
+                other.deloadStartDate == deloadStartDate));
+  }
+
+  @JsonKey(ignore: true)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType, sessionCount, isDeloadActive, cycleNumber, deloadStartDate);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$TrainingCycleImplCopyWith<_$TrainingCycleImpl> get copyWith =>
+      __$$TrainingCycleImplCopyWithImpl<_$TrainingCycleImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$TrainingCycleImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _TrainingCycle implements TrainingCycle {
+  const factory _TrainingCycle(
+      {required final int sessionCount,
+      required final bool isDeloadActive,
+      required final int cycleNumber,
+      final DateTime? deloadStartDate}) = _$TrainingCycleImpl;
+
+  factory _TrainingCycle.fromJson(Map<String, dynamic> json) =
+      _$TrainingCycleImpl.fromJson;
+
+  @override
+  int get sessionCount;
+  @override
+  bool get isDeloadActive;
+  @override
+  int get cycleNumber;
+  @override
+  DateTime? get deloadStartDate;
+  @override
+  @JsonKey(ignore: true)
+  _$$TrainingCycleImplCopyWith<_$TrainingCycleImpl> get copyWith =>
+      throw _privateConstructorUsedError;
 }

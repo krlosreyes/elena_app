@@ -14,6 +14,7 @@ _$ExerciseImpl _$$ExerciseImplFromJson(Map<String, dynamic> json) =>
       mechanics: json['mechanics'] as String,
       description: json['description'] as String,
       videoUrl: json['videoUrl'] as String?,
+      requiresWeight: json['requiresWeight'] as bool? ?? true,
     );
 
 Map<String, dynamic> _$$ExerciseImplToJson(_$ExerciseImpl instance) =>
@@ -24,4 +25,5 @@ Map<String, dynamic> _$$ExerciseImplToJson(_$ExerciseImpl instance) =>
       'mechanics': instance.mechanics,
       'description': instance.description,
       'videoUrl': instance.videoUrl,
+      'requiresWeight': instance.requiresWeight,
     };

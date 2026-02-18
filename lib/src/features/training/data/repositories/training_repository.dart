@@ -5,6 +5,7 @@ import '../../domain/entities/exercise.dart';
 import '../../domain/entities/routine_template.dart';
 import '../../domain/entities/workout_log.dart';
 import '../../domain/entities/training_entities.dart'; // Keep for WeeklyTrainingStats
+import '../../domain/entities/metabolic_state.dart';
 
 part 'training_repository.g.dart';
 
@@ -167,8 +168,69 @@ class TrainingRepository {
   }
   
   // Existing method stub - Keeping integration
-  Future<void> saveWorkoutSession(WorkoutSession session) async {
-    // Legacy support or alias to saveWorkoutLog
+// 8. Get Daily Metabolic Check-in
+  Future<MetabolicState?> getDailyCheckin(String userId, DateTime date) async {
+    try {
+      final startOfDay = DateTime(date.year, date.month, date.day);
+      final endOfDay = startOfDay.add(const Duration(days: 1)).subtract(const Duration(milliseconds: 1));
+      
+      final querySnapshot = await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('metabolic_checkins')
+          .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+          .where('date', isLessThanOrEqualTo: Timestamp.fromDate(endOfDay))
+          .limit(1)
+          .get();
+
+      if (querySnapshot.docs.isEmpty) return null;
+      
+      // Need to handle Timestamp conversion manually if not done by json_serializable custom converter
+      final data = querySnapshot.docs.first.data();
+      // Adjust timestamp if needed (MetabolicState uses DateTime)
+      // Assuming generated toJson handles DateTime as String or Timestamp?
+      // Freezed/JsonSerializable usually uses String ISO8601 by default unless configured.
+      // Firestore returns Timestamp. 
+      // Let's safe-convert.
+      if (data['date'] is Timestamp) {
+         data['date'] = (data['date'] as Timestamp).toDate().toIso8601String();
+      }
+      
+      return MetabolicState.fromJson(data);
+    } catch (e) {
+      print('Error getting metabolic checkin: $e');
+      return null;
+    }
+  }
+
+  // 9. Save Daily Metabolic Check-in
+  Future<void> saveCheckin(String userId, MetabolicState checkin) async {
+    try {
+      // Logic to use a consistent ID for the day could be useful to avoid duplicates,
+      // but query limits to 1 anyway. Let's just add().
+      // Actually, better to use date string as ID to enforce uniqueness at DB level?
+      // Or just add. The use case prevents double submission at app layer.
+      
+      // Convert to Json.
+      final json = checkin.toJson();
+      // Ensure date is saved as Timestamp for querying if needed, or keep ISO string.
+      // Above query compares Timestamp, so we should save as Timestamp or ensure comparison works.
+      // If we save as ISO String, range query on 'date' (Timestamp) won't match String field.
+      // CRITICAL: We need consistent types.
+      // Let's save 'date' as FieldValue.serverTimestamp() or Timestamp.fromDate(checkin.date).
+      // But MetabolicState has DateTime. 
+      // Let's overwrite 'date' in the json map before saving to Firestore.
+      json['date'] = Timestamp.fromDate(checkin.date);
+      
+      await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('metabolic_checkins')
+          .add(json);
+    } catch (e) {
+      print('Error saving metabolic checkin: $e');
+      throw e;
+    }
   }
 }
 

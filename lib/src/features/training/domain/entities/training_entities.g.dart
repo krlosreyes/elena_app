@@ -62,6 +62,8 @@ _$ExerciseImpl _$$ExerciseImplFromJson(Map<String, dynamic> json) =>
       targetReps: json['targetReps'] as String,
       rir: (json['rir'] as num).toInt(),
       restSeconds: (json['restSeconds'] as num).toInt(),
+      targetMuscle: json['targetMuscle'] as String? ?? 'Unknown',
+      requiresWeight: json['requiresWeight'] as bool? ?? true,
     );
 
 Map<String, dynamic> _$$ExerciseImplToJson(_$ExerciseImpl instance) =>
@@ -72,6 +74,8 @@ Map<String, dynamic> _$$ExerciseImplToJson(_$ExerciseImpl instance) =>
       'targetReps': instance.targetReps,
       'rir': instance.rir,
       'restSeconds': instance.restSeconds,
+      'targetMuscle': instance.targetMuscle,
+      'requiresWeight': instance.requiresWeight,
     };
 
 _$WeeklyTrainingStatsImpl _$$WeeklyTrainingStatsImplFromJson(
@@ -111,4 +115,22 @@ Map<String, dynamic> _$$WorkoutRecommendationImplToJson(
       'durationMinutes': instance.durationMinutes,
       'intensity': instance.intensity,
       'notes': instance.notes,
+    };
+
+_$TrainingCycleImpl _$$TrainingCycleImplFromJson(Map<String, dynamic> json) =>
+    _$TrainingCycleImpl(
+      sessionCount: (json['sessionCount'] as num).toInt(),
+      isDeloadActive: json['isDeloadActive'] as bool,
+      cycleNumber: (json['cycleNumber'] as num).toInt(),
+      deloadStartDate: json['deloadStartDate'] == null
+          ? null
+          : DateTime.parse(json['deloadStartDate'] as String),
+    );
+
+Map<String, dynamic> _$$TrainingCycleImplToJson(_$TrainingCycleImpl instance) =>
+    <String, dynamic>{
+      'sessionCount': instance.sessionCount,
+      'isDeloadActive': instance.isDeloadActive,
+      'cycleNumber': instance.cycleNumber,
+      'deloadStartDate': instance.deloadStartDate?.toIso8601String(),
     };

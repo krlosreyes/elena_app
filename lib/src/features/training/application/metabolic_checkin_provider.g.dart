@@ -1,27 +1,26 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'workout_submit_controller.dart';
+part of 'metabolic_checkin_provider.dart';
 
 // **************************************************************************
 // RiverpodGenerator
 // **************************************************************************
 
-String _$workoutSubmitControllerHash() =>
-    r'd31bbcb88905549784fcb35b3b4aabf30bd340f4';
+String _$metabolicCheckinHash() => r'9a65189107b36bab8c6bd807265a2f6d0569c7bb';
 
-/// See also [WorkoutSubmitController].
-@ProviderFor(WorkoutSubmitController)
-final workoutSubmitControllerProvider =
-    AutoDisposeAsyncNotifierProvider<WorkoutSubmitController, void>.internal(
-  WorkoutSubmitController.new,
-  name: r'workoutSubmitControllerProvider',
+/// See also [MetabolicCheckin].
+@ProviderFor(MetabolicCheckin)
+final metabolicCheckinProvider = AutoDisposeAsyncNotifierProvider<
+    MetabolicCheckin, MetabolicState?>.internal(
+  MetabolicCheckin.new,
+  name: r'metabolicCheckinProvider',
   debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
       ? null
-      : _$workoutSubmitControllerHash,
+      : _$metabolicCheckinHash,
   dependencies: null,
   allTransitiveDependencies: null,
 );
 
-typedef _$WorkoutSubmitController = AutoDisposeAsyncNotifier<void>;
+typedef _$MetabolicCheckin = AutoDisposeAsyncNotifier<MetabolicState?>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member

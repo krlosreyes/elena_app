@@ -22,8 +22,9 @@ InteractiveExercise _$InteractiveExerciseFromJson(Map<String, dynamic> json) {
 mixin _$InteractiveExercise {
   String get id => throw _privateConstructorUsedError;
   String get name => throw _privateConstructorUsedError;
-  int get targetRir => throw _privateConstructorUsedError;
+  String get targetRir => throw _privateConstructorUsedError; // e.g. "2-3"
   List<InteractiveSet> get sets => throw _privateConstructorUsedError;
+  bool get requiresWeight => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -37,7 +38,12 @@ abstract class $InteractiveExerciseCopyWith<$Res> {
           InteractiveExercise value, $Res Function(InteractiveExercise) then) =
       _$InteractiveExerciseCopyWithImpl<$Res, InteractiveExercise>;
   @useResult
-  $Res call({String id, String name, int targetRir, List<InteractiveSet> sets});
+  $Res call(
+      {String id,
+      String name,
+      String targetRir,
+      List<InteractiveSet> sets,
+      bool requiresWeight});
 }
 
 /// @nodoc
@@ -57,6 +63,7 @@ class _$InteractiveExerciseCopyWithImpl<$Res, $Val extends InteractiveExercise>
     Object? name = null,
     Object? targetRir = null,
     Object? sets = null,
+    Object? requiresWeight = null,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -70,11 +77,15 @@ class _$InteractiveExerciseCopyWithImpl<$Res, $Val extends InteractiveExercise>
       targetRir: null == targetRir
           ? _value.targetRir
           : targetRir // ignore: cast_nullable_to_non_nullable
-              as int,
+              as String,
       sets: null == sets
           ? _value.sets
           : sets // ignore: cast_nullable_to_non_nullable
               as List<InteractiveSet>,
+      requiresWeight: null == requiresWeight
+          ? _value.requiresWeight
+          : requiresWeight // ignore: cast_nullable_to_non_nullable
+              as bool,
     ) as $Val);
   }
 }
@@ -87,7 +98,12 @@ abstract class _$$InteractiveExerciseImplCopyWith<$Res>
       __$$InteractiveExerciseImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({String id, String name, int targetRir, List<InteractiveSet> sets});
+  $Res call(
+      {String id,
+      String name,
+      String targetRir,
+      List<InteractiveSet> sets,
+      bool requiresWeight});
 }
 
 /// @nodoc
@@ -105,6 +121,7 @@ class __$$InteractiveExerciseImplCopyWithImpl<$Res>
     Object? name = null,
     Object? targetRir = null,
     Object? sets = null,
+    Object? requiresWeight = null,
   }) {
     return _then(_$InteractiveExerciseImpl(
       id: null == id
@@ -118,11 +135,15 @@ class __$$InteractiveExerciseImplCopyWithImpl<$Res>
       targetRir: null == targetRir
           ? _value.targetRir
           : targetRir // ignore: cast_nullable_to_non_nullable
-              as int,
+              as String,
       sets: null == sets
           ? _value._sets
           : sets // ignore: cast_nullable_to_non_nullable
               as List<InteractiveSet>,
+      requiresWeight: null == requiresWeight
+          ? _value.requiresWeight
+          : requiresWeight // ignore: cast_nullable_to_non_nullable
+              as bool,
     ));
   }
 }
@@ -133,8 +154,9 @@ class _$InteractiveExerciseImpl implements _InteractiveExercise {
   const _$InteractiveExerciseImpl(
       {required this.id,
       required this.name,
-      this.targetRir = 2,
-      final List<InteractiveSet> sets = const []})
+      required this.targetRir,
+      final List<InteractiveSet> sets = const [],
+      this.requiresWeight = true})
       : _sets = sets;
 
   factory _$InteractiveExerciseImpl.fromJson(Map<String, dynamic> json) =>
@@ -145,9 +167,10 @@ class _$InteractiveExerciseImpl implements _InteractiveExercise {
   @override
   final String name;
   @override
-  @JsonKey()
-  final int targetRir;
+  final String targetRir;
+// e.g. "2-3"
   final List<InteractiveSet> _sets;
+// e.g. "2-3"
   @override
   @JsonKey()
   List<InteractiveSet> get sets {
@@ -157,8 +180,12 @@ class _$InteractiveExerciseImpl implements _InteractiveExercise {
   }
 
   @override
+  @JsonKey()
+  final bool requiresWeight;
+
+  @override
   String toString() {
-    return 'InteractiveExercise(id: $id, name: $name, targetRir: $targetRir, sets: $sets)';
+    return 'InteractiveExercise(id: $id, name: $name, targetRir: $targetRir, sets: $sets, requiresWeight: $requiresWeight)';
   }
 
   @override
@@ -170,13 +197,15 @@ class _$InteractiveExerciseImpl implements _InteractiveExercise {
             (identical(other.name, name) || other.name == name) &&
             (identical(other.targetRir, targetRir) ||
                 other.targetRir == targetRir) &&
-            const DeepCollectionEquality().equals(other._sets, _sets));
+            const DeepCollectionEquality().equals(other._sets, _sets) &&
+            (identical(other.requiresWeight, requiresWeight) ||
+                other.requiresWeight == requiresWeight));
   }
 
   @JsonKey(ignore: true)
   @override
   int get hashCode => Object.hash(runtimeType, id, name, targetRir,
-      const DeepCollectionEquality().hash(_sets));
+      const DeepCollectionEquality().hash(_sets), requiresWeight);
 
   @JsonKey(ignore: true)
   @override
@@ -197,8 +226,9 @@ abstract class _InteractiveExercise implements InteractiveExercise {
   const factory _InteractiveExercise(
       {required final String id,
       required final String name,
-      final int targetRir,
-      final List<InteractiveSet> sets}) = _$InteractiveExerciseImpl;
+      required final String targetRir,
+      final List<InteractiveSet> sets,
+      final bool requiresWeight}) = _$InteractiveExerciseImpl;
 
   factory _InteractiveExercise.fromJson(Map<String, dynamic> json) =
       _$InteractiveExerciseImpl.fromJson;
@@ -208,9 +238,11 @@ abstract class _InteractiveExercise implements InteractiveExercise {
   @override
   String get name;
   @override
-  int get targetRir;
-  @override
+  String get targetRir;
+  @override // e.g. "2-3"
   List<InteractiveSet> get sets;
+  @override
+  bool get requiresWeight;
   @override
   @JsonKey(ignore: true)
   _$$InteractiveExerciseImplCopyWith<_$InteractiveExerciseImpl> get copyWith =>

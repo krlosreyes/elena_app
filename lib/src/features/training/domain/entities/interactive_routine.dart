@@ -10,8 +10,9 @@ class InteractiveExercise with _$InteractiveExercise {
   const factory InteractiveExercise({
     required String id,
     required String name,
-    @Default(2) int targetRir,
+    required String targetRir, // e.g. "2-3"
     @Default([]) List<InteractiveSet> sets,
+    @Default(true) bool requiresWeight, // Added for UI logic
   }) = _InteractiveExercise;
 
   factory InteractiveExercise.fromJson(Map<String, dynamic> json) =>

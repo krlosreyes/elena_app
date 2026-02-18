@@ -12,6 +12,7 @@ class Exercise with _$Exercise {
     required String mechanics,
     required String description,
     String? videoUrl,
+    @Default(true) bool requiresWeight,
   }) = _Exercise;
 
   factory Exercise.fromJson(Map<String, dynamic> json) => _$ExerciseFromJson(json);

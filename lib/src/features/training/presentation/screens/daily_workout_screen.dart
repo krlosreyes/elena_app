@@ -21,6 +21,7 @@ import '../widgets/rest_timer_banner.dart';
 import '../widgets/metabolic_insight_banner.dart';
 import '../widgets/past_workout_summary_view.dart';
 import '../widgets/missed_workout_view.dart';
+import '../widgets/metabolic_checkin_widget.dart';
 
 
 class DailyWorkoutScreen extends ConsumerWidget {
@@ -160,14 +161,27 @@ class DailyWorkoutScreen extends ConsumerWidget {
   Widget _buildWorkoutView(BuildContext context, DailyWorkout plan, bool isCompleted, WorkoutDisplayMode mode) {
     switch (plan.type) {
       case WorkoutType.strength:
-        final recommendation = WorkoutRecommendation(
-            type: 'Strength', 
-            targetMuscle: null, 
-            durationMinutes: plan.durationMinutes, 
-            intensity: plan.details, 
-            notes: plan.description
+        // Inject Check-in Widget for Strength workouts
+        return Column(
+          children: [
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16.0),
+              child: MetabolicCheckinWidget(),
+            ),
+            Expanded(
+              child: StrengthWorkoutView(
+                recommendation: WorkoutRecommendation(
+                  type: 'Strength', 
+                  targetMuscle: null, 
+                  durationMinutes: plan.durationMinutes, 
+                  intensity: plan.details, 
+                  notes: plan.description
+                ),
+                mode: mode,
+              ),
+            ),
+          ],
         );
-        return StrengthWorkoutView(recommendation: recommendation, mode: mode);
 
       case WorkoutType.cardio:
         return CardioWorkoutView(plan: plan, isCompleted: isCompleted, mode: mode);

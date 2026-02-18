@@ -7,7 +7,10 @@ import 'package:confetti/confetti.dart';
 import '../../../../config/theme/app_theme.dart';
 import '../../domain/entities/workout_log.dart';
 
-class WorkoutSummaryScreen extends StatefulWidget {
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../authentication/data/auth_repository.dart';
+
+class WorkoutSummaryScreen extends ConsumerStatefulWidget {
   static const String routeName = 'workout_summary';
   
   final WorkoutLog log;
@@ -15,10 +18,10 @@ class WorkoutSummaryScreen extends StatefulWidget {
   const WorkoutSummaryScreen({super.key, required this.log});
 
   @override
-  State<WorkoutSummaryScreen> createState() => _WorkoutSummaryScreenState();
+  ConsumerState<WorkoutSummaryScreen> createState() => _WorkoutSummaryScreenState();
 }
 
-class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
+class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
   late ConfettiController _confettiController;
 
   @override
@@ -81,16 +84,44 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  Text(
-                    "¡Entrenamiento Completado!",
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.outfit(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.primaryColor,
-                    ),
+                  const SizedBox(height: 16),
+                  
+                  // Personalized Motivated Message
+                  Consumer(
+                    builder: (context, ref, _) {
+                      final user = ref.read(authRepositoryProvider).currentUser;
+                      final name = user?.displayName?.split(' ').first ?? 'Atleta';
+                      
+                      return Column(
+                        children: [
+                          Text(
+                            "¡Brutal, $name!",
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.outfit(
+                              fontSize: 28,
+                              fontWeight: FontWeight.w900,
+                              color: AppTheme.primaryColor,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                            child: Text(
+                              "Has completado el volumen efectivo de hoy. Tu síntesis proteica está en marcha; ahora prioriza tu descanso y nutrición.",
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.outfit(
+                                fontSize: 15,
+                                color: Colors.grey.shade700,
+                                height: 1.4,
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    }
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 16),
+
                   Text(
                     DateFormat('EEEE d, MMMM', 'es_ES').format(widget.log.date).toUpperCase(),
                     style: GoogleFonts.outfit(

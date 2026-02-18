@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../config/theme/app_theme.dart';
 import '../../application/daily_routine_provider.dart';
+import '../../application/metabolic_checkin_provider.dart';
+import '../../application/training_cycle_provider.dart';
+import 'metabolic_insight_banner.dart';
 import 'package:elena_app/src/features/training/application/daily_orchestrator_provider.dart' as orchestrator;
 import 'package:go_router/go_router.dart';
 import '../../application/workout_submit_controller.dart';
@@ -39,6 +42,8 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
     InteractiveExercise(
       id: '1',
       name: 'Sentadilla con Barra',
+      targetRir: '2-3',
+      requiresWeight: true,
       sets: [
         InteractiveSet(setIndex: 1, weight: 60.0, reps: 12),
         InteractiveSet(setIndex: 2, weight: 60.0, reps: 12),
@@ -48,6 +53,8 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
     InteractiveExercise(
       id: '2',
       name: 'Press Militar',
+      targetRir: '2',
+      requiresWeight: true,
       sets: [
         InteractiveSet(setIndex: 1, weight: 30.0, reps: 10),
         InteractiveSet(setIndex: 2, weight: 30.0, reps: 10),
@@ -56,6 +63,8 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
     InteractiveExercise(
       id: '3',
       name: 'Peso Muerto Rumano',
+      targetRir: '2',
+      requiresWeight: true,
       sets: [
         InteractiveSet(setIndex: 1, weight: 80.0, reps: 10),
         InteractiveSet(setIndex: 2, weight: 80.0, reps: 10),
@@ -262,6 +271,47 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
                 fontSize: 14,
                 color: Colors.grey.shade800,
               ),
+            ),
+            
+            // Persistent Metabolic Insight (if check-in exists)
+            Consumer(
+              builder: (context, ref, _) {
+                 final checkin = ref.watch(metabolicCheckinProvider).valueOrNull;
+                 final cycleState = ref.watch(trainingCycleProviderProvider);
+
+                 if (cycleState.isDeloadActive) {
+                    return Container(
+                      margin: const EdgeInsets.only(top: 16),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.teal.shade50,
+                        border: Border.all(color: Colors.teal.shade200),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.spa, color: Colors.teal.shade700),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              "Esta es tu semana de Descarga. Estamos reduciendo la carga al 50% para resetear tu metabolismo. ¡Confía en la ciencia, volverás más fuerte!",
+                              style: GoogleFonts.outfit(
+                                fontSize: 14,
+                                color: Colors.teal.shade900,
+                                height: 1.4,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                 }
+
+                 if (checkin?.insightMessage != null) {
+                   return MetabolicInsightBanner(message: checkin!.insightMessage!);
+                 }
+                 return const SizedBox.shrink();
+              },
             ),
           ],
         ),

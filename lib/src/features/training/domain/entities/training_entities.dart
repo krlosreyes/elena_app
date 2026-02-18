@@ -40,6 +40,8 @@ class RoutineExercise with _$RoutineExercise {
     required String targetReps,
     required int rir,
     required int restSeconds,
+    @Default('Unknown') String targetMuscle,
+    @Default(true) bool requiresWeight,
   }) = _Exercise;
 
   factory RoutineExercise.fromJson(Map<String, dynamic> json) => _$RoutineExerciseFromJson(json);
@@ -83,4 +85,16 @@ class WorkoutRecommendation with _$WorkoutRecommendation {
       intensity: 'Zone 1',
       notes: 'Caminata ligera o movilidad. Priorizar recuperación.',
   );
+}
+
+@freezed
+class TrainingCycle with _$TrainingCycle {
+  const factory TrainingCycle({
+    required int sessionCount,
+    required bool isDeloadActive,
+    required int cycleNumber,
+    DateTime? deloadStartDate,
+  }) = _TrainingCycle;
+
+  factory TrainingCycle.fromJson(Map<String, dynamic> json) => _$TrainingCycleFromJson(json);
 }

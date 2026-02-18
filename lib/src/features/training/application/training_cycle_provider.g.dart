@@ -1,27 +1,27 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'workout_submit_controller.dart';
+part of 'training_cycle_provider.dart';
 
 // **************************************************************************
 // RiverpodGenerator
 // **************************************************************************
 
-String _$workoutSubmitControllerHash() =>
-    r'd31bbcb88905549784fcb35b3b4aabf30bd340f4';
+String _$trainingCycleProviderHash() =>
+    r'a70fc1c8168a21a6ef960539a0d4f0886c267559';
 
-/// See also [WorkoutSubmitController].
-@ProviderFor(WorkoutSubmitController)
-final workoutSubmitControllerProvider =
-    AutoDisposeAsyncNotifierProvider<WorkoutSubmitController, void>.internal(
-  WorkoutSubmitController.new,
-  name: r'workoutSubmitControllerProvider',
+/// See also [TrainingCycleProvider].
+@ProviderFor(TrainingCycleProvider)
+final trainingCycleProviderProvider =
+    NotifierProvider<TrainingCycleProvider, TrainingCycle>.internal(
+  TrainingCycleProvider.new,
+  name: r'trainingCycleProviderProvider',
   debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
       ? null
-      : _$workoutSubmitControllerHash,
+      : _$trainingCycleProviderHash,
   dependencies: null,
   allTransitiveDependencies: null,
 );
 
-typedef _$WorkoutSubmitController = AutoDisposeAsyncNotifier<void>;
+typedef _$TrainingCycleProvider = Notifier<TrainingCycle>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member

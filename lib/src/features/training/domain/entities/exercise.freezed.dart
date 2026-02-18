@@ -26,6 +26,7 @@ mixin _$Exercise {
   String get mechanics => throw _privateConstructorUsedError;
   String get description => throw _privateConstructorUsedError;
   String? get videoUrl => throw _privateConstructorUsedError;
+  bool get requiresWeight => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -44,7 +45,8 @@ abstract class $ExerciseCopyWith<$Res> {
       String targetMuscle,
       String mechanics,
       String description,
-      String? videoUrl});
+      String? videoUrl,
+      bool requiresWeight});
 }
 
 /// @nodoc
@@ -66,6 +68,7 @@ class _$ExerciseCopyWithImpl<$Res, $Val extends Exercise>
     Object? mechanics = null,
     Object? description = null,
     Object? videoUrl = freezed,
+    Object? requiresWeight = null,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -92,6 +95,10 @@ class _$ExerciseCopyWithImpl<$Res, $Val extends Exercise>
           ? _value.videoUrl
           : videoUrl // ignore: cast_nullable_to_non_nullable
               as String?,
+      requiresWeight: null == requiresWeight
+          ? _value.requiresWeight
+          : requiresWeight // ignore: cast_nullable_to_non_nullable
+              as bool,
     ) as $Val);
   }
 }
@@ -110,7 +117,8 @@ abstract class _$$ExerciseImplCopyWith<$Res>
       String targetMuscle,
       String mechanics,
       String description,
-      String? videoUrl});
+      String? videoUrl,
+      bool requiresWeight});
 }
 
 /// @nodoc
@@ -130,6 +138,7 @@ class __$$ExerciseImplCopyWithImpl<$Res>
     Object? mechanics = null,
     Object? description = null,
     Object? videoUrl = freezed,
+    Object? requiresWeight = null,
   }) {
     return _then(_$ExerciseImpl(
       id: null == id
@@ -156,6 +165,10 @@ class __$$ExerciseImplCopyWithImpl<$Res>
           ? _value.videoUrl
           : videoUrl // ignore: cast_nullable_to_non_nullable
               as String?,
+      requiresWeight: null == requiresWeight
+          ? _value.requiresWeight
+          : requiresWeight // ignore: cast_nullable_to_non_nullable
+              as bool,
     ));
   }
 }
@@ -169,7 +182,8 @@ class _$ExerciseImpl implements _Exercise {
       required this.targetMuscle,
       required this.mechanics,
       required this.description,
-      this.videoUrl});
+      this.videoUrl,
+      this.requiresWeight = true});
 
   factory _$ExerciseImpl.fromJson(Map<String, dynamic> json) =>
       _$$ExerciseImplFromJson(json);
@@ -186,10 +200,13 @@ class _$ExerciseImpl implements _Exercise {
   final String description;
   @override
   final String? videoUrl;
+  @override
+  @JsonKey()
+  final bool requiresWeight;
 
   @override
   String toString() {
-    return 'Exercise(id: $id, name: $name, targetMuscle: $targetMuscle, mechanics: $mechanics, description: $description, videoUrl: $videoUrl)';
+    return 'Exercise(id: $id, name: $name, targetMuscle: $targetMuscle, mechanics: $mechanics, description: $description, videoUrl: $videoUrl, requiresWeight: $requiresWeight)';
   }
 
   @override
@@ -206,13 +223,15 @@ class _$ExerciseImpl implements _Exercise {
             (identical(other.description, description) ||
                 other.description == description) &&
             (identical(other.videoUrl, videoUrl) ||
-                other.videoUrl == videoUrl));
+                other.videoUrl == videoUrl) &&
+            (identical(other.requiresWeight, requiresWeight) ||
+                other.requiresWeight == requiresWeight));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hash(
-      runtimeType, id, name, targetMuscle, mechanics, description, videoUrl);
+  int get hashCode => Object.hash(runtimeType, id, name, targetMuscle,
+      mechanics, description, videoUrl, requiresWeight);
 
   @JsonKey(ignore: true)
   @override
@@ -235,7 +254,8 @@ abstract class _Exercise implements Exercise {
       required final String targetMuscle,
       required final String mechanics,
       required final String description,
-      final String? videoUrl}) = _$ExerciseImpl;
+      final String? videoUrl,
+      final bool requiresWeight}) = _$ExerciseImpl;
 
   factory _Exercise.fromJson(Map<String, dynamic> json) =
       _$ExerciseImpl.fromJson;
@@ -252,6 +272,8 @@ abstract class _Exercise implements Exercise {
   String get description;
   @override
   String? get videoUrl;
+  @override
+  bool get requiresWeight;
   @override
   @JsonKey(ignore: true)
   _$$ExerciseImplCopyWith<_$ExerciseImpl> get copyWith =>

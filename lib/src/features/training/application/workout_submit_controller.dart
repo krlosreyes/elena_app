@@ -9,6 +9,8 @@ import 'daily_routine_provider.dart';
 import 'calendar_state_provider.dart';
 import 'workout_log_provider.dart';
 
+import 'training_cycle_provider.dart';
+
 part 'workout_submit_controller.g.dart';
 
 @riverpod
@@ -136,6 +138,9 @@ class WorkoutSubmitController extends _$WorkoutSubmitController {
       log('[WorkoutSubmit] ✅ Saved successfully');
       
       state = const AsyncData(null);
+      // 6. Update Training Cycle (Session Count)
+      ref.read(trainingCycleProviderProvider.notifier).incrementSession();
+
       return newLog; 
     } catch (e, st) {
       log('[WorkoutSubmit] ❌ Error: $e', error: e, stackTrace: st);

@@ -11,11 +11,12 @@ _$InteractiveExerciseImpl _$$InteractiveExerciseImplFromJson(
     _$InteractiveExerciseImpl(
       id: json['id'] as String,
       name: json['name'] as String,
-      targetRir: (json['targetRir'] as num?)?.toInt() ?? 2,
+      targetRir: json['targetRir'] as String,
       sets: (json['sets'] as List<dynamic>?)
               ?.map((e) => InteractiveSet.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const [],
+      requiresWeight: json['requiresWeight'] as bool? ?? true,
     );
 
 Map<String, dynamic> _$$InteractiveExerciseImplToJson(
@@ -25,6 +26,7 @@ Map<String, dynamic> _$$InteractiveExerciseImplToJson(
       'name': instance.name,
       'targetRir': instance.targetRir,
       'sets': instance.sets,
+      'requiresWeight': instance.requiresWeight,
     };
 
 _$InteractiveSetImpl _$$InteractiveSetImplFromJson(Map<String, dynamic> json) =>

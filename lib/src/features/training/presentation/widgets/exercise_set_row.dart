@@ -9,20 +9,23 @@ class ExerciseSetRow extends ConsumerStatefulWidget {
   final int setIndex;
   final String targetReps;
   final bool isDone;
-  final double? initialWeight;
-  final int? initialReps;
-  final Function(double? weight, int? reps)? onToggle; // Keeping as optional/legacy or for other uses if needed, but primary logic moves.
+  final bool requiresWeight; // Add this prop
 
   const ExerciseSetRow({
     super.key,
-    required this.exerciseId, // Required now
+    required this.exerciseId, 
     required this.setIndex,
     required this.targetReps,
     required this.isDone,
+    this.requiresWeight = true, // Default true
     this.onToggle,
     this.initialWeight,
     this.initialReps,
   });
+
+  final void Function(double weight, int reps)? onToggle;
+  final double? initialWeight;
+  final int? initialReps;
 
   @override
   ConsumerState<ExerciseSetRow> createState() => _ExerciseSetRowState();
@@ -75,7 +78,9 @@ class _ExerciseSetRowState extends ConsumerState<ExerciseSetRow> {
   }
 
   void _handleToggle() {
-    final weight = double.tryParse(_weightController.text) ?? 0.0;
+    final weight = widget.requiresWeight 
+        ? (double.tryParse(_weightController.text) ?? 0.0) 
+        : 0.0;
     final reps = int.tryParse(_repsController.text) ?? 0;
 
     // Call provider directly to update state
@@ -135,6 +140,8 @@ class _ExerciseSetRowState extends ConsumerState<ExerciseSetRow> {
           ),
 
           // Weight Input
+          // Weight Input (Conditional)
+          if (widget.requiresWeight)
           SizedBox(
             width: 60,
             child: TextField(
@@ -162,6 +169,8 @@ class _ExerciseSetRowState extends ConsumerState<ExerciseSetRow> {
               ),
             ),
           ),
+          if (widget.requiresWeight)
+          const SizedBox(width: 8),
           const SizedBox(width: 8),
 
           // Reps Input
