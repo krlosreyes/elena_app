@@ -11,6 +11,7 @@ import '../features/progress/presentation/progress_screen.dart';
 import '../features/profile/presentation/profile_screen.dart';
 import '../features/training/presentation/screens/daily_workout_screen.dart';
 import '../features/training/presentation/screens/workout_summary_screen.dart';
+import '../features/nutrition/presentation/screens/nutrition_dashboard_screen.dart';
 
 import '../features/training/domain/entities/workout_log.dart';
 
@@ -105,6 +106,10 @@ GoRouter goRouter(GoRouterRef ref) {
             path: '/profile',
             name: 'profile',
             pageBuilder: (context, state) => const NoTransitionPage(child: ProfileScreen()),
+          ),
+          GoRoute(
+            path: '/nutrition',
+            pageBuilder: (context, state) => const NoTransitionPage(child: NutritionDashboardScreen()),
           ),
         ],
       ),
