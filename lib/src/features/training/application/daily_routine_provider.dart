@@ -195,4 +195,26 @@ class DailyRoutine extends _$DailyRoutine {
       }
     });
   }
+
+  void addBonusSet(String exerciseId) {
+    state.whenData((routine) {
+      final updatedRoutine = [
+        for (final ex in routine)
+          if (ex.id == exerciseId)
+            ex.copyWith(sets: [
+              ...ex.sets,
+              InteractiveSet(
+                setIndex: ex.sets.length + 1,
+                targetReps: ex.sets.last.targetReps, 
+                weight: ex.sets.last.weight,         
+                isDone: false,
+                isBonus: true, // Mark as bonus
+              )
+            ])
+          else ex
+      ];
+      
+      state = AsyncData(updatedRoutine);
+    });
+  }
 }

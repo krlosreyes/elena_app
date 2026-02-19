@@ -29,6 +29,7 @@ mixin _$WorkoutLog {
       throw _privateConstructorUsedError;
   int? get durationMinutes => throw _privateConstructorUsedError;
   int? get caloriesBurned => throw _privateConstructorUsedError;
+  bool get isFasted => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -49,7 +50,8 @@ abstract class $WorkoutLogCopyWith<$Res> {
       int sessionRirScore,
       List<Map<String, dynamic>> completedExercises,
       int? durationMinutes,
-      int? caloriesBurned});
+      int? caloriesBurned,
+      bool isFasted});
 }
 
 /// @nodoc
@@ -72,6 +74,7 @@ class _$WorkoutLogCopyWithImpl<$Res, $Val extends WorkoutLog>
     Object? completedExercises = null,
     Object? durationMinutes = freezed,
     Object? caloriesBurned = freezed,
+    Object? isFasted = null,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -102,6 +105,10 @@ class _$WorkoutLogCopyWithImpl<$Res, $Val extends WorkoutLog>
           ? _value.caloriesBurned
           : caloriesBurned // ignore: cast_nullable_to_non_nullable
               as int?,
+      isFasted: null == isFasted
+          ? _value.isFasted
+          : isFasted // ignore: cast_nullable_to_non_nullable
+              as bool,
     ) as $Val);
   }
 }
@@ -121,7 +128,8 @@ abstract class _$$WorkoutLogImplCopyWith<$Res>
       int sessionRirScore,
       List<Map<String, dynamic>> completedExercises,
       int? durationMinutes,
-      int? caloriesBurned});
+      int? caloriesBurned,
+      bool isFasted});
 }
 
 /// @nodoc
@@ -142,6 +150,7 @@ class __$$WorkoutLogImplCopyWithImpl<$Res>
     Object? completedExercises = null,
     Object? durationMinutes = freezed,
     Object? caloriesBurned = freezed,
+    Object? isFasted = null,
   }) {
     return _then(_$WorkoutLogImpl(
       id: null == id
@@ -172,6 +181,10 @@ class __$$WorkoutLogImplCopyWithImpl<$Res>
           ? _value.caloriesBurned
           : caloriesBurned // ignore: cast_nullable_to_non_nullable
               as int?,
+      isFasted: null == isFasted
+          ? _value.isFasted
+          : isFasted // ignore: cast_nullable_to_non_nullable
+              as bool,
     ));
   }
 }
@@ -186,7 +199,8 @@ class _$WorkoutLogImpl extends _WorkoutLog {
       required this.sessionRirScore,
       required final List<Map<String, dynamic>> completedExercises,
       this.durationMinutes,
-      this.caloriesBurned})
+      this.caloriesBurned,
+      this.isFasted = false})
       : _completedExercises = completedExercises,
         super._();
 
@@ -215,10 +229,13 @@ class _$WorkoutLogImpl extends _WorkoutLog {
   final int? durationMinutes;
   @override
   final int? caloriesBurned;
+  @override
+  @JsonKey()
+  final bool isFasted;
 
   @override
   String toString() {
-    return 'WorkoutLog(id: $id, templateId: $templateId, date: $date, sessionRirScore: $sessionRirScore, completedExercises: $completedExercises, durationMinutes: $durationMinutes, caloriesBurned: $caloriesBurned)';
+    return 'WorkoutLog(id: $id, templateId: $templateId, date: $date, sessionRirScore: $sessionRirScore, completedExercises: $completedExercises, durationMinutes: $durationMinutes, caloriesBurned: $caloriesBurned, isFasted: $isFasted)';
   }
 
   @override
@@ -237,7 +254,9 @@ class _$WorkoutLogImpl extends _WorkoutLog {
             (identical(other.durationMinutes, durationMinutes) ||
                 other.durationMinutes == durationMinutes) &&
             (identical(other.caloriesBurned, caloriesBurned) ||
-                other.caloriesBurned == caloriesBurned));
+                other.caloriesBurned == caloriesBurned) &&
+            (identical(other.isFasted, isFasted) ||
+                other.isFasted == isFasted));
   }
 
   @JsonKey(ignore: true)
@@ -250,7 +269,8 @@ class _$WorkoutLogImpl extends _WorkoutLog {
       sessionRirScore,
       const DeepCollectionEquality().hash(_completedExercises),
       durationMinutes,
-      caloriesBurned);
+      caloriesBurned,
+      isFasted);
 
   @JsonKey(ignore: true)
   @override
@@ -274,7 +294,8 @@ abstract class _WorkoutLog extends WorkoutLog {
       required final int sessionRirScore,
       required final List<Map<String, dynamic>> completedExercises,
       final int? durationMinutes,
-      final int? caloriesBurned}) = _$WorkoutLogImpl;
+      final int? caloriesBurned,
+      final bool isFasted}) = _$WorkoutLogImpl;
   const _WorkoutLog._() : super._();
 
   factory _WorkoutLog.fromJson(Map<String, dynamic> json) =
@@ -295,6 +316,8 @@ abstract class _WorkoutLog extends WorkoutLog {
   int? get durationMinutes;
   @override
   int? get caloriesBurned;
+  @override
+  bool get isFasted;
   @override
   @JsonKey(ignore: true)
   _$$WorkoutLogImplCopyWith<_$WorkoutLogImpl> get copyWith =>

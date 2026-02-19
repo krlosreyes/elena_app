@@ -2,7 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart'; 
 import 'package:confetti/confetti.dart';
 import '../../../../config/theme/app_theme.dart';
 import '../../domain/entities/workout_log.dart';
@@ -41,9 +41,10 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
   @override
   Widget build(BuildContext context) {
     // Calculate stats
-    final duration = widget.log.durationMinutes ?? 0;
+    final duration = widget.log.durationMinutes ?? 45; // Default if null
     int totalSets = 0;
     double totalVolume = 0;
+    int totalReps = 0;
 
     for (var ex in widget.log.completedExercises) {
       final sets = ex['sets'] as List<dynamic>;
@@ -52,41 +53,63 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
           totalSets++;
           final weight = set['weight'] as num?;
           final reps = set['reps'] as num?;
-          if (weight != null && reps != null) {
-            totalVolume += (weight * reps);
+          if (reps != null) {
+              totalReps += reps.toInt();
+              if (weight != null) {
+                totalVolume += (weight * reps);
+              }
           }
         }
       }
     }
+    
+    // Estimate Stimulus Time (TUT) ~ 4s per rep
+    final int stimulusSeconds = totalReps * 4;
+    final String stimulusTime = stimulusSeconds > 60 
+        ? "${(stimulusSeconds / 60).toStringAsFixed(1)} min" 
+        : "$stimulusSeconds sec";
 
     return Scaffold(
-      backgroundColor: AppTheme.surfaceColor,
+      backgroundColor: Colors.white,
       body: Stack(
         children: [
           SafeArea(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  const SizedBox(height: 40),
-                  // Success Icon with simple scale animation (could be added)
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.green.shade100,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.check_rounded,
-                      size: 60,
-                      color: Colors.green.shade700,
-                    ),
+                  const SizedBox(height: 20),
+                  // Trophy Icon with Glow
+                  Stack(
+                    alignment: Alignment.center,
+                    children: [
+                         Container(
+                           width: 100,
+                           height: 100,
+                           decoration: BoxDecoration(
+                             shape: BoxShape.circle,
+                             color: Colors.amber.shade100.withOpacity(0.5),
+                             boxShadow: [
+                               BoxShadow(
+                                 color: Colors.amber.withOpacity(0.2),
+                                 blurRadius: 20,
+                                 spreadRadius: 5,
+                               )
+                             ]
+                           ),
+                         ),
+                        const Icon(
+                          Icons.emoji_events_rounded,
+                          size: 64,
+                          color: Colors.amber,
+                        ),
+                    ],
                   ),
+
                   const SizedBox(height: 24),
-                  const SizedBox(height: 16),
                   
-                  // Personalized Motivated Message
+                  // Personalized Header
                   Consumer(
                     builder: (context, ref, _) {
                       final user = ref.read(authRepositoryProvider).currentUser;
@@ -95,95 +118,130 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
                       return Column(
                         children: [
                           Text(
-                            "¡Brutal, $name!",
+                            "¡Misión Cumplida, $name!",
                             textAlign: TextAlign.center,
                             style: GoogleFonts.outfit(
-                              fontSize: 28,
+                              fontSize: 26,
                               fontWeight: FontWeight.w900,
                               color: AppTheme.primaryColor,
+                              height: 1.1,
                             ),
                           ),
                           const SizedBox(height: 8),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                            child: Text(
-                              "Has completado el volumen efectivo de hoy. Tu síntesis proteica está en marcha; ahora prioriza tu descanso y nutrición.",
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.outfit(
-                                fontSize: 15,
-                                color: Colors.grey.shade700,
-                                height: 1.4,
-                              ),
+                          Text(
+                            "Has vencido a tu versión de ayer.",
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.outfit(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.grey.shade600,
                             ),
                           ),
                         ],
                       );
                     }
                   ),
-                  const SizedBox(height: 16),
+                  
+                  const SizedBox(height: 32),
 
-                  Text(
-                    DateFormat('EEEE d, MMMM', 'es_ES').format(widget.log.date).toUpperCase(),
-                    style: GoogleFonts.outfit(
-                      fontSize: 14,
-                      color: Colors.grey,
-                      letterSpacing: 1.2,
+                  // Insight Card (Conditional)
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.blue.shade100),
+                    ),
+                    child: Column(
+                      children: [
+                         Row(
+                           children: [
+                             Icon(widget.log.isFasted ? Icons.bolt : Icons.restaurant, color: AppTheme.brandBlue),
+                             const SizedBox(width: 8),
+                             Text(
+                               widget.log.isFasted ? "ENTRENAMIENTO EN AYUNAS" : "ENTRENAMIENTO ALIMENTADO", 
+                               style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: AppTheme.brandBlue, fontSize: 12)
+                             ),
+                           ],
+                         ),
+                         const SizedBox(height: 12),
+                         Consumer(
+                           builder: (context, ref, _) {
+                              final user = ref.read(authRepositoryProvider).currentUser;
+                              final name = user?.displayName?.split(' ').first ?? 'Atleta';
+                              
+                              return Text(
+                                widget.log.isFasted
+                                    ? "$name, entrenar en ayunas hoy ha potenciado tu flexibilidad metabólica. Tu síntesis proteica se disparará cuando rompas el ayuno. ¡Mantente hidratado hasta tu próxima comida!"
+                                    : "$name, gran uso de tu energía hoy. Tus niveles de insulina actuales facilitarán el transporte de aminoácidos a tus músculos tras este esfuerzo. ¡Asegura tu comida post-entreno!",
+                                style: GoogleFonts.outfit(
+                                  fontSize: 15,
+                                  color: Colors.blueGrey.shade800,
+                                  height: 1.4,
+                                ),
+                              );
+                           }
+                         ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 48),
+
+                  const SizedBox(height: 32),
 
                   // Metrics Grid
                   Row(
                     children: [
                       Expanded(
-                        child: _MetricCard(
-                          label: "Tiempo",
-                          value: "$duration",
-                          unit: "min",
-                          icon: Icons.timer_outlined,
-                          color: Colors.blue,
-                        ),
+                         child: _MetricCard(
+                           label: "Volumen Total",
+                           value: totalVolume > 999 
+                               ? "${(totalVolume/1000).toStringAsFixed(1)}Ton" 
+                               : "${totalVolume.toInt()}kg",
+                           icon: Icons.monitor_weight_outlined,
+                           color: Colors.purple,
+                         ),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
-                        child: _MetricCard(
-                          label: "Volumen",
-                          value: totalVolume > 1000 
-                              ? "${(totalVolume/1000).toStringAsFixed(1)}k" 
-                              : "${totalVolume.toInt()}",
-                          unit: "kg",
-                          icon: Icons.fitness_center,
-                          color: Colors.purple,
-                        ),
+                         child: _MetricCard(
+                           label: "Tiempo Estímulo",
+                           value: stimulusTime,
+                           icon: Icons.timer,
+                           color: Colors.orange,
+                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _MetricCard(
-                          label: "Calorías",
-                          value: "${widget.log.caloriesBurned ?? 0}",
-                          unit: "kcal",
-                          icon: Icons.local_fire_department,
-                          color: Colors.orange,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: _MetricCard(
-                          label: "Series",
-                          value: "$totalSets",
-                          unit: "sets",
-                          icon: Icons.repeat,
-                          color: Colors.teal,
-                        ),
-                      ),
-                    ],
+                  
+                  const SizedBox(height: 32),
+                  
+                  // Next Steps (CTA)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration( 
+                       color: Colors.grey.shade50,
+                       borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                         Text("PRÓXIMA MISIÓN 👇", style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey.shade400, letterSpacing: 1.5)),
+                         const SizedBox(height: 8),
+                         Text(
+                           "Mañana toca Cardio.",
+                           style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
+                         ),
+                         const SizedBox(height: 4),
+                         Text(
+                           "Hacerlo dentro de tu ventana de ayuno será el toque final para limpiar tu sistema y acelerar la recuperación. ¿Aceptas el reto?",
+                           style: GoogleFonts.outfit(fontSize: 14, color: Colors.grey.shade600, height: 1.4),
+                         ),
+                      ],
+                    ),
                   ),
 
-                  const SizedBox(height: 60),
+                  const SizedBox(height: 40),
 
                   // Action Button
                   SizedBox(
@@ -191,16 +249,15 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
                     height: 56,
                     child: ElevatedButton(
                       onPressed: () {
-                        // Go back to dashboard or workout screen?
-                        // User story implies gratification then move on.
                         context.go('/dashboard');
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppTheme.primaryColor,
+                        shadowColor: AppTheme.primaryColor.withOpacity(0.4),
+                        elevation: 8,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
-                        elevation: 0,
                       ),
                       child: Text(
                         "Volver al Inicio",
@@ -212,6 +269,7 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
                       ),
                     ),
                   ),
+                  const SizedBox(height: 20),
                 ],
               ),
             ),
@@ -223,11 +281,11 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
             child: ConfettiWidget(
               confettiController: _confettiController,
               blastDirection: pi / 2, // down
-              maxBlastForce: 5,
-              minBlastForce: 2,
+              maxBlastForce: 20, // increased for more impact
+              minBlastForce: 8,
               emissionFrequency: 0.05,
               numberOfParticles: 20,
-              gravity: 0.1,
+              gravity: 0.2,
               colors: const [Colors.green, Colors.blue, Colors.pink, Colors.orange, Colors.purple],
             ),
           ),
@@ -240,14 +298,12 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
 class _MetricCard extends StatelessWidget {
   final String label;
   final String value;
-  final String unit;
   final IconData icon;
   final Color color;
 
   const _MetricCard({
     required this.label,
     required this.value,
-    required this.unit,
     required this.icon,
     required this.color,
   });
@@ -258,12 +314,14 @@ class _MetricCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.grey.shade100),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: color.withOpacity(0.05),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+            spreadRadius: 0,
           ),
         ],
       ),
@@ -271,27 +329,21 @@ class _MetricCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(14),
             ),
-            child: Icon(icon, color: color, size: 20),
+            child: Icon(icon, color: color, size: 22),
           ),
           const SizedBox(height: 16),
           Text(
             value,
             style: GoogleFonts.outfit(
-              fontSize: 24,
+              fontSize: 22,
               fontWeight: FontWeight.bold,
               color: Colors.black87,
-            ),
-          ),
-          Text(
-            unit,
-            style: GoogleFonts.outfit(
-              fontSize: 12,
-              color: Colors.grey,
+              height: 1.0,
             ),
           ),
           const SizedBox(height: 4),
@@ -299,7 +351,7 @@ class _MetricCard extends StatelessWidget {
             label,
             style: GoogleFonts.outfit(
               fontSize: 12,
-              color: Colors.grey[600],
+              color: Colors.grey.shade500,
               fontWeight: FontWeight.w500,
             ),
           ),

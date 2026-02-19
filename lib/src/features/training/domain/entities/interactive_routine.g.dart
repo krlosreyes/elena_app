@@ -36,6 +36,7 @@ _$InteractiveSetImpl _$$InteractiveSetImplFromJson(Map<String, dynamic> json) =>
       weight: (json['weight'] as num?)?.toDouble() ?? 5.0,
       reps: (json['reps'] as num?)?.toInt(),
       isDone: json['isDone'] as bool? ?? false,
+      isBonus: json['isBonus'] as bool? ?? false,
     );
 
 Map<String, dynamic> _$$InteractiveSetImplToJson(
@@ -46,4 +47,5 @@ Map<String, dynamic> _$$InteractiveSetImplToJson(
       'weight': instance.weight,
       'reps': instance.reps,
       'isDone': instance.isDone,
+      'isBonus': instance.isBonus,
     };

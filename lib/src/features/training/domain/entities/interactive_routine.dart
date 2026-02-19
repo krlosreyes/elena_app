@@ -28,6 +28,7 @@ class InteractiveSet with _$InteractiveSet {
     @Default(5.0) double weight,
     int? reps,
     @Default(false) bool isDone,
+    @Default(false) bool isBonus, // Track extra sets
   }) = _InteractiveSet;
 
   factory InteractiveSet.fromJson(Map<String, dynamic> json) =>

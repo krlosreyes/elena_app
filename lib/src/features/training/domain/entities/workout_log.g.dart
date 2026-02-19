@@ -17,6 +17,7 @@ _$WorkoutLogImpl _$$WorkoutLogImplFromJson(Map<String, dynamic> json) =>
           .toList(),
       durationMinutes: (json['durationMinutes'] as num?)?.toInt(),
       caloriesBurned: (json['caloriesBurned'] as num?)?.toInt(),
+      isFasted: json['isFasted'] as bool? ?? false,
     );
 
 Map<String, dynamic> _$$WorkoutLogImplToJson(_$WorkoutLogImpl instance) =>
@@ -28,4 +29,5 @@ Map<String, dynamic> _$$WorkoutLogImplToJson(_$WorkoutLogImpl instance) =>
       'completedExercises': instance.completedExercises,
       'durationMinutes': instance.durationMinutes,
       'caloriesBurned': instance.caloriesBurned,
+      'isFasted': instance.isFasted,
     };

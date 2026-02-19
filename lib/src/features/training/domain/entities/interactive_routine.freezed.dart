@@ -260,6 +260,7 @@ mixin _$InteractiveSet {
   double get weight => throw _privateConstructorUsedError;
   int? get reps => throw _privateConstructorUsedError;
   bool get isDone => throw _privateConstructorUsedError;
+  bool get isBonus => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -274,7 +275,12 @@ abstract class $InteractiveSetCopyWith<$Res> {
       _$InteractiveSetCopyWithImpl<$Res, InteractiveSet>;
   @useResult
   $Res call(
-      {int setIndex, String targetReps, double weight, int? reps, bool isDone});
+      {int setIndex,
+      String targetReps,
+      double weight,
+      int? reps,
+      bool isDone,
+      bool isBonus});
 }
 
 /// @nodoc
@@ -295,6 +301,7 @@ class _$InteractiveSetCopyWithImpl<$Res, $Val extends InteractiveSet>
     Object? weight = null,
     Object? reps = freezed,
     Object? isDone = null,
+    Object? isBonus = null,
   }) {
     return _then(_value.copyWith(
       setIndex: null == setIndex
@@ -317,6 +324,10 @@ class _$InteractiveSetCopyWithImpl<$Res, $Val extends InteractiveSet>
           ? _value.isDone
           : isDone // ignore: cast_nullable_to_non_nullable
               as bool,
+      isBonus: null == isBonus
+          ? _value.isBonus
+          : isBonus // ignore: cast_nullable_to_non_nullable
+              as bool,
     ) as $Val);
   }
 }
@@ -330,7 +341,12 @@ abstract class _$$InteractiveSetImplCopyWith<$Res>
   @override
   @useResult
   $Res call(
-      {int setIndex, String targetReps, double weight, int? reps, bool isDone});
+      {int setIndex,
+      String targetReps,
+      double weight,
+      int? reps,
+      bool isDone,
+      bool isBonus});
 }
 
 /// @nodoc
@@ -349,6 +365,7 @@ class __$$InteractiveSetImplCopyWithImpl<$Res>
     Object? weight = null,
     Object? reps = freezed,
     Object? isDone = null,
+    Object? isBonus = null,
   }) {
     return _then(_$InteractiveSetImpl(
       setIndex: null == setIndex
@@ -371,6 +388,10 @@ class __$$InteractiveSetImplCopyWithImpl<$Res>
           ? _value.isDone
           : isDone // ignore: cast_nullable_to_non_nullable
               as bool,
+      isBonus: null == isBonus
+          ? _value.isBonus
+          : isBonus // ignore: cast_nullable_to_non_nullable
+              as bool,
     ));
   }
 }
@@ -383,7 +404,8 @@ class _$InteractiveSetImpl implements _InteractiveSet {
       this.targetReps = '8-12',
       this.weight = 5.0,
       this.reps,
-      this.isDone = false});
+      this.isDone = false,
+      this.isBonus = false});
 
   factory _$InteractiveSetImpl.fromJson(Map<String, dynamic> json) =>
       _$$InteractiveSetImplFromJson(json);
@@ -401,10 +423,13 @@ class _$InteractiveSetImpl implements _InteractiveSet {
   @override
   @JsonKey()
   final bool isDone;
+  @override
+  @JsonKey()
+  final bool isBonus;
 
   @override
   String toString() {
-    return 'InteractiveSet(setIndex: $setIndex, targetReps: $targetReps, weight: $weight, reps: $reps, isDone: $isDone)';
+    return 'InteractiveSet(setIndex: $setIndex, targetReps: $targetReps, weight: $weight, reps: $reps, isDone: $isDone, isBonus: $isBonus)';
   }
 
   @override
@@ -418,13 +443,14 @@ class _$InteractiveSetImpl implements _InteractiveSet {
                 other.targetReps == targetReps) &&
             (identical(other.weight, weight) || other.weight == weight) &&
             (identical(other.reps, reps) || other.reps == reps) &&
-            (identical(other.isDone, isDone) || other.isDone == isDone));
+            (identical(other.isDone, isDone) || other.isDone == isDone) &&
+            (identical(other.isBonus, isBonus) || other.isBonus == isBonus));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, setIndex, targetReps, weight, reps, isDone);
+  int get hashCode => Object.hash(
+      runtimeType, setIndex, targetReps, weight, reps, isDone, isBonus);
 
   @JsonKey(ignore: true)
   @override
@@ -447,7 +473,8 @@ abstract class _InteractiveSet implements InteractiveSet {
       final String targetReps,
       final double weight,
       final int? reps,
-      final bool isDone}) = _$InteractiveSetImpl;
+      final bool isDone,
+      final bool isBonus}) = _$InteractiveSetImpl;
 
   factory _InteractiveSet.fromJson(Map<String, dynamic> json) =
       _$InteractiveSetImpl.fromJson;
@@ -462,6 +489,8 @@ abstract class _InteractiveSet implements InteractiveSet {
   int? get reps;
   @override
   bool get isDone;
+  @override
+  bool get isBonus;
   @override
   @JsonKey(ignore: true)
   _$$InteractiveSetImplCopyWith<_$InteractiveSetImpl> get copyWith =>

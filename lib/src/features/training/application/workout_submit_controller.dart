@@ -10,6 +10,7 @@ import 'calendar_state_provider.dart';
 import 'workout_log_provider.dart';
 
 import 'training_cycle_provider.dart';
+import '../../fasting/presentation/fasting_controller.dart'; // Added Import
 
 part 'workout_submit_controller.g.dart';
 
@@ -116,9 +117,13 @@ class WorkoutSubmitController extends _$WorkoutSubmitController {
         }
       }
 
-      // 3. Upsert Logic: Check if a log already exists for this date to prevent duplicates
+    // 3. Upsert Logic: Check if a log already exists for this date to prevent duplicates
       final existingLog = await ref.read(trainingRepositoryProvider).getWorkoutLogForDate(userId, logDate);
       final logId = existingLog?.id ?? const Uuid().v4();
+
+      // Check Fasting State
+      final fastingState = ref.read(fastingControllerProvider).valueOrNull;
+      final isFasted = fastingState?.isFasting ?? false;
 
       final newLog = WorkoutLog(
         id: logId,
@@ -128,6 +133,7 @@ class WorkoutSubmitController extends _$WorkoutSubmitController {
         completedExercises: completedExercises,
         durationMinutes: totalMinutes,
         caloriesBurned: finalCalories,
+        isFasted: isFasted,
       );
 
       log('[WorkoutSubmit] Saving log: id=${newLog.id}, exercises=${newLog.completedExercises.length}');

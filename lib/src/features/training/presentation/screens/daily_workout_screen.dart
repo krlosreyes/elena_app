@@ -3,10 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../config/theme/app_theme.dart';
+import '../../../authentication/data/auth_repository.dart'; // Added Import
 
 
 import '../../application/daily_orchestrator_provider.dart';
 import '../../application/workout_submit_controller.dart';
+import '../../application/training_engine_provider.dart'; 
+import '../../application/metabolic_checkin_provider.dart'; // Added Import
+import '../../application/training_cycle_provider.dart'; // Added Import
 import '../../domain/enums/workout_enums.dart';
 import '../../domain/entities/training_entities.dart';
 import '../../domain/entities/daily_workout.dart';
@@ -14,6 +18,7 @@ import '../../domain/entities/workout_log.dart';
 
 // Views
 import '../widgets/strength_workout_view.dart';
+import 'workout_summary_screen.dart'; // Added Import
 import '../widgets/cardio_workout_view.dart';
 import '../widgets/rest_day_view.dart';
 import '../widgets/weekly_calendar_strip.dart';
@@ -22,6 +27,7 @@ import '../widgets/metabolic_insight_banner.dart';
 import '../widgets/past_workout_summary_view.dart';
 import '../widgets/missed_workout_view.dart';
 import '../widgets/metabolic_checkin_widget.dart';
+import '../widgets/daily_diagnostic_card.dart'; // Added Import
 
 
 class DailyWorkoutScreen extends ConsumerWidget {
@@ -80,7 +86,7 @@ class DailyWorkoutScreen extends ConsumerWidget {
           
           Expanded(
             child: orchestratorAsync.when(
-              data: (state) => _buildBody(context, state),
+              data: (state) => _buildBody(context, ref, state),
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (err, stack) => Center(child: Text('Error: $err')),
             ),
@@ -94,10 +100,21 @@ class DailyWorkoutScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildBody(BuildContext context, DailyWorkoutState state) {
+  Widget _buildBody(BuildContext context, WidgetRef ref, DailyWorkoutState state) {
     // Default fallback
     if (state is DailyWorkoutLoading) { 
       return const Center(child: CircularProgressIndicator());
+    }
+
+    // BLOCKING NAVIGATION: If Completed, show Summary directly
+    if (state is DailyWorkoutPastCompleted) {
+       return PastWorkoutSummaryView(log: state.log); // Or reused WorkoutSummaryScreen if we want the animation again? 
+       // User said: "Si el usuario intenta entrar de nuevo al entrenamiento del mismo día, debe ver directamente este resumen de resultados"
+       // We can reuse WorkoutSummaryScreen if we convert it to not play confetti every time, OR just use it.
+       // Let's use WorkoutSummaryScreen but maybe wrapped to not auto-pop?
+       // Actually `WorkoutSummaryScreen` requires `log`.
+       // We should swap `PastWorkoutSummaryView` (which seems like a simple viewer) for our NEW `WorkoutSummaryScreen`.
+       return WorkoutSummaryScreen(log: state.log);
     }
 
     // Map State to Display Mode & Plan
@@ -106,11 +123,7 @@ class DailyWorkoutScreen extends ConsumerWidget {
     final bool isCompleted;
 
     switch (state) {
-      case DailyWorkoutPastCompleted(log: final log, plannedWorkout: final p):
-         mode = WorkoutDisplayMode.completed;
-         plan = p; 
-         isCompleted = true;
-         break;
+      // PastCompleted is handled above now.
       case DailyWorkoutPastMissed(plannedWorkout: final p):
          mode = WorkoutDisplayMode.retroactive;
          plan = p;
@@ -131,56 +144,150 @@ class DailyWorkoutScreen extends ConsumerWidget {
          plan = null;
          isCompleted = false;
     }
-
-    // Resolving Plan if null (e.g. PastCompleted didn't carry it in previous step)
-    // Actually, DailyWorkoutPastCompleted in orchestrator *should* be updated to carry plan.
-    // But let's see if we can get it from context.
-    // If plan is null here, we effectively show Rest Day.
-    
-    // Quick Fix: render Rest Day if plan is null, unless we can get it.
-    if (plan == null && mode != WorkoutDisplayMode.completed) return const RestDayView();
-    
-    // For completed, we might not have the plan if Orchestrator didn't pass it.
-    // But we need to show *something*.
-    // If it is completed, we prioritize the Log info, but existing views expect a Plan.
-    // Let's fallback to "Entrenamiento Completado" simple view if we can't show details.
-    // OR, we assume Orchestrator *will* pass plan in next iteration.
-    // Let's assume plan is available or return Rest View.
     
     final finalPlan = plan; 
     
     if (finalPlan == null) {
-       // If completed, stick to old summary view for now as fallback?
-       if (state is DailyWorkoutPastCompleted) return PastWorkoutSummaryView(log: state.log);
        return const RestDayView(); 
     }
 
-    return _buildWorkoutView(context, finalPlan, isCompleted, mode);
+    return _buildWorkoutView(context, ref, finalPlan, isCompleted, mode);
   }
 
-  Widget _buildWorkoutView(BuildContext context, DailyWorkout plan, bool isCompleted, WorkoutDisplayMode mode) {
+  Widget _buildWorkoutView(BuildContext context, WidgetRef ref, DailyWorkout plan, bool isCompleted, WorkoutDisplayMode mode) {
     switch (plan.type) {
       case WorkoutType.strength:
-        // Inject Check-in Widget for Strength workouts
+        // STATE GUARDIAN LOGIC (Revised: Single-Card Flow)
+        // 1. Loading Guard (Directly watch checkin provider to prevent flash)
+        final checkinAsync = ref.watch(metabolicCheckinProvider);
+        
+        if (checkinAsync.isLoading) {
+           return const Center(child: CircularProgressIndicator());
+        }
+
+        if (checkinAsync.hasError) {
+           return Center(child: Text("Error: ${checkinAsync.error}"));
+        }
+
+        // 2. STATUS ENGINE (Strict Logic from TrainingEngine)
+        final engineState = ref.watch(trainingEngineProvider);
+        final status = engineState.status;
+        final isCompleted = status == TrainingStatus.active; // Strict active check
+
+        final checkin = checkinAsync.valueOrNull;
+
+        // User Data for Personalization
+        final user = ref.watch(authRepositoryProvider).currentUser;
+        final displayName = user?.displayName?.split(' ').first ?? 'Atleta';
+        
+        // Layout Hierarchy:
+        // 1. Fixed Header (Always visible, adapts content)
+        // 2. Dynamic Space (Form vs Workout)
+
         return Column(
-          children: [
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.0),
-              child: MetabolicCheckinWidget(),
-            ),
-            Expanded(
-              child: StrengthWorkoutView(
-                recommendation: WorkoutRecommendation(
-                  type: 'Strength', 
-                  targetMuscle: null, 
-                  durationMinutes: plan.durationMinutes, 
-                  intensity: plan.details, 
-                  notes: plan.description
+        children: [
+            // 1. FIXED HEADER
+            Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            color: Colors.white,
+            child: Column(
+                children: [
+                // Top Row: Title & Badge
+                Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                        Expanded(
+                            child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                                Text(
+                                "ENTRENAMIENTO DE HOY",
+                                style: GoogleFonts.outfit(
+                                    fontSize: 10, 
+                                    fontWeight: FontWeight.bold, 
+                                    color: Colors.grey.shade500,
+                                    letterSpacing: 1.2,
+                                ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                isCompleted 
+                                    ? "¡Brutal, $displayName!"  // Complete
+                                    : "Diagnóstico Diario",     // Incomplete
+                                style: GoogleFonts.outfit(
+                                    fontSize: 22, 
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black87,
+                                    height: 1.1,
+                                ),
+                                ),
+                            ],
+                            ),
+                        ),
+                        // Badge
+                        Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                            color: AppTheme.brandBlue,
+                            borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                            plan.description, // e.g. "FullBody B"
+                            style: GoogleFonts.outfit(
+                                color: Colors.white, 
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                            ),
+                            ),
+                        ),
+                    ],
                 ),
-                mode: mode,
-              ),
+                
+                const SizedBox(height: 12),
+                
+                // Optional: Insight Banner (Only if Completed)
+                if (isCompleted && checkin?.insightMessage != null)
+                    SizedBox(
+                        width: double.infinity,
+                        child: MetabolicInsightBanner(
+                            message: checkin!.insightMessage!, 
+                            compact: false
+                        ),
+                    ),
+                ],
             ),
-          ],
+            ),
+
+            // 2. DYNAMIC SPACE
+            Expanded(
+            child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 500),
+                transitionBuilder: (Widget child, Animation<double> animation) {
+                return FadeTransition(opacity: animation, child: child);
+                },
+                child: isCompleted
+                    ? StrengthWorkoutView(
+                        key: const ValueKey('WorkoutView'),
+                        recommendation: WorkoutRecommendation(
+                            type: 'Strength', 
+                            targetMuscle: null, 
+                            durationMinutes: plan.durationMinutes, 
+                            intensity: plan.details, 
+                            notes: plan.description
+                        ),
+                        mode: mode,
+                        hideHeader: true, // Internal header hidden
+                        )
+                    : SingleChildScrollView(
+                        key: const ValueKey('DiagnosticForm'),
+                        child: DailyDiagnosticCard(
+                            userDisplayName: displayName,
+                        ),
+                        ),
+            ),
+            ),
+        ],
         );
 
       case WorkoutType.cardio:

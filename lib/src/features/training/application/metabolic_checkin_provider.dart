@@ -7,7 +7,7 @@ import '../../profile/data/user_repository.dart';
 
 part 'metabolic_checkin_provider.g.dart';
 
-@riverpod
+@Riverpod(keepAlive: true)
 class MetabolicCheckin extends _$MetabolicCheckin {
   @override
   Future<MetabolicState?> build() async {
@@ -63,6 +63,37 @@ class MetabolicCheckin extends _$MetabolicCheckin {
      final uid = ref.read(authRepositoryProvider).currentUser?.uid;
      if (uid != null) {
        await ref.read(trainingRepositoryProvider).saveCheckin(uid, finalState);
+       // Invalidate the future provider so the UI updates!
+       ref.invalidate(isDailyCheckInCompletedProvider); 
      }
+  }
+}
+
+@riverpod
+Future<bool> isDailyCheckInCompleted(IsDailyCheckInCompletedRef ref) async {
+  final uid = ref.watch(authRepositoryProvider).currentUser?.uid;
+  if (uid == null) return false;
+
+  final repo = ref.watch(trainingRepositoryProvider);
+  final today = DateTime.now();
+  
+  // Reuse the repository logic or cache? 
+  // It's safer to fetch fresh or rely on the other provider if it's consistent.
+  // But user asked for a "Guardia de Ruta" that works.
+   try {
+     final checkin = await repo.getDailyCheckin(uid, today);
+     
+     if (checkin == null) return false;
+     
+     // STRICT DATE VALIDATION (Application Layer)
+     final checkInDate = checkin.date; // already DateTime in entity
+     final isSameDay = checkInDate.year == today.year && 
+                       checkInDate.month == today.month && 
+                       checkInDate.day == today.day;
+                       
+     return isSameDay;
+  } catch(e) {
+     return false; // Fail safe to "Needs checkin" or "Error"?
+     // If error, maybe allow? No, better to force check-in to be safe.
   }
 }

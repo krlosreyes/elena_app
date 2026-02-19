@@ -38,6 +38,7 @@ class WorkoutLog with _$WorkoutLog {
     required List<Map<String, dynamic>> completedExercises, 
     int? durationMinutes,
     int? caloriesBurned,
+    @Default(false) bool isFasted, // Added tracking
   }) = _WorkoutLog;
 
   factory WorkoutLog.fromJson(Map<String, dynamic> json) => _$WorkoutLogFromJson(json);

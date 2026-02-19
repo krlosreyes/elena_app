@@ -102,119 +102,113 @@ class _ExerciseSetRowState extends ConsumerState<ExerciseSetRow> {
     // CRITICAL: Read isDone from widget prop (immutable from Riverpod), NOT a local variable.
     final isDone = widget.isDone;
     // Enable inputs only if not done (optional, but good UX)
-    // The user requested: "El botón de Check DEBE ser un Consumer y leer widget.set.isDone." which is satisfied here.
     
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
         children: [
-          // Set Index
+          // Set Index (Soft Circle)
           Container(
-            width: 24,
-            height: 24,
+            width: 32,
+            height: 32,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: Colors.grey.shade200,
+              color: Colors.teal.withOpacity(0.05), // Soft Teal bg
               shape: BoxShape.circle,
             ),
             child: Text(
               "${widget.setIndex}",
               style: GoogleFonts.outfit(
-                fontSize: 12,
+                fontSize: 14,
                 fontWeight: FontWeight.bold,
-                color: Colors.grey.shade700,
+                color: Colors.teal.shade700,
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 8),
 
           // Target Reps
           Expanded(
             child: Text(
-              "Obj: ${widget.targetReps}",
+              "${widget.targetReps}", // Just number, header says "OBJETIVO"
               style: GoogleFonts.outfit(
-                fontSize: 13,
-                color: Colors.grey.shade600,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey.shade700,
               ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
+          const SizedBox(width: 8),
 
-          // Weight Input
           // Weight Input (Conditional)
-          if (widget.requiresWeight)
-          SizedBox(
-            width: 60,
-            child: TextField(
-              controller: _weightController,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              textAlign: TextAlign.center,
-              enabled: !isDone,
-              style: GoogleFonts.outfit(fontSize: 14),
-              decoration: InputDecoration(
-                labelText: 'Peso',
-                suffixText: 'kg',
-                floatingLabelBehavior: FloatingLabelBehavior.always,
-                contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-                isDense: true,
-                filled: true,
-                fillColor: isDone ? Colors.grey.shade100 : Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: Colors.grey.shade300),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: Colors.grey.shade300),
-                ),
-              ),
-            ),
-          ),
-          if (widget.requiresWeight)
-          const SizedBox(width: 8),
-          const SizedBox(width: 8),
+          if (widget.requiresWeight) ...[
+             SizedBox(
+               width: 58, 
+               child: _buildEliteInput(_weightController, isDone, false),
+             ),
+             const SizedBox(width: 8),
+          ],
 
-          // Reps Input
+          // Reps Input (Expanded if no weight)
           SizedBox(
-            width: 60,
-            child: TextField(
-              controller: _repsController,
-              keyboardType: TextInputType.number,
-              textAlign: TextAlign.center,
-              enabled: !isDone,
-              style: GoogleFonts.outfit(fontSize: 14),
-              decoration: InputDecoration(
-                labelText: 'Reps',
-                floatingLabelBehavior: FloatingLabelBehavior.always,
-                contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-                isDense: true,
-                filled: true,
-                fillColor: isDone ? Colors.grey.shade100 : Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: Colors.grey.shade300),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: Colors.grey.shade300),
-                ),
-              ),
-            ),
+            width: widget.requiresWeight ? 58 : 88, 
+            child: _buildEliteInput(_repsController, isDone, true),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 12), // Space before Check
 
-          // Check Button — reads isDone from WIDGET PROP (Riverpod immutable state)
+          // Check Button (Larger touch target)
           InkWell(
             onTap: _handleToggle,
-            child: Icon(
-              isDone ? Icons.check_circle : Icons.circle_outlined,
-              color: isDone
-                  ? Colors.green
-                  : Colors.grey.shade300,
-              size: 28,
+            borderRadius: BorderRadius.circular(30),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                 shape: BoxShape.circle,
+                 color: isDone ? Colors.green : Colors.transparent,
+                 border: isDone ? null : Border.all(color: Colors.grey.shade300, width: 2),
+              ),
+              child: isDone 
+                 ? const Icon(Icons.check, color: Colors.white, size: 20)
+                 : null,
             ),
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildEliteInput(TextEditingController controller, bool isDone, bool isReps) {
+     return TextField(
+       controller: controller,
+       keyboardType: const TextInputType.numberWithOptions(decimal: true),
+       textAlign: TextAlign.center,
+       enabled: !isDone,
+       style: GoogleFonts.outfit(
+         fontSize: 14, 
+         fontWeight: FontWeight.bold,
+         color: Colors.black87
+       ),
+       decoration: InputDecoration(
+         contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4), 
+         isDense: true,
+         filled: true,
+         fillColor: isDone ? Colors.grey.shade50 : Colors.white,
+         border: OutlineInputBorder(
+             borderRadius: BorderRadius.circular(12), // Elite Radius
+             borderSide: const BorderSide(color: Color(0xFFE0E0E0)), // Specific color
+         ),
+         enabledBorder: OutlineInputBorder( // Explicit enabled border
+             borderRadius: BorderRadius.circular(12),
+             borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+         ),
+         focusedBorder: OutlineInputBorder( // Active state
+             borderRadius: BorderRadius.circular(12),
+             borderSide: const BorderSide(color: Colors.blue, width: 1.5),
+         ),
+       ),
+     );
   }
 }
