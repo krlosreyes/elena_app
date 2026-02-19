@@ -19,6 +19,8 @@ mixin _$TrainingSessionState {
   int get currentIndex => throw _privateConstructorUsedError;
   bool get isDeload => throw _privateConstructorUsedError;
   bool get isSessionActive => throw _privateConstructorUsedError;
+  bool get isExecuting =>
+      throw _privateConstructorUsedError; // Dynamic Feedback Visibility
   TrainingStatus get status => throw _privateConstructorUsedError;
 
   @JsonKey(ignore: true)
@@ -36,6 +38,7 @@ abstract class $TrainingSessionStateCopyWith<$Res> {
       {int currentIndex,
       bool isDeload,
       bool isSessionActive,
+      bool isExecuting,
       TrainingStatus status});
 }
 
@@ -56,6 +59,7 @@ class _$TrainingSessionStateCopyWithImpl<$Res,
     Object? currentIndex = null,
     Object? isDeload = null,
     Object? isSessionActive = null,
+    Object? isExecuting = null,
     Object? status = null,
   }) {
     return _then(_value.copyWith(
@@ -70,6 +74,10 @@ class _$TrainingSessionStateCopyWithImpl<$Res,
       isSessionActive: null == isSessionActive
           ? _value.isSessionActive
           : isSessionActive // ignore: cast_nullable_to_non_nullable
+              as bool,
+      isExecuting: null == isExecuting
+          ? _value.isExecuting
+          : isExecuting // ignore: cast_nullable_to_non_nullable
               as bool,
       status: null == status
           ? _value.status
@@ -91,6 +99,7 @@ abstract class _$$TrainingSessionStateImplCopyWith<$Res>
       {int currentIndex,
       bool isDeload,
       bool isSessionActive,
+      bool isExecuting,
       TrainingStatus status});
 }
 
@@ -108,6 +117,7 @@ class __$$TrainingSessionStateImplCopyWithImpl<$Res>
     Object? currentIndex = null,
     Object? isDeload = null,
     Object? isSessionActive = null,
+    Object? isExecuting = null,
     Object? status = null,
   }) {
     return _then(_$TrainingSessionStateImpl(
@@ -122,6 +132,10 @@ class __$$TrainingSessionStateImplCopyWithImpl<$Res>
       isSessionActive: null == isSessionActive
           ? _value.isSessionActive
           : isSessionActive // ignore: cast_nullable_to_non_nullable
+              as bool,
+      isExecuting: null == isExecuting
+          ? _value.isExecuting
+          : isExecuting // ignore: cast_nullable_to_non_nullable
               as bool,
       status: null == status
           ? _value.status
@@ -138,6 +152,7 @@ class _$TrainingSessionStateImpl implements _TrainingSessionState {
       {this.currentIndex = 0,
       this.isDeload = false,
       this.isSessionActive = false,
+      this.isExecuting = false,
       this.status = TrainingStatus.needsDiagnostic});
 
   @override
@@ -151,11 +166,15 @@ class _$TrainingSessionStateImpl implements _TrainingSessionState {
   final bool isSessionActive;
   @override
   @JsonKey()
+  final bool isExecuting;
+// Dynamic Feedback Visibility
+  @override
+  @JsonKey()
   final TrainingStatus status;
 
   @override
   String toString() {
-    return 'TrainingSessionState(currentIndex: $currentIndex, isDeload: $isDeload, isSessionActive: $isSessionActive, status: $status)';
+    return 'TrainingSessionState(currentIndex: $currentIndex, isDeload: $isDeload, isSessionActive: $isSessionActive, isExecuting: $isExecuting, status: $status)';
   }
 
   @override
@@ -169,12 +188,14 @@ class _$TrainingSessionStateImpl implements _TrainingSessionState {
                 other.isDeload == isDeload) &&
             (identical(other.isSessionActive, isSessionActive) ||
                 other.isSessionActive == isSessionActive) &&
+            (identical(other.isExecuting, isExecuting) ||
+                other.isExecuting == isExecuting) &&
             (identical(other.status, status) || other.status == status));
   }
 
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, currentIndex, isDeload, isSessionActive, status);
+  int get hashCode => Object.hash(runtimeType, currentIndex, isDeload,
+      isSessionActive, isExecuting, status);
 
   @JsonKey(ignore: true)
   @override
@@ -190,6 +211,7 @@ abstract class _TrainingSessionState implements TrainingSessionState {
       {final int currentIndex,
       final bool isDeload,
       final bool isSessionActive,
+      final bool isExecuting,
       final TrainingStatus status}) = _$TrainingSessionStateImpl;
 
   @override
@@ -199,6 +221,8 @@ abstract class _TrainingSessionState implements TrainingSessionState {
   @override
   bool get isSessionActive;
   @override
+  bool get isExecuting;
+  @override // Dynamic Feedback Visibility
   TrainingStatus get status;
   @override
   @JsonKey(ignore: true)

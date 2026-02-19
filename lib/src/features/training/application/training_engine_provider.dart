@@ -30,7 +30,8 @@ class TrainingSessionState with _$TrainingSessionState {
     @Default(0) int currentIndex,
     @Default(false) bool isDeload,
     @Default(false) bool isSessionActive,
-    @Default(TrainingStatus.needsDiagnostic) TrainingStatus status, // New Status Logic
+    @Default(false) bool isExecuting, // Dynamic Feedback Visibility
+    @Default(TrainingStatus.needsDiagnostic) TrainingStatus status, 
   }) = _TrainingSessionState;
 }
 
@@ -38,6 +39,7 @@ class TrainingSessionState with _$TrainingSessionState {
 class TrainingEngine extends _$TrainingEngine {
   @override
   TrainingSessionState build() {
+    // ... existing build logic ...
     // 1. LISTEN: React to Check-in Updates (Submission)
     ref.listen(metabolicCheckinProvider, (prev, next) {
         next.whenData((checkin) {
@@ -83,22 +85,26 @@ class TrainingEngine extends _$TrainingEngine {
   }
 
   void initialize({required bool isDeload, int startIndex = 0}) {
-    // Preserve status!
     state = state.copyWith(
       isDeload: isDeload,
       currentIndex: startIndex,
       isSessionActive: true,
-      // If initialized, it implies active, but let's trust the build logic/watch.
+      isExecuting: false, // Reset on init
     );
   }
 
+  /// Dynamic Visibility: Hide feedback during sets
+  void setExecuting(bool isExecuting) {
+    state = state.copyWith(isExecuting: isExecuting);
+  }
+
   void nextPage() {
-    state = state.copyWith(currentIndex: state.currentIndex + 1);
+    state = state.copyWith(currentIndex: state.currentIndex + 1, isExecuting: false); // Reset visibility on new page
   }
   
   void previousPage() {
     if (state.currentIndex > 0) {
-      state = state.copyWith(currentIndex: state.currentIndex - 1);
+      state = state.copyWith(currentIndex: state.currentIndex - 1, isExecuting: false);
     }
   }
 
@@ -112,6 +118,6 @@ class TrainingEngine extends _$TrainingEngine {
   }
   
   void endSession() {
-      state = state.copyWith(isSessionActive: false, currentIndex: 0);
+      state = state.copyWith(isSessionActive: false, currentIndex: 0, isExecuting: false);
   }
 }
