@@ -146,17 +146,16 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
             ),
 
             // 4. REST TIMER OVERLAY (Floating Z-Index)
-            // Positioned above the footer or sticking to bottom?
-            // User requested "Rest Timer Banner".
+            // Positioned above the footer reliably
             Positioned(
-              bottom: 100, // Above Footer
+              bottom: 110, // Just above the sticky footer
               left: 20,
               right: 20,
               child: Consumer(
                  builder: (context, ref, _) {
-                    final seconds = ref.watch(restTimerProvider);
-                    // Only show if timer > 0
-                    if (seconds > 0) {
+                    // PERFORMANCE FIX: Watch ONLY the isResting boolean, not the timer integer tick
+                    final isResting = ref.watch(trainingEngineProvider.select((state) => state.isResting));
+                    if (isResting) {
                        return const RestTimerBanner();
                     }
                     return const SizedBox.shrink();
