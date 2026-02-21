@@ -214,4 +214,21 @@ class DailyRoutine extends _$DailyRoutine {
       state = AsyncData(updatedRoutine);
     });
   }
+
+  void setEquipmentPreference(bool hasDumbbells, double weightParam) {
+    state.whenData((routine) {
+      final updatedRoutine = routine.map((ex) {
+         // Force disables weight requirement if "Sin Mancuernas" is selected
+         final reqWeight = hasDumbbells ? ex.requiresWeight : false;
+         // Give default weight to sets if dumbbells selected
+         return ex.copyWith(
+           requiresWeight: reqWeight,
+           sets: ex.sets.map((s) => s.copyWith(
+              weight: hasDumbbells ? weightParam : 0.0,
+           )).toList()
+         );
+      }).toList();
+      state = AsyncData(updatedRoutine);
+    });
+  }
 }
