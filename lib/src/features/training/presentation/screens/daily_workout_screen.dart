@@ -171,114 +171,95 @@ class DailyWorkoutScreen extends ConsumerWidget {
         final displayName = user?.displayName?.split(' ').first ?? 'Atleta';
         
         // Layout Hierarchy:
-        // 1. Fixed Header (Always visible, adapts content)
-        // 2. Dynamic Space (Form vs Workout)
-
-        return Column(
-        children: [
-            // 1. FIXED HEADER
-            Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            color: Colors.white,
-            child: Column(
-                children: [
-                // Top Row: Title & Badge
-                Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+        if (isCompleted) {
+            return StrengthWorkoutView(
+                key: const ValueKey('WorkoutView'),
+                recommendation: WorkoutRecommendation(
+                    type: 'Strength', 
+                    targetMuscle: null, 
+                    durationMinutes: plan.durationMinutes, 
+                    intensity: plan.details, 
+                    notes: plan.description
+                ),
+                mode: mode,
+                hideHeader: false, // Internal header can be shown or not depending on its own logic (which we fixed already)
+            );
+        } else {
+            return Column(
+            children: [
+                // 1. FIXED HEADER
+                Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                color: Colors.white,
+                child: Column(
                     children: [
-                        Expanded(
-                            child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                                Text(
-                                "ENTRENAMIENTO DE HOY",
-                                style: GoogleFonts.outfit(
-                                    fontSize: 10, 
-                                    fontWeight: FontWeight.bold, 
-                                    color: Colors.grey.shade500,
-                                    letterSpacing: 1.2,
+                    // Top Row: Title & Badge
+                    Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                            Expanded(
+                                child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                    Text(
+                                    "ENTRENAMIENTO DE HOY",
+                                    style: GoogleFonts.outfit(
+                                        fontSize: 10, 
+                                        fontWeight: FontWeight.bold, 
+                                        color: Colors.grey.shade500,
+                                        letterSpacing: 1.2,
+                                    ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                    "Diagnóstico Diario",     // Incomplete
+                                    style: GoogleFonts.outfit(
+                                        fontSize: 22, 
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.black87,
+                                        height: 1.1,
+                                    ),
+                                    ),
+                                ],
                                 ),
+                            ),
+                            // Badge
+                            Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                decoration: BoxDecoration(
+                                color: AppTheme.brandBlue,
+                                borderRadius: BorderRadius.circular(8),
                                 ),
-                                const SizedBox(height: 4),
-                                Text(
-                                isCompleted 
-                                    ? "¡Brutal, $displayName!"  // Complete
-                                    : "Diagnóstico Diario",     // Incomplete
+                                child: Text(
+                                plan.description, // e.g. "FullBody B"
                                 style: GoogleFonts.outfit(
-                                    fontSize: 22, 
+                                    color: Colors.white, 
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.black87,
-                                    height: 1.1,
+                                    fontSize: 12,
                                 ),
                                 ),
-                            ],
                             ),
-                        ),
-                        // Badge
-                        Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                            decoration: BoxDecoration(
-                            color: AppTheme.brandBlue,
-                            borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                            plan.description, // e.g. "FullBody B"
-                            style: GoogleFonts.outfit(
-                                color: Colors.white, 
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
-                            ),
-                            ),
-                        ),
+                        ],
+                    ),
+                    
+                    const SizedBox(height: 12),
                     ],
                 ),
-                
-                const SizedBox(height: 12),
-                
-                // Optional: Insight Banner (Only if Completed)
-                if (isCompleted && checkin?.insightMessage != null)
-                    SizedBox(
-                        width: double.infinity,
-                        child: MetabolicInsightBanner(
-                            message: checkin!.insightMessage!, 
-                            compact: false
-                        ),
-                    ),
-                ],
-            ),
-            ),
+                ),
 
-            // 2. DYNAMIC SPACE
-            Expanded(
-            child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 500),
-                transitionBuilder: (Widget child, Animation<double> animation) {
-                return FadeTransition(opacity: animation, child: child);
-                },
-                child: isCompleted
-                    ? StrengthWorkoutView(
-                        key: const ValueKey('WorkoutView'),
-                        recommendation: WorkoutRecommendation(
-                            type: 'Strength', 
-                            targetMuscle: null, 
-                            durationMinutes: plan.durationMinutes, 
-                            intensity: plan.details, 
-                            notes: plan.description
-                        ),
-                        mode: mode,
-                        hideHeader: true, // Internal header hidden
-                        )
-                    : SingleChildScrollView(
-                        key: const ValueKey('DiagnosticForm'),
-                        child: DailyDiagnosticCard(
-                            userDisplayName: displayName,
-                        ),
-                        ),
-            ),
-            ),
-        ],
-        );
+                // 2. DYNAMIC SPACE (Diagnostic Card)
+                Expanded(
+                child: SingleChildScrollView(
+                    key: const ValueKey('DiagnosticForm'),
+                    child: DailyDiagnosticCard(
+                        userDisplayName: displayName,
+                    ),
+                ),
+                ),
+            ],
+            );
+        }
 
       case WorkoutType.cardio:
         return CardioWorkoutView(plan: plan, isCompleted: isCompleted, mode: mode);
