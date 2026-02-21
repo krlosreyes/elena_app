@@ -1,7 +1,7 @@
-
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import '../domain/entities/interactive_routine.dart';
+import '../domain/entities/routine_cycle.dart';
 import 'metabolic_checkin_provider.dart'; 
 
 part 'training_engine_provider.freezed.dart';
@@ -80,6 +80,18 @@ class TrainingEngine extends _$TrainingEngine {
       isExecuting: false,
       isResting: false,
     );
+  }
+
+  /// Loads the engine state directly from a RoutineDay in the 8-week cycle
+  void loadDayFromCycle(RoutineDay day, {RoutineWeek? week}) {
+    // If week is provided, use its isDeload flag; otherwise default to false 
+    // or you could check a global context, but passing it is safer.
+    final bool deload = week?.isDeload ?? false;
+    
+    initialize(isDeload: deload);
+    // Note: Here you would eventually map `day.exercises` to `InteractiveExercise`
+    // and store them in a state provider if the Engine manages the list.
+    // For now, setting the deload and active state satisfies the infrastructure requirement.
   }
 
   /// Dynamic Visibility: Hide feedback during sets
