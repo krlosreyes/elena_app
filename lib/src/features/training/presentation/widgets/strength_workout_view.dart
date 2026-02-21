@@ -14,7 +14,6 @@ import '../../domain/entities/interactive_routine.dart';
 import '../widgets/exercise_set_row.dart';
 import '../widgets/rir_logging_slider.dart';
 import '../widgets/training_feedback_card.dart';
-import '../widgets/rest_timer_banner.dart';
 import '../../application/rest_timer_provider.dart';
 import '../../domain/enums/workout_enums.dart';
 
@@ -221,40 +220,23 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
         final isLastExercise = currentExerciseIndex == dailyExercises.length - 1;
         final isCurrentComplete = ref.read(trainingEngineProvider.notifier).isExerciseComplete(currentExercise);
 
-        return Stack( 
+        return Column(
           children: [
-            Column(
-              children: [
-                if (!widget.hideHeader)
-                TrainingFeedbackCard(recommendation: widget.recommendation, isDeload: cycleState.isDeloadActive),
-                
-                Expanded(
-                  child: PageView.builder(
-                    controller: _pageController,
-                    physics: const NeverScrollableScrollPhysics(), 
-                    itemCount: dailyExercises.length,
-                    itemBuilder: (context, index) {
-                       return _buildExercisePage(context, dailyExercises[index], cycleState.isDeloadActive);
-                    },
-                  ),
-                ),
-                
-                _buildStickyFooter(context, isCurrentComplete, isLastExercise, isSubmitting, dailyExercises.length, currentExerciseIndex + 1, sessionState.isResting),
-              ],
-            ),
-
-            Positioned(
-              bottom: 110, 
-              left: 20,
-              right: 20,
-              child: Consumer(
-                 builder: (context, ref, _) {
-                    final isResting = ref.watch(trainingEngineProvider.select((state) => state.isResting));
-                    if (isResting) return const RestTimerBanner();
-                    return const SizedBox.shrink();
-                 }
+            if (!widget.hideHeader)
+            TrainingFeedbackCard(recommendation: widget.recommendation, isDeload: cycleState.isDeloadActive),
+            
+            Expanded(
+              child: PageView.builder(
+                controller: _pageController,
+                physics: const NeverScrollableScrollPhysics(), 
+                itemCount: dailyExercises.length,
+                itemBuilder: (context, index) {
+                   return _buildExercisePage(context, dailyExercises[index], cycleState.isDeloadActive);
+                },
               ),
             ),
+            
+            _buildStickyFooter(context, isCurrentComplete, isLastExercise, isSubmitting, dailyExercises.length, currentExerciseIndex + 1, sessionState.isResting),
           ],
         );
       },
