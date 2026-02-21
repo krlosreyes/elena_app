@@ -113,7 +113,7 @@ class _ExerciseSetRowState extends ConsumerState<ExerciseSetRow> {
             height: 32,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: Colors.teal.withOpacity(0.05), // Soft Teal bg
+              color: Colors.teal.withValues(alpha: 0.05), // Soft Teal bg
               shape: BoxShape.circle,
             ),
             child: Text(
@@ -130,7 +130,7 @@ class _ExerciseSetRowState extends ConsumerState<ExerciseSetRow> {
           // Target Reps
           Expanded(
             child: Text(
-              "${widget.targetReps}", // Just number, header says "OBJETIVO"
+              widget.targetReps, // Just number, header says "OBJETIVO"
               style: GoogleFonts.outfit(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,

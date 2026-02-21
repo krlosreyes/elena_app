@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../domain/user_model.dart'; // Import UserModel
+// Import UserModel
 
 class RecompositionProgressCard extends StatelessWidget {
   final double currentWeight;
@@ -47,7 +47,7 @@ class RecompositionProgressCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),

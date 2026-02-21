@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'workout_log.freezed.dart';
@@ -27,7 +28,7 @@ class TimestampConverter implements JsonConverter<DateTime, dynamic> {
 }
 
 @freezed
-class WorkoutLog with _$WorkoutLog {
+sealed class WorkoutLog with _$WorkoutLog {
   const WorkoutLog._();
 
   const factory WorkoutLog({

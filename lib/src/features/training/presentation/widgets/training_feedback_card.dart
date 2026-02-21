@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../config/theme/app_theme.dart';
 import '../../application/metabolic_checkin_provider.dart';
-import '../../application/training_cycle_provider.dart';
 import '../../application/training_engine_provider.dart';
 import '../../../authentication/data/auth_repository.dart';
 import 'metabolic_insight_banner.dart';
@@ -102,9 +101,9 @@ class TrainingFeedbackCard extends ConsumerWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: badgeColor.withOpacity(0.1),
+                      color: badgeColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: badgeColor.withOpacity(0.2)),
+                      border: Border.all(color: badgeColor.withValues(alpha: 0.2)),
                     ),
                     child: Text(
                       "$badgeEmoji ${isDeload ? 'Descarga' : recommendation.notes}", 
@@ -124,14 +123,14 @@ class TrainingFeedbackCard extends ConsumerWidget {
           // Insight Content
           Consumer(
             builder: (context, ref, _) {
-               final checkin = ref.watch(metabolicCheckinProvider).valueOrNull;
+               final checkin = ref.watch(metabolicCheckinProvider).asData?.value;
                
                if (isDeload) {
                   return Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.8),
+                      color: Colors.white.withValues(alpha: 0.8),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: Colors.teal.shade100),
                     ),

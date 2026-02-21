@@ -2,10 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import '../../authentication/data/auth_repository.dart';
-import '../../coaching/domain/weekly_plan.dart';
 import '../../progress/domain/measurement_log.dart';
 import '../../progress/data/progress_service.dart';
 import '../../profile/presentation/widgets/biometric_cards.dart';
@@ -47,7 +44,7 @@ class ProfileScreen extends ConsumerWidget {
                     children: [
                       CircleAvatar(
                         radius: 50,
-                        backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
+                        backgroundColor: Theme.of(context).primaryColor.withValues(alpha: 0.1),
                         child: Text(
                           user?.displayName?.substring(0, 1).toUpperCase() ?? 'U',
                           style: GoogleFonts.outfit(
@@ -122,7 +119,7 @@ class ProfileScreen extends ConsumerWidget {
                     await ref.read(authRepositoryProvider).signOut();
                     // El router se encargará del resto
                   },
-                  tileColor: Colors.red.withOpacity(0.05), // Fondo suave rojo
+                  tileColor: Colors.red.withValues(alpha: 0.05), // Fondo suave rojo
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
     
@@ -429,7 +426,7 @@ class _BodyMeasurementsSectionState extends State<_BodyMeasurementsSection> {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -536,10 +533,10 @@ class _ActivePlanCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: statusColor.withOpacity(0.3), width: 1),
+            border: Border.all(color: statusColor.withValues(alpha: 0.3), width: 1),
             boxShadow: [
               BoxShadow(
-                color: statusColor.withOpacity(0.05),
+                color: statusColor.withValues(alpha: 0.05),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -552,7 +549,7 @@ class _ActivePlanCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.1),
+                  color: statusColor.withValues(alpha: 0.1),
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(14),
                     topRight: Radius.circular(14),

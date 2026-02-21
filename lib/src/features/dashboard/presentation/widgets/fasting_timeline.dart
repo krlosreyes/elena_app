@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
 
 class FastingStage {
   final int hour;
@@ -129,7 +127,7 @@ class FastingTimeline extends StatelessWidget {
                                 boxShadow: [
                                   if (isReached)
                                     BoxShadow(
-                                      color: Theme.of(context).primaryColor.withOpacity(0.4),
+                                      color: Theme.of(context).primaryColor.withValues(alpha: 0.4),
                                       blurRadius: 6,
                                       offset: const Offset(0, 2),
                                     ),
@@ -154,7 +152,7 @@ class FastingTimeline extends StatelessWidget {
                         ),
                       ),
                     );
-                  }).toList(),
+                  }),
                 ],
               );
             },

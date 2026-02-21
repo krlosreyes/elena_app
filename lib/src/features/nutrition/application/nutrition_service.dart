@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../authentication/data/auth_repository.dart';
@@ -10,19 +11,19 @@ part 'nutrition_service.g.dart';
 
 // 1. Repository Provider
 @Riverpod(keepAlive: true)
-NutritionRepository nutritionRepository(NutritionRepositoryRef ref) {
+NutritionRepository nutritionRepository(Ref ref) {
   return NutritionRepositoryImpl(FirebaseFirestore.instance);
 }
 
 // 2. Engine Provider
 @Riverpod(keepAlive: true)
-NutritionEngine nutritionEngine(NutritionEngineRef ref) {
+NutritionEngine nutritionEngine(Ref ref) {
   return NutritionEngine();
 }
 
 // 3. Current Plan Stream Provider
 @riverpod
-Stream<NutritionPlan?> nutritionPlan(NutritionPlanRef ref) {
+Stream<NutritionPlan?> nutritionPlan(Ref ref) {
   final user = ref.watch(authRepositoryProvider).currentUser;
   if (user == null) return Stream.value(null);
 

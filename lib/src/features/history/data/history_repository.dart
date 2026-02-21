@@ -1,7 +1,7 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import '../../../authentication/data/auth_repository.dart';
+import '../../authentication/data/auth_repository.dart';
 import '../../training/domain/entities/training_entities.dart';
 import '../domain/workout_stats.dart';
 

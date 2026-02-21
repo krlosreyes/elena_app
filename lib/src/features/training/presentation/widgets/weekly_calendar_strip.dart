@@ -89,7 +89,7 @@ class WeeklyCalendarStrip extends ConsumerWidget {
                   style: GoogleFonts.outfit(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
-                    color: textColor.withOpacity(0.8),
+                    color: textColor.withValues(alpha: 0.8),
                   ),
                 ),
                 const SizedBox(height: 4),

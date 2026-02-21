@@ -4,8 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import '../../../../config/theme/app_theme.dart';
-import '../../../authentication/data/auth_repository.dart';
+import '../../../config/theme/app_theme.dart';
+import '../../authentication/data/auth_repository.dart';
 import '../data/history_repository.dart';
 import '../domain/workout_stats.dart';
 
@@ -121,9 +121,9 @@ class HistoricalSummaryScreen extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: AppTheme.brandBlue.withOpacity(0.05),
+              color: AppTheme.brandBlue.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppTheme.brandBlue.withOpacity(0.2)),
+              border: Border.all(color: AppTheme.brandBlue.withValues(alpha: 0.2)),
             ),
             child: Column(
               children: [

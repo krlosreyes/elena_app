@@ -46,9 +46,9 @@ class _MeasurementBottomSheetState extends ConsumerState<MeasurementBottomSheet>
   @override
   void initState() {
     super.initState();
-    _weightController = TextEditingController(text: widget.existingLog?.weight.toString() ?? widget.initialWeight?.toString() ?? widget.user.currentWeightKg?.toString() ?? '');
-    _waistController = TextEditingController(text: widget.existingLog?.waistCircumference?.toString() ?? widget.initialWaist?.toString() ?? widget.user.waistCircumferenceCm?.toString() ?? '');
-    _neckController = TextEditingController(text: widget.existingLog?.neckCircumference?.toString() ?? widget.initialNeck?.toString() ?? widget.user.neckCircumferenceCm?.toString() ?? '');
+    _weightController = TextEditingController(text: widget.existingLog?.weight.toString() ?? widget.initialWeight?.toString() ?? widget.user.currentWeightKg.toString() ?? '');
+    _waistController = TextEditingController(text: widget.existingLog?.waistCircumference?.toString() ?? widget.initialWaist?.toString() ?? widget.user.waistCircumferenceCm.toString() ?? '');
+    _neckController = TextEditingController(text: widget.existingLog?.neckCircumference?.toString() ?? widget.initialNeck?.toString() ?? widget.user.neckCircumferenceCm.toString() ?? '');
     _hipController = TextEditingController(text: widget.existingLog?.hipCircumference?.toString() ?? widget.initialHip?.toString() ?? widget.user.hipCircumferenceCm?.toString() ?? '');
     _selectedDate = widget.existingLog?.date ?? widget.initialDate ?? DateTime.now();
   }

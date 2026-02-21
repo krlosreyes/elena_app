@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../profile/domain/user_model.dart';
 import '../onboarding_controller.dart';
 
 class StepCircadian extends ConsumerWidget {

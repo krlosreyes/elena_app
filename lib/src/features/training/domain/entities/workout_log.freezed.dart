@@ -191,7 +191,7 @@ class __$$WorkoutLogImplCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$WorkoutLogImpl extends _WorkoutLog {
+class _$WorkoutLogImpl extends _WorkoutLog with DiagnosticableTreeMixin {
   const _$WorkoutLogImpl(
       {required this.id,
       required this.templateId,
@@ -234,8 +234,23 @@ class _$WorkoutLogImpl extends _WorkoutLog {
   final bool isFasted;
 
   @override
-  String toString() {
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
     return 'WorkoutLog(id: $id, templateId: $templateId, date: $date, sessionRirScore: $sessionRirScore, completedExercises: $completedExercises, durationMinutes: $durationMinutes, caloriesBurned: $caloriesBurned, isFasted: $isFasted)';
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(DiagnosticsProperty('type', 'WorkoutLog'))
+      ..add(DiagnosticsProperty('id', id))
+      ..add(DiagnosticsProperty('templateId', templateId))
+      ..add(DiagnosticsProperty('date', date))
+      ..add(DiagnosticsProperty('sessionRirScore', sessionRirScore))
+      ..add(DiagnosticsProperty('completedExercises', completedExercises))
+      ..add(DiagnosticsProperty('durationMinutes', durationMinutes))
+      ..add(DiagnosticsProperty('caloriesBurned', caloriesBurned))
+      ..add(DiagnosticsProperty('isFasted', isFasted));
   }
 
   @override

@@ -64,9 +64,9 @@ class _TrainingStatsSectionState extends ConsumerState<TrainingStatsSection> {
                   style: ButtonStyle(
                     visualDensity: VisualDensity.compact,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    backgroundColor: MaterialStateProperty.resolveWith<Color>((Set<MaterialState> states) {
-                       if (states.contains(MaterialState.selected)) {
-                         return AppTheme.primaryColor.withOpacity(0.1); 
+                    backgroundColor: WidgetStateProperty.resolveWith<Color>((Set<WidgetState> states) {
+                       if (states.contains(WidgetState.selected)) {
+                         return AppTheme.primaryColor.withValues(alpha: 0.1); 
                        }
                        return Colors.white;
                     }),

@@ -6,7 +6,7 @@ part of 'workout_log_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$workoutLogHash() => r'52dd8f87fc361cc968c96f849fed31d862df2a48';
+String _$workoutLogHash() => r'15b6af314d6a1055ee9b521af1f9c04d92d19b82';
 
 /// Copied from Dart SDK
 class _SystemHash {

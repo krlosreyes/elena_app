@@ -3,8 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../config/theme/app_theme.dart';
 import '../../application/metabolic_checkin_provider.dart';
-import '../../domain/entities/metabolic_state.dart';
-import '../../domain/entities/training_entities.dart'; // For WorkoutRecommendation if needed for header?
+// For WorkoutRecommendation if needed for header?
 // Actually the header needs WorkoutRecommendation for the "FullBody" badge.
 // We can pass it in or fetch it.
 // The badge "notes" comes from the DailyWorkout plan.
@@ -36,10 +35,10 @@ class _DailyDiagnosticCardState extends ConsumerState<DailyDiagnosticCard> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppTheme.brandBlue.withOpacity(0.1), width: 1),
+        border: Border.all(color: AppTheme.brandBlue.withValues(alpha: 0.1), width: 1),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.brandBlue.withOpacity(0.05),
+            color: AppTheme.brandBlue.withValues(alpha: 0.05),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -54,7 +53,7 @@ class _DailyDiagnosticCardState extends ConsumerState<DailyDiagnosticCard> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppTheme.brandTeal.withOpacity(0.1),
+                  color: AppTheme.brandTeal.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(Icons.monitor_heart_outlined, color: AppTheme.brandTeal),

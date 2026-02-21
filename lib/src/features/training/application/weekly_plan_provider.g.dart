@@ -6,7 +6,7 @@ part of 'weekly_plan_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$weeklyPlanHash() => r'775772e66f31c92ac343b6afa44bc3ad86f4b06f';
+String _$weeklyPlanHash() => r'd833c26827b515b916c4acca11967af77456d329';
 
 /// See also [weeklyPlan].
 @ProviderFor(weeklyPlan)
@@ -20,7 +20,7 @@ final weeklyPlanProvider = AutoDisposeProvider<List<DailyWorkout>>.internal(
 );
 
 typedef WeeklyPlanRef = AutoDisposeProviderRef<List<DailyWorkout>>;
-String _$todayWorkoutHash() => r'3cedc766dd3c6c868a65131aff0069280cab9dc2';
+String _$todayWorkoutHash() => r'a6810aca7a4303bc5c2777f7c154f8800b97ae40';
 
 /// See also [todayWorkout].
 @ProviderFor(todayWorkout)

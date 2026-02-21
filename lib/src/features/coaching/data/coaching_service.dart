@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../authentication/data/auth_repository.dart';
 import '../../progress/domain/measurement_log.dart';
 import '../../profile/domain/user_model.dart';
 import '../domain/weekly_plan.dart';

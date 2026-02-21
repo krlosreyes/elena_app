@@ -7,7 +7,7 @@ part of 'training_repository.dart';
 // **************************************************************************
 
 String _$trainingRepositoryHash() =>
-    r'f98a24f265b798fa0c47c5930cbd2312acb14a1b';
+    r'35570f789b7c19cf302d2af4b364d5a86e12d7d1';
 
 /// See also [trainingRepository].
 @ProviderFor(trainingRepository)

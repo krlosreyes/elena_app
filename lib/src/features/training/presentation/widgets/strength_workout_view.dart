@@ -4,10 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../config/theme/app_theme.dart';
 import '../../../authentication/data/auth_repository.dart'; // Corrected Import
 import '../../application/daily_routine_provider.dart';
-import '../../application/metabolic_checkin_provider.dart';
 import '../../application/training_cycle_provider.dart';
 import '../../application/training_engine_provider.dart';
-import 'metabolic_insight_banner.dart';
 import 'package:elena_app/src/features/training/application/daily_orchestrator_provider.dart' as orchestrator;
 import 'package:go_router/go_router.dart';
 import '../../application/workout_submit_controller.dart';
@@ -15,7 +13,9 @@ import '../../domain/entities/training_entities.dart';
 import '../../domain/entities/interactive_routine.dart';
 import '../widgets/exercise_set_row.dart';
 import '../widgets/rir_logging_slider.dart';
-import '../widgets/training_feedback_card.dart'; // Added Import
+import '../widgets/training_feedback_card.dart';
+import '../widgets/rest_timer_banner.dart';
+import '../../application/rest_timer_provider.dart';
 
 import '../../domain/enums/workout_enums.dart';
 
@@ -69,7 +69,7 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
   @override
   Widget build(BuildContext context) {
      final dailyExercisesAsync = ref.watch(dailyRoutineProvider);
-     final sessionState = ref.watch(trainingEngineProvider); // Watch Engine
+     final sessionState = ref.watch(trainingEngineProvider); 
      final cycleState = ref.watch(trainingCycleProviderProvider);
      
      final submitState = ref.watch(workoutSubmitControllerProvider);
@@ -104,37 +104,64 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
         // Check if current exercise is complete
         final isCurrentComplete = ref.read(trainingEngineProvider.notifier).isExerciseComplete(currentExercise);
 
-        return Column(
+        // STACK for Overlay (Rest Timer)
+        return Stack( 
           children: [
-            // 1. DYNAMIC HEADER (Feedback Card)
-            if (!widget.hideHeader)
-            TrainingFeedbackCard(
-               recommendation: widget.recommendation, 
-               isDeload: cycleState.isDeloadActive
+            // SCROLLABLE CONTENT (Header + Body)
+            // Use Column with Expanded to ensure PageView takes available space
+            Column(
+              children: [
+                // 1. DYNAMIC HEADER (Feedback Card) - Pushes content down
+                if (!widget.hideHeader)
+                TrainingFeedbackCard(
+                   recommendation: widget.recommendation, 
+                   isDeload: cycleState.isDeloadActive
+                ),
+                
+                // 2. PAGE VIEW (Body) - Takes remaining space
+                Expanded(
+                  child: PageView.builder(
+                    controller: _pageController,
+                    physics: const NeverScrollableScrollPhysics(), // Engine controlled
+                    itemCount: dailyExercises.length,
+                    itemBuilder: (context, index) {
+                       final exercise = dailyExercises[index];
+                       return _buildExercisePage(context, exercise, cycleState.isDeloadActive);
+                    },
+                  ),
+                ),
+                
+                // 3. STICKY FOOTER (Action Button) - Always visible at bottom of Column
+                _buildStickyFooter(
+                   context, 
+                   isCurrentComplete, 
+                   isLastExercise, 
+                   isSubmitting,
+                   dailyExercises.length, // Total exercises
+                   currentExerciseIndex + 1, // Current 1-based
+                   currentExercise, // Pass to check sets
+                   sessionState.isResting // New Prop
+                ),
+              ],
             ),
-            
-            // 2. PAGE VIEW (Expanded)
-            Expanded(
-              child: PageView.builder(
-                controller: _pageController,
-                physics: const NeverScrollableScrollPhysics(), // Engine controlled
-                itemCount: dailyExercises.length,
-                itemBuilder: (context, index) {
-                   final exercise = dailyExercises[index];
-                   return _buildExercisePage(context, exercise, cycleState.isDeloadActive);
-                },
+
+            // 4. REST TIMER OVERLAY (Floating Z-Index)
+            // Positioned above the footer or sticking to bottom?
+            // User requested "Rest Timer Banner".
+            Positioned(
+              bottom: 100, // Above Footer
+              left: 20,
+              right: 20,
+              child: Consumer(
+                 builder: (context, ref, _) {
+                    final seconds = ref.watch(restTimerProvider);
+                    // Only show if timer > 0
+                    if (seconds > 0) {
+                       return const RestTimerBanner();
+                    }
+                    return const SizedBox.shrink();
+                 }
               ),
-            ),
-            
-            // 3. STICKY FOOTER (Action Button)
-            _buildStickyFooter(
-               context, 
-               isCurrentComplete, 
-               isLastExercise, 
-               isSubmitting,
-               dailyExercises.length, // Total exercises
-               currentExerciseIndex + 1, // Current 1-based
-               currentExercise // Pass to check sets
             ),
           ],
         );
@@ -143,8 +170,8 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
       error: (err, stack) => Center(child: Text('Error: $err')),
     );
   }
-  
 
+  // ... (Removed old _buildFixedHeader) ...
 
   Widget _buildExercisePage(BuildContext context, InteractiveExercise exercise, bool isDeload) {
     return SingleChildScrollView( 
@@ -152,34 +179,37 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Technique Carousel (Fixed Height 180px)
-          Container(
-            height: 180, 
-            margin: const EdgeInsets.only(bottom: 24),
-            decoration: BoxDecoration(
-               color: Colors.grey.shade200,
-               borderRadius: BorderRadius.circular(20),
-            ),
-            child: Stack(
-               alignment: Alignment.bottomCenter,
-               children: [
-                 PageView(
-                    children: [
-                       Center(child: Icon(Icons.fitness_center, size: 64, color: Colors.grey.shade400)), 
-                       Center(child: Icon(Icons.accessibility_new, size: 64, color: Colors.grey.shade400)),
-                    ],
-                 ),
-                 Padding(
-                   padding: const EdgeInsets.all(8.0),
-                   child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+          // Technique Carousel 
+          // 1. LAYOUT FIX: AspectRatio
+          AspectRatio( 
+            aspectRatio: 16/9,
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 24),
+              decoration: BoxDecoration(
+                 color: Colors.grey.shade200,
+                 borderRadius: BorderRadius.circular(20),
+              ),
+              child: Stack(
+                 alignment: Alignment.bottomCenter,
+                 children: [
+                   PageView(
                       children: [
-                         Container(width: 8, height: 8, margin: const EdgeInsets.all(4), decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle)),
-                         Container(width: 8, height: 8, margin: const EdgeInsets.all(4), decoration: const BoxDecoration(color: Colors.black26, shape: BoxShape.circle)),
+                         Center(child: Icon(Icons.fitness_center, size: 64, color: Colors.grey.shade400)), 
+                         Center(child: Icon(Icons.accessibility_new, size: 64, color: Colors.grey.shade400)),
                       ],
                    ),
-                 )
-               ],
+                   Padding(
+                     padding: const EdgeInsets.all(8.0),
+                     child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                           Container(width: 8, height: 8, margin: const EdgeInsets.all(4), decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle)),
+                           Container(width: 8, height: 8, margin: const EdgeInsets.all(4), decoration: const BoxDecoration(color: Colors.black26, shape: BoxShape.circle)),
+                        ],
+                     ),
+                   )
+                 ],
+              ),
             ),
           ),
 
@@ -191,7 +221,7 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
               borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
+                  color: Colors.black.withValues(alpha: 0.04),
                   blurRadius: 20,
                   offset: const Offset(0, 8),
                 ),
@@ -211,7 +241,7 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
                          borderRadius: BorderRadius.circular(12),
                        ),
                        child: Text(
-                         exercise.id.substring(0, 1), 
+                         exercise.id.substring(0, 1).toUpperCase(), 
                          style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16),
                        ),
                      ),
@@ -229,7 +259,7 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
                              ),
                            ),
                            Text(
-                             "Objetivo: ${exercise.sets.first.targetReps} Reps${exercise.requiresWeight ? '' : ''}", 
+                             "Objetivo: ${exercise.sets.first.targetReps} Reps", 
                              style: GoogleFonts.outfit(
                                fontSize: 12,
                                color: Colors.grey.shade500,
@@ -242,36 +272,16 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
                  ),
                  const SizedBox(height: 16),
 
-                 // Sets Header Row (Static Titles)
-                 Padding(
-                   padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 8.0),
-                   child: Row(
-                      children: [
-                        SizedBox(
-                          width: 24, 
-                          child: Text("Set", textAlign: TextAlign.center, style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey.shade400))
-                        ),
-                        const SizedBox(width: 8),
-                        const Spacer(), // Labels aligned with content in Row?
-                        // Actually, aligning with ExerciseSetRow is tricky without fixed widths.
-                        // ExerciseSetRow: 24(Index) + 8 + Expanded(Target) + 8 + Weight?(50) + 6 + Reps(50/80) + 8 + Check(28)
-                        
-                        // Let's rely on standard "Series" title?
-                        // Or try to align:
-                      ],
-                   ),
-                 ),
-                 // BETTER IMPLEMENTATION:
-                 // ExerciseSetRow structure is flexible.
-                 // To make a header row align, we should perhaps construct it similarly.
-                 // But simply putting labels above the columns works if widths are fixed.
-                 // My ExerciseSetRow uses constrained widths for inputs.
+                 // Sets Header Row (Dynamic Inputs)
                  Row(
                     children: [
                        SizedBox(width: 32, child: Text("Serie", style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey.shade400))),
                        Expanded(child: Text("Objetivo", style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey.shade400))),
+                       
+                       // 2. DYNAMIC INPUTS
                        if (exercise.requiresWeight)
                        SizedBox(width: 58, child: Text("Peso", textAlign: TextAlign.center, style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey.shade400))),
+                       
                        SizedBox(width: exercise.requiresWeight ? 58 : 88, child: Text("Reps", textAlign: TextAlign.center, style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey.shade400))),
                        const SizedBox(width: 28), // Checkbox space
                     ],
@@ -284,21 +294,7 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
                      final index = entry.key;
                      final set = entry.value;
                      // Logic: "Last Scheduled Set". 
-                     // If we have 3 sets initially, set 3 (index 2) is the trigger.
-                     // If we add a bonus set (index 3), it shouldn't trigger again?
-                     // "Al marcar el ÚLTIMO checkbox programado (ej. la serie 3)"
-                     // How do we know it's scheduled?
-                     // IsBonus flag! 
-                     // We check if this is the last *non-bonus* set?
-                     // Or just check if it's the last set AND !isBonus AND sets.length < limit.
-                     
-                     // Identifying "Last Scheduled": It's the last set where isBonus is false?
-                     // Or simply: If this is the last set in the list, and it's NOT a bonus set?
-                     // Actually, if we add set 4, set 3 is no longer last.
-                     // But we want to trigger when set 3 is done.
-                     // So we should trigger when *any* non-bonus set that IS the last non-bonus set is done?
-                     // No, simpler: When checking the last item in the list, if it's not a bonus set (or even if it is? User said "Serie extra" implies one).
-                     // Let's say we trigger on the last set of the list, provided we haven't maxed out.
+                     // We consider the last item in the list as the potential trigger for Extra Set.
                      
                      final isLastInList = index == exercise.sets.length - 1;
 
@@ -310,36 +306,38 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
                        initialWeight: set.weight,
                        initialReps: set.reps,
                        requiresWeight: exercise.requiresWeight, 
-                       // Highlight Bonus Sets?
-                       // We can add a property or style wrapper.
-                       // For now, standard row.
                        
                        onToggle: _isReadOnly ? null : (weight, reps) async {
-                          // Bonus Trigger Logic
-                          if (isLastInList && !set.isDone) {
-                             // Marking last set as done.
-                             final user = ref.read(authRepositoryProvider).currentUser;
-                             final name = user?.displayName?.split(' ').first ?? 'Atleta';
+
+                          // 3. REST TIMER LOGIC & STATE UPDATE
+                          if (!set.isDone) { // User just marked as Done
                              
-                             // Limit bonus sets (Max 1 bonus set for now to avoid loop?)
-                             // Prompt: "Al marcar el ÚLTIMO checkbox programado"
-                             // If we add a set, the new set becomes last.
-                             // We don't want to trigger again on the bonus set?
-                             // "Dopamina Metabólica" implies one extra push.
-                             // Let's limit to if (!set.isBonus).
+                             // Start Rest Timer (30s) if not last set
+                             if (!isLastInList) {
+                                // Update State
+                                ref.read(trainingEngineProvider.notifier).setResting(true);
+                                ref.read(restTimerProvider.notifier).startTimer(30);
+                             }
+                          }
+
+                          // 4. EXTRA SET CHALLENGE
+                          if (isLastInList && !set.isDone) {
+                             // User completing the last available set
                              if (!set.isBonus) {
+                                ref.read(restTimerProvider.notifier).stopTimer(); // Ensure timer is off
+                                ref.read(trainingEngineProvider.notifier).setResting(false); // Ensure not "resting" state during dialog?
+                                
                                 await showDialog(context: context, builder: (ctx) {
                                    return AlertDialog(
                                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                                      title: Text("¡Bien hecho, $name!", style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-                                      content: Text("¡Completaste tu objetivo! Tus niveles de energía hoy son buenos. ¿Quieres intentar una serie extra?", style: GoogleFonts.outfit()),
+                                      title: Text("¡Bien hecho!", style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+                                      content: Text("Vas muy bien. ¿Crees que puedes hacer una serie más?", style: GoogleFonts.outfit()),
                                       actions: [
                                          TextButton(
                                            onPressed: () {
                                              Navigator.pop(ctx);
-                                             // No action, user can proceed to next exercise via footer button.
                                            }, 
-                                           child: Text("NO, SIGUIENTE", style: GoogleFonts.outfit(color: Colors.grey, fontWeight: FontWeight.bold))
+                                           child: Text("NO", style: GoogleFonts.outfit(color: Colors.grey, fontWeight: FontWeight.bold))
                                          ),
                                          FilledButton(
                                             onPressed: () {
@@ -347,7 +345,7 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
                                                ref.read(dailyRoutineProvider.notifier).addBonusSet(exercise.id);
                                             },
                                             style: FilledButton.styleFrom(backgroundColor: AppTheme.brandBlue),
-                                            child: Text("SÍ, ¡VAMOS!", style: GoogleFonts.outfit(fontWeight: FontWeight.bold))
+                                            child: Text("SÍ", style: GoogleFonts.outfit(fontWeight: FontWeight.bold))
                                          ),
                                       ],
                                    );
@@ -374,7 +372,8 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
     bool isSubmitting,
     int totalExercises,
     int currentExerciseNum,
-    InteractiveExercise currentExercise
+    InteractiveExercise currentExercise,
+    bool isResting, // New Prop
   ) {
      final user = ref.read(authRepositoryProvider).currentUser;
      final name = user?.displayName?.split(' ').first ?? 'Atleta';
@@ -385,7 +384,7 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -5),
           ),
@@ -452,7 +451,7 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
                    : Text(
                        isLast 
                            ? "¡Lo lograste, $name! Ver resultados 🏆"
-                           : (isComplete || _isReadOnly ? "Siguiente Ejercicio ->" : "Completa las series"),
+                           : (isResting ? "Descansando... (Omitir)" : (isComplete || _isReadOnly ? "Siguiente Ejercicio ->" : "Completa las series")),
                        style: GoogleFonts.outfit(
                          fontSize: 16,
                          fontWeight: FontWeight.bold, 
@@ -461,7 +460,7 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
                      ),
              ),
            ),
-           if (!isComplete && !_isReadOnly)
+           if (!isComplete && !_isReadOnly && !isResting)
              Padding(
                padding: const EdgeInsets.only(top: 8.0),
                child: Text(

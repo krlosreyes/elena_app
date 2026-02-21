@@ -20,12 +20,13 @@ class _MetabolicCheckinWidgetState extends ConsumerState<MetabolicCheckinWidget>
   @override
   Widget build(BuildContext context) {
     // Hide if already checked in
-    final checkinState = ref.watch(metabolicCheckinProvider).valueOrNull;
+    final checkinState = ref.watch(metabolicCheckinProvider).asData?.value;
     if (checkinState != null) return const SizedBox.shrink();
     
     // Get User Name
     final userAsync = ref.watch(currentUserProvider);
-    final userName = userAsync.valueOrNull?.name ?? "Atleta";
+    // Safe access to user name
+    final userName = userAsync.asData?.value?.name ?? "Atleta";
 
     return Card(
       margin: const EdgeInsets.all(16),

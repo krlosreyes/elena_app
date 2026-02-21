@@ -84,7 +84,7 @@ class StepClinical extends ConsumerWidget {
               style: TextStyle(fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           DropdownButtonFormField<ActivityLevel>(
-            value: user.activityLevel,
+            initialValue: user.activityLevel,
             items: ActivityLevel.values.map((level) {
               return DropdownMenuItem(
                 value: level,

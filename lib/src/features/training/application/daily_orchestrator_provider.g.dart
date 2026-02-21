@@ -6,7 +6,7 @@ part of 'daily_orchestrator_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$dailyOrchestratorHash() => r'1ab9a3f356694322aa98ddf6fe5899d2e7b54e89';
+String _$dailyOrchestratorHash() => r'37214e662c96e0abfbbdb51485ed7352527c6795';
 
 /// See also [dailyOrchestrator].
 @ProviderFor(dailyOrchestrator)

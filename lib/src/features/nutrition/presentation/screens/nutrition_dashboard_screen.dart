@@ -22,7 +22,7 @@ class NutritionDashboardScreen extends ConsumerWidget {
     final userAsync = ref.watch(currentUserProvider);
     
     // 3. Watch Fasting State (for Contextual Message)
-    final fastingState = ref.watch(fastingControllerProvider).valueOrNull;
+    final fastingState = ref.watch(fastingControllerProvider).value;
 
     return Scaffold(
       appBar: AppBar(
@@ -38,7 +38,7 @@ class NutritionDashboardScreen extends ConsumerWidget {
           }
           
           // Determine Name
-          final String userName = userAsync.valueOrNull?.name ?? "Atleta";
+          final String userName = userAsync.value?.name ?? "Atleta";
           
           // Determine Contextual Message
           String message = "Este es tu plan metabólico de precisión.";

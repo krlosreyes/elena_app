@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../common_widgets/scaffold_with_navbar.dart';
@@ -8,7 +8,6 @@ import '../features/dashboard/presentation/dashboard_screen.dart';
 import '../features/onboarding/presentation/onboarding_screen.dart';
 import '../features/profile/presentation/profile_screen.dart';
 import '../features/progress/presentation/progress_screen.dart';
-import '../features/profile/presentation/profile_screen.dart';
 import '../features/training/presentation/screens/daily_workout_screen.dart';
 import '../features/training/presentation/screens/workout_summary_screen.dart';
 import '../features/nutrition/presentation/screens/nutrition_dashboard_screen.dart';
@@ -26,20 +25,21 @@ part 'app_router.g.dart';
 // Key for the shell navigator - REMOVED to avoid collision
 
 @riverpod
-GoRouter goRouter(GoRouterRef ref) {
+GoRouter goRouter(Ref ref) {
   final authState = ref.watch(authStateChangesProvider);
   
   // Si hay usuario autenticado, escuchamos su perfil de Firestore en tiempo real
   // Usamos .select para evitar reconstruir el Router con cada cambio del usuario (ej. peso),
   // lo cual regenera el Router y causa conflicto de GlobalKey. Solo nos importa onboarding y loading.
-  final userRedirectionState = authState.valueOrNull != null
-      ? ref.watch(userStreamProvider(authState.value!.uid).select((value) {
-          return (
-            isLoading: value.isLoading,
-            onboardingCompleted: value.valueOrNull?.onboardingCompleted ?? false,
-          );
-        }))
-      : null;
+  // Simplification to fix build error: watch the full provider
+  final userAsync = authState.asData?.value != null
+      ? ref.watch(userStreamProvider(authState.asData!.value!.uid))
+      : const AsyncValue<UserModel?>.loading();
+
+  final userRedirectionState = (
+    isLoading: userAsync.isLoading,
+    onboardingCompleted: userAsync.asData?.value?.onboardingCompleted ?? false,
+  );
 
   return GoRouter(
     initialLocation: '/login',
@@ -47,7 +47,7 @@ GoRouter goRouter(GoRouterRef ref) {
     redirect: (context, state) {
       if (authState.isLoading || authState.hasError) return null;
 
-      final isLoggedIn = authState.valueOrNull != null;
+      final isLoggedIn = authState.asData?.value != null;
       final isLoggingIn = state.uri.path == '/login';
       final isRegistering = state.uri.path == '/register';
 
@@ -59,7 +59,7 @@ GoRouter goRouter(GoRouterRef ref) {
 
       // 2. Logueado -> Verificar Onboarding
       // Si el stream de usuario está cargando inicial, esperamos
-      if (userRedirectionState == null || userRedirectionState.isLoading) return null;
+      if (userRedirectionState.isLoading) return null;
 
       final onboardingCompleted = userRedirectionState.onboardingCompleted;
 

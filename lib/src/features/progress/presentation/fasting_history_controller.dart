@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:state_notifier/state_notifier.dart';
 import 'package:intl/intl.dart';
 import '../../fasting/domain/fasting_session.dart';
 import '../../fasting/data/fasting_repository.dart';
@@ -49,7 +50,7 @@ class FastingHistoryController extends StateNotifier<FastingHistoryState> {
        state = state.copyWith(allSessions: [], isLoading: false);
        return;
     }
-    _repository.getHistoryStream(_uid!).listen((sessions) {
+    _repository.getHistoryStream(_uid).listen((sessions) {
       if (mounted) {
         state = state.copyWith(allSessions: sessions, isLoading: false);
       }

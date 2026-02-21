@@ -2,7 +2,6 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart'; 
 import 'package:confetti/confetti.dart';
 import '../../../../config/theme/app_theme.dart';
 import '../../domain/entities/workout_log.dart';
@@ -41,8 +40,8 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
   @override
   Widget build(BuildContext context) {
     // Calculate stats
-    final duration = widget.log.durationMinutes ?? 45; // Default if null
-    int totalSets = 0;
+    // final duration = widget.log.durationMinutes ?? 45; // unused
+    // int totalSets = 0; // unused
     double totalVolume = 0;
     int totalReps = 0;
 
@@ -50,7 +49,7 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
       final sets = ex['sets'] as List<dynamic>;
       for (var set in sets) {
         if (set['isDone'] == true) {
-          totalSets++;
+          // totalSets++;
           final weight = set['weight'] as num?;
           final reps = set['reps'] as num?;
           if (reps != null) {
@@ -89,10 +88,10 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
                            height: 100,
                            decoration: BoxDecoration(
                              shape: BoxShape.circle,
-                             color: Colors.amber.shade100.withOpacity(0.5),
+                             color: Colors.amber.shade100.withValues(alpha: 0.5),
                              boxShadow: [
                                BoxShadow(
-                                 color: Colors.amber.withOpacity(0.2),
+                                 color: Colors.amber.withValues(alpha: 0.2),
                                  blurRadius: 20,
                                  spreadRadius: 5,
                                )
@@ -253,7 +252,7 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppTheme.primaryColor,
-                        shadowColor: AppTheme.primaryColor.withOpacity(0.4),
+                        shadowColor: AppTheme.primaryColor.withValues(alpha: 0.4),
                         elevation: 8,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
@@ -318,7 +317,7 @@ class _MetricCard extends StatelessWidget {
         border: Border.all(color: Colors.grey.shade100),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.05),
+            color: color.withValues(alpha: 0.05),
             blurRadius: 15,
             offset: const Offset(0, 8),
             spreadRadius: 0,
@@ -331,7 +330,7 @@ class _MetricCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(14),
             ),
             child: Icon(icon, color: color, size: 22),

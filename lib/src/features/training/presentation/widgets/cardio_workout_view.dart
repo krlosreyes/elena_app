@@ -1,9 +1,7 @@
 import 'dart:async';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
 import '../../../../config/theme/app_theme.dart';
 import '../../domain/entities/daily_workout.dart';
 import 'package:elena_app/src/features/training/application/daily_orchestrator_provider.dart' as orchestrator;

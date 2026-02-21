@@ -94,8 +94,9 @@ class PerformanceRepository {
              final data = doc.data() as Map<String, dynamic>;
              final rawStart = data['startTime'];
              DateTime start;
-             if (rawStart is Timestamp) start = rawStart.toDate();
-             else if (rawStart is String) start = DateTime.parse(rawStart);
+             if (rawStart is Timestamp) {
+               start = rawStart.toDate();
+             } else if (rawStart is String) start = DateTime.parse(rawStart);
              else return false;
 
              return start.year == day.year && start.month == day.month && start.day == day.day;

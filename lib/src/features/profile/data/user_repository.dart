@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../authentication/data/auth_repository.dart';
 import '../../plan/domain/health_plan.dart';
@@ -102,22 +103,22 @@ class UserRepository {
 }
 
 @Riverpod(keepAlive: true)
-UserRepository userRepository(UserRepositoryRef ref) {
+UserRepository userRepository(Ref ref) {
   return UserRepository(FirebaseFirestore.instance);
 }
 
 @riverpod
-Future<UserModel?> user(UserRef ref, String uid) {
+Future<UserModel?> user(Ref ref, String uid) {
   return ref.watch(userRepositoryProvider).getUser(uid);
 }
 
 @riverpod
-Stream<UserModel?> userStream(UserStreamRef ref, String uid) {
+Stream<UserModel?> userStream(Ref ref, String uid) {
   return ref.watch(userRepositoryProvider).watchUser(uid);
 }
 
 @riverpod
-Stream<UserModel?> currentUser(CurrentUserRef ref) {
+Stream<UserModel?> currentUser(Ref ref) {
   final authState = ref.watch(authStateChangesProvider);
   return authState.when(
     data: (user) {

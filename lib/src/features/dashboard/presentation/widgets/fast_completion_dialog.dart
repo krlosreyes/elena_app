@@ -106,9 +106,9 @@ class _FastCompletionDialogState extends State<FastCompletionDialog> {
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
               decoration: BoxDecoration(
-                border: Border.all(color: Theme.of(context).primaryColor.withOpacity(0.5)),
+                border: Border.all(color: Theme.of(context).primaryColor.withValues(alpha: 0.5)),
                 borderRadius: BorderRadius.circular(8),
-                color: Theme.of(context).primaryColor.withOpacity(0.05),
+                color: Theme.of(context).primaryColor.withValues(alpha: 0.05),
               ),
               child: _buildTimeRow(
                 'Fin:', 
@@ -143,7 +143,7 @@ class _FastCompletionDialogState extends State<FastCompletionDialog> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: Colors.orange.withOpacity(0.1),
+                color: Colors.orange.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Row(

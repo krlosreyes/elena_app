@@ -1,4 +1,3 @@
-import 'dart:math';
 
 import 'package:elena_app/src/features/profile/data/user_repository.dart';
 import 'package:elena_app/src/features/profile/domain/user_model.dart';
@@ -9,10 +8,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../progress/data/progress_service.dart';
 import '../../progress/domain/measurement_log.dart';
-import '../../coaching/data/coaching_service.dart';
 import '../../authentication/data/auth_repository.dart';
 import '../../glucose/presentation/widgets/glucose_chart_widget.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'widgets/fasting_chart_card.dart';
 import 'widgets/measurement_bottom_sheet.dart';
 import 'package:elena_app/src/features/progress/presentation/widgets/weight_input_sheet.dart';
@@ -168,7 +165,11 @@ class _BioMetricsGrid extends StatelessWidget {
   final MeasurementLog? previous;
   final double userHeightCm;
 
-  const _BioMetricsGrid({this.latest, this.previous, required this.userHeightCm});
+  const _BioMetricsGrid({
+    required this.userHeightCm,
+    this.latest,
+    this.previous,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -262,7 +263,7 @@ class _MetricCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -403,8 +404,8 @@ class _WeightChart extends StatelessWidget {
               show: true,
               gradient: LinearGradient(
                 colors: [
-                  Theme.of(context).primaryColor.withOpacity(0.3),
-                  Theme.of(context).primaryColor.withOpacity(0.0),
+                  Theme.of(context).primaryColor.withValues(alpha: 0.3),
+                  Theme.of(context).primaryColor.withValues(alpha: 0.0),
                 ],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
@@ -507,7 +508,7 @@ class _HistoryTable extends ConsumerWidget {
                     // Abrir el modal en modo edición
                     final authUser = ref.read(authRepositoryProvider).currentUser;
                     if (authUser != null) {
-                      final user = ref.read(userStreamProvider(authUser.uid)).valueOrNull;
+                      final user = ref.read(userStreamProvider(authUser.uid)).asData?.value;
                       if (user != null) {
                         showModalBottomSheet(
                           context: context,

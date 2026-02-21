@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../domain/entities/metabolic_state.dart';
 import '../../authentication/data/auth_repository.dart';
@@ -10,9 +11,14 @@ part 'metabolic_checkin_provider.g.dart';
 @Riverpod(keepAlive: true)
 class MetabolicCheckin extends _$MetabolicCheckin {
   @override
-  Future<MetabolicState?> build() async {
-    // 1. Try to load from repository (if check-in already done today)
-    final uid = ref.watch(authRepositoryProvider).currentUser?.uid;
+  FutureOr<MetabolicState?> build() async {
+    // 1. Check if we already have one in state (cache)
+    //    We don't want to re-fetch if we just saved it.
+    if (state.asData?.value != null) return state.asData!.value;
+
+    // 2. Fetch from Repository
+    final user = ref.read(currentUserProvider).asData?.value;
+    final uid = user?.uid; // Define uid from user
     if (uid == null) return null;
 
     final today = DateTime.now();
@@ -34,7 +40,7 @@ class MetabolicCheckin extends _$MetabolicCheckin {
     required double energyLevel,
   }) async {
     // IMMUTABILITY CHECK: If already checked in for today, do NOT overwrite.
-    if (state.valueOrNull != null) return;
+    if (state.value != null) return;
 
     final stateData = MetabolicState(
       date: DateTime.now(),
@@ -46,7 +52,7 @@ class MetabolicCheckin extends _$MetabolicCheckin {
     );
     
     // Generate Insight using Domain Logic
-    final user = ref.read(currentUserProvider).valueOrNull;
+    final user = ref.read(currentUserProvider).value;
     final userName = user?.name ?? "Atleta";
     
     // Logic import needed or duplicate? Let's assume we can import logic.
@@ -70,7 +76,7 @@ class MetabolicCheckin extends _$MetabolicCheckin {
 }
 
 @riverpod
-Future<bool> isDailyCheckInCompleted(IsDailyCheckInCompletedRef ref) async {
+Future<bool> isDailyCheckInCompleted(Ref ref) async {
   final uid = ref.watch(authRepositoryProvider).currentUser?.uid;
   if (uid == null) return false;
 
@@ -80,7 +86,7 @@ Future<bool> isDailyCheckInCompleted(IsDailyCheckInCompletedRef ref) async {
   // Reuse the repository logic or cache? 
   // It's safer to fetch fresh or rely on the other provider if it's consistent.
   // But user asked for a "Guardia de Ruta" that works.
-   try {
+  try {
      final checkin = await repo.getDailyCheckin(uid, today);
      
      if (checkin == null) return false;

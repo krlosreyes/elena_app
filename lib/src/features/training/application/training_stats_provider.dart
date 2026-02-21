@@ -1,4 +1,4 @@
-
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../authentication/data/auth_repository.dart';
 import '../domain/entities/workout_log.dart';
@@ -47,7 +47,7 @@ class TrainingStatsFilter extends _$TrainingStatsFilter {
 }
 
 @riverpod
-Future<List<WorkoutLog>> trainingStats(TrainingStatsRef ref) async {
+Future<List<WorkoutLog>> trainingStats(Ref ref) async {
   final range = ref.watch(trainingStatsFilterProvider);
   final repository = ref.watch(trainingRepositoryProvider);
   final user = ref.read(authRepositoryProvider).currentUser;
@@ -55,23 +55,13 @@ Future<List<WorkoutLog>> trainingStats(TrainingStatsRef ref) async {
   if (user == null) return [];
 
   final now = DateTime.now();
-  final DateTime startDate;
-  final DateTime endDate = now;
+  final endDate = now;
 
-  switch (range) {
-    case StatsRange.week:
-      // Last 7 days including today
-      startDate = now.subtract(const Duration(days: 6));
-      break;
-    case StatsRange.month:
-      // Last 30 days
-      startDate = now.subtract(const Duration(days: 29));
-      break;
-    case StatsRange.year:
-      // Last 12 months/365 days
-      startDate = now.subtract(const Duration(days: 365));
-      break;
-  }
+  final startDate = switch (range) {
+    StatsRange.week => now.subtract(const Duration(days: 6)),
+    StatsRange.month => now.subtract(const Duration(days: 29)),
+    StatsRange.year => now.subtract(const Duration(days: 365)),
+  };
 
   // Normalize startDate to midnight
   final start = DateTime(startDate.year, startDate.month, startDate.day);

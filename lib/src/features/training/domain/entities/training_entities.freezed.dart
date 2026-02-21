@@ -163,7 +163,9 @@ class __$$WorkoutSessionImplCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$WorkoutSessionImpl implements _WorkoutSession {
+class _$WorkoutSessionImpl
+    with DiagnosticableTreeMixin
+    implements _WorkoutSession {
   const _$WorkoutSessionImpl(
       {required this.id,
       required this.date,
@@ -197,8 +199,21 @@ class _$WorkoutSessionImpl implements _WorkoutSession {
   }
 
   @override
-  String toString() {
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
     return 'WorkoutSession(id: $id, date: $date, type: $type, targetMuscle: $targetMuscle, durationMinutes: $durationMinutes, sets: $sets)';
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(DiagnosticsProperty('type', 'WorkoutSession'))
+      ..add(DiagnosticsProperty('id', id))
+      ..add(DiagnosticsProperty('date', date))
+      ..add(DiagnosticsProperty('type', type))
+      ..add(DiagnosticsProperty('targetMuscle', targetMuscle))
+      ..add(DiagnosticsProperty('durationMinutes', durationMinutes))
+      ..add(DiagnosticsProperty('sets', sets));
   }
 
   @override
@@ -381,7 +396,7 @@ class __$$ExerciseSetImplCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$ExerciseSetImpl implements _ExerciseSet {
+class _$ExerciseSetImpl with DiagnosticableTreeMixin implements _ExerciseSet {
   const _$ExerciseSetImpl(
       {required this.exerciseName,
       required this.weight,
@@ -401,8 +416,19 @@ class _$ExerciseSetImpl implements _ExerciseSet {
   final int rir;
 
   @override
-  String toString() {
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
     return 'ExerciseSet(exerciseName: $exerciseName, weight: $weight, repsCompleted: $repsCompleted, rir: $rir)';
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(DiagnosticsProperty('type', 'ExerciseSet'))
+      ..add(DiagnosticsProperty('exerciseName', exerciseName))
+      ..add(DiagnosticsProperty('weight', weight))
+      ..add(DiagnosticsProperty('repsCompleted', repsCompleted))
+      ..add(DiagnosticsProperty('rir', rir));
   }
 
   @override
@@ -636,7 +662,7 @@ class __$$ExerciseImplCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$ExerciseImpl implements _Exercise {
+class _$ExerciseImpl with DiagnosticableTreeMixin implements _Exercise {
   const _$ExerciseImpl(
       {required this.id,
       required this.name,
@@ -670,8 +696,23 @@ class _$ExerciseImpl implements _Exercise {
   final bool requiresWeight;
 
   @override
-  String toString() {
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
     return 'RoutineExercise(id: $id, name: $name, sets: $sets, targetReps: $targetReps, rir: $rir, restSeconds: $restSeconds, targetMuscle: $targetMuscle, requiresWeight: $requiresWeight)';
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(DiagnosticsProperty('type', 'RoutineExercise'))
+      ..add(DiagnosticsProperty('id', id))
+      ..add(DiagnosticsProperty('name', name))
+      ..add(DiagnosticsProperty('sets', sets))
+      ..add(DiagnosticsProperty('targetReps', targetReps))
+      ..add(DiagnosticsProperty('rir', rir))
+      ..add(DiagnosticsProperty('restSeconds', restSeconds))
+      ..add(DiagnosticsProperty('targetMuscle', targetMuscle))
+      ..add(DiagnosticsProperty('requiresWeight', requiresWeight));
   }
 
   @override
@@ -871,7 +912,9 @@ class __$$WeeklyTrainingStatsImplCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$WeeklyTrainingStatsImpl implements _WeeklyTrainingStats {
+class _$WeeklyTrainingStatsImpl
+    with DiagnosticableTreeMixin
+    implements _WeeklyTrainingStats {
   const _$WeeklyTrainingStatsImpl(
       {required this.totalStrengthMins,
       required this.totalHiitMins,
@@ -891,8 +934,20 @@ class _$WeeklyTrainingStatsImpl implements _WeeklyTrainingStats {
   final int consecutiveWeeksTrained;
 
   @override
-  String toString() {
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
     return 'WeeklyTrainingStats(totalStrengthMins: $totalStrengthMins, totalHiitMins: $totalHiitMins, zone2Mins: $zone2Mins, consecutiveWeeksTrained: $consecutiveWeeksTrained)';
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(DiagnosticsProperty('type', 'WeeklyTrainingStats'))
+      ..add(DiagnosticsProperty('totalStrengthMins', totalStrengthMins))
+      ..add(DiagnosticsProperty('totalHiitMins', totalHiitMins))
+      ..add(DiagnosticsProperty('zone2Mins', zone2Mins))
+      ..add(DiagnosticsProperty(
+          'consecutiveWeeksTrained', consecutiveWeeksTrained));
   }
 
   @override
@@ -1097,7 +1152,9 @@ class __$$WorkoutRecommendationImplCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$WorkoutRecommendationImpl implements _WorkoutRecommendation {
+class _$WorkoutRecommendationImpl
+    with DiagnosticableTreeMixin
+    implements _WorkoutRecommendation {
   const _$WorkoutRecommendationImpl(
       {required this.type,
       this.targetMuscle,
@@ -1122,8 +1179,20 @@ class _$WorkoutRecommendationImpl implements _WorkoutRecommendation {
   final String notes;
 
   @override
-  String toString() {
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
     return 'WorkoutRecommendation(type: $type, targetMuscle: $targetMuscle, durationMinutes: $durationMinutes, intensity: $intensity, notes: $notes)';
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(DiagnosticsProperty('type', 'WorkoutRecommendation'))
+      ..add(DiagnosticsProperty('type', type))
+      ..add(DiagnosticsProperty('targetMuscle', targetMuscle))
+      ..add(DiagnosticsProperty('durationMinutes', durationMinutes))
+      ..add(DiagnosticsProperty('intensity', intensity))
+      ..add(DiagnosticsProperty('notes', notes));
   }
 
   @override
@@ -1311,7 +1380,9 @@ class __$$TrainingCycleImplCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$TrainingCycleImpl implements _TrainingCycle {
+class _$TrainingCycleImpl
+    with DiagnosticableTreeMixin
+    implements _TrainingCycle {
   const _$TrainingCycleImpl(
       {required this.sessionCount,
       required this.isDeloadActive,
@@ -1331,8 +1402,19 @@ class _$TrainingCycleImpl implements _TrainingCycle {
   final DateTime? deloadStartDate;
 
   @override
-  String toString() {
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
     return 'TrainingCycle(sessionCount: $sessionCount, isDeloadActive: $isDeloadActive, cycleNumber: $cycleNumber, deloadStartDate: $deloadStartDate)';
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(DiagnosticsProperty('type', 'TrainingCycle'))
+      ..add(DiagnosticsProperty('sessionCount', sessionCount))
+      ..add(DiagnosticsProperty('isDeloadActive', isDeloadActive))
+      ..add(DiagnosticsProperty('cycleNumber', cycleNumber))
+      ..add(DiagnosticsProperty('deloadStartDate', deloadStartDate));
   }
 
   @override

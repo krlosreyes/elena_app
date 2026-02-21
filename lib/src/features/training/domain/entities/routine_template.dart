@@ -4,7 +4,7 @@ part 'routine_template.freezed.dart';
 part 'routine_template.g.dart';
 
 @freezed
-class RoutineExercise with _$RoutineExercise {
+sealed class RoutineExercise with _$RoutineExercise {
   const factory RoutineExercise({
     required String exerciseId,
     required int order,
@@ -18,7 +18,7 @@ class RoutineExercise with _$RoutineExercise {
 }
 
 @freezed
-class RoutineTemplate with _$RoutineTemplate {
+sealed class RoutineTemplate with _$RoutineTemplate {
   const factory RoutineTemplate({
     required String id,
     required String goal,

@@ -13,7 +13,7 @@ class BioGaugeCard extends StatelessWidget {
   final List<Color>? gradientColors;
 
   const BioGaugeCard({
-    Key? key,
+    super.key,
     required this.title,
     required this.value,
     required this.min,
@@ -22,7 +22,7 @@ class BioGaugeCard extends StatelessWidget {
     required this.statusColor,
     this.unit = '',
     this.gradientColors,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -46,7 +46,7 @@ class BioGaugeCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),

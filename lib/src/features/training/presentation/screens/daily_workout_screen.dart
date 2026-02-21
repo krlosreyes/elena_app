@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:go_router/go_router.dart';
 import '../../../../config/theme/app_theme.dart';
 import '../../../authentication/data/auth_repository.dart'; // Added Import
 
@@ -10,11 +9,10 @@ import '../../application/daily_orchestrator_provider.dart';
 import '../../application/workout_submit_controller.dart';
 import '../../application/training_engine_provider.dart'; 
 import '../../application/metabolic_checkin_provider.dart'; // Added Import
-import '../../application/training_cycle_provider.dart'; // Added Import
+// Added Import
 import '../../domain/enums/workout_enums.dart';
 import '../../domain/entities/training_entities.dart';
 import '../../domain/entities/daily_workout.dart';
-import '../../domain/entities/workout_log.dart';
 
 // Views
 import '../widgets/strength_workout_view.dart';
@@ -22,11 +20,8 @@ import 'workout_summary_screen.dart'; // Added Import
 import '../widgets/cardio_workout_view.dart';
 import '../widgets/rest_day_view.dart';
 import '../widgets/weekly_calendar_strip.dart';
-import '../widgets/rest_timer_banner.dart';
 import '../widgets/metabolic_insight_banner.dart';
-import '../widgets/past_workout_summary_view.dart';
-import '../widgets/missed_workout_view.dart';
-import '../widgets/metabolic_checkin_widget.dart';
+// import '../widgets/past_workout_summary_view.dart'; // Unused
 import '../widgets/daily_diagnostic_card.dart'; // Added Import
 
 
@@ -108,12 +103,7 @@ class DailyWorkoutScreen extends ConsumerWidget {
 
     // BLOCKING NAVIGATION: If Completed, show Summary directly
     if (state is DailyWorkoutPastCompleted) {
-       return PastWorkoutSummaryView(log: state.log); // Or reused WorkoutSummaryScreen if we want the animation again? 
-       // User said: "Si el usuario intenta entrar de nuevo al entrenamiento del mismo día, debe ver directamente este resumen de resultados"
-       // We can reuse WorkoutSummaryScreen if we convert it to not play confetti every time, OR just use it.
-       // Let's use WorkoutSummaryScreen but maybe wrapped to not auto-pop?
-       // Actually `WorkoutSummaryScreen` requires `log`.
-       // We should swap `PastWorkoutSummaryView` (which seems like a simple viewer) for our NEW `WorkoutSummaryScreen`.
+       // Use the new summary screen directly
        return WorkoutSummaryScreen(log: state.log);
     }
 
@@ -174,7 +164,7 @@ class DailyWorkoutScreen extends ConsumerWidget {
         final status = engineState.status;
         final isCompleted = status == TrainingStatus.active; // Strict active check
 
-        final checkin = checkinAsync.valueOrNull;
+        final checkin = checkinAsync.asData?.value;
 
         // User Data for Personalization
         final user = ref.watch(authRepositoryProvider).currentUser;
@@ -294,8 +284,8 @@ class DailyWorkoutScreen extends ConsumerWidget {
         return CardioWorkoutView(plan: plan, isCompleted: isCompleted, mode: mode);
 
       case WorkoutType.rest:
-      default:
         return const RestDayView();
+
     }
   }
 }

@@ -5,7 +5,7 @@ part 'nutrition_plan.freezed.dart';
 part 'nutrition_plan.g.dart';
 
 @freezed
-class NutritionPlan with _$NutritionPlan {
+sealed class NutritionPlan with _$NutritionPlan {
   // Fix for Firestore: Force nested objects to convert to Map
   @JsonSerializable(explicitToJson: true)
   const factory NutritionPlan({
@@ -23,7 +23,7 @@ class NutritionPlan with _$NutritionPlan {
 }
 
 @freezed
-class BaseMetrics with _$BaseMetrics {
+sealed class BaseMetrics with _$BaseMetrics {
   const factory BaseMetrics({
     required double weightKg,
     required double bodyFatPercentage,
@@ -37,7 +37,7 @@ class BaseMetrics with _$BaseMetrics {
 }
 
 @freezed
-class MacroTargets with _$MacroTargets {
+sealed class MacroTargets with _$MacroTargets {
   const factory MacroTargets({
     required int totalCalories,
     required int proteinGrams,
@@ -49,7 +49,7 @@ class MacroTargets with _$MacroTargets {
 }
 
 @freezed
-class VisualPlate with _$VisualPlate {
+sealed class VisualPlate with _$VisualPlate {
   const factory VisualPlate({
     required double vegetablesPercent,
     required double proteinPercent,
@@ -61,7 +61,7 @@ class VisualPlate with _$VisualPlate {
 }
 
 @freezed
-class WeeklyAdjustment with _$WeeklyAdjustment {
+sealed class WeeklyAdjustment with _$WeeklyAdjustment {
   const factory WeeklyAdjustment({
     @Default(false) bool isAdjusted,
     @TimestampConverter() DateTime? lastAdjustmentDate,

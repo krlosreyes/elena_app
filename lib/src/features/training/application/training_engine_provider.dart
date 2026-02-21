@@ -1,17 +1,8 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-import '../../authentication/data/auth_repository.dart';
-import '../../profile/data/user_repository.dart';
-import '../../profile/domain/user_model.dart';
-import 'package:freezed_annotation/freezed_annotation.dart';
-import '../domain/entities/training_entities.dart';
-import '../domain/entities/interactive_routine.dart';
-import '../data/repositories/training_repository.dart';
-import '../../../core/science/training_physiology.dart';
-import 'metabolic_checkin_provider.dart'; // Added Import
-import '../domain/entities/metabolic_state.dart'; // Often needed for phase? No, just logic.
 
-import 'metabolic_checkin_provider.dart'; // Added Import
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
+import '../domain/entities/interactive_routine.dart';
+import 'metabolic_checkin_provider.dart'; 
 
 part 'training_engine_provider.freezed.dart';
 part 'training_engine_provider.g.dart';
@@ -31,6 +22,7 @@ class TrainingSessionState with _$TrainingSessionState {
     @Default(false) bool isDeload,
     @Default(false) bool isSessionActive,
     @Default(false) bool isExecuting, // Dynamic Feedback Visibility
+    @Default(false) bool isResting,   // New: Track Rest State
     @Default(TrainingStatus.needsDiagnostic) TrainingStatus status, 
   }) = _TrainingSessionState;
 }
@@ -39,12 +31,11 @@ class TrainingSessionState with _$TrainingSessionState {
 class TrainingEngine extends _$TrainingEngine {
   @override
   TrainingSessionState build() {
-    // ... existing build logic ...
     // 1. LISTEN: React to Check-in Updates (Submission)
     ref.listen(metabolicCheckinProvider, (prev, next) {
         next.whenData((checkin) {
            if (checkin != null) {
-              // Ensure we re-validate date even on listen, though usually submission is for 'now'.
+              // Ensure we re-validate date even on listen
               final today = DateTime.now();
               if (checkin.date.year == today.year && 
                   checkin.date.month == today.month && 
@@ -57,10 +48,9 @@ class TrainingEngine extends _$TrainingEngine {
 
     // 2. WATCH: Strict Initial State Guard
     final checkinAsync = ref.watch(metabolicCheckinProvider);
-    final checkin = checkinAsync.valueOrNull;
+    final checkin = checkinAsync.asData?.value;
 
     // STRICT DATE VALIDATION (Application Layer)
-    // Check if check-in exists for TODAY (DateTime.now).
     bool isValidForToday = false;
     if (checkin != null) {
        final today = DateTime.now();
@@ -71,7 +61,6 @@ class TrainingEngine extends _$TrainingEngine {
        }
     }
 
-    // Determine status from data availability & validity
     final impliedStatus = isValidForToday 
         ? TrainingStatus.active 
         : TrainingStatus.needsDiagnostic;
@@ -79,7 +68,6 @@ class TrainingEngine extends _$TrainingEngine {
     return TrainingSessionState(status: impliedStatus);
   }
 
-  // Explicitly start check-in (optional)
   void startDiagnostic() {
     state = state.copyWith(status: TrainingStatus.needsDiagnostic);
   }
@@ -89,7 +77,8 @@ class TrainingEngine extends _$TrainingEngine {
       isDeload: isDeload,
       currentIndex: startIndex,
       isSessionActive: true,
-      isExecuting: false, // Reset on init
+      isExecuting: false,
+      isResting: false,
     );
   }
 
@@ -97,14 +86,31 @@ class TrainingEngine extends _$TrainingEngine {
   void setExecuting(bool isExecuting) {
     state = state.copyWith(isExecuting: isExecuting);
   }
+  
+  /// Rest State Management
+  void setResting(bool isResting) {
+    state = state.copyWith(
+        isResting: isResting,
+        isExecuting: !isResting // If resting, we are not executing
+    );
+  }
 
   void nextPage() {
-    state = state.copyWith(currentIndex: state.currentIndex + 1, isExecuting: false); // Reset visibility on new page
+    // Reset states on page change
+    state = state.copyWith(
+        currentIndex: state.currentIndex + 1, 
+        isExecuting: false,
+        isResting: false 
+    ); 
   }
   
   void previousPage() {
     if (state.currentIndex > 0) {
-      state = state.copyWith(currentIndex: state.currentIndex - 1, isExecuting: false);
+      state = state.copyWith(
+          currentIndex: state.currentIndex - 1, 
+          isExecuting: false,
+          isResting: false
+      );
     }
   }
 
@@ -118,6 +124,11 @@ class TrainingEngine extends _$TrainingEngine {
   }
   
   void endSession() {
-      state = state.copyWith(isSessionActive: false, currentIndex: 0, isExecuting: false);
+      state = state.copyWith(
+          isSessionActive: false, 
+          currentIndex: 0, 
+          isExecuting: false,
+          isResting: false
+      );
   }
 }

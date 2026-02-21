@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../authentication/data/auth_repository.dart';
 import '../../profile/data/user_repository.dart';
@@ -9,7 +10,7 @@ import '../domain/services/weekly_plan_generator.dart';
 part 'weekly_plan_provider.g.dart';
 
 @riverpod
-List<DailyWorkout> weeklyPlan(WeeklyPlanRef ref) {
+List<DailyWorkout> weeklyPlan(Ref ref) {
   // Watch the current user
   final authState = ref.watch(authStateChangesProvider);
   final user = authState.value;
@@ -47,7 +48,7 @@ List<DailyWorkout> weeklyPlan(WeeklyPlanRef ref) {
 }
 
 @riverpod
-DailyWorkout? todayWorkout(TodayWorkoutRef ref) {
+DailyWorkout? todayWorkout(Ref ref) {
   final plan = ref.watch(weeklyPlanProvider);
   final todayIndex = DateTime.now().weekday; // 1=Mon, 7=Sun
 

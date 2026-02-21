@@ -58,14 +58,14 @@ class ElenaBrain {
     final firstMealTime = lastMealTime.subtract(Duration(hours: eatingWindowHours));
     
     // Formateo HH:mm
-    String _formatTime(DateTime dt) {
+    String formatTime(DateTime dt) {
       final h = dt.hour.toString().padLeft(2, '0');
       final m = dt.minute.toString().padLeft(2, '0');
       return '$h:$m';
     }
 
-    final windowStart = _formatTime(firstMealTime);
-    final windowEnd = _formatTime(lastMealTime);
+    final windowStart = formatTime(firstMealTime);
+    final windowEnd = formatTime(lastMealTime);
 
     // 3. Ejercicio (Fórmula MAF 180)
     final age = DateTime.now().year - user.birthDate.year;

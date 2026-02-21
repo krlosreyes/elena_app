@@ -3,7 +3,6 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:uuid/uuid.dart';
 import '../../authentication/data/auth_repository.dart';
 import '../domain/entities/workout_log.dart';
-import '../domain/entities/interactive_routine.dart';
 import '../data/repositories/training_repository.dart';
 import 'daily_routine_provider.dart';
 import 'calendar_state_provider.dart';
@@ -47,7 +46,7 @@ class WorkoutSubmitController extends _$WorkoutSubmitController {
       if (!routineState.hasValue && !isCardioRetroactive) {
         throw Exception("La rutina no está cargada o hubo un error.");
       }
-      final routine = routineState.valueOrNull ?? [];
+      final routine = routineState.asData?.value ?? [];
       
       log('[WorkoutSubmit] userId=$userId, workoutType=$workoutType');
       log('[WorkoutSubmit] routine has ${routine.length} exercises');

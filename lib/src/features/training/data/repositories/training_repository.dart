@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../domain/entities/exercise.dart';
@@ -66,7 +67,7 @@ class TrainingRepository {
           .set(log.toJson(), SetOptions(merge: true));
     } catch (e) {
       print('Error saving workout log: $e');
-      throw e;
+      rethrow;
     }
   }
 
@@ -229,12 +230,12 @@ class TrainingRepository {
           .add(json);
     } catch (e) {
       print('Error saving metabolic checkin: $e');
-      throw e;
+      rethrow;
     }
   }
 }
 
 @Riverpod(keepAlive: true)
-TrainingRepository trainingRepository(TrainingRepositoryRef ref) {
+TrainingRepository trainingRepository(Ref ref) {
   return TrainingRepository(FirebaseFirestore.instance);
 }

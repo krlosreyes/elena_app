@@ -31,7 +31,7 @@ final filteredGlucoseProvider = StreamProvider.autoDispose<List<GlucoseLog>>((re
   final filter = ref.watch(glucoseTimeFilterProvider);
 
   // Calculamos startDate según el filtro
-  final DateTime startDate;
+  DateTime startDate; // Remove 'final' to allow assignment in switch
   switch (filter) {
     case TimeFilter.semana:
       startDate = DateTime.now().subtract(const Duration(days: 7));

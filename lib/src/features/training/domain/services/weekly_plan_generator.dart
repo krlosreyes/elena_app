@@ -27,8 +27,9 @@ class WeeklyPlanGenerator {
       if (sortedWorkoutDays.contains(day)) {
         // ... (Strength logic remains same)
         String routineType;
-        if (strengthSessionCount % 3 == 0) routineType = 'A';
-        else if (strengthSessionCount % 3 == 1) routineType = 'B';
+        if (strengthSessionCount % 3 == 0) {
+          routineType = 'A';
+        } else if (strengthSessionCount % 3 == 1) routineType = 'B';
         else routineType = 'C';
 
         strengthSessionCount++;

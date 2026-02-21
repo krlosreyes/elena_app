@@ -4,13 +4,11 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart'; // Import GoRouter
 import '../../authentication/data/auth_repository.dart';
 import '../../profile/data/user_repository.dart';
-import '../../profile/domain/user_model.dart';
 
 import '../../onboarding/logic/elena_brain.dart';
 import 'widgets/fasting_card.dart';
 import 'widgets/protocol_selector.dart'; // Import ProtocolSelector
 import '../../fasting/presentation/fasting_controller.dart'; // Import FastingController
-import '../../glucose/presentation/widgets/glucose_input_sheet.dart';
 import 'widgets/dashboard_header.dart';
 import 'widgets/dashboard_action_card.dart';
 
@@ -169,7 +167,7 @@ class _StrategyCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
+                    color: color.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(icon, color: color, size: 24),
@@ -213,7 +211,7 @@ class _StrategyCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.amber.withOpacity(0.1),
+                  color: Colors.amber.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: Colors.amber),
                 ),

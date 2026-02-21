@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'training_entities.freezed.dart';
@@ -6,7 +7,7 @@ part 'training_entities.g.dart';
 enum TargetMuscle { chest, back, legs, fullBody, cardio }
 
 @freezed
-class WorkoutSession with _$WorkoutSession {
+sealed class WorkoutSession with _$WorkoutSession {
   const factory WorkoutSession({
     required String id,
     required DateTime date,
@@ -20,7 +21,7 @@ class WorkoutSession with _$WorkoutSession {
 }
 
 @freezed
-class ExerciseSet with _$ExerciseSet {
+sealed class ExerciseSet with _$ExerciseSet {
   const factory ExerciseSet({
     required String exerciseName,
     required double weight,
@@ -32,7 +33,7 @@ class ExerciseSet with _$ExerciseSet {
 }
 
 @freezed
-class RoutineExercise with _$RoutineExercise {
+sealed class RoutineExercise with _$RoutineExercise {
   const factory RoutineExercise({
     required String id,
     required String name,
@@ -48,7 +49,7 @@ class RoutineExercise with _$RoutineExercise {
 }
 
 @freezed
-class WeeklyTrainingStats with _$WeeklyTrainingStats {
+sealed class WeeklyTrainingStats with _$WeeklyTrainingStats {
   const factory WeeklyTrainingStats({
     required int totalStrengthMins,
     required int totalHiitMins,
@@ -60,7 +61,7 @@ class WeeklyTrainingStats with _$WeeklyTrainingStats {
 }
 
 @freezed
-class WorkoutRecommendation with _$WorkoutRecommendation {
+sealed class WorkoutRecommendation with _$WorkoutRecommendation {
   const factory WorkoutRecommendation({
     required String type, // Strength, Cardio, ActiveRecovery, Deload
     TargetMuscle? targetMuscle,
@@ -88,7 +89,7 @@ class WorkoutRecommendation with _$WorkoutRecommendation {
 }
 
 @freezed
-class TrainingCycle with _$TrainingCycle {
+sealed class TrainingCycle with _$TrainingCycle {
   const factory TrainingCycle({
     required int sessionCount,
     required bool isDeloadActive,

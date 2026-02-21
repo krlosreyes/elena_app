@@ -3,10 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../domain/entities/interactive_routine.dart';
 import '../domain/entities/daily_workout.dart'; // Added missing import
 import '../domain/enums/workout_enums.dart';
-import '../../authentication/data/auth_repository.dart';
-import '../data/repositories/training_repository.dart';
 import 'calendar_state_provider.dart'; // Added for flexible planning
-import 'selected_day_provider.dart';
 import 'weekly_plan_provider.dart';
 import 'workout_log_provider.dart';
 import 'metabolic_checkin_provider.dart';
@@ -27,7 +24,7 @@ class DailyRoutine extends _$DailyRoutine {
     final logAsync = ref.watch(workoutLogProvider(selectedDate));
     
     // Unpack AsyncValue
-    final log = logAsync.valueOrNull;
+    final log = logAsync.value;
 
       if (log != null && log.completedExercises.isNotEmpty) {
         debugPrint("ElenaApp Log: Log encontrado (Reactive) para $selectedDate. Cargando historial.");
@@ -82,7 +79,7 @@ class DailyRoutine extends _$DailyRoutine {
 
     // 5. Select Routine Type based on Metabolic State
     final checkinAsync = ref.watch(metabolicCheckinProvider);
-    final metabolicState = checkinAsync.valueOrNull;
+    final metabolicState = checkinAsync.asData?.value;
 
     // Default to 'Definición' (Standard) if no check-in
     String routineType = 'Definición';

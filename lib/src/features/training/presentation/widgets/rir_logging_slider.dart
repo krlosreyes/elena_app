@@ -48,9 +48,9 @@ class RirLoggingSlider extends StatelessWidget {
               SliderTheme(
                 data: SliderTheme.of(context).copyWith(
                   activeTrackColor: AppTheme.brandTeal,
-                  inactiveTrackColor: AppTheme.brandTeal.withOpacity(0.2),
+                  inactiveTrackColor: AppTheme.brandTeal.withValues(alpha: 0.2),
                   thumbColor: AppTheme.brandTeal,
-                  overlayColor: AppTheme.brandTeal.withOpacity(0.1),
+                  overlayColor: AppTheme.brandTeal.withValues(alpha: 0.1),
                   trackHeight: 6,
                   thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
                 ),

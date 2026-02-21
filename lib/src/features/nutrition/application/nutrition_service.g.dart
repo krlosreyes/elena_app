@@ -7,7 +7,7 @@ part of 'nutrition_service.dart';
 // **************************************************************************
 
 String _$nutritionRepositoryHash() =>
-    r'0af92833747359da8c8a15d9b06212ee1abb876a';
+    r'e6a422cab39c6252e693528db8aa2755b9550f6e';
 
 /// See also [nutritionRepository].
 @ProviderFor(nutritionRepository)
@@ -22,7 +22,7 @@ final nutritionRepositoryProvider = Provider<NutritionRepository>.internal(
 );
 
 typedef NutritionRepositoryRef = ProviderRef<NutritionRepository>;
-String _$nutritionEngineHash() => r'7dce7840bdd04aaf4fc72f8f67ade84b9dec4ed8';
+String _$nutritionEngineHash() => r'ca6c48f164c56afba8380ccf4bf7e36177d12349';
 
 /// See also [nutritionEngine].
 @ProviderFor(nutritionEngine)
@@ -37,7 +37,7 @@ final nutritionEngineProvider = Provider<NutritionEngine>.internal(
 );
 
 typedef NutritionEngineRef = ProviderRef<NutritionEngine>;
-String _$nutritionPlanHash() => r'0504b88472a52956a982ab28697b0e7b751a18fd';
+String _$nutritionPlanHash() => r'0eeca4338e049b477fa3e371d968f8b78d1a5b27';
 
 /// See also [nutritionPlan].
 @ProviderFor(nutritionPlan)
