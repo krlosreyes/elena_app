@@ -13,7 +13,6 @@ import '../../domain/entities/training_entities.dart';
 import '../../domain/entities/interactive_routine.dart';
 import '../widgets/exercise_set_row.dart';
 import '../widgets/rir_logging_slider.dart';
-import '../widgets/training_feedback_card.dart';
 import '../../application/rest_timer_provider.dart';
 import '../../domain/enums/workout_enums.dart';
 
@@ -222,9 +221,6 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
 
         return Column(
           children: [
-            if (!widget.hideHeader)
-            TrainingFeedbackCard(recommendation: widget.recommendation, isDeload: cycleState.isDeloadActive),
-            
             Expanded(
               child: PageView.builder(
                 controller: _pageController,
