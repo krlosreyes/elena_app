@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart'; // Ensure AsyncValue is visible
-import '../../fasting/presentation/providers/fasting_provider.dart';
+import '../../fasting/application/fasting_provider.dart';
 import '../../fasting/domain/fasting_session.dart';
-import '../../glucose/presentation/providers/glucose_provider.dart';
+import '../../glucose/application/glucose_provider.dart';
 import '../../glucose/domain/glucose_model.dart';
 
 part 'metabolic_insight_provider.g.dart';

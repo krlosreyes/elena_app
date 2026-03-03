@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../providers/performance_provider.dart';
+import '../../application/performance_provider.dart';
 
 class WeekCalendar extends ConsumerWidget {
   final int checkInDay; // 1 = Lunes
