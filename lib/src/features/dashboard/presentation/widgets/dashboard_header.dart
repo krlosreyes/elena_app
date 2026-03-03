@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../profile/data/user_repository.dart';
+import '../../../profile/application/user_controller.dart';
 
 class DashboardHeader extends ConsumerWidget {
   const DashboardHeader({super.key});
@@ -9,7 +9,7 @@ class DashboardHeader extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // 1. Escuchamos al usuario en tiempo real
-    final userAsync = ref.watch(currentUserProvider);
+    final userAsync = ref.watch(currentUserStreamProvider);
 
     return userAsync.when(
       data: (user) {

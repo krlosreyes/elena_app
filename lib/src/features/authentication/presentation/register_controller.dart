@@ -1,5 +1,5 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import '../data/auth_repository.dart';
+import '../application/auth_controller.dart';
 
 part 'register_controller.g.dart';
 
@@ -18,7 +18,7 @@ class RegisterController extends _$RegisterController {
     state = const AsyncLoading();
 
     try {
-      final repository = ref.read(authRepositoryProvider);
+      final repository = ref.read(authControllerProvider.notifier);
       await repository.createUserWithEmailAndPassword(email, password);
 
       // Update display name after successful creation

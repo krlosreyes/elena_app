@@ -4,7 +4,7 @@ import 'package:state_notifier/state_notifier.dart';
 import 'package:intl/intl.dart';
 import '../../fasting/domain/fasting_session.dart';
 import '../../fasting/data/fasting_repository.dart';
-import '../../authentication/data/auth_repository.dart';
+import '../../authentication/application/auth_controller.dart';
 
 enum MetricType { week, month, year }
 

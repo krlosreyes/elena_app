@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart'; // Import GoRouter
-import '../../authentication/data/auth_repository.dart';
-import '../../profile/data/user_repository.dart';
+import '../../authentication/application/auth_controller.dart';
+import '../../profile/application/user_controller.dart';
 
 import '../../onboarding/logic/elena_brain.dart';
 import 'widgets/fasting_card.dart';
@@ -20,12 +20,12 @@ class DashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // 1. Obtener Usuario
-    final authUser = ref.watch(authRepositoryProvider).currentUser;
-    if (authUser == null) {
+    final authUser = ref.watch(authControllerProvider.notifier).currentUser;
+    final userAsync = ref.watch(currentUserStreamProvider);
+    if (userAsync.value == null) {
       return const Center(child: CircularProgressIndicator());
     }
     
-    final userAsync = ref.watch(userStreamProvider(authUser.uid));
 
     return userAsync.when(
       data: (user) {

@@ -6,7 +6,7 @@ import 'package:intl/intl.dart';
 import '../../../profile/domain/user_model.dart';
 import '../../../progress/domain/measurement_log.dart';
 import '../../../coaching/data/coaching_service.dart';
-import '../../data/progress_service.dart';
+import '../../application/progress_controller.dart';
 
 class MeasurementBottomSheet extends ConsumerStatefulWidget {
   final UserModel user;
@@ -142,7 +142,7 @@ class _MeasurementBottomSheetState extends ConsumerState<MeasurementBottomSheet>
         );
         
         // Update in Firestore
-        await ref.read(progressServiceProvider).updateMeasurement(widget.user.uid, logToSave);
+        await ref.read(progressControllerProvider.notifier).updateMeasurement(widget.user.uid, logToSave);
       } else {
         // CREATE new log
         final tempLog = MeasurementLog(

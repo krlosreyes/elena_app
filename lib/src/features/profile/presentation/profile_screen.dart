@@ -1,13 +1,14 @@
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../authentication/data/auth_repository.dart';
+import '../../authentication/application/auth_controller.dart';
+import '../../progress/application/progress_controller.dart';
+import '../../profile/application/user_controller.dart';
 import '../../progress/domain/measurement_log.dart';
-import '../../progress/data/progress_service.dart';
 import '../../profile/presentation/widgets/biometric_cards.dart';
 import 'widgets/recomposition_progress_card.dart';
-import '../../profile/data/user_repository.dart';
 import '../../profile/domain/user_model.dart';
 import '../../progress/presentation/widgets/measurement_bottom_sheet.dart';
 
@@ -16,8 +17,8 @@ class ProfileScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(authRepositoryProvider).currentUser;
-    final progressService = ref.watch(progressServiceProvider);
+    final user = ref.watch(authControllerProvider.notifier).currentUser;
+    final progressService = ref.watch(progressControllerProvider.notifier);
     
     // We need user model for height/gender to calculate things if needed
     final userModelAsync = user != null ? ref.watch(userStreamProvider(user.uid)) : const AsyncValue<UserModel?>.loading();
@@ -116,7 +117,7 @@ class ProfileScreen extends ConsumerWidget {
                   ),
                   onTap: () async {
                     // Lógica de cierre de sesión
-                    await ref.read(authRepositoryProvider).signOut();
+                    await ref.read(authControllerProvider.notifier).signOut();
                     // El router se encargará del resto
                   },
                   tileColor: Colors.red.withValues(alpha: 0.05), // Fondo suave rojo
@@ -143,7 +144,7 @@ class _BioControlSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Escuchar el provider reactivo
-    final historyAsync = ref.watch(userMeasurementsProvider);
+    final historyAsync = ref.watch(userMeasurementsStreamProvider);
 
     return historyAsync.when(
       data: (history) {

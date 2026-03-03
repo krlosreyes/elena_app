@@ -5,7 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../config/theme/app_theme.dart';
 import '../../application/metabolic_checkin_provider.dart';
 import '../../application/training_engine_provider.dart';
-import '../../../authentication/data/auth_repository.dart';
+import '../../../authentication/application/auth_controller.dart';
 import 'metabolic_insight_banner.dart';
 import '../../domain/entities/training_entities.dart';
 
@@ -40,7 +40,7 @@ class TrainingFeedbackCard extends ConsumerWidget {
   }
 
   Widget _buildDashboardContent(BuildContext context, WidgetRef ref) {
-    final user = ref.read(authRepositoryProvider).currentUser;
+    final user = ref.read(authControllerProvider.notifier).currentUser;
     final name = user?.displayName?.split(' ').first ?? 'Atleta';
     
     // Logic extracted from old _buildFixedHeader

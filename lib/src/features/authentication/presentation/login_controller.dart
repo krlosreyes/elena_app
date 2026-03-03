@@ -1,7 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import '../data/auth_repository.dart';
+import '../application/auth_controller.dart';
 
-import '../../profile/data/user_repository.dart';
+import '../../profile/application/user_controller.dart';
 
 part 'login_controller.g.dart';
 
@@ -15,7 +15,7 @@ class LoginController extends _$LoginController {
   Future<void> signIn({required String email, required String password}) async {
     state = const AsyncLoading();
     try {
-      final authRepo = ref.read(authRepositoryProvider);
+      final authRepo = ref.read(authControllerProvider.notifier);
       await authRepo.signInWithEmailAndPassword(email, password);
       
       final currentUser = authRepo.currentUser;
@@ -32,7 +32,7 @@ class LoginController extends _$LoginController {
       // But authStateChanges usually triggers immediately.
       
       try {
-        final userModel = await ref.read(userRepositoryProvider).getUser(currentUser.uid);
+        final userModel = await ref.read(userControllerProvider.notifier).getUser(currentUser.uid);
          // If logic reaches here and controller is disposed, setting state might throw.
         state = AsyncValue.data(userModel == null);
       } catch (e) {

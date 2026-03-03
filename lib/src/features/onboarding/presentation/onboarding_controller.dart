@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:flutter/foundation.dart';
-import '../../profile/data/user_repository.dart';
+import '../../profile/application/user_controller.dart';
 import '../../profile/domain/user_model.dart';
 import '../../progress/domain/measurement_log.dart';
 import '../logic/elena_brain.dart';
@@ -55,7 +55,7 @@ class OnboardingController extends _$OnboardingController {
 
       // 2. Marcar onboarding como completado
       final userCompleted = state!.copyWith(onboardingCompleted: true);
-      final repo = ref.read(userRepositoryProvider);
+      final repo = ref.read(userControllerProvider.notifier);
 
       // 3. Guardar Plan y Usuario en Firestore
       await repo.saveHealthPlan(userCompleted.uid, clinicalPlan);

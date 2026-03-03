@@ -7,7 +7,7 @@ import '../widgets/macro_metrics_card.dart';
 import '../widgets/visual_plate_widget.dart';
 import '../widgets/science_disclaimer_widget.dart';
 
-import '../../../profile/data/user_repository.dart'; // Import user repository for name
+import '../../../profile/application/user_controller.dart';
 import '../../../fasting/presentation/fasting_controller.dart'; // Import fasting controller
 
 class NutritionDashboardScreen extends ConsumerWidget {
@@ -19,7 +19,7 @@ class NutritionDashboardScreen extends ConsumerWidget {
     final nutritionPlanAsync = ref.watch(nutritionPlanProvider);
     
     // 2. Watch User Data (for Name)
-    final userAsync = ref.watch(currentUserProvider);
+    final userAsync = ref.watch(currentUserStreamProvider);
     
     // 3. Watch Fasting State (for Contextual Message)
     final fastingState = ref.watch(fastingControllerProvider).value;

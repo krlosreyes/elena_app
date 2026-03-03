@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../config/theme/app_theme.dart';
-import '../../../authentication/data/auth_repository.dart';
+import '../../../authentication/application/auth_controller.dart';
 import '../../application/daily_routine_provider.dart';
 import '../../application/training_cycle_provider.dart';
 import '../../application/training_engine_provider.dart';
@@ -428,7 +428,7 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
   }
 
   Widget _buildStickyFooter(BuildContext context, bool isComplete, bool isLast, bool isSubmitting, int totalExercises, int currentExerciseNum, bool isResting) {
-     final user = ref.read(authRepositoryProvider).currentUser;
+     final user = ref.watch(authControllerProvider.notifier).currentUser;
      final name = user?.displayName?.split(' ').first ?? 'Atleta';
   
     return Container(

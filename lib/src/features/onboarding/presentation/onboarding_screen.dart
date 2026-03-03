@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../authentication/data/auth_repository.dart';
+import '../../authentication/application/auth_controller.dart';
 import 'onboarding_controller.dart';
 import 'steps/step_bio.dart';
 import 'steps/step_body.dart';
@@ -33,7 +33,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     super.initState();
     // Inicializar el controlador con datos del usuario actual
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final authUser = ref.read(authRepositoryProvider).currentUser;
+      final authUser = ref.read(authControllerProvider.notifier).currentUser;
       if (authUser != null) {
         ref.read(onboardingControllerProvider.notifier).init(
               authUser.uid,

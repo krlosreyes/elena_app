@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../config/theme/app_theme.dart';
-import '../../../authentication/data/auth_repository.dart'; // Added Import
+import '../../../authentication/application/auth_controller.dart';
 
 
 import '../../application/daily_orchestrator_provider.dart';
@@ -167,7 +167,7 @@ class DailyWorkoutScreen extends ConsumerWidget {
         final checkin = checkinAsync.asData?.value;
 
         // User Data for Personalization
-        final user = ref.watch(authRepositoryProvider).currentUser;
+        final user = ref.watch(authControllerProvider.notifier).currentUser;
         final displayName = user?.displayName?.split(' ').first ?? 'Atleta';
         
         // Layout Hierarchy:

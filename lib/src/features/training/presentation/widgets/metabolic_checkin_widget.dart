@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../config/theme/app_theme.dart';
-import '../../../profile/data/user_repository.dart';
+import '../../../profile/application/user_controller.dart';
 import '../../application/metabolic_checkin_provider.dart';
 
 class MetabolicCheckinWidget extends ConsumerStatefulWidget {
@@ -24,7 +24,7 @@ class _MetabolicCheckinWidgetState extends ConsumerState<MetabolicCheckinWidget>
     if (checkinState != null) return const SizedBox.shrink();
     
     // Get User Name
-    final userAsync = ref.watch(currentUserProvider);
+    final userAsync = ref.watch(currentUserStreamProvider);
     // Safe access to user name
     final userName = userAsync.asData?.value?.name ?? "Atleta";
 

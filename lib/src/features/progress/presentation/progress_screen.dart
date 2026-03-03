@@ -1,14 +1,14 @@
 
-import 'package:elena_app/src/features/profile/data/user_repository.dart';
+import 'package:elena_app/src/features/profile/application/user_controller.dart';
 import 'package:elena_app/src/features/profile/domain/user_model.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import '../../progress/data/progress_service.dart';
+import '../../progress/application/progress_controller.dart';
 import '../../progress/domain/measurement_log.dart';
-import '../../authentication/data/auth_repository.dart';
+import '../../authentication/application/auth_controller.dart';
 import '../../glucose/presentation/widgets/glucose_chart_widget.dart';
 import 'widgets/fasting_chart_card.dart';
 import 'widgets/measurement_bottom_sheet.dart';
@@ -23,11 +23,11 @@ class ProgressScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final historyAsync = ref.watch(userMeasurementsProvider); // Usar el provider del servicio
-    final authUser = ref.read(authRepositoryProvider).currentUser;
+    final historyAsync = ref.watch(userMeasurementsStreamProvider); // Usar el provider del servicio
+    final authUser = ref.read(authControllerProvider.notifier).currentUser;
     // Necesitamos perfil del usuario para altura/género
     final userAsync = authUser != null 
-        ? ref.watch(userStreamProvider(authUser.uid)) 
+        ? ref.watch(currentUserStreamProvider) 
         : const AsyncValue<UserModel?>.loading();
 
     // Convert string day name to int (Mon=1..Sun=7) if needed, 
@@ -495,9 +495,9 @@ class _HistoryTable extends ConsumerWidget {
                   );
                 },
                 onDismissed: (direction) {
-                  final user = ref.read(authRepositoryProvider).currentUser;
+                  final user = ref.read(authControllerProvider.notifier).currentUser;
                   if (user != null) {
-                    ref.read(progressServiceProvider).deleteMeasurement(user.uid, item.id);
+                    ref.read(progressControllerProvider.notifier).deleteMeasurement(user.uid, item.id);
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Registro eliminado')),
                     );
@@ -506,9 +506,9 @@ class _HistoryTable extends ConsumerWidget {
                 child: InkWell(
                   onTap: () {
                     // Abrir el modal en modo edición
-                    final authUser = ref.read(authRepositoryProvider).currentUser;
+                    final authUser = ref.read(authControllerProvider.notifier).currentUser;
                     if (authUser != null) {
-                      final user = ref.read(userStreamProvider(authUser.uid)).asData?.value;
+                      final user = ref.read(currentUserStreamProvider).asData?.value;
                       if (user != null) {
                         showModalBottomSheet(
                           context: context,

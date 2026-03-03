@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:elena_app/src/features/authentication/data/auth_repository.dart';
+import 'package:elena_app/src/features/authentication/application/auth_controller.dart';
 import 'package:elena_app/src/features/glucose/data/glucose_repository.dart';
 import 'package:elena_app/src/features/glucose/domain/glucose_model.dart';
 

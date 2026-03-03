@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:state_notifier/state_notifier.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../authentication/data/auth_repository.dart';
+import '../../authentication/application/auth_controller.dart';
 import '../domain/fasting_session.dart';
 import '../../../core/services/notification_service.dart';
 import '../data/fasting_repository.dart';
@@ -65,7 +65,7 @@ class FastingController extends StateNotifier<AsyncValue<FastingState>> {
   }
 
   void _init() {
-    final uid = ref.read(authRepositoryProvider).currentUser?.uid;
+    final uid = ref.read(authControllerProvider.notifier).currentUser?.uid;
     if (uid != null) {
       // SUSCRIBIRSE al Stream de Firestore para sincronización en tiempo real
       _firestoreSubscription = ref
@@ -120,7 +120,7 @@ class FastingController extends StateNotifier<AsyncValue<FastingState>> {
 
     // 1. Guardar Persistencia Local INMEDIATA
     final prefs = await SharedPreferences.getInstance();
-    final uid = ref.read(authRepositoryProvider).currentUser?.uid;
+    final uid = ref.read(authControllerProvider.notifier).currentUser?.uid;
     
     await prefs.setString(_keyStartTime, start.toIso8601String());
     await prefs.setInt(_keyPlannedHours, hours);
@@ -180,7 +180,7 @@ class FastingController extends StateNotifier<AsyncValue<FastingState>> {
     }
 
     final endTime = DateTime.now();
-    final uid = ref.read(authRepositoryProvider).currentUser?.uid;
+    final uid = ref.read(authControllerProvider.notifier).currentUser?.uid;
 
     // 3. Guardar en Repositorio (Firestore)
     if (uid != null) {
@@ -226,7 +226,7 @@ class FastingController extends StateNotifier<AsyncValue<FastingState>> {
     _timer?.cancel();
     await NotificationService.cancelAll();
 
-    final uid = ref.read(authRepositoryProvider).currentUser?.uid;
+    final uid = ref.read(authControllerProvider.notifier).currentUser?.uid;
     if (uid != null) {
       // Calcular duración real
       final duration = endTime.difference(startTime);
@@ -359,7 +359,7 @@ class FastingController extends StateNotifier<AsyncValue<FastingState>> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt(_keyPlannedHours, newHours);
       
-      final uid = ref.read(authRepositoryProvider).currentUser?.uid;
+      final uid = ref.read(authControllerProvider.notifier).currentUser?.uid;
       if (uid != null) {
           FirebaseFirestore.instance.collection('users').doc(uid).update({
             'fastingProtocol': protocolString

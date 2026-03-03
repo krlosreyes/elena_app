@@ -7,7 +7,7 @@ import '../../../../config/theme/app_theme.dart';
 import '../../domain/entities/workout_log.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../authentication/data/auth_repository.dart';
+import '../../../authentication/application/auth_controller.dart';
 
 class WorkoutSummaryScreen extends ConsumerStatefulWidget {
   static const String routeName = 'workout_summary';
@@ -111,7 +111,7 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
                   // Personalized Header
                   Consumer(
                     builder: (context, ref, _) {
-                      final user = ref.read(authRepositoryProvider).currentUser;
+                      final user = ref.read(authControllerProvider.notifier).currentUser;
                       final name = user?.displayName?.split(' ').first ?? 'Atleta';
                       
                       return Column(
@@ -166,7 +166,7 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
                          const SizedBox(height: 12),
                          Consumer(
                            builder: (context, ref, _) {
-                              final user = ref.read(authRepositoryProvider).currentUser;
+                              final user = ref.read(authControllerProvider.notifier).currentUser;
                               final name = user?.displayName?.split(' ').first ?? 'Atleta';
                               
                               return Text(
