@@ -24,7 +24,7 @@ class StepCircadian extends ConsumerWidget {
     final user = ref.watch(onboardingControllerProvider);
     if (user == null) return const SizedBox.shrink();
 
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(24.0),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -78,7 +78,90 @@ class StepCircadian extends ConsumerWidget {
                 .read(onboardingControllerProvider.notifier)
                 .updateUser(user.copyWith(bedTime: val)),
           ),
+          const SizedBox(height: 32),
+          const Text(
+            'Nivel de Energía / Antojos',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          _buildEnergyOption(
+            context,
+            ref,
+            user.energyLevel1To10 ?? 7,
+            10,
+            'Energía estable todo el día',
+            Icons.battery_full,
+          ),
+          const SizedBox(height: 8),
+          _buildEnergyOption(
+            context,
+            ref,
+            user.energyLevel1To10 ?? 7,
+            7,
+            'Bajones de energía en la tarde',
+            Icons.battery_4_bar,
+          ),
+          const SizedBox(height: 8),
+          _buildEnergyOption(
+            context,
+            ref,
+            user.energyLevel1To10 ?? 7,
+            4,
+            'Muchos antojos de azúcar/carbohidratos',
+            Icons.cookie,
+          ),
+          const SizedBox(height: 8),
+          _buildEnergyOption(
+            context,
+            ref,
+            user.energyLevel1To10 ?? 7,
+            1,
+            'Exhausto/a constantemente',
+            Icons.battery_0_bar,
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildEnergyOption(BuildContext context, WidgetRef ref, int currentValue, int optionValue, String label, IconData icon) {
+    final isSelected = currentValue == optionValue;
+    return InkWell(
+      onTap: () {
+        final user = ref.read(onboardingControllerProvider);
+        if (user != null) {
+           ref.read(onboardingControllerProvider.notifier).updateUser(user.copyWith(energyLevel1To10: optionValue));
+        }
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF009688).withOpacity(0.1) : Colors.transparent,
+          border: Border.all(
+            color: isSelected ? const Color(0xFF009688) : Colors.grey[800]!,
+            width: isSelected ? 2 : 1,
+          ),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: isSelected ? const Color(0xFF009688) : Colors.grey),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: isSelected ? Colors.white : Colors.grey[300],
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                ),
+              ),
+            ),
+            if (isSelected)
+               const Icon(Icons.check_circle, color: Color(0xFF009688)),
+          ],
+        ),
       ),
     );
   }

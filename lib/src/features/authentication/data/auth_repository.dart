@@ -1,100 +1,63 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../core/exceptions/exceptions.dart';
 
-part 'auth_repository.g.dart';
+/// Interfaz que define el contrato de autenticación, facilitando
+/// la inyección de dependencias y el Unit Testing (Mocking).
+abstract class IAuthRepository {
+  User? get currentUser;
+  Stream<User?> authStateChanges();
+  Future<void> signInWithEmailAndPassword(String email, String password);
+  Future<void> createUserWithEmailAndPassword(String email, String password);
+  Future<void> signOut();
+}
 
-class AuthRepository {
+/// Implementación concreta de IAuthRepository usando Firebase.
+class AuthRepository implements IAuthRepository {
   final FirebaseAuth _firebaseAuth;
 
   AuthRepository(this._firebaseAuth);
 
-  /// Returns the current signed-in [User], or `null` if the user is signed out.
+  @override
   User? get currentUser => _firebaseAuth.currentUser;
 
-  /// Stream to listen for authentication state changes.
+  @override
   Stream<User?> authStateChanges() => _firebaseAuth.authStateChanges();
 
-  /// Signs in a user with email and password.
-  ///
-  /// Throws [AppException] with Spanish error messages for common cases.
+  @override
   Future<void> signInWithEmailAndPassword(String email, String password) async {
     try {
       await _firebaseAuth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
+    } on FirebaseAuthException catch (e) {
+      // ✅ MEJORA DE SEGURIDAD (No Nuclear Fix):
+      // Se analizan solo las excepciones nativas de Firebase para evitar
+      // ocultar errores fatales del framework.
+      throw _handleFirebaseAuthException(e);
     } catch (e) {
-      // 🛑 NUCLEAR FIX: No usamos 'on FirebaseAuthException'. Atrapamos TODO.
-      final errorRaw = e.toString();
-
-      // Búsqueda de texto simple para evitar problemas de tipos
-      if (errorRaw.contains('user-not-found') ||
-          errorRaw.contains('invalid-credential') ||
-          errorRaw.contains('wrong-password')) {
-        throw const AppException(
-            'Credenciales incorrectas.', 'auth/invalid-credentials');
-      }
-      if (errorRaw.contains('invalid-email')) {
-        throw const AppException(
-            'El formato del correo es inválido.', 'auth/invalid-email');
-      }
-      if (errorRaw.contains('user-disabled')) {
-        throw const AppException(
-            'Esta cuenta ha sido deshabilitada.', 'auth/user-disabled');
-      }
-      if (errorRaw.contains('network-request-failed')) {
-        throw const AppException(
-            'Error de conexión. Verifica tu internet.', 'auth/network-error');
-      }
-      if (errorRaw.contains('too-many-requests')) {
-        throw const AppException('Demasiados intentos. Intenta más tarde.',
-            'auth/too-many-requests');
-      }
-
-      // Si no coincide, lanzamos el error genérico limpio
-      throw AppException(errorRaw, 'unknown');
+      // Cualquier otro error inesperado se reporta sin filtrar información
+      throw AppException(e.toString(), 'unknown');
     }
   }
 
-  /// Creates a new user account with email and password.
-  ///
-  /// Throws [AppException] with Spanish error messages for common cases.
-  Future<void> createUserWithEmailAndPassword(
-      String email, String password) async {
+  @override
+  Future<void> createUserWithEmailAndPassword(String email, String password) async {
     try {
       await _firebaseAuth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
+    } on FirebaseAuthException catch (e) {
+      // ✅ MEJORA DE SEGURIDAD
+      throw _handleFirebaseAuthException(e);
     } catch (e) {
-      // 🛑 NUCLEAR FIX: No usamos 'on FirebaseAuthException'. Atrapamos TODO.
-      final errorRaw = e.toString();
-
-      // Búsqueda de texto simple para evitar problemas de tipos
-      if (errorRaw.contains('email-already-in-use')) {
-        throw const AppException(
-            'Este correo ya está registrado.', 'email-exists');
-      }
-      if (errorRaw.contains('weak-password')) {
-        throw const AppException(
-            'La contraseña es muy débil (mínimo 6 caracteres).', 'weak-pass');
-      }
-      if (errorRaw.contains('invalid-email')) {
-        throw const AppException('El correo no es válido.', 'invalid-email');
-      }
-      if (errorRaw.contains('operation-not-allowed')) {
-        throw const AppException(
-            'Habilita Email/Password en Firebase Console.', 'config-error');
-      }
-
-      // Si no coincide, lanzamos el error genérico limpio
-      throw AppException(errorRaw, 'unknown');
+      throw AppException(e.toString(), 'unknown');
     }
   }
 
-  /// Signs out the current user.
+  @override
   Future<void> signOut() async {
     try {
       await _firebaseAuth.signOut();
@@ -134,12 +97,8 @@ class AuthRepository {
   }
 }
 
-@Riverpod(keepAlive: true)
-AuthRepository authRepository(Ref ref) {
+// ✅ Provider configurado hacia la Interfaz
+final authRepositoryProvider = Provider<IAuthRepository>((ref) {
   return AuthRepository(FirebaseAuth.instance);
-}
+});
 
-@riverpod
-Stream<User?> authStateChanges(Ref ref) {
-  return ref.watch(authRepositoryProvider).authStateChanges();
-}

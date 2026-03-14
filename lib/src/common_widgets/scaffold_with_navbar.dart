@@ -18,62 +18,80 @@ class ScaffoldWithNavBar extends ConsumerWidget {
         ? ref.watch(userStreamProvider(authUser.uid))
         : const AsyncValue<UserModel?>.loading();
 
-    // Calculate current index for BottomNavigationBar based on current location
+    // Calculate current index based on current location
     final String location = GoRouterState.of(context).uri.path;
-    
-    // Default to 0 (Home)
     int currentIndex = 0;
     if (location.startsWith('/progress')) {
       currentIndex = 1;
     } else if (location.startsWith('/profile')) {
-      // Profile usually doesn't have a tab, but if we want to show it as "active" or just valid
-      // For now, let's say it keeps the last tab or creates a phantom state.
-      // Requirements say: "ensure when on profile, avatar doesn't do anything redundant".
-      // We will leave index as is or maybe not highlight any if on profile?
-      // Let's stick to Home/Progress tabs. 
-      // If we are on profile, maybe we don't highlight bottom nav or highlight home?
-      // Let's keep it simple: Home=0, Progress=1. If Profile, maybe unselected?
-      // NavigationBar requires valid index. 
-      // Let's assume Profile is a separate pushed screen usually, BUT user said:
-      // "Mover la lógica de la AppBar... eliminar AppBar de ProfileScreen".
-      // This implies ProfileScreen is INSIDE the shell.
-      // If Profile is inside shell, it needs a way to NOT crash nav bar index.
-      // Let's just default to 0 if unknown, or maybe make index nullable? NavigationBar index must be non-null.
-      // Actually, standard pattern with ShellRoute is that Profile might cover the shell or be part of it.
-      // If part of it, we need a tab for it OR we accept that one tab is selected while unrelated content is shown.
-      // HOWEVER, the user asked for BottomNavBar to be part of GLOBAL Scaffold.
-      // Let's implement it such that:
-      // 0: Dashboard
-      // 1: Progress
-      // If on Profile, we can either hide BottomNav or just let it sit there.
-      // Let's stick to 0/1.
-      currentIndex = location.startsWith('/progress') ? 1 : 0;
+      currentIndex = 2;
+    }
+
+    // Build avatar widget helper
+    Widget buildAvatar({required bool selected}) {
+      return userAsync.when(
+        data: (user) {
+          final initial = (user?.name?.isNotEmpty == true)
+              ? user!.name![0].toUpperCase()
+              : 'P';
+          return Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: selected
+                  ? Border.all(color: const Color(0xFF009688), width: 2)
+                  : null,
+            ),
+            child: CircleAvatar(
+              radius: 14,
+              backgroundColor: selected ? const Color(0xFF009688) : const Color(0xFF1565C0),
+              child: Text(
+                initial,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+          );
+        },
+        loading: () => const CircleAvatar(radius: 14, backgroundColor: Color(0xFF1565C0)),
+        error: (_, __) => const CircleAvatar(radius: 14, backgroundColor: Color(0xFF1565C0)),
+      );
     }
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: child,
       bottomNavigationBar: NavigationBar(
         selectedIndex: currentIndex,
-        backgroundColor: Colors.white,
-        elevation: 2,
+        backgroundColor: Theme.of(context).cardTheme.color,
+        indicatorColor: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+        elevation: 0,
         onDestinationSelected: (index) {
           if (index == 0) {
             context.go('/dashboard');
           } else if (index == 1) {
             context.go('/progress');
+          } else if (index == 2) {
+            context.push('/profile');
           }
         },
-        destinations: const [
+        destinations: [
           NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
+            icon: const Icon(Icons.home_outlined, color: Colors.white),
+            selectedIcon: Icon(Icons.home, color: Theme.of(context).colorScheme.primary),
             label: 'Inicio',
           ),
           NavigationDestination(
-            icon: Icon(Icons.show_chart),
-            selectedIcon: Icon(Icons.show_chart),
+            icon: const Icon(Icons.show_chart, color: Colors.white),
+            selectedIcon: Icon(Icons.show_chart, color: Theme.of(context).colorScheme.primary),
             label: 'Progreso',
+          ),
+          NavigationDestination(
+            icon: buildAvatar(selected: false),
+            selectedIcon: buildAvatar(selected: true),
+            label: 'Perfil',
           ),
         ],
       ),

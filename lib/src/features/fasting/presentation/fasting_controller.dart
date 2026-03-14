@@ -1,140 +1,204 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:state_notifier/state_notifier.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../../authentication/application/auth_controller.dart';
-import '../domain/fasting_session.dart';
+import '../../progress/domain/measurement_log.dart';
 import '../../../core/services/notification_service.dart';
 import '../data/fasting_repository.dart';
+import '../domain/fasting_session.dart';
+import '../../imx/application/imx_provider.dart';
 
 // Estado del Ayuno
 class FastingState {
-  final bool isFasting;
-  final Duration elapsed;
-  final double progress; // 0.0 a 1.0 (o más si excedió la meta)
   final DateTime? startTime;
+  final Duration elapsed;
   final int plannedHours;
+  final bool isFasting;
+  final double progress;
 
-  const FastingState({
-    required this.isFasting,
+  FastingState({
+    required this.startTime,
     required this.elapsed,
+    required this.plannedHours,
+    required this.isFasting,
     required this.progress,
-    this.startTime,
-    this.plannedHours = 16,
   });
 
   factory FastingState.initial() {
-    return const FastingState(
-      isFasting: false,
+    return FastingState(
+      startTime: null,
       elapsed: Duration.zero,
+      plannedHours: 16, // Default
+      isFasting: false,
       progress: 0.0,
-      plannedHours: 16, // Default safety
     );
   }
 
   FastingState copyWith({
-    bool? isFasting,
-    Duration? elapsed,
-    double? progress,
     DateTime? startTime,
+    Duration? elapsed,
     int? plannedHours,
+    bool? isFasting,
+    double? progress,
   }) {
     return FastingState(
-      isFasting: isFasting ?? this.isFasting,
-      elapsed: elapsed ?? this.elapsed,
-      progress: progress ?? this.progress,
       startTime: startTime ?? this.startTime,
+      elapsed: elapsed ?? this.elapsed,
       plannedHours: plannedHours ?? this.plannedHours,
+      isFasting: isFasting ?? this.isFasting,
+      progress: progress ?? this.progress,
     );
   }
 }
 
-// Controller
-class FastingController extends StateNotifier<AsyncValue<FastingState>> {
-  final Ref ref;
-  Timer? _timer;
+class FastingController extends AutoDisposeNotifier<AsyncValue<FastingState>> {
   static const String _keyStartTime = 'fasting_start_time';
   static const String _keyPlannedHours = 'fasting_planned_hours';
   static const String _keyUserUid = 'fasting_user_uid';
 
+  Timer? _timer;
   StreamSubscription? _firestoreSubscription;
 
-  FastingController(this.ref) : super(const AsyncValue.loading()) {
-    _init();
+  @override
+  AsyncValue<FastingState> build() {
+    // Escuchar el estado de autenticación de forma reactiva
+    final authState = ref.watch(authStateChangesProvider);
+    
+    // Cleanup: Cancel timer and stream subscription when AutoDispose fires (Hot Reload, navigate away, etc.)
+    ref.onDispose(() {
+      _timer?.cancel();
+      _firestoreSubscription?.cancel();
+    });
+    
+    // Si la autenticación está cargando, retornamos loading
+    if (authState.isLoading) {
+       return const AsyncValue.loading();
+    }
+    
+    // Si no hay usuario logueado
+    if (authState.value == null) {
+      _timer?.cancel();
+      _firestoreSubscription?.cancel();
+      return AsyncValue.data(FastingState.initial());
+    }
+
+    // Inicializar el estado de forma asíncrona pero retornar un dato síncrono inicial (Carga local)
+    _loadState(authState.value!.uid);
+    return const AsyncValue.loading(); 
   }
 
-  void _init() {
-    final uid = ref.read(authControllerProvider.notifier).currentUser?.uid;
-    if (uid != null) {
-      // SUSCRIBIRSE al Stream de Firestore para sincronización en tiempo real
-      _firestoreSubscription = ref
-          .read(fastingRepositoryProvider)
-          .getActiveFastStream(uid)
-          .listen((activeFast) {
-            
-        if (activeFast != null) {
-          // CASO 1: Hay un ayuno activo en DB
-          final now = DateTime.now();
-          final elapsed = now.difference(activeFast.startTime);
-          
-          state = AsyncValue.data(FastingState(
-            isFasting: true,
-            elapsed: elapsed,
-            progress: _calculateProgress(elapsed, activeFast.plannedDurationHours),
-            startTime: activeFast.startTime,
-            plannedHours: activeFast.plannedDurationHours,
-          ));
-          _startTicker(); // Asegurar que el reloj corra
-          
-        } else {
-          // CASO 2: No hay ayuno activo (o se canceló remotamente)
-          // Solo reseteamos si LOCALMENTE creíamos que había uno
-          if (state.value?.isFasting == true) {
-             _timer?.cancel();
-             state = AsyncValue.data(FastingState.initial());
-          } else if (state.isLoading) {
-             // Primera carga, sin ayuno
-             state = AsyncValue.data(FastingState.initial());
-          }
-        }
-      }, onError: (err) {
-        print("Error en stream de ayuno: $err");
-        // Fallback a lógica local si falla la red? 
-        // Por ahora solo logueamos.
-      });
-    } else {
-      // Sin usuario logueado, usar estado inicial
-      state = AsyncValue.data(FastingState.initial());
+  Future<void> _loadState(String currentUid) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      
+      // 1. RESTRICCIÓN DE SEGURIDAD: Validar que el local storage coincida con el usuario actual
+      final savedUid = prefs.getString(_keyUserUid);
+      if (savedUid != null && savedUid != currentUid) {
+        print("⚠️ Usuario cambiado. Limpiando estado local de ayuno antiguo.");
+        await prefs.remove(_keyStartTime);
+        await prefs.remove(_keyPlannedHours);
+        await prefs.remove(_keyUserUid);
+      } else if (savedUid == null) {
+        // Guardar el uid actual en local para futuras verificaciones
+        await prefs.setString(_keyUserUid, currentUid);
+      }
+
+      final startTimeStr = prefs.getString(_keyStartTime);
+      final plannedHours = prefs.getInt(_keyPlannedHours) ?? 16;
+      
+      // 2. RECUPERAR ESTADO LOCAL (Respuesta inmediata UI)
+      if (startTimeStr != null) {
+        final startTime = DateTime.parse(startTimeStr);
+        final elapsed = DateTime.now().difference(startTime);
+        
+        state = AsyncValue.data(FastingState(
+          startTime: startTime,
+          elapsed: elapsed,
+          plannedHours: plannedHours,
+          isFasting: true,
+          progress: _calculateProgress(elapsed, plannedHours),
+        ));
+        
+        _startTicker();
+      } else {
+        state = AsyncValue.data(FastingState.initial().copyWith(plannedHours: plannedHours));
+      }
+
+      // 3. RECUPERAR ACTIVE SESSION DE FIRESTORE (Robustez de multi-dispositivo)
+      _syncWithFirestore(currentUid, prefs);
+
+    } catch (e, stack) {
+      state = AsyncValue.error(e, stack);
     }
   }
 
-  // 2. Iniciar Ayuno
-  Future<void> startFast({DateTime? startTime, int hours = 16}) async {
-    // Cancelar timer previo por seguridad
-    _timer?.cancel();
+  void _syncWithFirestore(String uid, SharedPreferences prefs) {
+    _firestoreSubscription?.cancel();
     
-    final now = DateTime.now();
-    // Usar la fecha proporcionada o NOW si es nulo
-    final start = startTime ?? now;
+    final repo = ref.read(fastingRepositoryProvider);
+    _firestoreSubscription = repo.getActiveFastStream(uid).listen((activeSession) async {
+      final currentState = state.value;
+      
+      if (activeSession != null) {
+         // Only sync from Firestore if:
+         // (a) We have no local state OR
+         // (b) We are not currently fasting locally
+         // (c) Firestore has a NEWER start time (e.g. edited from another device)
+         // We do NOT overwrite if local startTime is NEWER than Firestore — that means user
+         // made a local manual edit that hasn't been pushed yet.
+         if (currentState == null || 
+             !currentState.isFasting) {
+             
+             print("🔄 Sincronizando sesión de ayuno desde Firestore...");
+             
+             await prefs.setString(_keyStartTime, activeSession.startTime.toIso8601String());
+             await prefs.setInt(_keyPlannedHours, activeSession.plannedDurationHours);
+             await prefs.setString(_keyUserUid, uid);
 
-    // 1. Guardar Persistencia Local INMEDIATA
-    final prefs = await SharedPreferences.getInstance();
-    final uid = ref.read(authControllerProvider.notifier).currentUser?.uid;
+             final elapsed = DateTime.now().difference(activeSession.startTime);
+             
+             state = AsyncValue.data(FastingState(
+                startTime: activeSession.startTime,
+                elapsed: elapsed,
+                plannedHours: activeSession.plannedDurationHours,
+                isFasting: true,
+                progress: _calculateProgress(elapsed, activeSession.plannedDurationHours),
+             ));
+             
+             _startTicker();
+         }
+      } else if (currentState != null && currentState.isFasting) {
+          // Si Firebase dice que no hay sesión, pero localmente sí (Posible desincronización)
+          // Asumimos Firebase como fuente de verdad si la sesión local lleva mucho rato y Firebase la cortó.
+          // Para no matar el de un error offline, podríamos ser conservadores.
+          // Por ahora, sincronizamos forzadamente borrando local si firebase está vacío, a menos que llevemos offline.
+          // Implementación conservadora: Dejar local hasta que intente guardar.
+      }
+    });
+  }
+
+  // 2. Iniciar Ayuno
+  Future<void> startFast({DateTime? startTime, required int hours}) async {
+    final start = startTime ?? DateTime.now();
     
+    // 1. Guardar Persistencia Local
+    final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keyStartTime, start.toIso8601String());
     await prefs.setInt(_keyPlannedHours, hours);
+    
+    final uid = ref.read(authControllerProvider.notifier).currentUser?.uid;
     if (uid != null) {
       await prefs.setString(_keyUserUid, uid);
     }
 
-    // 2. Establecer Estado Activo
+    // 2. Actualizar Estado Inmediatamente (Optimistic UI)
     state = AsyncValue.data(FastingState(
-      isFasting: true,
-      elapsed: Duration.zero, // El ticker lo corregirá inmediatamente
-      progress: 0.0,
       startTime: start,
+      elapsed: Duration.zero,
       plannedHours: hours,
+      isFasting: true,
+      progress: 0.0,
     ));
 
     // 3. Programar Notificaciones
@@ -199,17 +263,19 @@ class FastingController extends StateNotifier<AsyncValue<FastingState>> {
       try {
         final repo = ref.read(fastingRepositoryProvider);
         await repo.saveCompletedFast(uid, session);
+        
+        // TODO: Re-calcular IMX a través de un orquestador global
+        // Escuchando los eventos de ayuno para no acoplar la logica aquí
       } catch (e) {
         print("❌ Error crítico guardando ayuno: $e");
         // Aún así continuamos para limpiar la UI
       }
     }
 
-    // 4. Limpiar Local Storage (Rest of the method...)
+    // 4. Limpiar Local Storage
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_keyStartTime);
     await prefs.remove(_keyUserUid);
-    // await prefs.remove(_keyPlannedHours); // Dejamos las horas para la UX de recordatorio
 
     // 5. FORZAR RESETEO DE UI
     state = AsyncValue.data(FastingState.initial().copyWith(
@@ -265,12 +331,7 @@ class FastingController extends StateNotifier<AsyncValue<FastingState>> {
     ));
   }
 
-  // ... (Rest of methods _startTicker, _updateTickerLogic, updateStartTime, _calculateProgress, setProtocol, dispose) ...
-  // Re-pasting them to ensure no code loss during replacement if large block needed. 
-  // Actually, I can just target the specific blocks or the end of file.
-  // The user instruction implies updating the provider too.
-
-  // 4. Timer Interno (Ticker) - Lógica Revisada
+  // 4. Timer Interno (Ticker)
   void _startTicker() {
     _timer?.cancel(); // Siempre cancelar el anterior
     
@@ -283,10 +344,8 @@ class FastingController extends StateNotifier<AsyncValue<FastingState>> {
   }
   
   void _updateTickerLogic() {
-      if (!mounted) {
-          _timer?.cancel();
-          return;
-      }
+      // El mounted base ya no existe en AutoDisposeNotifier. 
+      // Si llegamos aquí y el provider fue descartado, ref lanzará StateError al intentar acceder, pero eso es manejado por Riverpod.
       
       final currentState = state.value;
       if (currentState == null || !currentState.isFasting || currentState.startTime == null) {
@@ -299,11 +358,15 @@ class FastingController extends StateNotifier<AsyncValue<FastingState>> {
       final newElapsed = now.difference(currentState.startTime!);
       
       // Actualizar estado (Copia eficiente)
-      // STATE NOTIFIER TRIGGER: Esto reconstruye la UI
       state = AsyncValue.data(currentState.copyWith(
           elapsed: newElapsed,
           progress: _calculateProgress(newElapsed, currentState.plannedHours)
       ));
+  }
+
+  double _calculateProgress(Duration elapsed, int plannedHours) {
+    if (plannedHours <= 0) return 0.0;
+    return elapsed.inSeconds / (plannedHours * 3600);
   }
 
   // 5. Actualizar Hora de Inicio (Edición Manual)
@@ -311,7 +374,7 @@ class FastingController extends StateNotifier<AsyncValue<FastingState>> {
     final currentState = state.value;
     if (currentState == null || !currentState.isFasting) return;
     
-    // 1. Guardar Persistencia
+    // 1. Guardar Persistencia LOCAL
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keyStartTime, newStartTime.toIso8601String());
     
@@ -332,14 +395,14 @@ class FastingController extends StateNotifier<AsyncValue<FastingState>> {
     // 4. Reprogramar notificaciones
     await NotificationService.scheduleFastingNotifications(
         newStartTime, Duration(hours: currentState.plannedHours));
+
+    // 5. PERSISTIR EN FIRESTORE (Fuente de Verdad para Multi-Dispositivo y Hot Reload)
+    final uid = ref.read(authControllerProvider.notifier).currentUser?.uid;
+    if (uid != null) {
+      await ref.read(fastingRepositoryProvider).updateActiveFastStartTime(uid, newStartTime);
+    }
         
     print("✏️ Hora de inicio actualizada a: $newStartTime");
-  }
-
-
-  double _calculateProgress(Duration elapsed, int plannedHours) {
-    if (plannedHours <= 0) return 0.0;
-    return elapsed.inSeconds / (plannedHours * 3600);
   }
 
   // 6. Cambiar Protocolo
@@ -361,9 +424,11 @@ class FastingController extends StateNotifier<AsyncValue<FastingState>> {
       
       final uid = ref.read(authControllerProvider.notifier).currentUser?.uid;
       if (uid != null) {
-          FirebaseFirestore.instance.collection('users').doc(uid).update({
-            'fastingProtocol': protocolString
-          }).catchError((e) => print("Error update protocol: $e"));
+          try {
+            await ref.read(fastingRepositoryProvider).updateProtocol(uid, protocolString);
+          } catch (e) {
+            print("Error update protocol: $e");
+          }
       }
 
       if (currentState.isFasting && currentState.startTime != null) {
@@ -373,18 +438,7 @@ class FastingController extends StateNotifier<AsyncValue<FastingState>> {
     }
   }
 
-  @override
-  void dispose() {
-    _timer?.cancel();
-    _firestoreSubscription?.cancel();
-    super.dispose();
-  }
 }
 
-final fastingControllerProvider =
-    StateNotifierProvider.autoDispose<FastingController, AsyncValue<FastingState>>((ref) {
-  // Watch auth state to reset controller when user changes
-  ref.watch(authStateChangesProvider);
-  return FastingController(ref);
-});
+final fastingControllerProvider = AutoDisposeNotifierProvider<FastingController, AsyncValue<FastingState>>(FastingController.new);
 

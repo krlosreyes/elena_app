@@ -23,11 +23,11 @@ class RestTimerBanner extends ConsumerWidget {
         margin: const EdgeInsets.symmetric(horizontal: 24),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         decoration: BoxDecoration(
-          color: AppTheme.brandDark,
+          color: Theme.of(context).cardTheme.color,
           borderRadius: BorderRadius.circular(30),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.2),
+              color: Colors.black.withOpacity(0.2),
               blurRadius: 10,
               offset: const Offset(0, 4),
             )

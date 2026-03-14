@@ -113,28 +113,29 @@ class _ExerciseSetRowState extends ConsumerState<ExerciseSetRow> {
             height: 32,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: Colors.teal.withValues(alpha: 0.05), // Soft Teal bg
+              color: const Color(0xFF00FFB2).withOpacity(0.1),
               shape: BoxShape.circle,
+              border: Border.all(color: const Color(0xFF00FFB2).withOpacity(0.2)),
             ),
             child: Text(
               "${widget.setIndex}",
-              style: GoogleFonts.outfit(
-                fontSize: 14,
+              style: GoogleFonts.firaCode(
+                fontSize: 12,
                 fontWeight: FontWeight.bold,
-                color: Colors.teal.shade700,
+                color: const Color(0xFF00FFB2),
               ),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 12),
 
           // Target Reps
           Expanded(
             child: Text(
-              widget.targetReps, // Just number, header says "OBJETIVO"
-              style: GoogleFonts.outfit(
+              widget.targetReps,
+              style: GoogleFonts.firaCode(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: Colors.grey.shade700,
+                color: Colors.white,
               ),
               overflow: TextOverflow.ellipsis,
             ),
@@ -167,11 +168,11 @@ class _ExerciseSetRowState extends ConsumerState<ExerciseSetRow> {
               height: 32,
               decoration: BoxDecoration(
                  shape: BoxShape.circle,
-                 color: isDone ? Colors.green : Colors.transparent,
-                 border: isDone ? null : Border.all(color: Colors.grey.shade300, width: 2),
+                 color: isDone ? const Color(0xFF00FFB2) : Colors.transparent,
+                 border: isDone ? null : Border.all(color: Colors.white.withOpacity(0.1), width: 1.5),
               ),
               child: isDone 
-                 ? const Icon(Icons.check, color: Colors.white, size: 20)
+                 ? const Icon(Icons.check, color: Colors.black, size: 20)
                  : null,
             ),
           ),
@@ -186,27 +187,31 @@ class _ExerciseSetRowState extends ConsumerState<ExerciseSetRow> {
        keyboardType: const TextInputType.numberWithOptions(decimal: true),
        textAlign: TextAlign.center,
        enabled: !isDone,
-       style: GoogleFonts.outfit(
+       style: GoogleFonts.firaCode(
          fontSize: 14, 
          fontWeight: FontWeight.bold,
-         color: Colors.black87
+         color: isDone ? Colors.grey.shade600 : Colors.white
        ),
        decoration: InputDecoration(
          contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4), 
          isDense: true,
          filled: true,
-         fillColor: isDone ? Colors.grey.shade50 : Colors.white,
+         fillColor: isDone ? Colors.white.withOpacity(0.02) : const Color(0xFF111111),
          border: OutlineInputBorder(
-             borderRadius: BorderRadius.circular(12), // Elite Radius
-             borderSide: const BorderSide(color: Color(0xFFE0E0E0)), // Specific color
-         ),
-         enabledBorder: OutlineInputBorder( // Explicit enabled border
              borderRadius: BorderRadius.circular(12),
-             borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+             borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
          ),
-         focusedBorder: OutlineInputBorder( // Active state
+         enabledBorder: OutlineInputBorder(
              borderRadius: BorderRadius.circular(12),
-             borderSide: const BorderSide(color: Colors.blue, width: 1.5),
+             borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+         ),
+         disabledBorder: OutlineInputBorder(
+             borderRadius: BorderRadius.circular(12),
+             borderSide: BorderSide(color: Colors.white.withOpacity(0.05)),
+         ),
+         focusedBorder: OutlineInputBorder(
+             borderRadius: BorderRadius.circular(12),
+             borderSide: const BorderSide(color: Color(0xFF00FFB2), width: 1.5),
          ),
        ),
      );

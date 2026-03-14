@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/features/glucose/data/glucose_repository.dart' hide glucoseRepositoryProvider;
 import 'package:elena_app/src/features/glucose/domain/glucose_model.dart';
-import 'package:elena_app/src/features/authentication/data/auth_repository.dart';
+import 'package:elena_app/src/features/authentication/application/auth_controller.dart';
 
 // 1. Provider del Repositorio (CORREGIDO)
 final glucoseRepositoryProvider = Provider<GlucoseRepository>((ref) {
@@ -14,7 +14,18 @@ final glucoseRepositoryProvider = Provider<GlucoseRepository>((ref) {
 enum TimeFilter { semana, mes, ano }
 
 // Provider for the selected filter
-final glucoseTimeFilterProvider = StateProvider<TimeFilter>((ref) => TimeFilter.semana);
+class GlucoseTimeFilterNotifier extends Notifier<TimeFilter> {
+  @override
+  TimeFilter build() => TimeFilter.semana;
+
+  void setFilter(TimeFilter filter) {
+    state = filter;
+  }
+}
+
+// Provider for the selected filter
+final glucoseTimeFilterProvider =
+    NotifierProvider<GlucoseTimeFilterNotifier, TimeFilter>(GlucoseTimeFilterNotifier.new);
 
 // 2. Provider de Datos Filtrados (Reactivo)
 final filteredGlucoseProvider = StreamProvider.autoDispose<List<GlucoseLog>>((ref) {
@@ -31,7 +42,8 @@ final filteredGlucoseProvider = StreamProvider.autoDispose<List<GlucoseLog>>((re
   final filter = ref.watch(glucoseTimeFilterProvider);
 
   // Calculamos startDate según el filtro
-  DateTime startDate; // Remove 'final' to allow assignment in switch
+  // Calculamos startDate según el filtro
+  DateTime startDate = DateTime.now().subtract(const Duration(days: 7)); // Default value
   switch (filter) {
     case TimeFilter.semana:
       startDate = DateTime.now().subtract(const Duration(days: 7));

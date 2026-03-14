@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -7,6 +6,7 @@ import '../../../profile/domain/user_model.dart';
 import '../../../progress/domain/measurement_log.dart';
 import '../../../coaching/data/coaching_service.dart';
 import '../../application/progress_controller.dart';
+import '../../data/progress_service.dart';
 
 class MeasurementBottomSheet extends ConsumerStatefulWidget {
   final UserModel user;
@@ -157,12 +157,8 @@ class _MeasurementBottomSheetState extends ConsumerState<MeasurementBottomSheet>
           visceralFat: visceralFat,
         );
         
-        // Save to Firestore (Log History)
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(widget.user.uid)
-            .collection('measurements')
-            .add(tempLog.toJson());
+        // Usando el Service en lugar de DB directo
+        await ref.read(progressServiceProvider).addFullMeasurement(widget.user.uid, tempLog);
             
         // Use tempLog for profile update check
         logToSave = tempLog; 
@@ -178,15 +174,13 @@ class _MeasurementBottomSheetState extends ConsumerState<MeasurementBottomSheet>
       // A simple heuristic: Update profile fields if selectedDate is today.
       
       if (DateUtils.isSameDay(_selectedDate, DateTime.now())) {
-          await FirebaseFirestore.instance
-            .collection('users')
-            .doc(widget.user.uid)
-            .update({
-              'currentWeightKg': weight,
-              if (waist != null) 'waistCircumferenceCm': waist,
-              if (neck != null) 'neckCircumferenceCm': neck,
-              if (hip != null) 'hipCircumferenceCm': hip,
-            });
+          await ref.read(progressServiceProvider).updateProfileDerivedStats(
+             widget.user.uid,
+             weight: weight,
+             waist: waist,
+             neck: neck,
+             hip: hip,
+          );
       }
 
       // 7. Generate Coaching Plan

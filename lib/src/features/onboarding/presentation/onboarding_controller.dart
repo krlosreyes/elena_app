@@ -1,22 +1,16 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/foundation.dart';
 import '../../profile/application/user_controller.dart';
 import '../../profile/domain/user_model.dart';
 import '../../progress/domain/measurement_log.dart';
+import '../../progress/data/progress_service.dart';
 import '../logic/elena_brain.dart';
+import '../../imx/application/imx_service.dart';
 
+class OnboardingController extends StateNotifier<UserModel?> {
+  final Ref _ref;
 
-part 'onboarding_controller.g.dart';
-
-@riverpod
-class OnboardingController extends _$OnboardingController {
-  @override
-  UserModel? build() {
-    // Inicializamos con datos vacíos o parciales si ya existe el usuario
-    // Por ahora retornamos null hasta que carguemos o creemos uno nuevo
-    return null;
-  }
+  OnboardingController(this._ref) : super(null);
 
   /// Inicializa el estado con el usuario actual o crea uno base
   Future<void> init(String uid, String email, String displayName) async {
@@ -45,7 +39,6 @@ class OnboardingController extends _$OnboardingController {
     state = newUser;
   }
 
-
   Future<void> submit() async {
     if (state == null) return;
 
@@ -55,7 +48,7 @@ class OnboardingController extends _$OnboardingController {
 
       // 2. Marcar onboarding como completado
       final userCompleted = state!.copyWith(onboardingCompleted: true);
-      final repo = ref.read(userControllerProvider.notifier);
+      final repo = _ref.read(userControllerProvider.notifier);
 
       // 3. Guardar Plan y Usuario en Firestore
       await repo.saveHealthPlan(userCompleted.uid, clinicalPlan);
@@ -64,34 +57,83 @@ class OnboardingController extends _$OnboardingController {
       // 4. Generar primer MeasurementLog automático
       await _generateInitialMeasurement(userCompleted);
 
-      // 5. Log debug
-      debugPrint('Plan Clínico Generado: $clinicalPlan');
-      
+      // 5. Generar IMX Baseline
+      await _generateBaselineIMX(userCompleted);
+
+      debugPrint('Plan Clínico e IMX Generados Exitosamente');
       // La navegación la maneja la vista
     } catch (e) {
       debugPrint('Error en onboarding submit: $e');
-      rethrow; // Para que la vista maneje el error
+      rethrow;
     }
+  }
+
+  double _calculateSleepHours(String bedTimeStr, String wakeUpTimeStr) {
+    try {
+      final bedParts = bedTimeStr.split(':');
+      final wakeParts = wakeUpTimeStr.split(':');
+      final bedHour = int.parse(bedParts[0]) + int.parse(bedParts[1]) / 60.0;
+      final wakeHour = int.parse(wakeParts[0]) + int.parse(wakeParts[1]) / 60.0;
+      
+      double diff = wakeHour - bedHour;
+      if (diff < 0) {
+        diff += 24.0;
+      }
+      return diff;
+    } catch (e) {
+      return 8.0; // Fallback
+    }
+  }
+
+  Future<void> _generateBaselineIMX(UserModel user) async {
+      try {
+        // Proxies baseados en los hábitos iniciales
+        double avgFasting = user.fastingExperience == FastingExperience.advanced ? 16.0 
+                          : user.fastingExperience == FastingExperience.intermediate ? 14.0 
+                          : 12.0;
+        int energyLevel = user.energyLevel1To10 ?? (user.snackingHabit == SnackingHabit.frequent ? 4 : 7);
+        double nutritionScore = user.snackingHabit == SnackingHabit.frequent ? 40.0 : 80.0;
+        double exerciseScore = user.activityLevel == ActivityLevel.heavy ? 90.0
+                             : user.activityLevel == ActivityLevel.moderate ? 70.0
+                             : user.activityLevel == ActivityLevel.light ? 40.0
+                             : 20.0;
+        
+        // Sueño (Dinámico basado en ritmos circadianos)
+        double sleepHours = _calculateSleepHours(user.bedTime, user.wakeUpTime); 
+
+        await _ref.read(imxServiceProvider.notifier).calculateAndSave(
+          waistCm: user.waistCircumferenceCm,
+          heightCm: user.heightCm,
+          hipCm: user.hipCircumferenceCm ?? user.waistCircumferenceCm * 1.2, // Fallback aproximado
+          neckCm: user.neckCircumferenceCm,
+          avgFastingHours: avgFasting,
+          energyLevel1To10: energyLevel,
+          nutritionAdherenceScore: nutritionScore,
+          exerciseAdherenceScore: exerciseScore,
+          avgSleepHours: sleepHours,
+        );
+      } catch (e) {
+         debugPrint('Error generando baseline IMX: $e');
+      }
   }
 
   Future<void> _generateInitialMeasurement(UserModel user) async {
     try {
-      // Calcular Grasa (Navy Method)
       final bodyFat = MeasurementLog.calculateBodyFat(
-            heightCm: user.heightCm,
-            waistCm: user.waistCircumferenceCm,
-            neckCm: user.neckCircumferenceCm,
-            hipCm: user.hipCircumferenceCm,
-            isMale: user.gender == Gender.male,
-          );
-      
+        heightCm: user.heightCm,
+        waistCm: user.waistCircumferenceCm,
+        neckCm: user.neckCircumferenceCm,
+        hipCm: user.hipCircumferenceCm,
+        isMale: user.gender == Gender.male,
+      );
+
       double? leanMass;
       if (bodyFat != null) {
         leanMass = 100.0 - bodyFat;
       }
 
       final initialLog = MeasurementLog(
-        id: '', // Se genera al guardar
+        id: '',
         date: DateTime.now(),
         weight: user.currentWeightKg,
         waistCircumference: user.waistCircumferenceCm,
@@ -99,20 +141,20 @@ class OnboardingController extends _$OnboardingController {
         hipCircumference: user.hipCircumferenceCm,
         bodyFatPercentage: bodyFat,
         muscleMassPercentage: leanMass,
-        energyLevel: 5, // Default neutral
+        energyLevel: 5,
       );
 
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .collection('measurements')
-          .add(initialLog.toJson());
-          
+      // Usando las capas de repositorio/servicio para aislar la BD del controlador UI
+      await _ref.read(progressServiceProvider).addFullMeasurement(user.uid, initialLog);
+
       debugPrint('Initial Measurement Log created.');
     } catch (e) {
       debugPrint('Error creating initial measurement: $e');
-      // No rethrow aquí para no bloquear el onboarding si esto falla
     }
   }
 }
 
+final onboardingControllerProvider =
+    StateNotifierProvider.autoDispose<OnboardingController, UserModel?>((ref) {
+  return OnboardingController(ref);
+});

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:async';
 import 'package:state_notifier/state_notifier.dart';
 import 'package:intl/intl.dart';
 import '../../fasting/domain/fasting_session.dart';
@@ -36,24 +37,28 @@ class FastingHistoryState {
   }
 }
 
-class FastingHistoryController extends StateNotifier<FastingHistoryState> {
-  final FastingRepository _repository;
-  final String? _uid;
+class FastingHistoryController extends AutoDisposeNotifier<FastingHistoryState> {
+  StreamSubscription? _subscription;
 
-  FastingHistoryController(this._repository, this._uid)
-      : super(FastingHistoryState(focusedDate: DateTime.now())) {
-    _loadHistory();
+  @override
+  FastingHistoryState build() {
+    ref.onDispose(() {
+      _subscription?.cancel();
+    });
+    Future.microtask(_loadHistory);
+    return FastingHistoryState(focusedDate: DateTime.now());
   }
 
   void _loadHistory() {
-    if (_uid == null) {
+    final uid = ref.read(authControllerProvider.notifier).currentUser?.uid;
+    if (uid == null) {
        state = state.copyWith(allSessions: [], isLoading: false);
        return;
     }
-    _repository.getHistoryStream(_uid).listen((sessions) {
-      if (mounted) {
+    final repository = ref.read(fastingRepositoryProvider);
+    _subscription?.cancel();
+    _subscription = repository.getHistoryStream(uid).listen((sessions) {
         state = state.copyWith(allSessions: sessions, isLoading: false);
-      }
     });
   }
 
@@ -227,8 +232,6 @@ class ChartDataPoint {
 }
 
 final fastingHistoryProvider = 
-    StateNotifierProvider.autoDispose<FastingHistoryController, FastingHistoryState>((ref) {
-  final repo = ref.watch(fastingRepositoryProvider);
-  final user = ref.watch(authStateChangesProvider).value;
-  return FastingHistoryController(repo, user?.uid);
+    AutoDisposeNotifierProvider<FastingHistoryController, FastingHistoryState>(() {
+  return FastingHistoryController();
 });

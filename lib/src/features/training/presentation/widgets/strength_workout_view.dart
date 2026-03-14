@@ -72,9 +72,10 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      isDismissible: false, // Force them to choose or pop back
+      isDismissible: false,
       enableDrag: false,
       backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withOpacity(0.8),
       builder: (ctx) {
         return StatefulBuilder(
           builder: (context, setModalState) {
@@ -82,44 +83,68 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
               padding: EdgeInsets.only(
                 left: 24, 
                 right: 24, 
-                top: 24, 
-                bottom: MediaQuery.of(context).viewInsets.bottom + 24
+                top: 32, 
+                bottom: MediaQuery.of(context).viewInsets.bottom + 32
               ),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+              decoration: BoxDecoration(
+                color: const Color(0xFF000000),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+                border: Border.all(color: const Color(0xFF00FFB2).withOpacity(0.2), width: 1.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF00FFB2).withOpacity(0.1),
+                    blurRadius: 40,
+                    spreadRadius: 2,
+                    offset: const Offset(0, -10),
+                  ),
+                ],
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text("¡Preparados!", style: GoogleFonts.outfit(fontSize: 28, fontWeight: FontWeight.bold)),
+                  Row(
+                    children: [
+                      Text("¡PREPARADOS!", 
+                        style: GoogleFonts.firaCode(
+                          fontSize: 24, 
+                          fontWeight: FontWeight.w900, 
+                          color: Colors.white,
+                          letterSpacing: 1.0,
+                        )
+                      ),
+                      const SizedBox(width: 12),
+                      const Text("🚀", style: TextStyle(fontSize: 24)),
+                    ],
+                  ),
                   const SizedBox(height: 8),
-                  Text("Antes de empezar, define tu equipo de hoy:", style: GoogleFonts.outfit(fontSize: 16, color: Colors.grey.shade600)),
-                  const SizedBox(height: 24),
+                  Text("Antes de empezar, define tu equipo de hoy:", 
+                    style: GoogleFonts.outfit(fontSize: 15, color: Colors.grey.shade500, fontWeight: FontWeight.w500)),
+                  const SizedBox(height: 32),
                   
                   // dumbbels toggle
                   Container(
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.grey.shade200)
+                      color: const Color(0xFF111111),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.white.withOpacity(0.05))
                     ),
                     child: Column(
                       children: [
-                        RadioListTile<bool>(
-                          value: true,
-                          groupValue: hasDumbbells,
-                          activeColor: AppTheme.brandBlue,
-                          title: Text("Con Mancuernas", style: GoogleFonts.outfit(fontWeight: FontWeight.w600)),
-                          onChanged: (val) => setModalState(() => hasDumbbells = val!),
+                        _buildEquipmentOption(
+                          context, 
+                          "Con Mancuernas", 
+                          true, 
+                          hasDumbbells, 
+                          (val) => setModalState(() => hasDumbbells = val)
                         ),
-                        RadioListTile<bool>(
-                          value: false,
-                          groupValue: hasDumbbells,
-                          activeColor: AppTheme.brandBlue,
-                          title: Text("Sin Mancuernas (Solo Peso Corporal)", style: GoogleFonts.outfit(fontWeight: FontWeight.w600)),
-                          onChanged: (val) => setModalState(() => hasDumbbells = val!),
+                        Divider(height: 1, color: Colors.white.withOpacity(0.05)),
+                        _buildEquipmentOption(
+                          context, 
+                          "Solo Peso Corporal", 
+                          false, 
+                          hasDumbbells, 
+                          (val) => setModalState(() => hasDumbbells = val)
                         ),
                       ],
                     ),
@@ -129,44 +154,84 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
                     duration: const Duration(milliseconds: 300),
                     child: hasDumbbells 
                      ? Padding(
-                        padding: const EdgeInsets.only(top: 24.0),
+                        padding: const EdgeInsets.only(top: 32.0),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text("Peso base (kg):", style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-                            const SizedBox(height: 8),
+                            Text("PESO BASE (KG):", 
+                              style: GoogleFonts.firaCode(
+                                fontSize: 11, 
+                                fontWeight: FontWeight.bold, 
+                                color: const Color(0xFF00FFB2),
+                                letterSpacing: 1.5,
+                              )
+                            ),
+                            const SizedBox(height: 12),
                             TextField(
                               keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              style: GoogleFonts.firaCode(color: Colors.white, fontWeight: FontWeight.bold),
                               decoration: InputDecoration(
                                 hintText: "Ej. 5",
+                                hintStyle: GoogleFonts.firaCode(color: Colors.grey.shade700),
                                 filled: true,
-                                fillColor: Colors.grey.shade100,
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                                fillColor: const Color(0xFF111111),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16), 
+                                  borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16), 
+                                  borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16), 
+                                  borderSide: const BorderSide(color: Color(0xFF00FFB2), width: 1.5),
+                                ),
                               ),
                               onChanged: (val) => weight = double.tryParse(val) ?? 5.0,
                             ),
                           ],
                         ),
-                     )
+                      )
                      : const SizedBox.shrink(),
                   ),
 
-                  const SizedBox(height: 32),
-                  SizedBox(
-                    width: double.infinity,
+                  const SizedBox(height: 40),
+                  
+                  Container(
                     height: 56,
-                    child: FilledButton(
-                      style: FilledButton.styleFrom(backgroundColor: AppTheme.brandBlue, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF00FFB2), Color(0xFF009688)],
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF00FFB2).withOpacity(0.3),
+                          blurRadius: 15,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: ElevatedButton(
                       onPressed: () {
-                         // 1. Update Provider State
                          ref.read(dailyRoutineProvider.notifier).setEquipmentPreference(hasDumbbells, weight);
-                         // 2. Init Engine
                          _initializeEngine();
-                         // 3. Close modal & allow UI to load
                          setState(() => _hasConfiguredWorkout = true);
                          Navigator.pop(ctx);
                       },
-                      child: Text("Empezar Entrenamiento 🚀", style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        foregroundColor: Colors.black,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      ),
+                      child: Text("Empezar Entrenamiento", 
+                        style: GoogleFonts.firaCode(fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
                     ),
                   )
                 ],
@@ -175,6 +240,42 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
           }
         );
       }
+    );
+  }
+
+  Widget _buildEquipmentOption(BuildContext context, String title, bool value, bool groupValue, Function(bool) onChanged) {
+    final isSelected = value == groupValue;
+    return InkWell(
+      onTap: () => onChanged(value),
+      borderRadius: BorderRadius.circular(isSelected ? 20 : 0),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+        child: Row(
+          children: [
+            Container(
+              height: 24,
+              width: 24,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isSelected ? const Color(0xFF00FFB2) : Colors.white24,
+                  width: isSelected ? 7 : 2,
+                ),
+                color: isSelected ? Colors.transparent : Colors.black,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Text(
+              title,
+              style: GoogleFonts.outfit(
+                color: isSelected ? Colors.white : Colors.grey.shade500,
+                fontSize: 16,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -188,7 +289,7 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
   Widget build(BuildContext context) {
      if (!_hasConfiguredWorkout && !_isReadOnly) {
         // While the BottomSheet is overlaid, show a clean skeleton or loading background
-        return const Scaffold(backgroundColor: Colors.white, body: Center(child: CircularProgressIndicator()));
+        return const Scaffold(backgroundColor: Colors.black, body: Center(child: CircularProgressIndicator(color: Color(0xFF00FFB2))));
      }
 
      final dailyExercisesAsync = ref.watch(dailyRoutineProvider);
@@ -256,15 +357,16 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
             child: Container(
               margin: const EdgeInsets.only(bottom: 24),
               decoration: BoxDecoration(
-                 color: const Color(0xFFF3F4F6), // Smooth standard gray
-                 borderRadius: BorderRadius.circular(24),
-                 boxShadow: [
-                   BoxShadow(
-                     color: Colors.black.withValues(alpha: 0.05),
-                     blurRadius: 15,
-                     offset: const Offset(0, 10),
-                   ),
-                 ]
+                  color: const Color(0xFF1A1A1A), // Darker tech gray
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: Colors.white.withOpacity(0.05)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ]
               ),
               child: Stack(
                  alignment: Alignment.bottomCenter,
@@ -283,16 +385,18 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(32), // More rounded and premium
+              color: const Color(0xFF111111),
+              borderRadius: BorderRadius.circular(32),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.03),
+                  color: Colors.black.withOpacity(0.2),
                   blurRadius: 30,
                   offset: const Offset(0, 15),
                 ),
               ],
-              border: isDeload ? Border.all(color: Colors.teal.shade100, width: 2) : Border.all(color: Colors.grey.shade100, width: 1),
+              border: isDeload 
+                ? Border.all(color: const Color(0xFF00FFB2).withOpacity(0.3), width: 2) 
+                : Border.all(color: Colors.white.withOpacity(0.05), width: 1),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -302,12 +406,12 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
                      Container(
                        padding: const EdgeInsets.all(12),
                        decoration: BoxDecoration(
-                         color: AppTheme.brandBlue.withValues(alpha: 0.1),
+                         color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                          borderRadius: BorderRadius.circular(16),
                        ),
                        child: Text(
                          exercise.id.substring(0, 1).toUpperCase(), 
-                         style: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 18, color: AppTheme.brandBlue),
+                         style: GoogleFonts.robotoMono(fontWeight: FontWeight.bold, fontSize: 18, color: Theme.of(context).colorScheme.primary),
                        ),
                      ),
                      const SizedBox(width: 16),
@@ -320,16 +424,24 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
                              style: GoogleFonts.outfit(
                                fontSize: 22, // Slightly larger
                                fontWeight: FontWeight.bold,
+                               color: Colors.white,
                                height: 1.2,
                              ),
                            ),
                            const SizedBox(height: 4),
                            Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(color: Colors.orange.shade50, borderRadius: BorderRadius.circular(8)),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF00FFB2).withOpacity(0.1), 
+                                borderRadius: BorderRadius.circular(8)
+                              ),
                               child: Text(
-                                "Objetivo: ${exercise.sets.first.targetReps} Reps", 
-                                style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.orange.shade800),
+                                "OBJETIVO: ${exercise.sets.first.targetReps} REPS", 
+                                style: GoogleFonts.firaCode(
+                                  fontSize: 10, 
+                                  fontWeight: FontWeight.bold, 
+                                  color: const Color(0xFF00FFB2)
+                                ),
                               ),
                            )
                          ],
@@ -342,14 +454,14 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
                  // Sets Header Row 
                  Row(
                     children: [
-                       SizedBox(width: 32, child: Text("Serie", style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey.shade400))),
-                       Expanded(child: Text("Objetivo", style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey.shade400))),
+                       SizedBox(width: 32, child: Text("SERIE", style: GoogleFonts.firaCode(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey.shade600))),
+                       Expanded(child: Text("OBJETIVO", style: GoogleFonts.firaCode(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey.shade600))),
                        
                        // Dynamic Header
                        if (exercise.requiresWeight)
-                       SizedBox(width: 58, child: Text("Peso", textAlign: TextAlign.center, style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey.shade400))),
+                       SizedBox(width: 58, child: Text("PESO", textAlign: TextAlign.center, style: GoogleFonts.firaCode(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey.shade600))),
                        
-                       SizedBox(width: exercise.requiresWeight ? 58 : 88, child: Text("Reps", textAlign: TextAlign.center, style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey.shade400))),
+                       SizedBox(width: exercise.requiresWeight ? 58 : 88, child: Text("REPS", textAlign: TextAlign.center, style: GoogleFonts.firaCode(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey.shade600))),
                        const SizedBox(width: 28),
                     ],
                  ),
@@ -400,9 +512,9 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
                             width: double.infinity,
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             decoration: BoxDecoration(
-                               color: Colors.red.withValues(alpha: 0.05),
+                               color: Colors.red.withOpacity(0.05),
                                borderRadius: BorderRadius.circular(16),
-                               border: Border.all(color: Colors.red.withValues(alpha: 0.2), width: 1.5, strokeAlign: BorderSide.strokeAlignInside)
+                               border: Border.all(color: Colors.red.withOpacity(0.2), width: 1.5, strokeAlign: BorderSide.strokeAlignInside)
                             ),
                             child: Row(
                                mainAxisAlignment: MainAxisAlignment.center,
@@ -434,18 +546,19 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 20, offset: const Offset(0, -10))],
+        color: const Color(0xFF000000),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 20, offset: const Offset(0, -10))],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
            LinearProgressIndicator(
              value: currentExerciseNum / totalExercises,
-             backgroundColor: Colors.grey.shade100,
-             valueColor: AlwaysStoppedAnimation<Color>(AppTheme.brandBlue),
+             backgroundColor: Colors.white.withOpacity(0.05),
+             valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF00FFB2)),
              borderRadius: BorderRadius.circular(8),
-             minHeight: 6,
+             minHeight: 4,
            ),
            const SizedBox(height: 20),
            
@@ -476,7 +589,7 @@ class _StrengthWorkoutViewState extends ConsumerState<StrengthWorkoutView> {
                        }
                    },
                style: FilledButton.styleFrom(
-                 backgroundColor: (!isComplete && !_isReadOnly) ? Colors.grey.shade200 : (isLast ? Colors.green : AppTheme.brandBlue),
+                 backgroundColor: (!isComplete && !_isReadOnly) ? Theme.of(context).cardTheme.color : (isLast ? Colors.green : Theme.of(context).colorScheme.secondary),
                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                  elevation: (!isComplete && !_isReadOnly) ? 0 : 4,
                ),

@@ -43,11 +43,12 @@ class RecompositionProgressCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        color: Theme.of(context).cardTheme.color,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Theme.of(context).dividerColor),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Colors.black.withOpacity(0.2),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -62,7 +63,7 @@ class RecompositionProgressCard extends StatelessWidget {
             style: GoogleFonts.outfit(
               fontSize: 11,
               fontWeight: FontWeight.bold,
-              color: Colors.grey[600],
+              color: Colors.grey[400],
               letterSpacing: 0.5,
             ),
           ),
@@ -80,7 +81,7 @@ class RecompositionProgressCard extends StatelessWidget {
             child: LinearProgressIndicator(
               value: fatProgress,
               minHeight: 8,
-              backgroundColor: Colors.grey[100],
+              backgroundColor: Colors.white12,
               valueColor: AlwaysStoppedAnimation<Color>(Colors.orange.shade400),
             ),
           ),
@@ -99,7 +100,7 @@ class RecompositionProgressCard extends StatelessWidget {
             child: LinearProgressIndicator(
               value: lbmProgress,
               minHeight: 8,
-              backgroundColor: Colors.grey[100],
+              backgroundColor: Colors.white12,
               valueColor: const AlwaysStoppedAnimation<Color>(Colors.blueAccent),
             ),
           ),
@@ -116,18 +117,18 @@ class RecompositionProgressCard extends StatelessWidget {
           label,
           style: GoogleFonts.outfit(
             fontWeight: FontWeight.w600,
-            color: Colors.black87,
+            color: Colors.white,
             fontSize: 14,
           ),
         ),
         RichText(
           text: TextSpan(
-            style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey[600]),
+            style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey[400]),
             children: [
               const TextSpan(text: "Actual: "),
               TextSpan(
                 text: currentVal, 
-                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
+                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
               ),
               const TextSpan(text: "  |  Meta: "),
               TextSpan(text: targetVal),

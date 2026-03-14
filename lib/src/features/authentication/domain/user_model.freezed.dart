@@ -422,7 +422,15 @@ class _$MedicalProfileImpl implements _MedicalProfile {
       this.targetWeightKg,
       this.metabolicStage = MetabolicStage.recovery,
       this.activityLevel = ActivityLevel.sedentary,
-      this.gender = Gender.female});
+      this.gender = Gender.female})
+      : assert(heightCm >= 50 && heightCm <= 250,
+            'La altura debe estar entre 50 y 250cm.'),
+        assert(startWeightKg >= 20 && startWeightKg <= 350,
+            'El peso inicial debe estar entre 20kg y 350kg.'),
+        assert(currentWeightKg >= 20 && currentWeightKg <= 350,
+            'El peso actual debe estar entre 20kg y 350kg.'),
+        assert(waistCircumferenceCm >= 30 && waistCircumferenceCm <= 250,
+            'La circunferencia es ilógica (<30cm o >250cm).');
 
   factory _$MedicalProfileImpl.fromJson(Map<String, dynamic> json) =>
       _$$MedicalProfileImplFromJson(json);

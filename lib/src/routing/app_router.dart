@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -11,10 +12,11 @@ import '../features/progress/presentation/progress_screen.dart';
 import '../features/training/presentation/screens/daily_workout_screen.dart';
 import '../features/training/presentation/screens/workout_summary_screen.dart';
 import '../features/nutrition/presentation/screens/nutrition_dashboard_screen.dart';
+import '../features/fasting/presentation/fasting_screen.dart';
 
 import '../features/training/domain/entities/workout_log.dart';
 
-import '../features/authentication/data/auth_repository.dart';
+import '../features/authentication/application/auth_controller.dart';
 
 import '../features/profile/data/user_repository.dart';
 import '../features/profile/domain/user_model.dart';
@@ -45,30 +47,49 @@ GoRouter goRouter(Ref ref) {
     initialLocation: '/login',
     debugLogDiagnostics: true,
     redirect: (context, state) {
-      if (authState.isLoading || authState.hasError) return null;
+      if (authState.isLoading) return null;
+      if (authState.hasError) return null;
 
       final isLoggedIn = authState.asData?.value != null;
       final isLoggingIn = state.uri.path == '/login';
       final isRegistering = state.uri.path == '/register';
 
-      // 1. No Logueado -> Login
+      // 1. NO LOGUEADO -> Forzar Login (a menos que ya esté en login/register)
       if (!isLoggedIn) {
         if (isLoggingIn || isRegistering) return null;
         return '/login';
       }
 
-      // 2. Logueado -> Verificar Onboarding
-      // Si el stream de usuario está cargando inicial, esperamos
-      if (userRedirectionState.isLoading) return null;
+      // 2. LOGUEADO -> Verificar Perfil de Usuario
+      // Si el stream del usuario está cargando o tiene error (latencia de red),
+      // NO redirigimos agresivamente para evitar bucles.
+      if (userAsync.isLoading) return null;
+      
+      // Si hay error de red (visto en logs), permitimos que se quede donde está
+      // para que el usuario pueda intentar reintentar o cerrar sesión.
+      if (userAsync.hasError) {
+         debugPrint('Router Error: ${userAsync.error}');
+         return null; 
+      }
 
-      final onboardingCompleted = userRedirectionState.onboardingCompleted;
+      final user = userAsync.value;
+      
+      // 3. LOGUEADO PERO SIN PERFIL EN FIRESTORE (Nuevo Usuario)
+      if (user == null) {
+        if (state.uri.path == '/onboarding') return null;
+        return '/onboarding';
+      }
 
+      final onboardingCompleted = user.onboardingCompleted;
+
+      // 4. LOGUEADO -> ONBOARDING INCOMPLETO
       if (!onboardingCompleted) {
         if (state.uri.path == '/onboarding') return null;
         return '/onboarding';
       }
 
-      // 3. Onboarding Completo -> Dashboard (y proteger rutas de auth/onboarding)
+      // 5. LOGUEADO -> ONBOARDING COMPLETO -> DASHBOARD
+      // Proteger rutas de Auth y Onboarding para que no vuelva atrás
       if (isLoggingIn || isRegistering || state.uri.path == '/onboarding') {
         return '/dashboard';
       }
@@ -110,6 +131,10 @@ GoRouter goRouter(Ref ref) {
           GoRoute(
             path: '/nutrition',
             pageBuilder: (context, state) => const NoTransitionPage(child: NutritionDashboardScreen()),
+          ),
+          GoRoute(
+            path: '/fasting',
+            pageBuilder: (context, state) => const NoTransitionPage(child: FastingScreen()),
           ),
         ],
       ),

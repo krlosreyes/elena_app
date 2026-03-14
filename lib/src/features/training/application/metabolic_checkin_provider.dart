@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../domain/entities/metabolic_state.dart';
-import '../../authentication/data/auth_repository.dart';
+import '../../authentication/application/auth_controller.dart';
 import '../data/repositories/training_repository.dart';
 import '../domain/logic/metabolic_logic.dart';
 import '../../profile/data/user_repository.dart';
@@ -17,7 +17,7 @@ class MetabolicCheckin extends _$MetabolicCheckin {
     if (state.asData?.value != null) return state.asData!.value;
 
     // 2. Fetch from Repository
-    final user = ref.read(currentUserProvider).asData?.value;
+    final user = ref.read(authControllerProvider.notifier).currentUser;
     final uid = user?.uid; // Define uid from user
     if (uid == null) return null;
 
@@ -52,8 +52,8 @@ class MetabolicCheckin extends _$MetabolicCheckin {
     );
     
     // Generate Insight using Domain Logic
-    final user = ref.read(currentUserProvider).value;
-    final userName = user?.name ?? "Atleta";
+    final user = ref.read(authControllerProvider.notifier).currentUser;
+    final userName = user?.displayName ?? "Atleta";
     
     // Logic import needed or duplicate? Let's assume we can import logic.
     // Since we are in application layer, we should import domain logic.
@@ -66,7 +66,7 @@ class MetabolicCheckin extends _$MetabolicCheckin {
     state = AsyncData(finalState);
     
     // Persist logic
-     final uid = ref.read(authRepositoryProvider).currentUser?.uid;
+     final uid = ref.read(authControllerProvider.notifier).currentUser?.uid;
      if (uid != null) {
        await ref.read(trainingRepositoryProvider).saveCheckin(uid, finalState);
        // Invalidate the future provider so the UI updates!
@@ -77,7 +77,7 @@ class MetabolicCheckin extends _$MetabolicCheckin {
 
 @riverpod
 Future<bool> isDailyCheckInCompleted(Ref ref) async {
-  final uid = ref.watch(authRepositoryProvider).currentUser?.uid;
+  final uid = ref.watch(authControllerProvider.notifier).currentUser?.uid;
   if (uid == null) return false;
 
   final repo = ref.watch(trainingRepositoryProvider);

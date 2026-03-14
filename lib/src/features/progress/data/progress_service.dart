@@ -68,6 +68,28 @@ class ProgressService {
     if (log.id.isEmpty) return; // Should not happen for existing logs
     await _measurementsRef(uid).doc(log.id).set(log);
   }
+
+  // Add Full Auto Measurement from Object directly
+  Future<void> addFullMeasurement(String uid, MeasurementLog log) async {
+    await _measurementsRef(uid).add(log);
+  }
+
+  // Update Profile Stats directly from Measurement logic
+  Future<void> updateProfileDerivedStats(String uid, {
+      required double weight, 
+      double? waist, 
+      double? neck, 
+      double? hip
+  }) async {
+    final Map<String, dynamic> updates = {
+      'currentWeightKg': weight,
+    };
+    if (waist != null) updates['waistCircumferenceCm'] = waist;
+    if (neck != null)  updates['neckCircumferenceCm'] = neck;
+    if (hip != null)   updates['hipCircumferenceCm'] = hip;
+
+    await _firestore.collection('users').doc(uid).update(updates);
+  }
 }
 
 // Providers
@@ -75,12 +97,3 @@ final progressServiceProvider = Provider<ProgressService>((ref) {
   return ProgressService(FirebaseFirestore.instance);
 });
 
-// Reactive Provider that watches Auth State
-final userMeasurementsProvider = StreamProvider.autoDispose<List<MeasurementLog>>((ref) {
-  final user = ref.watch(authRepositoryProvider).currentUser;
-  if (user == null) {
-    return const Stream.empty();
-  }
-  final service = ref.watch(progressServiceProvider);
-  return service.getHistory(user.uid);
-});

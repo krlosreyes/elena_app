@@ -26,19 +26,29 @@ class GlucoseChartWidget extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Control de Glucemia',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                Expanded(
+                  child: Text(
+                    'Control de Glucemia',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
                 ),
-                TextButton.icon(
-                  onPressed: () => _showInputSheet(context),
-                  icon: const Icon(Icons.add_circle_outline, size: 20),
-                  label: const Text("Registrar"),
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    foregroundColor: Colors.blueAccent,
+                const SizedBox(width: 8),
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: TextButton.icon(
+                      onPressed: () => _showInputSheet(context),
+                      icon: const Icon(Icons.add_circle_outline, size: 20),
+                      label: const Text("Registrar"),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        foregroundColor: Colors.blueAccent,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -85,7 +95,7 @@ class GlucoseChartWidget extends ConsumerWidget {
           return Expanded(
             child: GestureDetector(
               onTap: () {
-                ref.read(glucoseTimeFilterProvider.notifier).state = filter;
+                ref.read(glucoseTimeFilterProvider.notifier).setFilter(filter);
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
@@ -104,16 +114,22 @@ class GlucoseChartWidget extends ConsumerWidget {
                       : [],
                 ),
                 alignment: Alignment.center,
-                child: Text(
-                  filter == TimeFilter.semana
-                      ? 'Semana'
-                      : filter == TimeFilter.mes
-                          ? 'Mes'
-                          : 'Año',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                    color: isSelected ? Colors.black : Colors.grey.shade600,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Text(
+                      filter == TimeFilter.semana
+                          ? 'Semana'
+                          : filter == TimeFilter.mes
+                              ? 'Mes'
+                              : 'Año',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        color: isSelected ? Colors.black : Colors.grey.shade600,
+                      ),
+                    ),
                   ),
                 ),
               ),

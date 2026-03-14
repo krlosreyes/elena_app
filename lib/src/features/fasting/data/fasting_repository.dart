@@ -77,6 +77,35 @@ class FastingRepository {
     }
   }
 
+  /// Updates the start time of the current active fast in Firestore.
+  Future<void> updateActiveFastStartTime(String uid, DateTime newStartTime) async {
+    try {
+      final colRef = _firestore.collection('users').doc(uid).collection('fasting_history');
+      final activeSnapshot = await colRef.where('isCompleted', isEqualTo: false).limit(1).get();
+      
+      if (activeSnapshot.docs.isNotEmpty) {
+        final docId = activeSnapshot.docs.first.id;
+        // The domain entity uses ISO strings for JSON serialization
+        await colRef.doc(docId).update({
+          'startTime': newStartTime.toIso8601String()
+        });
+      }
+    } catch (e) {
+      print("Warning: Failed to update active fast start time in Firestore: $e");
+    }
+  }
+
+  /// Updates the fasting protocol for the user profile.
+  Future<void> updateProtocol(String uid, String protocol) async {
+    try {
+      await _firestore.collection('users').doc(uid).update({
+        'fastingProtocol': protocol
+      });
+    } catch (e) {
+      print("Warning: Failed to update fasting protocol in Firestore: $e");
+    }
+  }
+
   Stream<List<FastingSession>> getHistoryStream(String uid) {
     return _firestore
         .collection('users')

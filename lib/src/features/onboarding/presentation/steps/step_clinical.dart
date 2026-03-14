@@ -66,6 +66,12 @@ class StepClinical extends ConsumerWidget {
             activeColor: const Color(0xFF009688),
           ),
           CheckboxListTile(
+            title: const Text('Anemia'),
+            value: pathologies.contains('anemia'),
+            onChanged: (val) => togglePathology('anemia', val),
+            activeColor: const Color(0xFF009688),
+          ),
+          CheckboxListTile(
             title: const Text('Ninguna de las anteriores'),
             value: pathologies.contains('none'),
             onChanged: (val) {
@@ -80,29 +86,107 @@ class StepClinical extends ConsumerWidget {
             activeColor: const Color(0xFF009688),
           ),
           const SizedBox(height: 32),
-          const Text('Nivel de Actividad',
-              style: TextStyle(fontWeight: FontWeight.bold)),
+          const Text(
+            'Nivel de Actividad o Ejercicio',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          _buildActivityOption(
+            context,
+            ref,
+            user.activityLevel,
+            ActivityLevel.heavy,
+            'Atleta / Intenso',
+            'Entreno duro 5-6 días por semana.',
+            Icons.fitness_center,
+          ),
           const SizedBox(height: 8),
-          DropdownButtonFormField<ActivityLevel>(
-            initialValue: user.activityLevel,
-            items: ActivityLevel.values.map((level) {
-              return DropdownMenuItem(
-                value: level,
-                child: Text(level.name.toUpperCase()),
-              );
-            }).toList(),
-            onChanged: (value) {
-              if (value != null) {
-                ref
-                    .read(onboardingControllerProvider.notifier)
-                    .updateUser(user.copyWith(activityLevel: value));
-              }
-            },
-            decoration: const InputDecoration(
-              border: OutlineInputBorder(),
-            ),
+          _buildActivityOption(
+            context,
+            ref,
+            user.activityLevel,
+            ActivityLevel.moderate,
+            'Moderado / Frecuente',
+            'Hago ejercicio moderado 3-5 días por semana.',
+            Icons.directions_run,
+          ),
+          const SizedBox(height: 8),
+          _buildActivityOption(
+            context,
+            ref,
+            user.activityLevel,
+            ActivityLevel.light,
+            'Ligero / Ocasional',
+            'Camino o hago algo ligero 1-3 días por semana.',
+            Icons.directions_walk,
+          ),
+          const SizedBox(height: 8),
+          _buildActivityOption(
+            context,
+            ref,
+            user.activityLevel,
+            ActivityLevel.sedentary,
+            'Sedentario',
+            'Trabajo en escritorio, poco movimiento diario.',
+            Icons.event_seat,
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildActivityOption(BuildContext context, WidgetRef ref, ActivityLevel currentValue, ActivityLevel optionValue, String title, String description, IconData icon) {
+    final isSelected = currentValue == optionValue;
+    return InkWell(
+      onTap: () {
+        final user = ref.read(onboardingControllerProvider);
+        if (user != null) {
+           ref.read(onboardingControllerProvider.notifier).updateUser(user.copyWith(activityLevel: optionValue));
+        }
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF009688).withOpacity(0.1) : Colors.transparent,
+          border: Border.all(
+            color: isSelected ? const Color(0xFF009688) : Colors.grey[800]!,
+            width: isSelected ? 2 : 1,
+          ),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: isSelected ? const Color(0xFF009688) : Colors.grey, size: 28),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: isSelected ? Colors.white : Colors.grey[300],
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    description,
+                    style: TextStyle(
+                      color: Colors.grey[500],
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (isSelected)
+               const Icon(Icons.check_circle, color: Color(0xFF009688)),
+          ],
+        ),
       ),
     );
   }

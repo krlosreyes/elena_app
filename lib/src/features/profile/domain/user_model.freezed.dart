@@ -64,7 +64,9 @@ mixin _$UserModel {
 // Configuración
   int? get checkInDay =>
       throw _privateConstructorUsedError; // 1 = Lunes, 7 = Domingo
-// Metadata
+// IMX Specific Overrides (Metabolic & Lifestyle)
+  double? get averageSleepHours => throw _privateConstructorUsedError;
+  int? get energyLevel1To10 => throw _privateConstructorUsedError; // Metadata
   bool get onboardingCompleted => throw _privateConstructorUsedError;
   DateTime? get createdAt => throw _privateConstructorUsedError;
   DateTime? get updatedAt => throw _privateConstructorUsedError;
@@ -112,6 +114,8 @@ abstract class $UserModelCopyWith<$Res> {
       double? targetFatPercentage,
       double? targetLBM,
       int? checkInDay,
+      double? averageSleepHours,
+      int? energyLevel1To10,
       bool onboardingCompleted,
       DateTime? createdAt,
       DateTime? updatedAt});
@@ -161,6 +165,8 @@ class _$UserModelCopyWithImpl<$Res, $Val extends UserModel>
     Object? targetFatPercentage = freezed,
     Object? targetLBM = freezed,
     Object? checkInDay = freezed,
+    Object? averageSleepHours = freezed,
+    Object? energyLevel1To10 = freezed,
     Object? onboardingCompleted = null,
     Object? createdAt = freezed,
     Object? updatedAt = freezed,
@@ -290,6 +296,14 @@ class _$UserModelCopyWithImpl<$Res, $Val extends UserModel>
           ? _value.checkInDay
           : checkInDay // ignore: cast_nullable_to_non_nullable
               as int?,
+      averageSleepHours: freezed == averageSleepHours
+          ? _value.averageSleepHours
+          : averageSleepHours // ignore: cast_nullable_to_non_nullable
+              as double?,
+      energyLevel1To10: freezed == energyLevel1To10
+          ? _value.energyLevel1To10
+          : energyLevel1To10 // ignore: cast_nullable_to_non_nullable
+              as int?,
       onboardingCompleted: null == onboardingCompleted
           ? _value.onboardingCompleted
           : onboardingCompleted // ignore: cast_nullable_to_non_nullable
@@ -346,6 +360,8 @@ abstract class _$$UserModelImplCopyWith<$Res>
       double? targetFatPercentage,
       double? targetLBM,
       int? checkInDay,
+      double? averageSleepHours,
+      int? energyLevel1To10,
       bool onboardingCompleted,
       DateTime? createdAt,
       DateTime? updatedAt});
@@ -393,6 +409,8 @@ class __$$UserModelImplCopyWithImpl<$Res>
     Object? targetFatPercentage = freezed,
     Object? targetLBM = freezed,
     Object? checkInDay = freezed,
+    Object? averageSleepHours = freezed,
+    Object? energyLevel1To10 = freezed,
     Object? onboardingCompleted = null,
     Object? createdAt = freezed,
     Object? updatedAt = freezed,
@@ -522,6 +540,14 @@ class __$$UserModelImplCopyWithImpl<$Res>
           ? _value.checkInDay
           : checkInDay // ignore: cast_nullable_to_non_nullable
               as int?,
+      averageSleepHours: freezed == averageSleepHours
+          ? _value.averageSleepHours
+          : averageSleepHours // ignore: cast_nullable_to_non_nullable
+              as double?,
+      energyLevel1To10: freezed == energyLevel1To10
+          ? _value.energyLevel1To10
+          : energyLevel1To10 // ignore: cast_nullable_to_non_nullable
+              as int?,
       onboardingCompleted: null == onboardingCompleted
           ? _value.onboardingCompleted
           : onboardingCompleted // ignore: cast_nullable_to_non_nullable
@@ -573,6 +599,8 @@ class _$UserModelImpl extends _UserModel {
       this.targetFatPercentage,
       this.targetLBM,
       this.checkInDay,
+      this.averageSleepHours,
+      this.energyLevel1To10,
       this.onboardingCompleted = false,
       this.createdAt,
       this.updatedAt})
@@ -686,6 +714,11 @@ class _$UserModelImpl extends _UserModel {
   @override
   final int? checkInDay;
 // 1 = Lunes, 7 = Domingo
+// IMX Specific Overrides (Metabolic & Lifestyle)
+  @override
+  final double? averageSleepHours;
+  @override
+  final int? energyLevel1To10;
 // Metadata
   @override
   @JsonKey()
@@ -697,7 +730,7 @@ class _$UserModelImpl extends _UserModel {
 
   @override
   String toString() {
-    return 'UserModel(uid: $uid, email: $email, displayName: $displayName, name: $name, photoUrl: $photoUrl, gender: $gender, birthDate: $birthDate, heightCm: $heightCm, currentWeightKg: $currentWeightKg, waistCircumferenceCm: $waistCircumferenceCm, neckCircumferenceCm: $neckCircumferenceCm, hipCircumferenceCm: $hipCircumferenceCm, pathologies: $pathologies, activityLevel: $activityLevel, physicalLimitations: $physicalLimitations, snackingHabit: $snackingHabit, dietaryPreference: $dietaryPreference, hasDumbbells: $hasDumbbells, workoutDays: $workoutDays, wakeUpTime: $wakeUpTime, bedTime: $bedTime, usualFirstMealTime: $usualFirstMealTime, usualLastMealTime: $usualLastMealTime, fastingExperience: $fastingExperience, recommendedProtocol: $recommendedProtocol, healthGoal: $healthGoal, targetWeightKg: $targetWeightKg, startWeightKg: $startWeightKg, targetFatPercentage: $targetFatPercentage, targetLBM: $targetLBM, checkInDay: $checkInDay, onboardingCompleted: $onboardingCompleted, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'UserModel(uid: $uid, email: $email, displayName: $displayName, name: $name, photoUrl: $photoUrl, gender: $gender, birthDate: $birthDate, heightCm: $heightCm, currentWeightKg: $currentWeightKg, waistCircumferenceCm: $waistCircumferenceCm, neckCircumferenceCm: $neckCircumferenceCm, hipCircumferenceCm: $hipCircumferenceCm, pathologies: $pathologies, activityLevel: $activityLevel, physicalLimitations: $physicalLimitations, snackingHabit: $snackingHabit, dietaryPreference: $dietaryPreference, hasDumbbells: $hasDumbbells, workoutDays: $workoutDays, wakeUpTime: $wakeUpTime, bedTime: $bedTime, usualFirstMealTime: $usualFirstMealTime, usualLastMealTime: $usualLastMealTime, fastingExperience: $fastingExperience, recommendedProtocol: $recommendedProtocol, healthGoal: $healthGoal, targetWeightKg: $targetWeightKg, startWeightKg: $startWeightKg, targetFatPercentage: $targetFatPercentage, targetLBM: $targetLBM, checkInDay: $checkInDay, averageSleepHours: $averageSleepHours, energyLevel1To10: $energyLevel1To10, onboardingCompleted: $onboardingCompleted, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -762,6 +795,10 @@ class _$UserModelImpl extends _UserModel {
                 other.targetLBM == targetLBM) &&
             (identical(other.checkInDay, checkInDay) ||
                 other.checkInDay == checkInDay) &&
+            (identical(other.averageSleepHours, averageSleepHours) ||
+                other.averageSleepHours == averageSleepHours) &&
+            (identical(other.energyLevel1To10, energyLevel1To10) ||
+                other.energyLevel1To10 == energyLevel1To10) &&
             (identical(other.onboardingCompleted, onboardingCompleted) ||
                 other.onboardingCompleted == onboardingCompleted) &&
             (identical(other.createdAt, createdAt) ||
@@ -805,6 +842,8 @@ class _$UserModelImpl extends _UserModel {
         targetFatPercentage,
         targetLBM,
         checkInDay,
+        averageSleepHours,
+        energyLevel1To10,
         onboardingCompleted,
         createdAt,
         updatedAt
@@ -857,6 +896,8 @@ abstract class _UserModel extends UserModel {
       final double? targetFatPercentage,
       final double? targetLBM,
       final int? checkInDay,
+      final double? averageSleepHours,
+      final int? energyLevel1To10,
       final bool onboardingCompleted,
       final DateTime? createdAt,
       final DateTime? updatedAt}) = _$UserModelImpl;
@@ -931,7 +972,11 @@ abstract class _UserModel extends UserModel {
 // Configuración
   int? get checkInDay;
   @override // 1 = Lunes, 7 = Domingo
-// Metadata
+// IMX Specific Overrides (Metabolic & Lifestyle)
+  double? get averageSleepHours;
+  @override
+  int? get energyLevel1To10;
+  @override // Metadata
   bool get onboardingCompleted;
   @override
   DateTime? get createdAt;

@@ -33,7 +33,7 @@ class _TrainingStatsSectionState extends ConsumerState<TrainingStatsSection> {
           style: GoogleFonts.outfit(
             fontWeight: FontWeight.bold,
             fontSize: 16,
-            color: Colors.black87,
+            color: Theme.of(context).colorScheme.primary,
           ),
         ),
         const SizedBox(height: 12),
@@ -41,8 +41,8 @@ class _TrainingStatsSectionState extends ConsumerState<TrainingStatsSection> {
           elevation: 0,
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
-              side: BorderSide(color: Colors.grey.shade200)),
-          color: Colors.white,
+              side: BorderSide(color: Theme.of(context).dividerColor)),
+          color: Theme.of(context).cardTheme.color,
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
@@ -66,9 +66,9 @@ class _TrainingStatsSectionState extends ConsumerState<TrainingStatsSection> {
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     backgroundColor: WidgetStateProperty.resolveWith<Color>((Set<WidgetState> states) {
                        if (states.contains(WidgetState.selected)) {
-                         return AppTheme.primaryColor.withValues(alpha: 0.1); 
+                         return Theme.of(context).colorScheme.primary.withOpacity(0.1); 
                        }
-                       return Colors.white;
+                       return Theme.of(context).scaffoldBackgroundColor;
                     }),
                   ),
                 ),
@@ -150,7 +150,7 @@ class _TrainingStatsSectionState extends ConsumerState<TrainingStatsSection> {
                backDrawRodData: BackgroundBarChartRodData(
                  show: true,
                  toY: 100, // Fixed max
-                 color: Colors.grey.shade100,
+                 color: Theme.of(context).scaffoldBackgroundColor,
                ),
              )
            ],
@@ -207,7 +207,7 @@ class _TrainingStatsSectionState extends ConsumerState<TrainingStatsSection> {
            drawVerticalLine: false,
            horizontalInterval: 25,
            getDrawingHorizontalLine: (value) => FlLine(
-             color: Colors.grey.shade100,
+             color: Theme.of(context).dividerColor,
              strokeWidth: 1,
            ),
         ),
@@ -288,7 +288,7 @@ class _TrainingStatsSectionState extends ConsumerState<TrainingStatsSection> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-          color: Colors.grey.shade50,
+          color: Theme.of(context).scaffoldBackgroundColor,
           borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -320,7 +320,7 @@ class _MiniStat extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Icon(icon, size: 16, color: AppTheme.primaryColor),
+        Icon(icon, size: 16, color: Theme.of(context).colorScheme.primary),
         const SizedBox(height: 2),
         Text(value, style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold)),
         Text(label, style: GoogleFonts.outfit(fontSize: 10, color: Colors.grey)),

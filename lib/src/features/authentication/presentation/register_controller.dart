@@ -1,14 +1,10 @@
-import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../application/auth_controller.dart';
 
-part 'register_controller.g.dart';
+class RegisterController extends StateNotifier<AsyncValue<void>> {
+  final Ref _ref;
 
-@riverpod
-class RegisterController extends _$RegisterController {
-  @override
-  FutureOr<void> build() {
-    // nothing to initialize
-  }
+  RegisterController(this._ref) : super(const AsyncValue.data(null));
 
   Future<void> register({
     required String name,
@@ -16,21 +12,14 @@ class RegisterController extends _$RegisterController {
     required String password,
   }) async {
     state = const AsyncLoading();
-
     try {
-      final repository = ref.read(authControllerProvider.notifier);
-      await repository.createUserWithEmailAndPassword(email, password);
+      final authController = _ref.read(authControllerProvider.notifier);
+      await authController.createUserWithEmailAndPassword(email, password);
 
-      // Update display name after successful creation
-      final user = repository.currentUser;
+      final user = authController.currentUser;
       if (user != null) {
         await user.updateDisplayName(name);
-        await user.reload(); // Refresh user data
-        // Explicitly wait slightly to ensure Firebase auth stream propagates if needed,
-        // though typically the router listens to the stream.
-        // The flicker happens if the stream emits "Authenticated" -> Router goes Home -> Then we try Onboarding.
-        // To fix: The router likely redirects to Home on auth. 
-        // We should handle the onboarding flow via the router possibly, but here we enforce local state success.
+        await user.reload();
       }
       state = const AsyncData(null);
     } catch (e, st) {
@@ -38,3 +27,8 @@ class RegisterController extends _$RegisterController {
     }
   }
 }
+
+final registerControllerProvider =
+    StateNotifierProvider.autoDispose<RegisterController, AsyncValue<void>>((ref) {
+  return RegisterController(ref);
+});

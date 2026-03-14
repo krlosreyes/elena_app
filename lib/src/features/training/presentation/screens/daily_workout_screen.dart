@@ -62,13 +62,20 @@ class DailyWorkoutScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Plan de Entrenamiento"),
+        title: Text(
+          "PLAN DE ENTRENAMIENTO",
+          style: GoogleFonts.firaCode(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1.5,
+          ),
+        ),
         elevation: 0,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
         actions: const [],
       ),
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.black,
       body: Column(
         children: [
           const SizedBox(height: 16),
@@ -191,7 +198,7 @@ class DailyWorkoutScreen extends ConsumerWidget {
                 Container(
                 width: double.infinity,
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                color: Colors.white,
+                color: Colors.transparent,
                 child: Column(
                     children: [
                     // Top Row: Title & Badge
@@ -204,20 +211,20 @@ class DailyWorkoutScreen extends ConsumerWidget {
                                 children: [
                                     Text(
                                     "ENTRENAMIENTO DE HOY",
-                                    style: GoogleFonts.outfit(
+                                    style: GoogleFonts.firaCode(
                                         fontSize: 10, 
                                         fontWeight: FontWeight.bold, 
-                                        color: Colors.grey.shade500,
-                                        letterSpacing: 1.2,
+                                        color: Colors.grey.shade600,
+                                        letterSpacing: 1.5,
                                     ),
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                    "Diagnóstico Diario",     // Incomplete
+                                    "Diagnóstico Diario",
                                     style: GoogleFonts.outfit(
-                                        fontSize: 22, 
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.black87,
+                                        fontSize: 24, 
+                                        fontWeight: FontWeight.w900,
+                                        color: Colors.white,
                                         height: 1.1,
                                     ),
                                     ),
@@ -228,15 +235,16 @@ class DailyWorkoutScreen extends ConsumerWidget {
                             Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                 decoration: BoxDecoration(
-                                color: AppTheme.brandBlue,
+                                color: const Color(0xFF00FFB2).withOpacity(0.2),
                                 borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: const Color(0xFF00FFB2).withOpacity(0.4)),
                                 ),
                                 child: Text(
-                                plan.description, // e.g. "FullBody B"
-                                style: GoogleFonts.outfit(
-                                    color: Colors.white, 
+                                plan.description.toUpperCase(), // e.g. "FullBody B"
+                                style: GoogleFonts.firaCode(
+                                    color: const Color(0xFF00FFB2), 
                                     fontWeight: FontWeight.bold,
-                                    fontSize: 12,
+                                    fontSize: 10,
                                 ),
                                 ),
                             ),

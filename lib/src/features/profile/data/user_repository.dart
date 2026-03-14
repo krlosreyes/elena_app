@@ -1,12 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../authentication/data/auth_repository.dart';
 import '../../plan/domain/health_plan.dart';
 import '../domain/user_model.dart';
 import '../../../core/exceptions/exceptions.dart';
 
-part 'user_repository.g.dart';
+
 
 class UserRepository {
   final FirebaseFirestore _firestore;
@@ -100,32 +99,35 @@ class UserRepository {
       throw UnknownException();
     }
   }
+
+  /// Recupera el plan activo del usuario en tiempo real.
+  Stream<Map<String, dynamic>?> userActivePlanStream(String uid) {
+    return _usersCollection
+        .doc(uid)
+        .collection('plans')
+        .doc('current')
+        .snapshots()
+        .map((snapshot) {
+      if (snapshot.exists && snapshot.data() != null) {
+        return snapshot.data();
+      }
+      return null;
+    });
+  }
 }
 
-@Riverpod(keepAlive: true)
-UserRepository userRepository(Ref ref) {
+final userRepositoryProvider = Provider<UserRepository>((ref) {
   return UserRepository(FirebaseFirestore.instance);
-}
+});
 
-@riverpod
-Future<UserModel?> user(Ref ref, String uid) {
+
+final userFutureProvider =
+    FutureProvider.family.autoDispose<UserModel?, String>((ref, uid) {
   return ref.watch(userRepositoryProvider).getUser(uid);
-}
+});
 
-@riverpod
-Stream<UserModel?> userStream(Ref ref, String uid) {
+final userStreamProvider =
+    StreamProvider.family.autoDispose<UserModel?, String>((ref, uid) {
   return ref.watch(userRepositoryProvider).watchUser(uid);
-}
+});
 
-@riverpod
-Stream<UserModel?> currentUser(Ref ref) {
-  final authState = ref.watch(authStateChangesProvider);
-  return authState.when(
-    data: (user) {
-      if (user == null) return Stream.value(null);
-      return ref.watch(userRepositoryProvider).watchUser(user.uid);
-    },
-    loading: () => const Stream.empty(),
-    error: (err, stack) => Stream.value(null),
-  );
-}

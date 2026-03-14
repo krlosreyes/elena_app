@@ -42,6 +42,12 @@ class AppUser with _$AppUser {
 /// Contains critical metrics for the metabolic engine.
 @freezed
 class MedicalProfile with _$MedicalProfile {
+  // ✅ Validación de Dominio: Evita inconsistencias matemáticas y físicas
+  // antes de que entren al Motor IMX y base de datos.
+  @Assert('heightCm >= 50 && heightCm <= 250', 'La altura debe estar entre 50 y 250cm.')
+  @Assert('startWeightKg >= 20 && startWeightKg <= 350', 'El peso inicial debe estar entre 20kg y 350kg.')
+  @Assert('currentWeightKg >= 20 && currentWeightKg <= 350', 'El peso actual debe estar entre 20kg y 350kg.')
+  @Assert('waistCircumferenceCm >= 30 && waistCircumferenceCm <= 250', 'La circunferencia es ilógica (<30cm o >250cm).')
   const factory MedicalProfile({
     required DateTime birthDate,
     required double heightCm,

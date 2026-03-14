@@ -28,20 +28,20 @@ class WeeklyCalendarStrip extends ConsumerWidget {
             children: [
               Text(
                 DateFormat('MMMM yyyy', 'es_ES').format(selectedDate).toUpperCase(),
-                style: GoogleFonts.outfit(
-                  fontSize: 16,
+                style: GoogleFonts.firaCode(
+                  fontSize: 14,
                   fontWeight: FontWeight.bold,
-                  letterSpacing: 1.2,
-                  color: Colors.grey[800],
+                  letterSpacing: 1.5,
+                  color: Colors.white,
                 ),
               ),
               const Spacer(),
               IconButton(
-                icon: const Icon(Icons.chevron_left),
+                icon: const Icon(Icons.chevron_left, color: Colors.white70),
                 onPressed: () => ref.read(calendarStateProvider.notifier).prevWeek(),
               ),
               IconButton(
-                icon: Icon(Icons.chevron_right, color: canGoNext ? null : Colors.grey[300]),
+                icon: Icon(Icons.chevron_right, color: canGoNext ? Colors.white70 : Colors.white24),
                 onPressed: canGoNext ? () => ref.read(calendarStateProvider.notifier).nextWeek() : null,
               ),
             ],
@@ -58,16 +58,20 @@ class WeeklyCalendarStrip extends ConsumerWidget {
 
             Color backgroundColor;
             Color textColor;
+            BoxBorder? border;
 
             if (isToday) {
-              backgroundColor = Colors.green; 
-              textColor = Colors.white;
+              backgroundColor = const Color(0xFF00FFB2).withOpacity(0.2); 
+              textColor = const Color(0xFF00FFB2);
+              border = Border.all(color: const Color(0xFF00FFB2).withOpacity(0.5));
             } else if (isSelected) {
-              backgroundColor = AppTheme.brandBlue; 
-              textColor = Colors.white;
+              backgroundColor = Colors.blueAccent.withOpacity(0.2); 
+              textColor = Colors.blueAccent;
+              border = Border.all(color: Colors.blueAccent.withOpacity(0.5));
             } else {
-              backgroundColor = Colors.grey.shade100;
-              textColor = Colors.grey.shade600;
+              backgroundColor = Colors.white.withOpacity(0.05);
+              textColor = Colors.grey.shade500;
+              border = Border.all(color: Colors.white10);
             }
 
             return GestureDetector(
@@ -80,16 +84,17 @@ class WeeklyCalendarStrip extends ConsumerWidget {
             decoration: BoxDecoration(
               color: backgroundColor,
               borderRadius: BorderRadius.circular(12),
+              border: border,
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
                   _weekDayLetter(date.weekday),
-                  style: GoogleFonts.outfit(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: textColor.withValues(alpha: 0.8),
+                  style: GoogleFonts.firaCode(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: textColor.withOpacity(0.6),
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -99,6 +104,7 @@ class WeeklyCalendarStrip extends ConsumerWidget {
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                     color: textColor,
+                    letterSpacing: -0.5,
                   ),
                 ),
               ],

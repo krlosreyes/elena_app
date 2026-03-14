@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:elena_app/src/features/authentication/application/auth_controller.dart';
 import 'package:elena_app/src/features/fasting/data/fasting_repository.dart';
 import 'package:elena_app/src/features/fasting/domain/fasting_session.dart';
+import 'package:elena_app/src/core/utils/dark_picker_theme.dart';
 
 class ManualFastInputSheet extends ConsumerStatefulWidget {
   const ManualFastInputSheet({super.key});
@@ -44,12 +45,14 @@ class _ManualFastInputSheetState extends ConsumerState<ManualFastInputSheet> {
       initialDate: initialDate,
       firstDate: DateTime(2020),
       lastDate: DateTime.now(),
+      builder: (ctx, child) => Theme(data: darkPickerTheme(ctx), child: child!),
     );
     
     if (date != null && mounted) {
       final time = await showTimePicker(
         context: context,
         initialTime: initialTime,
+        builder: (ctx, child) => Theme(data: darkPickerTheme(ctx), child: child!),
       );
       
       if (time != null) {
@@ -125,22 +128,41 @@ class _ManualFastInputSheetState extends ConsumerState<ManualFastInputSheet> {
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.only(
-        top: 20,
+        top: 24,
         left: 20,
         right: 20,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 28,
       ),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A1A),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        border: const Border(
+          top: BorderSide(color: Color(0xFF2E2E2E), width: 1),
+        ),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // Handle bar
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 20),
+              decoration: BoxDecoration(
+                color: Colors.white24,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
           const Text(
             'Registrar Ayuno Pasado',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
@@ -153,29 +175,37 @@ class _ManualFastInputSheetState extends ConsumerState<ManualFastInputSheet> {
             color: Colors.orange,
           ),
           
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           
           _buildDateTimePicker(
             label: 'FIN',
             date: _endDate,
             time: _endTime,
             onTap: () => _pickDateTime(isStart: false),
-            color: Colors.green,
+            color: const Color(0xFF00BFA5), // Teal
           ),
           
-          const SizedBox(height: 32),
+          const SizedBox(height: 28),
           
           SizedBox(
-            height: 50,
+            height: 52,
             child: ElevatedButton(
               onPressed: _isLoading ? null : _saveLog,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blueAccent,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                backgroundColor: const Color(0xFF009688),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               ),
               child: _isLoading 
-                  ? const CircularProgressIndicator(color: Colors.white)
-                  : const Text('GUARDAR', style: TextStyle(fontSize: 16, color: Colors.white)),
+                  ? const SizedBox(
+                      width: 22, height: 22,
+                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                    )
+                  : const Text(
+                      'GUARDAR AYUNO',
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, letterSpacing: 1.2),
+                    ),
             ),
           ),
         ],
@@ -192,13 +222,13 @@ class _ManualFastInputSheetState extends ConsumerState<ManualFastInputSheet> {
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(14),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withValues(alpha: 0.3)),
+          color: const Color(0xFF252525),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: color.withOpacity(0.4)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -209,30 +239,35 @@ class _ManualFastInputSheetState extends ConsumerState<ManualFastInputSheet> {
                 Text(
                   label,
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 11,
                     fontWeight: FontWeight.bold,
                     color: color,
-                    letterSpacing: 1.0,
+                    letterSpacing: 1.2,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   DateFormat('EEE d MMM, yyyy').format(date),
-                  style: const TextStyle(fontWeight: FontWeight.w500),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white70,
+                    fontSize: 13,
+                  ),
                 ),
               ],
             ),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
+                color: color.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: color.withOpacity(0.3)),
               ),
               child: Text(
                 time.format(context),
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  fontSize: 16,
+                  fontSize: 18,
                   color: color,
                 ),
               ),

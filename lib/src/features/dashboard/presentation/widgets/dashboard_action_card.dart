@@ -27,29 +27,20 @@ class DashboardActionCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: gradientColors,
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          color: Theme.of(context).cardTheme.color, // Dark matte
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: shadowColor,
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          border: Border.all(color: Theme.of(context).dividerColor),
         ),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
+                color: gradientColors.first.withOpacity(0.1), // 10% opacity for neon glow
                 shape: BoxShape.circle,
+                border: Border.all(color: gradientColors.first.withOpacity(0.5)),
               ),
-              child: Icon(icon, color: Colors.white, size: 28),
+              child: Icon(icon, color: gradientColors.first, size: 28), // The actual neon color
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -58,24 +49,24 @@ class DashboardActionCard extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: GoogleFonts.outfit(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       color: Colors.white,
+                      fontSize: 16, // Pequeño ajuste de tamaño
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
-                    style: GoogleFonts.outfit(
-                      fontSize: 14,
-                      color: Colors.white.withValues(alpha: 0.9),
-                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodyMedium,
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 16),
+            Icon(Icons.arrow_forward_ios, color: Colors.grey.shade600, size: 16),
           ],
         ),
       ),

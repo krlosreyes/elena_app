@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../fasting_history_controller.dart';
 import 'package:elena_app/src/features/fasting/presentation/widgets/manual_fast_input_sheet.dart';
+import '../../../fasting/presentation/fasting_controller.dart';
 
 class FastingChartCard extends ConsumerWidget {
   const FastingChartCard({super.key});
@@ -13,21 +14,25 @@ class FastingChartCard extends ConsumerWidget {
     final state = ref.watch(fastingHistoryProvider);
     final controller = ref.read(fastingHistoryProvider.notifier);
     
+    // Get target hours to calculate consistency percentage
+    final fastingStateAsync = ref.watch(fastingControllerProvider);
+    final targetHours = fastingStateAsync.value?.plannedHours ?? 16.0;
+
     final chartData = controller.getAggregatedData();
 
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.black.withOpacity(0.1),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
         ],
-        border: Border.all(color: Colors.grey[200]!),
+        border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Column(
         children: [
@@ -44,7 +49,7 @@ class FastingChartCard extends ConsumerWidget {
                 style: GoogleFonts.outfit(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
-                  color: Colors.black87,
+                  color: Colors.white,
                 ),
               ),
               TextButton.icon(
@@ -75,7 +80,7 @@ class FastingChartCard extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
-              color: Colors.grey[100],
+              color: Theme.of(context).scaffoldBackgroundColor,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -102,7 +107,7 @@ class FastingChartCard extends ConsumerWidget {
                 style: GoogleFonts.outfit(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
-                  color: Colors.grey[800],
+                  color: Theme.of(context).textTheme.titleLarge?.color,
                 ),
               ),
               IconButton( 
@@ -128,7 +133,7 @@ class FastingChartCard extends ConsumerWidget {
                   drawVerticalLine: false,
                   horizontalInterval: 5,
                   getDrawingHorizontalLine: (value) => FlLine(
-                    color: Colors.grey[100],
+                    color: Theme.of(context).dividerColor,
                     strokeWidth: 1,
                   ),
                 ),
@@ -176,18 +181,52 @@ class FastingChartCard extends ConsumerWidget {
                 ),
                 borderData: FlBorderData(show: false),
                 barGroups: chartData.map((point) {
+                  // Porcentaje de cumplimiento del ayuno
+                  final double pct = targetHours > 0 ? (point.y / targetHours) : 0.0;
+                  
+                  // Colores de la paleta de la app
+                  const Color colorRed    = Color(0xFFFF5252); // <50%  rojo
+                  const Color colorYellow = Color(0xFFFFB300); // 50-90% ámbar
+                  const Color colorGreen  = Color(0xFF00FFB2); // ≥90%  cyan/verde app
+
+                  Color barColor;
+                  Color glowColor;
+                  if (point.y == 0) {
+                    barColor = Colors.transparent;
+                    glowColor = Colors.transparent;
+                  } else if (pct < 0.5) {
+                    barColor = colorRed;
+                    glowColor = colorRed.withOpacity(0.25);
+                  } else if (pct < 0.9) {
+                    barColor = colorYellow;
+                    glowColor = colorYellow.withOpacity(0.25);
+                  } else {
+                    barColor = colorGreen;
+                    glowColor = colorGreen.withOpacity(0.2);
+                  }
+
                   return BarChartGroupData(
                     x: point.x,
                     barRods: [
                       BarChartRodData(
-                        toY: point.y,
-                        color: Theme.of(context).primaryColor,
+                        toY: point.y > 24 ? 24 : point.y,
+                        gradient: point.y > 0
+                          ? LinearGradient(
+                              colors: [barColor.withOpacity(0.6), barColor],
+                              begin: Alignment.bottomCenter,
+                              end: Alignment.topCenter,
+                            )
+                          : null,
+                        color: point.y > 0 ? null : Colors.transparent,
                         width: state.view == MetricType.month ? 6 : 12,
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: BorderRadius.circular(6),
+                        borderSide: point.y > 0
+                          ? BorderSide(color: barColor.withOpacity(0.7), width: 1.5)
+                          : BorderSide.none,
                         backDrawRodData: BackgroundBarChartRodData(
-                            show: true,
-                            toY: 24, // Full height reference
-                            color: Colors.grey[50], 
+                          show: true,
+                          toY: 24,
+                          color: glowColor.withOpacity(0.06),
                         ),
                       ),
                     ],
@@ -198,19 +237,12 @@ class FastingChartCard extends ConsumerWidget {
                     getTooltipColor: (_) => Colors.black87, // Fixed: use getTooltipColor
                     getTooltipItem: (group, groupIndex, rod, rodIndex) {
                        final item = chartData[group.x.toInt()];
+                       // Concatenamos todo en un solo string para evitar fallos de renderizado de TextSpans en Flutter Web con fl_chart
+                       final isYear = state.view == MetricType.year;
+                       final subtitleText = isYear ? 'Promedio' : 'Completado';
                        return BarTooltipItem(
-                         '${item.y.toStringAsFixed(1)}h\n',
-                         const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                         children: [
-                           TextSpan(
-                             text: 'Promedio', // Si es año, o 'Total'
-                             style: const TextStyle(
-                               color: Colors.white70,
-                               fontSize: 10,
-                               fontWeight: FontWeight.normal
-                             )
-                           ),
-                         ]
+                         '${item.y.toStringAsFixed(1)}h\n$subtitleText',
+                         const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
                        );
                     },
                   ),
@@ -247,7 +279,7 @@ class FastingChartCard extends ConsumerWidget {
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
-            color: isSelected ? Colors.white : Colors.transparent,
+            color: isSelected ? Theme.of(context).colorScheme.primary.withOpacity(0.1) : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
             boxShadow: isSelected 
                 ? [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4)] 
@@ -258,7 +290,7 @@ class FastingChartCard extends ConsumerWidget {
             textAlign: TextAlign.center,
             style: GoogleFonts.outfit(
               fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-              color: isSelected ? Colors.black87 : Colors.grey[600],
+              color: isSelected ? Theme.of(context).colorScheme.primary : Colors.grey[500],
               fontSize: 13,
             ),
           ),

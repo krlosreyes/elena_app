@@ -24,6 +24,19 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	
+	<!-- ✅ MEJORA DE SEGURIDAD (Usage Descriptions): 
+	     Apple rechaza aplicaciones que llaman frameworks que requieren tracking 
+	     sin explicar expresamente por qué al usuario final. -->
+	<key>NSCameraUsageDescription</key>
+	<string>ElenaApp requiere acceso a la cámara para escanear alimentos y actualizar tu foto de perfil de progreso biométrico.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>ElenaApp requiere acceso a la galería para subir registros visuales a tu progreso de coaching.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+		<string>remote-notification</string>
+	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>

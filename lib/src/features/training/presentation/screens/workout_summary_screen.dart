@@ -69,7 +69,7 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
         : "$stimulusSeconds sec";
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.black,
       body: Stack(
         children: [
           SafeArea(
@@ -79,29 +79,26 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   const SizedBox(height: 20),
-                  // Trophy Icon with Glow
                   Stack(
                     alignment: Alignment.center,
                     children: [
                          Container(
-                           width: 100,
-                           height: 100,
+                           width: 120,
+                           height: 120,
                            decoration: BoxDecoration(
                              shape: BoxShape.circle,
-                             color: Colors.amber.shade100.withValues(alpha: 0.5),
-                             boxShadow: [
-                               BoxShadow(
-                                 color: Colors.amber.withValues(alpha: 0.2),
-                                 blurRadius: 20,
-                                 spreadRadius: 5,
-                               )
-                             ]
+                             gradient: RadialGradient(
+                               colors: [
+                                 const Color(0xFFFFD700).withOpacity(0.2),
+                                 const Color(0xFFFFD700).withOpacity(0.0),
+                               ],
+                             ),
                            ),
                          ),
                         const Icon(
                           Icons.emoji_events_rounded,
-                          size: 64,
-                          color: Colors.amber,
+                          size: 72,
+                          color: Color(0xFFFFD700),
                         ),
                     ],
                   ),
@@ -117,23 +114,24 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
                       return Column(
                         children: [
                           Text(
-                            "¡Misión Cumplida, $name!",
+                            "¡MISIÓN CUMPLIDA, ${name.toUpperCase()}!",
                             textAlign: TextAlign.center,
-                            style: GoogleFonts.outfit(
-                              fontSize: 26,
+                            style: GoogleFonts.firaCode(
+                              fontSize: 22,
                               fontWeight: FontWeight.w900,
-                              color: AppTheme.primaryColor,
+                              color: Colors.white,
+                              letterSpacing: 1.0,
                               height: 1.1,
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 12),
                           Text(
                             "Has vencido a tu versión de ayer.",
                             textAlign: TextAlign.center,
                             style: GoogleFonts.outfit(
                               fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.grey.shade600,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.grey.shade500,
                             ),
                           ),
                         ],
@@ -145,25 +143,41 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
 
                   // Insight Card (Conditional)
                   Container(
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: Colors.blue.shade50,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.blue.shade100),
+                      color: const Color(0xFF111111),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: const Color(0xFF00FFB2).withOpacity(0.1)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF00FFB2).withOpacity(0.05),
+                          blurRadius: 20,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
                     ),
                     child: Column(
                       children: [
                          Row(
                            children: [
-                             Icon(widget.log.isFasted ? Icons.bolt : Icons.restaurant, color: AppTheme.brandBlue),
-                             const SizedBox(width: 8),
+                             Icon(
+                               widget.log.isFasted ? Icons.bolt : Icons.restaurant, 
+                               color: const Color(0xFF00FFB2),
+                               size: 20,
+                             ),
+                             const SizedBox(width: 12),
                              Text(
-                               widget.log.isFasted ? "ENTRENAMIENTO EN AYUNAS" : "ENTRENAMIENTO ALIMENTADO", 
-                               style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: AppTheme.brandBlue, fontSize: 12)
+                               widget.log.isFasted ? "ESTADO: AYUNAS" : "ESTADO: ALIMENTADO", 
+                               style: GoogleFonts.firaCode(
+                                 fontWeight: FontWeight.bold, 
+                                 color: const Color(0xFF00FFB2), 
+                                 fontSize: 11,
+                                 letterSpacing: 1.2,
+                               )
                              ),
                            ],
                          ),
-                         const SizedBox(height: 12),
+                         const SizedBox(height: 16),
                          Consumer(
                            builder: (context, ref, _) {
                               final user = ref.read(authControllerProvider.notifier).currentUser;
@@ -171,11 +185,11 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
                               
                               return Text(
                                 widget.log.isFasted
-                                    ? "$name, entrenar en ayunas hoy ha potenciado tu flexibilidad metabólica. Tu síntesis proteica se disparará cuando rompas el ayuno. ¡Mantente hidratado hasta tu próxima comida!"
-                                    : "$name, gran uso de tu energía hoy. Tus niveles de insulina actuales facilitarán el transporte de aminoácidos a tus músculos tras este esfuerzo. ¡Asegura tu comida post-entreno!",
+                                    ? "$name, entrenar en ayunas hoy ha potenciado tu flexibilidad metabólica. Tu síntesis proteica se disparará cuando rompas el ayuno."
+                                    : "$name, gran uso de tu energía hoy. Tus niveles de insulina actuales facilitarán el transporte de aminoácidos a tus músculos tras este esfuerzo.",
                                 style: GoogleFonts.outfit(
                                   fontSize: 15,
-                                  color: Colors.blueGrey.shade800,
+                                  color: Colors.grey.shade400,
                                   height: 1.4,
                                 ),
                               );
@@ -217,24 +231,40 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
                   // Next Steps (CTA)
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration( 
-                       color: Colors.grey.shade50,
-                       borderRadius: BorderRadius.circular(20),
+                       color: const Color(0xFF111111),
+                       borderRadius: BorderRadius.circular(24),
+                       border: Border.all(color: Colors.white.withOpacity(0.05)),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                         Text("PRÓXIMA MISIÓN 👇", style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey.shade400, letterSpacing: 1.5)),
-                         const SizedBox(height: 8),
+                         Text("PRÓXIMA MISIÓN 👇", 
+                           style: GoogleFonts.firaCode(
+                             fontSize: 10, 
+                             fontWeight: FontWeight.bold, 
+                             color: Colors.grey.shade600, 
+                             letterSpacing: 1.5
+                           )
+                         ),
+                         const SizedBox(height: 12),
                          Text(
                            "Mañana toca Cardio.",
-                           style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
+                           style: GoogleFonts.outfit(
+                             fontSize: 18, 
+                             fontWeight: FontWeight.bold, 
+                             color: Colors.white
+                           ),
                          ),
-                         const SizedBox(height: 4),
+                         const SizedBox(height: 8),
                          Text(
                            "Hacerlo dentro de tu ventana de ayuno será el toque final para limpiar tu sistema y acelerar la recuperación. ¿Aceptas el reto?",
-                           style: GoogleFonts.outfit(fontSize: 14, color: Colors.grey.shade600, height: 1.4),
+                           style: GoogleFonts.outfit(
+                             fontSize: 14, 
+                             color: Colors.grey.shade500, 
+                             height: 1.4
+                           ),
                          ),
                       ],
                     ),
@@ -243,27 +273,42 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
                   const SizedBox(height: 40),
 
                   // Action Button
-                  SizedBox(
+                  Container(
                     width: double.infinity,
                     height: 56,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF00FFB2), Color(0xFF009688)],
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF00FFB2).withOpacity(0.3),
+                          blurRadius: 15,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
                     child: ElevatedButton(
                       onPressed: () {
                         context.go('/dashboard');
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primaryColor,
-                        shadowColor: AppTheme.primaryColor.withValues(alpha: 0.4),
-                        elevation: 8,
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        foregroundColor: Colors.black,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
                       ),
                       child: Text(
                         "Volver al Inicio",
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.firaCode(
                           fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.5,
                         ),
                       ),
                     ),
@@ -285,7 +330,7 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
               emissionFrequency: 0.05,
               numberOfParticles: 20,
               gravity: 0.2,
-              colors: const [Colors.green, Colors.blue, Colors.pink, Colors.orange, Colors.purple],
+              colors: const [Color(0xFF00FFB2), Color(0xFF00E5FF), Color(0xFFFF00E5), Color(0xFFFFD700)],
             ),
           ),
         ],
@@ -310,17 +355,16 @@ class _MetricCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF111111),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.grey.shade100),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
         boxShadow: [
           BoxShadow(
-            color: color.withValues(alpha: 0.05),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
-            spreadRadius: 0,
+            color: color.withOpacity(0.05),
+            blurRadius: 20,
+            offset: const Offset(0, 5),
           ),
         ],
       ),
@@ -328,30 +372,31 @@ class _MetricCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(14),
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: color, size: 22),
+            child: Icon(icon, color: color, size: 20),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           Text(
             value,
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.firaCode(
               fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              fontWeight: FontWeight.w900,
+              color: Colors.white,
               height: 1.0,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           Text(
-            label,
-            style: GoogleFonts.outfit(
-              fontSize: 12,
-              color: Colors.grey.shade500,
-              fontWeight: FontWeight.w500,
+            label.toUpperCase(),
+            style: GoogleFonts.firaCode(
+              fontSize: 10,
+              color: Colors.grey.shade600,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.0,
             ),
           ),
         ],

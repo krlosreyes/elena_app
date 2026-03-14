@@ -5,7 +5,7 @@ import '../../authentication/application/auth_controller.dart';
 import 'onboarding_controller.dart';
 import 'steps/step_bio.dart';
 import 'steps/step_body.dart';
-import 'steps/step_metabolic.dart';
+
 import 'steps/step_circadian.dart';
 import 'steps/step_clinical.dart';
 
@@ -19,11 +19,11 @@ class OnboardingScreen extends ConsumerStatefulWidget {
 class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
+  bool _isSaving = false;
 
   final List<Widget> _steps = const [
     StepBio(),
     StepBody(),
-    StepMetabolic(),
     StepCircadian(),
     StepClinical(),
   ];
@@ -86,6 +86,28 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 onPressed: _prevPage,
               )
             : null,
+        actions: [
+          IconButton(
+            tooltip: 'Cerrar sesión',
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+              final confirm = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Cerrar Sesión'),
+                  content: const Text('¿Estás seguro de que deseas salir? Tu progreso actual no se guardará.'),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('CANCELAR')),
+                    TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('SALIR')),
+                  ],
+                ),
+              );
+              if (confirm == true) {
+                await ref.read(authControllerProvider.notifier).signOut();
+              }
+            },
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -108,11 +130,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
-                onPressed: _nextPage,
+                onPressed: _isSaving ? null : _nextPage,
                 // Style inherited from Theme
-                child: Text(
-                  _currentPage == _steps.length - 1 ? 'FINALIZAR' : 'SIGUIENTE',
-                ),
+                child: _isSaving 
+                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                    : Text(_currentPage == _steps.length - 1 ? 'FINALIZAR' : 'SIGUIENTE'),
               ),
             ),
           ),
@@ -131,16 +153,24 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         _currentPage++;
       });
     } else {
-      // Finalizar - Fix de navegación
+      // Finalizar - Fix de navegación y feedback
+      setState(() => _isSaving = true);
       try {
          await ref.read(onboardingControllerProvider.notifier).submit();
+         // IMPORTANTE: GoRouter reaccionará al cambio en el StreamProvider 
+         // que el router observa, pero llamamos context.go por seguridad extra.
          if (mounted) {
            context.go('/dashboard');
          }
       } catch (e) {
         if (mounted) {
+           setState(() => _isSaving = false);
            ScaffoldMessenger.of(context).showSnackBar(
-             SnackBar(content: Text('Error guardando datos: $e'), backgroundColor: Colors.red),
+             SnackBar(
+               content: Text('Error guardando datos: $e'), 
+               backgroundColor: Theme.of(context).colorScheme.error,
+               action: SnackBarAction(label: 'REINTENTAR', textColor: Colors.white, onPressed: _nextPage),
+             ),
            );
         }
       }

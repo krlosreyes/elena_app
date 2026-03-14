@@ -7,7 +7,7 @@ part of 'metabolic_checkin_provider.dart';
 // **************************************************************************
 
 String _$isDailyCheckInCompletedHash() =>
-    r'a9460ef08d56a06463fcb70ec720d3583182db92';
+    r'092440373f5f685254af4fd39fe21b63f2a4a4ee';
 
 /// See also [isDailyCheckInCompleted].
 @ProviderFor(isDailyCheckInCompleted)
@@ -23,7 +23,7 @@ final isDailyCheckInCompletedProvider =
 );
 
 typedef IsDailyCheckInCompletedRef = AutoDisposeFutureProviderRef<bool>;
-String _$metabolicCheckinHash() => r'1bda63094a11d1af77d7c1779f80c752b0248fda';
+String _$metabolicCheckinHash() => r'be773ba7df8391d85ab9dded9c13042941f23cda';
 
 /// See also [MetabolicCheckin].
 @ProviderFor(MetabolicCheckin)

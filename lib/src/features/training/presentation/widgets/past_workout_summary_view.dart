@@ -32,7 +32,7 @@ class PastWorkoutSummaryView extends StatelessWidget {
             style: GoogleFonts.outfit(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: AppTheme.primaryColor,
+              color: Theme.of(context).colorScheme.primary,
             ),
           ),
           const SizedBox(height: 8),
@@ -80,7 +80,7 @@ class _StatItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Icon(icon, color: AppTheme.brandTeal, size: 32),
+        Icon(icon, color: Theme.of(context).colorScheme.secondary, size: 32),
         const SizedBox(height: 8),
         Text(
           value,

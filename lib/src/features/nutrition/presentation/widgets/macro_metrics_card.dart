@@ -41,10 +41,10 @@ class MacroMetricsCard extends StatelessWidget {
                     ),
                     Text(
                       "${macros.totalCalories} kcal",
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.robotoMono(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
-                        color: AppTheme.brandDark,
+                        color: Colors.white,
                       ),
                     ),
                   ],
@@ -52,15 +52,15 @@ class MacroMetricsCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: AppTheme.brandLightBlue,
+                    color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
                     "TDEE: ${baseMetrics.tdee.round()}",
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.robotoMono(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
-                      color: AppTheme.brandBlue,
+                      color: Theme.of(context).colorScheme.primary,
                     ),
                   ),
                 ),
@@ -112,7 +112,7 @@ class _MacroItem extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
+          color: color.withOpacity(0.1),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(

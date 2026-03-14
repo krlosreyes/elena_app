@@ -101,9 +101,9 @@ class TrainingFeedbackCard extends ConsumerWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: badgeColor.withValues(alpha: 0.1),
+                      color: badgeColor.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: badgeColor.withValues(alpha: 0.2)),
+                      border: Border.all(color: badgeColor.withOpacity(0.2)),
                     ),
                     child: Text(
                       "$badgeEmoji ${isDeload ? 'Descarga' : recommendation.notes}", 
@@ -130,7 +130,7 @@ class TrainingFeedbackCard extends ConsumerWidget {
                     width: double.infinity,
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.8),
+                      color: Colors.white.withOpacity(0.8),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: Colors.teal.shade100),
                     ),

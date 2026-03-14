@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import '../../authentication/data/auth_repository.dart';
+import '../../authentication/application/auth_controller.dart';
 import '../../profile/data/user_repository.dart';
 import '../../profile/domain/user_model.dart';
 import '../domain/entities/daily_workout.dart';

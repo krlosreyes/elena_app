@@ -9,6 +9,7 @@ import '../widgets/science_disclaimer_widget.dart';
 
 import '../../../profile/application/user_controller.dart';
 import '../../../fasting/presentation/fasting_controller.dart'; // Import fasting controller
+import '../../../../shared/presentation/widgets/responsive_centered_view.dart';
 
 class NutritionDashboardScreen extends ConsumerWidget {
   const NutritionDashboardScreen({super.key});
@@ -52,7 +53,9 @@ class NutritionDashboardScreen extends ConsumerWidget {
             }
           }
 
-          return SingleChildScrollView(
+          return ResponsiveCenteredView(
+            maxWidth: 600,
+            child: SingleChildScrollView(
             padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -62,7 +65,7 @@ class NutritionDashboardScreen extends ConsumerWidget {
                    style: GoogleFonts.outfit(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: AppTheme.brandDark,
+                    color: Theme.of(context).colorScheme.primary,
                   ),
                 ),
                 Text(
@@ -103,8 +106,9 @@ class NutritionDashboardScreen extends ConsumerWidget {
                  const SizedBox(height: 40),
               ],
             ),
-          );
-        },
+          ),
+        );
+      },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(
           child: Column(

@@ -30,17 +30,18 @@ class _DailyDiagnosticCardState extends ConsumerState<DailyDiagnosticCard> {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8), // Adjusted margin
-      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppTheme.brandBlue.withValues(alpha: 0.1), width: 1),
+        color: const Color(0xFF111111),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFF00FFB2).withOpacity(0.1), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.brandBlue.withValues(alpha: 0.05),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: const Color(0xFF00FFB2).withOpacity(0.05),
+            blurRadius: 20,
+            spreadRadius: -2,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -51,27 +52,35 @@ class _DailyDiagnosticCardState extends ConsumerState<DailyDiagnosticCard> {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: AppTheme.brandTeal.withValues(alpha: 0.1),
+                  color: const Color(0xFF00FFB2).withOpacity(0.1),
                   shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF00FFB2).withOpacity(0.1),
+                      blurRadius: 8,
+                      spreadRadius: 2,
+                    )
+                  ],
                 ),
-                child: Icon(Icons.monitor_heart_outlined, color: AppTheme.brandTeal),
+                child: const Icon(Icons.analytics_outlined, color: Color(0xFF00FFB2), size: 20),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 16),
               Expanded(
                 child: Text(
                   "${widget.userDisplayName}, configuremos tu sesión...",
                   style: GoogleFonts.outfit(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    color: Colors.white,
+                    letterSpacing: 0.2,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 32),
           
           // Question 1: Sleep
           _buildSliderQuestion(
@@ -85,6 +94,7 @@ class _DailyDiagnosticCardState extends ConsumerState<DailyDiagnosticCard> {
               divisions: 18,
               onChanged: (v) => setState(() => _sleepHours = v),
               activeColor: Colors.blueAccent,
+              inactiveColor: Colors.white12,
             )
           ),
 
@@ -100,6 +110,7 @@ class _DailyDiagnosticCardState extends ConsumerState<DailyDiagnosticCard> {
               divisions: 4,
               onChanged: (v) => setState(() => _sorenessLevel = v.toInt()),
               activeColor: Colors.redAccent,
+              inactiveColor: Colors.white12,
             )
           ),
           
@@ -115,30 +126,48 @@ class _DailyDiagnosticCardState extends ConsumerState<DailyDiagnosticCard> {
               divisions: 9,
               onChanged: (v) => setState(() => _energyLevel = v),
               activeColor: Colors.amber,
+              inactiveColor: Colors.white12,
             )
           ),
 
-          const SizedBox(height: 24),
+          const SizedBox(height: 32),
 
-          ElevatedButton(
-            onPressed: () {
-              ref.read(metabolicCheckinProvider.notifier).submitCheckin(
-                sleepHours: _sleepHours,
-                sorenessLevel: _sorenessLevel,
-                nutritionStatus: 'fed', 
-                energyLevel: _energyLevel,
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.brandBlue,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              elevation: 0,
+          Container(
+            height: 56,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              gradient: const LinearGradient(
+                colors: [Color(0xFF00FFB2), Color(0xFF009688)],
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF00FFB2).withOpacity(0.3),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-            child: Text(
-              "Sincronizar Metabolismo", 
-              style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16)
+            child: ElevatedButton(
+              onPressed: () {
+                ref.read(metabolicCheckinProvider.notifier).submitCheckin(
+                  sleepHours: _sleepHours,
+                  sorenessLevel: _sorenessLevel,
+                  nutritionStatus: 'fed', 
+                  energyLevel: _energyLevel,
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.transparent,
+                foregroundColor: Colors.black,
+                shadowColor: Colors.transparent,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+              child: Text(
+                "Sincronizar Metabolismo", 
+                style: GoogleFonts.firaCode(fontWeight: FontWeight.w800, fontSize: 15, letterSpacing: 0.5)
+              ),
             ),
           ),
         ],

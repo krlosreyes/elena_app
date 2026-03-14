@@ -1,29 +1,41 @@
-import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/user_repository.dart';
 import '../domain/user_model.dart';
 import '../../plan/domain/health_plan.dart';
+import '../../authentication/application/auth_controller.dart';
 
-part 'user_controller.g.dart';
+class UserController extends StateNotifier<void> {
+  final UserRepository _repository;
 
-@riverpod
-class UserController extends _$UserController {
-  @override
-  void build() {}
+  UserController(this._repository) : super(null);
 
   Future<UserModel?> getUser(String uid) {
-    return ref.read(userRepositoryProvider).getUser(uid);
+    return _repository.getUser(uid);
   }
 
   Future<void> saveUser(UserModel user) {
-    return ref.read(userRepositoryProvider).saveUser(user);
+    return _repository.saveUser(user);
   }
 
   Future<void> saveHealthPlan(String uid, HealthPlan plan) {
-    return ref.read(userRepositoryProvider).saveHealthPlan(uid, plan);
+    return _repository.saveHealthPlan(uid, plan);
   }
 }
 
-@riverpod
-Stream<UserModel?> currentUserStream(Ref ref) {
-  return ref.watch(currentUserProvider);
-}
+final userControllerProvider =
+    StateNotifierProvider<UserController, void>((ref) {
+  return UserController(ref.watch(userRepositoryProvider));
+});
+
+/// Reactive stream of the currently signed-in user's profile.
+final currentUserStreamProvider = StreamProvider<UserModel?>((ref) {
+  final authState = ref.watch(authStateChangesProvider);
+  return authState.when(
+    data: (user) {
+      if (user == null) return Stream.value(null);
+      return ref.watch(userRepositoryProvider).watchUser(user.uid);
+    },
+    loading: () => const Stream.empty(),
+    error: (_, __) => Stream.value(null),
+  );
+});

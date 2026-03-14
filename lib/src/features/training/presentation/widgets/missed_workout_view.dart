@@ -21,7 +21,7 @@ class MissedWorkoutView extends StatelessWidget {
             style: GoogleFonts.outfit(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: AppTheme.primaryColor,
+              color: Theme.of(context).colorScheme.primary,
             ),
           ),
           const SizedBox(height: 8),
@@ -39,7 +39,7 @@ class MissedWorkoutView extends StatelessWidget {
             icon: const Icon(Icons.edit_calendar),
             label: const Text("Registrar Manualmente"),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.brandTeal,
+              backgroundColor: Theme.of(context).colorScheme.primary,
               foregroundColor: Colors.white,
             ),
           ),

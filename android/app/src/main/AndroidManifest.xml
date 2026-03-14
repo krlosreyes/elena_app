@@ -2,13 +2,18 @@
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.VIBRATE"/>
-    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
+    <!-- ✅ MEJORA DE SEGURIDAD: 
+         Se elimina SCHEDULE_EXACT_ALARM. En Android 14+ usar AlarmManger para 
+         alarmas exactas es restringido. Las tareas secundarias asincronas deben 
+         delegarse a WorkManager, mejorando la duración de batería y previniendo 
+         que Google Play rechace la actualización por abusos de permisos de Foreground. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 
     <application
         android:label="elena_app"
         android:name="${applicationName}"
-        android:icon="@mipmap/launcher_icon">
+        android:icon="@mipmap/launcher_icon"
+        android:enableOnBackInvokedCallback="true">
         <receiver android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED"/>

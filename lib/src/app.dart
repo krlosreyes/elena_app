@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'routing/routing.dart';
 import 'config/theme/app_theme.dart';
-import 'features/authentication/data/auth_repository.dart';
+import 'features/authentication/application/auth_controller.dart';
 
 class ElenaApp extends ConsumerWidget {
   const ElenaApp({super.key});
@@ -15,7 +15,7 @@ class ElenaApp extends ConsumerWidget {
     
     // STRICT MODE: Use UID as Key to force complete rebuild on user switch.
     // This prevents "Zombie State" in providers and UI widgets.
-    final String appKey = authState.value?.uid ?? 'auth_reset_${DateTime.now().millisecondsSinceEpoch}';
+    final String appKey = authState.value?.uid ?? 'guest_session';
 
     return MaterialApp.router(
       key: ValueKey(appKey), 
@@ -23,7 +23,7 @@ class ElenaApp extends ConsumerWidget {
       debugShowCheckedModeBanner: false,
       restorationScopeId: 'elena_app',
       onGenerateTitle: (BuildContext context) => 'Elena App',
-      theme: AppTheme.lightTheme,
+      theme: AppTheme.darkTelemetryTheme,
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,

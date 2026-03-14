@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../../../profile/application/user_controller.dart';
 
 class DashboardHeader extends ConsumerWidget {
@@ -17,43 +16,24 @@ class DashboardHeader extends ConsumerWidget {
         final initial = name.isNotEmpty ? name[0].toUpperCase() : 'U';
         final firstName = name.split(' ').first;
 
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Hola, $firstName", // <--- CORRECCIÓN 1: NOMBRE
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-                Text(
-                  "Vamos a cumplir tus metas hoy",
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey,
-                      ),
-                ),
-              ],
-            ),
-            GestureDetector(
-              onTap: () {
-                 // Navegación al perfil
-                 context.pushNamed('profile');
-              },
-              child: CircleAvatar(
-                radius: 24,
-                backgroundColor: Colors.blueAccent,
-                child: Text(
-                  initial, // <--- CORRECCIÓN 2: INICIAL
-                  style: const TextStyle(
-                    color: Colors.white,
+            Text(
+              "Hola, $firstName",
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
-                    fontSize: 18,
+                    color: Colors.white,
                   ),
-                ),
-              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              "Vamos a cumplir tus metas hoy",
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.grey[400],
+                  ),
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         );

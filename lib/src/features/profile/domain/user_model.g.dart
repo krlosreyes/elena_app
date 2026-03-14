@@ -51,6 +51,8 @@ _$UserModelImpl _$$UserModelImplFromJson(Map<String, dynamic> json) =>
       targetFatPercentage: (json['targetFatPercentage'] as num?)?.toDouble(),
       targetLBM: (json['targetLBM'] as num?)?.toDouble(),
       checkInDay: (json['checkInDay'] as num?)?.toInt(),
+      averageSleepHours: (json['averageSleepHours'] as num?)?.toDouble(),
+      energyLevel1To10: (json['energyLevel1To10'] as num?)?.toInt(),
       onboardingCompleted: json['onboardingCompleted'] as bool? ?? false,
       createdAt: json['createdAt'] == null
           ? null
@@ -95,6 +97,8 @@ Map<String, dynamic> _$$UserModelImplToJson(_$UserModelImpl instance) =>
       'targetFatPercentage': instance.targetFatPercentage,
       'targetLBM': instance.targetLBM,
       'checkInDay': instance.checkInDay,
+      'averageSleepHours': instance.averageSleepHours,
+      'energyLevel1To10': instance.energyLevel1To10,
       'onboardingCompleted': instance.onboardingCompleted,
       'createdAt': instance.createdAt?.toIso8601String(),
       'updatedAt': instance.updatedAt?.toIso8601String(),

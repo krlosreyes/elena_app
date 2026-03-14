@@ -65,6 +65,10 @@ class UserModel with _$UserModel {
     // Configuración
     int? checkInDay, // 1 = Lunes, 7 = Domingo
 
+    // IMX Specific Overrides (Metabolic & Lifestyle)
+    double? averageSleepHours,
+    int? energyLevel1To10,
+
     // Metadata
     @Default(false) bool onboardingCompleted,
     DateTime? createdAt,

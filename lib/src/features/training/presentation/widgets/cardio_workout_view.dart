@@ -158,7 +158,7 @@ class _CardioWorkoutViewState extends ConsumerState<CardioWorkoutView> {
             if (_seconds > 0 && !_isRunning)
                FloatingActionButton.large(
                 onPressed: () => _finish((_seconds / 60).round()),
-                backgroundColor: AppTheme.brandBlue,
+                backgroundColor: Theme.of(context).colorScheme.primary,
                 child: const Icon(Icons.check),
               ),
           ],
