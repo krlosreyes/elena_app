@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../fasting/application/fasting_controller.dart';
+import '../../../fasting/application/daily_log_service.dart';
 import '../../../authentication/data/auth_repository.dart';
 
 class FastingStatusWidget extends ConsumerWidget {
@@ -62,21 +62,10 @@ class FastingStatusWidget extends ConsumerWidget {
                 final uid = ref.read(authRepositoryProvider).currentUser?.uid;
                 if (uid == null) return;
                 final todayId = DateFormat('yyyy-MM-dd').format(DateTime.now());
-                final snapshot = await FirebaseFirestore.instance
-                    .collection('users')
-                    .doc(uid)
-                    .collection('daily_logs')
-                    .where('date', isEqualTo: todayId)
-                    .get();
-                for (var doc in snapshot.docs) {
-                  await doc.reference.delete();
-                }
-                await FirebaseFirestore.instance
-                    .collection('users')
-                    .doc(uid)
-                    .collection('daily_logs')
-                    .doc(todayId)
-                    .delete();
+                
+                // ✅ Usar DailyLogService en lugar de FirebaseFirestore directo
+                final dailyLogService = ref.read(dailyLogServiceProvider);
+                await dailyLogService.clearDailyLogForDate(uid, todayId);
 
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
