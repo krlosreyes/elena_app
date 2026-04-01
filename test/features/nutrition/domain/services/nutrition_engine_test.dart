@@ -47,7 +47,7 @@ void main() {
       // Lean: 38.25 -> BMR: ~1196
       // Sedentary (1.2) -> 1435
       // Lose Fat (-500) -> 935 (Below 1200)
-      
+
       final plan = engine.calculatePlan(
         userId: 'test',
         weightKg: 45,
@@ -76,14 +76,14 @@ void main() {
     });
 
     test('Caps Protein at 2.5g/kg', () {
-       // 100kg user. 2.5g/kg = 250g max.
-       // Even if calculations wanted more, it should cap.
-       // (Our current logic sets 2.0 or 2.2, so it shouldn't hit 2.5 naturally unless we change logic, 
-       // but strictly checking the guard.)
-       
-       // Force a scenario? Routine sets default 2.0-2.2.
-       // Let's just check standard range is safe.
-       final plan = engine.calculatePlan(
+      // 100kg user. 2.5g/kg = 250g max.
+      // Even if calculations wanted more, it should cap.
+      // (Our current logic sets 2.0 or 2.2, so it shouldn't hit 2.5 naturally unless we change logic,
+      // but strictly checking the guard.)
+
+      // Force a scenario? Routine sets default 2.0-2.2.
+      // Let's just check standard range is safe.
+      final plan = engine.calculatePlan(
         userId: 'test',
         weightKg: 100,
         bodyFatPercentage: 15,
@@ -91,8 +91,9 @@ void main() {
         gender: 'male',
         goal: 'muscle_gain', // set to 2.2g
       );
-      
-      expect(plan.macroTargets.proteinGrams, lessThanOrEqualTo(250)); // 100 * 2.5
+
+      expect(
+          plan.macroTargets.proteinGrams, lessThanOrEqualTo(250)); // 100 * 2.5
       expect(plan.macroTargets.proteinGrams, 220); // 100 * 2.2
     });
   });

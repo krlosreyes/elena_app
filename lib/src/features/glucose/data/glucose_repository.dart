@@ -28,12 +28,30 @@ class GlucoseRepository {
         .collection('users')
         .doc(uid)
         .collection('glucose_logs')
-        .where('timestamp', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
+        .where('timestamp',
+            isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
         .orderBy('timestamp', descending: true)
         .snapshots()
         .map((snapshot) => snapshot.docs
             .map((doc) => GlucoseLog.fromMap(doc.data(), doc.id))
             .toList());
+  }
+
+  Stream<GlucoseLog?> getLatestGlucoseLog(String uid) {
+    return _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('glucose_logs')
+        .orderBy('timestamp', descending: true)
+        .limit(1)
+        .snapshots()
+        .map((snapshot) {
+      if (snapshot.docs.isNotEmpty) {
+        return GlucoseLog.fromMap(
+            snapshot.docs.first.data(), snapshot.docs.first.id);
+      }
+      return null;
+    });
   }
 }
 

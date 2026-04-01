@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../progress/domain/measurement_log.dart';
-import '../../profile/domain/user_model.dart';
+import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import '../domain/weekly_plan.dart';
 
 class CoachingService {
@@ -38,12 +38,12 @@ class CoachingService {
         .get();
 
     MeasurementLog? previousLog;
-    
+
     // Filtramos para asegurar que no comparamos con el mismo ID (por si acaso)
     final otherLogs = historyQuery.docs
         .map((d) => d.data())
-        .where((log) => log.id != currentLog.id) 
-        // Nota: currentLog.id podría venir vacío si es local antes de guardar, 
+        .where((log) => log.id != currentLog.id)
+        // Nota: currentLog.id podría venir vacío si es local antes de guardar,
         // pero aquí asumimos que ya se guardó o que filtramos por fecha.
         // Mejor lógica: Tomar el primer log cuya fecha sea ANTERIOR a currentLog.date
         .toList();
@@ -55,37 +55,40 @@ class CoachingService {
     // 2. Generar Plan
     final nextPlan = _createPlanLogic(currentLog, previousLog, user);
 
-    // 3. Guardar Plan (Overwrite 'current' or add to history? 
-    // Requirement says: users/{uid}/plans/current. 
-    // Let's use a specific ID 'current' to easily overwrite/fetch, 
+    // 3. Guardar Plan (Overwrite 'current' or add to history?
+    // Requirement says: users/{uid}/plans/current.
+    // Let's use a specific ID 'current' to easily overwrite/fetch,
     // or store in a collection and just use the latest.
     // The requirement says: "Guardar el WeeklyPlan en Firestore: users/{uid}/plans/current"
     // This implies a document with ID 'current'.
-    
+
     await _plansRef(user.uid).doc('current').set(nextPlan);
-    
+
     return nextPlan;
   }
 
   WeeklyPlan _createPlanLogic(
       MeasurementLog current, MeasurementLog? previous, UserModel user) {
-    
     final now = DateTime.now();
-    final startDate = now; 
+    final startDate = now;
     final endDate = now.add(const Duration(days: 7));
 
     // PASO 2: Primer Registro (No hay historial previo)
-    if (previous == null || previous.waistCircumference == null || current.waistCircumference == null) {
-      bool hasInsulinResistance = user.pathologies.contains('insulin_resistance') || 
-                                  user.pathologies.contains('prediabetes');
-      
+    if (previous == null ||
+        previous.waistCircumference == null ||
+        current.waistCircumference == null) {
+      bool hasInsulinResistance =
+          user.pathologies.contains('insulin_resistance') ||
+              user.pathologies.contains('prediabetes');
+
       return WeeklyPlan(
         id: 'current',
         startDate: startDate,
         endDate: endDate,
         protocol: hasInsulinResistance ? '16/8' : '14/10',
         status: PlanStatus.initial,
-        coachMessage: "¡Comenzamos tu transformación! Esta semana es de adaptación.",
+        coachMessage:
+            "¡Comenzamos tu transformación! Esta semana es de adaptación.",
         adjustments: ["Hidratación constante", "Dormir 7h+"],
       );
     }
@@ -103,8 +106,9 @@ class CoachingService {
     if (deltaWaist < -0.5) {
       // PROGRESS
       status = PlanStatus.progress;
-      protocol = '16/8'; // Mantener anterior (simplificación: asumimos 16/8 por defecto si no tenemos el plan previo)
-      // Idealmente leeríamos el plan anterior para mantener su protocolo. 
+      protocol =
+          '16/8'; // Mantener anterior (simplificación: asumimos 16/8 por defecto si no tenemos el plan previo)
+      // Idealmente leeríamos el plan anterior para mantener su protocolo.
       // Por ahora, '16/8' es un valor seguro o el del user preference.
       // Mejora: si pudiéramos leer el plan anterior, useríamos ese protocolo.
       // Asumiremos mantener 16/8 como base de éxito.
@@ -114,14 +118,20 @@ class CoachingService {
       // STAGNATION
       status = PlanStatus.stagnation;
       protocol = '18/6'; // Aumentar intensidad
-      message = "Estabilidad detectada. Vamos a retar a tu cuerpo con un protocolo nuevo.";
+      message =
+          "Estabilidad detectada. Vamos a retar a tu cuerpo con un protocolo nuevo.";
       adjustments = ["Protocolo 18/6", "Caminar antes de primera comida"];
     } else {
       // REGRESSION
       status = PlanStatus.regression;
       protocol = '14/10'; // Resetear (Control de estrés)
-      message = "Cintura arriba. Prioricemos descanso y comida real esta semana.";
-      adjustments = ["Reducir ventana a 14/10", "Priorizar sueño", "Cero procesados"];
+      message =
+          "Cintura arriba. Prioricemos descanso y comida real esta semana.";
+      adjustments = [
+        "Reducir ventana a 14/10",
+        "Priorizar sueño",
+        "Cero procesados"
+      ];
     }
 
     return WeeklyPlan(
@@ -139,4 +149,3 @@ class CoachingService {
 final coachingProvider = Provider<CoachingService>((ref) {
   return CoachingService(FirebaseFirestore.instance);
 });
-

@@ -44,7 +44,7 @@ class MetabolicLogic {
 
   static String generateInsightMessage(MetabolicState state, String userName) {
     final routineType = determineRoutineType(state);
-    
+
     // Copywriting Persuasivo (Mensajes de Elena)
     return "$userName, he diseñado tu rutina '$routineType' de 6 ejercicios. Según tu descanso y energía de hoy, he ajustado el volumen para que tus fibras se recuperen al 100%. En los ejercicios sin peso, concéntrate en la lentitud del movimiento; ahí está la clave de tu metabolismo hoy.";
   }

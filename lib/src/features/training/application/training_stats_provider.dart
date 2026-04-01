@@ -1,11 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+
 import '../../authentication/data/auth_repository.dart';
 import '../domain/entities/workout_log.dart';
-import '../data/repositories/training_repository.dart';
+import 'training_provider.dart';
 
 part 'training_stats_provider.g.dart';
-  
+
 // Helper to calculate percentage based on "Standard Load" estimation
 extension WorkoutLogX on WorkoutLog {
   double get completionPercentage {
@@ -18,20 +19,20 @@ extension WorkoutLogX on WorkoutLog {
         // we just count them.
         final setsList = ex['sets'] as List?;
         if (setsList != null) {
-           totalSets += setsList.where((s) => s['isDone'] == true).length;
+          totalSets += setsList.where((s) => s['isDone'] == true).length;
         }
       }
       // Baseline: ~10 sets for a full workout (3 exercises * 3-4 sets)
       return (totalSets / 10.0 * 100).clamp(0.0, 100.0);
-    } 
-    
+    }
+
     // 2. Cardio Logic
     final duration = durationMinutes ?? 0;
     if (duration > 0) {
       // Baseline: 30 minutes cardio
       return (duration / 30.0 * 100).clamp(0.0, 100.0);
     }
-    
+
     return 0.0;
   }
 }
@@ -51,7 +52,7 @@ Future<List<WorkoutLog>> trainingStats(Ref ref) async {
   final range = ref.watch(trainingStatsFilterProvider);
   final repository = ref.watch(trainingRepositoryProvider);
   final user = ref.read(authRepositoryProvider).currentUser;
-  
+
   if (user == null) return [];
 
   final now = DateTime.now();

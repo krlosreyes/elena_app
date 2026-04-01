@@ -19,7 +19,8 @@ sealed class NutritionPlan with _$NutritionPlan {
     required WeeklyAdjustment weeklyAdjustment,
   }) = _NutritionPlan;
 
-  factory NutritionPlan.fromJson(Map<String, dynamic> json) => _$NutritionPlanFromJson(json);
+  factory NutritionPlan.fromJson(Map<String, dynamic> json) =>
+      _$NutritionPlanFromJson(json);
 }
 
 @freezed
@@ -33,7 +34,8 @@ sealed class BaseMetrics with _$BaseMetrics {
     required double activityMultiplier,
   }) = _BaseMetrics;
 
-  factory BaseMetrics.fromJson(Map<String, dynamic> json) => _$BaseMetricsFromJson(json);
+  factory BaseMetrics.fromJson(Map<String, dynamic> json) =>
+      _$BaseMetricsFromJson(json);
 }
 
 @freezed
@@ -45,7 +47,8 @@ sealed class MacroTargets with _$MacroTargets {
     required int carbsGrams,
   }) = _MacroTargets;
 
-  factory MacroTargets.fromJson(Map<String, dynamic> json) => _$MacroTargetsFromJson(json);
+  factory MacroTargets.fromJson(Map<String, dynamic> json) =>
+      _$MacroTargetsFromJson(json);
 }
 
 @freezed
@@ -57,7 +60,8 @@ sealed class VisualPlate with _$VisualPlate {
     required String carbsType, // e.g., "complex_low_gi"
   }) = _VisualPlate;
 
-  factory VisualPlate.fromJson(Map<String, dynamic> json) => _$VisualPlateFromJson(json);
+  factory VisualPlate.fromJson(Map<String, dynamic> json) =>
+      _$VisualPlateFromJson(json);
 }
 
 @freezed
@@ -68,7 +72,8 @@ sealed class WeeklyAdjustment with _$WeeklyAdjustment {
     String? adjustmentReason,
   }) = _WeeklyAdjustment;
 
-  factory WeeklyAdjustment.fromJson(Map<String, dynamic> json) => _$WeeklyAdjustmentFromJson(json);
+  factory WeeklyAdjustment.fromJson(Map<String, dynamic> json) =>
+      _$WeeklyAdjustmentFromJson(json);
 }
 
 class TimestampConverter implements JsonConverter<DateTime, Object> {

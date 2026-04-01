@@ -30,6 +30,7 @@ mixin _$WorkoutLog {
   int? get durationMinutes => throw _privateConstructorUsedError;
   int? get caloriesBurned => throw _privateConstructorUsedError;
   bool get isFasted => throw _privateConstructorUsedError;
+  String get type => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -51,7 +52,8 @@ abstract class $WorkoutLogCopyWith<$Res> {
       List<Map<String, dynamic>> completedExercises,
       int? durationMinutes,
       int? caloriesBurned,
-      bool isFasted});
+      bool isFasted,
+      String type});
 }
 
 /// @nodoc
@@ -75,6 +77,7 @@ class _$WorkoutLogCopyWithImpl<$Res, $Val extends WorkoutLog>
     Object? durationMinutes = freezed,
     Object? caloriesBurned = freezed,
     Object? isFasted = null,
+    Object? type = null,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -109,6 +112,10 @@ class _$WorkoutLogCopyWithImpl<$Res, $Val extends WorkoutLog>
           ? _value.isFasted
           : isFasted // ignore: cast_nullable_to_non_nullable
               as bool,
+      type: null == type
+          ? _value.type
+          : type // ignore: cast_nullable_to_non_nullable
+              as String,
     ) as $Val);
   }
 }
@@ -129,7 +136,8 @@ abstract class _$$WorkoutLogImplCopyWith<$Res>
       List<Map<String, dynamic>> completedExercises,
       int? durationMinutes,
       int? caloriesBurned,
-      bool isFasted});
+      bool isFasted,
+      String type});
 }
 
 /// @nodoc
@@ -151,6 +159,7 @@ class __$$WorkoutLogImplCopyWithImpl<$Res>
     Object? durationMinutes = freezed,
     Object? caloriesBurned = freezed,
     Object? isFasted = null,
+    Object? type = null,
   }) {
     return _then(_$WorkoutLogImpl(
       id: null == id
@@ -185,6 +194,10 @@ class __$$WorkoutLogImplCopyWithImpl<$Res>
           ? _value.isFasted
           : isFasted // ignore: cast_nullable_to_non_nullable
               as bool,
+      type: null == type
+          ? _value.type
+          : type // ignore: cast_nullable_to_non_nullable
+              as String,
     ));
   }
 }
@@ -200,7 +213,8 @@ class _$WorkoutLogImpl extends _WorkoutLog with DiagnosticableTreeMixin {
       required final List<Map<String, dynamic>> completedExercises,
       this.durationMinutes,
       this.caloriesBurned,
-      this.isFasted = false})
+      this.isFasted = false,
+      this.type = 'Fuerza'})
       : _completedExercises = completedExercises,
         super._();
 
@@ -232,10 +246,13 @@ class _$WorkoutLogImpl extends _WorkoutLog with DiagnosticableTreeMixin {
   @override
   @JsonKey()
   final bool isFasted;
+  @override
+  @JsonKey()
+  final String type;
 
   @override
   String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
-    return 'WorkoutLog(id: $id, templateId: $templateId, date: $date, sessionRirScore: $sessionRirScore, completedExercises: $completedExercises, durationMinutes: $durationMinutes, caloriesBurned: $caloriesBurned, isFasted: $isFasted)';
+    return 'WorkoutLog(id: $id, templateId: $templateId, date: $date, sessionRirScore: $sessionRirScore, completedExercises: $completedExercises, durationMinutes: $durationMinutes, caloriesBurned: $caloriesBurned, isFasted: $isFasted, type: $type)';
   }
 
   @override
@@ -250,7 +267,8 @@ class _$WorkoutLogImpl extends _WorkoutLog with DiagnosticableTreeMixin {
       ..add(DiagnosticsProperty('completedExercises', completedExercises))
       ..add(DiagnosticsProperty('durationMinutes', durationMinutes))
       ..add(DiagnosticsProperty('caloriesBurned', caloriesBurned))
-      ..add(DiagnosticsProperty('isFasted', isFasted));
+      ..add(DiagnosticsProperty('isFasted', isFasted))
+      ..add(DiagnosticsProperty('type', type));
   }
 
   @override
@@ -271,7 +289,8 @@ class _$WorkoutLogImpl extends _WorkoutLog with DiagnosticableTreeMixin {
             (identical(other.caloriesBurned, caloriesBurned) ||
                 other.caloriesBurned == caloriesBurned) &&
             (identical(other.isFasted, isFasted) ||
-                other.isFasted == isFasted));
+                other.isFasted == isFasted) &&
+            (identical(other.type, type) || other.type == type));
   }
 
   @JsonKey(ignore: true)
@@ -285,7 +304,8 @@ class _$WorkoutLogImpl extends _WorkoutLog with DiagnosticableTreeMixin {
       const DeepCollectionEquality().hash(_completedExercises),
       durationMinutes,
       caloriesBurned,
-      isFasted);
+      isFasted,
+      type);
 
   @JsonKey(ignore: true)
   @override
@@ -310,7 +330,8 @@ abstract class _WorkoutLog extends WorkoutLog {
       required final List<Map<String, dynamic>> completedExercises,
       final int? durationMinutes,
       final int? caloriesBurned,
-      final bool isFasted}) = _$WorkoutLogImpl;
+      final bool isFasted,
+      final String type}) = _$WorkoutLogImpl;
   const _WorkoutLog._() : super._();
 
   factory _WorkoutLog.fromJson(Map<String, dynamic> json) =
@@ -333,6 +354,8 @@ abstract class _WorkoutLog extends WorkoutLog {
   int? get caloriesBurned;
   @override
   bool get isFasted;
+  @override
+  String get type;
   @override
   @JsonKey(ignore: true)
   _$$WorkoutLogImplCopyWith<_$WorkoutLogImpl> get copyWith =>

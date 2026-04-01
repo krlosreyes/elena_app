@@ -9,14 +9,15 @@ class RestTimer extends _$RestTimer {
 
   @override
   int build() {
-    // Initial state is 0 seconds
+    // Audit: Proper disposal to prevent memory leaks
+    ref.onDispose(() => _timer?.cancel());
     return 0;
   }
 
   void startTimer(int seconds) {
     // Cancel existing timer
     _timer?.cancel();
-    
+
     // Set initial state
     state = seconds;
 

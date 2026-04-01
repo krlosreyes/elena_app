@@ -1,7 +1,9 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../data/user_repository.dart';
-import '../domain/user_model.dart';
-import '../../plan/domain/health_plan.dart';
+import 'package:elena_app/src/shared/domain/models/user_model.dart';
+import 'package:elena_app/src/shared/domain/models/health_plan.dart';
 import '../../authentication/application/auth_controller.dart';
 
 class UserController extends StateNotifier<void> {
@@ -20,6 +22,10 @@ class UserController extends StateNotifier<void> {
   Future<void> saveHealthPlan(String uid, HealthPlan plan) {
     return _repository.saveHealthPlan(uid, plan);
   }
+
+  Future<void> updateUserBodyMetrics(String uid, Map<String, double> metrics) {
+    return _repository.saveBodyLog(uid, metrics);
+  }
 }
 
 final userControllerProvider =
@@ -27,15 +33,19 @@ final userControllerProvider =
   return UserController(ref.watch(userRepositoryProvider));
 });
 
-/// Reactive stream of the currently signed-in user's profile.
+// currentUserStreamProvider consolidado aquí
 final currentUserStreamProvider = StreamProvider<UserModel?>((ref) {
   final authState = ref.watch(authStateChangesProvider);
   return authState.when(
     data: (user) {
       if (user == null) return Stream.value(null);
+      debugPrint('👤 [USER STREAM] Watching profile for UID: ${user.uid}');
       return ref.watch(userRepositoryProvider).watchUser(user.uid);
     },
     loading: () => const Stream.empty(),
-    error: (_, __) => Stream.value(null),
+    error: (e, st) {
+      debugPrint('❌ [USER STREAM] Error: $e');
+      return Stream.value(null);
+    },
   );
 });

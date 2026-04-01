@@ -1,4 +1,3 @@
-
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'workout_stats.freezed.dart';
@@ -17,7 +16,8 @@ class WorkoutStats with _$WorkoutStats {
     required int totalSets,
   }) = _WorkoutStats;
 
-  factory WorkoutStats.fromJson(Map<String, dynamic> json) => _$WorkoutStatsFromJson(json);
+  factory WorkoutStats.fromJson(Map<String, dynamic> json) =>
+      _$WorkoutStatsFromJson(json);
 
   /// Standard Calorie Estimation Formula
   /// Formula: (MET * 3.5 * weightInKg) / 200 * durationInMinutes

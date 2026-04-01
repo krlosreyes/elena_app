@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:elena_app/src/features/glucose/data/glucose_repository.dart' hide glucoseRepositoryProvider;
+import 'package:elena_app/src/features/glucose/data/glucose_repository.dart'
+    hide glucoseRepositoryProvider;
 import 'package:elena_app/src/features/glucose/domain/glucose_model.dart';
 import 'package:elena_app/src/features/authentication/application/auth_controller.dart';
 
@@ -25,10 +26,12 @@ class GlucoseTimeFilterNotifier extends Notifier<TimeFilter> {
 
 // Provider for the selected filter
 final glucoseTimeFilterProvider =
-    NotifierProvider<GlucoseTimeFilterNotifier, TimeFilter>(GlucoseTimeFilterNotifier.new);
+    NotifierProvider<GlucoseTimeFilterNotifier, TimeFilter>(
+        GlucoseTimeFilterNotifier.new);
 
 // 2. Provider de Datos Filtrados (Reactivo)
-final filteredGlucoseProvider = StreamProvider.autoDispose<List<GlucoseLog>>((ref) {
+final filteredGlucoseProvider =
+    StreamProvider.autoDispose<List<GlucoseLog>>((ref) {
   // Escuchamos al usuario actual
   final authState = ref.watch(authStateChangesProvider);
   final user = authState.value;
@@ -43,7 +46,8 @@ final filteredGlucoseProvider = StreamProvider.autoDispose<List<GlucoseLog>>((re
 
   // Calculamos startDate según el filtro
   // Calculamos startDate según el filtro
-  DateTime startDate = DateTime.now().subtract(const Duration(days: 7)); // Default value
+  DateTime startDate =
+      DateTime.now().subtract(const Duration(days: 7)); // Default value
   switch (filter) {
     case TimeFilter.semana:
       startDate = DateTime.now().subtract(const Duration(days: 7));
@@ -59,4 +63,15 @@ final filteredGlucoseProvider = StreamProvider.autoDispose<List<GlucoseLog>>((re
   // Obtenemos el repo y pedimos los datos con el UID y startDate
   final repository = ref.watch(glucoseRepositoryProvider);
   return repository.getGlucoseLogs(uid: user.uid, startDate: startDate);
+});
+
+// 3. Proveedor del último registro (para el Hub Metabólico)
+final latestGlucoseLogProvider = StreamProvider.autoDispose<GlucoseLog?>((ref) {
+  final authState = ref.watch(authStateChangesProvider);
+  final user = authState.value;
+  if (user == null) return const Stream.empty();
+
+  final repository = ref.watch(glucoseRepositoryProvider);
+  // Obtenemos el último registro (limit 1)
+  return repository.getLatestGlucoseLog(user.uid);
 });

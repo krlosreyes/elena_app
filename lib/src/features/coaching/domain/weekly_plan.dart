@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-
 enum PlanStatus { progress, stagnation, regression, initial }
 
 class WeeklyPlan {
@@ -49,4 +48,3 @@ class WeeklyPlan {
     };
   }
 }
-

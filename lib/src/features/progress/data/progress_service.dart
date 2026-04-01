@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../authentication/data/auth_repository.dart';
 import '../domain/measurement_log.dart';
 
 class ProgressService {
@@ -19,7 +18,8 @@ class ProgressService {
       );
 
   // Add Measurement
-  Future<void> addMeasurement(String uid, {
+  Future<void> addMeasurement(
+    String uid, {
     required double weight,
     double? waistCircumference,
     int? energyLevel,
@@ -32,7 +32,7 @@ class ProgressService {
       waistCircumference: waistCircumference,
       energyLevel: energyLevel,
     );
-    
+
     // Use standard add to let Firestore generate ID
     await _measurementsRef(uid).add(log);
   }
@@ -75,18 +75,17 @@ class ProgressService {
   }
 
   // Update Profile Stats directly from Measurement logic
-  Future<void> updateProfileDerivedStats(String uid, {
-      required double weight, 
-      double? waist, 
-      double? neck, 
-      double? hip
-  }) async {
+  Future<void> updateProfileDerivedStats(String uid,
+      {required double weight,
+      double? waist,
+      double? neck,
+      double? hip}) async {
     final Map<String, dynamic> updates = {
       'currentWeightKg': weight,
     };
     if (waist != null) updates['waistCircumferenceCm'] = waist;
-    if (neck != null)  updates['neckCircumferenceCm'] = neck;
-    if (hip != null)   updates['hipCircumferenceCm'] = hip;
+    if (neck != null) updates['neckCircumferenceCm'] = neck;
+    if (hip != null) updates['hipCircumferenceCm'] = hip;
 
     await _firestore.collection('users').doc(uid).update(updates);
   }
@@ -96,4 +95,3 @@ class ProgressService {
 final progressServiceProvider = Provider<ProgressService>((ref) {
   return ProgressService(FirebaseFirestore.instance);
 });
-

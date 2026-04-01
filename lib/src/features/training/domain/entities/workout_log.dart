@@ -20,7 +20,8 @@ class TimestampConverter implements JsonConverter<DateTime, dynamic> {
     if (json is int) {
       return DateTime.fromMillisecondsSinceEpoch(json);
     }
-    throw ArgumentError('Cannot convert $json (${json.runtimeType}) to DateTime');
+    throw ArgumentError(
+        'Cannot convert $json (${json.runtimeType}) to DateTime');
   }
 
   @override
@@ -36,11 +37,13 @@ sealed class WorkoutLog with _$WorkoutLog {
     required String templateId,
     @TimestampConverter() required DateTime date,
     required int sessionRirScore,
-    required List<Map<String, dynamic>> completedExercises, 
+    required List<Map<String, dynamic>> completedExercises,
     int? durationMinutes,
     int? caloriesBurned,
-    @Default(false) bool isFasted, // Added tracking
+    @Default(false) bool isFasted,
+    @Default('Fuerza') String type,
   }) = _WorkoutLog;
 
-  factory WorkoutLog.fromJson(Map<String, dynamic> json) => _$WorkoutLogFromJson(json);
+  factory WorkoutLog.fromJson(Map<String, dynamic> json) =>
+      _$WorkoutLogFromJson(json);
 }

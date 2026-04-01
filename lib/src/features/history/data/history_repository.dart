@@ -1,5 +1,5 @@
-
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../authentication/data/auth_repository.dart';
 import '../../training/domain/entities/training_entities.dart';
@@ -50,7 +50,8 @@ class HistoryRepository {
       // or we can fetch the user profile.
       // Given the prompt asks for a "Helper or Entity method", we'll use the static method with default.
       // Ideally we'd fetch the user's weight from a profile provider.
-      final double userWeight = 75.0; // Todo: Fetch from ProfileRepository if available
+      final double userWeight =
+          75.0; // Todo: Fetch from ProfileRepository if available
 
       final calories = WorkoutStats.calculateCalories(
         durationMinutes: workout.durationMinutes,
@@ -65,10 +66,9 @@ class HistoryRepository {
         workoutType: workout.type,
         totalSets: totalSets,
       );
-
     } catch (e) {
       // Log error
-      print('Error fetching workout summary: $e');
+      debugPrint('Error fetching workout summary: $e');
       return null;
     }
   }
@@ -77,7 +77,8 @@ class HistoryRepository {
 @riverpod
 HistoryRepository historyRepository(HistoryRepositoryRef ref) {
   final auth = ref.watch(authRepositoryProvider);
-  return HistoryRepository(FirebaseFirestore.instance, auth.currentUser?.uid ?? '');
+  return HistoryRepository(
+      FirebaseFirestore.instance, auth.currentUser?.uid ?? '');
 }
 
 // Stats Provider

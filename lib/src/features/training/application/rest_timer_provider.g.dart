@@ -6,7 +6,7 @@ part of 'rest_timer_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$restTimerHash() => r'1a185ced7449858e5fcdafccc9be405d94b98663';
+String _$restTimerHash() => r'8bf9d2ab618e66927f7f080d06edeeffd8c62786';
 
 /// See also [RestTimer].
 @ProviderFor(RestTimer)

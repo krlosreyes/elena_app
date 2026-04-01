@@ -17,8 +17,19 @@ android {
         isCoreLibraryDesugaringEnabled = true
     }
 
+    kotlin {
+        compilerOptions {
+            jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
+        }
+    }
+
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
+        // Suppress warnings about deprecated APIs and obsolete compiler options
+        freeCompilerArgs = listOf(
+            "-Xlint:-deprecation",
+            "-Xlint:-options",
+            "-Xlint:-unchecked"
+        )
     }
 
     defaultConfig {

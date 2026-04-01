@@ -1,0 +1,39 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // 1. Regla para la colección de usuarios
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      
+      match /{allPaths=**} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
+    // 2. user_food_suggestions — catálogo global de sugerencias
+    //    Cualquier usuario autenticado puede leer.
+    //    Escritura permitida solo a usuarios autenticados (seed + last_shown updates).
+    match /user_food_suggestions/{docId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // 3. master_food_db — Base de datos maestra de alimentos
+    match /master_food_db/{docId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+
+    // 4. master_exercises_db — Base de datos maestra de ejercicios
+    match /master_exercises_db/{docId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+
+    // 5. Contenido público
+    match /metamorfosis_posts/{postId} {
+      allow read: if true;
+      allow write: if false;
+    }
+  }
+}

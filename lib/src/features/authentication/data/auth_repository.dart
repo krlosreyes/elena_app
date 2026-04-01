@@ -10,6 +10,7 @@ abstract class IAuthRepository {
   Future<void> signInWithEmailAndPassword(String email, String password);
   Future<void> createUserWithEmailAndPassword(String email, String password);
   Future<void> signOut();
+  Future<void> deleteAccount();
 }
 
 /// Implementación concreta de IAuthRepository usando Firebase.
@@ -43,7 +44,8 @@ class AuthRepository implements IAuthRepository {
   }
 
   @override
-  Future<void> createUserWithEmailAndPassword(String email, String password) async {
+  Future<void> createUserWithEmailAndPassword(
+      String email, String password) async {
     try {
       await _firebaseAuth.createUserWithEmailAndPassword(
         email: email,
@@ -62,7 +64,18 @@ class AuthRepository implements IAuthRepository {
     try {
       await _firebaseAuth.signOut();
     } catch (e) {
-      throw const UnknownException();
+      // Proceso silencioso si falla por cancelación de token u otra causa
+    }
+  }
+
+  @override
+  Future<void> deleteAccount() async {
+    try {
+      await _firebaseAuth.currentUser?.delete();
+    } on FirebaseAuthException catch (e) {
+      throw _handleFirebaseAuthException(e);
+    } catch (e) {
+      throw AppException(e.toString(), 'unknown');
     }
   }
 
@@ -91,6 +104,10 @@ class AuthRepository implements IAuthRepository {
       case 'too-many-requests':
         return const AppException('Demasiados intentos. Intenta más tarde.',
             'auth/too-many-requests');
+      case 'requires-recent-login':
+        return const AppException(
+            'Por seguridad, esta acción requiere una sesión reciente. Por favor, cierra sesión y vuelve a entrar para continuar.',
+            'auth/requires-recent-login');
       default:
         return AppException('Error de autenticación: ${e.message}', e.code);
     }
@@ -102,3 +119,6 @@ final authRepositoryProvider = Provider<IAuthRepository>((ref) {
   return AuthRepository(FirebaseAuth.instance);
 });
 
+final authStateChangesProvider = StreamProvider<User?>((ref) {
+  return ref.watch(authRepositoryProvider).authStateChanges();
+});

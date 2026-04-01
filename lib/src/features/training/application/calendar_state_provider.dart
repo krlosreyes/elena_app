@@ -20,7 +20,7 @@ class CalendarState extends _$CalendarState {
   void prevWeek() {
     state = state.subtract(const Duration(days: 7));
   }
-  
+
   bool get canGoNextWeek {
     final now = DateTime.now();
     final nextWeekLimit = now.add(const Duration(days: 7));

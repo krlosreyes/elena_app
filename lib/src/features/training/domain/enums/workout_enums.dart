@@ -2,7 +2,7 @@ enum WorkoutGoal {
   fatLoss,
   recomp,
   muscleGain,
-  metabolic_health,
+  metabolicHealth,
 }
 
 enum WorkoutType {

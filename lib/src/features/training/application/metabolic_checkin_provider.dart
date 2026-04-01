@@ -1,10 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import '../domain/entities/metabolic_state.dart';
+
 import '../../authentication/application/auth_controller.dart';
-import '../data/repositories/training_repository.dart';
+import '../domain/entities/metabolic_state.dart';
 import '../domain/logic/metabolic_logic.dart';
-import '../../profile/data/user_repository.dart';
+import 'training_provider.dart';
 
 part 'metabolic_checkin_provider.g.dart';
 
@@ -23,13 +24,13 @@ class MetabolicCheckin extends _$MetabolicCheckin {
 
     final today = DateTime.now();
     try {
-        final repo = ref.watch(trainingRepositoryProvider);
-        final checkin = await repo.getDailyCheckin(uid, today);
-        return checkin;
-    } catch(e) {
-        // Log error
-        print("Error loading metabolic checkin: $e");
-        return null;
+      final repo = ref.watch(trainingRepositoryProvider);
+      final checkin = await repo.getDailyCheckin(uid, today);
+      return checkin;
+    } catch (e) {
+      // Log error
+      debugPrint("Error loading metabolic checkin: $e");
+      return null;
     }
   }
 
@@ -50,28 +51,28 @@ class MetabolicCheckin extends _$MetabolicCheckin {
       energyLevel: energyLevel,
       insightMessage: null, // Will be set below
     );
-    
+
     // Generate Insight using Domain Logic
     final user = ref.read(authControllerProvider.notifier).currentUser;
     final userName = user?.displayName ?? "Atleta";
-    
+
     // Logic import needed or duplicate? Let's assume we can import logic.
     // Since we are in application layer, we should import domain logic.
     // import '../domain/logic/metabolic_logic.dart';
-    
+
     // For now, I'll use the static method. I need to add import to file.
     final insight = MetabolicLogic.generateInsightMessage(stateData, userName);
     final finalState = stateData.copyWith(insightMessage: insight);
 
     state = AsyncData(finalState);
-    
+
     // Persist logic
-     final uid = ref.read(authControllerProvider.notifier).currentUser?.uid;
-     if (uid != null) {
-       await ref.read(trainingRepositoryProvider).saveCheckin(uid, finalState);
-       // Invalidate the future provider so the UI updates!
-       ref.invalidate(isDailyCheckInCompletedProvider); 
-     }
+    final uid = ref.read(authControllerProvider.notifier).currentUser?.uid;
+    if (uid != null) {
+      await ref.read(trainingRepositoryProvider).saveCheckin(uid, finalState);
+      // Invalidate the future provider so the UI updates!
+      ref.invalidate(isDailyCheckInCompletedProvider);
+    }
   }
 }
 
@@ -82,24 +83,24 @@ Future<bool> isDailyCheckInCompleted(Ref ref) async {
 
   final repo = ref.watch(trainingRepositoryProvider);
   final today = DateTime.now();
-  
-  // Reuse the repository logic or cache? 
+
+  // Reuse the repository logic or cache?
   // It's safer to fetch fresh or rely on the other provider if it's consistent.
   // But user asked for a "Guardia de Ruta" that works.
   try {
-     final checkin = await repo.getDailyCheckin(uid, today);
-     
-     if (checkin == null) return false;
-     
-     // STRICT DATE VALIDATION (Application Layer)
-     final checkInDate = checkin.date; // already DateTime in entity
-     final isSameDay = checkInDate.year == today.year && 
-                       checkInDate.month == today.month && 
-                       checkInDate.day == today.day;
-                       
-     return isSameDay;
-  } catch(e) {
-     return false; // Fail safe to "Needs checkin" or "Error"?
-     // If error, maybe allow? No, better to force check-in to be safe.
+    final checkin = await repo.getDailyCheckin(uid, today);
+
+    if (checkin == null) return false;
+
+    // STRICT DATE VALIDATION (Application Layer)
+    final checkInDate = checkin.date; // already DateTime in entity
+    final isSameDay = checkInDate.year == today.year &&
+        checkInDate.month == today.month &&
+        checkInDate.day == today.day;
+
+    return isSameDay;
+  } catch (e) {
+    return false; // Fail safe to "Needs checkin" or "Error"?
+    // If error, maybe allow? No, better to force check-in to be safe.
   }
 }

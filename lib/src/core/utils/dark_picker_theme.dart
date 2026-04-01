@@ -5,10 +5,10 @@ import 'package:flutter/material.dart';
 ThemeData darkPickerTheme(BuildContext context) {
   return Theme.of(context).copyWith(
     colorScheme: const ColorScheme.dark(
-      primary: Color(0xFF009688),       // Teal — selection & accent
-      onPrimary: Colors.white,          // Text on selected day
-      surface: Color(0xFF1E1E1E),       // Dialog background
-      onSurface: Colors.white,          // Regular text/numbers
+      primary: Color(0xFF009688), // Teal — selection & accent
+      onPrimary: Colors.white, // Text on selected day
+      surface: Color(0xFF1E1E1E), // Dialog background
+      onSurface: Colors.white, // Regular text/numbers
       secondary: Color(0xFF009688),
       onSecondary: Colors.white,
       outline: Color(0xFF2E2E2E),

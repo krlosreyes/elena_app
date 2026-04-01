@@ -1,0 +1,571 @@
+╔═════════════════════════════════════════════════════════════════════════════╗
+║                                                                             ║
+║      🔗 ELENA FOOD SEARCH — ARCHITECTURE & DATA FLOW DIAGRAMS              ║
+║                                                                             ║
+║      Visual Guide to Integration Points and User Journeys                   ║
+║                                                                             ║
+║      Date: 31 de Marzo de 2026                                            ║
+║                                                                             ║
+╚═════════════════════════════════════════════════════════════════════════════╝
+
+═════════════════════════════════════════════════════════════════════════════════
+
+## 🏗️ SYSTEM ARCHITECTURE
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│  ┌─ PRESENTATION LAYER ─────────────────────────────────────────────────┐  │
+│  │                                                                      │  │
+│  │  OnboardingScreen                  MealRegistrationModal            │  │
+│  │  └─ NutritionPreferencesStep        └─ MealRegistrationState        │  │
+│  │     └─ ElenaFoodSearchField            └─ ElenaFoodSearchField      │  │
+│  │        └─ FoodSearchAutocomplete          └─ PortionAdjustmentView  │  │
+│  │                                             └─ FoodMacroDisplay      │  │
+│  │                                                                      │  │
+│  └──────────────────────────────────────────────────────────────────────┘  │
+│                                       │                                     │
+│                                       ▼                                     │
+│  ┌─ APPLICATION LAYER ──────────────────────────────────────────────────┐  │
+│  │                                                                      │  │
+│  │  onboardingFoodPreferencesProvider        foodRepositoryProvider    │  │
+│  │  onboardingCustomFoodsProvider           searchFoodProvider         │  │
+│  │  mealControllerProvider                  foodsByCategoryProvider    │  │
+│  │                                                                      │  │
+│  └──────────────────────────────────────────────────────────────────────┘  │
+│                                       │                                     │
+│                                       ▼                                     │
+│  ┌─ DATA LAYER ─────────────────────────────────────────────────────────┐  │
+│  │                                                                      │  │
+│  │  FoodRepositoryImpl                  MealControllerImpl               │  │
+│  │  └─ searchFoods(query)              └─ registerMeal(...)           │  │
+│  │  └─ getFoodsByCategory()            └─ todayLog()                  │  │
+│  │                                                                      │  │
+│  └──────────────────────────────────────────────────────────────────────┘  │
+│                                       │                                     │
+│                                       ▼                                     │
+│  ┌─ PERSISTENCE LAYER ──────────────────────────────────────────────────┐  │
+│  │                                                                      │  │
+│  │  Firestore Collections:                                             │  │
+│  │  • master_food_db: {id, name, protein_100g, ...}                   │  │
+│  │  • users/{uid}/preferences/custom_foods                            │  │
+│  │  • users/{uid}/daily_logs/{date}/meals                             │  │
+│  │                                                                      │  │
+│  └──────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+═════════════════════════════════════════════════════════════════════════════════
+
+## 👤 USER JOURNEY 1: ONBOARDING FOOD PREFERENCES
+
+┌─ STEP 1: ENTER NUTRITION PREFERENCES STEP ────────────────────────────────┐
+│                                                                            │
+│  OnboardingScreen shows 4th step: "PREFERENCIAS"                         │
+│  └─ NutritionPreferencesStep rendered                                   │
+│     ├─ Shows 3 static categories (Proteins, Fats, Carbs)                │
+│     ├─ User selects items from each category                            │
+│     └─ NEW: ElenaFoodSearchField section added                          │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌─ STEP 2: OPEN ELENA FOOD SEARCH ─────────────────────────────────────────┐
+│                                                                            │
+│  ElenaFoodSearchField visible with:                                      │
+│  • Label: "BÚSQUEDA AVANZADA DE ALIMENTOS"                              │
+│  • Hint: "Ej: Pollo Rostizado, Arroz Integral, Manzana Verde"         │
+│  • Verified badge info                                                   │
+│                                                                            │
+│  User taps field → FocusNode activated                                   │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌─ STEP 3: TYPE FOOD NAME ─────────────────────────────────────────────────┐
+│                                                                            │
+│  User types: "pollo"                                                     │
+│  └─ _onSearchChanged() triggered                                        │
+│     └─ _performSearch("pollo") called                                   │
+│        ├─ Query: searchFoodProvider("pollo")                            │
+│        │  └─ Firestore: master_food_db                                 │
+│        │     where name matches "pollo"                                 │
+│        │                                                                 │
+│        ├─ Result: [                                                      │
+│        │   {                                                              │
+│        │     id: "pollo-pecho",                                          │
+│        │     name: "Pollo - Pecho",                                      │
+│        │     protein_100g: 31.0,                                         │
+│        │     fat_100g: 3.6,                                              │
+│        │     carbs_100g: 0.0,                                            │
+│        │     calories_100g: 165.0,                                       │
+│        │     is_verified: true                                           │
+│        │   },                                                             │
+│        │   {                                                              │
+│        │     id: "pollo-entero",                                         │
+│        │     name: "Pollo Entero",                                       │
+│        │     protein_100g: 18.0,                                         │
+│        │     fat_100g: 14.0,                                             │
+│        │     carbs_100g: 0.0,                                            │
+│        │     calories_100g: 239.0,                                       │
+│        │     is_verified: true                                           │
+│        │   }                                                              │
+│        │ ]                                                                 │
+│        │                                                                 │
+│        └─ _showEnhancedOverlay() displays results                       │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌─ STEP 4: DROPDOWN OVERLAY SHOWS ─────────────────────────────────────────┐
+│                                                                            │
+│  ╔═ FOOD SEARCH DROPDOWN ═══════════════════════════════════════════════╗│
+│  ║                                                                       ║│
+│  ║  Pollo - Pecho ✓                                                     ║│
+│  ║  31.0g P • 3.6g F • 0g C • 165 kcal (x100g)                         ║│
+│  ║                                                                       ║│
+│  ║  ─────────────────────────────────────────────────────────────────  ║│
+│  ║                                                                       ║│
+│  ║  Pollo Entero ✓                                                      ║│
+│  ║  18.0g P • 14.0g F • 0g C • 239 kcal (x100g)                        ║│
+│  ║                                                                       ║│
+│  ║  ─────────────────────────────────────────────────────────────────  ║│
+│  ║                                                                       ║│
+│  ║  ❓ No se encuentra el alimento? Agregar manualmente                 ║│
+│  ║                                                                       ║│
+│  ╚═══════════════════════════════════════════════════════════════════════╝│
+│                                                                            │
+│  Styling:                                                                 │
+│  • Background: #0A0A0A dark                                             │
+│  • Border: AppTheme.primary (neon green) @ 0.4 opacity                 │
+│  • Verified icon: ✓ in neon green (#39FF14)                           │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌─ STEP 5: USER SELECTS FOOD ──────────────────────────────────────────────┐
+│                                                                            │
+│  User taps "Pollo - Pecho"                                              │
+│  └─ onFoodSelected(FoodModel) callback triggered                        │
+│     └─ Ref.read(onboardingCustomFoodsProvider.notifier).state updated  │
+│        └─ Adds new food to list                                         │
+│     └─ _controller.clear() (empties search field)                      │
+│     └─ _overlayEntry.remove() (closes dropdown)                       │
+│                                                                            │
+│  New state:                                                               │
+│  onboardingCustomFoodsProvider = [                                       │
+│    FoodModel(id: "pollo-pecho", ...)                                    │
+│  ]                                                                         │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌─ STEP 6: INPUTCHIP APPEARS ──────────────────────────────────────────────┐
+│                                                                            │
+│  Below ElenaFoodSearchField, a Wrap of InputChips shows:               │
+│                                                                            │
+│  ┌─────────────────────────────────┐                                     │
+│  │  ✓ Pollo - Pecho           [X]  │  ← Verified badge + Delete button  │
+│  └─────────────────────────────────┘                                     │
+│                                                                            │
+│  Styling:                                                                 │
+│  • Background: AppTheme.primary @ 0.1 opacity                           │
+│  • Border: AppTheme.primary @ 0.3 opacity                               │
+│  • Can delete by tapping [X]                                            │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌─ STEP 7: USER CAN ADD MORE OR CONTINUE ─────────────────────────────────┐
+│                                                                            │
+│  Option A: Add another food                                             │
+│  └─ Repeat Steps 3-6 for different food                                │
+│     Result: Multiple InputChips for different foods                    │
+│                                                                            │
+│  Option B: Finish step (tap CONTINUAR PROTOCOLO)                       │
+│  └─ onboardingControllerProvider.notifier.submit(preferences)         │
+│     with onboardingCustomFoodsProvider included                        │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌─ STEP 8: PERSIST TO FIRESTORE ───────────────────────────────────────────┐
+│                                                                            │
+│  Collection: users/{uid}/preferences/custom_foods                      │
+│                                                                            │
+│  {                                                                         │
+│    "foods": [                                                             │
+│      {                                                                     │
+│        "id": "pollo-pecho",                                              │
+│        "name": "Pollo - Pecho",                                          │
+│        "protein_100g": 31.0,                                             │
+│        "fat_100g": 3.6,                                                  │
+│        "carbs_100g": 0.0,                                                │
+│        "calories_100g": 165.0,                                           │
+│        "is_verified": true,                                              │
+│        "source": "internal",                                             │
+│        "category": "protein"                                             │
+│      }                                                                     │
+│    ],                                                                      │
+│    "updated_at": FieldValue.serverTimestamp()                            │
+│  }                                                                         │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+═════════════════════════════════════════════════════════════════════════════════
+
+## 🍽️ USER JOURNEY 2: MEAL REGISTRATION WITH PORTION ADJUSTMENT
+
+┌─ STEP 1: OPEN MEAL REGISTRATION MODAL ────────────────────────────────────┐
+│                                                                            │
+│  User taps "+ REGISTRA COMIDA" button                                   │
+│  └─ MealRegistrationModal.show() displays AlertDialog                  │
+│     ├─ Title: "REGISTRA TU COMIDA 1 🥩🥑🍚"                            │
+│     ├─ Subtitle: "¿Qué comiste para romper tu ayuno?"                 │
+│     └─ Content:                                                          │
+│        └─ ElenaFoodSearchField (instead of plain TextField)           │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌─ STEP 2: SEARCH FOR FOOD ────────────────────────────────────────────────┐
+│                                                                            │
+│  User taps ElenaFoodSearchField & types "huevo"                        │
+│  └─ FoodSearchAutocomplete queries master_food_db                       │
+│     └─ Results:                                                           │
+│        {                                                                   │
+│          id: "huevo-gallina-grande",                                      │
+│          name: "Huevo de Gallina (Grande)",                              │
+│          protein_100g: 13.0,                                             │
+│          fat_100g: 11.0,                                                 │
+│          carbs_100g: 1.1,                                                │
+│          calories_100g: 155.0,                                           │
+│          is_verified: true                                               │
+│        }                                                                   │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌─ STEP 3: SELECT FOOD FROM DROPDOWN ──────────────────────────────────────┐
+│                                                                            │
+│  User taps "Huevo de Gallina (Grande) ✓" in dropdown                   │
+│  └─ onFoodSelected(FoodModel) callback                                  │
+│     └─ setState():                                                        │
+│        _selectedFoodModel = food                                         │
+│        _showingPortionAdjustment = true                                 │
+│        │                                                                 │
+│        └─ UI rebuilds → PortionAdjustmentView appears                 │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌─ STEP 4: PORTION ADJUSTMENT VIEW OPENS ──────────────────────────────────┐
+│                                                                            │
+│  ╔══════════════════════════════════════════════════════════════════════╗│
+│  ║  AJUSTAR PORCIÓN                                           [X]       ║│
+│  ║                                                                      ║│
+│  ║  Huevo de Gallina (Grande)                                          ║│
+│  ║  ✓ Alimento Verificado                                              ║│
+│  ║  ────────────────────────────────────────────────────────────────  ║│
+│  ║                                                                      ║│
+│  ║  PESO EN GRAMOS                                                      ║│
+│  ║  [−] [ 100g ] [+]                                                   ║│
+│  ║  ────────────────────────────────────────────────────────────────  ║│
+│  ║                                                                      ║│
+│  ║  O DESLIZA PARA AJUSTAR                                             ║│
+│  ║  [════════●═══════════]  (slider at 100g)                           ║│
+│  ║  ────────────────────────────────────────────────────────────────  ║│
+│  ║                                                                      ║│
+│  ║  UNIDADES ESTÁNDAR                                                   ║│
+│  ║  [Pequeña] [Mediana] [Grande] [Puño] [Taza] [Plato]               ║│
+│  ║  ────────────────────────────────────────────────────────────────  ║│
+│  ║                                                                      ║│
+│  ║  MACROS @ 100g                                                      ║│
+│  ║  13.0g P  │  11.0g F  │  1.1g C  │  155 kcal                       ║│
+│  ║  ────────────────────────────────────────────────────────────────  ║│
+│  ║                                                                      ║│
+│  ║  PROPORCIÓN DE MACROS                                               ║│
+│  ║  [33%P][43%F][6%C]  (colored bar)                                   ║│
+│  ║  ────────────────────────────────────────────────────────────────  ║│
+│  ║                                                                      ║│
+│  ║                 [CONFIRMAR PORCIÓN]                                 ║│
+│  ║                                                                      ║║
+│  ╚══════════════════════════════════════════════════════════════════════╝│
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌─ STEP 5: USER ADJUSTS WEIGHT ────────────────────────────────────────────┐
+│                                                                            │
+│  User taps [+] button 5 times to increase from 100g → 150g            │
+│  └─ setState() _weightGrams = 150                                       │
+│     └─ FoodMacroDisplay recalculates:                                   │
+│        Protein: 13.0 * (150/100) = 19.5g                               │
+│        Fat: 11.0 * (150/100) = 16.5g                                    │
+│        Carbs: 1.1 * (150/100) = 1.65g                                   │
+│        Calories: 155.0 * (150/100) = 232.5 kcal                       │
+│                                                                            │
+│  UI shows updated macros in real-time                                   │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌─ STEP 6: USER CONFIRMS PORTION ──────────────────────────────────────────┐
+│                                                                            │
+│  User taps [CONFIRMAR PORCIÓN]                                          │
+│  └─ onConfirm(food, weightGrams) callback                              │
+│     └─ setState():                                                        │
+│        _mealFoods.add((                                                  │
+│          food: huevo-gallina-grande,                                     │
+│          weight: 150                                                      │
+│        ))                                                                  │
+│        _selectedFoodModel = null                                         │
+│        _showingPortionAdjustment = false                               │
+│                                                                            │
+│  PortionAdjustmentView closes → ElenaFoodSearchField reappears         │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌─ STEP 7: USER CAN ADD MORE FOODS OR CONFIRM ─────────────────────────────┐
+│                                                                            │
+│  Option A: Add another food                                             │
+│  └─ ElenaFoodSearchField available again                               │
+│     └─ Repeat Steps 2-6                                                 │
+│        Result: _mealFoods = [                                           │
+│          (food: huevo, weight: 150),                                     │
+│          (food: aguacate, weight: 50),                                   │
+│          ...                                                              │
+│        ]                                                                  │
+│                                                                            │
+│  Option B: Finish meal registration                                    │
+│  └─ Taps [REGISTRA COMIDA] button at bottom                            │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌─ STEP 8: AGGREGATE MACROS ───────────────────────────────────────────────┐
+│                                                                            │
+│  Button onPressed logic:                                                 │
+│  1. Iterate through _mealFoods                                           │
+│  2. For each: food.calculateMacros(weight)                             │
+│  3. Sum totals:                                                          │
+│                                                                            │
+│  Example:                                                                 │
+│  • Huevo (150g): 19.5p, 16.5f, 1.65c, 232.5kcal                       │
+│  • Aguacate (50g): 1.2p, 13.5f, 7.0c, 134.5kcal                       │
+│  • Aceite oliva (10g): 0p, 10f, 0c, 90kcal                            │
+│  ─────────────────────────────────────────────────────                │
+│  TOTAL:                                                                  │
+│  • Protein: 20.7g                                                        │
+│  • Fat: 40.0g                                                            │
+│  • Carbs: 8.65g                                                          │
+│  • Calories: 457.0 kcal                                                  │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌─ STEP 9: LOG MEAL TO DATABASE ───────────────────────────────────────────┐
+│                                                                            │
+│  mealControllerProvider.notifier.registerMeal(                          │
+│    name: "Huevo de Gallina (Grande), Aguacate, Aceite de Oliva",      │
+│    type: MealType.breakfast,                                             │
+│    calories: 457.0,                                                      │
+│    protein: 20.7,                                                        │
+│    carbs: 8.65,                                                          │
+│    fat: 40.0,                                                            │
+│  )                                                                         │
+│                                                                            │
+│  Saved to:                                                                │
+│  users/{uid}/daily_logs/{date}/meals/{mealId}                           │
+│                                                                            │
+│  {                                                                         │
+│    "name": "Huevo de Gallina (Grande), Aguacate, Aceite de Oliva",      │
+│    "type": "breakfast",                                                   │
+│    "calories": 457.0,                                                    │
+│    "protein": 20.7,                                                      │
+│    "carbs": 8.65,                                                        │
+│    "fat": 40.0,                                                          │
+│    "timestamp": FieldValue.serverTimestamp(),                            │
+│    "foods": [                                                             │
+│      {                                                                     │
+│        "id": "huevo-gallina-grande",                                      │
+│        "weight_grams": 150,                                              │
+│      },                                                                    │
+│      {                                                                     │
+│        "id": "aguacate",                                                  │
+│        "weight_grams": 50                                                │
+│      },                                                                    │
+│      {                                                                     │
+│        "id": "aceite-oliva",                                              │
+│        "weight_grams": 10                                                │
+│      }                                                                     │
+│    ]                                                                       │
+│  }                                                                         │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌─ STEP 10: CLOSE MODAL & UPDATE UI ───────────────────────────────────────┐
+│                                                                            │
+│  Modal closes                                                             │
+│  Dashboard updates with new meal:                                       │
+│  "🥩 Desayuno: 457 kcal | 20.7g P | 40.0g F | 8.65g C"               │
+│                                                                            │
+│  Cascade invalidations trigger:                                          │
+│  • dailyLogsProvider refreshed                                           │
+│  • metabolicHubProvider recalculates daily totals                        │
+│  • biometricProfileProvider updates macros %                            │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+═════════════════════════════════════════════════════════════════════════════════
+
+## 🔄 DATA FLOW DIAGRAM: COMPLETE END-TO-END
+
+USER TYPES "POLLO"
+       │
+       ▼
+ElenaFoodSearchField._onSearchChanged()
+       │
+       ▼
+_performSearch("pollo")
+       │
+       ▼
+ref.read(searchFoodProvider("pollo").future)
+       │
+       ▼
+FoodRepositoryImpl.searchExercises("pollo")
+       │
+       ▼
+Firestore Query:
+master_food_db where name contains "pollo"
+       │
+       ▼
+Results: [FoodModel(...), FoodModel(...)]
+       │
+       ▼
+setState(() _suggestions = results)
+       │
+       ▼
+_showEnhancedOverlay() builds OverlayEntry
+       │
+       ▼
+USER SEES DROPDOWN WITH RESULTS + VERIFIED BADGES
+
+
+USER TAPS FOOD IN DROPDOWN
+       │
+       ▼
+onFoodSelected(FoodModel) callback
+       │
+       ▼
+PortionAdjustmentView appears (if meal registration)
+OR
+InputChip added (if onboarding)
+       │
+       ▼
+USER ADJUSTS WEIGHT (if PortionAdjustmentView)
+       │
+       ▼
+setState() _weightGrams = newValue
+       │
+       ▼
+FoodMacroDisplay.build() recalculates:
+macros = food.calculateMacros(weightGrams)
+       │
+       ▼
+UI updates with new macros
+
+
+USER CONFIRMS PORTION (if PortionAdjustmentView)
+       │
+       ▼
+onConfirm(food, weight) callback
+       │
+       ▼
+_mealFoods.add((food, weight))
+       │
+       ▼
+USER TAPS REGISTRA COMIDA
+       │
+       ▼
+Aggregate macros from all _mealFoods:
+for each (food, weight):
+  macros = food.calculateMacros(weight)
+  totalP += macros.protein
+  totalF += macros.fat
+  totalC += macros.carbs
+  totalCal += macros.calories
+       │
+       ▼
+mealControllerProvider.notifier.registerMeal(...)
+       │
+       ▼
+Firestore Write:
+users/{uid}/daily_logs/{date}/meals/{id}
+       │
+       ▼
+Modal closes
+       │
+       ▼
+Cascade invalidations:
+• todayLogProvider(uid)
+• metabolicHubProvider
+• dailyMacrosProvider
+       │
+       ▼
+Dashboard UI updates with new meal data
+
+═════════════════════════════════════════════════════════════════════════════════
+
+## 📊 COMPONENT INTERACTION MATRIX
+
+┌──────────────────────────────┬─────────────────────────────────────────────┐
+│ Component                    │ Interacts With                              │
+├──────────────────────────────┼─────────────────────────────────────────────┤
+│ ElenaFoodSearchField         │ • _EnhancedFoodSearchAutocomplete           │
+│                              │ • food_provider (searchFoodProvider)        │
+│                              │ • food_provider (foodsByCategoryProvider)   │
+│                              │ • FoodModel                                 │
+├──────────────────────────────┼─────────────────────────────────────────────┤
+│ PortionAdjustmentView        │ • FoodModel.calculateMacros()              │
+│                              │ • FoodMacroDisplay                          │
+│                              │ • FoodModel.macroRatio                      │
+├──────────────────────────────┼─────────────────────────────────────────────┤
+│ _EnhancedFoodSearchAutocomplete
+│                              │ • food_provider (searchFoodProvider)        │
+│                              │ • food_provider (foodsByCategoryProvider)   │
+│                              │ • ElenaFoodSearchField callback             │
+├──────────────────────────────┼─────────────────────────────────────────────┤
+│ NutritionPreferencesStep     │ • ElenaFoodSearchField                      │
+│                              │ • onboardingCustomFoodsProvider             │
+│                              │ • onboardingFoodPreferencesProvider        │
+├──────────────────────────────┼─────────────────────────────────────────────┤
+│ MealRegistrationModal        │ • ElenaFoodSearchField                      │
+│                              │ • PortionAdjustmentView                     │
+│                              │ • mealControllerProvider                    │
+│                              │ • todayLogProvider                          │
+└──────────────────────────────┴─────────────────────────────────────────────┘
+
+═════════════════════════════════════════════════════════════════════════════════
+
+## 🎨 UI/UX SPECS
+
+### ElenaFoodSearchField
+
+• Background: White @ 5% opacity
+• Border: None (until focused)
+• Text: PublicSans, white, 14pt
+• Overlay Border: AppTheme.primary @ 40% opacity, 1.5px
+• Overlay Background: #0A0A0A
+• Verified Icon: ✓ in #39FF14 (neon green), 16px
+• Max height: 340px
+• Max width: 320px
+
+### PortionAdjustmentView
+
+• Header background: Transparent
+• Weight input border: AppTheme.primary @ 30% opacity
+• Slider track: 4px height, AppTheme.primary active
+• Macro ratio bar: Segmented (Red/Yellow/Blue) with labels
+• Standard units: Pills with border on inactive, filled on active
+• Confirmation button: AppTheme.primary background, black text
+
+### FoodMacroDisplay
+
+• Border: AppTheme.primary @ 30% opacity
+• Macro colors: Red (protein), Yellow (fat), Blue (carbs), Neon (calories)
+• Font: JetBrains Mono (numbers), PublicSans (labels)
+
+═════════════════════════════════════════════════════════════════════════════════
+
+Status: ✅ READY FOR IMPLEMENTATION
+
+All diagrams and data flows documented. Follow the user journeys above to understand
+the exact behavior of ElenaFoodSearchField in both integration contexts.
+
+═════════════════════════════════════════════════════════════════════════════════

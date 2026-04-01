@@ -22,43 +22,67 @@ final nutritionRepositoryProvider = Provider<NutritionRepository>.internal(
 );
 
 typedef NutritionRepositoryRef = ProviderRef<NutritionRepository>;
-String _$nutritionEngineHash() => r'ca6c48f164c56afba8380ccf4bf7e36177d12349';
+String _$activeMetabolicPlanHash() =>
+    r'7db92070630459e4354d475cc1bc0c4fba751945';
 
-/// See also [nutritionEngine].
-@ProviderFor(nutritionEngine)
-final nutritionEngineProvider = Provider<NutritionEngine>.internal(
-  nutritionEngine,
-  name: r'nutritionEngineProvider',
+/// See also [activeMetabolicPlan].
+@ProviderFor(activeMetabolicPlan)
+final activeMetabolicPlanProvider =
+    AutoDisposeStreamProvider<MetabolicNutritionPlan?>.internal(
+  activeMetabolicPlan,
+  name: r'activeMetabolicPlanProvider',
   debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
       ? null
-      : _$nutritionEngineHash,
+      : _$activeMetabolicPlanHash,
   dependencies: null,
   allTransitiveDependencies: null,
 );
 
-typedef NutritionEngineRef = ProviderRef<NutritionEngine>;
-String _$nutritionPlanHash() => r'0eeca4338e049b477fa3e371d968f8b78d1a5b27';
+typedef ActiveMetabolicPlanRef
+    = AutoDisposeStreamProviderRef<MetabolicNutritionPlan?>;
+String _$todayMacroTargetsHash() => r'c6c67b86efff04e7ac28267a0abc25601ae26ae1';
 
-/// See also [nutritionPlan].
-@ProviderFor(nutritionPlan)
-final nutritionPlanProvider =
-    AutoDisposeStreamProvider<NutritionPlan?>.internal(
-  nutritionPlan,
-  name: r'nutritionPlanProvider',
+/// Quick access to today's macro targets (used by dashboard)
+///
+/// Copied from [todayMacroTargets].
+@ProviderFor(todayMacroTargets)
+final todayMacroTargetsProvider = AutoDisposeProvider<
+    ({int calories, int protein, int fat, int carbs})?>.internal(
+  todayMacroTargets,
+  name: r'todayMacroTargetsProvider',
   debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
       ? null
-      : _$nutritionPlanHash,
+      : _$todayMacroTargetsHash,
   dependencies: null,
   allTransitiveDependencies: null,
 );
 
-typedef NutritionPlanRef = AutoDisposeStreamProviderRef<NutritionPlan?>;
-String _$nutritionServiceHash() => r'39da281efea6c4aa40896962ff2d04d0e9872fd9';
+typedef TodayMacroTargetsRef = AutoDisposeProviderRef<
+    ({int calories, int protein, int fat, int carbs})?>;
+String _$activeStrategyNameHash() =>
+    r'9ef4cee9301a3a3accbd1adf250d8dee38d701fc';
+
+/// Strategy name for display in UI
+///
+/// Copied from [activeStrategyName].
+@ProviderFor(activeStrategyName)
+final activeStrategyNameProvider = AutoDisposeProvider<String>.internal(
+  activeStrategyName,
+  name: r'activeStrategyNameProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$activeStrategyNameHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+typedef ActiveStrategyNameRef = AutoDisposeProviderRef<String>;
+String _$nutritionServiceHash() => r'23e4872e72c2a3a9d83fc0488b4544cf95d7f3b8';
 
 /// See also [NutritionService].
 @ProviderFor(NutritionService)
-final nutritionServiceProvider =
-    AutoDisposeNotifierProvider<NutritionService, void>.internal(
+final nutritionServiceProvider = AutoDisposeNotifierProvider<NutritionService,
+    AsyncValue<MetabolicNutritionPlan?>>.internal(
   NutritionService.new,
   name: r'nutritionServiceProvider',
   debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
@@ -68,6 +92,7 @@ final nutritionServiceProvider =
   allTransitiveDependencies: null,
 );
 
-typedef _$NutritionService = AutoDisposeNotifier<void>;
+typedef _$NutritionService
+    = AutoDisposeNotifier<AsyncValue<MetabolicNutritionPlan?>>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member

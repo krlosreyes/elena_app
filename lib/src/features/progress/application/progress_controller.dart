@@ -3,14 +3,13 @@ import '../data/progress_service.dart';
 import '../domain/measurement_log.dart';
 import '../../authentication/application/auth_controller.dart';
 
-
 class ProgressController extends StateNotifier<void> {
   final ProgressService _service;
-  final Ref _ref; // Necesitamos el ref para leer otros providers
 
-  ProgressController(this._service, this._ref) : super(null);
+  ProgressController(this._service) : super(null);
 
-  Future<void> addMeasurement(String uid, {
+  Future<void> addMeasurement(
+    String uid, {
     required double weight,
     double? waistCircumference,
     int? energyLevel,
@@ -23,7 +22,7 @@ class ProgressController extends StateNotifier<void> {
       energyLevel: energyLevel,
       date: date,
     );
-    
+
     // TODO: Re-calcular IMX tras registrar la medida mediante un trigger global
   }
 
@@ -42,14 +41,14 @@ class ProgressController extends StateNotifier<void> {
 
 final progressControllerProvider =
     StateNotifierProvider<ProgressController, void>((ref) {
-  return ProgressController(ref.watch(progressServiceProvider), ref);
+  return ProgressController(ref.watch(progressServiceProvider));
 });
 
 /// Reactive stream of all measurements for the currently authenticated user.
 final userMeasurementsStreamProvider =
     StreamProvider.autoDispose<List<MeasurementLog>>((ref) {
   final authState = ref.watch(authStateChangesProvider);
-  
+
   return authState.when(
     data: (user) {
       if (user == null) return const Stream.empty();

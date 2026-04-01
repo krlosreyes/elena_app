@@ -1,42 +1,32 @@
-import 'src/features/imx/application/imx_providers.dart';
+import 'package:firebase_app_check/firebase_app_check.dart'; // ✅ Import de Seguridad
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart'; // ✅ Necesario para kDebugMode
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_app_check/firebase_app_check.dart'; // ✅ Import de Seguridad
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'src/features/imx/application/imx_controller.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import 'firebase_options.dart';
 import 'src/app.dart';
+import 'src/core/providers/shared_preferences_provider.dart';
 import 'src/core/services/notification_service.dart';
-
-import 'package:flutter/foundation.dart'; // ✅ Necesario para kDebugMode
+import 'src/features/nutrition/data/food_seeder.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // 🌱 🧹 CLEAN & RESEED: Purge duplicates and re-inject deduplicated data
+  print(
+    '[MAIN] 🧹 Running CLEAN & RESEED to purge duplicates and ensure clean database...',
   );
+  await FoodSeeder.cleanAndReseed();
 
   final prefs = await SharedPreferences.getInstance();
-  
-  // ✅ HARDENING: Activación resiliente de Firebase App Check
-  try {
-    debugPrint('🚀 INICIANDO APP CHECK (${kDebugMode ? 'DEBUG' : 'RELEASE'})...');
-    await FirebaseAppCheck.instance.activate(
-      androidProvider: kDebugMode ? AndroidProvider.debug : AndroidProvider.playIntegrity,
-      appleProvider: kDebugMode ? AppleProvider.debug : AppleProvider.deviceCheck,
-      // Para Web en Debug, si falla reCAPTCHA (común en localhost), permitimos que la app arranque
-      webProvider: ReCaptchaV3Provider('6Lcw_YcpAAAAAZ6Z4G4G4G4G4G4G4G4G4G4G4G4G'),
-    );
-    debugPrint('✅ APP CHECK ACTIVADO.');
-  } catch (e) {
-    debugPrint('⚠️ APP CHECK ADVERTENCIA: No se pudo activar App Check ($e).');
-    if (kDebugMode) {
-      debugPrint('💡 INFO: En Web/Debug esto es normal si no se ha configurado el Debug Token en la consola de Firebase.');
-    }
-  }  
+
+  // ✅ SOLUCIÓN BLINDADA 1.2: Inicialización segura de servicios
+  await _setupFirebaseSecurity();
 
   await initializeDateFormatting('es');
 
@@ -48,12 +38,49 @@ void main() async {
     debugPrint('Error inicializando notificaciones: $e');
   }
 
+  // 🔧 [DEBUG] SEED FIRESTORE
+  // Database seeding is now automatic on user registration
+  // See: register_controller.dart -> seedInitialNutritionData()
+
+  if (kDebugMode) {
+    print(
+      '[DEBUG] ElenaApp initialized - Food database seeding handled by registration controller',
+    );
+  }
+
   runApp(
     ProviderScope(
-      overrides: [
-        sharedPreferencesProvider.overrideWithValue(prefs),
-      ],
+      overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
       child: const ElenaApp(),
     ),
   );
+}
+
+/// ✅ ENCAPSULACIÓN DE SEGURIDAD (Solución 1.2)
+Future<void> _setupFirebaseSecurity() async {
+  if (kIsWeb) {
+    if (kDebugMode) {
+      debugPrint('💡 INFO: Saltando App Check/Messaging en Web/Debug.');
+      return;
+    }
+    // En Web Release, App Check es opcional o vía recaptcha
+  }
+
+  try {
+    debugPrint('🚀 INICIANDO PROTOCOLOS DE SEGURIDAD...');
+    await FirebaseAppCheck.instance.activate(
+      providerAndroid: kDebugMode
+          ? const AndroidDebugProvider()
+          : const AndroidPlayIntegrityProvider(),
+      providerApple: kDebugMode
+          ? const AppleDebugProvider()
+          : const AppleDeviceCheckProvider(),
+      providerWeb: ReCaptchaV3Provider(
+        '6Lcw_YcpAAAAAZ6Z4G4G4G4G4G4G4G4G4G4G4G4G',
+      ),
+    );
+    debugPrint('✅ SEGURIDAD ACTIVADA.');
+  } catch (e) {
+    debugPrint('⚠️ ADVERTENCIA SEGURIDAD: $e');
+  }
 }

@@ -75,12 +75,18 @@ class MeasurementLog {
   // Static: Calculate Body Fat (US Navy Formula)
   static double? calculateBodyFat({
     required double heightCm,
-    required double waistCm,
-    required double neckCm,
+    required double? waistCm,
+    required double? neckCm,
     double? hipCm,
     required bool isMale,
   }) {
-    if (heightCm <= 0 || waistCm <= 0 || neckCm <= 0) return null;
+    if (heightCm <= 0 ||
+        waistCm == null ||
+        neckCm == null ||
+        waistCm <= 0 ||
+        neckCm <= 0) {
+      return null;
+    }
 
     try {
       if (isMale) {
@@ -103,7 +109,6 @@ class MeasurementLog {
       return null;
     }
   }
-
 
   // Estimate Visceral Fat if missing
   static double? estimateVisceralFat({
@@ -147,4 +152,3 @@ class MeasurementLog {
     );
   }
 }
-

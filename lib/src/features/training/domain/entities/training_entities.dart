@@ -1,39 +1,71 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'training_entities.freezed.dart';
 part 'training_entities.g.dart';
 
-enum TargetMuscle { chest, back, legs, fullBody, cardio }
+enum TargetMuscle { chest, back, legs, fullBody, cardio, fuerza, hiit, movilidad }
 
-@freezed
-sealed class WorkoutSession with _$WorkoutSession {
-  const factory WorkoutSession({
-    required String id,
-    required DateTime date,
-    required String type, // fuerza / cardio
-    required TargetMuscle targetMuscle,
-    required int durationMinutes,
-    @Default([]) List<ExerciseSet> sets,
-  }) = _WorkoutSession;
+/// Converts Firestore Timestamp ↔ Dart DateTime for Freezed JSON serialization.
+class TimestampConverter implements JsonConverter<DateTime, dynamic> {
+  const TimestampConverter();
 
-  factory WorkoutSession.fromJson(Map<String, dynamic> json) => _$WorkoutSessionFromJson(json);
+  @override
+  DateTime fromJson(dynamic json) {
+    if (json is Timestamp) return json.toDate();
+    if (json is String) return DateTime.parse(json);
+    return DateTime.now(); // Fallback
+  }
+
+  @override
+  dynamic toJson(DateTime date) => Timestamp.fromDate(date);
 }
 
 @freezed
-sealed class ExerciseSet with _$ExerciseSet {
+class WorkoutSession with _$WorkoutSession {
+  @JsonSerializable(fieldRename: FieldRename.snake)
+  const factory WorkoutSession({
+    required String id,
+    required String userId,
+    @TimestampConverter() required DateTime startTime,
+    @TimestampConverter() required DateTime endTime,
+    required int intensityLevel, // 1-10
+    required String type, // Fuerza, HIIT, Movilidad
+    TargetMuscle? targetMuscle,
+    @Default([]) List<ExerciseSet> sets,
+  }) = _WorkoutSession;
+
+  factory WorkoutSession.fromJson(Map<String, dynamic> json) =>
+      _$WorkoutSessionFromJson(json);
+}
+
+extension WorkoutSessionX on WorkoutSession {
+  int get durationMinutes => endTime.difference(startTime).inMinutes;
+  DateTime get date => startTime;
+}
+
+
+
+@freezed
+class ExerciseSet with _$ExerciseSet {
+  @JsonSerializable(fieldRename: FieldRename.snake)
   const factory ExerciseSet({
+    required int setIndex,
     required String exerciseName,
     required double weight,
     required int repsCompleted,
     required int rir, // 0-4
+    @Default(false) bool isDone,
   }) = _ExerciseSet;
 
-  factory ExerciseSet.fromJson(Map<String, dynamic> json) => _$ExerciseSetFromJson(json);
+  factory ExerciseSet.fromJson(Map<String, dynamic> json) =>
+      _$ExerciseSetFromJson(json);
 }
 
 @freezed
-sealed class RoutineExercise with _$RoutineExercise {
+class RoutineExercise with _$RoutineExercise {
+  @JsonSerializable(fieldRename: FieldRename.snake)
   const factory RoutineExercise({
     required String id,
     required String name,
@@ -45,11 +77,13 @@ sealed class RoutineExercise with _$RoutineExercise {
     @Default(true) bool requiresWeight,
   }) = _Exercise;
 
-  factory RoutineExercise.fromJson(Map<String, dynamic> json) => _$RoutineExerciseFromJson(json);
+  factory RoutineExercise.fromJson(Map<String, dynamic> json) =>
+      _$RoutineExerciseFromJson(json);
 }
 
 @freezed
-sealed class WeeklyTrainingStats with _$WeeklyTrainingStats {
+class WeeklyTrainingStats with _$WeeklyTrainingStats {
+  @JsonSerializable(fieldRename: FieldRename.snake)
   const factory WeeklyTrainingStats({
     required int totalStrengthMins,
     required int totalHiitMins,
@@ -57,11 +91,13 @@ sealed class WeeklyTrainingStats with _$WeeklyTrainingStats {
     required int consecutiveWeeksTrained,
   }) = _WeeklyTrainingStats;
 
-  factory WeeklyTrainingStats.fromJson(Map<String, dynamic> json) => _$WeeklyTrainingStatsFromJson(json);
+  factory WeeklyTrainingStats.fromJson(Map<String, dynamic> json) =>
+      _$WeeklyTrainingStatsFromJson(json);
 }
 
 @freezed
-sealed class WorkoutRecommendation with _$WorkoutRecommendation {
+class WorkoutRecommendation with _$WorkoutRecommendation {
+  @JsonSerializable(fieldRename: FieldRename.snake)
   const factory WorkoutRecommendation({
     required String type, // Strength, Cardio, ActiveRecovery, Deload
     TargetMuscle? targetMuscle,
@@ -70,26 +106,28 @@ sealed class WorkoutRecommendation with _$WorkoutRecommendation {
     required String notes,
   }) = _WorkoutRecommendation;
 
-  factory WorkoutRecommendation.fromJson(Map<String, dynamic> json) => _$WorkoutRecommendationFromJson(json);
+  factory WorkoutRecommendation.fromJson(Map<String, dynamic> json) =>
+      _$WorkoutRecommendationFromJson(json);
 
   // Factory constructors for common recommendations
   factory WorkoutRecommendation.deloadWeek() => const WorkoutRecommendation(
-    type: 'Deload',
-    durationMinutes: 30,
-    intensity: 'Light',
-    notes: 'Semana de descarga. Reducir volumen e intensidad al 50%.',
-  );
-  
+        type: 'Deload',
+        durationMinutes: 30,
+        intensity: 'Light',
+        notes: 'Semana de descarga. Reducir volumen e intensidad al 50%.',
+      );
+
   factory WorkoutRecommendation.activeRecovery() => const WorkoutRecommendation(
-      type: 'ActiveRecovery',
-      durationMinutes: 45,
-      intensity: 'Zone 1',
-      notes: 'Caminata ligera o movilidad. Priorizar recuperación.',
-  );
+        type: 'ActiveRecovery',
+        durationMinutes: 45,
+        intensity: 'Zone 1',
+        notes: 'Caminata ligera o movilidad. Priorizar recuperación.',
+      );
 }
 
 @freezed
-sealed class TrainingCycle with _$TrainingCycle {
+class TrainingCycle with _$TrainingCycle {
+  @JsonSerializable(fieldRename: FieldRename.snake)
   const factory TrainingCycle({
     required int sessionCount,
     required bool isDeloadActive,
@@ -97,5 +135,6 @@ sealed class TrainingCycle with _$TrainingCycle {
     DateTime? deloadStartDate,
   }) = _TrainingCycle;
 
-  factory TrainingCycle.fromJson(Map<String, dynamic> json) => _$TrainingCycleFromJson(json);
+  factory TrainingCycle.fromJson(Map<String, dynamic> json) =>
+      _$TrainingCycleFromJson(json);
 }

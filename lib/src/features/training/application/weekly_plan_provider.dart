@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../authentication/application/auth_controller.dart';
 import '../../profile/data/user_repository.dart';
-import '../../profile/domain/user_model.dart';
+import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import '../domain/entities/daily_workout.dart';
 import '../domain/enums/workout_enums.dart';
 import '../domain/services/weekly_plan_generator.dart';
@@ -16,34 +16,42 @@ List<DailyWorkout> weeklyPlan(Ref ref) {
   final user = authState.value;
 
   if (user == null) {
-    return WeeklyPlanGenerator.generate(WorkoutGoal.fatLoss, age: 30, hasDumbbells: false);
+    return WeeklyPlanGenerator.generate(WorkoutGoal.fatLoss,
+        age: 30, hasDumbbells: false);
   }
 
   // Watch the full profile
   // Note: We use existing provider from user_repository
   // Since this is synchronous/provider-based, we need to handle AsyncValue if using a stream
   // Or simpler: just watch the stream and return [] when loading, or default.
-  
+
   final userProfileAsync = ref.watch(userStreamProvider(user.uid));
-  
+
   return userProfileAsync.when(
     data: (profile) {
-      if (profile == null) return WeeklyPlanGenerator.generate(WorkoutGoal.fatLoss, age: 30, hasDumbbells: false);
-      
+      if (profile == null) {
+        return WeeklyPlanGenerator.generate(WorkoutGoal.fatLoss,
+            age: 30, hasDumbbells: false);
+      }
+
       // Map HealthGoal to WorkoutGoal if needed, or use directly if they match
       // HealthGoal: fat_loss, muscle_gain, metabolic_health
       WorkoutGoal goal = WorkoutGoal.fatLoss;
-      if (profile.healthGoal == HealthGoal.metabolic_health) goal = WorkoutGoal.recomp;
+      if (profile.healthGoal == HealthGoal.metabolicHealth) {
+        goal = WorkoutGoal.recomp;
+      }
 
       return WeeklyPlanGenerator.generate(
-        goal, 
-        age: profile.age, 
+        goal,
+        age: profile.age,
         hasDumbbells: profile.hasDumbbells,
-        workoutDays: profile.workoutDays.isNotEmpty ? profile.workoutDays : [1, 3, 5],
+        workoutDays:
+            profile.workoutDays.isNotEmpty ? profile.workoutDays : [1, 3, 5],
       );
     },
     loading: () => [],
-    error: (_, __) => WeeklyPlanGenerator.generate(WorkoutGoal.fatLoss, age: 30, hasDumbbells: false), // Fallback
+    error: (_, __) => WeeklyPlanGenerator.generate(WorkoutGoal.fatLoss,
+        age: 30, hasDumbbells: false), // Fallback
   );
 }
 

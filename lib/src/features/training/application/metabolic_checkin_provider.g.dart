@@ -23,7 +23,7 @@ final isDailyCheckInCompletedProvider =
 );
 
 typedef IsDailyCheckInCompletedRef = AutoDisposeFutureProviderRef<bool>;
-String _$metabolicCheckinHash() => r'be773ba7df8391d85ab9dded9c13042941f23cda';
+String _$metabolicCheckinHash() => r'199fd11671d339253a36705e2275b2fbfe7619ac';
 
 /// See also [MetabolicCheckin].
 @ProviderFor(MetabolicCheckin)

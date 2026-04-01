@@ -14,7 +14,8 @@ sealed class RoutineExercise with _$RoutineExercise {
     required int restSeconds,
   }) = _RoutineExercise;
 
-  factory RoutineExercise.fromJson(Map<String, dynamic> json) => _$RoutineExerciseFromJson(json);
+  factory RoutineExercise.fromJson(Map<String, dynamic> json) =>
+      _$RoutineExerciseFromJson(json);
 }
 
 @freezed
@@ -28,5 +29,6 @@ sealed class RoutineTemplate with _$RoutineTemplate {
     required List<RoutineExercise> exercises,
   }) = _RoutineTemplate;
 
-  factory RoutineTemplate.fromJson(Map<String, dynamic> json) => _$RoutineTemplateFromJson(json);
+  factory RoutineTemplate.fromJson(Map<String, dynamic> json) =>
+      _$RoutineTemplateFromJson(json);
 }

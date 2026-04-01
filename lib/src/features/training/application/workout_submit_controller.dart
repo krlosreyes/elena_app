@@ -1,28 +1,33 @@
 import 'dart:developer';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
+
 import '../../authentication/data/auth_repository.dart';
+import '../../fasting/application/fasting_controller.dart';
 import '../domain/entities/workout_log.dart';
-import '../data/repositories/training_repository.dart';
-import 'daily_routine_provider.dart';
 import 'calendar_state_provider.dart';
+import 'daily_routine_provider.dart';
+import 'training_cycle_controller.dart';
+import 'training_provider.dart';
 import 'workout_log_provider.dart';
 
-import 'training_cycle_provider.dart';
-import '../../fasting/presentation/fasting_controller.dart'; // Added Import
+/// Controller for submitting workout logs
+/// Manual implementation to avoid build_runner conflicts
+final workoutSubmitControllerProvider =
+    StateNotifierProvider<WorkoutSubmitController, AsyncValue<WorkoutLog?>>(
+        (ref) {
+  return WorkoutSubmitController(ref);
+});
 
-part 'workout_submit_controller.g.dart';
+class WorkoutSubmitController extends StateNotifier<AsyncValue<WorkoutLog?>> {
+  final Ref ref;
 
-@riverpod
-class WorkoutSubmitController extends _$WorkoutSubmitController {
-  @override
-  FutureOr<void> build() {
-    // Initial state is idle
-  }
+  WorkoutSubmitController(this.ref) : super(const AsyncValue.data(null));
 
   Future<WorkoutLog?> submitWorkout({
-    required int sessionRir, 
-    int? durationMinutes, 
+    required int sessionRir,
+    int? durationMinutes,
     int? calories,
     String? workoutType,
   }) async {
@@ -30,47 +35,43 @@ class WorkoutSubmitController extends _$WorkoutSubmitController {
 
     try {
       final user = ref.read(authRepositoryProvider).currentUser;
-      final userId = user?.uid ?? 'current_user_id'; 
+      final userId = user?.uid ?? 'current_user_id';
 
-      // Get selected date early to check for bypass
       final selectedDate = ref.read(calendarStateProvider);
-      
-      // Check if this is a Retroactive Cardio save (Cardio + Manual Minutes > 0)
-      // We rely on durationMinutes being provided by the UI for past dates.
-      final isCardioRetroactive = workoutType == 'Cardio' && (durationMinutes ?? 0) > 0;
 
-      // 1. Get current routine state (AsyncValue)
+      final isCardioRetroactive =
+          workoutType == 'Cardio' && (durationMinutes ?? 0) > 0;
+
       final routineState = ref.read(dailyRoutineProvider);
-      
-      // Ensure data is loaded -> BYPASS if it's retroactive cardio
+
       if (!routineState.hasValue && !isCardioRetroactive) {
         throw Exception("La rutina no está cargada o hubo un error.");
       }
       final routine = routineState.asData?.value ?? [];
-      
+
       log('[WorkoutSubmit] userId=$userId, workoutType=$workoutType');
       log('[WorkoutSubmit] routine has ${routine.length} exercises');
 
       final now = DateTime.now();
       final logDate = DateTime(
-          selectedDate.year, 
-          selectedDate.month, 
-          selectedDate.day, 
-          now.hour, 
-          now.minute,
+        selectedDate.year,
+        selectedDate.month,
+        selectedDate.day,
+        now.hour,
+        now.minute,
       );
 
       final List<Map<String, dynamic>> completedExercises = [];
       int finalCalories = calories ?? 0;
       int totalMinutes = durationMinutes ?? 0;
 
-      // Handle Strength Logic
-      final isStrength = workoutType == 'Strength' || (workoutType == null && routine.isNotEmpty);
-      
+      final isStrength = workoutType == 'Strength' ||
+          (workoutType == null && routine.isNotEmpty);
+
       if (isStrength) {
         for (final exercise in routine) {
           final doneSets = exercise.sets.where((s) => s.isDone).toList();
-          
+
           if (doneSets.isEmpty) continue;
 
           log('[WorkoutSubmit] Exercise "${exercise.name}" (${exercise.id}): '
@@ -79,35 +80,38 @@ class WorkoutSubmitController extends _$WorkoutSubmitController {
           completedExercises.add({
             'exerciseId': exercise.id,
             'name': exercise.name,
-            'sets': doneSets.map((s) => {
-              'setIndex': s.setIndex,
-              'weight': s.weight,
-              'reps': s.reps ?? int.tryParse(s.targetReps.split(RegExp(r'\D')).firstWhere((e) => e.isNotEmpty, orElse: () => '0')),
-              'isDone': s.isDone,
-              'targetReps': s.targetReps,
-            }).toList(),
+            'sets': doneSets
+                .map((s) => {
+                      'setIndex': s.setIndex,
+                      'weight': s.weight,
+                      'reps': s.reps ??
+                          int.tryParse(s.targetReps
+                              .split(RegExp(r'\D'))
+                              .firstWhere((e) => e.isNotEmpty,
+                                  orElse: () => '0')),
+                      'isDone': s.isDone,
+                      'targetReps': s.targetReps,
+                    })
+                .toList(),
           });
         }
-        
+
         log('[WorkoutSubmit] Total completed exercises: ${completedExercises.length}');
-        
-        // If Strength, we MUST have exercises. (Unless it's a rest day? But we shouldn't be submitting strength on rest day usually)
+
         if (completedExercises.isEmpty) {
-          throw Exception("No hay series marcadas como completadas.\nMarca al menos una serie (check verde).");
+          throw Exception(
+              "No hay series marcadas como completadas.\nMarca al menos una serie (check verde).");
         }
 
-        // Estimate calories (~6 kcal/min) if not provided
         if (finalCalories == 0) {
-           // If duration needs estimation
-           if (totalMinutes == 0) {
-             final totalSets = completedExercises.fold(0, (sum, ex) => sum + (ex['sets'] as List).length);
-             totalMinutes = totalSets * 3; // 3 mins per set roughly
-           }
-           finalCalories = totalMinutes * 5; // Conservative 5 kcal/min
+          if (totalMinutes == 0) {
+            final totalSets = completedExercises.fold(
+                0, (sum, ex) => sum + (ex['sets'] as List).length);
+            totalMinutes = totalSets * 3;
+          }
+          finalCalories = totalMinutes * 5;
         }
-      } 
-      // Handle Cardio Logic
-      else if (workoutType == 'Cardio') {
+      } else if (workoutType == 'Cardio') {
         if (totalMinutes <= 0) {
           throw Exception("La duración del cardio debe ser mayor a 0.");
         }
@@ -116,11 +120,11 @@ class WorkoutSubmitController extends _$WorkoutSubmitController {
         }
       }
 
-    // 3. Upsert Logic: Check if a log already exists for this date to prevent duplicates
-      final existingLog = await ref.read(trainingRepositoryProvider).getWorkoutLogForDate(userId, logDate);
+      final existingLog = await ref
+          .read(trainingRepositoryProvider)
+          .getWorkoutLogForDate(userId, logDate);
       final logId = existingLog?.id ?? const Uuid().v4();
 
-      // Check Fasting State
       final fastingState = ref.read(fastingControllerProvider).valueOrNull;
       final isFasted = fastingState?.isFasting ?? false;
 
@@ -133,31 +137,36 @@ class WorkoutSubmitController extends _$WorkoutSubmitController {
         durationMinutes: totalMinutes,
         caloriesBurned: finalCalories,
         isFasted: isFasted,
+        type: workoutType ?? 'Fuerza',
       );
 
-      log('[WorkoutSubmit] Saving log: id=${newLog.id}, exercises=${newLog.completedExercises.length}');
+      log('[WorkoutSubmit] Saving log: id=${newLog.id}, type=${newLog.type}');
 
-      // 4. Save to Firestore
-      await ref.read(trainingRepositoryProvider).saveWorkoutLog(userId, newLog);
+      final isHighIntensity =
+          (workoutType == 'Fuerza' || workoutType == 'HIIT');
+
+      await ref.read(trainingRepositoryProvider).completeWorkoutSession(
+            userId: userId,
+            log: newLog,
+            isHighIntensity: isHighIntensity,
+          );
 
       log('[WorkoutSubmit] ✅ Saved successfully');
-      
-      state = const AsyncData(null);
-      // 6. Update Training Cycle (Session Count)
-      ref.read(trainingCycleProviderProvider.notifier).incrementSession();
 
-      return newLog; 
+      state = AsyncValue.data(newLog);
+      ref.read(trainingCycleControllerProvider.notifier).incrementSession();
+
+      return newLog;
     } catch (e, st) {
       log('[WorkoutSubmit] ❌ Error: $e', error: e, stackTrace: st);
-      state = AsyncError(e, st);
+      state = AsyncValue.error(e, st);
       return null;
     } finally {
-       // Force refresh of log data to update UI to "Completed" state
-       if (state.hasValue || state.isLoading == false) { // Relaxed check to ensure invalidation happens
-          final selectedDate = ref.read(calendarStateProvider);
-          ref.invalidate(workoutLogProvider(selectedDate));
-          ref.invalidate(dailyRoutineProvider);
-       }
+      if (state.hasValue || !state.isLoading) {
+        final selectedDate = ref.read(calendarStateProvider);
+        ref.invalidate(workoutLogProvider(selectedDate));
+        ref.invalidate(dailyRoutineProvider);
+      }
     }
   }
 }

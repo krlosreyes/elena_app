@@ -15,5 +15,6 @@ class Exercise with _$Exercise {
     @Default(true) bool requiresWeight,
   }) = _Exercise;
 
-  factory Exercise.fromJson(Map<String, dynamic> json) => _$ExerciseFromJson(json);
+  factory Exercise.fromJson(Map<String, dynamic> json) =>
+      _$ExerciseFromJson(json);
 }

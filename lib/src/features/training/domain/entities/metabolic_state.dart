@@ -14,5 +14,6 @@ class MetabolicState with _$MetabolicState {
     required String? insightMessage,
   }) = _MetabolicState;
 
-  factory MetabolicState.fromJson(Map<String, dynamic> json) => _$MetabolicStateFromJson(json);
+  factory MetabolicState.fromJson(Map<String, dynamic> json) =>
+      _$MetabolicStateFromJson(json);
 }

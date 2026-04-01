@@ -21,7 +21,7 @@ final authStateChangesProvider = AutoDisposeStreamProvider<User?>.internal(
 );
 
 typedef AuthStateChangesRef = AutoDisposeStreamProviderRef<User?>;
-String _$authControllerHash() => r'ac443e4fdc076eb1b6ec4b37681aa16b405b9c45';
+String _$authControllerHash() => r'3490213108aabf3a50fcb027a95c3b20997b1a1d';
 
 /// ✅ MEJORA DE ARQUITECTURA:
 /// Uso de `@riverpod` y `AsyncNotifier`. Permite manejar internamente el

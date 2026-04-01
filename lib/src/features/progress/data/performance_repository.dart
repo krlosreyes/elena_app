@@ -33,19 +33,21 @@ class PerformanceRepository {
   Stream<Map<DateTime, int>> getWeeklyScores(String uid) {
     final now = DateTime.now();
     // Lunes de la semana actual (a las 00:00)
-    final startOfWeek = DateTime(now.year, now.month, now.day).subtract(Duration(days: now.weekday - 1));
-    final endOfWeek = startOfWeek.add(const Duration(days: 7));
+    final startOfWeek = DateTime(now.year, now.month, now.day)
+        .subtract(Duration(days: now.weekday - 1));
 
     // 1. FASTING Stream
     final fastingStream = _firestore
         .collection('users')
         .doc(uid)
         .collection('fasting_history')
-        .where('startTime', isGreaterThanOrEqualTo: startOfWeek.toIso8601String()) // Asumiendo formato ISO string por el fix anterior
-        // Nota: Si hay mezclados Timestamps y Strings, esto podría ser complejo. 
+        .where('startTime',
+            isGreaterThanOrEqualTo: startOfWeek
+                .toIso8601String()) // Asumiendo formato ISO string por el fix anterior
+        // Nota: Si hay mezclados Timestamps y Strings, esto podría ser complejo.
         // Asumiremos que el fix anterior estandarizó a String o que Firestore maneja la query si es Timestamp.
         // CORRECCIÓN: El fix anterior solo afectó la lectura, no la escritura masiva.
-        // Sin embargo, para no complicar, traeremos los últimos 7 días sin filtro estricto de query si es posible, 
+        // Sin embargo, para no complicar, traeremos los últimos 7 días sin filtro estricto de query si es posible,
         // o filtraremos en memoria.
         .snapshots()
         .map((percent) => percent.docs);
@@ -73,7 +75,8 @@ class PerformanceRepository {
       fastingStream,
       workoutsStream,
       mealsStream,
-      (List<DocumentSnapshot> fasts, List<DocumentSnapshot> workouts, List<DocumentSnapshot> meals) {
+      (List<DocumentSnapshot> fasts, List<DocumentSnapshot> workouts,
+          List<DocumentSnapshot> meals) {
         final Map<DateTime, int> scores = {};
 
         // Iterar los 7 días de la semana
@@ -84,39 +87,48 @@ class PerformanceRepository {
 
           // Si es futuro, no calculamos (o score 0/null, pero UI lo manejará)
           if (dayKey.isAfter(DateTime(now.year, now.month, now.day))) {
-            continue; 
+            continue;
           }
 
           // A. Fasting
           // Criterio: Algún ayuno completado ese día o activo que cubra el día?
           // Simplificación: StartTime cae en ese día.
           bool hasFasting = fasts.any((doc) {
-             final data = doc.data() as Map<String, dynamic>;
-             final rawStart = data['startTime'];
-             DateTime start;
-             if (rawStart is Timestamp) {
-               start = rawStart.toDate();
-             } else if (rawStart is String) start = DateTime.parse(rawStart);
-             else return false;
+            final data = doc.data() as Map<String, dynamic>;
+            final rawStart = data['startTime'];
+            DateTime start;
+            if (rawStart is Timestamp) {
+              start = rawStart.toDate();
+            } else if (rawStart is String) {
+              start = DateTime.parse(rawStart);
+            } else {
+              return false;
+            }
 
-             return start.year == day.year && start.month == day.month && start.day == day.day;
+            return start.year == day.year &&
+                start.month == day.month &&
+                start.day == day.day;
           });
 
           // B. Workout
           bool hasWorkout = workouts.any((doc) {
-             final data = doc.data() as Map<String, dynamic>;
-             // Asumimos campo 'date' Timestamp
-             if (data['date'] is! Timestamp) return false;
-             final date = (data['date'] as Timestamp).toDate();
-             return date.year == day.year && date.month == day.month && date.day == day.day;
+            final data = doc.data() as Map<String, dynamic>;
+            // Asumimos campo 'date' Timestamp
+            if (data['date'] is! Timestamp) return false;
+            final date = (data['date'] as Timestamp).toDate();
+            return date.year == day.year &&
+                date.month == day.month &&
+                date.day == day.day;
           });
 
           // C. Nutrition (Criteria: >= 2 meals)
           int mealCount = meals.where((doc) {
-             final data = doc.data() as Map<String, dynamic>;
-             if (data['date'] is! Timestamp) return false;
-             final date = (data['date'] as Timestamp).toDate();
-             return date.year == day.year && date.month == day.month && date.day == day.day;
+            final data = doc.data() as Map<String, dynamic>;
+            if (data['date'] is! Timestamp) return false;
+            final date = (data['date'] as Timestamp).toDate();
+            return date.year == day.year &&
+                date.month == day.month &&
+                date.day == day.day;
           }).length;
           bool hasNutrition = mealCount >= 2;
 

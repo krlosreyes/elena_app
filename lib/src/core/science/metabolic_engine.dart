@@ -68,6 +68,18 @@ abstract class MetabolicEngine {
     }
   }
 
+  /// Indice Cintura-Altura (metaICA)
+  static double calculateMetaICA(double waistCm, double heightCm) {
+    if (heightCm <= 0) return 0.0;
+    return waistCm / heightCm;
+  }
+
+  /// Indice Cintura-Cadera (metaICC)
+  static double calculateMetaICC(double waistCm, double? hipCm) {
+    if (hipCm == null || hipCm <= 0) return 0.0;
+    return waistCm / hipCm;
+  }
+
   /// Provides an exercise prescription based on current glucose levels.
   ///
   /// *   > 140 mg/dL: Suggests immediate movement to activate GLUT4 transporters

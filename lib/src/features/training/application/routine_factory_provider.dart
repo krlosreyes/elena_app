@@ -1,5 +1,5 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import '../../profile/domain/user_model.dart';
+import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import '../domain/entities/routine_cycle.dart';
 import '../domain/entities/training_entities.dart';
 
@@ -13,27 +13,24 @@ RoutineFactory routineFactory(RoutineFactoryRef ref) {
 class RoutineFactory {
   /// Entry point to generate the 8-week cycle based on user profile.
   RoutineCycle generateCycle(UserModel user, DateTime startDate) {
-    bool hasDumbbells = user.hasDumbbells;
-    HealthGoal goal = user.healthGoal ?? HealthGoal.fat_loss;
-
     // Strategy selection based on goal and equipment.
     // For now, we seed: Body Recomposition - No Dumbbells (Bodyweight)
-    
+
     // In the future, you can implement specific strategies
-    // if (goal == HealthGoal.muscle_gain && hasDumbbells) return buildMuscleGainDumbbells(...);
+    // if (goal == HealthGoal.muscleGain && hasDumbbells) return buildMuscleGainDumbbells(...);
 
     return _buildBodyRecompNoDumbbells(startDate);
   }
 
   RoutineCycle _buildBodyRecompNoDumbbells(DateTime startDate) {
     List<RoutineWeek> weeks = [];
-    
+
     // Generate 8 weeks
     for (int weekNum = 1; weekNum <= 8; weekNum++) {
       bool isDeload = (weekNum == 5);
-      
+
       List<RoutineDay> days = [];
-      
+
       // Seed week logic:
       // Day 1: Full Body (Strength)
       // Day 2: Cardio Zona 2
@@ -42,11 +39,12 @@ class RoutineFactory {
       // Day 5: Full Body (Strength)
       // Day 6: Cardio Zona 2
       // Day 7: Active Rest
-      
+
       for (int dayNum = 1; dayNum <= 7; dayNum++) {
         if (dayNum == 1 || dayNum == 3 || dayNum == 5) {
           // Strength Day
-          days.add(_buildStrengthDay(dayNumber: dayNum, weekNumber: weekNum, isDeload: isDeload));
+          days.add(_buildStrengthDay(
+              dayNumber: dayNum, weekNumber: weekNum, isDeload: isDeload));
         } else if (dayNum == 2 || dayNum == 4 || dayNum == 6) {
           // Cardio Day
           days.add(RoutineDay(
@@ -67,7 +65,7 @@ class RoutineFactory {
           ));
         }
       }
-      
+
       weeks.add(RoutineWeek(
         weekNumber: weekNum,
         isDeload: isDeload,
@@ -83,10 +81,13 @@ class RoutineFactory {
   }
 
   /// Helper to build a standard Full Body strength day
-  RoutineDay _buildStrengthDay({required int dayNumber, required int weekNumber, required bool isDeload}) {
+  RoutineDay _buildStrengthDay(
+      {required int dayNumber,
+      required int weekNumber,
+      required bool isDeload}) {
     // Base volume parameters for Week 1
     int baseSets = 3;
-    
+
     // Progressive Overload Logic: increase slightly over weeks 1-4, 6-8.
     // E.g., week 1-2: 3 sets, week 3-4: 4 sets.
     int targetSets = baseSets;

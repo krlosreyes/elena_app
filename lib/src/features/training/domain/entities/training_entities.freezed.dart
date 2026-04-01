@@ -21,10 +21,15 @@ WorkoutSession _$WorkoutSessionFromJson(Map<String, dynamic> json) {
 /// @nodoc
 mixin _$WorkoutSession {
   String get id => throw _privateConstructorUsedError;
-  DateTime get date => throw _privateConstructorUsedError;
-  String get type => throw _privateConstructorUsedError; // fuerza / cardio
-  TargetMuscle get targetMuscle => throw _privateConstructorUsedError;
-  int get durationMinutes => throw _privateConstructorUsedError;
+  String get userId => throw _privateConstructorUsedError;
+  @TimestampConverter()
+  DateTime get startTime => throw _privateConstructorUsedError;
+  @TimestampConverter()
+  DateTime get endTime => throw _privateConstructorUsedError;
+  int get intensityLevel => throw _privateConstructorUsedError; // 1-10
+  String get type =>
+      throw _privateConstructorUsedError; // Fuerza, HIIT, Movilidad
+  TargetMuscle? get targetMuscle => throw _privateConstructorUsedError;
   List<ExerciseSet> get sets => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -41,10 +46,12 @@ abstract class $WorkoutSessionCopyWith<$Res> {
   @useResult
   $Res call(
       {String id,
-      DateTime date,
+      String userId,
+      @TimestampConverter() DateTime startTime,
+      @TimestampConverter() DateTime endTime,
+      int intensityLevel,
       String type,
-      TargetMuscle targetMuscle,
-      int durationMinutes,
+      TargetMuscle? targetMuscle,
       List<ExerciseSet> sets});
 }
 
@@ -62,10 +69,12 @@ class _$WorkoutSessionCopyWithImpl<$Res, $Val extends WorkoutSession>
   @override
   $Res call({
     Object? id = null,
-    Object? date = null,
+    Object? userId = null,
+    Object? startTime = null,
+    Object? endTime = null,
+    Object? intensityLevel = null,
     Object? type = null,
-    Object? targetMuscle = null,
-    Object? durationMinutes = null,
+    Object? targetMuscle = freezed,
     Object? sets = null,
   }) {
     return _then(_value.copyWith(
@@ -73,22 +82,30 @@ class _$WorkoutSessionCopyWithImpl<$Res, $Val extends WorkoutSession>
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
               as String,
-      date: null == date
-          ? _value.date
-          : date // ignore: cast_nullable_to_non_nullable
+      userId: null == userId
+          ? _value.userId
+          : userId // ignore: cast_nullable_to_non_nullable
+              as String,
+      startTime: null == startTime
+          ? _value.startTime
+          : startTime // ignore: cast_nullable_to_non_nullable
               as DateTime,
+      endTime: null == endTime
+          ? _value.endTime
+          : endTime // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      intensityLevel: null == intensityLevel
+          ? _value.intensityLevel
+          : intensityLevel // ignore: cast_nullable_to_non_nullable
+              as int,
       type: null == type
           ? _value.type
           : type // ignore: cast_nullable_to_non_nullable
               as String,
-      targetMuscle: null == targetMuscle
+      targetMuscle: freezed == targetMuscle
           ? _value.targetMuscle
           : targetMuscle // ignore: cast_nullable_to_non_nullable
-              as TargetMuscle,
-      durationMinutes: null == durationMinutes
-          ? _value.durationMinutes
-          : durationMinutes // ignore: cast_nullable_to_non_nullable
-              as int,
+              as TargetMuscle?,
       sets: null == sets
           ? _value.sets
           : sets // ignore: cast_nullable_to_non_nullable
@@ -107,10 +124,12 @@ abstract class _$$WorkoutSessionImplCopyWith<$Res>
   @useResult
   $Res call(
       {String id,
-      DateTime date,
+      String userId,
+      @TimestampConverter() DateTime startTime,
+      @TimestampConverter() DateTime endTime,
+      int intensityLevel,
       String type,
-      TargetMuscle targetMuscle,
-      int durationMinutes,
+      TargetMuscle? targetMuscle,
       List<ExerciseSet> sets});
 }
 
@@ -126,10 +145,12 @@ class __$$WorkoutSessionImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? id = null,
-    Object? date = null,
+    Object? userId = null,
+    Object? startTime = null,
+    Object? endTime = null,
+    Object? intensityLevel = null,
     Object? type = null,
-    Object? targetMuscle = null,
-    Object? durationMinutes = null,
+    Object? targetMuscle = freezed,
     Object? sets = null,
   }) {
     return _then(_$WorkoutSessionImpl(
@@ -137,22 +158,30 @@ class __$$WorkoutSessionImplCopyWithImpl<$Res>
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
               as String,
-      date: null == date
-          ? _value.date
-          : date // ignore: cast_nullable_to_non_nullable
+      userId: null == userId
+          ? _value.userId
+          : userId // ignore: cast_nullable_to_non_nullable
+              as String,
+      startTime: null == startTime
+          ? _value.startTime
+          : startTime // ignore: cast_nullable_to_non_nullable
               as DateTime,
+      endTime: null == endTime
+          ? _value.endTime
+          : endTime // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      intensityLevel: null == intensityLevel
+          ? _value.intensityLevel
+          : intensityLevel // ignore: cast_nullable_to_non_nullable
+              as int,
       type: null == type
           ? _value.type
           : type // ignore: cast_nullable_to_non_nullable
               as String,
-      targetMuscle: null == targetMuscle
+      targetMuscle: freezed == targetMuscle
           ? _value.targetMuscle
           : targetMuscle // ignore: cast_nullable_to_non_nullable
-              as TargetMuscle,
-      durationMinutes: null == durationMinutes
-          ? _value.durationMinutes
-          : durationMinutes // ignore: cast_nullable_to_non_nullable
-              as int,
+              as TargetMuscle?,
       sets: null == sets
           ? _value._sets
           : sets // ignore: cast_nullable_to_non_nullable
@@ -162,16 +191,19 @@ class __$$WorkoutSessionImplCopyWithImpl<$Res>
 }
 
 /// @nodoc
-@JsonSerializable()
+
+@JsonSerializable(fieldRename: FieldRename.snake)
 class _$WorkoutSessionImpl
     with DiagnosticableTreeMixin
     implements _WorkoutSession {
   const _$WorkoutSessionImpl(
       {required this.id,
-      required this.date,
+      required this.userId,
+      @TimestampConverter() required this.startTime,
+      @TimestampConverter() required this.endTime,
+      required this.intensityLevel,
       required this.type,
-      required this.targetMuscle,
-      required this.durationMinutes,
+      this.targetMuscle,
       final List<ExerciseSet> sets = const []})
       : _sets = sets;
 
@@ -181,14 +213,21 @@ class _$WorkoutSessionImpl
   @override
   final String id;
   @override
-  final DateTime date;
+  final String userId;
+  @override
+  @TimestampConverter()
+  final DateTime startTime;
+  @override
+  @TimestampConverter()
+  final DateTime endTime;
+  @override
+  final int intensityLevel;
+// 1-10
   @override
   final String type;
-// fuerza / cardio
+// Fuerza, HIIT, Movilidad
   @override
-  final TargetMuscle targetMuscle;
-  @override
-  final int durationMinutes;
+  final TargetMuscle? targetMuscle;
   final List<ExerciseSet> _sets;
   @override
   @JsonKey()
@@ -200,7 +239,7 @@ class _$WorkoutSessionImpl
 
   @override
   String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
-    return 'WorkoutSession(id: $id, date: $date, type: $type, targetMuscle: $targetMuscle, durationMinutes: $durationMinutes, sets: $sets)';
+    return 'WorkoutSession(id: $id, userId: $userId, startTime: $startTime, endTime: $endTime, intensityLevel: $intensityLevel, type: $type, targetMuscle: $targetMuscle, sets: $sets)';
   }
 
   @override
@@ -209,10 +248,12 @@ class _$WorkoutSessionImpl
     properties
       ..add(DiagnosticsProperty('type', 'WorkoutSession'))
       ..add(DiagnosticsProperty('id', id))
-      ..add(DiagnosticsProperty('date', date))
+      ..add(DiagnosticsProperty('userId', userId))
+      ..add(DiagnosticsProperty('startTime', startTime))
+      ..add(DiagnosticsProperty('endTime', endTime))
+      ..add(DiagnosticsProperty('intensityLevel', intensityLevel))
       ..add(DiagnosticsProperty('type', type))
       ..add(DiagnosticsProperty('targetMuscle', targetMuscle))
-      ..add(DiagnosticsProperty('durationMinutes', durationMinutes))
       ..add(DiagnosticsProperty('sets', sets));
   }
 
@@ -222,19 +263,30 @@ class _$WorkoutSessionImpl
         (other.runtimeType == runtimeType &&
             other is _$WorkoutSessionImpl &&
             (identical(other.id, id) || other.id == id) &&
-            (identical(other.date, date) || other.date == date) &&
+            (identical(other.userId, userId) || other.userId == userId) &&
+            (identical(other.startTime, startTime) ||
+                other.startTime == startTime) &&
+            (identical(other.endTime, endTime) || other.endTime == endTime) &&
+            (identical(other.intensityLevel, intensityLevel) ||
+                other.intensityLevel == intensityLevel) &&
             (identical(other.type, type) || other.type == type) &&
             (identical(other.targetMuscle, targetMuscle) ||
                 other.targetMuscle == targetMuscle) &&
-            (identical(other.durationMinutes, durationMinutes) ||
-                other.durationMinutes == durationMinutes) &&
             const DeepCollectionEquality().equals(other._sets, _sets));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hash(runtimeType, id, date, type, targetMuscle,
-      durationMinutes, const DeepCollectionEquality().hash(_sets));
+  int get hashCode => Object.hash(
+      runtimeType,
+      id,
+      userId,
+      startTime,
+      endTime,
+      intensityLevel,
+      type,
+      targetMuscle,
+      const DeepCollectionEquality().hash(_sets));
 
   @JsonKey(ignore: true)
   @override
@@ -254,10 +306,12 @@ class _$WorkoutSessionImpl
 abstract class _WorkoutSession implements WorkoutSession {
   const factory _WorkoutSession(
       {required final String id,
-      required final DateTime date,
+      required final String userId,
+      @TimestampConverter() required final DateTime startTime,
+      @TimestampConverter() required final DateTime endTime,
+      required final int intensityLevel,
       required final String type,
-      required final TargetMuscle targetMuscle,
-      required final int durationMinutes,
+      final TargetMuscle? targetMuscle,
       final List<ExerciseSet> sets}) = _$WorkoutSessionImpl;
 
   factory _WorkoutSession.fromJson(Map<String, dynamic> json) =
@@ -266,13 +320,19 @@ abstract class _WorkoutSession implements WorkoutSession {
   @override
   String get id;
   @override
-  DateTime get date;
+  String get userId;
   @override
+  @TimestampConverter()
+  DateTime get startTime;
+  @override
+  @TimestampConverter()
+  DateTime get endTime;
+  @override
+  int get intensityLevel;
+  @override // 1-10
   String get type;
-  @override // fuerza / cardio
-  TargetMuscle get targetMuscle;
-  @override
-  int get durationMinutes;
+  @override // Fuerza, HIIT, Movilidad
+  TargetMuscle? get targetMuscle;
   @override
   List<ExerciseSet> get sets;
   @override
@@ -287,10 +347,12 @@ ExerciseSet _$ExerciseSetFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$ExerciseSet {
+  int get setIndex => throw _privateConstructorUsedError;
   String get exerciseName => throw _privateConstructorUsedError;
   double get weight => throw _privateConstructorUsedError;
   int get repsCompleted => throw _privateConstructorUsedError;
-  int get rir => throw _privateConstructorUsedError;
+  int get rir => throw _privateConstructorUsedError; // 0-4
+  bool get isDone => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -304,7 +366,13 @@ abstract class $ExerciseSetCopyWith<$Res> {
           ExerciseSet value, $Res Function(ExerciseSet) then) =
       _$ExerciseSetCopyWithImpl<$Res, ExerciseSet>;
   @useResult
-  $Res call({String exerciseName, double weight, int repsCompleted, int rir});
+  $Res call(
+      {int setIndex,
+      String exerciseName,
+      double weight,
+      int repsCompleted,
+      int rir,
+      bool isDone});
 }
 
 /// @nodoc
@@ -320,12 +388,18 @@ class _$ExerciseSetCopyWithImpl<$Res, $Val extends ExerciseSet>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
+    Object? setIndex = null,
     Object? exerciseName = null,
     Object? weight = null,
     Object? repsCompleted = null,
     Object? rir = null,
+    Object? isDone = null,
   }) {
     return _then(_value.copyWith(
+      setIndex: null == setIndex
+          ? _value.setIndex
+          : setIndex // ignore: cast_nullable_to_non_nullable
+              as int,
       exerciseName: null == exerciseName
           ? _value.exerciseName
           : exerciseName // ignore: cast_nullable_to_non_nullable
@@ -342,6 +416,10 @@ class _$ExerciseSetCopyWithImpl<$Res, $Val extends ExerciseSet>
           ? _value.rir
           : rir // ignore: cast_nullable_to_non_nullable
               as int,
+      isDone: null == isDone
+          ? _value.isDone
+          : isDone // ignore: cast_nullable_to_non_nullable
+              as bool,
     ) as $Val);
   }
 }
@@ -354,7 +432,13 @@ abstract class _$$ExerciseSetImplCopyWith<$Res>
       __$$ExerciseSetImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({String exerciseName, double weight, int repsCompleted, int rir});
+  $Res call(
+      {int setIndex,
+      String exerciseName,
+      double weight,
+      int repsCompleted,
+      int rir,
+      bool isDone});
 }
 
 /// @nodoc
@@ -368,12 +452,18 @@ class __$$ExerciseSetImplCopyWithImpl<$Res>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
+    Object? setIndex = null,
     Object? exerciseName = null,
     Object? weight = null,
     Object? repsCompleted = null,
     Object? rir = null,
+    Object? isDone = null,
   }) {
     return _then(_$ExerciseSetImpl(
+      setIndex: null == setIndex
+          ? _value.setIndex
+          : setIndex // ignore: cast_nullable_to_non_nullable
+              as int,
       exerciseName: null == exerciseName
           ? _value.exerciseName
           : exerciseName // ignore: cast_nullable_to_non_nullable
@@ -390,22 +480,31 @@ class __$$ExerciseSetImplCopyWithImpl<$Res>
           ? _value.rir
           : rir // ignore: cast_nullable_to_non_nullable
               as int,
+      isDone: null == isDone
+          ? _value.isDone
+          : isDone // ignore: cast_nullable_to_non_nullable
+              as bool,
     ));
   }
 }
 
 /// @nodoc
-@JsonSerializable()
+
+@JsonSerializable(fieldRename: FieldRename.snake)
 class _$ExerciseSetImpl with DiagnosticableTreeMixin implements _ExerciseSet {
   const _$ExerciseSetImpl(
-      {required this.exerciseName,
+      {required this.setIndex,
+      required this.exerciseName,
       required this.weight,
       required this.repsCompleted,
-      required this.rir});
+      required this.rir,
+      this.isDone = false});
 
   factory _$ExerciseSetImpl.fromJson(Map<String, dynamic> json) =>
       _$$ExerciseSetImplFromJson(json);
 
+  @override
+  final int setIndex;
   @override
   final String exerciseName;
   @override
@@ -414,10 +513,14 @@ class _$ExerciseSetImpl with DiagnosticableTreeMixin implements _ExerciseSet {
   final int repsCompleted;
   @override
   final int rir;
+// 0-4
+  @override
+  @JsonKey()
+  final bool isDone;
 
   @override
   String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
-    return 'ExerciseSet(exerciseName: $exerciseName, weight: $weight, repsCompleted: $repsCompleted, rir: $rir)';
+    return 'ExerciseSet(setIndex: $setIndex, exerciseName: $exerciseName, weight: $weight, repsCompleted: $repsCompleted, rir: $rir, isDone: $isDone)';
   }
 
   @override
@@ -425,10 +528,12 @@ class _$ExerciseSetImpl with DiagnosticableTreeMixin implements _ExerciseSet {
     super.debugFillProperties(properties);
     properties
       ..add(DiagnosticsProperty('type', 'ExerciseSet'))
+      ..add(DiagnosticsProperty('setIndex', setIndex))
       ..add(DiagnosticsProperty('exerciseName', exerciseName))
       ..add(DiagnosticsProperty('weight', weight))
       ..add(DiagnosticsProperty('repsCompleted', repsCompleted))
-      ..add(DiagnosticsProperty('rir', rir));
+      ..add(DiagnosticsProperty('rir', rir))
+      ..add(DiagnosticsProperty('isDone', isDone));
   }
 
   @override
@@ -436,18 +541,21 @@ class _$ExerciseSetImpl with DiagnosticableTreeMixin implements _ExerciseSet {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is _$ExerciseSetImpl &&
+            (identical(other.setIndex, setIndex) ||
+                other.setIndex == setIndex) &&
             (identical(other.exerciseName, exerciseName) ||
                 other.exerciseName == exerciseName) &&
             (identical(other.weight, weight) || other.weight == weight) &&
             (identical(other.repsCompleted, repsCompleted) ||
                 other.repsCompleted == repsCompleted) &&
-            (identical(other.rir, rir) || other.rir == rir));
+            (identical(other.rir, rir) || other.rir == rir) &&
+            (identical(other.isDone, isDone) || other.isDone == isDone));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, exerciseName, weight, repsCompleted, rir);
+  int get hashCode => Object.hash(
+      runtimeType, setIndex, exerciseName, weight, repsCompleted, rir, isDone);
 
   @JsonKey(ignore: true)
   @override
@@ -465,14 +573,18 @@ class _$ExerciseSetImpl with DiagnosticableTreeMixin implements _ExerciseSet {
 
 abstract class _ExerciseSet implements ExerciseSet {
   const factory _ExerciseSet(
-      {required final String exerciseName,
+      {required final int setIndex,
+      required final String exerciseName,
       required final double weight,
       required final int repsCompleted,
-      required final int rir}) = _$ExerciseSetImpl;
+      required final int rir,
+      final bool isDone}) = _$ExerciseSetImpl;
 
   factory _ExerciseSet.fromJson(Map<String, dynamic> json) =
       _$ExerciseSetImpl.fromJson;
 
+  @override
+  int get setIndex;
   @override
   String get exerciseName;
   @override
@@ -481,6 +593,8 @@ abstract class _ExerciseSet implements ExerciseSet {
   int get repsCompleted;
   @override
   int get rir;
+  @override // 0-4
+  bool get isDone;
   @override
   @JsonKey(ignore: true)
   _$$ExerciseSetImplCopyWith<_$ExerciseSetImpl> get copyWith =>
@@ -661,7 +775,8 @@ class __$$ExerciseImplCopyWithImpl<$Res>
 }
 
 /// @nodoc
-@JsonSerializable()
+
+@JsonSerializable(fieldRename: FieldRename.snake)
 class _$ExerciseImpl with DiagnosticableTreeMixin implements _Exercise {
   const _$ExerciseImpl(
       {required this.id,
@@ -911,7 +1026,8 @@ class __$$WeeklyTrainingStatsImplCopyWithImpl<$Res>
 }
 
 /// @nodoc
-@JsonSerializable()
+
+@JsonSerializable(fieldRename: FieldRename.snake)
 class _$WeeklyTrainingStatsImpl
     with DiagnosticableTreeMixin
     implements _WeeklyTrainingStats {
@@ -1151,7 +1267,8 @@ class __$$WorkoutRecommendationImplCopyWithImpl<$Res>
 }
 
 /// @nodoc
-@JsonSerializable()
+
+@JsonSerializable(fieldRename: FieldRename.snake)
 class _$WorkoutRecommendationImpl
     with DiagnosticableTreeMixin
     implements _WorkoutRecommendation {
@@ -1379,7 +1496,8 @@ class __$$TrainingCycleImplCopyWithImpl<$Res>
 }
 
 /// @nodoc
-@JsonSerializable()
+
+@JsonSerializable(fieldRename: FieldRename.snake)
 class _$TrainingCycleImpl
     with DiagnosticableTreeMixin
     implements _TrainingCycle {
