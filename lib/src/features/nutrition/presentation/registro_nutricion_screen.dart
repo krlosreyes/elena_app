@@ -11,7 +11,8 @@ import '../../health/data/health_repository.dart';
 import '../../../shared/domain/models/metabolic_milestone.dart';
 import '../data/repositories/food_suggestions_repository.dart';
 import '../domain/entities/food_suggestion.dart';
-// import 'widgets/meal_registration_modal.dart'; // Unused
+import 'package:elena_app/src/shared/domain/models/meal_log.dart';
+import '../application/meal_controller.dart';
 
 // ─────────────────────────────────────────────────────────────
 // 🎨 PALETTE
@@ -98,7 +99,6 @@ class _RegistroNutricionScreenState
     // ── Suggested meals from Firestore (rotated) ─────────────────
     final uid = ref.watch(authRepositoryProvider).currentUser?.uid;
     final suggestionsAsync = ref.watch(dailySuggestionsProvider);
-    final repo = ref.watch(foodSuggestionsRepositoryProvider);
     final hub = ref.watch(metabolicHubProvider);
     final todayLogAsync = uid != null
         ? ref.watch(todayLogProvider(uid))
@@ -229,10 +229,42 @@ class _RegistroNutricionScreenState
                       onAdd: (uid == null || isNextMealLocked)
                           ? null
                           : () async {
-                              await repo.addToDaily(
-                                uid: uid,
-                                suggestion: suggestions[i],
-                              );
+                              final suggestion = suggestions[i];
+                              final mealType = switch (suggestion.category) {
+                                FoodCategory.ruptura => MealType.breakfast,
+                                FoodCategory.principal => MealType.lunch,
+                                FoodCategory.snack => MealType.snack,
+                              };
+
+                              final success = await ref
+                                  .read(mealControllerProvider.notifier)
+                                  .registerMeal(
+                                    name: suggestion.name,
+                                    type: mealType,
+                                    calories: suggestion.macros.kcal,
+                                    protein: suggestion.macros.protein,
+                                    carbs: suggestion.macros.carbs,
+                                    fat: suggestion.macros.fat,
+                                  );
+
+                              if (context.mounted) {
+                                if (success) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('✓ ${suggestion.name} AÑADIDO'),
+                                      backgroundColor: _colorProtein,
+                                      duration: const Duration(seconds: 1),
+                                    ),
+                                  );
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('⚠️ VENTANA BLOQUEADA POR PROTOCOLO'),
+                                      backgroundColor: Colors.orangeAccent,
+                                    ),
+                                  );
+                                }
+                              }
                             },
                     ),
                     childCount: suggestions.length,

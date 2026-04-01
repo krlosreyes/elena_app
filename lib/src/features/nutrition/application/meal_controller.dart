@@ -1,4 +1,3 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:uuid/uuid.dart';
 import 'package:flutter/foundation.dart';
@@ -47,7 +46,6 @@ class MealController extends _$MealController {
     }
 
     // 2. Check if the specific milestone is reached (Fasting break or inter-meal gap)
-    // Only lock if NOT the first meal (Ruptura is usually handled by fasting timer)
     final isLocked = nextMealIndex > 0 && 
                     nextMealIndex < hub.mealMilestones.length && 
                     !hub.mealMilestones[nextMealIndex].isReached;
@@ -73,15 +71,19 @@ class MealController extends _$MealController {
       await ref.read(mealRepositoryProvider).saveMeal(meal);
 
       // Sincronizar con DailyLog para disparar actualización del IED
-      final healthRepo = ref.read(healthRepositoryProvider);
-      await healthRepo.logNutrition(
-        uid: user.uid,
-        name: meal.name,
-        type: meal.type,
-        calories: meal.calories,
-        protein: meal.proteinGrams,
-        carbs: meal.carbsGrams,
-        fat: meal.fatGrams,
+      await ref.read(healthRepositoryProvider).logNutrition(
+        user.uid,
+        {
+          'id': meal.id,
+          'userId': user.uid,
+          'name': meal.name,
+          'type': meal.type.name,
+          'calories': meal.calories,
+          'protein': meal.proteinGrams,
+          'carbs': meal.carbsGrams,
+          'fats': meal.fatGrams,
+          'timestamp': meal.timestamp.toIso8601String(),
+        },
       );
 
       await NotificationService.schedulePostPrandialWalking(meal.timestamp);

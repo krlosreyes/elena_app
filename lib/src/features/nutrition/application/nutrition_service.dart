@@ -4,8 +4,6 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../authentication/data/auth_repository.dart';
 import '../../fasting/application/fasting_controller.dart';
-import '../../fasting/data/fasting_repository.dart';
-import '../../profile/data/user_repository.dart';
 import '../../profile/application/user_controller.dart';
 
 import '../data/repositories/nutrition_repository_impl.dart';

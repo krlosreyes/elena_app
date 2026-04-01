@@ -87,7 +87,7 @@ class UserModel with _$UserModel {
     double? metaICA,
     double? metaICC,
 
-    @Default(2) int numberOfMeals,
+    @Default(2) int numberOfMeals, // 2 is typically the default for fasting, but see MetabolicHub for overrides.
 
     // Metadata
     @Default(false) bool onboardingCompleted,

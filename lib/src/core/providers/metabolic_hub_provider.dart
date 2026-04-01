@@ -160,9 +160,15 @@ class MetabolicHub extends Notifier<MetabolicContext> {
       }
     }
 
+    final parts = protocolStr.split(':');
+    final fastingHours = parts.length == 2 ? (int.tryParse(parts[0]) ?? 16) : 16;
+    final feedingWindowVal = 24.0 - fastingHours.toDouble();
+
     final List<double> mealOffsets = MealMilestoneCalculator.calculateOffsets(
       protocolStr,
-      numberOfMeals: profile?.numberOfMeals ?? 1,
+      numberOfMeals: (profile?.numberOfMeals == 2 && feedingWindowVal > 8.0) 
+        ? null 
+        : profile?.numberOfMeals,
     );
     final List<MetabolicMilestone> mealMilestones = [];
 

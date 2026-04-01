@@ -6,7 +6,7 @@ part of 'meal_controller.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$recentMealsHash() => r'ac45332e8f4d3dcf45c9d09b36a0520add237768';
+String _$recentMealsHash() => r'0c36032cedb4c3b5e272f410e53496bcb8928ea6';
 
 /// See also [recentMeals].
 @ProviderFor(recentMeals)
@@ -20,7 +20,7 @@ final recentMealsProvider = AutoDisposeStreamProvider<List<MealLog>>.internal(
 );
 
 typedef RecentMealsRef = AutoDisposeStreamProviderRef<List<MealLog>>;
-String _$mealControllerHash() => r'1e102c5757e8441e2f7dd5bc890a29f0cdd3273d';
+String _$mealControllerHash() => r'862da7477d854b1ed495447ac78e9390f83edfbb';
 
 /// See also [MealController].
 @ProviderFor(MealController)

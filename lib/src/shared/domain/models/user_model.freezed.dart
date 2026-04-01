@@ -70,7 +70,9 @@ mixin _$UserModel {
       throw _privateConstructorUsedError; // Legacy / Calculated (Can be stored or calculated)
   double? get metaICA => throw _privateConstructorUsedError;
   double? get metaICC => throw _privateConstructorUsedError;
-  int get numberOfMeals => throw _privateConstructorUsedError; // Metadata
+  int get numberOfMeals =>
+      throw _privateConstructorUsedError; // 2 is typically the default for fasting, but see MetabolicHub for overrides.
+// Metadata
   bool get onboardingCompleted => throw _privateConstructorUsedError;
   bool get hasCompletedTour => throw _privateConstructorUsedError;
   @OptionalTimestampConverter()
@@ -813,6 +815,7 @@ class _$UserModelImpl extends _UserModel {
   @override
   @JsonKey()
   final int numberOfMeals;
+// 2 is typically the default for fasting, but see MetabolicHub for overrides.
 // Metadata
   @override
   @JsonKey()
@@ -1104,7 +1107,8 @@ abstract class _UserModel extends UserModel {
   double? get metaICC;
   @override
   int get numberOfMeals;
-  @override // Metadata
+  @override // 2 is typically the default for fasting, but see MetabolicHub for overrides.
+// Metadata
   bool get onboardingCompleted;
   @override
   bool get hasCompletedTour;
