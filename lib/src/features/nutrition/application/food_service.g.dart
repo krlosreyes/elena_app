@@ -40,7 +40,7 @@ final foodServiceProvider = AutoDisposeProvider<FoodService>.internal(
 );
 
 typedef FoodServiceRef = AutoDisposeProviderRef<FoodService>;
-String _$foodsByCategoryHash() => r'5786a6427661d17697c0220e1d23b63e7c7530bc';
+String _$foodsByCategoryHash() => r'd18a19e3aedebbc3153861882fa2bcf73882d1b9';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -203,7 +203,7 @@ class _FoodsByCategoryProviderElement
   String get category => (origin as FoodsByCategoryProvider).category;
 }
 
-String _$searchFoodHash() => r'ea5f29fd512557f0690c4e54497e3db2db621051';
+String _$searchFoodHash() => r'2d2a2a4b838693ea00721b014950f14c63ad0b81';
 
 /// ✅ Buscar comida (AsyncValue)
 ///

@@ -1,11 +1,12 @@
 import 'package:permission_handler/permission_handler.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+
 import 'app_logger.dart';
 
 part 'permissions_service.g.dart';
 
 /// 🔑 PERMISSIONS SERVICE
-/// 
+///
 /// Centraliza toda la gestión de permisos del SO (iOS/Android).
 /// Solicita permisos de forma segura y auditable.
 class PermissionsService {

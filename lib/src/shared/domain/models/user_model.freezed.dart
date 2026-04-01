@@ -69,7 +69,8 @@ mixin _$UserModel {
   int? get energyLevel1To10 =>
       throw _privateConstructorUsedError; // Legacy / Calculated (Can be stored or calculated)
   double? get metaICA => throw _privateConstructorUsedError;
-  double? get metaICC => throw _privateConstructorUsedError; // Metadata
+  double? get metaICC => throw _privateConstructorUsedError;
+  int get numberOfMeals => throw _privateConstructorUsedError; // Metadata
   bool get onboardingCompleted => throw _privateConstructorUsedError;
   bool get hasCompletedTour => throw _privateConstructorUsedError;
   @OptionalTimestampConverter()
@@ -125,6 +126,7 @@ abstract class $UserModelCopyWith<$Res> {
       int? energyLevel1To10,
       double? metaICA,
       double? metaICC,
+      int numberOfMeals,
       bool onboardingCompleted,
       bool hasCompletedTour,
       @OptionalTimestampConverter() DateTime? createdAt,
@@ -180,6 +182,7 @@ class _$UserModelCopyWithImpl<$Res, $Val extends UserModel>
     Object? energyLevel1To10 = freezed,
     Object? metaICA = freezed,
     Object? metaICC = freezed,
+    Object? numberOfMeals = null,
     Object? onboardingCompleted = null,
     Object? hasCompletedTour = null,
     Object? createdAt = freezed,
@@ -330,6 +333,10 @@ class _$UserModelCopyWithImpl<$Res, $Val extends UserModel>
           ? _value.metaICC
           : metaICC // ignore: cast_nullable_to_non_nullable
               as double?,
+      numberOfMeals: null == numberOfMeals
+          ? _value.numberOfMeals
+          : numberOfMeals // ignore: cast_nullable_to_non_nullable
+              as int,
       onboardingCompleted: null == onboardingCompleted
           ? _value.onboardingCompleted
           : onboardingCompleted // ignore: cast_nullable_to_non_nullable
@@ -395,6 +402,7 @@ abstract class _$$UserModelImplCopyWith<$Res>
       int? energyLevel1To10,
       double? metaICA,
       double? metaICC,
+      int numberOfMeals,
       bool onboardingCompleted,
       bool hasCompletedTour,
       @OptionalTimestampConverter() DateTime? createdAt,
@@ -448,6 +456,7 @@ class __$$UserModelImplCopyWithImpl<$Res>
     Object? energyLevel1To10 = freezed,
     Object? metaICA = freezed,
     Object? metaICC = freezed,
+    Object? numberOfMeals = null,
     Object? onboardingCompleted = null,
     Object? hasCompletedTour = null,
     Object? createdAt = freezed,
@@ -598,6 +607,10 @@ class __$$UserModelImplCopyWithImpl<$Res>
           ? _value.metaICC
           : metaICC // ignore: cast_nullable_to_non_nullable
               as double?,
+      numberOfMeals: null == numberOfMeals
+          ? _value.numberOfMeals
+          : numberOfMeals // ignore: cast_nullable_to_non_nullable
+              as int,
       onboardingCompleted: null == onboardingCompleted
           ? _value.onboardingCompleted
           : onboardingCompleted // ignore: cast_nullable_to_non_nullable
@@ -659,6 +672,7 @@ class _$UserModelImpl extends _UserModel {
       this.energyLevel1To10,
       this.metaICA,
       this.metaICC,
+      this.numberOfMeals = 2,
       this.onboardingCompleted = false,
       this.hasCompletedTour = false,
       @OptionalTimestampConverter() this.createdAt,
@@ -796,6 +810,9 @@ class _$UserModelImpl extends _UserModel {
   final double? metaICA;
   @override
   final double? metaICC;
+  @override
+  @JsonKey()
+  final int numberOfMeals;
 // Metadata
   @override
   @JsonKey()
@@ -812,7 +829,7 @@ class _$UserModelImpl extends _UserModel {
 
   @override
   String toString() {
-    return 'UserModel(uid: $uid, email: $email, displayName: $displayName, name: $name, photoUrl: $photoUrl, gender: $gender, birthDate: $birthDate, heightCm: $heightCm, currentWeightKg: $currentWeightKg, waistCircumferenceCm: $waistCircumferenceCm, neckCircumferenceCm: $neckCircumferenceCm, hipCircumferenceCm: $hipCircumferenceCm, pathologies: $pathologies, activityLevel: $activityLevel, physicalLimitations: $physicalLimitations, snackingHabit: $snackingHabit, dietaryPreference: $dietaryPreference, hasDumbbells: $hasDumbbells, workoutDays: $workoutDays, lastHighIntensityWorkoutAt: $lastHighIntensityWorkoutAt, wakeUpTime: $wakeUpTime, bedTime: $bedTime, usualFirstMealTime: $usualFirstMealTime, usualLastMealTime: $usualLastMealTime, fastingExperience: $fastingExperience, recommendedProtocol: $recommendedProtocol, healthGoal: $healthGoal, targetWeightKg: $targetWeightKg, startWeightKg: $startWeightKg, targetFatPercentage: $targetFatPercentage, targetLBM: $targetLBM, checkInDay: $checkInDay, averageSleepHours: $averageSleepHours, energyLevel1To10: $energyLevel1To10, metaICA: $metaICA, metaICC: $metaICC, onboardingCompleted: $onboardingCompleted, hasCompletedTour: $hasCompletedTour, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'UserModel(uid: $uid, email: $email, displayName: $displayName, name: $name, photoUrl: $photoUrl, gender: $gender, birthDate: $birthDate, heightCm: $heightCm, currentWeightKg: $currentWeightKg, waistCircumferenceCm: $waistCircumferenceCm, neckCircumferenceCm: $neckCircumferenceCm, hipCircumferenceCm: $hipCircumferenceCm, pathologies: $pathologies, activityLevel: $activityLevel, physicalLimitations: $physicalLimitations, snackingHabit: $snackingHabit, dietaryPreference: $dietaryPreference, hasDumbbells: $hasDumbbells, workoutDays: $workoutDays, lastHighIntensityWorkoutAt: $lastHighIntensityWorkoutAt, wakeUpTime: $wakeUpTime, bedTime: $bedTime, usualFirstMealTime: $usualFirstMealTime, usualLastMealTime: $usualLastMealTime, fastingExperience: $fastingExperience, recommendedProtocol: $recommendedProtocol, healthGoal: $healthGoal, targetWeightKg: $targetWeightKg, startWeightKg: $startWeightKg, targetFatPercentage: $targetFatPercentage, targetLBM: $targetLBM, checkInDay: $checkInDay, averageSleepHours: $averageSleepHours, energyLevel1To10: $energyLevel1To10, metaICA: $metaICA, metaICC: $metaICC, numberOfMeals: $numberOfMeals, onboardingCompleted: $onboardingCompleted, hasCompletedTour: $hasCompletedTour, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -887,6 +904,8 @@ class _$UserModelImpl extends _UserModel {
                 other.energyLevel1To10 == energyLevel1To10) &&
             (identical(other.metaICA, metaICA) || other.metaICA == metaICA) &&
             (identical(other.metaICC, metaICC) || other.metaICC == metaICC) &&
+            (identical(other.numberOfMeals, numberOfMeals) ||
+                other.numberOfMeals == numberOfMeals) &&
             (identical(other.onboardingCompleted, onboardingCompleted) ||
                 other.onboardingCompleted == onboardingCompleted) &&
             (identical(other.hasCompletedTour, hasCompletedTour) ||
@@ -937,6 +956,7 @@ class _$UserModelImpl extends _UserModel {
         energyLevel1To10,
         metaICA,
         metaICC,
+        numberOfMeals,
         onboardingCompleted,
         hasCompletedTour,
         createdAt,
@@ -995,6 +1015,7 @@ abstract class _UserModel extends UserModel {
       final int? energyLevel1To10,
       final double? metaICA,
       final double? metaICC,
+      final int numberOfMeals,
       final bool onboardingCompleted,
       final bool hasCompletedTour,
       @OptionalTimestampConverter() final DateTime? createdAt,
@@ -1081,6 +1102,8 @@ abstract class _UserModel extends UserModel {
   double? get metaICA;
   @override
   double? get metaICC;
+  @override
+  int get numberOfMeals;
   @override // Metadata
   bool get onboardingCompleted;
   @override

@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import '../../../fasting/application/fasting_controller.dart';
-import '../../../fasting/application/daily_log_service.dart';
+
 import '../../../authentication/data/auth_repository.dart';
+import '../../../fasting/application/daily_log_service.dart';
+import '../../../fasting/application/fasting_controller.dart';
 
 class FastingStatusWidget extends ConsumerWidget {
   const FastingStatusWidget({super.key});
@@ -62,7 +63,7 @@ class FastingStatusWidget extends ConsumerWidget {
                 final uid = ref.read(authRepositoryProvider).currentUser?.uid;
                 if (uid == null) return;
                 final todayId = DateFormat('yyyy-MM-dd').format(DateTime.now());
-                
+
                 // ✅ Usar DailyLogService en lugar de FirebaseFirestore directo
                 final dailyLogService = ref.read(dailyLogServiceProvider);
                 await dailyLogService.clearDailyLogForDate(uid, todayId);

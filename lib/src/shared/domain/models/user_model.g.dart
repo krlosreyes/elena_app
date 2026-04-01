@@ -63,6 +63,7 @@ _$UserModelImpl _$$UserModelImplFromJson(Map<String, dynamic> json) =>
       energyLevel1To10: (json['energyLevel1To10'] as num?)?.toInt(),
       metaICA: (json['metaICA'] as num?)?.toDouble(),
       metaICC: (json['metaICC'] as num?)?.toDouble(),
+      numberOfMeals: (json['numberOfMeals'] as num?)?.toInt() ?? 2,
       onboardingCompleted: json['onboardingCompleted'] as bool? ?? false,
       hasCompletedTour: json['hasCompletedTour'] as bool? ?? false,
       createdAt: const OptionalTimestampConverter().fromJson(json['createdAt']),
@@ -111,6 +112,7 @@ Map<String, dynamic> _$$UserModelImplToJson(_$UserModelImpl instance) =>
       'energyLevel1To10': instance.energyLevel1To10,
       'metaICA': instance.metaICA,
       'metaICC': instance.metaICC,
+      'numberOfMeals': instance.numberOfMeals,
       'onboardingCompleted': instance.onboardingCompleted,
       'hasCompletedTour': instance.hasCompletedTour,
       'createdAt':

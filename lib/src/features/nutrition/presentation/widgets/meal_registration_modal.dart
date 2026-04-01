@@ -541,7 +541,7 @@ class _MealRegistrationModalState extends ConsumerState<MealRegistrationModal> {
       final fat = (foodModel.fat * multiplier).toInt();
 
       // Register the meal
-      await ref.read(mealControllerProvider.notifier).registerMeal(
+      final success = await ref.read(mealControllerProvider.notifier).registerMeal(
             name: foodModel.name,
             type: mealType,
             calories: calories,
@@ -549,6 +549,18 @@ class _MealRegistrationModalState extends ConsumerState<MealRegistrationModal> {
             carbs: carbs,
             fat: fat,
           );
+
+      if (!success) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('⚠️ LA VENTANA DE ESTA COMIDA AÚN NO ESTÁ ABIERTA'),
+              backgroundColor: Colors.orangeAccent,
+            ),
+          );
+        }
+        return;
+      }
 
       // Record first meal transition if applicable
       if (mealNum == 1) {

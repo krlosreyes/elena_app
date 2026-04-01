@@ -1,8 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+
+import '../../../core/services/app_logger.dart';
 import '../data/repositories/food_repository.dart' as old_repo;
 import '../domain/entities/food_model.dart';
-import '../../../core/services/app_logger.dart';
 
 part 'food_service.g.dart';
 
@@ -39,7 +40,7 @@ class FoodService {
 }
 
 /// 📱 Riverpod Providers para FoodService
-/// 
+///
 /// Proporcionan acceso singleton a FoodService en toda la app
 
 @riverpod
@@ -55,20 +56,14 @@ FoodService foodService(FoodServiceRef ref) {
 
 /// ✅ Obtener comidas por categoría (Future)
 @riverpod
-Future<List<FoodModel>> foodsByCategory(
-  FoodByCategoryRef ref,
-  String category,
-) async {
+Future<List<FoodModel>> foodsByCategory(ref, String category) async {
   final service = ref.watch(foodServiceProvider);
   return await service.getFoodsByCategory(category);
 }
 
 /// ✅ Buscar comida (AsyncValue)
 @riverpod
-Future<FoodModel?> searchFood(
-  SearchFoodRef ref,
-  String query,
-) async {
+Future<FoodModel?> searchFood(ref, String query) async {
   final service = ref.watch(foodServiceProvider);
   return await service.searchFood(query);
 }

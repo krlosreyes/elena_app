@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+
 import '../../../core/services/app_logger.dart';
 
 part 'daily_log_service.g.dart';

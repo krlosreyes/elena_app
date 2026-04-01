@@ -211,22 +211,34 @@ class _RegistroNutricionScreenState
               error: (_, __) => const SliverToBoxAdapter(
                 child: SizedBox.shrink(),
               ),
-              data: (suggestions) => SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, i) => _FoodSuggestionCard(
-                    suggestion: suggestions[i],
-                    onAdd: uid == null
-                        ? null
-                        : () async {
-                            await repo.addToDaily(
-                              uid: uid,
-                              suggestion: suggestions[i],
-                            );
-                          },
+              data: (suggestions) {
+                final nextMealIndex = hub.actualMeals;
+                final bool isNextMealLocked = nextMealIndex > 0 &&
+                    nextMealIndex < hub.mealMilestones.length &&
+                    !hub.mealMilestones[nextMealIndex].isReached;
+
+                return SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, i) => _FoodSuggestionCard(
+                      suggestion: suggestions[i],
+                      locked: isNextMealLocked,
+                      timeUntilNext: isNextMealLocked
+                          ? _formatRealTime(
+                              hub.mealMilestones[nextMealIndex].absoluteHour)
+                          : null,
+                      onAdd: (uid == null || isNextMealLocked)
+                          ? null
+                          : () async {
+                              await repo.addToDaily(
+                                uid: uid,
+                                suggestion: suggestions[i],
+                              );
+                            },
+                    ),
+                    childCount: suggestions.length,
                   ),
-                  childCount: suggestions.length,
-                ),
-              ),
+                );
+              },
             ),
 
             const SliverToBoxAdapter(child: SizedBox(height: 40)),
@@ -477,12 +489,12 @@ class _FeedingTimeline extends StatelessWidget {
       ];
     }
 
-    return milestones.take(3).toList().asMap().entries.map<_TimelineItem>((e) {
+    return milestones.asMap().entries.map<_TimelineItem>((e) {
       final i = e.key;
       final m = e.value;
 
-      // Planned clock time from geometry
-      final absoluteHour = (startHour + m.hour) % 24;
+      // Planned clock time from geometry (PRECOMPUTED IN HUB)
+      final absoluteHour = m.absoluteHour;
       final planned = DateTime(
         today.year,
         today.month,
@@ -495,10 +507,20 @@ class _FeedingTimeline extends StatelessWidget {
       // Real timestamp from Firestore mealEntries[i] if exists
       String? loggedStr;
       if (i < mealEntries.length) {
-        final tsRaw = mealEntries[i]['timestamp'];
+        final entry = mealEntries[i];
+        final tsRaw = entry['timestamp'];
         if (tsRaw != null) {
           try {
-            final logged = DateTime.parse(tsRaw.toString()).toLocal();
+            // Check if it's a FireStore Timestamp or a String
+            final DateTime logged;
+            if (tsRaw is String) {
+               logged = DateTime.parse(tsRaw).toLocal();
+            } else if (tsRaw.runtimeType.toString().contains('Timestamp')) {
+               // This is a dynamic check for non-imported Timestamp
+               logged = (tsRaw as dynamic).toDate().toLocal();
+            } else {
+               logged = today; // Fallback
+            }
             loggedStr = fmt.format(logged);
           } catch (_) {}
         }
@@ -872,16 +894,28 @@ class _DonutPainter extends CustomPainter {
       old.fatPct != fatPct;
 }
 
+  String _formatRealTime(double absoluteHour) {
+    final hour = absoluteHour.floor();
+    final minute = ((absoluteHour - hour) * 60).round();
+    final today = DateTime.now();
+    final time = DateTime(today.year, today.month, today.day, hour, minute);
+    return DateFormat('hh:mm a').format(time);
+  }
+
 // ─────────────────────────────────────────────────────────────
 // 🍽 FOOD SUGGESTION CARD (from Firestore)
 // ─────────────────────────────────────────────────────────────
 class _FoodSuggestionCard extends StatefulWidget {
   final FoodSuggestion suggestion;
   final Future<void> Function()? onAdd;
+  final bool locked;
+  final String? timeUntilNext;
 
   const _FoodSuggestionCard({
     required this.suggestion,
-    required this.onAdd,
+    this.onAdd,
+    this.locked = false,
+    this.timeUntilNext,
   });
 
   @override
@@ -892,118 +926,100 @@ class _FoodSuggestionCardState extends State<_FoodSuggestionCard> {
   bool _loading = false;
   bool _added = false;
 
-  IconData _iconForCategory(FoodCategory cat) => switch (cat) {
-        FoodCategory.ruptura => Icons.wb_sunny_outlined,
-        FoodCategory.principal => Icons.restaurant_menu_outlined,
-        FoodCategory.snack => Icons.eco_outlined,
-      };
-
   @override
   Widget build(BuildContext context) {
-    final s = widget.suggestion;
-    final icon = _iconForCategory(s.category);
-    final isSelected = _added;
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      decoration: BoxDecoration(
-        color: const Color(0xFF0D0D10),
-        border: Border.all(
-          color: isSelected
-              ? AppTheme.primary.withValues(alpha: 0.1)
-              : Colors.white.withValues(alpha: 0.03),
-          width: 1,
-        ),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(4),
-          onTap: _added ? null : _handleAdd,
-          splashColor: _colorProtein.withValues(alpha: 0.05),
+    return AnimatedOpacity(
+      duration: const Duration(milliseconds: 400),
+      opacity: widget.locked ? 0.5 : 1.0,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
+        child: Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF0D0D10),
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(
+              color: widget.locked
+                  ? Colors.white.withValues(alpha: 0.03)
+                  : Colors.white.withValues(alpha: 0.08),
+              width: 1,
+            ),
+          ),
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16.0),
             child: Row(
               children: [
-                // Icon container
-                Container(
-                  width: 46,
-                  height: 46,
-                  decoration: BoxDecoration(
-                    color: _colorProtein.withValues(alpha: 0.08),
-                    border: Border.all(
-                        color: _colorProtein.withValues(alpha: 0.2), width: 1),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Icon(icon,
-                      color: _colorProtein.withValues(alpha: 0.8), size: 22),
-                ),
-                const SizedBox(width: 14),
-                // Text content
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        s.name,
-                        style: GoogleFonts.jetBrainsMono(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w900,
-                          color: Colors.white.withValues(alpha: 0.9),
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      // Tags as description
-                      Text(
-                        s.tags.take(2).join(' · '),
-                        style: GoogleFonts.jetBrainsMono(
-                          fontSize: 9,
-                          color: Colors.white.withValues(alpha: 0.35),
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      // Macro badges — corporate colors
                       Row(
                         children: [
-                          _MacroBadge('P ${s.macros.protein}g', _colorProtein),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppTheme.primary.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                            child: Text(
+                              widget.suggestion.category.label.toUpperCase(),
+                              style: GoogleFonts.jetBrainsMono(
+                                fontSize: 8,
+                                fontWeight: FontWeight.bold,
+                                color: AppTheme.primary,
+                                letterSpacing: 1,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          if (widget.locked)
+                            const Icon(Icons.lock_clock,
+                                color: Colors.white24, size: 12),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        widget.suggestion.name,
+                        style: GoogleFonts.publicSans(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          _MacroBadge('${widget.suggestion.macros.kcal} KCAL',
+                              Colors.white70),
                           const SizedBox(width: 6),
-                          _MacroBadge('C ${s.macros.carbs}g', _colorCarbs),
+                          _MacroBadge('${widget.suggestion.macros.protein} P',
+                              _colorProtein),
                           const SizedBox(width: 6),
-                          _MacroBadge('G ${s.macros.fat}g', _colorFat),
+                          _MacroBadge(
+                              '${widget.suggestion.macros.carbs} C', _colorCarbs),
                         ],
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 12),
-                // Kcal + Add button
                 Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      '${s.macros.kcal}',
-                      style: GoogleFonts.jetBrainsMono(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w900,
-                        color: _colorProtein,
+                    if (widget.locked)
+                      Text(
+                        widget.timeUntilNext ?? 'BLOQUEADO',
+                        style: GoogleFonts.jetBrainsMono(
+                          fontSize: 8,
+                          color: Colors.white24,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    Text(
-                      'kcal',
-                      style: GoogleFonts.jetBrainsMono(
-                        fontSize: 9,
-                        color: Colors.white.withValues(alpha: 0.3),
-                        letterSpacing: 1,
-                      ),
-                    ),
                     const SizedBox(height: 8),
                     _AddButton(
                       loading: _loading,
                       added: _added,
                       onTap: _handleAdd,
+                      locked: widget.locked,
                     ),
                   ],
                 ),
@@ -1016,7 +1032,7 @@ class _FoodSuggestionCardState extends State<_FoodSuggestionCard> {
   }
 
   Future<void> _handleAdd() async {
-    if (_loading || _added || widget.onAdd == null) return;
+    if (_loading || _added || widget.onAdd == null || widget.locked) return;
     setState(() => _loading = true);
     try {
       await widget.onAdd!();
@@ -1036,16 +1052,24 @@ class _FoodSuggestionCardState extends State<_FoodSuggestionCard> {
 class _AddButton extends StatelessWidget {
   final bool loading;
   final bool added;
+  final bool locked;
   final VoidCallback onTap;
-  const _AddButton(
-      {required this.loading, required this.added, required this.onTap});
+
+  const _AddButton({
+    required this.loading,
+    required this.added,
+    required this.onTap,
+    this.locked = false,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final color = added ? Colors.white.withValues(alpha: 0.3) : _colorProtein;
+    final color = locked 
+        ? Colors.white12
+        : (added ? Colors.white.withValues(alpha: 0.3) : _colorProtein);
 
     return GestureDetector(
-      onTap: (loading || added) ? null : onTap,
+      onTap: (loading || added || locked) ? null : onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),

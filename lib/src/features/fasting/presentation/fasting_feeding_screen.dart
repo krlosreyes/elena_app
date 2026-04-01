@@ -699,13 +699,17 @@ class _FeedingView extends ConsumerWidget {
                       nextMealIndex < hub.mealMilestones.length &&
                       !hub.mealMilestones[nextMealIndex].isReached;
 
+                  final bool isMaxMeals = nextMealIndex >= hub.mealMilestones.length;
+                  if (isMaxMeals) return const SizedBox.shrink();
+
                   final nextMealLabel = isNextMealLocked
                       ? 'PRÓXIMA: ${_formatRealTime(hub.mealMilestones[nextMealIndex].absoluteHour)}'
                       : 'REGISTRAR OTRA COMIDA';
 
                   return ElevatedButton.icon(
-                    onPressed: () =>
-                        ref.read(mealModalTriggerProvider.notifier).state = true,
+                    onPressed: isNextMealLocked
+                        ? null
+                        : () => ref.read(mealModalTriggerProvider.notifier).state = true,
                     icon: Icon(isNextMealLocked ? Icons.lock_clock : Icons.add,
                         size: 20,
                         color: isNextMealLocked ? Colors.white24 : AppTheme.primary),

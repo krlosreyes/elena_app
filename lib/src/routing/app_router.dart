@@ -1,22 +1,23 @@
+import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../features/dashboard/presentation/dashboard_screen.dart';
+
+import '../core/services/app_logger.dart';
+import '../features/authentication/application/auth_controller.dart';
 import '../features/authentication/presentation/login_screen.dart';
 import '../features/authentication/presentation/register_screen.dart';
-import '../features/authentication/application/auth_controller.dart';
-import '../features/onboarding/presentation/onboarding_screen.dart';
-import 'package:elena_app/src/shared/domain/models/user_model.dart';
+import '../features/dashboard/presentation/dashboard_screen.dart';
 import '../features/fasting/presentation/fasting_feeding_screen.dart';
-import '../features/progress/presentation/progress_screen.dart';
-import '../features/profile/application/user_controller.dart';
-import '../features/profile/presentation/profile_screen.dart';
-import '../features/onboarding/application/onboarding_controller.dart';
 import '../features/hydration/presentation/hydration_screen.dart';
 import '../features/nutrition/presentation/registro_nutricion_screen.dart';
+import '../features/onboarding/application/onboarding_controller.dart';
+import '../features/onboarding/presentation/onboarding_screen.dart';
+import '../features/profile/application/user_controller.dart';
+import '../features/profile/presentation/profile_screen.dart';
+import '../features/progress/presentation/progress_screen.dart';
 import '../features/sleep/presentation/sleep_analysis_screen.dart';
 import '../features/training/presentation/exercise_tracking_view.dart';
-import '../core/services/app_logger.dart';
 import 'scaffold_with_nav_bar.dart';
 
 final goRouterProvider = Provider<GoRouter>((ref) {
@@ -146,7 +147,8 @@ class AppRouterNotifier extends ChangeNotifier {
 
     if (!isAuthenticated) {
       if (isAuthRoute) return null;
-      AppLogger.logAuthEvent('No autenticado. Redirigiendo a /login desde ${state.matchedLocation}');
+      AppLogger.logAuthEvent(
+          'No autenticado. Redirigiendo a /login desde ${state.matchedLocation}');
       return '/login';
     }
 
@@ -173,7 +175,8 @@ class AppRouterNotifier extends ChangeNotifier {
     AppLogger.debug(
         'Router: [Auth=${authUser.uid.substring(0, 5)}...] [Profile=${profile != null ? "EXISTE" : "NULL"}] [Completed=${profile?.onboardingCompleted}] [Location=${state.matchedLocation}]');
 
-    final bool mustGoToOnboarding = profile == null || profile.onboardingCompleted == false;
+    final bool mustGoToOnboarding =
+        profile == null || profile.onboardingCompleted == false;
     final isJustFinished = _ref.read(onboardingJustFinishedProvider);
 
     AppLogger.debug(
@@ -189,20 +192,24 @@ class AppRouterNotifier extends ChangeNotifier {
             'Router: Forzando Onboarding (ProfileNull=${profile == null})');
         return '/onboarding';
       }
-      
+
       // Ya estamos en Onboarding, no hay necesidad de redirigir a otro sitio
       return null;
     }
 
     // 4. Si ya está todo completado (o acabamos de terminar) y está en Login/Register u Onboarding, vamos a la Home
-    if (isAuthRoute || (state.matchedLocation == '/onboarding' && (profile?.onboardingCompleted == true || isJustFinished))) {
-      AppLogger.info('Router: Onboarding completado/justFinished. Redirigiendo a /');
+    if (isAuthRoute ||
+        (state.matchedLocation == '/onboarding' &&
+            (profile?.onboardingCompleted == true || isJustFinished))) {
+      AppLogger.info(
+          'Router: Onboarding completado/justFinished. Redirigiendo a /');
       return '/';
     }
 
     // 5. Caso especial: Si estamos en la raíz y debemos ir a onboarding
     if (state.matchedLocation == '/' && mustGoToOnboarding && !isJustFinished) {
-      AppLogger.info('Router: En Home pero Onboarding pendiente. Redirigiendo a /onboarding');
+      AppLogger.info(
+          'Router: En Home pero Onboarding pendiente. Redirigiendo a /onboarding');
       return '/onboarding';
     }
 

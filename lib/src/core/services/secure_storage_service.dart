@@ -1,10 +1,10 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// 🔐 SECURE STORAGE SERVICE
-/// 
+///
 /// Encapsula todas las operaciones de almacenamiento seguro de credenciales.
 /// Reemplaza completamente el almacenamiento en memoria de contraseñas y tokens.
-/// 
+///
 /// FIPS 140-2 compliant en iOS (Keychain)
 /// Android: Encriptación AES-256 via EncryptedSharedPreferences
 class SecureStorageService {
@@ -125,7 +125,7 @@ class SecureStorageService {
   }
 
   /// ✅ TASK 1.2.10: LIMPIAR TODAS LAS CREDENCIALES (Logout)
-  /// 
+  ///
   /// ⚠️ CRÍTICO: Ejecutar siempre en logout para eliminar datos de usuario
   /// Esto previene que otro usuario en el mismo dispositivo acceda a datos previos
   Future<void> clearAll() async {
@@ -144,7 +144,6 @@ class SecureStorageService {
       throw SecureStorageException('Error limpiando clave: $e');
     }
   }
-
 }
 
 /// 🚨 EXCEPTION PERSONALIZADA

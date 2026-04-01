@@ -160,8 +160,10 @@ class MetabolicHub extends Notifier<MetabolicContext> {
       }
     }
 
-    final List<double> mealOffsets =
-        MealMilestoneCalculator.calculateOffsets(protocolStr);
+    final List<double> mealOffsets = MealMilestoneCalculator.calculateOffsets(
+      protocolStr,
+      numberOfMeals: profile?.numberOfMeals ?? 1,
+    );
     final List<MetabolicMilestone> mealMilestones = [];
 
     for (int i = 0; i < mealOffsets.length; i++) {

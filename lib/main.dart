@@ -8,10 +8,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'firebase_options.dart';
 import 'src/app.dart';
-import 'src/core/providers/shared_preferences_provider.dart';
-import 'src/core/services/notification_service.dart';
-import 'src/core/services/app_logger.dart';
 import 'src/core/config/security_config.dart';
+import 'src/core/providers/shared_preferences_provider.dart';
+import 'src/core/services/app_logger.dart';
+import 'src/core/services/notification_service.dart';
 import 'src/features/nutrition/data/food_seeder.dart';
 
 void main() async {
@@ -39,7 +39,8 @@ void main() async {
   }
 
   if (kDebugMode) {
-    AppLogger.debug('[DEBUG] ElenaApp initialized - Food database seeding handled by registration controller');
+    AppLogger.debug(
+        '[DEBUG] ElenaApp initialized - Food database seeding handled by registration controller');
   }
 
   runApp(

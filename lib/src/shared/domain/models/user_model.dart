@@ -87,6 +87,8 @@ class UserModel with _$UserModel {
     double? metaICA,
     double? metaICC,
 
+    @Default(2) int numberOfMeals,
+
     // Metadata
     @Default(false) bool onboardingCompleted,
     @Default(false) bool hasCompletedTour,

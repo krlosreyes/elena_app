@@ -1,8 +1,8 @@
-import 'package:logger/logger.dart';
 import 'package:flutter/foundation.dart';
+import 'package:logger/logger.dart';
 
 /// 🔐 SECURE LOGGING SERVICE
-/// 
+///
 /// Reemplaza todos los print() statements con logging estructurado.
 /// En PRODUCCIÓN: Logs de seguridad NO incluyen datos sensibles.
 /// En DESARROLLO: Modo debug con más información.
@@ -55,12 +55,14 @@ class AppLogger {
 
   /// ✅ TASK 1.4.1: Log de eventos de autenticación (sin datos sensibles)
   static void logAuthEvent(String event, {String? userId}) {
-    info('🔐 AUTH: $event${userId != null ? ' (user: ${userId.substring(0, 5)}...)' : ''}');
+    info(
+        '🔐 AUTH: $event${userId != null ? ' (user: ${userId.substring(0, 5)}...)' : ''}');
   }
 
   /// ✅ TASK 1.4.2: Log de eventos de red
   static void logNetworkEvent(String endpoint, String method, int? statusCode) {
-    info('🌐 API: $method $endpoint${statusCode != null ? ' [$statusCode]' : ''}');
+    info(
+        '🌐 API: $method $endpoint${statusCode != null ? ' [$statusCode]' : ''}');
   }
 
   /// ✅ TASK 1.4.3: Log de eventos de base de datos

@@ -1,17 +1,18 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:uuid/uuid.dart';
+import 'package:flutter/foundation.dart';
 import '../../authentication/data/auth_repository.dart';
 import 'package:elena_app/src/shared/domain/models/meal_log.dart';
 import '../data/repositories/meal_repository_impl.dart';
 import '../../health/data/health_repository.dart';
-
+import '../../../core/providers/metabolic_hub_provider.dart';
 import 'package:elena_app/src/core/services/notification_service.dart';
 
 part 'meal_controller.g.dart';
 
 @riverpod
-Stream<List<MealLog>> recentMeals(Ref ref) {
+Stream<List<MealLog>> recentMeals(RecentMealsRef ref) {
   final user = ref.watch(authRepositoryProvider).currentUser;
   if (user == null) return Stream.value([]);
 
@@ -24,7 +25,7 @@ class MealController extends _$MealController {
   @override
   void build() {}
 
-  Future<void> registerMeal({
+  Future<bool> registerMeal({
     required String name,
     required MealType type,
     required int calories,
@@ -33,7 +34,28 @@ class MealController extends _$MealController {
     required int fat,
   }) async {
     final user = ref.read(authRepositoryProvider).currentUser;
-    if (user == null) return;
+    if (user == null) return false;
+
+    // 🔬 METABOLIC GUARD: Check if next meal is locked
+    final hub = ref.read(metabolicHubProvider);
+    final nextMealIndex = hub.actualMeals;
+
+    // 1. Check if we already reached max meals for the protocol
+    if (nextMealIndex >= hub.expectedMeals) {
+      debugPrint('⚠️ [MEAL CONTROLLER] Protocol full: $nextMealIndex/${hub.expectedMeals}');
+      return false;
+    }
+
+    // 2. Check if the specific milestone is reached (Fasting break or inter-meal gap)
+    // Only lock if NOT the first meal (Ruptura is usually handled by fasting timer)
+    final isLocked = nextMealIndex > 0 && 
+                    nextMealIndex < hub.mealMilestones.length && 
+                    !hub.mealMilestones[nextMealIndex].isReached;
+    
+    if (isLocked) {
+      debugPrint('⚠️ [MEAL CONTROLLER] Locked: Milestone at ${hub.mealMilestones[nextMealIndex].absoluteHour} not reached.');
+      return false;
+    }
 
     final meal = MealLog(
       id: const Uuid().v4(),
@@ -47,22 +69,29 @@ class MealController extends _$MealController {
       timestamp: DateTime.now(),
     );
 
-    await ref.read(mealRepositoryProvider).saveMeal(meal);
+    try {
+      await ref.read(mealRepositoryProvider).saveMeal(meal);
 
-    // Sincronizar con DailyLog para disparar actualización del IED
-    final healthRepo = ref.read(healthRepositoryProvider);
-    await healthRepo.logNutrition(user.uid, {
-      'id': meal.id,
-      'name': meal.name,
-      'type': meal.type.name,
-      'calories': meal.calories,
-      'protein': meal.proteinGrams,
-      'carbs': meal.carbsGrams,
-      'fats': meal.fatGrams,
-      'timestamp': meal.timestamp.toIso8601String(),
-    });
+      // Sincronizar con DailyLog para disparar actualización del IED
+      final healthRepo = ref.read(healthRepositoryProvider);
+      await healthRepo.logNutrition(
+        uid: user.uid,
+        name: meal.name,
+        type: meal.type,
+        calories: meal.calories,
+        protein: meal.proteinGrams,
+        carbs: meal.carbsGrams,
+        fat: meal.fatGrams,
+      );
 
-    await NotificationService.schedulePostPrandialWalking(meal.timestamp);
+      await NotificationService.schedulePostPrandialWalking(meal.timestamp);
+      
+      debugPrint('✅ [MealController] Successfully registered meal: ${meal.name}');
+      return true;
+    } catch (e) {
+      debugPrint('❌ [MealController] Error registering meal: $e');
+      return false;
+    }
   }
 
   Future<void> deleteMeal(String mealId) async {

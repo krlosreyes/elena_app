@@ -1,13 +1,14 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
-import '../../authentication/auth_service.dart';
-import '../../authentication/application/register_controller.dart';
-import '../../progress/domain/measurement_log.dart';
-import '../../progress/data/progress_service.dart';
-import '../../../domain/logic/elena_brain.dart';
-import '../../profile/data/user_repository.dart';
-import '../../../shared/domain/models/user_food_preferences.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../../core/services/app_logger.dart';
+import '../../../domain/logic/elena_brain.dart';
+import '../../../shared/domain/models/user_food_preferences.dart';
+import '../../authentication/application/register_controller.dart';
+import '../../authentication/auth_service.dart';
+import '../../profile/data/user_repository.dart';
+import '../../progress/data/progress_service.dart';
+import '../../progress/domain/measurement_log.dart';
 
 class OnboardingController extends StateNotifier<UserModel?> {
   final Ref _ref;
@@ -68,7 +69,8 @@ class OnboardingController extends StateNotifier<UserModel?> {
 
   Future<void> submit(UserFoodPreferences? foodPrefs) async {
     if (state == null) {
-      AppLogger.warning('OnboardingController: Intento de submit con state nulo.');
+      AppLogger.warning(
+          'OnboardingController: Intento de submit con state nulo.');
       return;
     }
 
