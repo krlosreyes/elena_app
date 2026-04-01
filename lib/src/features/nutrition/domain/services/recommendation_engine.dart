@@ -399,7 +399,7 @@ class AdaptiveScore {
   final String mealName;
   final double baseScore; // Before adaptive adjustments
   final double adaptiveScore; // After adaptive adjustments
-  final FoodMacros macros; // From food_suggestion
+  final SuggestionMacros macros; // From food_suggestion
   final String reasoning; // User-facing explanation
   final List<String> bonusesApplied; // Debug: which bonuses were applied
   final bool isAboveBodyFatThreshold;
@@ -422,7 +422,7 @@ class AdaptiveScore {
       mealName: name,
       baseScore: 50.0,
       adaptiveScore: 50.0,
-      macros: FoodMacros(protein: 0, carbs: 0, fat: 0, kcal: 0),
+      macros: SuggestionMacros(protein: 0, carbs: 0, fat: 0, kcal: 0),
       reasoning: 'Sin datos de score disponibles',
       bonusesApplied: [],
       isAboveBodyFatThreshold: false,

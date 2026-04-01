@@ -1,19 +1,19 @@
+import 'package:elena_app/src/shared/domain/models/fasting_session.dart';
+import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/providers/metabolic_hub_provider.dart';
 import '../../../core/theme/app_theme.dart';
-import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import '../../../core/widgets/elena_header.dart';
-import '../../health/data/health_repository.dart';
-import '../../health/domain/daily_log.dart';
 import '../../../domain/logic/elena_brain.dart';
 import '../../fasting/data/fasting_repository.dart';
-import 'package:elena_app/src/shared/domain/models/fasting_session.dart';
+import '../../health/data/health_repository.dart';
+import '../../health/domain/daily_log.dart';
 import '../../profile/application/user_controller.dart';
 import '../../training/application/movement_controller.dart';
-import '../../../core/providers/metabolic_hub_provider.dart';
 
 class ProgressScreen extends ConsumerStatefulWidget {
   const ProgressScreen({super.key});

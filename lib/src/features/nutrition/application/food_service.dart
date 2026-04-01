@@ -64,7 +64,6 @@ class FoodService {
       }
 
       // 3. Prepare Scoring Logic
-      final engine = RecommendationEngine();
       final List<MapEntry<FoodModel, double>> scoredFoods = [];
 
       for (final food in masterFoods) {
@@ -84,8 +83,15 @@ class FoodService {
         );
 
         // Calculate score
-        final score = engine.calculateMealScore(tempSuggestion, user);
-        scoredFoods.add(MapEntry(food, score));
+        final adaptiveScore = RecommendationEngine.calculateMealScore(
+          meal: tempSuggestion,
+          bodyFatPercentage: user.currentFatPercentage ?? 25.0,
+          lastMonthBodyFat: null, // We don't have history here yet
+          userGender: user.gender == Gender.male ? 'M' : 'F',
+          healthCondition: user.pathologies.isNotEmpty ? user.pathologies.first : 'general',
+        );
+        
+        scoredFoods.add(MapEntry(food, adaptiveScore.adaptiveScore));
       }
 
       // 4. Sort and pick top 20

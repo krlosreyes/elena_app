@@ -1,18 +1,16 @@
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:go_router/go_router.dart';
-import 'package:uuid/uuid.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/core/widgets/blueprint_grid.dart';
 import 'package:elena_app/src/features/profile/application/user_controller.dart';
-import 'package:elena_app/src/features/training/domain/training_enums.dart';
 import 'package:elena_app/src/features/training/application/training_controller.dart';
 import 'package:elena_app/src/features/training/application/training_provider.dart';
-import 'package:elena_app/src/features/training/data/repositories/training_repository.dart';
 import 'package:elena_app/src/features/training/domain/entities/workout_log.dart';
-import 'package:elena_app/src/features/training/domain/entities/training_entities.dart';
+import 'package:elena_app/src/features/training/domain/training_enums.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:uuid/uuid.dart';
 
 final exerciseJustCompletedProvider = StateProvider<bool>((ref) => false);
 
@@ -123,7 +121,8 @@ class _ExerciseTrackingViewState extends ConsumerState<ExerciseTrackingView> {
     );
   }
 
-  Widget _buildTopNav(TrainingStatusState state, TrainingController controller) {
+  Widget _buildTopNav(
+      TrainingStatusState state, TrainingController controller) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12),
       decoration: BoxDecoration(
@@ -188,7 +187,8 @@ class _ExerciseTrackingViewState extends ConsumerState<ExerciseTrackingView> {
         backgroundColor: const Color(0xFF0A0A0A),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: AppTheme.primary.withValues(alpha: 0.3), width: 1),
+          side: BorderSide(
+              color: AppTheme.primary.withValues(alpha: 0.3), width: 1),
         ),
         title: Row(
           children: [
@@ -210,17 +210,20 @@ class _ExerciseTrackingViewState extends ConsumerState<ExerciseTrackingView> {
           children: [
             _ProtocolItem(
               title: 'OBJETIVO',
-              description: 'Máxima activación metabólica mediante estímulo mecánico o de alta intensidad.',
+              description:
+                  'Máxima activación metabólica mediante estímulo mecánico o de alta intensidad.',
             ),
             const SizedBox(height: 16),
             _ProtocolItem(
               title: 'OPTIMIZACIÓN',
-              description: 'Si estás en ayuno (>16h), la movilización de ácidos grasos será prioritaria.',
+              description:
+                  'Si estás en ayuno (>16h), la movilización de ácidos grasos será prioritaria.',
             ),
             const SizedBox(height: 16),
             _ProtocolItem(
               title: 'POST-MISIÓN',
-              description: 'Registra tu nivel de esfuerzo (RPE) para ajustar la prescripción alimentaria.',
+              description:
+                  'Registra tu nivel de esfuerzo (RPE) para ajustar la prescripción alimentaria.',
             ),
           ],
         ),
@@ -267,7 +270,8 @@ class _ExerciseTrackingViewState extends ConsumerState<ExerciseTrackingView> {
     );
   }
 
-  Widget _buildPhaseContent(TrainingStatusState state, TrainingController controller) {
+  Widget _buildPhaseContent(
+      TrainingStatusState state, TrainingController controller) {
     switch (state.phase) {
       case TrainingSessionStep.selection:
         return _buildSelectionHUD(state, controller);
@@ -278,7 +282,8 @@ class _ExerciseTrackingViewState extends ConsumerState<ExerciseTrackingView> {
     }
   }
 
-  Widget _buildSelectionHUD(TrainingStatusState state, TrainingController controller) {
+  Widget _buildSelectionHUD(
+      TrainingStatusState state, TrainingController controller) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -354,7 +359,8 @@ class _ExerciseTrackingViewState extends ConsumerState<ExerciseTrackingView> {
     );
   }
 
-  Widget _buildSummaryHUD(TrainingStatusState state, TrainingController controller) {
+  Widget _buildSummaryHUD(
+      TrainingStatusState state, TrainingController controller) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 40.0),
       child: Column(
@@ -479,7 +485,8 @@ class _ExerciseTrackingViewState extends ConsumerState<ExerciseTrackingView> {
                   color: Colors.redAccent.withValues(alpha: 0.2),
                   border: Border.all(color: Colors.redAccent, width: 2),
                 ),
-                child: const Icon(Icons.stop, color: Colors.redAccent, size: 32),
+                child:
+                    const Icon(Icons.stop, color: Colors.redAccent, size: 32),
               ),
               const SizedBox(height: 12),
               Text(
@@ -716,10 +723,10 @@ class _CircleGridPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     canvas.drawCircle(center, size.width * 0.3, paint);
     canvas.drawCircle(center, size.width * 0.15, paint);
-    canvas.drawLine(Offset(0, size.height / 2),
-        Offset(size.width, size.height / 2), paint);
-    canvas.drawLine(Offset(size.width / 2, 0),
-        Offset(size.width / 2, size.height), paint);
+    canvas.drawLine(
+        Offset(0, size.height / 2), Offset(size.width, size.height / 2), paint);
+    canvas.drawLine(
+        Offset(size.width / 2, 0), Offset(size.width / 2, size.height), paint);
   }
 
   @override

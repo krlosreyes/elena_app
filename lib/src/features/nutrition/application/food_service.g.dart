@@ -6,16 +6,13 @@ part of 'food_service.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$foodRepositoryHash() => r'cf7877a95c0fac2dbb77a5fa1799b54882d98981';
+String _$foodRepositoryHash() => r'd7394a50beb0d9b5ba3719edaebdaa157d4d026c';
 
 /// 📱 Riverpod Providers para FoodService
 ///
-/// Proporcionan acceso singleton a FoodService en toda la app
-///
 /// Copied from [foodRepository].
 @ProviderFor(foodRepository)
-final foodRepositoryProvider =
-    AutoDisposeProvider<old_repo.FoodRepository>.internal(
+final foodRepositoryProvider = AutoDisposeProvider<FoodRepository>.internal(
   foodRepository,
   name: r'foodRepositoryProvider',
   debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
@@ -25,8 +22,8 @@ final foodRepositoryProvider =
   allTransitiveDependencies: null,
 );
 
-typedef FoodRepositoryRef = AutoDisposeProviderRef<old_repo.FoodRepository>;
-String _$foodServiceHash() => r'63e02965032b75667618721e9ad18522fdc55b4e';
+typedef FoodRepositoryRef = AutoDisposeProviderRef<FoodRepository>;
+String _$foodServiceHash() => r'd17a01a9a5eab0d5fe037e22093a1e4d0a1b1d8e';
 
 /// See also [foodService].
 @ProviderFor(foodService)

@@ -103,6 +103,12 @@ class OnboardingController extends StateNotifier<UserModel?> {
         await _ref
             .read(userRepositoryProvider)
             .saveUserFoodPreferences(updatedUser.uid, foodPrefs);
+
+        // 🧠 SEEDING PERSONALIZADO: Generar Ecosistema de Nutrición
+        AppLogger.info('Generando Ecosistema de Nutrición Personalizado...');
+        await _ref
+            .read(foodServiceProvider)
+            .generatePersonalizedPool(updatedUser.uid, foodPrefs.allSelectedIds);
       }
 
       // 5. Actualizar estado local para evitar race conditions en navegación

@@ -14,7 +14,7 @@ import '../../authentication/application/auth_controller.dart';
 import '../../nutrition/application/food_service.dart' as food_service;
 import '../../nutrition/domain/entities/food_model.dart';
 import '../application/onboarding_controller.dart';
-import 'widgets/searchable_food_dropdown.dart';
+import 'widgets/elena_dropdown_menu.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -101,6 +101,41 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isSubmitting) {
+      return Container(
+        color: Colors.black,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const TechnicalWheelPicker(
+                options: ['SCORING...', 'SYNCING...', 'OPTIMIZING...', 'MAPPING...'],
+                selectedIndex: 0,
+                onChanged: null,
+              ),
+              const SizedBox(height: 32),
+              Text(
+                "Generando tu Ecosistema de Nutrición...",
+                style: GoogleFonts.orbitron(
+                  color: AppTheme.primary,
+                  fontSize: 16,
+                  letterSpacing: 2,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                "Aplicando Adaptive Metabolic Scoring a 120+ alimentos",
+                style: GoogleFonts.robotoMono(
+                  color: Colors.white60,
+                  fontSize: 10,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return BlueprintGrid(
       child: Scaffold(
         backgroundColor: Colors.transparent,
@@ -144,10 +179,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       _currentStep == 0
                           ? 'BIOMETRÍA'
                           : _currentStep == 1
-                          ? 'SINCRONIZACIÓN'
-                          : _currentStep == 2
-                          ? 'BIOTIPOLOGÍA'
-                          : 'PREFERENCIAS',
+                              ? 'SINCRONIZACIÓN'
+                              : _currentStep == 2
+                                  ? 'BIOTIPOLOGÍA'
+                                  : 'PREFERENCIAS',
                       style: GoogleFonts.orbitron(
                         color: AppTheme.primary,
                         fontSize: 14,
@@ -201,8 +236,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 color: isActive
                     ? AppTheme.primary
                     : (isPast
-                          ? AppTheme.primary.withValues(alpha: 0.3)
-                          : Colors.white.withValues(alpha: 0.05)),
+                        ? AppTheme.primary.withValues(alpha: 0.3)
+                        : Colors.white.withValues(alpha: 0.05)),
                 borderRadius: BorderRadius.circular(2),
                 boxShadow: isActive
                     ? [
@@ -232,13 +267,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             children: [
               Flexible(
                 child: Text(
-                  'SYS_INPUT: ${_currentStep == 0
-                      ? "BIOMETRICS"
-                      : _currentStep == 1
-                      ? "CIRCADIAN_SYNC"
-                      : _currentStep == 2
-                      ? "METABOLIC_STATUS"
-                      : "FOOD_PREFS"}',
+                  'SYS_INPUT: ${_currentStep == 0 ? "BIOMETRICS" : _currentStep == 1 ? "CIRCADIAN_SYNC" : _currentStep == 2 ? "METABOLIC_STATUS" : "FOOD_PREFS"}',
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.robotoMono(
                     color: AppTheme.primary.withValues(alpha: 0.7),
@@ -290,9 +319,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     const SizedBox(width: 12),
                   ],
                   Text(
-                    _currentStep < 3
-                        ? 'CONTINUAR PROTOCOLO'
-                        : 'FINALIZAR PROTOCOLO',
+                    _isSubmitting
+                        ? 'GENERANDO TU ECOSISTEMA...'
+                        : (_currentStep < 3
+                            ? 'CONTINUAR PROTOCOLO'
+                            : 'FINALIZAR PROTOCOLO'),
                     style: GoogleFonts.publicSans(
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
@@ -300,7 +331,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  const Icon(Icons.arrow_forward, size: 20),
+                  if (!_isSubmitting) const Icon(Icons.arrow_forward, size: 20),
                 ],
               ),
             ),
@@ -1107,8 +1138,8 @@ class _HabitsAndLifestyleStepState
                     user.snackingHabit == SnackingHabit.never
                         ? 'Nunca'
                         : user.snackingHabit == SnackingHabit.sometimes
-                        ? 'Ocasionalmente'
-                        : 'Frecuente',
+                            ? 'Ocasionalmente'
+                            : 'Frecuente',
                     style: GoogleFonts.publicSans(
                       color: Colors.white,
                       fontSize: 14,
@@ -1207,10 +1238,10 @@ class _HabitsAndLifestyleStepState
                     user.activityLevel == ActivityLevel.sedentary
                         ? 'Sedentario'
                         : user.activityLevel == ActivityLevel.light
-                        ? 'Ligero'
-                        : user.activityLevel == ActivityLevel.moderate
-                        ? 'Moderado'
-                        : 'Intenso',
+                            ? 'Ligero'
+                            : user.activityLevel == ActivityLevel.moderate
+                                ? 'Moderado'
+                                : 'Intenso',
                     style: GoogleFonts.publicSans(
                       color: Colors.white,
                       fontSize: 14,
@@ -1250,8 +1281,7 @@ class GoalsAndPreferencesStep extends ConsumerStatefulWidget {
 }
 
 class _GoalsAndPreferencesStepState
-    extends ConsumerState<GoalsAndPreferencesStep>
-    with OnboardingUIHelpers {
+    extends ConsumerState<GoalsAndPreferencesStep> with OnboardingUIHelpers {
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(onboardingControllerProvider);
@@ -1293,8 +1323,8 @@ class _GoalsAndPreferencesStepState
             color: isAdd
                 ? Colors.transparent
                 : (isSelected
-                      ? AppTheme.primary.withValues(alpha: 0.2)
-                      : const Color(0xFF12151C)),
+                    ? AppTheme.primary.withValues(alpha: 0.2)
+                    : const Color(0xFF12151C)),
             borderRadius: BorderRadius.circular(6),
             border: Border.all(
               color: isAdd
@@ -1600,8 +1630,7 @@ class NutritionPreferencesStep extends ConsumerStatefulWidget {
 }
 
 class _NutritionPreferencesStepState
-    extends ConsumerState<NutritionPreferencesStep>
-    with OnboardingUIHelpers {
+    extends ConsumerState<NutritionPreferencesStep> with OnboardingUIHelpers {
   late final Map<String, List<FoodModel>> _categorizedFoods;
   bool _foodsLoaded = false;
 
@@ -2130,7 +2159,7 @@ class _NutritionPreferencesStepState
             const Center(child: CircularProgressIndicator())
           else ...[
             // PROTEÍNAS DROPDOWN
-            SearchableFoodDropdown(
+            ElenaDropdownMenu(
               title: 'Fuentes de Proteína',
               emoji: '🥩',
               foods: _categorizedFoods['protein'] ?? [],
@@ -2154,7 +2183,7 @@ class _NutritionPreferencesStepState
             const SizedBox(height: 24),
 
             // GRASAS DROPDOWN
-            SearchableFoodDropdown(
+            ElenaDropdownMenu(
               title: 'Grasas Saludables',
               emoji: '🧈',
               foods: _categorizedFoods['fat'] ?? [],
@@ -2173,7 +2202,7 @@ class _NutritionPreferencesStepState
             const SizedBox(height: 24),
 
             // VEGETALES DROPDOWN
-            SearchableFoodDropdown(
+            ElenaDropdownMenu(
               title: 'Vegetales & Especias',
               emoji: '🥦',
               foods: _categorizedFoods['vegetable'] ?? [],
@@ -2197,7 +2226,7 @@ class _NutritionPreferencesStepState
             const SizedBox(height: 24),
 
             // CARBOHIDRATOS DROPDOWN
-            SearchableFoodDropdown(
+            ElenaDropdownMenu(
               title: 'Carbohidratos Elegidos',
               emoji: '🌾',
               foods: _categorizedFoods['carb'] ?? [],
@@ -2299,9 +2328,8 @@ class _NutritionPreferencesStepState
     required List<FoodModel> allFoods,
     required String category,
   }) {
-    final selectedFoods = allFoods
-        .where((food) => selectedFoodIds.contains(food.id))
-        .toList();
+    final selectedFoods =
+        allFoods.where((food) => selectedFoodIds.contains(food.id)).toList();
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -2312,9 +2340,12 @@ class _NutritionPreferencesStepState
           return Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: AppTheme.primary.withValues(alpha: 0.2),
-              border: Border.all(color: AppTheme.primary, width: 1),
-              borderRadius: BorderRadius.circular(20),
+              color: Colors.white.withValues(alpha: 0.05),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.1),
+                width: 1,
+              ),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -2411,9 +2442,8 @@ class _NutritionPreferencesStepState
       SnackBar(
         content: Text('$action: ${food.name}'),
         duration: const Duration(milliseconds: 800),
-        backgroundColor: items.contains(food.id)
-            ? AppTheme.primary
-            : Colors.white24,
+        backgroundColor:
+            items.contains(food.id) ? AppTheme.primary : Colors.white24,
         behavior: SnackBarBehavior.floating,
       ),
     );

@@ -984,31 +984,59 @@ class _FoodSuggestionCardState extends State<_FoodSuggestionCard> {
             ),
           ),
           
-          // FAST-TRACK PORTION SELECTOR
+          // FAST-TRACK PORTION SELECTOR (Adaptive Slider)
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.2),
+              color: Colors.black.withValues(alpha: 0.3),
               borderRadius: const BorderRadius.only(
                 bottomLeft: Radius.circular(16),
                 bottomRight: Radius.circular(16),
               ),
             ),
-            child: Row(
+            child: Column(
               children: [
-                Text(
-                  'PORCIÓN',
-                  style: GoogleFonts.jetBrainsMono(
-                    fontSize: 8,
-                    color: Colors.white24,
-                    fontWeight: FontWeight.bold,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      _selectedPortionIndex == 0 ? 'LIGERA' : (_selectedPortionIndex == 1 ? 'NORMAL' : 'GENEROSA'),
+                      style: GoogleFonts.jetBrainsMono(
+                        fontSize: 10,
+                        color: _accentNeon.withValues(alpha: 0.6),
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 2,
+                      ),
+                    ),
+                    Text(
+                      '${(_multiplier * 100).round()}%',
+                      style: GoogleFonts.robotoMono(
+                        fontSize: 10,
+                        color: Colors.white24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
                 ),
-                const Spacer(),
-                _SegmentedPicker(
-                  options: const ['LIGERA', 'NORMAL', 'GENEROSA'],
-                  selectedIndex: _selectedPortionIndex,
-                  onChanged: (val) => setState(() => _selectedPortionIndex = val),
+                SliderTheme(
+                  data: SliderTheme.of(context).copyWith(
+                    trackHeight: 2,
+                    activeTrackColor: _accentNeon,
+                    inactiveTrackColor: Colors.white10,
+                    thumbColor: Colors.white,
+                    overlayColor: _accentNeon.withValues(alpha: 0.1),
+                    thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+                    overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
+                  ),
+                  child: Slider(
+                    value: _selectedPortionIndex.toDouble(),
+                    min: 0,
+                    max: 2,
+                    divisions: 2,
+                    onChanged: (val) {
+                      setState(() => _selectedPortionIndex = val.round());
+                    },
+                  ),
                 ),
               ],
             ),
