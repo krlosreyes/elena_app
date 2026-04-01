@@ -142,12 +142,19 @@ class _FoodSearchAutocompleteState
             borderRadius: BorderRadius.circular(8),
             child: Container(
               decoration: BoxDecoration(
-                color: const Color(0xFF1A1A1A),
-                borderRadius: BorderRadius.circular(8),
+                color: const Color(0xFF09090B),
+                borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: AppTheme.primary.withValues(alpha: 0.3),
+                  color: Colors.white.withValues(alpha: 0.1),
                   width: 1,
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.5),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
               ),
               child: ListView.builder(
                 shrinkWrap: true,
@@ -184,13 +191,19 @@ class _FoodSearchAutocompleteState
         style: GoogleFonts.publicSans(color: Colors.white),
         decoration: InputDecoration(
           filled: true,
-          fillColor: Colors.white.withValues(alpha: 0.05),
+          fillColor: Colors.white.withValues(alpha: 0.03),
           hintText: widget.hintText ?? 'Busca un alimento...',
-          hintStyle: GoogleFonts.publicSans(color: Colors.white38),
-          border: const OutlineInputBorder(borderSide: BorderSide.none),
+          hintStyle: GoogleFonts.publicSans(
+            color: Colors.white24,
+            fontSize: 14,
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
           contentPadding: const EdgeInsets.symmetric(
-            horizontal: 12,
-            vertical: 16,
+            horizontal: 16,
+            vertical: 18,
           ),
           suffixIcon: _isLoading
               ? const SizedBox(
@@ -281,10 +294,12 @@ class _FoodSuggestionTile extends StatelessWidget {
 
               // Macros per 100g
               Text(
-                'P: ${macros.protein.toStringAsFixed(1)}g | F: ${macros.fat.toStringAsFixed(1)}g | C: ${macros.carbs.toStringAsFixed(1)}g | ${macros.calories.toStringAsFixed(0)}kcal',
+                'P: ${macros.protein.toStringAsFixed(0)}G | F: ${macros.fat.toStringAsFixed(0)}G | C: ${macros.carbs.toStringAsFixed(0)}G | ${macros.calories.toStringAsFixed(0)}KCAL',
                 style: GoogleFonts.jetBrainsMono(
-                  color: Colors.grey[400],
-                  fontSize: 11,
+                  color: Colors.white30,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
                 ),
               ),
 

@@ -49,3 +49,4 @@ final currentUserStreamProvider = StreamProvider<UserModel?>((ref) {
     },
   );
 });
+

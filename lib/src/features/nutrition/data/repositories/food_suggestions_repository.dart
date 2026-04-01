@@ -170,42 +170,34 @@ class FoodSuggestionsRepository {
   // ── Rotation algorithm ───────────────────────────────────────
   /// Returns 3 daily suggestions using LRU rotation:
   /// Filter → sort by last_shown asc → pick randomly from top-10
-  Future<List<FoodSuggestion>> getDailySuggestions() async {
+  /// Returns 3 suggestions for a specific category
+  Future<List<FoodSuggestion>> getSuggestionsByCategory(String category) async {
     await seedIfEmpty();
-
     try {
-      // Get all preference-match items, skip _meta doc
-      // ordered by last_shown asc (nulls first = never shown = highest priority)
       final query = await _col
+          .where('category', isEqualTo: category)
           .where('preferences_match', isEqualTo: true)
-          .orderBy('last_shown', descending: false)
           .limit(10)
           .get();
 
       if (query.docs.isEmpty) return [];
 
-      // Exclude meta document if it slips through
       final allItems = query.docs
           .where((d) => d.id != '_meta')
           .map((d) => FoodSuggestion.fromFirestore(d))
           .toList();
 
-      // Randomly pick 3 from the 10 oldest
       final rng = Random();
       final selected = <FoodSuggestion>[];
       final pool = List<FoodSuggestion>.from(allItems);
-      final count = pool.length.clamp(0, 3);
+      final count = pool.length.clamp(0, 5); // Pick up to 5 for the screen
       for (int i = 0; i < count; i++) {
         final idx = rng.nextInt(pool.length);
         selected.add(pool.removeAt(idx));
       }
-
-      // Update last_shown for the 3 chosen (fire-and-forget)
-      _updateLastShown(selected.map((s) => s.foodId).toList());
-
       return selected;
     } catch (e) {
-      debugPrint('❌ getDailySuggestions Error: $e');
+      debugPrint('❌ getSuggestionsByCategory Error ($category): $e');
       return [];
     }
   }
@@ -291,5 +283,11 @@ final foodSuggestionsRepositoryProvider =
 final dailySuggestionsProvider =
     FutureProvider.autoDispose<List<FoodSuggestion>>((ref) async {
   final repo = ref.watch(foodSuggestionsRepositoryProvider);
-  return repo.getDailySuggestions();
+  return repo.getSuggestionsByCategory('Principal'); // Default fallback
+});
+
+final categorySuggestionsProvider =
+    FutureProvider.family.autoDispose<List<FoodSuggestion>, String>((ref, category) async {
+  final repo = ref.watch(foodSuggestionsRepositoryProvider);
+  return repo.getSuggestionsByCategory(category);
 });

@@ -258,3 +258,4 @@ final userFoodPreferencesProvider =
     StreamProvider.family.autoDispose<UserFoodPreferences, String>((ref, uid) {
   return ref.watch(userRepositoryProvider).watchUserFoodPreferences(uid);
 });
+

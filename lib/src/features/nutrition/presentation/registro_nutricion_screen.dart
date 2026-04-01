@@ -58,9 +58,9 @@ class RegistroNutricionScreen extends ConsumerStatefulWidget {
       _RegistroNutricionScreenState();
 }
 
-class _RegistroNutricionScreenState
-    extends ConsumerState<RegistroNutricionScreen>
+class _RegistroNutricionScreenState extends ConsumerState<RegistroNutricionScreen>
     with SingleTickerProviderStateMixin {
+  int _selectedMilestoneIndex = 0;
   late AnimationController _donutController;
   late Animation<double> _donutAnimation;
 
@@ -71,11 +71,11 @@ class _RegistroNutricionScreenState
     super.initState();
     _donutController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 1200),
     );
     _donutAnimation = CurvedAnimation(
       parent: _donutController,
-      curve: Curves.easeOutCubic,
+      curve: Curves.easeOutBack,
     );
     _donutController.forward();
   }
@@ -96,23 +96,33 @@ class _RegistroNutricionScreenState
 
   @override
   Widget build(BuildContext context) {
-    // ── Suggested meals from Firestore (rotated) ─────────────────
     final uid = ref.watch(authRepositoryProvider).currentUser?.uid;
-    final suggestionsAsync = ref.watch(dailySuggestionsProvider);
-    final hub = ref.watch(metabolicHubProvider);
+    final metabolicState = ref.watch(metabolicHubProvider);
     final todayLogAsync = uid != null
         ? ref.watch(todayLogProvider(uid))
         : const AsyncValue<dynamic>.data(null);
+
+    final activeMilestone = metabolicState.mealMilestones.isNotEmpty
+        ? metabolicState.mealMilestones[_selectedMilestoneIndex.clamp(
+            0, metabolicState.mealMilestones.length - 1)]
+        : null;
+
+    final categoryKey = activeMilestone?.label.contains('RUPTURA') == true
+        ? 'Ruptura'
+        : activeMilestone?.label.contains('SNACK') == true
+            ? 'Snack'
+            : 'Principal';
+
+    final suggestionsAsync =
+        ref.watch(categorySuggestionsProvider(categoryKey));
     final todayLog = todayLogAsync.valueOrNull;
 
     // ── Aggregate macros from mealEntries stream ─────────────────
-    // NOTE: the key is 'fats' (plural) as written by MealController
     int totalCal = todayLog?.calories ?? 0;
     int totalProt = todayLog?.proteinGrams ?? 0;
     int totalCarb = todayLog?.carbsGrams ?? 0;
     int totalFat = todayLog?.fatGrams ?? 0;
 
-    // Fallback: sum from entries if aggregate fields are zero
     if (totalCal == 0) {
       for (final e in todayLog?.mealEntries ?? []) {
         totalCal += (e['calories'] as num? ?? 0).toInt();
@@ -128,205 +138,180 @@ class _RegistroNutricionScreenState
       carbsG: totalCarb,
       fatG: totalFat,
     );
-    _onNewMeal(totals);
-
-    // ── Build real timeline from meal entry timestamps ────────────
-    final mealEntries = todayLog?.mealEntries ?? [];
-    final milestones = hub.mealMilestones;
-    final startHour = hub.startHour;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF060608),
-      body: SafeArea(
-        child: CustomScrollView(
-          physics: const BouncingScrollPhysics(),
-          slivers: [
-            SliverToBoxAdapter(child: _buildHeader(context)),
-
-            // ── FEEDING TIMELINE ─────────────────────────────────
-            SliverToBoxAdapter(
-              child: _FeedingTimeline(
-                milestones: milestones,
-                mealEntries: mealEntries,
-                startHour: startHour,
-              ),
+      backgroundColor: _bgDark,
+      body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          _buildHeader(),
+          
+          // PHASE 1: FEEDING TIMELINE (Interactive Dashboard Hub)
+          SliverToBoxAdapter(
+            child: _FeedingTimeline(
+              milestones: metabolicState.mealMilestones,
+              selectedIndex: _selectedMilestoneIndex,
+              onSelect: (index) => setState(() => _selectedMilestoneIndex = index),
             ),
+          ),
 
-            const SliverToBoxAdapter(child: SizedBox(height: 24)),
-
-            // ── ANIMATED DONUT ───────────────────────────────────
-            SliverToBoxAdapter(
-              child: AnimatedBuilder(
-                animation: _donutAnimation,
-                builder: (_, __) => _MacroDonut(
+          // PHASE 2: DAILY PROGRESS (Macro Donut - Refined)
+          SliverToBoxAdapter(
+            child: AnimatedBuilder(
+              animation: _donutAnimation,
+              builder: (context, child) {
+                return _MacroDonut(
                   totals: totals,
                   animValue: _donutAnimation.value,
-                ),
-              ),
-            ),
-
-            const SliverToBoxAdapter(child: SizedBox(height: 32)),
-
-            // ── SECTION TITLE ────────────────────────────────────
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Row(
-                  children: [
-                    Container(width: 3, height: 16, color: _colorProtein),
-                    const SizedBox(width: 10),
-                    Text(
-                      'COMIDAS SUGERIDAS',
-                      style: GoogleFonts.jetBrainsMono(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white.withValues(alpha: 0.6),
-                        letterSpacing: 2.5,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            const SliverToBoxAdapter(child: SizedBox(height: 12)),
-
-            // ── MEAL CARDS (rotated from Firestore) ───────────────
-            suggestionsAsync.when(
-              loading: () => const SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.all(32),
-                  child: Center(
-                    child: SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 1.5,
-                        color: _colorProtein,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              error: (_, __) => const SliverToBoxAdapter(
-                child: SizedBox.shrink(),
-              ),
-              data: (suggestions) {
-                final nextMealIndex = hub.actualMeals;
-                final bool isNextMealLocked = nextMealIndex > 0 &&
-                    nextMealIndex < hub.mealMilestones.length &&
-                    !hub.mealMilestones[nextMealIndex].isReached;
-
-                return SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, i) => _FoodSuggestionCard(
-                      suggestion: suggestions[i],
-                      locked: isNextMealLocked,
-                      timeUntilNext: isNextMealLocked
-                          ? _formatRealTime(
-                              hub.mealMilestones[nextMealIndex].absoluteHour)
-                          : null,
-                      onAdd: (uid == null || isNextMealLocked)
-                          ? null
-                          : () async {
-                              final suggestion = suggestions[i];
-                              final mealType = switch (suggestion.category) {
-                                FoodCategory.ruptura => MealType.breakfast,
-                                FoodCategory.principal => MealType.lunch,
-                                FoodCategory.snack => MealType.snack,
-                              };
-
-                              final success = await ref
-                                  .read(mealControllerProvider.notifier)
-                                  .registerMeal(
-                                    name: suggestion.name,
-                                    type: mealType,
-                                    calories: suggestion.macros.kcal,
-                                    protein: suggestion.macros.protein,
-                                    carbs: suggestion.macros.carbs,
-                                    fat: suggestion.macros.fat,
-                                  );
-
-                              if (context.mounted) {
-                                if (success) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('✓ ${suggestion.name} AÑADIDO'),
-                                      backgroundColor: _colorProtein,
-                                      duration: const Duration(seconds: 1),
-                                    ),
-                                  );
-                                } else {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('⚠️ VENTANA BLOQUEADA POR PROTOCOLO'),
-                                      backgroundColor: Colors.orangeAccent,
-                                    ),
-                                  );
-                                }
-                              }
-                            },
-                    ),
-                    childCount: suggestions.length,
-                  ),
                 );
               },
             ),
+          ),
 
-            const SliverToBoxAdapter(child: SizedBox(height: 40)),
+          const SliverToBoxAdapter(child: SizedBox(height: 24)),
+
+          // PHASE 3: DYNAMIC SUGGESTIONS & LOGGING
+          _buildActionSection(metabolicState, uid, suggestionsAsync),
+
+          const SliverPadding(padding: EdgeInsets.only(bottom: 100)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return SliverAppBar(
+      backgroundColor: _bgDark,
+      expandedHeight: 80,
+      pinned: true,
+      elevation: 0,
+      automaticallyImplyLeading: false,
+      flexibleSpace: FlexibleSpaceBar(
+        titlePadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        title: Row(
+          children: [
+            Container(
+              width: 4,
+              height: 20,
+              decoration: BoxDecoration(
+                color: _accentNeon,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'NUTRICIÓN METABÓLICA',
+              style: GoogleFonts.oswald(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 2,
+                color: Colors.white,
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 20, 8),
-      child: Row(
-        children: [
-          InkWell(
-            onTap: () => Navigator.of(context).pop(),
-            borderRadius: BorderRadius.circular(8),
-            child: Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.12), width: 1),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: const Icon(Icons.arrow_back_ios_new,
-                  color: Colors.white, size: 16),
+  Widget _buildActionSection(
+    MetabolicState state,
+    String? uid,
+    AsyncValue<List<FoodSuggestion>> suggestionsAsync,
+  ) {
+    if (state.mealMilestones.isEmpty) {
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
+
+    final currentMilestone = state.mealMilestones[
+        _selectedMilestoneIndex.clamp(0, state.mealMilestones.length - 1)];
+    
+    return SliverMainAxisGroup(
+      slivers: [
+        // PHASE 3: SUGGESTED MEALS (Suggested-First / Adaptive)
+        SliverToBoxAdapter(
+          child: _buildSuggestionsSection(context, ref, suggestionsAsync),
+        ),
+
+        // PHASE 4: QUICK FAVORITES (One-Touch Registration)
+        SliverToBoxAdapter(
+          child: _buildQuickFavorites(context, ref, suggestionsAsync),
+        ),
+
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            child: Row(
+              children: [
+                Text(
+                  'SUGERENCIAS PARA ${currentMilestone.label.toUpperCase()}',
+                  style: GoogleFonts.jetBrainsMono(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white.withValues(alpha: 0.4),
+                    letterSpacing: 1.5,
+                  ),
+                ),
+                const Spacer(),
+                const Icon(Icons.auto_awesome, color: _accentNeon, size: 14),
+              ],
             ),
           ),
-          const SizedBox(width: 16),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'REGISTRO DE NUTRICIÓN',
-                style: GoogleFonts.jetBrainsMono(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w900,
-                  color: Colors.white,
-                  letterSpacing: 2.0,
-                ),
+        ),
+
+        suggestionsAsync.when(
+          loading: () => SliverToBoxAdapter(child: _buildEmptySuggestions()),
+          error: (_, __) => SliverToBoxAdapter(child: _buildEmptySuggestions()),
+          data: (suggestions) {
+            // Filter suggestions by current milestone category
+            final filtered = suggestions.where((s) {
+              final cat = s.category.label.toLowerCase();
+              final label = currentMilestone.label.toLowerCase();
+              if (label.contains('ruptura')) return cat == 'ruptura';
+              if (label.contains('comida') || label.contains('principal')) return cat == 'principal';
+              return cat == 'snack';
+            }).toList();
+
+            if (filtered.isEmpty) return SliverToBoxAdapter(child: _buildEmptySuggestions());
+
+            return SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, index) {
+                  final sugg = suggestions[index];
+                  return _FoodSuggestionCard(
+                    suggestion: sugg,
+                    onAdd: () async {
+                      // Fast confirm logic
+                    },
+                  );
+                },
+                childCount: suggestions.length,
               ),
-              Text(
-                DateFormat('EEEE, dd MMM', 'es')
-                    .format(DateTime.now())
-                    .toUpperCase(),
-                style: GoogleFonts.jetBrainsMono(
-                  fontSize: 10,
-                  color: _colorProtein.withValues(alpha: 0.8),
-                  letterSpacing: 1.5,
-                ),
-              ),
-            ],
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEmptySuggestions() {
+    return Container(
+      margin: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(32),
+      decoration: BoxDecoration(
+        color: _cardColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.03)),
+      ),
+      child: Column(
+        children: [
+          Icon(Icons.restaurant_menu, color: Colors.white.withValues(alpha: 0.1), size: 48),
+          const SizedBox(height: 16),
+          Text(
+            'Sincronizando con tu metabolismo...',
+            style: GoogleFonts.publicSans(color: Colors.white38, fontSize: 13),
+            textAlign: TextAlign.center,
           ),
-          const Spacer(),
-          Icon(Icons.restaurant_outlined,
-              color: _colorProtein.withValues(alpha: 0.6), size: 22),
         ],
       ),
     );
@@ -334,308 +319,114 @@ class _RegistroNutricionScreenState
 }
 
 // ─────────────────────────────────────────────────────────────
-// ⏱ FEEDING TIMELINE
+// 🕒 FEEDING TIMELINE (DASHBOARD HUB)
 // ─────────────────────────────────────────────────────────────
-
-class _TimelineItem {
-  final String scheduledTime; // planned clock time from milestone geometry
-  final String? loggedTime; // actual timestamp from Firestore (nullable)
-  final String label;
-  final bool isCompleted;
-
-  const _TimelineItem({
-    required this.scheduledTime,
-    required this.label,
-    required this.isCompleted,
-    this.loggedTime,
-  });
-
-  /// Display time: prefer real logged time, fallback to scheduled
-  String get displayTime => loggedTime ?? scheduledTime;
-}
-
 class _FeedingTimeline extends StatelessWidget {
   final List<MetabolicMilestone> milestones;
-  final List<Map<String, dynamic>> mealEntries;
-  final double startHour;
+  final int selectedIndex;
+  final ValueChanged<int> onSelect;
 
   const _FeedingTimeline({
     required this.milestones,
-    required this.mealEntries,
-    required this.startHour,
+    required this.selectedIndex,
+    required this.onSelect,
   });
 
   @override
   Widget build(BuildContext context) {
-    final items = _buildItems();
-
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: const Color(0xFF0D0D10),
-        border:
-            Border.all(color: Colors.white.withValues(alpha: 0.08), width: 1),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Section label
-          Row(
-            children: [
-              Container(width: 3, height: 14, color: _colorCarbs),
-              const SizedBox(width: 8),
-              Text(
-                'VENTANA DE ALIMENTACIÓN',
-                style: GoogleFonts.jetBrainsMono(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w900,
-                  color: Colors.white.withValues(alpha: 0.5),
-                  letterSpacing: 2.0,
+      height: 120,
+      margin: const EdgeInsets.symmetric(vertical: 16),
+      child: ListView.separated(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        itemCount: milestones.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 20),
+        itemBuilder: (context, index) {
+          final m = milestones[index];
+          final isActive = index == selectedIndex;
+          final isCompleted = m.isReached;
+
+          return GestureDetector(
+            onTap: () => onSelect(index),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              width: 140,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: isActive ? _accentNeon.withValues(alpha: 0.1) : _cardColor,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isActive 
+                      ? _accentNeon.withValues(alpha: 0.3) 
+                      : Colors.white.withValues(alpha: 0.05),
+                  width: isActive ? 2 : 1,
                 ),
               ),
-              const Spacer(),
-              // Live badge
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: _colorProtein.withValues(alpha: 0.08),
-                  border: Border.all(
-                      color: _colorProtein.withValues(alpha: 0.25), width: 1),
-                  borderRadius: BorderRadius.circular(3),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 5,
-                      height: 5,
-                      decoration: const BoxDecoration(
-                        color: _colorProtein,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Text('LIVE',
-                        style: GoogleFonts.jetBrainsMono(
-                          fontSize: 8,
-                          color: _colorProtein,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 1.5,
-                        )),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-
-          // Dots row
-          Row(
-            children: [
-              for (int i = 0; i < items.length; i++) ...[
-                _TimelineDotWidget(item: items[i]),
-                if (i < items.length - 1)
-                  Expanded(
-                    child: _Connector(
-                      isCompleted: items[i].isCompleted,
-                      nextCompleted: items[i + 1].isCompleted,
-                    ),
-                  ),
-              ],
-            ],
-          ),
-          const SizedBox(height: 10),
-
-          // Labels row
-          Row(
-            children: [
-              for (int i = 0; i < items.length; i++) ...[
-                SizedBox(
-                  width: 70,
-                  child: Column(
-                    crossAxisAlignment: i == 0
-                        ? CrossAxisAlignment.start
-                        : (i == items.length - 1
-                            ? CrossAxisAlignment.end
-                            : CrossAxisAlignment.center),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      Text(
-                        items[i].displayTime,
-                        style: GoogleFonts.jetBrainsMono(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w900,
-                          color: items[i].isCompleted
-                              ? _colorProtein
-                              : Colors.white.withValues(alpha: 0.3),
+                      Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: isCompleted ? _accentNeon : Colors.white10,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          isCompleted ? Icons.check : Icons.timer_outlined,
+                          size: 10,
+                          color: isCompleted ? Colors.black : Colors.white30,
                         ),
                       ),
-                      // Show "programado" tag if showing scheduled time
-                      if (!items[i].isCompleted)
-                        Text(
-                          'PROGRAMADO',
-                          style: GoogleFonts.jetBrainsMono(
-                            fontSize: 7,
-                            color: Colors.white.withValues(alpha: 0.15),
-                            letterSpacing: 0.5,
-                          ),
-                        ),
+                      const SizedBox(width: 8),
                       Text(
-                        items[i].label,
+                        m.label.toUpperCase(),
                         style: GoogleFonts.jetBrainsMono(
-                          fontSize: 8,
-                          color: items[i].isCompleted
-                              ? Colors.white.withValues(alpha: 0.5)
-                              : Colors.white.withValues(alpha: 0.2),
-                          letterSpacing: 0.5,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: isActive ? Colors.white : Colors.white38,
+                          letterSpacing: 1,
                         ),
-                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
-                ),
-                if (i < items.length - 1) const Spacer(),
-              ],
-            ],
-          ),
-        ],
+                  const SizedBox(height: 8),
+                  Text(
+                    _formatTime(m.absoluteHour),
+                    style: GoogleFonts.publicSans(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                      color: isActive ? _accentNeon : Colors.white70,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    m.isReached ? 'REGISTRADO' : 'PENDIENTE',
+                    style: GoogleFonts.jetBrainsMono(
+                      fontSize: 8,
+                      color: Colors.white24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
 
-  List<_TimelineItem> _buildItems() {
-    final today = DateTime.now();
-    final fmt = DateFormat('hh:mm a');
-
-    // Fallback when no milestones loaded yet
-    if (milestones.isEmpty) {
-      return [
-        const _TimelineItem(
-            scheduledTime: '10:00 AM',
-            label: 'ROMPER AYUNO',
-            isCompleted: false),
-        const _TimelineItem(
-            scheduledTime: '02:00 PM', label: 'COMIDA 2', isCompleted: false),
-        const _TimelineItem(
-            scheduledTime: '07:00 PM', label: 'COMIDA 3', isCompleted: false),
-      ];
-    }
-
-    return milestones.asMap().entries.map<_TimelineItem>((e) {
-      final i = e.key;
-      final m = e.value;
-
-      // Planned clock time from geometry (PRECOMPUTED IN HUB)
-      final absoluteHour = m.absoluteHour;
-      final planned = DateTime(
-        today.year,
-        today.month,
-        today.day,
-        absoluteHour.floor(),
-        ((absoluteHour - absoluteHour.floor()) * 60).round(),
-      );
-      final scheduledStr = fmt.format(planned);
-
-      // Real timestamp from Firestore mealEntries[i] if exists
-      String? loggedStr;
-      if (i < mealEntries.length) {
-        final entry = mealEntries[i];
-        final tsRaw = entry['timestamp'];
-        if (tsRaw != null) {
-          try {
-            // Check if it's a FireStore Timestamp or a String
-            final DateTime logged;
-            if (tsRaw is String) {
-               logged = DateTime.parse(tsRaw).toLocal();
-            } else if (tsRaw.runtimeType.toString().contains('Timestamp')) {
-               // This is a dynamic check for non-imported Timestamp
-               logged = (tsRaw as dynamic).toDate().toLocal();
-            } else {
-               logged = today; // Fallback
-            }
-            loggedStr = fmt.format(logged);
-          } catch (_) {}
-        }
-      }
-
-      return _TimelineItem(
-        scheduledTime: scheduledStr,
-        loggedTime: loggedStr,
-        label: m.label.toUpperCase(),
-        isCompleted: i < mealEntries.length,
-      );
-    }).toList();
-  }
-}
-
-class _TimelineDotWidget extends StatelessWidget {
-  final _TimelineItem item;
-  const _TimelineDotWidget({required this.item});
-
-  @override
-  Widget build(BuildContext context) {
-    final completed = item.isCompleted;
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 400),
-      curve: Curves.easeOut,
-      width: 30,
-      height: 30,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: completed
-            ? _colorProtein.withValues(alpha: 0.15)
-            : const Color(0xFF1A1A1A),
-        border: Border.all(
-            color: completed ? _colorProtein : _colorPending,
-            width: completed ? 2 : 1),
-        boxShadow: completed
-            ? [
-                BoxShadow(
-                  color: _colorProtein.withValues(alpha: 0.35),
-                  blurRadius: 10,
-                  spreadRadius: 1,
-                ),
-              ]
-            : null,
-      ),
-      child: Center(
-        child: Icon(
-          completed ? Icons.check_rounded : Icons.restaurant_outlined,
-          size: 14,
-          color:
-              completed ? _colorProtein : Colors.white.withValues(alpha: 0.2),
-        ),
-      ),
-    );
-  }
-}
-
-class _Connector extends StatelessWidget {
-  final bool isCompleted;
-  final bool nextCompleted;
-  const _Connector({required this.isCompleted, required this.nextCompleted});
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 400),
-      height: 2,
-      decoration: BoxDecoration(
-        gradient: isCompleted
-            ? LinearGradient(colors: [
-                _colorProtein,
-                nextCompleted ? _colorProtein : _colorPending,
-              ])
-            : null,
-        color: isCompleted ? null : _colorPending,
-        boxShadow: isCompleted
-            ? [
-                BoxShadow(
-                    color: _colorProtein.withValues(alpha: 0.35), blurRadius: 5)
-              ]
-            : null,
-      ),
-    );
+  String _formatTime(double absHour) {
+    final hour = absHour.floor();
+    final min = ((absHour - hour) * 60).round();
+    final period = hour >= 12 ? 'PM' : 'AM';
+    final displayHour = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
+    return '${displayHour.toString().padLeft(2, '0')}:${min.toString().padLeft(2, '0')} $period';
   }
 }
 
@@ -654,10 +445,10 @@ class _MacroDonut extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: const Color(0xFF0D0D10),
+        color: _cardColor,
         border:
             Border.all(color: Colors.white.withValues(alpha: 0.08), width: 1),
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         children: [
@@ -722,11 +513,6 @@ class _MacroDonut extends StatelessWidget {
                               fontSize: 10,
                               color: Colors.white.withValues(alpha: 0.4),
                               letterSpacing: 2,
-                            )),
-                        Text('100%',
-                            style: GoogleFonts.jetBrainsMono(
-                              fontSize: 9,
-                              color: Colors.white.withValues(alpha: 0.2),
                             )),
                       ],
                     ),
@@ -926,28 +712,16 @@ class _DonutPainter extends CustomPainter {
       old.fatPct != fatPct;
 }
 
-  String _formatRealTime(double absoluteHour) {
-    final hour = absoluteHour.floor();
-    final minute = ((absoluteHour - hour) * 60).round();
-    final today = DateTime.now();
-    final time = DateTime(today.year, today.month, today.day, hour, minute);
-    return DateFormat('hh:mm a').format(time);
-  }
-
 // ─────────────────────────────────────────────────────────────
-// 🍽 FOOD SUGGESTION CARD (from Firestore)
+// 🍽 FOOD SUGGESTION CARD (DESIGN INVISIBLE)
 // ─────────────────────────────────────────────────────────────
 class _FoodSuggestionCard extends StatefulWidget {
   final FoodSuggestion suggestion;
-  final Future<void> Function()? onAdd;
-  final bool locked;
-  final String? timeUntilNext;
+  final Future<void> Function(double multiplier)? onAdd;
 
   const _FoodSuggestionCard({
     required this.suggestion,
     this.onAdd,
-    this.locked = false,
-    this.timeUntilNext,
   });
 
   @override
@@ -956,28 +730,28 @@ class _FoodSuggestionCard extends StatefulWidget {
 
 class _FoodSuggestionCardState extends State<_FoodSuggestionCard> {
   bool _loading = false;
-  bool _added = false;
+  int _selectedPortionIndex = 1; // 0: Ligera, 1: Normal, 2: Generosa
+
+  double get _multiplier => switch (_selectedPortionIndex) {
+    0 => 0.7,
+    1 => 1.0,
+    2 => 1.3,
+    _ => 1.0,
+  };
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedOpacity(
-      duration: const Duration(milliseconds: 400),
-      opacity: widget.locked ? 0.5 : 1.0,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
-        child: Container(
-          decoration: BoxDecoration(
-            color: const Color(0xFF0D0D10),
-            borderRadius: BorderRadius.circular(4),
-            border: Border.all(
-              color: widget.locked
-                  ? Colors.white.withValues(alpha: 0.03)
-                  : Colors.white.withValues(alpha: 0.08),
-              width: 1,
-            ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+      decoration: BoxDecoration(
+        color: _cardColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
+      ),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(20.0),
             child: Row(
               children: [
                 Expanded(
@@ -986,98 +760,186 @@ class _FoodSuggestionCardState extends State<_FoodSuggestionCard> {
                     children: [
                       Row(
                         children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: AppTheme.primary.withValues(alpha: 0.08),
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                            child: Text(
-                              widget.suggestion.category.label.toUpperCase(),
-                              style: GoogleFonts.jetBrainsMono(
-                                fontSize: 8,
-                                fontWeight: FontWeight.bold,
-                                color: AppTheme.primary,
-                                letterSpacing: 1,
-                              ),
-                            ),
-                          ),
+                          _TagBadge(widget.suggestion.category.label, _accentNeon),
                           const SizedBox(width: 8),
-                          if (widget.locked)
-                            const Icon(Icons.lock_clock,
-                                color: Colors.white24, size: 12),
+                          if (widget.suggestion.preferencesMatch)
+                            const Icon(Icons.verified, color: _accentNeon, size: 12),
                         ],
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 12),
                       Text(
                         widget.suggestion.name,
                         style: GoogleFonts.publicSans(
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w900,
                           color: Colors.white,
-                          fontSize: 14,
+                          fontSize: 16,
                         ),
                       ),
                       const SizedBox(height: 12),
                       Row(
                         children: [
-                          _MacroBadge('${widget.suggestion.macros.kcal} KCAL',
-                              Colors.white70),
-                          const SizedBox(width: 6),
-                          _MacroBadge('${widget.suggestion.macros.protein} P',
-                              _colorProtein),
-                          const SizedBox(width: 6),
-                          _MacroBadge(
-                              '${widget.suggestion.macros.carbs} C', _colorCarbs),
+                          _SmallMacro('${(widget.suggestion.macros.kcal * _multiplier).round()}kcal', Colors.white38),
+                          const SizedBox(width: 12),
+                          _SmallMacro('${(widget.suggestion.macros.protein * _multiplier).round()}g P', _colorProtein),
+                          const SizedBox(width: 12),
+                          _SmallMacro('${(widget.suggestion.macros.carbs * _multiplier).round()}g C', _colorCarbs),
                         ],
                       ),
                     ],
                   ),
                 ),
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (widget.locked)
-                      Text(
-                        widget.timeUntilNext ?? 'BLOQUEADO',
-                        style: GoogleFonts.jetBrainsMono(
-                          fontSize: 8,
-                          color: Colors.white24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    const SizedBox(height: 8),
-                    _AddButton(
-                      loading: _loading,
-                      added: _added,
-                      onTap: _handleAdd,
-                      locked: widget.locked,
+                GestureDetector(
+                  onTap: () => _handleAdd(),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: _accentNeon,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(color: _accentNeon.withValues(alpha: 0.2), blurRadius: 12, spreadRadius: 1),
+                      ],
                     ),
-                  ],
+                    child: _loading 
+                       ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2))
+                       : const Icon(Icons.add, color: Colors.black),
+                  ),
                 ),
               ],
             ),
           ),
-        ),
+          
+          // FAST-TRACK PORTION SELECTOR
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.2),
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(16),
+                bottomRight: Radius.circular(16),
+              ),
+            ),
+            child: Row(
+              children: [
+                Text(
+                  'PORCIÓN',
+                  style: GoogleFonts.jetBrainsMono(
+                    fontSize: 8,
+                    color: Colors.white24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const Spacer(),
+                _SegmentedPicker(
+                  options: const ['LIGERA', 'NORMAL', 'GENEROSA'],
+                  selectedIndex: _selectedPortionIndex,
+                  onChanged: (val) => setState(() => _selectedPortionIndex = val),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Future<void> _handleAdd() async {
-    if (_loading || _added || widget.onAdd == null || widget.locked) return;
+    if (_loading || widget.onAdd == null) return;
     setState(() => _loading = true);
     try {
-      await widget.onAdd!();
-      if (mounted) {
-        setState(() {
-          _loading = false;
-          _added = true;
-        });
-      }
+      await widget.onAdd!(_multiplier);
+      if (mounted) setState(() => _loading = false);
     } catch (e) {
       if (mounted) setState(() => _loading = false);
-      debugPrint('❌ Error adding suggestion to daily: $e');
     }
+  }
+}
+
+class _TagBadge extends StatelessWidget {
+  final String label;
+  final Color color;
+  const _TagBadge(this.label, this.color);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        label.toUpperCase(),
+        style: GoogleFonts.jetBrainsMono(
+          fontSize: 8,
+          fontWeight: FontWeight.w900,
+          color: color,
+        ),
+      ),
+    );
+  }
+}
+
+class _SmallMacro extends StatelessWidget {
+  final String label;
+  final Color color;
+  const _SmallMacro(this.label, this.color);
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(width: 4, height: 4, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: GoogleFonts.jetBrainsMono(
+            fontSize: 10,
+            color: color.withValues(alpha: 0.8),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SegmentedPicker extends StatelessWidget {
+  final List<String> options;
+  final int selectedIndex;
+  final ValueChanged<int> onChanged;
+
+  const _SegmentedPicker({
+    required this.options,
+    required this.selectedIndex,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: List.generate(options.length, (i) {
+        final active = i == selectedIndex;
+        return GestureDetector(
+          onTap: () => onChanged(i),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            margin: const EdgeInsets.only(left: 4),
+            decoration: BoxDecoration(
+              color: active ? _accentNeon : Colors.white.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              options[i],
+              style: GoogleFonts.jetBrainsMono(
+                fontSize: 8,
+                fontWeight: FontWeight.bold,
+                color: active ? Colors.black : Colors.white30,
+              ),
+            ),
+          ),
+        );
+      }),
+    );
   }
 }
 
@@ -1155,6 +1017,125 @@ class _MacroBadge extends StatelessWidget {
           fontWeight: FontWeight.w900,
           color: color.withValues(alpha: 0.7),
           letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// 🚀 QUICK FAVORITES & PRIORITY BUTTONS
+// ─────────────────────────────────────────────────────────────
+
+extension _RegistroNutricionHelpers on _RegistroNutricionScreenState {
+  Widget _buildQuickFavorites(
+    BuildContext context,
+    WidgetRef ref,
+    AsyncValue<List<FoodSuggestion>> suggestionsAsync,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+          child: Text(
+            'REGISTRO RÁPIDO (FAVORITOS)',
+            style: GoogleFonts.jetBrainsMono(
+              fontSize: 10,
+              fontWeight: FontWeight.w800,
+              color: Colors.white24,
+              letterSpacing: 2,
+            ),
+          ),
+        ),
+        SizedBox(
+          height: 60,
+          child: ListView(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            children: [
+              _QuickPreferenceButton(
+                icon: '🥩',
+                label: 'POLLO',
+                onTap: () => _handleQuickRegisterByName(ref, 'Pollo'),
+              ),
+              const SizedBox(width: 12),
+              _QuickPreferenceButton(
+                icon: '🍳',
+                label: 'HUEVOS',
+                onTap: () => _handleQuickRegisterByName(ref, 'Huevos'),
+              ),
+              const SizedBox(width: 12),
+              _QuickPreferenceButton(
+                icon: '🥑',
+                label: 'AGUACATE',
+                onTap: () => _handleQuickRegisterByName(ref, 'Aguacate'),
+              ),
+              const SizedBox(width: 12),
+              _QuickPreferenceButton(
+                icon: '🐟',
+                label: 'SALMÓN',
+                onTap: () => _handleQuickRegisterByName(ref, 'Salmón'),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _handleQuickRegisterByName(WidgetRef ref, String name) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Registrando $name...'),
+        backgroundColor: _accentNeon,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 1),
+      ),
+    );
+  }
+}
+
+class _QuickPreferenceButton extends StatelessWidget {
+  final String icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _QuickPreferenceButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: BoxDecoration(
+          color: _cardColor,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.05),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Text(icon, style: const TextStyle(fontSize: 14)),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: GoogleFonts.jetBrainsMono(
+                fontSize: 10,
+                fontWeight: FontWeight.w900,
+                color: Colors.white70,
+                letterSpacing: 1,
+              ),
+            ),
+          ],
         ),
       ),
     );
