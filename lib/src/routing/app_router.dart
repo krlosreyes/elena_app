@@ -16,6 +16,7 @@ import '../features/hydration/presentation/hydration_screen.dart';
 import '../features/nutrition/presentation/registro_nutricion_screen.dart';
 import '../features/sleep/presentation/sleep_analysis_screen.dart';
 import '../features/training/presentation/exercise_tracking_view.dart';
+import '../core/services/app_logger.dart';
 import 'scaffold_with_nav_bar.dart';
 
 final goRouterProvider = Provider<GoRouter>((ref) {
@@ -145,7 +146,7 @@ class AppRouterNotifier extends ChangeNotifier {
 
     if (!isAuthenticated) {
       if (isAuthRoute) return null;
-      debugPrint('🚦 Router: No autenticado. Redirigiendo a /login desde ${state.matchedLocation}');
+      AppLogger.logAuthEvent('No autenticado. Redirigiendo a /login desde ${state.matchedLocation}');
       return '/login';
     }
 
@@ -163,20 +164,20 @@ class AppRouterNotifier extends ChangeNotifier {
     // 🛡️ Si hay un ERROR en la carga del perfil (ej. pérdida de conexión o permisos),
     // NO redirigimos a onboarding, para evitar crear perfiles duplicados o erróneos.
     if (profileAsync.hasError) {
-      debugPrint('AppRouter: Error cargando perfil -> ${profileAsync.error}');
+      AppLogger.error('Error cargando perfil en router: ${profileAsync.error}');
       return null;
     }
 
     final profile = profileAsync.valueOrNull;
 
-    debugPrint(
-        '🚦 Router: [Auth=${authUser.uid.substring(0, 5)}] [Profile=${profile != null ? "EXISTE" : "NULL"}] [Completed=${profile?.onboardingCompleted}] [Location=${state.matchedLocation}]');
+    AppLogger.debug(
+        'Router: [Auth=${authUser.uid.substring(0, 5)}...] [Profile=${profile != null ? "EXISTE" : "NULL"}] [Completed=${profile?.onboardingCompleted}] [Location=${state.matchedLocation}]');
 
     final bool mustGoToOnboarding = profile == null || profile.onboardingCompleted == false;
     final isJustFinished = _ref.read(onboardingJustFinishedProvider);
 
-    debugPrint(
-        '🚦 Router: [mustGoToOnboarding=$mustGoToOnboarding] [isJustFinished=$isJustFinished] [ProfileName=${profile?.name}] [Location=${state.matchedLocation}]');
+    AppLogger.debug(
+        'Router: [mustGoToOnboarding=$mustGoToOnboarding] [isJustFinished=$isJustFinished] [ProfileName=${profile?.name}] [Location=${state.matchedLocation}]');
 
     if (!isJustFinished && mustGoToOnboarding) {
       if (state.matchedLocation == '/profile' && profile == null) {
@@ -184,8 +185,8 @@ class AppRouterNotifier extends ChangeNotifier {
       }
 
       if (state.matchedLocation != '/onboarding') {
-        debugPrint(
-            '🚦 Router: Forzando Onboarding (ProfileNull=${profile == null})');
+        AppLogger.info(
+            'Router: Forzando Onboarding (ProfileNull=${profile == null})');
         return '/onboarding';
       }
       
@@ -195,13 +196,13 @@ class AppRouterNotifier extends ChangeNotifier {
 
     // 4. Si ya está todo completado (o acabamos de terminar) y está en Login/Register u Onboarding, vamos a la Home
     if (isAuthRoute || (state.matchedLocation == '/onboarding' && (profile?.onboardingCompleted == true || isJustFinished))) {
-      debugPrint('🚦 Router: Onboarding completado/justFinished. Redirigiendo a /');
+      AppLogger.info('Router: Onboarding completado/justFinished. Redirigiendo a /');
       return '/';
     }
 
     // 5. Caso especial: Si estamos en la raíz y debemos ir a onboarding
     if (state.matchedLocation == '/' && mustGoToOnboarding && !isJustFinished) {
-      debugPrint('🚦 Router: En Home pero Onboarding pendiente. Redirigiendo a /onboarding');
+      AppLogger.info('Router: En Home pero Onboarding pendiente. Redirigiendo a /onboarding');
       return '/onboarding';
     }
 

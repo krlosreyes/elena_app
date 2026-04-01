@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter/foundation.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import '../../authentication/auth_service.dart';
 import '../../authentication/application/register_controller.dart';
@@ -8,6 +7,7 @@ import '../../progress/data/progress_service.dart';
 import '../../../domain/logic/elena_brain.dart';
 import '../../profile/data/user_repository.dart';
 import '../../../shared/domain/models/user_food_preferences.dart';
+import '../../../core/services/app_logger.dart';
 
 class OnboardingController extends StateNotifier<UserModel?> {
   final Ref _ref;
@@ -68,12 +68,12 @@ class OnboardingController extends StateNotifier<UserModel?> {
 
   Future<void> submit(UserFoodPreferences? foodPrefs) async {
     if (state == null) {
-      debugPrint('❌ OnboardingController: Intento de submit con state nulo.');
+      AppLogger.warning('OnboardingController: Intento de submit con state nulo.');
       return;
     }
 
     try {
-      debugPrint('🚀 OnboardingController: Iniciando persistencia final...');
+      AppLogger.info('OnboardingController: Iniciando persistencia final...');
 
       // 1. Calcular índices metabólicos (metaICA, metaICC)
       final indices = ElenaBrain.calculateIndices(
@@ -90,14 +90,14 @@ class OnboardingController extends StateNotifier<UserModel?> {
         updatedAt: DateTime.now(),
       );
 
-      debugPrint('📊 User Data to Save: ${updatedUser.toJson()}');
+      AppLogger.debug('User Data to Save: ${updatedUser.email}');
 
       // 3. Guardar en Firestore usando AuthService
       await _ref.read(authServiceProvider).completeOnboarding(updatedUser);
 
       // 4. Guardar preferencias alimentarias si existen
       if (foodPrefs != null) {
-        debugPrint('🍎 Guardando preferencias alimentarias...');
+        AppLogger.info('Guardando preferencias alimentarias...');
         await _ref
             .read(userRepositoryProvider)
             .saveUserFoodPreferences(updatedUser.uid, foodPrefs);
@@ -110,10 +110,9 @@ class OnboardingController extends StateNotifier<UserModel?> {
       // 6. Generar primer MeasurementLog automático
       await _generateInitialMeasurement(updatedUser);
 
-      debugPrint('✅ Onboarding Completado Exitosamente');
+      AppLogger.info('Onboarding Completado Exitosamente');
     } catch (e, stack) {
-      debugPrint('❌ Error en onboarding submit: $e');
-      debugPrint(stack.toString());
+      AppLogger.error('Error en onboarding submit: $e', e, stack);
       rethrow;
     }
   }
@@ -151,9 +150,9 @@ class OnboardingController extends StateNotifier<UserModel?> {
           .read(progressServiceProvider)
           .addFullMeasurement(user.uid, initialLog);
 
-      debugPrint('Initial Measurement Log created.');
+      AppLogger.info('Initial Measurement Log created.');
     } catch (e) {
-      debugPrint('Error creating initial measurement: $e');
+      AppLogger.error('Error creating initial measurement: $e');
     }
   }
 }

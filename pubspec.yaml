@@ -34,6 +34,11 @@ dependencies:
   freezed_annotation: ^2.4.1
   json_annotation: ^4.8.1
 
+  # 🔐 SECURITY LAYER
+  flutter_secure_storage: ^9.0.0
+  permission_handler: ^12.0.1
+  logger: ^2.4.0
+
   # UI
   shared_preferences: ^2.5.4
   flutter_local_notifications: ^17.0.0

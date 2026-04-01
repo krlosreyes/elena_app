@@ -1,4 +1,4 @@
-import 'package:firebase_app_check/firebase_app_check.dart'; // ✅ Import de Seguridad
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart'; // ✅ Necesario para kDebugMode
 import 'package:flutter/material.dart';
@@ -10,6 +10,8 @@ import 'firebase_options.dart';
 import 'src/app.dart';
 import 'src/core/providers/shared_preferences_provider.dart';
 import 'src/core/services/notification_service.dart';
+import 'src/core/services/app_logger.dart';
+import 'src/core/config/security_config.dart';
 import 'src/features/nutrition/data/food_seeder.dart';
 
 void main() async {
@@ -18,9 +20,7 @@ void main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   // 🌱 🧹 CLEAN & RESEED: Purge duplicates and re-inject deduplicated data
-  print(
-    '[MAIN] 🧹 Running CLEAN & RESEED to purge duplicates and ensure clean database...',
-  );
+  AppLogger.info('[MAIN] Running CLEAN & RESEED to purge duplicates...');
   await FoodSeeder.cleanAndReseed();
 
   final prefs = await SharedPreferences.getInstance();
@@ -33,19 +33,13 @@ void main() async {
   // Inicializar Notificaciones Locales
   try {
     await NotificationService.init();
-    debugPrint('Notificaciones inicializadas correctamente');
+    AppLogger.info('Notificaciones inicializadas correctamente');
   } catch (e) {
-    debugPrint('Error inicializando notificaciones: $e');
+    AppLogger.error('Error inicializando notificaciones: $e');
   }
 
-  // 🔧 [DEBUG] SEED FIRESTORE
-  // Database seeding is now automatic on user registration
-  // See: register_controller.dart -> seedInitialNutritionData()
-
   if (kDebugMode) {
-    print(
-      '[DEBUG] ElenaApp initialized - Food database seeding handled by registration controller',
-    );
+    AppLogger.debug('[DEBUG] ElenaApp initialized - Food database seeding handled by registration controller');
   }
 
   runApp(
@@ -60,14 +54,14 @@ void main() async {
 Future<void> _setupFirebaseSecurity() async {
   if (kIsWeb) {
     if (kDebugMode) {
-      debugPrint('💡 INFO: Saltando App Check/Messaging en Web/Debug.');
+      AppLogger.info('💡 INFO: Saltando App Check/Messaging en Web/Debug.');
       return;
     }
     // En Web Release, App Check es opcional o vía recaptcha
   }
 
   try {
-    debugPrint('🚀 INICIANDO PROTOCOLOS DE SEGURIDAD...');
+    AppLogger.info('🚀 INICIANDO PROTOCOLOS DE SEGURIDAD...');
     await FirebaseAppCheck.instance.activate(
       providerAndroid: kDebugMode
           ? const AndroidDebugProvider()
@@ -76,11 +70,11 @@ Future<void> _setupFirebaseSecurity() async {
           ? const AppleDebugProvider()
           : const AppleDeviceCheckProvider(),
       providerWeb: ReCaptchaV3Provider(
-        '6Lcw_YcpAAAAAZ6Z4G4G4G4G4G4G4G4G4G4G4G4G',
+        SecurityConfig.recaptchaV3SiteKey,
       ),
     );
-    debugPrint('✅ SEGURIDAD ACTIVADA.');
+    AppLogger.info('✅ SEGURIDAD ACTIVADA.');
   } catch (e) {
-    debugPrint('⚠️ ADVERTENCIA SEGURIDAD: $e');
+    AppLogger.warning('⚠️ ADVERTENCIA SEGURIDAD: $e');
   }
 }
