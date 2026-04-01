@@ -2,9 +2,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../core/services/app_logger.dart';
+import '../data/repositories/training_repository.dart';
 import '../domain/entities/exercise_model.dart';
 import '../domain/entities/workout_log.dart';
-import '../data/repositories/training_repository.dart';
 
 part 'exercise_service.g.dart';
 
@@ -43,7 +43,8 @@ class ExerciseService {
     int hoursBack = 24,
   }) async {
     try {
-      AppLogger.debug('Obteniendo entrenamientos de las últimas $hoursBack horas');
+      AppLogger.debug(
+          'Obteniendo entrenamientos de las últimas $hoursBack horas');
       return await _repository.getRecentWorkoutSessions(uid, hoursBack);
     } catch (e) {
       AppLogger.error('Error obteniendo entrenamientos: $e');
@@ -74,7 +75,8 @@ class ExerciseService {
     DateTime date,
   ) async {
     try {
-      AppLogger.debug('Obteniendo entrenamiento para ${date.toIso8601String()}');
+      AppLogger.debug(
+          'Obteniendo entrenamiento para ${date.toIso8601String()}');
       return await _repository.getWorkoutLogForDate(uid, date);
     } catch (e) {
       AppLogger.error('Error obteniendo entrenamiento: $e');
@@ -104,7 +106,7 @@ class ExerciseService {
 
       final met = metValues[exerciseType.toLowerCase()] ?? 6.0;
       final calories = (weightKg * met * durationMinutes) / 60;
-      
+
       AppLogger.debug(
         'Calorías calculadas: $calories (MET: $met, Duration: ${durationMinutes}min)',
       );

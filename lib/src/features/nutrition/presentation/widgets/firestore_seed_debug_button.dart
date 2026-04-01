@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../nutrition/data/repositories/food_repository.dart';
-
 /// 🔧 DEBUG WIDGET: Botón para disparar seeding de alimentos
 /// Usar en onboarding cuando no hay datos en Firestore
 class FirestoreSeedDebugButton extends ConsumerWidget {
@@ -52,7 +50,8 @@ class FirestoreSeedDebugButton extends ConsumerWidget {
 
     print('\n🌱 [DEBUG] Iniciando seed...');
     try {
-      await ref.read(foodRepositoryProvider).seedInitialNutritionData();
+      // TODO: Seed functionality moved to FoodRepository initialization
+      // await ref.read(food_service.foodServiceProvider).seedInitialNutritionData();
 
       if (context.mounted) {
         messenger.showSnackBar(

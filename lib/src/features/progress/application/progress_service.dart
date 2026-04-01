@@ -2,8 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../core/services/app_logger.dart';
-import '../domain/measurement_log.dart';
 import '../data/progress_service.dart' as old_service;
+import '../domain/measurement_log.dart';
 
 part 'progress_service.g.dart';
 

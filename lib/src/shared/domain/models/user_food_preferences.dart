@@ -44,5 +44,8 @@ class UserFoodPreferences {
         'vegetables': vegetables,
       };
 
+  List<String> get allSelectedIds =>
+      [...proteins, ...fats, ...carbs, ...vegetables];
+
   factory UserFoodPreferences.empty() => const UserFoodPreferences();
 }

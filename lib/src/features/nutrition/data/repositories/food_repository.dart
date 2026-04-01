@@ -17,6 +17,9 @@ abstract class FoodRepository {
   /// Get all foods in a category
   Future<List<FoodModel>> getFoodsByCategory(String category);
 
+  /// Get all foods from master database
+  Future<List<FoodModel>> getAllFoods();
+
   /// Seed initial verified foods (Metamorfosis Real protocol)
   Future<void> seedInitialNutritionData();
 }
@@ -75,6 +78,19 @@ class FoodRepositoryImpl implements FoodRepository {
       return results;
     } catch (e) {
       debugPrint('[ERROR] Error fetching foods by category: $e');
+      return [];
+    }
+  }
+
+  @override
+  Future<List<FoodModel>> getAllFoods() async {
+    try {
+      final snapshot = await _firestore.collection(_masterFoodCollection).get();
+      return snapshot.docs
+          .map((doc) => FoodModel.fromFirestore(doc.data()))
+          .toList();
+    } catch (e) {
+      debugPrint('[ERROR] Error fetching all foods: $e');
       return [];
     }
   }

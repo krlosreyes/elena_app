@@ -13,7 +13,7 @@ import '../../../profile/application/biometric_provider.dart';
 import '../../../profile/data/user_repository.dart';
 import '../../application/meal_controller.dart';
 import '../../application/transition_controller.dart';
-import '../../data/repositories/food_repository.dart';
+import '../../application/food_service.dart' as food_service;
 import '../../domain/entities/food_model.dart';
 import 'elena_food_search_field.dart';
 
@@ -347,10 +347,10 @@ class _MealRegistrationModalState extends ConsumerState<MealRegistrationModal> {
       _selectedFoodName = foodName;
     });
 
-    // Fetch the full FoodModel
+    // Fetch the full FoodModel using FoodService
     try {
-      final foodRepository = ref.read(foodRepositoryProvider);
-      final foodModel = await foodRepository.getFoodMetadata(foodName);
+      final foodService = ref.read(food_service.foodServiceProvider);
+      final foodModel = await foodService.searchFood(foodName);
 
       if (foodModel == null) {
         if (context.mounted) {

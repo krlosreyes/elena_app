@@ -2,8 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../core/services/app_logger.dart';
-import '../domain/entities/sleep_log.dart';
 import '../data/repositories/sleep_repository_impl.dart';
+import '../domain/entities/sleep_log.dart';
 import '../domain/repositories/sleep_repository.dart';
 
 part 'sleep_service.g.dart';
@@ -138,4 +138,3 @@ Future<double> averageSleep(ref, String uid, {int limit = 7}) async {
   final service = ref.watch(sleepServiceProvider);
   return await service.getAverageSleep(uid, limit: limit);
 }
-

@@ -17,6 +17,10 @@ import '../application/meal_controller.dart';
 // ─────────────────────────────────────────────────────────────
 // 🎨 PALETTE
 // ─────────────────────────────────────────────────────────────
+const _bgDark = Color(0xFF09090B);
+const _cardColor = Color(0xFF131317);
+const _accentNeon = Color(0xFF00FF90);
+
 const _colorProtein = Color(0xFF00FF90);
 const _colorCarbs = Color(0xFF00E5FF);
 const _colorFat = Color(0xFFFFAA00);
@@ -215,7 +219,7 @@ class _RegistroNutricionScreenState extends ConsumerState<RegistroNutricionScree
   }
 
   Widget _buildActionSection(
-    MetabolicState state,
+    MetabolicContext state,
     String? uid,
     AsyncValue<List<FoodSuggestion>> suggestionsAsync,
   ) {
@@ -253,7 +257,7 @@ class _RegistroNutricionScreenState extends ConsumerState<RegistroNutricionScree
                   ),
                 ),
                 const Spacer(),
-                const Icon(Icons.auto_awesome, color: _accentNeon, size: 14),
+                Icon(Icons.auto_awesome, color: _accentNeon, size: 14),
               ],
             ),
           ),
@@ -280,8 +284,8 @@ class _RegistroNutricionScreenState extends ConsumerState<RegistroNutricionScree
                   final sugg = suggestions[index];
                   return _FoodSuggestionCard(
                     suggestion: sugg,
-                    onAdd: () async {
-                      // Fast confirm logic
+                    onAdd: (multiplier) async {
+                       await _handleQuickRegister(ref, sugg, multiplier);
                     },
                   );
                 },
@@ -315,6 +319,178 @@ class _RegistroNutricionScreenState extends ConsumerState<RegistroNutricionScree
         ],
       ),
     );
+  }
+
+  Widget _buildSuggestionsSection(
+    BuildContext context,
+    WidgetRef ref,
+    AsyncValue<List<FoodSuggestion>> suggestionsAsync,
+  ) {
+    return suggestionsAsync.when(
+      loading: () => const Center(
+          child: Padding(
+            padding: EdgeInsets.all(40),
+            child: CircularProgressIndicator(color: _accentNeon, strokeWidth: 1),
+          )),
+      error: (e, __) => Center(child: Text('Error: $e')),
+      data: (suggestions) {
+        if (suggestions.isEmpty) return const SizedBox.shrink();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 32, 24, 16),
+              child: Row(
+                children: [
+                   Container(
+                    width: 6,
+                    height: 6,
+                    decoration: const BoxDecoration(
+                      color: _accentNeon,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    'SUGERENCIAS PARA TI',
+                    style: GoogleFonts.jetBrainsMono(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white70,
+                      letterSpacing: 2,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(
+              height: 250,
+              child: ListView.separated(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                itemCount: suggestions.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 16),
+                itemBuilder: (context, index) {
+                  return _FoodSuggestionCard(
+                    suggestion: suggestions[index],
+                    onAdd: (multiplier) =>
+                        _handleQuickRegister(ref, suggestions[index], multiplier),
+                  );
+                },
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildQuickFavorites(
+    BuildContext context,
+    WidgetRef ref,
+    AsyncValue<List<FoodSuggestion>> suggestionsAsync,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
+          child: Text(
+            'REGISTRO RÁPIDO (FAVORITOS)',
+            style: GoogleFonts.jetBrainsMono(
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+              color: Colors.white24,
+              letterSpacing: 1.5,
+            ),
+          ),
+        ),
+        SizedBox(
+          height: 44,
+          child: ListView(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            scrollDirection: Axis.horizontal,
+            children: [
+              _QuickPreferenceButton(
+                icon: '🍗',
+                label: 'POLLO',
+                onTap: () => _handleQuickRegisterByName(ref, 'Pollo'),
+              ),
+              const SizedBox(width: 12),
+              _QuickPreferenceButton(
+                icon: '🥚',
+                label: 'HUEVOS',
+                onTap: () => _handleQuickRegisterByName(ref, 'Huevos'),
+              ),
+              const SizedBox(width: 12),
+              _QuickPreferenceButton(
+                icon: '🥑',
+                label: 'AGUACATE',
+                onTap: () => _handleQuickRegisterByName(ref, 'Aguacate'),
+              ),
+              const SizedBox(width: 12),
+              _QuickPreferenceButton(
+                icon: '🐟',
+                label: 'SALMÓN',
+                onTap: () => _handleQuickRegisterByName(ref, 'Salmón'),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _handleQuickRegister(WidgetRef ref, FoodSuggestion suggestion, double multiplier) async {
+    final metabolicState = ref.read(metabolicHubProvider);
+    final activeMilestone = metabolicState.mealMilestones.isNotEmpty 
+        ? metabolicState.mealMilestones[_selectedMilestoneIndex.clamp(0, metabolicState.mealMilestones.length - 1)]
+        : null;
+    
+    MealType type = MealType.other;
+    if (activeMilestone != null) {
+      final label = activeMilestone.label.toUpperCase();
+      if (label.contains('RUPTURA')) type = MealType.breakfast;
+      else if (label.contains('PRINCIPAL')) type = MealType.lunch;
+      else if (label.contains('SNACK')) type = MealType.snack;
+      else if (label.contains('CIERRE')) type = MealType.dinner;
+    }
+
+    final success = await ref.read(mealControllerProvider.notifier).registerMeal(
+      name: suggestion.name,
+      type: type,
+      calories: (suggestion.macros.kcal * multiplier).round(),
+      protein: (suggestion.macros.protein * multiplier).round(),
+      carbs: (suggestion.macros.carbs * multiplier).round(),
+      fat: (suggestion.macros.fat * multiplier).round(),
+    );
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(success ? '✅ ${suggestion.name} Registrado' : '❌ El protocolo no permite más comidas'),
+          backgroundColor: success ? _accentNeon : Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  void _handleQuickRegisterByName(WidgetRef ref, String name) {
+    // Basic search simulation for common favorites
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Registrando $name (Porción Normal)...'),
+        backgroundColor: _accentNeon.withValues(alpha: 0.8),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 1),
+      ),
+    );
+    
+    // In a future phase, we could fetch the specific food model and call _handleQuickRegister
   }
 }
 
@@ -1086,14 +1262,17 @@ extension _RegistroNutricionHelpers on _RegistroNutricionScreenState {
   }
 
   void _handleQuickRegisterByName(WidgetRef ref, String name) {
+    // Basic search simulation for common favorites
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Registrando $name...'),
-        backgroundColor: _accentNeon,
+        content: Text('Registrando $name (Porción Normal)...'),
+        backgroundColor: _accentNeon.withValues(alpha: 0.8),
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 1),
       ),
     );
+    
+    // In a future phase, we could fetch the specific food model and call _handleQuickRegister
   }
 }
 

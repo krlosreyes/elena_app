@@ -11,7 +11,7 @@ import '../../../core/widgets/technical_wheel_picker.dart';
 import '../../../domain/logic/elena_brain.dart';
 import '../../../shared/domain/models/user_food_preferences.dart';
 import '../../authentication/application/auth_controller.dart';
-import '../../nutrition/application/food_provider.dart';
+import '../../nutrition/application/food_service.dart' as food_service;
 import '../../nutrition/domain/entities/food_model.dart';
 import '../application/onboarding_controller.dart';
 import 'widgets/searchable_food_dropdown.dart';
@@ -1617,32 +1617,32 @@ class _NutritionPreferencesStepState
       debugPrint('[ONBOARDING DEBUG] 🔄 Starting _loadMasterFoods()...');
 
       // Fetch all foods from master_food_db and group by category
-      final foodRepository = ref.read(foodRepositoryProvider);
+      final foodService = ref.read(food_service.foodServiceProvider);
 
       debugPrint('[ONBOARDING DEBUG] 📡 Querying master_food_db...');
 
       // Fetch each category using plain-text categories (no emojis in queries)
-      // Repository handles the mapping internally
+      // FoodService handles the mapping internally
       // Query for protein categories - use plain-text 'Proteinas'
-      final proteinsFish = await foodRepository.getFoodsByCategory('Proteinas');
-      final proteinBeef = await foodRepository.getFoodsByCategory('Proteinas');
-      final proteinPoultry = await foodRepository.getFoodsByCategory(
+      final proteinsFish = await foodService.getFoodsByCategory('Proteinas');
+      final proteinBeef = await foodService.getFoodsByCategory('Proteinas');
+      final proteinPoultry = await foodService.getFoodsByCategory(
         'Proteinas',
       );
       final proteinsData = [...proteinsFish, ...proteinBeef, ...proteinPoultry];
 
       // Query for fat categories - use plain-text 'Grasas'
-      final fatsAvocado = await foodRepository.getFoodsByCategory('Grasas');
-      final fatsOil = await foodRepository.getFoodsByCategory('Grasas');
-      final fatsNuts = await foodRepository.getFoodsByCategory('Grasas');
-      final fatsMCT = await foodRepository.getFoodsByCategory('Grasas');
+      final fatsAvocado = await foodService.getFoodsByCategory('Grasas');
+      final fatsOil = await foodService.getFoodsByCategory('Grasas');
+      final fatsNuts = await foodService.getFoodsByCategory('Grasas');
+      final fatsMCT = await foodService.getFoodsByCategory('Grasas');
       final fatsData = [...fatsAvocado, ...fatsOil, ...fatsNuts, ...fatsMCT];
 
       // Query for vegetable categories - use plain-text 'Vegetales'
-      final vegGreens = await foodRepository.getFoodsByCategory('Vegetales');
-      final vegCrucif = await foodRepository.getFoodsByCategory('Vegetales');
-      final vegPeppers = await foodRepository.getFoodsByCategory('Vegetales');
-      final vegMushrooms = await foodRepository.getFoodsByCategory('Vegetales');
+      final vegGreens = await foodService.getFoodsByCategory('Vegetales');
+      final vegCrucif = await foodService.getFoodsByCategory('Vegetales');
+      final vegPeppers = await foodService.getFoodsByCategory('Vegetales');
+      final vegMushrooms = await foodService.getFoodsByCategory('Vegetales');
       final vegData = [
         ...vegGreens,
         ...vegCrucif,
@@ -1651,15 +1651,15 @@ class _NutritionPreferencesStepState
       ];
 
       // Query for carb categories - use plain-text 'Carbohidratos'
-      final carbRice = await foodRepository.getFoodsByCategory('Carbohidratos');
-      final carbPotatoes = await foodRepository.getFoodsByCategory(
+      final carbRice = await foodService.getFoodsByCategory('Carbohidratos');
+      final carbPotatoes = await foodService.getFoodsByCategory(
         'Carbohidratos',
       );
-      final carbCorn = await foodRepository.getFoodsByCategory('Carbohidratos');
-      final carbSweet = await foodRepository.getFoodsByCategory(
+      final carbCorn = await foodService.getFoodsByCategory('Carbohidratos');
+      final carbSweet = await foodService.getFoodsByCategory(
         'Carbohidratos',
       );
-      final carbFruit = await foodRepository.getFoodsByCategory(
+      final carbFruit = await foodService.getFoodsByCategory(
         'Carbohidratos',
       );
       final carbsData = [
@@ -1685,19 +1685,20 @@ class _NutritionPreferencesStepState
 
         try {
           // Attempt to seed from local dataset
-          await foodRepository.seedInitialNutritionData();
+          // TODO: Seed is handled by FoodRepository initialization
+          // await foodRepository.seedInitialNutritionData();
 
           // Wait a second for persistence to settle if needed, then re-query
           await Future.delayed(const Duration(milliseconds: 800));
 
           // Re-query with plain-text categories (no emojis)
-          final newProteinsFish = await foodRepository.getFoodsByCategory(
+          final newProteinsFish = await foodService.getFoodsByCategory(
             'Proteinas',
           );
-          final newProteinBeef = await foodRepository.getFoodsByCategory(
+          final newProteinBeef = await foodService.getFoodsByCategory(
             'Proteinas',
           );
-          final newProteinPoultry = await foodRepository.getFoodsByCategory(
+          final newProteinPoultry = await foodService.getFoodsByCategory(
             'Proteinas',
           );
           final newProteins = [
@@ -1706,12 +1707,12 @@ class _NutritionPreferencesStepState
             ...newProteinPoultry,
           ];
 
-          final newFatsAvocado = await foodRepository.getFoodsByCategory(
+          final newFatsAvocado = await foodService.getFoodsByCategory(
             'Grasas',
           );
-          final newFatsOil = await foodRepository.getFoodsByCategory('Grasas');
-          final newFatsNuts = await foodRepository.getFoodsByCategory('Grasas');
-          final newFatsMCT = await foodRepository.getFoodsByCategory('Grasas');
+          final newFatsOil = await foodService.getFoodsByCategory('Grasas');
+          final newFatsNuts = await foodService.getFoodsByCategory('Grasas');
+          final newFatsMCT = await foodService.getFoodsByCategory('Grasas');
           final newFats = [
             ...newFatsAvocado,
             ...newFatsOil,
@@ -1719,16 +1720,16 @@ class _NutritionPreferencesStepState
             ...newFatsMCT,
           ];
 
-          final newVegGreens = await foodRepository.getFoodsByCategory(
+          final newVegGreens = await foodService.getFoodsByCategory(
             'Vegetales',
           );
-          final newVegCrucif = await foodRepository.getFoodsByCategory(
+          final newVegCrucif = await foodService.getFoodsByCategory(
             'Vegetales',
           );
-          final newVegPeppers = await foodRepository.getFoodsByCategory(
+          final newVegPeppers = await foodService.getFoodsByCategory(
             'Vegetales',
           );
-          final newVegMushrooms = await foodRepository.getFoodsByCategory(
+          final newVegMushrooms = await foodService.getFoodsByCategory(
             'Vegetales',
           );
           final newVegetables = [
@@ -1738,19 +1739,19 @@ class _NutritionPreferencesStepState
             ...newVegMushrooms,
           ];
 
-          final newCarbRice = await foodRepository.getFoodsByCategory(
+          final newCarbRice = await foodService.getFoodsByCategory(
             'Carbohidratos',
           );
-          final newCarbPotatoes = await foodRepository.getFoodsByCategory(
+          final newCarbPotatoes = await foodService.getFoodsByCategory(
             'Carbohidratos',
           );
-          final newCarbCorn = await foodRepository.getFoodsByCategory(
+          final newCarbCorn = await foodService.getFoodsByCategory(
             'Carbohidratos',
           );
-          final newCarbSweet = await foodRepository.getFoodsByCategory(
+          final newCarbSweet = await foodService.getFoodsByCategory(
             'Carbohidratos',
           );
-          final newCarbFruit = await foodRepository.getFoodsByCategory(
+          final newCarbFruit = await foodService.getFoodsByCategory(
             'Carbohidratos',
           );
           final newCarbs = [

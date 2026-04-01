@@ -22,20 +22,20 @@ extension FoodCategoryX on FoodCategory {
 // ─────────────────────────────────────────────────────────────
 // Macros sub-object
 // ─────────────────────────────────────────────────────────────
-class FoodMacros {
+class SuggestionMacros {
   final int protein; // grams
   final int carbs; // grams
   final int fat; // grams (key: 'g' in Firestore)
   final int kcal;
 
-  const FoodMacros({
+  const SuggestionMacros({
     required this.protein,
     required this.carbs,
     required this.fat,
     required this.kcal,
   });
 
-  factory FoodMacros.fromMap(Map<String, dynamic> m) => FoodMacros(
+  factory SuggestionMacros.fromMap(Map<String, dynamic> m) => SuggestionMacros(
         protein: (m['p'] as num? ?? 0).toInt(),
         carbs: (m['c'] as num? ?? 0).toInt(),
         fat: (m['g'] as num? ?? 0).toInt(),
@@ -57,10 +57,11 @@ class FoodSuggestion {
   final String foodId;
   final String name;
   final List<String> tags;
-  final FoodMacros macros;
+  final SuggestionMacros macros;
   final FoodCategory category;
   final DateTime? lastShown;
   final bool preferencesMatch;
+  final String? sourceMasterId;
 
   const FoodSuggestion({
     required this.foodId,
@@ -70,6 +71,7 @@ class FoodSuggestion {
     required this.category,
     this.lastShown,
     this.preferencesMatch = true,
+    this.sourceMasterId,
   });
 
   factory FoodSuggestion.fromFirestore(DocumentSnapshot doc) {
@@ -78,10 +80,11 @@ class FoodSuggestion {
       foodId: doc.id,
       name: d['name'] as String? ?? '',
       tags: List<String>.from(d['tags'] ?? []),
-      macros: FoodMacros.fromMap(d['macros'] as Map<String, dynamic>? ?? {}),
+      macros: SuggestionMacros.fromMap(d['macros'] as Map<String, dynamic>? ?? {}),
       category: FoodCategoryX.fromString(d['category'] as String? ?? 'snack'),
       lastShown: (d['last_shown'] as Timestamp?)?.toDate(),
       preferencesMatch: (d['preferences_match'] as bool?) ?? true,
+      sourceMasterId: d['source_master_id'] as String?,
     );
   }
 
@@ -93,5 +96,6 @@ class FoodSuggestion {
         'category': category.label,
         'last_shown': lastShown != null ? Timestamp.fromDate(lastShown!) : null,
         'preferences_match': preferencesMatch,
+        'source_master_id': sourceMasterId,
       };
 }
