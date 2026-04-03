@@ -8,6 +8,7 @@ import '../data/repositories/food_suggestions_repository.dart';
 import '../domain/entities/food_model.dart';
 import '../domain/entities/food_suggestion.dart';
 import '../domain/services/recommendation_engine.dart';
+import '../../../shared/domain/models/user_model.dart';
 
 part 'food_service.g.dart';
 
@@ -73,10 +74,10 @@ class FoodService {
           name: food.name,
           tags: food.searchTags,
           macros: SuggestionMacros(
-            protein: food.protein.toInt(),
-            carbs: food.netCarbs.toInt(),
-            fat: food.fat.toInt(),
-            kcal: food.calories.toInt(),
+            protein: food.protein,
+            carbs: food.netCarbs,
+            fat: food.fat,
+            kcal: food.calories,
           ),
           category: _mapCategory(food.category),
           preferencesMatch: selectedFoodIds.contains(food.id),
@@ -87,7 +88,7 @@ class FoodService {
           meal: tempSuggestion,
           bodyFatPercentage: user.currentFatPercentage ?? 25.0,
           lastMonthBodyFat: null, // We don't have history here yet
-          userGender: user.gender == Gender.male ? 'M' : 'F',
+          userGender: user.gender,
           healthCondition: user.pathologies.isNotEmpty ? user.pathologies.first : 'general',
         );
         
@@ -106,10 +107,10 @@ class FoodService {
           name: food.name,
           tags: food.searchTags,
           macros: SuggestionMacros(
-            protein: food.protein.toInt(),
-            carbs: food.netCarbs.toInt(),
-            fat: food.fat.toInt(),
-            kcal: food.calories.toInt(),
+            protein: food.protein,
+            carbs: food.netCarbs,
+            fat: food.fat,
+            kcal: food.calories,
           ),
           category: _mapCategory(food.category),
           sourceMasterId: food.id,

@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+
+import '../../../core/providers/metabolic_hub_provider.dart';
 import '../../../core/widgets/blueprint_grid.dart';
 import '../../../core/widgets/elena_header.dart';
 import '../../profile/application/user_controller.dart';
 import '../application/hydration_controller.dart';
-import '../../../domain/logic/elena_brain.dart';
-import '../../../core/providers/metabolic_hub_provider.dart';
 
 class HydrationScreen extends ConsumerWidget {
   const HydrationScreen({super.key});
@@ -21,9 +21,9 @@ class HydrationScreen extends ConsumerWidget {
     }
 
     final metabolicHub = ref.watch(metabolicHubProvider);
-    final healthPlan = ElenaBrain.generateHealthPlan(user);
-
-    final hydrationGoal = healthPlan.hydrationGoal; // en vasos (250ml)
+    // Moved to DecisionEngine in Phase 3
+    // Keep hydration goal as simple helper (non-decisional).
+    final hydrationGoal = (user.currentWeightKg / 7).round().clamp(1, 20);
     final currentGlasses = metabolicHub.hydrationLevel;
     final currentLiters = currentGlasses * 0.25;
     final goalLiters = hydrationGoal * 0.25;

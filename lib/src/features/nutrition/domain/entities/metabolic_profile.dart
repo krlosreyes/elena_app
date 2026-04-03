@@ -1,5 +1,5 @@
-import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/domain/logic/elena_brain.dart';
+import 'package:elena_app/src/shared/domain/models/user_model.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // VALUE OBJECTS
@@ -235,6 +235,9 @@ class MetabolicProfile {
     final isMale = user.gender == Gender.male;
 
     // ── 1. Body Composition ──
+    // TODO: Remove in Phase 4 – duplicated metabolic logic
+    // Direct calls to ElenaBrain.calculateBodyFat/calculateBMR/calculateBMI/
+    // calculateWHtR/calculateWHR should delegate to core/science/MetabolicEngine.
     final bf = ElenaBrain.calculateBodyFat(
           heightCm: user.heightCm,
           waistCm: user.waistCircumferenceCm,
@@ -254,16 +257,23 @@ class MetabolicProfile {
 
     // ── 3. Risk Assessment ──
     const metabolicRiskKeys = [
-      'diabetes', 'prediabetes', 'diabetes_t2', 'insulin_resistance',
-      'pcos', 'metabolicSyndrome', 'obesity', 'fatty_liver'
+      'diabetes',
+      'prediabetes',
+      'diabetes_t2',
+      'insulin_resistance',
+      'pcos',
+      'metabolicSyndrome',
+      'obesity',
+      'fatty_liver'
     ];
     const hormonalRiskKeys = [
-      'hypothyroid', 'pcos', 'amenorrhea', 'adrenal_insufficiency'
+      'hypothyroid',
+      'pcos',
+      'amenorrhea',
+      'adrenal_insufficiency'
     ];
-    final hasMR =
-        user.pathologies.any((p) => metabolicRiskKeys.contains(p));
-    final hasHR =
-        user.pathologies.any((p) => hormonalRiskKeys.contains(p));
+    final hasMR = user.pathologies.any((p) => metabolicRiskKeys.contains(p));
+    final hasHR = user.pathologies.any((p) => hormonalRiskKeys.contains(p));
 
     // ── 4. Indices ──
     final bmi = ElenaBrain.calculateBMI(user.currentWeightKg, user.heightCm);
@@ -277,11 +287,10 @@ class MetabolicProfile {
       whtr: whtr,
       bf: bf,
       hasMetabolicRisk: hasMR,
-      fastingHours:
-          ElenaBrain.calculateFastingHours(
-            user.usualFirstMealTime,
-            user.usualLastMealTime,
-          ),
+      fastingHours: ElenaBrain.calculateFastingHours(
+        user.usualFirstMealTime,
+        user.usualLastMealTime,
+      ),
       snacking: user.snackingHabit,
       experience: user.fastingExperience,
     );
@@ -309,7 +318,8 @@ class MetabolicProfile {
 
     // ── 7b. HIIT Inference (last 24h) ──
     final hiitFromUser = user.lastHighIntensityWorkoutAt != null &&
-        DateTime.now().difference(user.lastHighIntensityWorkoutAt!).inHours < 24;
+        DateTime.now().difference(user.lastHighIntensityWorkoutAt!).inHours <
+            24;
     final hiitDetected = recentHighIntensityWorkout || hiitFromUser;
 
     return MetabolicProfile(
@@ -432,6 +442,8 @@ class MetabolicProfile {
   }
 
   /// Estimated current glucose based on fasting hours (if currently fasting).
+  // TODO: Remove in Phase 4 – duplicated metabolic logic
+  // Delegates to ElenaBrain.estimateGlucose – consolidate in core/science.
   double? get estimatedCurrentGlucose {
     if (!fastingContext.isCurrentlyFasting) return null;
     return ElenaBrain.estimateGlucose(
@@ -439,6 +451,8 @@ class MetabolicProfile {
   }
 
   /// Estimated current ketone level.
+  // TODO: Remove in Phase 4 – duplicated metabolic logic
+  // Delegates to ElenaBrain.estimateKetones – consolidate in core/science.
   double? get estimatedCurrentKetones {
     if (!fastingContext.isCurrentlyFasting) return null;
     return ElenaBrain.estimateKetones(

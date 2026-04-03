@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/science/metabolic_engine.dart' as core_science;
+
 class FastingStage {
   final String name;
   final String description;
@@ -54,12 +56,19 @@ class FastingStage {
   }
 
   static FastingStage getStageForDuration(Duration elapsed) {
-    final stages = getStages().reversed.toList();
-    for (var stage in stages) {
-      if (elapsed >= stage.startHour) {
-        return stage;
-      }
+    // Moved to DecisionEngine in Phase 3
+    // Stage decision now follows the core metabolic engine zone mapping.
+    final zone = core_science.MetabolicEngine.calculateZone(elapsed);
+
+    switch (zone) {
+      case core_science.MetabolicZone.sugarBurning:
+        if (elapsed.inHours >= 4) return getStages()[1];
+        return getStages()[0];
+      case core_science.MetabolicZone.fatBurning:
+        return getStages()[2];
+      case core_science.MetabolicZone.autophagy:
+      case core_science.MetabolicZone.deepKetosis:
+        return getStages()[4];
     }
-    return getStages().first;
   }
 }

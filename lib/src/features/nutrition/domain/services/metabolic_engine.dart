@@ -1,9 +1,14 @@
+// ignore_for_file: unused_element, prefer_interpolation_to_compose_strings
+
 import 'dart:math' as math;
-import 'package:uuid/uuid.dart';
+
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
+import 'package:uuid/uuid.dart';
+
+import '../../../../core/science/metabolic_engine.dart' as core_science;
+import '../entities/metabolic_nutrition_plan.dart';
 import '../entities/metabolic_profile.dart';
 import '../entities/nutrition_strategy.dart';
-import '../entities/metabolic_nutrition_plan.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // METABOLIC ENGINE — Pure Logic Core
@@ -12,6 +17,8 @@ import '../entities/metabolic_nutrition_plan.dart';
 // Output: MetabolicNutritionPlan
 // ─────────────────────────────────────────────────────────────────────────────
 
+// DEPRECATED: Use core/science/metabolic_engine.dart instead
+@Deprecated('DEPRECATED: Use core/science/metabolic_engine.dart instead')
 class MetabolicEngine {
   // ──────────────────────────────────────────────────────────────────────────
   // MAIN ENTRY POINT
@@ -19,6 +26,8 @@ class MetabolicEngine {
 
   /// Generates a full metabolic nutrition plan from a user profile.
   ///
+  /// Moved to DecisionEngine in Phase 3
+  /// This service now only provides nutrition data (calories/macros/meals).
   /// This is the single public API. All internal steps are called from here
   /// in a deterministic, ordered pipeline.
   static MetabolicNutritionPlan generate({
@@ -27,83 +36,74 @@ class MetabolicEngine {
     bool isTrainingDay = false,
     NutritionStrategy? strategyOverride,
   }) {
-    // ── STEP 1: Strategy Selection ──────────────────────────────────────────
     final strategy =
         strategyOverride ?? NutritionStrategySelector.select(profile);
 
-    // ── STEP 2: Caloric Target ───────────────────────────────────────────────
-    final caloricTarget = _computeCaloricTarget(profile, strategy);
-
-    // ── STEP 3: Protein ──────────────────────────────────────────────────────
-    final proteinG = _computeProtein(profile, strategy, caloricTarget);
-
-    // ── STEP 4: Fat ───────────────────────────────────────────────────────────
-    final fatG = _computeFat(profile, strategy, caloricTarget, proteinG);
-
-    // ── STEP 5: Carbs ─────────────────────────────────────────────────────────
-    final carbsG = _computeCarbs(
-      profile: profile,
-      strategy: strategy,
-      targetCalories: caloricTarget,
-      proteinG: proteinG,
-      fatG: fatG,
-      isTrainingDay: isTrainingDay,
+    final fastingHours = profile.fastingContext.currentFastingElapsedHours;
+    final zone = core_science.MetabolicEngine.calculateZone(
+      Duration(minutes: (fastingHours * 60).round()),
     );
 
-    // ── STEP 6: Calorie Recalibration ─────────────────────────────────────────
-    // After floors are applied, actual calories may differ from target.
-    final actualCalories = _recalibrate(proteinG, fatG, carbsG);
+    final baseCalories = profile.tdee * (1.0 + strategy.caloricModifier);
+    final zoneAdjustment = switch (zone) {
+      core_science.MetabolicZone.autophagy => 0.97,
+      core_science.MetabolicZone.fatBurning => 0.99,
+      core_science.MetabolicZone.sugarBurning => 1.0,
+      core_science.MetabolicZone.deepKetosis => 1.0,
+    };
 
-    // ── STEP 7: Safety Validation ─────────────────────────────────────────────
-    final safeResult = _applySafetyConstraints(
-      profile: profile,
-      strategy: strategy,
-      targetCalories: actualCalories,
-      proteinG: proteinG,
-      fatG: fatG,
-      carbsG: carbsG,
-    );
+    final calories = (baseCalories * zoneAdjustment)
+        .clamp(math.max(profile.bmr, 1200.0), profile.tdee * 1.20);
+    final protein = (profile.leanMassKg * (isTrainingDay ? 2.0 : 1.8))
+        .clamp(80.0, (calories * 0.40) / 4.0);
+    final fat = math.max(profile.totalWeightKg * 0.6, (calories * 0.30) / 9.0);
+    final carbs =
+        math.max(20.0, (calories - (protein * 4.0) - (fat * 9.0)) / 4.0);
 
-    // ── STEP 8: Meal Distribution ────────────────────────────────────────────
-    final meals = _distributeMeals(
-      profile: profile,
-      strategy: strategy,
-      totalCalories: safeResult.calories,
-      totalProteinG: safeResult.protein,
-      totalFatG: safeResult.fat,
-      totalCarbsG: safeResult.carbs,
-      isTrainingDay: isTrainingDay,
-    );
+    final mealCount = profile.fastingContext.feedingWindowHours <= 2
+        ? 1
+        : (profile.fastingContext.feedingWindowHours < 8 ? 2 : 3);
 
-    // ── STEP 9: Adaptation Adjustments ───────────────────────────────────────
-    final adaptedMeals = _applyAdaptationAdjustments(
-      profile: profile,
-      meals: meals,
-    );
+    final meals = List.generate(mealCount, (index) {
+      final priority = switch (index) {
+        0 => MealPriority.primary,
+        1 when mealCount == 2 => MealPriority.closing,
+        1 => MealPriority.secondary,
+        _ => MealPriority.closing,
+      };
 
-    // ── STEP 10: Fasting Alignment ────────────────────────────────────────────
-    final alignedMeals = _alignToFastingWindow(
-      profile: profile,
-      meals: adaptedMeals,
-    );
+      return PlannedMeal(
+        index: index + 1,
+        label: 'Comida ${index + 1}',
+        calories: (calories / mealCount).round(),
+        proteinG: (protein / mealCount).round(),
+        fatG: (fat / mealCount).round(),
+        carbsG: (carbs / mealCount).round(),
+        timingNote: 'Core zone ${zone.name}.',
+        priority: priority,
+      );
+    });
 
     return MetabolicNutritionPlan(
       id: const Uuid().v4(),
       userId: userId,
       calculatedAt: DateTime.now(),
-      algorithmVersion: '2.0.0-metabolic',
+      algorithmVersion: '3.0.0-core-wrapper',
       profile: profile,
       strategy: strategy,
       isTrainingDay: isTrainingDay,
-      totalCalories: safeResult.calories.round(),
-      proteinGrams: safeResult.protein.round(),
-      fatGrams: safeResult.fat.round(),
-      carbsGrams: safeResult.carbs.round(),
-      meals: alignedMeals,
-      caloricDeficitPercent:
-          ((profile.tdee - safeResult.calories) / profile.tdee * 100)
-              .clamp(-20.0, 40.0),
-      metabolicNotes: _generateNotes(profile, strategy, safeResult),
+      totalCalories: calories.round(),
+      proteinGrams: protein.round(),
+      fatGrams: fat.round(),
+      carbsGrams: carbs.round(),
+      meals: meals,
+      caloricDeficitPercent: profile.tdee > 0
+          ? ((profile.tdee - calories) / profile.tdee * 100).clamp(-25.0, 45.0)
+          : 0.0,
+      metabolicNotes: const [
+        'DEPRECATED: Use core/science/metabolic_engine.dart instead',
+        'Legacy nutrition wrapper uses core metabolic signals.',
+      ],
     );
   }
 
@@ -122,8 +122,10 @@ class MetabolicEngine {
     // avoid further BMR suppression (counter-intuitive but evidence-based).
     if (profile.adaptationState == AdaptationState.adapted) {
       // Bring calories closer to TDEE to restore metabolic rate.
-      target = profile.tdee * 0.90; // Max 10% deficit during adaptation recovery
-    } else if (profile.adaptationState == AdaptationState.metabolicallyResistant) {
+      target =
+          profile.tdee * 0.90; // Max 10% deficit during adaptation recovery
+    } else if (profile.adaptationState ==
+        AdaptationState.metabolicallyResistant) {
       // Temporarily cycle to maintenance.
       target = profile.tdee;
     }
@@ -195,7 +197,8 @@ class MetabolicEngine {
     double fatG;
 
     if (strategy.fatDirective.targetCaloriePercent != null) {
-      fatG = (targetCalories * strategy.fatDirective.targetCaloriePercent!) / 9.0;
+      fatG =
+          (targetCalories * strategy.fatDirective.targetCaloriePercent!) / 9.0;
     } else {
       // Minimum floor as primary calculation
       fatG = profile.totalWeightKg * strategy.fatDirective.minGPerKgBodyweight;
@@ -213,8 +216,7 @@ class MetabolicEngine {
     if (profile.fastingContext.experience == FastingExperience.advanced &&
         profile.metabolicFlexibility == MetabolicFlexibility.high) {
       // If in potential keto adaptation, allocate more fat
-      final residualForFatAndCarbs =
-          targetCalories - (proteinG * 4.0);
+      final residualForFatAndCarbs = targetCalories - (proteinG * 4.0);
       if (residualForFatAndCarbs > 0) {
         final ketoFat = (residualForFatAndCarbs * 0.75) / 9.0;
         fatG = math.max(fatG, ketoFat);
@@ -405,8 +407,7 @@ class MetabolicEngine {
         proteinG: meal1Protein.round(),
         fatG: fatPerMeal.round(),
         carbsG: meal1Carbs.round(),
-        timingNote:
-            'Primera comida al romper el ayuno. Prioriza proteína '
+        timingNote: 'Primera comida al romper el ayuno. Prioriza proteína '
             'completa (≥30g) para activar mTOR. Grasas saludables para '
             'cortisol suave en la apertura de ventana.',
         priority: MealPriority.primary,
@@ -419,8 +420,7 @@ class MetabolicEngine {
         proteinG: meal2Protein.round(),
         fatG: fatPerMeal.round(),
         carbsG: meal2Carbs.round(),
-        timingNote:
-            'Cierre de ventana. '
+        timingNote: 'Cierre de ventana. '
             '${isTrainingDay ? "Máximo de carbohidratos hoy (entrenamiento). " : ""}'
             'Terminar ${timing.stopEatingHoursBeforeSleep.toStringAsFixed(0)}h '
             'antes de dormir.',
@@ -430,8 +430,7 @@ class MetabolicEngine {
       // 3 meals
       final meal2Protein = remainingProtein * 0.50;
       final meal3Protein = remainingProtein * 0.50;
-      final meal1Carbs = math.max(
-          0.0, totalCarbsG - meal2Carbs - meal3Carbs);
+      final meal1Carbs = math.max(0.0, totalCarbsG - meal2Carbs - meal3Carbs);
       final meal1Cals = (meal1Protein * 4 + fatPerMeal * 9 + meal1Carbs * 4);
       final meal2Cals = (meal2Protein * 4 + fatPerMeal * 9 + meal2Carbs * 4);
       final meal3Cals = (meal3Protein * 4 + fatPerMeal * 9 + meal3Carbs * 4);
@@ -459,7 +458,8 @@ class MetabolicEngine {
             ? 'Ventana peri-entrenamiento: carbohidratos para performance '
                 'y refill glucogénico.'
             : 'Comida central del día.',
-        priority: isTrainingDay ? MealPriority.anabolic : MealPriority.secondary,
+        priority:
+            isTrainingDay ? MealPriority.anabolic : MealPriority.secondary,
       ));
 
       meals.add(PlannedMeal(
@@ -496,8 +496,8 @@ class MetabolicEngine {
         return meal.copyWith(
           timingNote: meal.timingNote +
               '\n⚠️ Adaptación Metabólica detectada: considera un día de '
-              're-alimentación (refeed) esta semana con +200–300 kcal en '
-              'carbohidratos para restaurar leptina.',
+                  're-alimentación (refeed) esta semana con +200–300 kcal en '
+                  'carbohidratos para restaurar leptina.',
         );
       }
       return meal;
@@ -528,8 +528,7 @@ class MetabolicEngine {
             'grasa y GH. Esta comida es tu recuperación post-ejercicio.';
       }
       if (fastingNote.isEmpty) return meal;
-      return meal.copyWith(
-          timingNote: meal.timingNote + fastingNote);
+      return meal.copyWith(timingNote: meal.timingNote + fastingNote);
     }).toList();
   }
 

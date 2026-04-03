@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../core/services/app_logger.dart';
@@ -51,19 +52,12 @@ class SleepService {
   }
 
   /// ✅ Calcular calidad de sueño (0-100)
-  /// - 8-9h = 100% (excelente)
-  /// - 7-8h = 90% (muy bueno)
-  /// - 6.5-7h = 80% (bueno)
-  /// - 6-6.5h = 70% (aceptable)
-  /// - 5-6h = 50% (deficiente)
-  /// - <5h = 30% (muy deficiente)
+  ///
+  /// Moved to DecisionEngine in Phase 3
+  /// This method remains as a simple helper for legacy callers.
   int calculateSleepQuality(double hours) {
-    if (hours >= 8.0 && hours <= 9.0) return 100;
-    if (hours >= 7.0 && hours < 8.0) return 90;
-    if (hours >= 6.5 && hours < 7.0) return 80;
-    if (hours >= 6.0 && hours < 6.5) return 70;
-    if (hours >= 5.0 && hours < 6.0) return 50;
-    return 30; // Menos de 5 horas
+    final normalized = (hours / 8.0 * 100).clamp(0.0, 100.0);
+    return normalized.round();
   }
 
   /// ✅ Calcular promedio de sueño
@@ -77,7 +71,7 @@ class SleepService {
 
       final totalHours = logs.fold<double>(
         0,
-        (sum, log) => sum + log.hours,
+        (accumulated, log) => accumulated + log.hours,
       );
 
       final average = totalHours / logs.length;
@@ -108,33 +102,33 @@ class SleepService {
 /// Proporcionan acceso singleton a SleepService en toda la app
 
 @riverpod
-SleepRepository sleepRepository(ref) {
+SleepRepository sleepRepository(Ref ref) {
   return SleepRepositoryImpl(FirebaseFirestore.instance);
 }
 
 @riverpod
-SleepService sleepService(ref) {
+SleepService sleepService(Ref ref) {
   final repository = ref.watch(sleepRepositoryProvider);
   return SleepService(repository);
 }
 
 /// ✅ Provider para sueño reciente
 @riverpod
-Future<List<SleepLog>> recentSleep(ref, String uid, {int limit = 7}) async {
+Future<List<SleepLog>> recentSleep(Ref ref, String uid, {int limit = 7}) async {
   final service = ref.watch(sleepServiceProvider);
   return await service.getRecentSleep(uid, limit: limit);
 }
 
 /// ✅ Stream provider para sueño en tiempo real
 @riverpod
-Stream<List<SleepLog>> sleepStream(ref, String uid, {int limit = 7}) {
+Stream<List<SleepLog>> sleepStream(Ref ref, String uid, {int limit = 7}) {
   final service = ref.watch(sleepServiceProvider);
   return service.watchRecentSleep(uid, limit: limit);
 }
 
 /// ✅ Provider para promedio de sueño
 @riverpod
-Future<double> averageSleep(ref, String uid, {int limit = 7}) async {
+Future<double> averageSleep(Ref ref, String uid, {int limit = 7}) async {
   final service = ref.watch(sleepServiceProvider);
   return await service.getAverageSleep(uid, limit: limit);
 }

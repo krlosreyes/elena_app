@@ -1,3 +1,4 @@
+
 /// Represents the current state of insulin in the body.
 ///
 /// Insulin is the primary anabolic hormone. Correctly managing its curves
@@ -68,12 +69,18 @@ abstract class MetabolicEngine {
     }
   }
 
+  // TODO: Remove in Phase 4 – duplicated metabolic logic
+  // calculateMetaICA is identical to ElenaBrain.calculateWHtR (waist/height).
+  // Phase 4: keep ONE canonical method here, remove ElenaBrain copy.
   /// Indice Cintura-Altura (metaICA)
   static double calculateMetaICA(double waistCm, double heightCm) {
     if (heightCm <= 0) return 0.0;
     return waistCm / heightCm;
   }
 
+  // TODO: Remove in Phase 4 – duplicated metabolic logic
+  // calculateMetaICC is identical to ElenaBrain.calculateWHR (waist/hip).
+  // Phase 4: keep ONE canonical method here, remove ElenaBrain copy.
   /// Indice Cintura-Cadera (metaICC)
   static double calculateMetaICC(double waistCm, double? hipCm) {
     if (hipCm == null || hipCm <= 0) return 0.0;

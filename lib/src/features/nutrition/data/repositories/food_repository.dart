@@ -41,7 +41,8 @@ class FoodRepositoryImpl implements FoodRepository {
       // SOVEREIGN MASTER DB: Search in Firestore 'master_food_db' using indexed query
       final localFood = await _searchSovereignDatabase(query);
       if (localFood != null) {
-        debugPrint('[SEARCH] ✅ Found: ${localFood.name} (IMR: ${localFood.imrScore})');
+        debugPrint(
+            '[SEARCH] ✅ Found: ${localFood.name} (IMR: ${localFood.imrScore})');
         return localFood;
       }
 
@@ -66,7 +67,8 @@ class FoodRepositoryImpl implements FoodRepository {
       debugPrint('[📡 REPO] Query returned ${snapshot.docs.length} documents');
 
       if (snapshot.docs.isEmpty) {
-        debugPrint('⚠️ WARNING: Query returned 0 documents for category: $category');
+        debugPrint(
+            '⚠️ WARNING: Query returned 0 documents for category: $category');
         return [];
       }
 
@@ -74,7 +76,8 @@ class FoodRepositoryImpl implements FoodRepository {
         return FoodModel.fromFirestore(doc.data());
       }).toList();
 
-      debugPrint('[REPOSITORY] ✅ Found ${results.length} items for category: $category');
+      debugPrint(
+          '[REPOSITORY] ✅ Found ${results.length} items for category: $category');
       return results;
     } catch (e) {
       debugPrint('[ERROR] Error fetching foods by category: $e');
@@ -107,31 +110,23 @@ class FoodRepositoryImpl implements FoodRepository {
       debugPrint('[SEARCH] Querying collection: $_masterFoodCollection');
 
       // Optimized search: Try literal match on ID first
-      final docSnapshot = await _firestore.collection(_masterFoodCollection).doc(normalizedQuery).get();
+      final docSnapshot = await _firestore
+          .collection(_masterFoodCollection)
+          .doc(normalizedQuery)
+          .get();
       if (docSnapshot.exists) {
         return FoodModel.fromFirestore(docSnapshot.data()!);
       }
 
-      // Fallback: Partial name search (prefix match)
-      final querySnapshot = await _firestore
-          .collection(_masterFoodCollection)
-          .where('metadata.nameLowercase', isGreaterThanOrEqualTo: normalizedQuery)
-          .where('metadata.nameLowercase', isLessThanOrEqualTo: '$normalizedQuery\uf8ff')
-          .limit(1)
-          .get();
-
-      if (querySnapshot.docs.isNotEmpty) {
-        return FoodModel.fromFirestore(querySnapshot.docs.first.data());
-      }
-
-      // Deep scan fallback (only for small datasets or curated search)
-      debugPrint('[SEARCH] No indexed match. Trying broad scan...');
-      final allFoods = await _firestore.collection(_masterFoodCollection).limit(50).get();
+      // Fallback: Scan by name match (nameLowercase removed from schema)
+      debugPrint('[SEARCH] Scanning documents by metadata.name...');
+      final allFoods =
+          await _firestore.collection(_masterFoodCollection).limit(100).get();
 
       for (final doc in allFoods.docs) {
         final food = FoodModel.fromFirestore(doc.data());
         if (food.name.toLowerCase().contains(normalizedQuery)) {
-          debugPrint('[SEARCH] Found via broad scan: ${food.name}');
+          debugPrint('[SEARCH] Found via name scan: ${food.name}');
           return food;
         }
       }

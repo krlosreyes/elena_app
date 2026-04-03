@@ -84,7 +84,7 @@ class MealRegistrationModal extends ConsumerStatefulWidget {
     // We close the dropdown first to show the portion selection
     Navigator.pop(context);
     
-    final foodService = ref.read(foodServiceProvider);
+    final foodService = ref.read(food_service.foodServiceProvider);
     final foodModel = await foodService.searchFood(foodName);
 
     if (foodModel == null) {

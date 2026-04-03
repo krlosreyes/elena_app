@@ -23,10 +23,10 @@ extension FoodCategoryX on FoodCategory {
 // Macros sub-object
 // ─────────────────────────────────────────────────────────────
 class SuggestionMacros {
-  final int protein; // grams
-  final int carbs; // grams
-  final int fat; // grams (key: 'g' in Firestore)
-  final int kcal;
+  final double protein; // grams
+  final double carbs; // grams
+  final double fat; // grams (key: 'g' in Firestore)
+  final double kcal;
 
   const SuggestionMacros({
     required this.protein,
@@ -36,10 +36,10 @@ class SuggestionMacros {
   });
 
   factory SuggestionMacros.fromMap(Map<String, dynamic> m) => SuggestionMacros(
-        protein: (m['p'] as num? ?? 0).toInt(),
-        carbs: (m['c'] as num? ?? 0).toInt(),
-        fat: (m['g'] as num? ?? 0).toInt(),
-        kcal: (m['kcal'] as num? ?? 0).toInt(),
+        protein: (m['p'] as num? ?? 0).toDouble(),
+        carbs: (m['c'] as num? ?? 0).toDouble(),
+        fat: (m['g'] as num? ?? 0).toDouble(),
+        kcal: (m['kcal'] as num? ?? 0).toDouble(),
       );
 
   Map<String, dynamic> toMap() => {

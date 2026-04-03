@@ -1,6 +1,10 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:elena_app/src/features/health/data/health_repository.dart';
 import 'package:elena_app/src/features/authentication/application/auth_controller.dart';
+import 'package:elena_app/src/features/health/data/health_repository.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../core/health/domain/decision_output.dart';
+import '../../../core/health/domain/health_snapshot.dart';
+import '../../../core/health/providers/health_snapshot_provider.dart';
 
 class HealthService {
   final Ref _ref;
@@ -11,7 +15,8 @@ class HealthService {
     final user = _ref.read(authControllerProvider.notifier).currentUser;
     if (user == null) return;
 
-    // Brain Validation (Sanity Check)
+    // Moved to DecisionEngine in Phase 3
+    // Keep only lightweight input sanitation in this thin adapter.
     final validatedGlasses = glasses.clamp(1, 10);
 
     await _ref
@@ -75,6 +80,18 @@ class HealthService {
     await _ref
         .read(healthRepositoryProvider)
         .logFasting(user.uid, end: DateTime.now());
+  }
+
+  /// Thin read adapter to the unified orchestration pipeline.
+  Future<HealthSnapshot?> getHealthSnapshot() async {
+    // Moved to DecisionEngine in Phase 3
+    return _ref.read(healthSnapshotProvider.future);
+  }
+
+  /// Convenience access to the current prioritized decision.
+  Future<DecisionOutput?> getDecisionOutput() async {
+    final snapshot = await getHealthSnapshot();
+    return snapshot?.decision;
   }
 }
 

@@ -1,20 +1,23 @@
 import 'dart:async';
 import 'dart:math' as math;
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../features/fasting/application/fasting_controller.dart';
-import '../../features/glucose/application/glucose_provider.dart';
-import '../../features/health/data/health_repository.dart';
-import '../../features/profile/application/user_controller.dart';
-import '../../domain/logic/elena_brain.dart';
-import '../../features/fasting/domain/meal_milestone_calculator.dart';
+
+import 'package:elena_app/src/core/health/providers/health_snapshot_provider.dart';
+import 'package:elena_app/src/core/services/notification_service.dart';
+import 'package:elena_app/src/features/dashboard/application/dashboard_adapter.dart';
+import 'package:elena_app/src/features/glucose/domain/glucose_model.dart';
 import 'package:elena_app/src/shared/domain/models/metabolic_milestone.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
-import 'package:elena_app/src/features/glucose/domain/glucose_model.dart';
-import 'package:elena_app/src/core/services/notification_service.dart';
-import '../../features/training/application/movement_controller.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../features/fasting/application/fasting_controller.dart';
+import '../../features/fasting/domain/meal_milestone_calculator.dart';
+import '../../features/glucose/application/glucose_provider.dart';
+import '../../features/health/data/health_repository.dart';
 import '../../features/health/domain/daily_log.dart';
+import '../../features/profile/application/user_controller.dart';
 import '../../features/sleep/application/sleep_controller.dart';
+import '../../features/training/application/movement_controller.dart';
 
 /// ✅ METABOLIC CONTEXT
 class MetabolicContext {
@@ -87,20 +90,25 @@ class MetabolicHub extends Notifier<MetabolicContext> {
 
   @override
   MetabolicContext build() {
+    // Moved to DecisionEngine in Phase 3
+    // This legacy hub is now a thin adapter over the unified health snapshot.
     final profile = ref.watch(currentUserStreamProvider).valueOrNull;
     final fastingStatus = ref.watch(fastingControllerProvider).valueOrNull;
     final latestGlucose = ref.watch(latestGlucoseLogProvider).valueOrNull;
     final movementStatus = ref.watch(exerciseProvider);
+    final snapshotData = ref.watch(healthSnapshotProvider).valueOrNull;
+    final dashboardSnapshot = snapshotData != null
+        ? const DashboardAdapter()
+            .adapt(snapshotData.state, decision: snapshotData.decision)
+        : null;
 
     // 1. Biometría en tiempo real
-    double estimatedG = 100.0;
-    double estimatedK = 0.2;
+    double estimatedG = dashboardSnapshot?.metabolic.estimatedGlucose ?? 100.0;
+    double estimatedK = dashboardSnapshot?.metabolic.estimatedKetones ?? 0.2;
     double hoursFasted = 0.0;
 
     if (fastingStatus != null && fastingStatus.isFasting) {
       hoursFasted = fastingStatus.elapsed.inMinutes / 60.0;
-      estimatedG = ElenaBrain.estimateGlucose(hoursFasted);
-      estimatedK = ElenaBrain.estimateKetones(hoursFasted);
     }
 
     // 2. Hidratación
@@ -161,14 +169,15 @@ class MetabolicHub extends Notifier<MetabolicContext> {
     }
 
     final parts = protocolStr.split(':');
-    final fastingHours = parts.length == 2 ? (int.tryParse(parts[0]) ?? 16) : 16;
+    final fastingHours =
+        parts.length == 2 ? (int.tryParse(parts[0]) ?? 16) : 16;
     final feedingWindowVal = 24.0 - fastingHours.toDouble();
 
     final List<double> mealOffsets = MealMilestoneCalculator.calculateOffsets(
       protocolStr,
-      numberOfMeals: (profile?.numberOfMeals == 2 && feedingWindowVal > 8.0) 
-        ? null 
-        : profile?.numberOfMeals,
+      numberOfMeals: (profile?.numberOfMeals == 2 && feedingWindowVal > 8.0)
+          ? null
+          : profile?.numberOfMeals,
     );
     final List<MetabolicMilestone> mealMilestones = [];
 
@@ -207,58 +216,26 @@ class MetabolicHub extends Notifier<MetabolicContext> {
 
     // 6. Sueño y MTI (Requiere Perfil)
     double sleepMins = 0.0;
-    double mti = 0.0;
-    double nutritionScore = 0.0;
+    double mti = dashboardSnapshot?.compliance.totalIED ?? 0.0;
+    double nutritionScore = dashboardSnapshot?.compliance.nutritionScore ?? 0.0;
 
-    int actualMealsVal = 0;
-    int expectedMealsVal = mealOffsets.length;
+    int actualMealsVal = dashboardSnapshot?.compliance.mealsLogged ?? 0;
+    int expectedMealsVal =
+        dashboardSnapshot?.compliance.mealsExpected ?? mealOffsets.length;
 
     if (profile != null) {
       final uid = profile.uid;
       final dailyLog = ref.watch(todayLogProvider(uid)).valueOrNull;
       sleepMins = (dailyLog?.sleepMinutes ?? 0).toDouble();
 
-      // 7. Cálculo del IED (Índice de Ejecución Diaria)
-      // Definido como el promedio simple de los 5 pilares (0-100%)
-
-      // Pilar 1: Ayuno
-      final fastingScore = (fastingStatus != null && fastingStatus.isFeeding)
-          ? 100.0
-          : (fastingStatus?.fastingPercent ?? 0.0).clamp(0, 100.0).toDouble();
-
-      // Pilar 2: Nutrición (basado en comidas registradas vs esperadas)
-      final int expMeals = mealOffsets.length;
-      final int actMeals = dailyLog?.mealEntries.length ?? 0;
-      nutritionScore =
-          expMeals > 0 ? (actMeals / expMeals).clamp(0, 1.0) * 100 : 0.0;
-
-      // Pilar 3: Ejercicio
-      final double exerciseGoal = 30.0; // Sincronizado con UI (30 min = 100%)
-      final exerciseScore =
-          ((dailyLog?.exerciseMinutes ?? 0) / exerciseGoal * 100)
-              .clamp(0, 100)
-              .toDouble();
-
-      // Pilar 4: Sueño
-      final double sleepGoal = 8.0 * 60.0; // 8 horas en minutos
-      final sleepScore = (sleepMins / sleepGoal * 100).clamp(0, 100).toDouble();
-
-      // Pilar 5: Hidratación
-      final double hydrationGoal =
-          (profile.currentWeightKg / 7).roundToDouble().clamp(1.0, 100.0);
-      final double hydrationScore =
-          (hydration / hydrationGoal * 100).clamp(0, 100).toDouble();
-
-      mti = (fastingScore +
-              nutritionScore +
-              exerciseScore +
-              sleepScore +
-              hydrationScore) /
-          5.0;
-
-      // Asignamos variables locales para el constructor
-      actualMealsVal = actMeals;
-      expectedMealsVal = expMeals;
+      // Moved to DecisionEngine in Phase 3
+      // IED and compliance scores now come from HealthOrchestrator + DashboardAdapter.
+      if (dashboardSnapshot == null) {
+        final int expMeals = mealOffsets.length;
+        final int actMeals = dailyLog?.mealEntries.length ?? 0;
+        actualMealsVal = actMeals;
+        expectedMealsVal = expMeals;
+      }
     }
 
     final sleepStatus = ref.watch(sleepStatusProvider).valueOrNull;
@@ -289,13 +266,9 @@ class MetabolicHub extends Notifier<MetabolicContext> {
   }
 
   void _checkHydration() {
-    final profile = ref.read(currentUserStreamProvider).valueOrNull;
-    if (profile == null) return;
-
     final now = DateTime.now();
-
-    // 1. Regla de Oro: No molestar durante el sueño
-    if (ElenaBrain.isSleepWindow(profile, now)) return;
+    // TODO: Remove in Phase 4 cleanup
+    // Legacy reminder cadence retained for backward compatibility.
 
     // 2. Cálculo de tiempo desde último recordatorio
     final last = _lastReminder ?? now.subtract(const Duration(minutes: 31));
@@ -303,20 +276,16 @@ class MetabolicHub extends Notifier<MetabolicContext> {
     final threshold = _isInsistent ? 5 : 30;
 
     if (diff.inMinutes >= threshold) {
-      _triggerReminder(profile);
+      _triggerReminder();
     }
   }
 
-  void _triggerReminder(UserModel profile) {
+  void _triggerReminder() {
     _lastReminder = DateTime.now();
 
-    // Mensajería Dinámica basada en Glucosa Estimada
-    final fastingStatus = ref.read(fastingControllerProvider).valueOrNull;
-    double hoursFasted = 0.0;
-    if (fastingStatus != null && fastingStatus.isFasting) {
-      hoursFasted = fastingStatus.elapsed.inMinutes / 60.0;
-    }
-    final estimatedG = ElenaBrain.estimateGlucose(hoursFasted);
+    final snapshotData = ref.read(healthSnapshotProvider).valueOrNull;
+    final estimatedG =
+        snapshotData?.state.metabolicProfile.estimatedCurrentGlucose ?? 95.0;
 
     NotificationService.scheduleHydrationReminder(
       Duration.zero,

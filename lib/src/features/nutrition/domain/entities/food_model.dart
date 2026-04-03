@@ -1,4 +1,6 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+
+import 'food_suggestion.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // FOOD MODEL — Sovereign Master Database Entity
@@ -6,10 +8,10 @@ import 'package:flutter/foundation.dart';
 // ─────────────────────────────────────────────────────────────────────────────
 //
 // 4-NODE STRUCTURE:
-// 1. metadata: {id, name, nameLowercase, category, search_tags}
-// 2. content: {calories, proteins, fats, net_carbs, serving}
-// 3. app_integration: {imr_score, svg_node, tip}
-// 4. quiz: {impact, level}
+// 1. metadata: {name, category, imrScore, tags}
+// 2. content: {tip, impact, level}
+// 3. app_integration: {macros: {p, g, c, kcal}, food_id}
+// 4. quiz: {last_reviewed}
 //
 // All nutritional values are per 100g for standardization.
 // Document ID in Firestore: slug (e.g., 'sardinas-atlanticas')
@@ -18,26 +20,23 @@ class FoodModel {
   // NODE 1: METADATA
   final String id; // Slug: 'sardinas-atlanticas'
   final String name; // Display name: 'Sardinas (Atlánticas)'
-  final String nameLowercase; // Auto-generated: 'sardinas (atlánticas)'
-  final String category; // Category: 'Proteína 🐟'
-  final List<String> searchTags; // ['sardina', 'pez', 'omega-3', 'calcio']
+  final String category; // Category: 'Proteína'
+  final List<String> searchTags;
 
-  // NODE 2: CONTENT (Nutritional values per 100g)
-  final double protein; // grams
-  final double fat; // grams
-  final double netCarbs; // grams
-  final double calories; // kcal
-  final double serving; // Reference serving in grams (default: 100g)
+  // NODE 2: CONTENT
+  final double protein; // grams (path: app_integration.macros.p)
+  final double fat; // grams (path: app_integration.macros.g)
+  final double netCarbs; // grams (path: app_integration.macros.c)
+  final double calories; // kcal (path: app_integration.macros.kcal)
+  final String tip; // Nutricional tip (path: content.tip)
 
   // NODE 3: APP INTEGRATION
-  final int imrScore; // Metabolic Resilience Score (1-10)
-  final String? svgNode; // SVG visualization (optional)
-  final String tip; // Nutricional tip: "Omega-3 y Calcio puro"
+  final double imrScore; // Metabolic Resilience (path: metadata.imrScore)
+  final String? svgNode;
 
   // NODE 4: QUIZ
-  final String
-  impact; // Impact category: 'sarcopenia', 'inflamación', 'energía'
-  final int level; // Difficulty level (1-3)
+  final String impact;
+  final int level;
 
   // METADATA & TRACKING
   final DateTime createdAt;
@@ -46,283 +45,213 @@ class FoodModel {
   const FoodModel({
     required this.id,
     required this.name,
-    required this.nameLowercase,
     required this.category,
     required this.searchTags,
     required this.protein,
     required this.fat,
     required this.netCarbs,
     required this.calories,
-    required this.serving,
+    required this.tip,
     required this.imrScore,
     this.svgNode,
-    required this.tip,
     required this.impact,
     required this.level,
     required this.createdAt,
     required this.updatedAt,
   });
 
-  /// Calculate macro ratio (useful for meal planning)
+  /// Getter for sanitized category (no emojis)
+  String get displayCategory => category
+      .replaceAll(RegExp(r'[\u{1F300}-\u{1F9FF}]', unicode: true), '')
+      .trim();
+
+  /// Getter for monochromatic icon based on category (minimalist design)
+  IconData get displayIcon {
+    final cat = displayCategory.toLowerCase();
+
+    if (cat.contains('proteina') ||
+        cat.contains('proteína') ||
+        cat.contains('proteinas') ||
+        cat.contains('proteínas')) {
+      return Icons.fitness_center_rounded;
+    }
+
+    if (cat.contains('carbo') ||
+        cat.contains('carbohidr') ||
+        cat.contains('carbs')) {
+      return Icons.bakery_dining_rounded;
+    }
+
+    if (cat.contains('grasa') ||
+        cat.contains('aceite') ||
+        cat.contains('lípido')) {
+      return Icons.water_drop_rounded;
+    }
+
+    if (cat.contains('vege') ||
+        cat.contains('verdura') ||
+        cat.contains('fibra')) {
+      return Icons.eco_rounded;
+    }
+
+    if (cat.contains('frut')) {
+      return Icons.apple_rounded;
+    }
+
+    return Icons.circle_outlined;
+  }
+
+  /// Calculate macro ratio
   MacroRatio get macroRatio {
     final totalCalories = (protein * 4) + (fat * 9) + (netCarbs * 4);
     return MacroRatio(
-      proteinPercent: totalCalories > 0
-          ? (protein * 4) / totalCalories * 100
-          : 0,
+      proteinPercent:
+          totalCalories > 0 ? (protein * 4) / totalCalories * 100 : 0,
       fatPercent: totalCalories > 0 ? (fat * 9) / totalCalories * 100 : 0,
-      carbsPercent: totalCalories > 0
-          ? (netCarbs * 4) / totalCalories * 100
-          : 0,
+      carbsPercent:
+          totalCalories > 0 ? (netCarbs * 4) / totalCalories * 100 : 0,
     );
   }
 
-  /// Calculate macros for a given weight
-  FoodMacros calculateMacros(double weightG) {
-    final multiplier = weightG / serving;
-    return FoodMacros(
+  /// Calculate macros for a given weight (Assuming standard 100g base)
+  SuggestionMacros calculateMacros(double weightG) {
+    const servingBase = 100.0;
+    final multiplier = weightG / servingBase;
+    return SuggestionMacros(
       protein: protein * multiplier,
       fat: fat * multiplier,
       carbs: netCarbs * multiplier,
-      calories: calories * multiplier,
+      kcal: calories * multiplier,
     );
   }
 
-  /// Create from JSON (API compatibility)
-  factory FoodModel.fromJson(Map<String, dynamic> json) {
-    return FoodModel(
-      id: json['id'] as String? ?? '',
-      name: json['name'] as String? ?? 'Unknown',
-      nameLowercase:
-          (json['nameLowercase'] as String?) ??
-          (json['name'] as String? ?? 'unknown').toLowerCase(),
-      category: json['category'] as String? ?? 'other',
-      searchTags:
-          (json['searchTags'] as List<dynamic>?)?.cast<String>().toList() ?? [],
-      protein: (json['protein'] as num?)?.toDouble() ?? 0.0,
-      fat: (json['fat'] as num?)?.toDouble() ?? 0.0,
-      netCarbs: (json['netCarbs'] as num?)?.toDouble() ?? 0.0,
-      calories: (json['calories'] as num?)?.toDouble() ?? 0.0,
-      serving: (json['serving'] as num?)?.toDouble() ?? 100.0,
-      imrScore: (json['imrScore'] as num?)?.toInt() ?? 5,
-      svgNode: json['svgNode'] as String?,
-      tip: json['tip'] as String? ?? 'Sin descripción',
-      impact: json['impact'] as String? ?? 'general',
-      level: (json['level'] as num?)?.toInt() ?? 1,
-      createdAt: (json['createdAt'] as dynamic)?.toDate() ?? DateTime.now(),
-      updatedAt: (json['updatedAt'] as dynamic)?.toDate() ?? DateTime.now(),
-    );
-  }
-
-  /// Convert to JSON (Firestore serialization)
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
-      'nameLowercase': nameLowercase, // Auto-generated for search index
-      'category': category,
-      'searchTags': searchTags,
-      'protein': protein,
-      'fat': fat,
-      'netCarbs': netCarbs,
-      'calories': calories,
-      'serving': serving,
-      'imrScore': imrScore,
-      'svgNode': svgNode,
-      'tip': tip,
-      'impact': impact,
-      'level': level,
-      'createdAt': createdAt,
-      'updatedAt': updatedAt,
-    };
-  }
-
-  /// Convert to Firestore-safe format with auto-generated lowercase name
-  Map<String, dynamic> toFirestoreMap() {
-    return {
-      'id': id,
-      'name': name,
-      'nameLowercase': name.toLowerCase(), // Auto-generated for indexed search
-      'category': category,
-      'searchTags': searchTags,
-      'protein': protein,
-      'fat': fat,
-      'netCarbs': netCarbs,
-      'calories': calories,
-      'serving': serving,
-      'imrScore': imrScore,
-      'svgNode': svgNode,
-      'tip': tip,
-      'impact': impact,
-      'level': level,
-      'createdAt': createdAt,
-      'updatedAt': updatedAt,
-    };
-  }
-
-  /// Create from Firestore document (factory constructor)
-  /// SUPPORTS BOTH STRUCTURES:
-  /// 1. 4-NODE ARCHITECTURE: { "metadata": {...}, "content": {...}, "app_integration": {...}, "quiz": {...} }
-  /// 2. FLAT STRUCTURE: { "id": "...", "name": "...", "category": "...", ... }
+  /// Create from Firestore document (4-node protocol)
   factory FoodModel.fromFirestore(Map<String, dynamic> data) {
-    // Try to extract from 4-node structure first
-    final metadata = data['metadata'] as Map<String, dynamic>? ?? {};
-    final content = data['content'] as Map<String, dynamic>? ?? {};
-    final appIntegration =
-        data['app_integration'] as Map<String, dynamic>? ?? {};
-    final quiz = data['quiz'] as Map<String, dynamic>? ?? {};
+    final rawMetadata = data['metadata'];
+    final rawAppIntegration = data['app_integration'];
 
-    // Extract metadata node data (or fall back to root level)
-    final String id =
-        (metadata['id'] as String?) ?? (data['id'] as String?) ?? '';
-    final String name =
-        (metadata['name'] as String?) ?? (data['name'] as String?) ?? 'Unknown';
-    final String nameLowercase =
-        (metadata['nameLowercase'] as String?) ??
-        (data['nameLowercase'] as String?) ??
-        name.toLowerCase();
-    final String category =
-        (metadata['category'] as String?) ??
-        (data['category'] as String?) ??
-        'General';
-
-    // Extract search tags (try 'tags' key in metadata first, then 'searchTags' at root)
-    List<String> searchTags = [];
-    if (metadata['tags'] is List) {
-      searchTags = (metadata['tags'] as List<dynamic>).cast<String>().toList();
-    } else if (data['searchTags'] is List) {
-      searchTags = (data['searchTags'] as List<dynamic>)
-          .cast<String>()
-          .toList();
+    // If either critical node is missing, return a safe default model
+    if (rawMetadata == null || rawAppIntegration == null) {
+      return FoodModel.defaultModel(id: (data['id'] as String?) ?? 'unknown');
     }
 
-    // Extract content node data (or fall back to root level)
-    final double calories =
-        (content['calories'] as num?)?.toDouble() ??
-        (data['calories'] as num?)?.toDouble() ??
-        0.0;
-    final double protein =
-        (content['proteins'] as num?)?.toDouble() ??
-        (data['protein'] as num?)?.toDouble() ??
-        0.0;
-    final double fat =
-        (content['fats'] as num?)?.toDouble() ??
-        (data['fat'] as num?)?.toDouble() ??
-        0.0;
-    final double netCarbs =
-        (content['net_carbs'] as num?)?.toDouble() ??
-        (data['netCarbs'] as num?)?.toDouble() ??
-        0.0;
+    final metadata = rawMetadata as Map<String, dynamic>;
+    final content = (data['content'] as Map<String, dynamic>?) ?? {};
+    final appIntegration = rawAppIntegration as Map<String, dynamic>;
+    final macros = (appIntegration['macros'] as Map<String, dynamic>?) ?? {};
 
-    // Extract serving (handle both 'serving' as string or number)
-    double serving = 100.0;
-    final servingValue = content['serving'] ?? data['serving'];
-    if (servingValue is num) {
-      serving = servingValue.toDouble();
-    } else if (servingValue is String) {
-      // Try to parse if it's "100g" format
-      final numStr = servingValue.replaceAll(RegExp(r'[^0-9.]'), '');
-      serving = double.tryParse(numStr) ?? 100.0;
-    }
-
-    // Extract app_integration node data (or fall back to root level)
-    final int imrScore =
-        (appIntegration['imr_score'] as num?)?.toInt() ??
-        (data['imrScore'] as num?)?.toInt() ??
-        5;
-    final String? svgNode =
-        (appIntegration['svg_node'] as String?) ?? (data['svgNode'] as String?);
-    final String tip =
-        (appIntegration['tip'] as String?) ??
-        (data['tip'] as String?) ??
-        'Sin descripción';
-
-    // Extract quiz node data (or fall back to root level)
-    final String impact =
-        (quiz['impact'] as String?) ?? (data['impact'] as String?) ?? 'general';
-
-    // Handle level (can be string like "Excelente" or int)
-    int level = 1;
-    final levelValue = quiz['level'] ?? data['level'];
-    if (levelValue is num) {
-      level = levelValue.toInt();
-    } else if (levelValue is String) {
-      // Map string values to numeric levels
-      final levelMap = {
-        'bajo': 1,
-        'medio': 2,
-        'alto': 3,
-        'basico': 1,
-        'intermedio': 2,
-        'avanzado': 3,
-        'excelente': 3,
-      };
-      level = levelMap[levelValue.toLowerCase()] ?? 1;
-    }
-
-    debugPrint('[DEBUG] 📖 FoodModel.fromFirestore():');
-    debugPrint('  ID: $id, Name: $name, Category: $category');
-    debugPrint('  IMR Score: $imrScore, Tip: $tip');
+    // Resolve document ID: app_integration.food_id → metadata.id → Firestore doc key
+    final resolvedId = (appIntegration['food_id'] as String?) ??
+        (metadata['id'] as String?) ??
+        (data['id'] as String?) ??
+        'unknown';
 
     return FoodModel(
-      id: id,
-      name: name,
-      nameLowercase: nameLowercase,
-      category: category,
-      searchTags: searchTags,
-      protein: protein,
-      fat: fat,
-      netCarbs: netCarbs,
-      calories: calories,
-      serving: serving,
-      imrScore: imrScore,
-      svgNode: svgNode,
-      tip: tip,
-      impact: impact,
-      level: level,
+      id: resolvedId,
+      name: (metadata['name'] as String?) ?? 'Alimento no identificado',
+      category: (metadata['category'] as String?) ?? 'General',
+      imrScore: (metadata['imrScore'] ?? 0).toDouble(),
+      tip: (content['tip'] as String?) ?? 'Sin descripción técnica',
+      protein: (macros['p'] ?? 0).toDouble(),
+      fat: (macros['g'] ?? 0).toDouble(),
+      netCarbs: (macros['c'] ?? 0).toDouble(),
+      calories: (macros['kcal'] ?? 0).toDouble(),
+      searchTags: (metadata['tags'] as List<dynamic>?)
+              ?.cast<String>()
+              .toList() ??
+          (metadata['searchTags'] as List<dynamic>?)?.cast<String>().toList() ??
+          const [],
+      svgNode: appIntegration['svg_node'] as String?,
+      impact: (content['impact'] as String?) ?? 'general',
+      level: (content['level'] as num?)?.toInt() ?? 1,
       createdAt: (data['createdAt'] as dynamic)?.toDate() ?? DateTime.now(),
       updatedAt: (data['updatedAt'] as dynamic)?.toDate() ?? DateTime.now(),
     );
   }
 
-  /// Create a modified copy (copyWith pattern)
+  /// Factory for fallback data
+  factory FoodModel.defaultModel({required String id}) {
+    return FoodModel(
+      id: id,
+      name: 'Alimento no identificado',
+      category: 'General',
+      searchTags: [],
+      protein: 0.0,
+      fat: 0.0,
+      netCarbs: 0.0,
+      calories: 0.0,
+      tip: 'Sin descripción técnica',
+      imrScore: 0.0,
+      impact: 'general',
+      level: 1,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+  }
+
+  /// Convert to JSON (Firestore 4-node schema serialization)
+  Map<String, dynamic> toJson() {
+    return {
+      'metadata': {
+        'name': name,
+        'category': category,
+        'imrScore': imrScore,
+        'tags': searchTags,
+      },
+      'content': {
+        'tip': tip,
+        'impact': impact,
+        'level': level,
+      },
+      'app_integration': {
+        'macros': {
+          'p': protein,
+          'g': fat,
+          'c': netCarbs,
+          'kcal': calories,
+        },
+        'food_id': id,
+      },
+      'quiz': {
+        'last_reviewed': null,
+      },
+      'createdAt': createdAt,
+      'updatedAt': updatedAt,
+    };
+  }
+
+  /// copyWith pattern
   FoodModel copyWith({
     String? id,
     String? name,
-    String? nameLowercase,
     String? category,
     List<String>? searchTags,
     double? protein,
     double? fat,
     double? netCarbs,
     double? calories,
-    double? serving,
-    int? imrScore,
-    String? svgNode,
     String? tip,
+    double? imrScore,
+    String? svgNode,
     String? impact,
     int? level,
-    DateTime? createdAt,
-    DateTime? updatedAt,
   }) {
     return FoodModel(
       id: id ?? this.id,
       name: name ?? this.name,
-      nameLowercase: nameLowercase ?? this.nameLowercase,
       category: category ?? this.category,
       searchTags: searchTags ?? this.searchTags,
       protein: protein ?? this.protein,
       fat: fat ?? this.fat,
       netCarbs: netCarbs ?? this.netCarbs,
       calories: calories ?? this.calories,
-      serving: serving ?? this.serving,
+      tip: tip ?? this.tip,
       imrScore: imrScore ?? this.imrScore,
       svgNode: svgNode ?? this.svgNode,
-      tip: tip ?? this.tip,
       impact: impact ?? this.impact,
       level: level ?? this.level,
-      createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
     );
   }
 
@@ -351,21 +280,4 @@ class MacroRatio {
   });
 }
 
-/// Calculated macros for a portion
-class FoodMacros {
-  final double protein;
-  final double fat;
-  final double carbs;
-  final double calories;
-
-  FoodMacros({
-    required this.protein,
-    required this.fat,
-    required this.carbs,
-    required this.calories,
-  });
-
-  @override
-  String toString() =>
-      'FoodMacros(P: ${protein.toStringAsFixed(1)}g, F: ${fat.toStringAsFixed(1)}g, C: ${carbs.toStringAsFixed(1)}g, Cal: ${calories.toStringAsFixed(0)}kcal)';
-}
+// Deleted FoodMacros as part of SuggestionMacros standardization.

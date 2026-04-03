@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-// Ensure AsyncValue is visible
-import '../../fasting/application/fasting_provider.dart';
-import 'package:elena_app/src/shared/domain/models/fasting_session.dart';
-import '../../glucose/application/glucose_provider.dart';
-import '../../glucose/domain/glucose_model.dart';
+
+import '../../../core/health/providers/health_snapshot_provider.dart';
 
 part 'metabolic_insight_provider.g.dart';
 
@@ -24,51 +21,44 @@ class MetabolicInsight {
 
 @riverpod
 MetabolicInsight? metabolicInsight(MetabolicInsightRef ref) {
-  // 1. Check Glucose (Priority: High)
-  final AsyncValue<List<GlucoseLog>> glucoseState =
-      ref.watch(filteredGlucoseProvider);
+  // Moved to DecisionEngine in Phase 3
+  final decision = ref.watch(healthSnapshotProvider).valueOrNull?.decision;
+  if (decision == null) return null;
 
-  if (glucoseState.hasValue &&
-      glucoseState.value != null &&
-      glucoseState.value!.isNotEmpty) {
-    // Sort by timestamp descending just to be safe
-    final logs = List.of(glucoseState.value!);
-    logs.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+  final visual = _visualForState(decision.metabolicState);
+  return MetabolicInsight(
+    message: '${decision.primaryAction}\n${decision.explanation}',
+    icon: visual.icon,
+    color: visual.color,
+    backgroundColor: visual.background,
+  );
+}
 
-    final latestLog = logs.first;
-    final hoursSinceLog =
-        DateTime.now().difference(latestLog.timestamp).inHours;
-
-    // Only relevant if log is very fresh (e.g., < 3 hours)
-    if (hoursSinceLog < 3 && latestLog.value > 140) {
-      return MetabolicInsight(
-        message:
-            "Pico de Glucosa Detectado (${latestLog.value.toInt()} mg/dL). \nSe sugiere una sesión de HIIT para activar receptores GLUT4 y estabilizar glicemia.",
-        icon: Icons.bolt,
-        color: Colors.orange.shade800,
-        backgroundColor: Colors.orange.shade50,
-      );
-    }
-  }
-
-  // 2. Check Fasting (Priority: Medium)
-  final AsyncValue<FastingSession?> fastingState =
-      ref.watch(activeFastProvider);
-
-  if (fastingState.hasValue && fastingState.value != null) {
-    final session = fastingState.value!;
-    final hoursFast = DateTime.now().difference(session.startTime).inHours;
-
-    if (!session.isCompleted && hoursFast >= 14) {
-      return MetabolicInsight(
-        message:
-            "Ayuno Profundo detectado ($hoursFast h). \nTu cuerpo está usando grasa como combustible. Mantén la intensidad en Zona 2 para maximizar la oxidación de lípidos.",
+({IconData icon, Color color, Color background}) _visualForState(String state) {
+  switch (state) {
+    case 'fat_burning':
+      return (
         icon: Icons.local_fire_department,
-        color: Colors.blue.shade800,
-        backgroundColor: Colors.blue.shade50,
+        color: Colors.orange.shade800,
+        background: Colors.orange.shade50,
       );
-    }
+    case 'recovery':
+      return (
+        icon: Icons.hotel,
+        color: Colors.indigo.shade700,
+        background: Colors.indigo.shade50,
+      );
+    case 'energy_boost':
+      return (
+        icon: Icons.bolt,
+        color: Colors.blue.shade800,
+        background: Colors.blue.shade50,
+      );
+    default:
+      return (
+        icon: Icons.insights,
+        color: Colors.teal.shade800,
+        background: Colors.teal.shade50,
+      );
   }
-
-  return null;
 }

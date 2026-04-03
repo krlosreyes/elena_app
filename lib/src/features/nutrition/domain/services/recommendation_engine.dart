@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'package:elena_app/src/shared/domain/models/user_model.dart';
 
 import '../entities/food_suggestion.dart';
 
@@ -32,7 +33,7 @@ class RecommendationEngine {
     required FoodSuggestion meal,
     required double bodyFatPercentage,
     required double? lastMonthBodyFat,
-    required String userGender, // 'M' or 'F'
+    required Gender userGender,
     required String healthCondition,
   }) {
     // ──────────────────────────────────────────────────────────────────────
@@ -62,7 +63,7 @@ class RecommendationEngine {
         );
         adaptiveScore += lowCarbBonus;
         bonusReasons.add(
-          '💚 Low Carb Bonus: +${lowCarbBonus.toStringAsFixed(1)} pts (${meal.macros.carbs}g carbs)',
+          '💚 Low Carb Bonus: +${lowCarbBonus.toStringAsFixed(1)} pts (${meal.macros.carbs.toStringAsFixed(0)}g carbs)',
         );
       }
 
@@ -71,7 +72,7 @@ class RecommendationEngine {
         const highProteinBonus = 15.0;
         adaptiveScore += highProteinBonus;
         bonusReasons.add(
-          '💪 High Protein Bonus: +${highProteinBonus.toStringAsFixed(1)} pts (${meal.macros.protein}g protein)',
+          '💪 High Protein Bonus: +${highProteinBonus.toStringAsFixed(1)} pts (${meal.macros.protein.toStringAsFixed(0)}g protein)',
         );
       }
 
@@ -80,7 +81,7 @@ class RecommendationEngine {
         const caloricPenalty = -10.0;
         adaptiveScore += caloricPenalty;
         bonusReasons.add(
-          '⚠️ Caloric Density Penalty: ${caloricPenalty.toStringAsFixed(1)} pts (${meal.macros.kcal} kcal)',
+          '⚠️ Caloric Density Penalty: ${caloricPenalty.toStringAsFixed(1)} pts (${meal.macros.kcal.toStringAsFixed(0)} kcal)',
         );
       }
     }
@@ -171,8 +172,8 @@ class RecommendationEngine {
   ///
   /// - Men: 25% (threshold for health concerns)
   /// - Women: 32% (adjusted for essential fat + hormonal differences)
-  static double _getBodyFatThreshold(String userGender) {
-    return userGender.toUpperCase() == 'F' ? 32.0 : 25.0;
+  static double _getBodyFatThreshold(Gender userGender) {
+    return userGender == Gender.female ? 32.0 : 25.0;
   }
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -188,7 +189,7 @@ class RecommendationEngine {
   static double _calculateLowCarbBonus(
     double currentBodyFat,
     double? lastMonthBodyFat,
-    String userGender,
+    Gender userGender,
   ) {
     const baseBonus = 20.0;
     const plateauBonus = 30.0;
@@ -349,7 +350,7 @@ class RecommendationEngine {
           ? 0.0
           : (matchCount / meal.tags.length) * 100;
 
-      return matchPercentage >= 70.0;
+      return matchPercentage >= 30.0;
     }).toList();
   }
 

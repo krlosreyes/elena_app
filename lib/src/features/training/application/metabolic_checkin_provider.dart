@@ -2,9 +2,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../core/health/providers/health_snapshot_provider.dart';
 import '../../authentication/application/auth_controller.dart';
 import '../domain/entities/metabolic_state.dart';
-import '../domain/logic/metabolic_logic.dart';
 import 'training_provider.dart';
 
 part 'metabolic_checkin_provider.g.dart';
@@ -43,25 +43,31 @@ class MetabolicCheckin extends _$MetabolicCheckin {
     // IMMUTABILITY CHECK: If already checked in for today, do NOT overwrite.
     if (state.value != null) return;
 
-    final stateData = MetabolicState(
-      date: DateTime.now(),
-      sleepHours: sleepHours,
-      sorenessLevel: sorenessLevel,
-      nutritionStatus: nutritionStatus,
-      energyLevel: energyLevel,
-      insightMessage: null, // Will be set below
-    );
+    final snapshot = ref.read(healthSnapshotProvider).valueOrNull;
+    final stateData = snapshot != null
+        ? MetabolicState.fromUserHealthState(
+            snapshot.state,
+            date: DateTime.now(),
+            sleepHoursOverride: sleepHours,
+            sorenessLevelOverride: sorenessLevel,
+            nutritionStatusOverride: nutritionStatus,
+            energyLevelOverride: energyLevel,
+            insightMessage: null,
+          )
+        : MetabolicState(
+            date: DateTime.now(),
+            sleepHours: sleepHours,
+            sorenessLevel: sorenessLevel,
+            nutritionStatus: nutritionStatus,
+            energyLevel: energyLevel,
+            insightMessage: null,
+          );
 
-    // Generate Insight using Domain Logic
-    final user = ref.read(authControllerProvider.notifier).currentUser;
-    final userName = user?.displayName ?? "Atleta";
-
-    // Logic import needed or duplicate? Let's assume we can import logic.
-    // Since we are in application layer, we should import domain logic.
-    // import '../domain/logic/metabolic_logic.dart';
-
-    // For now, I'll use the static method. I need to add import to file.
-    final insight = MetabolicLogic.generateInsightMessage(stateData, userName);
+    // Moved to DecisionEngine in Phase 3
+    final decision = ref.read(healthSnapshotProvider).valueOrNull?.decision;
+    final insight = decision != null
+        ? '${decision.primaryAction}. ${decision.explanation}'
+        : 'Check-in registrado. Elena ajustará tu plan con tu estado integral.';
     final finalState = stateData.copyWith(insightMessage: insight);
 
     state = AsyncData(finalState);

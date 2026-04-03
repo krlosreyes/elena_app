@@ -1,7 +1,8 @@
 import 'dart:math';
-import 'package:elena_app/src/shared/domain/models/user_model.dart';
+
 import 'package:elena_app/src/shared/domain/models/health_plan.dart';
 import 'package:elena_app/src/shared/domain/models/mti_model.dart';
+import 'package:elena_app/src/shared/domain/models/user_model.dart';
 
 /// ✅ ELENA BRAIN V2.0 (Metabolic Precision Engine)
 ///
@@ -14,6 +15,7 @@ class ElenaBrain {
   static const double minBmrFloor = 1200.0; // Absolute safety floor
   static const double metabolicStressMultiplier = 1.07;
 
+  // TODO: Remove in Phase 4 cleanup
   /// MTI Classification Engine
   static MtiClassification classifyMtiScore(double score) {
     if (score <= 30) return MtiClassification.highRisk;
@@ -25,22 +27,31 @@ class ElenaBrain {
 
   // --- 1. Clinical Anthropometry & Body Composition ---
 
+  // TODO: Remove in Phase 4 – duplicated metabolic logic
+  // BMI calculation is duplicated here and consumed by MetabolicProfile.fromUser.
+  // Phase 4: move to core/science/MetabolicEngine as single source of truth.
   static double calculateBMI(double weightKg, double heightCm) {
     if (heightCm < minHeightCm) return 0.0;
     return (weightKg / pow(heightCm / 100, 2)).clamp(10.0, 60.0);
   }
 
+  // TODO: Remove in Phase 4 – duplicated metabolic logic
+  // WHtR is identical to core/science/MetabolicEngine.calculateMetaICA.
   static double calculateWHtR(double? waistCm, double heightCm) {
     if (waistCm == null || heightCm < minHeightCm) return 0.0;
     return (waistCm / heightCm).clamp(0.2, 1.2);
   }
 
+  // TODO: Remove in Phase 4 – duplicated metabolic logic
+  // WHR is identical to core/science/MetabolicEngine.calculateMetaICC.
   /// Calculates Waist-to-Hip Ratio (WHR).
   static double calculateWHR(double? waistCm, double? hipCm) {
     if (waistCm == null || hipCm == null || hipCm <= 1.0) return 0.0;
     return (waistCm / hipCm).clamp(0.4, 1.5);
   }
 
+  // TODO: Remove in Phase 4 – duplicated metabolic logic
+  // Body fat (US Navy) should live in core/science/MetabolicEngine.
   /// US Navy Formula - High Authority Precision
   static double? calculateBodyFat({
     required double heightCm,
@@ -83,6 +94,8 @@ class ElenaBrain {
     }
   }
 
+  // TODO: Remove in Phase 4 – duplicated metabolic logic
+  // Alias duplicates calculateBodyFat above.
   /// Alias for calculateBodyFat for automated calls
   static double? calculateFatPercentage({
     required double heightCm,
@@ -111,6 +124,8 @@ class ElenaBrain {
 
   // --- 2. Advanced Metabolic Engine ---
 
+  // TODO: Remove in Phase 4 – duplicated metabolic logic
+  // BMR (Katch-McArdle / Mifflin-St Jeor) should live in core/science/MetabolicEngine.
   /// BMR Logic: Prefers Katch-McArdle (Lean Mass based) over Mifflin-St Jeor.
   static double calculateBMR(UserModel user) {
     final bf = calculateBodyFat(
@@ -140,6 +155,9 @@ class ElenaBrain {
     return bmr;
   }
 
+  // TODO: Remove in Phase 4 cleanup
+  // TODO: Remove in Phase 4 – duplicated metabolic logic
+  // Macro calculation duplicates nutrition/MetabolicEngine.generate pipeline.
   static Map<String, double> calculateMacros(UserModel user) {
     final bmr = calculateBMR(user);
     final tdee = bmr * _getActivityMultiplier(user.activityLevel);
@@ -181,26 +199,44 @@ class ElenaBrain {
 
   /// Estimates macros based on portions that prioritize metabolic control.
   static Map<String, int> estimateMacrosFromFoods(List<String> foods) {
-    int p = 0; int c = 0; int f = 0;
+    int p = 0;
+    int c = 0;
+    int f = 0;
     for (final food in foods) {
       final l = food.toLowerCase();
-      if (l.contains('huevo') || l.contains('carne') || l.contains('pollo')) { p += 25; f += 5; }
-      else if (l.contains('aguacate') || l.contains('nuez')) { f += 15; p += 2; }
-      else if (l.contains('arroz') || l.contains('papa')) { c += 35; p += 3; }
-      else if (l.contains('brócoli') || l.contains('fibra')) { c += 5; }
+      if (l.contains('huevo') || l.contains('carne') || l.contains('pollo')) {
+        p += 25;
+        f += 5;
+      } else if (l.contains('aguacate') || l.contains('nuez')) {
+        f += 15;
+        p += 2;
+      } else if (l.contains('arroz') || l.contains('papa')) {
+        c += 35;
+        p += 3;
+      } else if (l.contains('brócoli') || l.contains('fibra')) {
+        c += 5;
+      }
     }
-    return {'calories': (p * 4) + (c * 4) + (f * 9), 'protein': p, 'carbs': c, 'fats': f};
+    return {
+      'calories': (p * 4) + (c * 4) + (f * 9),
+      'protein': p,
+      'carbs': c,
+      'fats': f
+    };
   }
 
+  // TODO: Remove in Phase 4 cleanup
+  // TODO: Remove in Phase 4 – duplicated metabolic logic
+  // Metabolic phase mirrors core/science/MetabolicEngine.calculateZone.
   /// Provides a qualitative state of the current metabolism.
-  static String getMetabolicPhase(int p, int c, int f, Duration fastingElapsed) {
+  static String getMetabolicPhase(
+      int p, int c, int f, Duration fastingElapsed) {
     if (fastingElapsed.inHours > 16) return "AUTOFAGIA";
     if (fastingElapsed.inHours > 12) return "LIPÓLISIS";
     if (c > 50 && c > p) return "INSULINA ALTA";
     if (p > 40 && c < 30) return "ANABOLISMO";
     return "EQUILIBRIO";
   }
-
 
   // --- 3. MTI (Metabolic Terrain Index) & Sarcopenia ---
 
@@ -228,6 +264,7 @@ class ElenaBrain {
         .clamp(0.0, 100.0);
   }
 
+  // TODO: Remove in Phase 4 cleanup
   static double calculateTotalMTI(
     UserModel user, {
     double? realTimeFastingHours,
@@ -269,8 +306,10 @@ class ElenaBrain {
     return score.clamp(0.0, 100.0);
   }
 
+  // TODO: Remove in Phase 4 cleanup
   static double calculateMTIForUser(UserModel user) => calculateTotalMTI(user);
 
+  // TODO: Remove in Phase 4 cleanup
   static double calculateBodyScore(double? waistCm, double heightCm,
       double? hipCm, double? neckCm, bool isMale) {
     if (waistCm == null || waistCm < 1.0 || heightCm <= 0) {
@@ -294,6 +333,7 @@ class ElenaBrain {
     return bodyScore.isNaN ? 0.5 : bodyScore;
   }
 
+  // TODO: Remove in Phase 4 cleanup
   static double calculateMetabolicScore(
       double avgFastingHours, int energyLevel1To10) {
     final s4 = 1.0 / (1.0 + exp(-(avgFastingHours - 14.0) / 2.0));
@@ -301,6 +341,7 @@ class ElenaBrain {
     return (0.6 * s4) + (0.4 * s5);
   }
 
+  // TODO: Remove in Phase 4 cleanup
   static double calculateLifestyleScore(
       double nutritionScore, double exerciseScore, double sleepHours,
       [double hydrationScore = 50.0]) {
@@ -311,6 +352,7 @@ class ElenaBrain {
     return (0.35 * s6) + (0.35 * s7) + (0.2 * s8) + (0.1 * s9);
   }
 
+  // TODO: Remove in Phase 4 cleanup
   /// ✅ 🧠 Cálculo Circadiano de Calidad de Sueño (Protocolo 20/20)
   static const double sleepLatency =
       20.0; // Minutos estimados para conciliar el sueño
@@ -323,8 +365,7 @@ class ElenaBrain {
     DateTime? lastMealTime, // Sincronización con Nutrición
   }) {
     // 1. Latency Engine: Restar latencia del tiempo total
-    final sleepStart =
-        checkIn.add(Duration(minutes: sleepLatency.toInt()));
+    final sleepStart = checkIn.add(Duration(minutes: sleepLatency.toInt()));
     final double durationHours =
         checkOut.difference(sleepStart).inMinutes / 60.0;
 
@@ -359,6 +400,8 @@ class ElenaBrain {
     return finalScore.clamp(0.0, 100.0);
   }
 
+  // TODO: Remove in Phase 4 – duplicated metabolic logic
+  // Fasting hours calculation should be a shared utility in core/science.
   static double calculateFastingHours(String? firstMeal, String? lastMeal) {
     if (firstMeal == null ||
         firstMeal.isEmpty ||
@@ -409,6 +452,8 @@ class ElenaBrain {
     }
   }
 
+  // TODO: Remove in Phase 4 – duplicated metabolic logic
+  // calculateIndices wraps calculateWHtR + calculateWHR → same duplication.
   static Map<String, double> calculateIndices(
       double heightCm, double? waistCm, double? hipCm) {
     return {
@@ -459,6 +504,9 @@ class ElenaBrain {
     return user.pathologies.any((p) => risks.contains(p));
   }
 
+  // TODO: Remove in Phase 4 cleanup
+  // TODO: Remove in Phase 4 – duplicated metabolic logic
+  // HealthPlan generation overlaps with nutrition/MetabolicEngine pipeline.
   static HealthPlan generateHealthPlan(UserModel user) {
     final bmi = calculateBMI(user.currentWeightKg, user.heightCm);
     final whtr = calculateWHtR(user.waistCircumferenceCm, user.heightCm);
@@ -495,10 +543,14 @@ class ElenaBrain {
     );
   }
 
+  // TODO: Remove in Phase 4 – duplicated metabolic logic
+  // Glucose estimation duplicated here and in MetabolicHub. Consolidate in core/science.
   static double estimateGlucose(double hoursFasted) {
     return 110.0 - (38 * (1.0 - exp(-0.15 * hoursFasted)));
   }
 
+  // TODO: Remove in Phase 4 – duplicated metabolic logic
+  // Ketone estimation duplicated here and in MetabolicHub. Consolidate in core/science.
   static double estimateKetones(double hoursFasted) {
     if (hoursFasted < 8) return 0.2;
     final val = 0.2 + (0.1 * exp(0.18 * (hoursFasted - 8)));

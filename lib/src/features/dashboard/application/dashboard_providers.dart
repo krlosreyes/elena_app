@@ -1,11 +1,13 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:elena_app/src/features/health/data/health_repository.dart';
+import 'package:elena_app/src/features/profile/application/user_controller.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:elena_app/src/features/health/data/health_repository.dart';
+
+import '../../../core/health/providers/health_snapshot_provider.dart';
 import '../../authentication/application/auth_controller.dart';
-import '../../../core/providers/metabolic_hub_provider.dart';
-import 'package:elena_app/src/features/profile/application/user_controller.dart';
+import 'dashboard_adapter.dart';
 
 final dashboardTabIndexProvider = StateProvider<int>((ref) => 0);
 
@@ -13,6 +15,20 @@ final dashboardTabIndexProvider = StateProvider<int>((ref) => 0);
 final lastAutomatedMealIndexProvider = StateProvider<int>((ref) => -1);
 
 final dailyComplianceScoreProvider = Provider<double>((ref) {
+  // ── NEW PIPELINE: If health state is available, use DashboardAdapter ────
+  final useNew = ref.watch(useHealthStatePipelineProvider);
+  if (useNew) {
+    final snapshotData = ref.watch(healthSnapshotProvider).valueOrNull;
+    if (snapshotData != null) {
+      const adapter = DashboardAdapter();
+      final snapshot =
+          adapter.adapt(snapshotData.state, decision: snapshotData.decision);
+      return snapshot.compliance.totalIED;
+    }
+    // Fall through to legacy if healthState is null (loading/error)
+  }
+
+  // ── LEGACY FALLBACK: Existing MetabolicHub-based logic ─────────────────
   final user = ref.watch(authControllerProvider.notifier).currentUser;
   if (user == null) return 0.0;
 
@@ -67,10 +83,29 @@ final dailyComplianceScoreProvider = Provider<double>((ref) {
 });
 
 final dailyMotivationalPhraseProvider = Provider<String>((ref) {
+  // ── NEW PIPELINE: Use DashboardAdapter scores for richer messages ───────
+  final useNew = ref.watch(useHealthStatePipelineProvider);
+  if (useNew) {
+    final snapshotData = ref.watch(healthSnapshotProvider).valueOrNull;
+    if (snapshotData != null) {
+      const adapter = DashboardAdapter();
+      final snapshot =
+          adapter.adapt(snapshotData.state, decision: snapshotData.decision);
+      return snapshot.mainMessage;
+    }
+  }
+
+  // ── LEGACY FALLBACK ────────────────────────────────────────────────────
   final score = ref.watch(dailyComplianceScoreProvider);
+  final snapshotData = ref.watch(healthSnapshotProvider).valueOrNull;
+  final mtiScore = snapshotData != null
+      ? const DashboardAdapter()
+          .adapt(snapshotData.state, decision: snapshotData.decision)
+          .compliance
+          .totalIED
+      : score;
 
   // Mensajes basados en Score General (Breves y Concisos - Máx 4 palabras)
-  final mtiScore = ref.watch(metabolicHubProvider).totalIED;
   final user = ref.watch(currentUserStreamProvider).valueOrNull;
   final waist = user?.waistCircumferenceCm ?? 95.0;
 
@@ -103,3 +138,6 @@ final strictMealCountProvider =
     return snapshot.docs.length;
   });
 });
+
+// Moved to DecisionEngine in Phase 3
+// `healthSnapshotProvider` is the single source for UI-facing dashboard state.

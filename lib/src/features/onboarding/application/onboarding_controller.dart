@@ -6,6 +6,7 @@ import '../../../domain/logic/elena_brain.dart';
 import '../../../shared/domain/models/user_food_preferences.dart';
 import '../../authentication/application/register_controller.dart';
 import '../../authentication/auth_service.dart';
+import '../../nutrition/application/food_service.dart';
 import '../../profile/data/user_repository.dart';
 import '../../progress/data/progress_service.dart';
 import '../../progress/domain/measurement_log.dart';
@@ -78,6 +79,8 @@ class OnboardingController extends StateNotifier<UserModel?> {
       AppLogger.info('OnboardingController: Iniciando persistencia final...');
 
       // 1. Calcular índices metabólicos (metaICA, metaICC)
+      // TODO: Remove in Phase 4 – duplicated metabolic logic
+      // Direct call to ElenaBrain.calculateIndices duplicates core/science logic.
       final indices = ElenaBrain.calculateIndices(
         state!.heightCm,
         state!.waistCircumferenceCm,
@@ -106,9 +109,8 @@ class OnboardingController extends StateNotifier<UserModel?> {
 
         // 🧠 SEEDING PERSONALIZADO: Generar Ecosistema de Nutrición
         AppLogger.info('Generando Ecosistema de Nutrición Personalizado...');
-        await _ref
-            .read(foodServiceProvider)
-            .generatePersonalizedPool(updatedUser.uid, foodPrefs.allSelectedIds);
+        await _ref.read(foodServiceProvider).generatePersonalizedPool(
+            updatedUser.uid, foodPrefs.allSelectedIds);
       }
 
       // 5. Actualizar estado local para evitar race conditions en navegación
@@ -129,6 +131,8 @@ class OnboardingController extends StateNotifier<UserModel?> {
     try {
       final isMale = user.gender == Gender.male;
 
+      // TODO: Remove in Phase 4 – duplicated metabolic logic
+      // Direct call to ElenaBrain.calculateBodyFat duplicates core/science logic.
       final bodyFat = ElenaBrain.calculateBodyFat(
         heightCm: user.heightCm,
         waistCm: user.waistCircumferenceCm,
