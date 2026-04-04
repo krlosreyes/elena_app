@@ -47,7 +47,33 @@ void main() {
       expect(result.tone, equals('clinical'));
     });
 
-    test('detects recovery mode and gamification triggers', () {
+    test(
+        'activates recovery mode when missedDays >= 2 and adherenceScore < 0.4',
+        () {
+      final result = engine.enhance(
+        decision: _baseDecision(priority: 2),
+        behavior: UserBehaviorProfile(),
+        engagement: UserEngagementProfile(
+          motivationLevel: 0.7,
+          adherenceScore: 0.3,
+          currentStreak: 14,
+          longestStreak: 20,
+          totalActionsCompleted: 50,
+          missedDays: 2,
+        ),
+      );
+
+      expect(result.recoveryMode, isTrue);
+      expect(result.decision.primaryAction, equals('Drink water'));
+      expect(result.suggestedActions, contains('Walk 10 minutes'));
+      expect(result.suggestedActions, contains('Eat something light'));
+      expect(result.suggestedActions, contains('No strict fasting today.'));
+      expect(result.suggestedActions, contains('No intense training today.'));
+      expect(result.systemFlags, contains('recovery_mode'));
+      expect(result.systemFlags, contains('expectations_reset'));
+    });
+
+    test('does not activate recovery mode if adherence is not low enough', () {
       final result = engine.enhance(
         decision: _baseDecision(priority: 2),
         behavior: UserBehaviorProfile(),
@@ -61,11 +87,8 @@ void main() {
         ),
       );
 
-      expect(result.recoveryMode, isTrue);
+      expect(result.recoveryMode, isFalse);
       expect(result.rewardTriggered, isTrue);
-      expect(
-          result.gamificationMessage.toLowerCase(), contains('recuperación'));
-      expect(result.systemFlags, contains('recovery_mode'));
       expect(result.systemFlags, contains('reward_triggered'));
     });
   });

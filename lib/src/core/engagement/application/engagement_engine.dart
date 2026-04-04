@@ -20,8 +20,37 @@ class EngagementEngine {
   }) {
     final isCritical = _isCriticalHealthDecision(decision);
 
-    final recoveryMode = engagement.missedDays > 2;
-    final lowAdherence = engagement.adherenceScore < 0.45;
+    final recoveryMode =
+        engagement.missedDays >= 2 && engagement.adherenceScore < 0.4;
+    final lowAdherence = engagement.adherenceScore < 0.4;
+
+    if (recoveryMode) {
+      final recoveryDecision = _buildRecoveryDecision(decision);
+
+      return UserExperienceOutput(
+        decision: recoveryDecision,
+        tone: 'recovery',
+        primaryMessage:
+            'Recovery mode active: focus on rebuilding consistency today.',
+        suggestedActions: const [
+          'Drink water',
+          'Walk 10 minutes',
+          'Eat something light',
+          'No strict fasting today.',
+          'No intense training today.',
+        ],
+        gamificationMessage:
+            'Objetivo del día: recuperar ritmo con acciones simples y sostenibles.',
+        streakAtRisk: engagement.currentStreak > 0,
+        rewardTriggered: false,
+        recoveryMode: true,
+        systemFlags: const [
+          'recovery_mode',
+          'consistency_rebuild',
+          'expectations_reset',
+        ],
+      );
+    }
 
     final tone = _resolveTone(
       motivationLevel: engagement.motivationLevel,
@@ -63,8 +92,9 @@ class EngagementEngine {
     if (streakAtRisk) flags.add('streak_risk');
     if (rewardTriggered) flags.add('reward_triggered');
     if (decision.isPersonalized) flags.add('health_personalized');
-    if (behavior.nutritionCompliance < 0.4)
+    if (behavior.nutritionCompliance < 0.4) {
       flags.add('behavior_low_nutrition_compliance');
+    }
 
     return UserExperienceOutput(
       decision: decision,
@@ -84,6 +114,27 @@ class EngagementEngine {
 
     final action = decision.primaryAction.toLowerCase();
     return action.contains('romper el ayuno') || action.contains('descanso');
+  }
+
+  DecisionOutput _buildRecoveryDecision(DecisionOutput baseDecision) {
+    return DecisionOutput(
+      primaryAction: 'Drink water',
+      explanation:
+          'Recovery mode activated due to missed days and low adherence. '
+          'Keep it simple and rebuild consistency first.',
+      secondaryActions: const [
+        'Walk 10 minutes',
+        'Eat something light',
+        'No strict fasting today.',
+        'No intense training today.',
+      ],
+      pillarScores: baseDecision.pillarScores,
+      metabolicState: 'recovery',
+      priority: 2,
+      isPersonalized: true,
+      personalizationReason:
+          'Recovery mode was triggered by missed days and low adherence.',
+    );
   }
 
   String _resolveTone({

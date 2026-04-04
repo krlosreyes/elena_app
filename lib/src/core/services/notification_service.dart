@@ -1,11 +1,13 @@
-import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:intl/intl.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart'; // For kIsWeb
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:timezone/timezone.dart' as tz;
+import 'package:intl/intl.dart';
 import 'package:timezone/data/latest.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
+
+import '../science/metabolic_engine.dart';
 
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _notificationsPlugin =
@@ -191,6 +193,147 @@ class NotificationService {
     } catch (e) {
       debugPrint("ERROR scheduling hydration: $e");
     }
+  }
+
+  static Map<String, String> _getPhaseMessage(
+    MetabolicZone zone,
+    CircadianPhase circadian,
+  ) {
+    // Caso especial: mañana temprano — Fenómeno del Amanecer
+    if (circadian == CircadianPhase.morningSensitivity &&
+        zone == MetabolicZone.postAbsorption) {
+      return {
+        'title': 'Tu cuerpo ya se preparó solo ☀️',
+        'body': 'Acaba de liberar cortisol y glucosa natural. '
+            'Si no tienes hambre real, tu desayuno puede esperar. '
+            'Un café negro prolonga tu quema de grasa.',
+      };
+    }
+
+    // Caso especial: melatonina activa — advertencia digestiva
+    if (circadian == CircadianPhase.melatoninRise) {
+      return {
+        'title': 'Tu sistema digestivo está cerrando 🌙',
+        'body': 'Después de las 8:30 PM tu cuerpo paraliza la digestión. '
+            'Ingerir comida pesada ahora compite con tu reparación celular '
+            'y destruye la calidad del sueño.',
+      };
+    }
+
+    switch (zone) {
+      case MetabolicZone.postAbsorption:
+        return {
+          'title': 'Ayuno en curso',
+          'body': 'Tu cuerpo está procesando la última comida. '
+              'El glucógeno hepático está activo.',
+        };
+      case MetabolicZone.glycogenDepletion:
+        return {
+          'title': 'Punto de inflexión metabólico ⚡',
+          'body': 'Tu cuerpo está buscando reservas. '
+              'El hambre ahora es una ola hormonal temporal, '
+              'no verdadera inanición. '
+              'Un vaso de agua mineral o té verde te lleva al otro lado.',
+        };
+      case MetabolicZone.fatBurning:
+        return {
+          'title': '🔥 Quema de Grasa Activa',
+          'body': 'Gluconeogénesis activada. Tu hígado fabrica energía '
+              'desde grasa. La adrenalina sube — es normal sentir '
+              'más energía y menos hambre. Hidrata con electrolitos.',
+        };
+      case MetabolicZone.deepKetosis:
+        return {
+          'title': '⚡ Cetosis Profunda — Claridad Mental',
+          'body': 'Tu cerebro opera con cetonas. '
+              'La hormona de crecimiento se duplica protegiendo '
+              'tu masa muscular. Estado óptimo de enfoque.',
+        };
+      case MetabolicZone.autophagy:
+        return {
+          'title': '🔬 Modo Clínico — Autofagia',
+          'body': 'Tus células están en limpieza profunda. '
+              'Si sientes mareo o debilidad, consume caldo de hueso '
+              'o agua con sal y magnesio de inmediato.',
+        };
+      case MetabolicZone.survivalMode:
+        return {
+          'title': '⚠️ Ayuno Extendido — Revisión Necesaria',
+          'body': 'Llevas más de 72 horas. El cuerpo está en estrés '
+              'metabólico extremo. La salud se construye con '
+              'flexibilidad, no con castigos prolongados. '
+              'Considera terminar el ayuno.',
+        };
+    }
+  }
+
+  static Future<void> sendFastingProgressNotification({
+    required Duration fastingElapsed,
+    DateTime? now,
+  }) async {
+    if (!_isInitialized) return;
+    if (kIsWeb) return;
+
+    final zone = MetabolicEngine.calculateZone(fastingElapsed);
+    final circadian = MetabolicEngine.getCurrentCircadianPhase(now: now);
+    final message = _getPhaseMessage(zone, circadian);
+
+    // Alerta especial de electrolitos en fatBurning y deepKetosis
+    final needsElectrolytes = zone == MetabolicZone.fatBurning ||
+        zone == MetabolicZone.deepKetosis ||
+        zone == MetabolicZone.autophagy;
+
+    const AndroidNotificationDetails androidDetails =
+        AndroidNotificationDetails(
+      'metabolic_phase_channel',
+      'Fases Metabólicas',
+      channelDescription: 'Alertas de progreso del ayuno por fase',
+      importance: Importance.high,
+      priority: Priority.high,
+      playSound: true,
+    );
+
+    const NotificationDetails details =
+        NotificationDetails(android: androidDetails);
+
+    await _notificationsPlugin.show(
+      zone.index + 100, // ID único por zona
+      message['title'],
+      needsElectrolytes
+          ? '${message['body']} · Recuerda: Na, K, Mg.'
+          : message['body'],
+      details,
+    );
+  }
+
+  static Future<void> sendSurvivalModeAlert() async {
+    if (!_isInitialized) return;
+    if (kIsWeb) return;
+
+    const AndroidNotificationDetails androidDetails =
+        AndroidNotificationDetails(
+      'safety_channel',
+      'Seguridad',
+      channelDescription: 'Alertas críticas de seguridad del ayuno',
+      importance: Importance.max,
+      priority: Priority.max,
+      playSound: true,
+      enableVibration: true,
+      fullScreenIntent: true,
+    );
+
+    const NotificationDetails details =
+        NotificationDetails(android: androidDetails);
+
+    await _notificationsPlugin.show(
+      999,
+      '⚠️ Revisión de Seguridad Requerida',
+      'Llevas más de 72 horas en ayuno. '
+          'El riesgo de arritmias y pérdida de masa muscular es real. '
+          'Elena no puede acompañar ayunos sin supervisión médica '
+          'más allá de este punto.',
+      details,
+    );
   }
 
   static Future<void> scheduleFastingNotifications(

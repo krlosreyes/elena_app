@@ -298,7 +298,7 @@ class _EnhancedFoodSearchAutocompleteState
                     padding:
                         const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: _getImrScoreColor(food.imrScore),
+                      color: _getImrScoreColor(food.imrScore.round()),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
@@ -481,7 +481,7 @@ class FoodMacroDisplay extends StatelessWidget {
             ),
             _buildMacroColumn(
               label: 'Calorías',
-              value: macros.calories.toStringAsFixed(0),
+              value: macros.kcal.toStringAsFixed(0),
               color: AppTheme.primary,
             ),
           ],

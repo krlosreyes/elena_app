@@ -1,4 +1,3 @@
-
 /// Represents the current state of insulin in the body.
 ///
 /// Insulin is the primary anabolic hormone. Correctly managing its curves
@@ -19,17 +18,23 @@ enum InsulinState {
 
 /// Defines the primary metabolic substrate being used for energy.
 enum MetabolicZone {
-  /// Primarily running on glucose/glycogen.
-  sugarBurning,
+  /// 0–12h: glucosa en sangre, glucógeno activo
+  postAbsorption,
 
-  /// Shift towards fatty acid oxidation (Lipolysis).
+  /// 12–18h: agotamiento glucógeno, inicio cambio combustible
+  glycogenDepletion,
+
+  /// 18–24h: gluconeogénesis + quema de grasa activa, adrenalina sube
   fatBurning,
 
-  /// Cellular repair processes activated (e.g. mTOR suppression).
+  /// 24–48h: cetosis profunda, claridad mental, GH se duplica
+  deepKetosis,
+
+  /// 48–72h: autofagia real, modo clínico, riesgo si no hay adaptación
   autophagy,
 
-  /// High concentration of ketone bodies (Beta-hydroxybutyrate).
-  deepKetosis,
+  /// 72h+: estrés metabólico extremo, restricción obligatoria en UI
+  survivalMode,
 }
 
 /// Represents the user's circadian rhythm phase.
@@ -55,18 +60,22 @@ enum CircadianPhase {
 /// generate prescriptions based on physiological inputs.
 abstract class MetabolicEngine {
   /// Calculates the current metabolic zone based on fasting duration.
-  ///
-  /// *   < 12h: [MetabolicZone.sugarBurning] - Glycogen stores are active.
-  /// *   12h - 16h: [MetabolicZone.fatBurning] - Lipolysis increases as insulin drops.
-  /// *   > 16h: [MetabolicZone.autophagy] - Cellular cleanup begins.
   static MetabolicZone calculateZone(Duration fastingTime) {
-    if (fastingTime.inHours > 16) {
-      return MetabolicZone.autophagy;
-    } else if (fastingTime.inHours > 12) {
-      return MetabolicZone.fatBurning;
-    } else {
-      return MetabolicZone.sugarBurning;
-    }
+    final h = fastingTime.inMinutes / 60.0;
+    if (h >= 72) return MetabolicZone.survivalMode;
+    if (h >= 48) return MetabolicZone.autophagy;
+    if (h >= 24) return MetabolicZone.deepKetosis;
+    if (h >= 18) return MetabolicZone.fatBurning;
+    if (h >= 12) return MetabolicZone.glycogenDepletion;
+    return MetabolicZone.postAbsorption;
+  }
+
+  static CircadianPhase getCurrentCircadianPhase({DateTime? now}) {
+    final hour = (now ?? DateTime.now()).hour;
+    if (hour >= 21 || hour < 6) return CircadianPhase.deepSleep;
+    if (hour >= 18) return CircadianPhase.melatoninRise;
+    if (hour >= 13) return CircadianPhase.afternoonDip;
+    return CircadianPhase.morningSensitivity;
   }
 
   // TODO: Remove in Phase 4 – duplicated metabolic logic

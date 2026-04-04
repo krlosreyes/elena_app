@@ -12,10 +12,12 @@ class MetabolicLogic {
   static double calculateVolumeAdjustment(MetabolicState state) {
     final zone = _resolveZone(state);
     final factorByZone = switch (zone) {
-      core_science.MetabolicZone.autophagy => 0.75,
-      core_science.MetabolicZone.fatBurning => 0.90,
-      core_science.MetabolicZone.sugarBurning => 1.00,
-      core_science.MetabolicZone.deepKetosis => 0.85,
+      core_science.MetabolicZone.postAbsorption => 1.00,
+      core_science.MetabolicZone.glycogenDepletion => 0.90,
+      core_science.MetabolicZone.fatBurning => 0.85,
+      core_science.MetabolicZone.deepKetosis => 0.80,
+      core_science.MetabolicZone.autophagy => 0.70,
+      core_science.MetabolicZone.survivalMode => 0.50,
     };
 
     final sorenessPenalty =
@@ -34,7 +36,9 @@ class MetabolicLogic {
     }
 
     if (zone == core_science.MetabolicZone.fatBurning ||
-        zone == core_science.MetabolicZone.autophagy) {
+        zone == core_science.MetabolicZone.deepKetosis ||
+        zone == core_science.MetabolicZone.autophagy ||
+        zone == core_science.MetabolicZone.survivalMode) {
       return 'Definición';
     }
 

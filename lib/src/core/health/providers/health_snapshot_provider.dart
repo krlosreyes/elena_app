@@ -9,19 +9,19 @@ import '../../../features/sleep/domain/entities/sleep_log.dart';
 import '../../../features/training/application/training_stats_provider.dart';
 import '../../../features/training/domain/entities/workout_log.dart';
 import '../application/health_orchestrator.dart';
-import '../domain/health_snapshot.dart';
+import '../domain/full_user_state.dart';
 
 /// Feature flag for the unified health pipeline.
 final useHealthStatePipelineProvider = StateProvider<bool>((ref) => false);
 
-/// Aggregates domain sources and returns a unified [HealthSnapshot].
+/// Aggregates domain sources and returns a unified [FullUserState].
 ///
 /// Async-safe by design (`FutureProvider`):
 /// - exposes loading/error states automatically via `AsyncValue`
 /// - guards nullable upstream sources
 /// - catches non-critical data failures (workouts/profile) gracefully
 final healthSnapshotProvider =
-    FutureProvider.autoDispose<HealthSnapshot?>((ref) async {
+    FutureProvider.autoDispose<FullUserState?>((ref) async {
   final isEnabled = ref.watch(useHealthStatePipelineProvider);
   if (!isEnabled) return null;
 

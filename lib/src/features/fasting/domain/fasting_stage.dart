@@ -61,13 +61,17 @@ class FastingStage {
     final zone = core_science.MetabolicEngine.calculateZone(elapsed);
 
     switch (zone) {
-      case core_science.MetabolicZone.sugarBurning:
-        if (elapsed.inHours >= 4) return getStages()[1];
+      case core_science.MetabolicZone.postAbsorption:
         return getStages()[0];
+      case core_science.MetabolicZone.glycogenDepletion:
+        return getStages()[1];
       case core_science.MetabolicZone.fatBurning:
         return getStages()[2];
-      case core_science.MetabolicZone.autophagy:
       case core_science.MetabolicZone.deepKetosis:
+        return getStages()[3];
+      case core_science.MetabolicZone.autophagy:
+        return getStages()[4];
+      case core_science.MetabolicZone.survivalMode:
         return getStages()[4];
     }
   }

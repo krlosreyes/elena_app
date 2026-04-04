@@ -1,26 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
+
+import '../../../core/providers/metabolic_hub_provider.dart';
+import '../../../core/utils/responsive_utils.dart';
+import '../../../shared/domain/models/user_model.dart';
+import '../../fasting/application/fasting_controller.dart';
+import '../../fasting/presentation/widgets/fasting_end_dialog.dart';
+import '../../nutrition/presentation/widgets/meal_registration_modal.dart';
+import '../../profile/application/user_controller.dart';
+import '../../sleep/application/circadian_controller.dart';
+import '../../sleep/application/sleep_controller.dart';
+import '../../tour/application/interactive_tour_service.dart';
+import '../../tour/application/tour_controller.dart';
+import '../application/dashboard_providers.dart';
+import 'widgets/dynamic_header_widget.dart';
 import 'widgets/elena_diagnosis_card.dart';
 import 'widgets/metabolic_pentagon_grid.dart';
-import 'widgets/dynamic_header_widget.dart';
-import '../../nutrition/presentation/widgets/meal_registration_modal.dart';
-import '../../fasting/application/fasting_controller.dart';
-import '../../../core/theme/app_theme.dart';
-import '../application/dashboard_providers.dart';
-import '../../fasting/presentation/widgets/fasting_end_dialog.dart';
-import '../../../core/providers/metabolic_hub_provider.dart';
-import 'package:flutter/scheduler.dart';
-import '../../../core/utils/responsive_utils.dart';
-import '../../tour/application/tour_controller.dart';
-import '../../tour/application/interactive_tour_service.dart';
-import '../../profile/application/user_controller.dart';
-import '../../../shared/domain/models/user_model.dart';
-
-
-import '../../sleep/application/sleep_controller.dart';
-import '../../sleep/application/circadian_controller.dart';
-import 'package:intl/intl.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -36,7 +34,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
   final GlobalKey _nutricionKey = GlobalKey();
   final GlobalKey _hidratacionKey = GlobalKey();
   final GlobalKey _suenoKey = GlobalKey();
-  final GlobalKey _panicKey = GlobalKey();
 
   bool _tourIsShowing = false;
 
@@ -155,9 +152,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     ref.listen<AsyncValue<FastingState>>(fastingControllerProvider,
         (previous, next) {
       final state = next.value;
-      if (state != null &&
-          state.isFeeding &&
-          !state.hasFeedingEndDialogShown) {
+      if (state != null && state.isFeeding && !state.hasFeedingEndDialogShown) {
         final feedingHours = 24 - state.plannedHours;
         final totalFeedingDuration = Duration(hours: feedingHours);
         if (state.elapsed >= totalFeedingDuration) {
@@ -182,10 +177,26 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     return ColorFiltered(
       colorFilter: circadianStatus.isPrepPhase
           ? const ColorFilter.matrix([
-              1.0, 0, 0, 0, 0,
-              0, 0.85, 0, 0, 0,
-              0, 0, 0.5, 0, 0,
-              0, 0, 0, 1, 0,
+              1.0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0.85,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0.5,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0,
             ])
           : const ColorFilter.mode(Colors.white, BlendMode.multiply),
       child: Container(
@@ -233,7 +244,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                             },
                           ),
                           const Spacer(flex: 1),
-                          _buildHungerPanicButton(context),
                           SizedBox(height: getRelativeHeight(context, 0.05)),
                         ],
                       ),
@@ -272,7 +282,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
         _nutricionKey,
         _hidratacionKey,
         _suenoKey,
-        _panicKey,
       ],
       onComplete: () {
         ref.read(tourControllerProvider.notifier).completeTour();
@@ -385,110 +394,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     );
   }
 
-  Widget _buildHungerPanicButton(BuildContext context) {
-    return Center(
-      child: Container(
-        key: _panicKey,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-        child: OutlinedButton.icon(
-          onPressed: () => _showHungerPanicDialog(context),
-          icon: const Icon(Icons.warning_amber_rounded,
-              size: 20, color: Colors.redAccent),
-          label: Text(
-            'PÁNICO DE HAMBRE',
-            style: GoogleFonts.jetBrainsMono(
-              fontSize: 12,
-              fontWeight: FontWeight.w900,
-              color: Colors.redAccent,
-              letterSpacing: 1.0,
-            ),
-          ),
-          style: OutlinedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-            side: BorderSide(color: Colors.redAccent.withValues(alpha: 0.3)),
-            shape: const BeveledRectangleBorder(),
-            backgroundColor: Colors.redAccent.withValues(alpha: 0.05),
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showHungerPanicDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(builder: (context, setState) {
-          return AlertDialog(
-            backgroundColor: const Color(0xFF0A0A0A),
-            shape: const BeveledRectangleBorder(
-              side: BorderSide(color: Colors.redAccent, width: 1),
-            ),
-            title: Text(
-              'ESTRATEGIA ANTI-PÁNICO',
-              style: GoogleFonts.jetBrainsMono(
-                color: Colors.redAccent,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'El hambre es una ola de 10 minutos. Tu cuerpo está pidiendo energía, pero tu hígado puede proveerla vía autofagia.',
-                  style:
-                      GoogleFonts.publicSans(color: Colors.white, fontSize: 15),
-                ),
-                const SizedBox(height: 20),
-                const LinearProgressIndicator(
-                  backgroundColor: Colors.white12,
-                  color: Colors.redAccent,
-                ),
-                const SizedBox(height: 20),
-                _buildAdviceItem(
-                    Icons.water_drop, 'Bebe 250ml de agua técnica ahora.'),
-                _buildAdviceItem(
-                    Icons.timer, 'Espera 10 minutos para recalibrar.'),
-                _buildAdviceItem(Icons.psychology,
-                    'La autofagia es reparación celular máxima.'),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text(
-                  'ENTENDIDO // RECALIBRANDO',
-                  style: GoogleFonts.jetBrainsMono(color: Colors.white70),
-                ),
-              ),
-            ],
-          );
-        });
-      },
-    );
-  }
-
-  Widget _buildAdviceItem(IconData icon, String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        children: [
-          Icon(icon, color: AppTheme.primary, size: 16),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              text,
-              style:
-                  GoogleFonts.publicSans(color: Colors.white70, fontSize: 13),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildPrepNotification() {
     return Container(
       width: double.infinity,
@@ -518,6 +423,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
       ),
     );
   }
+
   String _formatRealTime(double decimalHour) {
     int hours = decimalHour.toInt() % 24;
     int minutes = ((decimalHour - decimalHour.toInt()) * 60).round();

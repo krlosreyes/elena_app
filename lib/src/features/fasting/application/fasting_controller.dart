@@ -1,20 +1,19 @@
 import 'dart:async';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:elena_app/src/features/profile/application/user_controller.dart';
+import 'package:elena_app/src/shared/domain/models/fasting_session.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../../core/science/metabolic_engine.dart';
+import '../../../core/services/notification_service.dart';
 import '../../authentication/application/auth_controller.dart'
     show authStateChangesProvider, authControllerProvider;
-import '../../../core/services/notification_service.dart';
-import '../data/fasting_repository.dart';
-import 'package:elena_app/src/shared/domain/models/fasting_session.dart';
 import '../../health/data/health_repository.dart';
 import '../../health/domain/daily_log.dart';
-import 'package:elena_app/src/features/profile/application/user_controller.dart';
-
-
-
+import '../data/fasting_repository.dart';
 
 // Constantes de Fase Metabólica
 const String phaseFasting = 'IS_FASTING';
@@ -109,8 +108,10 @@ class FastingState {
       hasCompletedConfirmationShown:
           hasCompletedConfirmationShown ?? this.hasCompletedConfirmationShown,
       isContinuingPastGoal: isContinuingPastGoal ?? this.isContinuingPastGoal,
-      hasInitialMealBeenLogged: hasInitialMealBeenLogged ?? this.hasInitialMealBeenLogged,
-      hasFeedingEndDialogShown: hasFeedingEndDialogShown ?? this.hasFeedingEndDialogShown,
+      hasInitialMealBeenLogged:
+          hasInitialMealBeenLogged ?? this.hasInitialMealBeenLogged,
+      hasFeedingEndDialogShown:
+          hasFeedingEndDialogShown ?? this.hasFeedingEndDialogShown,
     );
   }
 }
@@ -118,6 +119,7 @@ class FastingState {
 class FastingController extends AutoDisposeNotifier<AsyncValue<FastingState>> {
   Timer? _timer;
   StreamSubscription? _metabolicSubscription;
+  MetabolicZone? _lastNotifiedZone;
   bool _autoTriggerChecked = false;
 
   @override
@@ -155,18 +157,24 @@ class FastingController extends AutoDisposeNotifier<AsyncValue<FastingState>> {
           if (data != null) {
             final String phase = data['current_phase'] ?? phaseFeeding;
             final rawStartTime = data['start_time'] ?? data['startTime'];
-            final DateTime? startTime = rawStartTime != null ? _parseDateTime(rawStartTime) : null;
-            
-            final rawFeedingStart = data['feeding_start_time'] ?? data['feedingStartTime'];
-            final DateTime? feedingStartTime = rawFeedingStart != null ? _parseDateTime(rawFeedingStart) : null;
+            final DateTime? startTime =
+                rawStartTime != null ? _parseDateTime(rawStartTime) : null;
+
+            final rawFeedingStart =
+                data['feeding_start_time'] ?? data['feedingStartTime'];
+            final DateTime? feedingStartTime = rawFeedingStart != null
+                ? _parseDateTime(rawFeedingStart)
+                : null;
             final int targetHours = data['target_hours'] ?? 16;
             final int originalTargetHours =
                 data['original_target_hours'] ?? targetHours;
             bool effectiveHasConfirmed =
                 data['has_completed_confirmation_shown'] ?? false;
             final bool isContinuing = data['is_continuing_past_goal'] ?? false;
-            final bool initialMealLogged = data['has_initial_meal_been_logged'] ?? false;
-            final bool feedingEndDialogShown = data['has_feeding_end_dialog_shown'] ?? false;
+            final bool initialMealLogged =
+                data['has_initial_meal_been_logged'] ?? false;
+            final bool feedingEndDialogShown =
+                data['has_feeding_end_dialog_shown'] ?? false;
             final now = DateTime.now();
             // debugPrint("🔄 Sync Snapshot: Phase=$phase, Start=$startTime, Confirmed=$effectiveHasConfirmed, Continuing=$isContinuing"); // Silenciado
 
@@ -267,17 +275,20 @@ class FastingController extends AutoDisposeNotifier<AsyncValue<FastingState>> {
 
                   // Actualizar flag hasInitialMealBeenLogged si hay comidas
                   if (log != null && log.mealEntries.isNotEmpty) {
-                    state = AsyncValue.data(state.value!.copyWith(hasInitialMealBeenLogged: true));
+                    state = AsyncValue.data(
+                        state.value!.copyWith(hasInitialMealBeenLogged: true));
                   }
 
-                  if (log != null && log.mealEntries.isEmpty && state.value?.hasInitialMealBeenLogged == false) {
+                  if (log != null &&
+                      log.mealEntries.isEmpty &&
+                      state.value?.hasInitialMealBeenLogged == false) {
                     debugPrint(
                         "🥗 Auto-Trigger: Abriendo registro de comida (Ventana con 0 comidas).");
                     ref.read(mealModalTriggerProvider.notifier).state = true;
                   } else if (log != null && log.mealEntries.isNotEmpty) {
                     debugPrint(
                         "🥗 Skip Trigger: Ya hay comidas registradas hoy.");
-                    // En un futuro podríamos reactivar el modal si pasó suficiente tiempo, 
+                    // En un futuro podríamos reactivar el modal si pasó suficiente tiempo,
                     // pero por ahora el usuario quiere evitar bucles automáticos.
                     // ref.read(mealModalTriggerProvider.notifier).state = false;
                   }
@@ -287,9 +298,10 @@ class FastingController extends AutoDisposeNotifier<AsyncValue<FastingState>> {
                 }
               });
             } else if (effectivePhase == phaseFasting) {
-                // Reset auto-trigger check for the next feeding window
-                _autoTriggerChecked = false;
-            } else if (effectivePhase == phaseFeeding && !effectiveHasConfirmed) {
+              // Reset auto-trigger check for the next feeding window
+              _autoTriggerChecked = false;
+            } else if (effectivePhase == phaseFeeding &&
+                !effectiveHasConfirmed) {
               debugPrint(
                   "🥗 Skip Trigger: En Alimentación pero SIN CONFIRMACIÓN. Esperando diálogo.");
             }
@@ -306,12 +318,14 @@ class FastingController extends AutoDisposeNotifier<AsyncValue<FastingState>> {
             ));
 
             // Persistimos para que el timer sea estable en el próximo snapshot
-            Future.delayed(Duration.zero, () => repo.updateMetabolicState(
-                  uid: uid,
-                  phase: phaseFeeding,
-                  feedingStartTime: defaultFeedingStart,
-                  isActive: true,
-                ));
+            Future.delayed(
+                Duration.zero,
+                () => repo.updateMetabolicState(
+                      uid: uid,
+                      phase: phaseFeeding,
+                      feedingStartTime: defaultFeedingStart,
+                      isActive: true,
+                    ));
 
             _startTicker();
           }
@@ -378,13 +392,29 @@ class FastingController extends AutoDisposeNotifier<AsyncValue<FastingState>> {
       isWindowClosing: windowClosing,
     ));
 
+    if (currentState.isFasting) {
+      // Detectar cambio de zona — solo notificar en transiciones
+      final currentZone = MetabolicEngine.calculateZone(elapsed);
+      if (_lastNotifiedZone != currentZone) {
+        _lastNotifiedZone = currentZone;
+        if (currentZone == MetabolicZone.survivalMode) {
+          NotificationService.sendSurvivalModeAlert();
+        } else {
+          NotificationService.sendFastingProgressNotification(
+            fastingElapsed: elapsed,
+          );
+        }
+      }
+    }
+
     // Debug periódico solo si es necesario para desarrollo (Silenciado para reducir ruido)
     // if (elapsed.inSeconds % 30 == 0) {
     //   debugPrint("💓 TICK [${currentState.currentPhase}]: ${elapsed.inSeconds}s (Base: $baseTime) | Closing: $windowClosing");
     // }
   }
 
-  Future<void> startFast({required int hours, DateTime? manualStartTime}) async {
+  Future<void> startFast(
+      {required int hours, DateTime? manualStartTime}) async {
     final uid = ref.read(authControllerProvider.notifier).currentUser?.uid;
     if (uid == null) return;
 
@@ -424,8 +454,9 @@ class FastingController extends AutoDisposeNotifier<AsyncValue<FastingState>> {
     final now = manualEndTime ?? DateTime.now();
     final startTime = currentState.startTime ?? now;
 
-    debugPrint("🎬 [FastingController] endFasting() Invocado (Reactive Overlay)...");
-    
+    debugPrint(
+        "🎬 [FastingController] endFasting() Invocado (Reactive Overlay)...");
+
     // 1. ACTUALIZACIÓN LOCAL INMEDIATA: Transición instantánea a FEEDING
     // para que la UI responda sin esperar a Firestore.
     state = AsyncValue.data(currentState.copyWith(
@@ -437,28 +468,30 @@ class FastingController extends AutoDisposeNotifier<AsyncValue<FastingState>> {
       hasFeedingEndDialogShown: false,
     ));
 
-
     try {
       final repo = ref.read(fastingRepositoryProvider);
 
       // 2. Transición Atómica en DB con Timeout de 5s
-      await repo.performEndFastingBatch(
+      await repo
+          .performEndFastingBatch(
         uid: uid,
         endTime: now,
         startTime: startTime,
         targetHours: currentState.plannedHours,
-      ).timeout(const Duration(seconds: 5), onTimeout: () {
-        throw TimeoutException("La conexión con Firestore ha tardado demasiado (5s). Reintente.");
+      )
+          .timeout(const Duration(seconds: 5), onTimeout: () {
+        throw TimeoutException(
+            "La conexión con Firestore ha tardado demasiado (5s). Reintente.");
       });
 
       debugPrint("✅ [FastingController] Transición Atómica en DB: EXITOSA");
-      
+
       // 3. Reiniciamos el gatillo automático para la nueva fase de alimentación
       _autoTriggerChecked = false;
+      _lastNotifiedZone = null;
 
       // 4. Invalida telemetría previa para telemetría pura
       ref.invalidate(todayLogProvider(uid));
-
 
       // 4. Feedback Háptico
       HapticFeedback.vibrate();
@@ -468,7 +501,6 @@ class FastingController extends AutoDisposeNotifier<AsyncValue<FastingState>> {
           now, 24 - currentState.plannedHours);
 
       debugPrint("🚀 [FastingController] endFasting() Finalizado con éxito.");
-
     } catch (e) {
       debugPrint("❌ [FastingController] Error crítico en endFasting: $e");
       // Restauramos el estado anterior (reaparece el overlay si es necesario)
@@ -569,10 +601,10 @@ class FastingController extends AutoDisposeNotifier<AsyncValue<FastingState>> {
     try {
       // 1. Limpiamos en HealthRepository (recalcula IED a 0)
       await ref.read(healthRepositoryProvider).clearTodayMeals(uid);
-      
+
       // 2. Disparamos inmediatamente el modal de registro para que inicie "desde cero"
       ref.read(mealModalTriggerProvider.notifier).state = true;
-      
+
       debugPrint("🗑️ Telemetría del día limpiada con éxito.");
       return true;
     } catch (e) {

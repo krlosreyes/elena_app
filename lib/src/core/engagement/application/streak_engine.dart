@@ -104,10 +104,12 @@ class StreakEngine {
   String _actionKeyFromDecision(DecisionOutput decision) {
     final action = decision.primaryAction.toLowerCase();
 
-    if (action.contains('romper el ayuno') || action.contains('momento de comer')) {
+    if (action.contains('romper el ayuno') ||
+        action.contains('momento de comer')) {
       return 'eat_now';
     }
-    if (action.contains('mantén tu ayuno') || action.contains('mantener ayuno')) {
+    if (action.contains('mantén tu ayuno') ||
+        action.contains('mantener ayuno')) {
       return 'fasting_continue';
     }
     if (action.contains('descanso')) return 'rest';

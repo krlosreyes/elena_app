@@ -42,7 +42,7 @@ class FoodModel {
   final DateTime createdAt;
   final DateTime updatedAt;
 
-  const FoodModel({
+  FoodModel({
     required this.id,
     required this.name,
     required this.category,
@@ -56,9 +56,10 @@ class FoodModel {
     this.svgNode,
     required this.impact,
     required this.level,
-    required this.createdAt,
-    required this.updatedAt,
-  });
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  })  : createdAt = createdAt ?? DateTime.now(),
+        updatedAt = updatedAt ?? DateTime.now();
 
   /// Getter for sanitized category (no emojis)
   String get displayCategory => category

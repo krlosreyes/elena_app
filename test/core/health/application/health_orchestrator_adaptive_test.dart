@@ -1,3 +1,6 @@
+import 'package:elena_app/src/core/engagement/application/engagement_engine.dart';
+import 'package:elena_app/src/core/engagement/domain/user_engagement_profile.dart';
+import 'package:elena_app/src/core/engagement/domain/user_experience_output.dart';
 import 'package:elena_app/src/core/health/application/adaptive_engine.dart';
 import 'package:elena_app/src/core/health/application/behavior_tracker.dart';
 import 'package:elena_app/src/core/health/application/decision_engine.dart';
@@ -21,6 +24,7 @@ void main() {
 
     final fakeDecisionEngine = _FakeDecisionEngine(baseDecision);
     final fakeAdaptiveEngine = _FakeAdaptiveEngine();
+    final fakeEngagementEngine = _FakeEngagementEngine();
     final fakeStore = _FakeBehaviorStore(
       profile: UserBehaviorProfile(
         fastingTolerance: 0.8,
@@ -32,6 +36,7 @@ void main() {
     final orchestrator = HealthOrchestrator(
       decisionEngine: fakeDecisionEngine,
       adaptiveEngine: fakeAdaptiveEngine,
+      engagementEngine: fakeEngagementEngine,
       behaviorStore: fakeStore,
     );
 
@@ -44,8 +49,10 @@ void main() {
 
     expect(fakeStore.loadCalled, isTrue);
     expect(fakeAdaptiveEngine.called, isTrue);
+    expect(fakeEngagementEngine.called, isTrue);
     expect(snapshot.decision.explanation, equals('adapted-decision'));
     expect(snapshot.decision.priority, equals(4));
+    expect(snapshot.experience.primaryMessage, equals('ux-final-message'));
   });
 }
 
@@ -70,6 +77,26 @@ class _FakeAdaptiveEngine extends AdaptiveEngine {
     return baseDecision.copyWith(
       explanation: 'adapted-decision',
       priority: 4,
+    );
+  }
+}
+
+class _FakeEngagementEngine extends EngagementEngine {
+  bool called = false;
+
+  @override
+  UserExperienceOutput enhance({
+    required DecisionOutput decision,
+    required UserBehaviorProfile behavior,
+    required UserEngagementProfile engagement,
+  }) {
+    called = true;
+    return UserExperienceOutput(
+      decision: decision,
+      tone: 'balanced',
+      primaryMessage: 'ux-final-message',
+      suggestedActions: const ['Drink water'],
+      recoveryMode: false,
     );
   }
 }

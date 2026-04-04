@@ -10,7 +10,7 @@ void main() {
     test('increases streak when user follows primary action', () {
       final output = engine.evaluate(
         decision: _hydrateDecision(priority: 3),
-  engagement: UserEngagementProfile(currentStreak: 2, longestStreak: 4),
+        engagement: UserEngagementProfile(currentStreak: 2, longestStreak: 4),
         userAction: 'hydrate',
         actionCompleted: true,
       );
@@ -30,7 +30,7 @@ void main() {
 
       final output = engine.evaluate(
         decision: critical,
-  engagement: UserEngagementProfile(currentStreak: 5, longestStreak: 8),
+        engagement: UserEngagementProfile(currentStreak: 5, longestStreak: 8),
         userAction: 'hydrate',
         actionCompleted: false,
       );
@@ -71,7 +71,7 @@ void main() {
     test('detects milestone rewards at 7/14/30', () {
       final at7 = engine.evaluate(
         decision: _hydrateDecision(priority: 2),
-  engagement: UserEngagementProfile(currentStreak: 6, longestStreak: 6),
+        engagement: UserEngagementProfile(currentStreak: 6, longestStreak: 6),
         userAction: 'hydrate',
         actionCompleted: true,
       );
@@ -80,7 +80,7 @@ void main() {
 
       final at14 = engine.evaluate(
         decision: _hydrateDecision(priority: 2),
-  engagement: UserEngagementProfile(currentStreak: 13, longestStreak: 13),
+        engagement: UserEngagementProfile(currentStreak: 13, longestStreak: 13),
         userAction: 'hydrate',
         actionCompleted: true,
       );
@@ -89,7 +89,7 @@ void main() {
 
       final at30 = engine.evaluate(
         decision: _hydrateDecision(priority: 2),
-  engagement: UserEngagementProfile(currentStreak: 29, longestStreak: 29),
+        engagement: UserEngagementProfile(currentStreak: 29, longestStreak: 29),
         userAction: 'hydrate',
         actionCompleted: true,
       );

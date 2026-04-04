@@ -294,7 +294,7 @@ class _FoodSuggestionTile extends StatelessWidget {
 
               // Macros per 100g
               Text(
-                'P: ${macros.protein.toStringAsFixed(0)}G | F: ${macros.fat.toStringAsFixed(0)}G | C: ${macros.carbs.toStringAsFixed(0)}G | ${macros.calories.toStringAsFixed(0)}KCAL',
+                'P: ${macros.protein.toStringAsFixed(0)}G | F: ${macros.fat.toStringAsFixed(0)}G | C: ${macros.carbs.toStringAsFixed(0)}G | ${macros.kcal.toStringAsFixed(0)}KCAL',
                 style: GoogleFonts.jetBrainsMono(
                   color: Colors.white30,
                   fontSize: 10,

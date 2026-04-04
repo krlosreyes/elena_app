@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/fasting/application/fasting_controller.dart';
+import '../../features/fasting/domain/fasting_stage.dart';
 import '../../features/fasting/domain/meal_milestone_calculator.dart';
 import '../../features/glucose/application/glucose_provider.dart';
 import '../../features/health/data/health_repository.dart';
@@ -18,6 +19,7 @@ import '../../features/health/domain/daily_log.dart';
 import '../../features/profile/application/user_controller.dart';
 import '../../features/sleep/application/sleep_controller.dart';
 import '../../features/training/application/movement_controller.dart';
+import 'circadian_phase_provider.dart';
 
 /// ✅ METABOLIC CONTEXT
 class MetabolicContext {
@@ -336,3 +338,22 @@ class MetabolicHub extends Notifier<MetabolicContext> {
 
 final metabolicHubProvider =
     NotifierProvider<MetabolicHub, MetabolicContext>(MetabolicHub.new);
+
+final metabolicHubSubLabelProvider = Provider.autoDispose<String>((ref) {
+  final hub = ref.watch(metabolicHubProvider);
+  final circadianLabel = ref.watch(circadianWindowLabelProvider);
+
+  if (hub.isFasting) {
+    final elapsed = hub.fastingStatus?.elapsed ?? Duration.zero;
+    final fastingStageLabel = FastingStage.getStageForDuration(elapsed).name;
+    return 'FASE: $fastingStageLabel · $circadianLabel';
+  }
+
+  return circadianLabel;
+});
+
+final metabolicHubCircadianPhaseColorProvider =
+    Provider.autoDispose<int>((ref) {
+  final phaseColor = ref.watch(circadianPhaseColorProvider);
+  return phaseColor;
+});

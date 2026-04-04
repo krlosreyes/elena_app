@@ -1,5 +1,6 @@
 import 'dart:developer' as developer;
 
+import '../../science/metabolic_engine.dart';
 import '../domain/decision_output.dart';
 import '../domain/user_health_state.dart';
 
@@ -10,6 +11,9 @@ class DecisionEngine {
 
   DecisionOutput decide(UserHealthState state, {DateTime? now}) {
     final referenceNow = now ?? DateTime.now();
+    final circadian =
+        MetabolicEngine.getCurrentCircadianPhase(now: referenceNow);
+    final isCircadianSleepWindow = circadian == CircadianPhase.deepSleep;
     _assertValidState(state);
 
     final pillarScores = _buildPillarScores(state);
@@ -43,6 +47,9 @@ class DecisionEngine {
     final lowRecovery = recovery < 45;
     final highEnergy = energy >= 75;
     final dehydrated = hydrationDeficit >= 2;
+    final isMorningWindow = circadian == CircadianPhase.morningSensitivity;
+    final isAfternoonWindow = circadian == CircadianPhase.afternoonDip;
+    final isMelatoninWindow = circadian == CircadianPhase.melatoninRise;
 
     // ───────────────────────────────────────────────────────────────────────
     // CRITICAL
@@ -145,6 +152,76 @@ class DecisionEngine {
             routineType: fastingActive ? 'Zona 2' : 'Potencia',
             isFasted: fastingActive,
           ).copyWith(priority: 3),
+        ),
+      );
+    }
+
+    // ── Circadiano: Pico cognitivo matutino ──
+    // 9–13h: máxima claridad mental y testosterona.
+    // Solo si el usuario no está en crisis de energía.
+    if (isMorningWindow && !veryLowEnergy && !poorSleep) {
+      candidates.add(
+        _DecisionCandidate(
+          tier: _DecisionTier.medium,
+          score: 520,
+          output: DecisionOutput.deepWork(
+            pillarScores: pillarScores,
+            circadianPhase: 'morningSensitivity',
+          ).copyWith(priority: 2),
+        ),
+      );
+    }
+
+    // ── Circadiano: Ventana neuromotora de tarde ──
+    // 14:30–17h: máxima coordinación y fuerza muscular.
+    // Sobrescribe la recomendación genérica de entrenamiento.
+    if (isAfternoonWindow && highEnergy && recovery >= 65) {
+      candidates.add(
+        _DecisionCandidate(
+          tier: _DecisionTier.medium,
+          score: 560, // score > 550 del train genérico → gana
+          output: DecisionOutput.train(
+            pillarScores: pillarScores,
+            routineType: fastingActive
+                ? 'Fuerza en Ayuno — Ventana Neuromotora'
+                : 'Fuerza Máxima — Ventana Neuromotora',
+            isFasted: fastingActive,
+          ).copyWith(priority: 3),
+        ),
+      );
+    }
+
+    // ── Circadiano: Advertencia digestiva nocturna ──
+    // Melatonina activa: comer ahora interrumpe reparación celular.
+    // Solo aplica si está en ventana de alimentación.
+    if (isMelatoninWindow && feedingWindow) {
+      candidates.add(
+        _DecisionCandidate(
+          tier: _DecisionTier.medium,
+          score: 580,
+          output: DecisionOutput.circadianWarning(
+            pillarScores: pillarScores,
+            message: 'Tu sistema digestivo está cerrando. '
+                'Ingerir comida pesada después de las 8:30 PM '
+                'compite con tu reparación celular nocturna. '
+                'Si puedes, cierra tu ventana de alimentación ahora.',
+          ).copyWith(priority: 2),
+        ),
+      );
+    }
+
+    // ── Circadiano: Ventana de sueño profundo ──
+    // Si el motor detecta que es hora de dormir y el usuario
+    // reportó menos de 7h anoche, la prioridad sube.
+    if (isCircadianSleepWindow && !poorSleep && sleepHours < 7.5) {
+      candidates.add(
+        _DecisionCandidate(
+          tier: _DecisionTier.medium,
+          score: 530,
+          output: DecisionOutput.rest(
+            pillarScores: pillarScores,
+            sleepDebt: (7.5 - sleepHours).clamp(0.0, 4.0),
+          ).copyWith(priority: 2),
         ),
       );
     }

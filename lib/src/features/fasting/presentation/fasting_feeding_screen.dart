@@ -1,28 +1,30 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui';
+
+import 'package:elena_app/src/shared/domain/models/user_model.dart';
+import 'package:elena_app/src/shared/presentation/widgets/circadian_wheel_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../core/providers/metabolic_hub_provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/blueprint_grid.dart';
 import '../../../core/widgets/elena_header.dart';
 import '../../../domain/logic/elena_brain.dart';
 import '../../authentication/application/auth_controller.dart'
     show authControllerProvider;
-import '../application/fasting_controller.dart';
-import '../../profile/application/user_controller.dart';
-import '../domain/fasting_stage.dart';
-import '../../../core/providers/metabolic_hub_provider.dart';
-import 'package:elena_app/src/shared/presentation/widgets/circadian_wheel_widget.dart';
-import '../../nutrition/presentation/widgets/meal_registration_modal.dart';
-import '../../nutrition/presentation/widgets/meal_review_sheet.dart';
 import '../../health/data/health_repository.dart';
 import '../../health/domain/daily_log.dart';
-import 'package:elena_app/src/shared/domain/models/user_model.dart';
+import '../../nutrition/presentation/widgets/meal_registration_modal.dart';
+import '../../nutrition/presentation/widgets/meal_review_sheet.dart';
+import '../../profile/application/user_controller.dart';
+import '../application/fasting_controller.dart';
+import '../domain/fasting_stage.dart';
 import 'widgets/fasting_end_dialog.dart';
+import 'widgets/sos_button_widget.dart';
 
 class FastingFeedingScreen extends ConsumerStatefulWidget {
   const FastingFeedingScreen({super.key});
@@ -80,7 +82,8 @@ class _FastingFeedingScreenState extends ConsumerState<FastingFeedingScreen> {
     });
 
     // Listen to feeding window expiration (Changes during session)
-    ref.listen<AsyncValue<FastingState>>(fastingControllerProvider, (previous, next) {
+    ref.listen<AsyncValue<FastingState>>(fastingControllerProvider,
+        (previous, next) {
       final state = next.value;
       if (state != null && state.isFeeding && !state.hasFeedingEndDialogShown) {
         final feedingHours = 24 - state.plannedHours;
@@ -95,8 +98,8 @@ class _FastingFeedingScreenState extends ConsumerState<FastingFeedingScreen> {
 
     // Handle initial expiration on app launch
     final currentState = fastingStateAsync.value;
-    if (currentState != null && 
-        currentState.isFeeding && 
+    if (currentState != null &&
+        currentState.isFeeding &&
         !currentState.hasFeedingEndDialogShown) {
       final feedingHours = 24 - currentState.plannedHours;
       final totalFeedingDuration = Duration(hours: feedingHours);
@@ -144,22 +147,26 @@ class _FastingFeedingScreenState extends ConsumerState<FastingFeedingScreen> {
 
         // 🏁 TRANSICIÓN A ALIMENTACIÓN: Reactiva y Atómica
         if (previous?.value?.isFasting == true && state.isFeeding) {
-          debugPrint("⚡ [FastingScreen] Transición a FEEDING detectada (Reactive).");
-          
-          final uid = ref.read(authControllerProvider.notifier).currentUser?.uid;
+          debugPrint(
+              "⚡ [FastingScreen] Transición a FEEDING detectada (Reactive).");
+
+          final uid =
+              ref.read(authControllerProvider.notifier).currentUser?.uid;
           if (uid != null) {
             try {
               // 1. Telemetría Pura: Validar si hay comida previa hoy
               // Await direct future to decide UI path
               final log = await ref.read(todayLogProvider(uid).future);
-              
+
               if (!mounted) return;
 
               if (log != null && log.mealEntries.isNotEmpty) {
-                debugPrint("🥗 [ReactiveTransition] Ruido detectado. Review Sheet.");
+                debugPrint(
+                    "🥗 [ReactiveTransition] Ruido detectado. Review Sheet.");
                 if (context.mounted) _showMealReviewSheet(context, ref);
               } else {
-                debugPrint("🥗 [ReactiveTransition] Telemetría limpia. Modal Registro.");
+                debugPrint(
+                    "🥗 [ReactiveTransition] Telemetría limpia. Modal Registro.");
                 if (context.mounted) MealRegistrationModal.show(context, ref);
               }
             } catch (e) {
@@ -221,7 +228,7 @@ class _FastingFeedingScreenState extends ConsumerState<FastingFeedingScreen> {
 
   void _showMealReviewSheet(BuildContext context, WidgetRef ref) {
     if (!mounted) return;
-    
+
     final user = ref.read(authControllerProvider.notifier).currentUser;
     if (user != null) {
       MealReviewSheet.show(context, user.uid);
@@ -293,6 +300,9 @@ class _FastingView extends ConsumerWidget {
               ),
               const SizedBox(height: 32),
               _buildActions(context, ref),
+              SosButtonWidget(
+                fastingElapsed: state.elapsed,
+              ),
             ],
           ),
         ),
@@ -570,7 +580,8 @@ class GoalReachedOverlay extends ConsumerWidget {
                   color: AppTheme.primary.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.stars, color: AppTheme.primary, size: 64),
+                child:
+                    const Icon(Icons.stars, color: AppTheme.primary, size: 64),
               ),
               const SizedBox(height: 32),
               Text(
@@ -606,26 +617,30 @@ class GoalReachedOverlay extends ConsumerWidget {
                   backgroundColor: AppTheme.primary,
                   foregroundColor: Colors.black,
                   minimumSize: const Size(double.infinity, 56),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16)),
                 ),
-                child: Text('TERMINAR Y COMER', 
-                  style: GoogleFonts.robotoMono(fontWeight: FontWeight.bold, fontSize: 16)),
+                child: Text('TERMINAR Y COMER',
+                    style: GoogleFonts.robotoMono(
+                        fontWeight: FontWeight.bold, fontSize: 16)),
               ),
               const SizedBox(height: 16),
               TextButton(
                 onPressed: () {
-                  ref.read(fastingControllerProvider.notifier).setContinuingPastGoal(true);
+                  ref
+                      .read(fastingControllerProvider.notifier)
+                      .setContinuingPastGoal(true);
                 },
                 style: TextButton.styleFrom(
                   minimumSize: const Size(double.infinity, 56),
                 ),
                 child: Text('EXTENDER AYUNO',
-                  style: GoogleFonts.robotoMono(
-                    color: Colors.white38,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    letterSpacing: 1,
-                  )),
+                    style: GoogleFonts.robotoMono(
+                      color: Colors.white38,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      letterSpacing: 1,
+                    )),
               ),
             ],
           ),
@@ -654,8 +669,10 @@ class _FeedingView extends ConsumerWidget {
 
     // Live progress for feeding window (normalized to 24h for the circle)
 
-    final log = user != null ? ref.watch(todayLogProvider(user.uid)).valueOrNull : null;
-    final hasMeals = state.hasInitialMealBeenLogged || (log?.mealEntries.isNotEmpty ?? false);
+    final log =
+        user != null ? ref.watch(todayLogProvider(user.uid)).valueOrNull : null;
+    final hasMeals = state.hasInitialMealBeenLogged ||
+        (log?.mealEntries.isNotEmpty ?? false);
 
     return SafeArea(
       child: SingleChildScrollView(
@@ -664,7 +681,8 @@ class _FeedingView extends ConsumerWidget {
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16),
           child: Column(
             children: [
-              if (user != null) ElenaHeader(title: 'VENTANA DE ALIMENTACIÓN', user: user),
+              if (user != null)
+                ElenaHeader(title: 'VENTANA DE ALIMENTACIÓN', user: user),
               const SizedBox(height: 32),
               Center(
                 child: CircadianWheelWidget(
@@ -687,7 +705,8 @@ class _FeedingView extends ConsumerWidget {
                 currentProtocol:
                     "${state.plannedHours}:${24 - state.plannedHours}",
                 recommendedProtocol: recommendedProtocol,
-                readOnly: true, // No cambiar protocolo durante alimentación activa
+                readOnly:
+                    true, // No cambiar protocolo durante alimentación activa
               ),
               const SizedBox(height: 16),
               _buildSequenceCard(),
@@ -699,7 +718,8 @@ class _FeedingView extends ConsumerWidget {
                       nextMealIndex < hub.mealMilestones.length &&
                       !hub.mealMilestones[nextMealIndex].isReached;
 
-                  final bool isMaxMeals = nextMealIndex >= hub.mealMilestones.length;
+                  final bool isMaxMeals =
+                      nextMealIndex >= hub.mealMilestones.length;
                   if (isMaxMeals) return const SizedBox.shrink();
 
                   final nextMealLabel = isNextMealLocked
@@ -709,10 +729,14 @@ class _FeedingView extends ConsumerWidget {
                   return ElevatedButton.icon(
                     onPressed: isNextMealLocked
                         ? null
-                        : () => ref.read(mealModalTriggerProvider.notifier).state = true,
+                        : () => ref
+                            .read(mealModalTriggerProvider.notifier)
+                            .state = true,
                     icon: Icon(isNextMealLocked ? Icons.lock_clock : Icons.add,
                         size: 20,
-                        color: isNextMealLocked ? Colors.white24 : AppTheme.primary),
+                        color: isNextMealLocked
+                            ? Colors.white24
+                            : AppTheme.primary),
                     label: Text(nextMealLabel,
                         style: GoogleFonts.robotoMono(
                             fontWeight: FontWeight.bold,
@@ -851,7 +875,8 @@ class _ProtocolSelector extends ConsumerWidget {
     return _buildSelector(context, ref, isEditable: true);
   }
 
-  Widget _buildSelector(BuildContext context, WidgetRef ref, {required bool isEditable}) {
+  Widget _buildSelector(BuildContext context, WidgetRef ref,
+      {required bool isEditable}) {
     final state = ref.watch(fastingControllerProvider).valueOrNull;
     if (state == null) return const SizedBox.shrink();
 
@@ -907,24 +932,29 @@ class _ProtocolSelector extends ConsumerWidget {
               final bool isRecommended = recommendedProtocol == p['val'];
 
               return GestureDetector(
-                onTap: !isEditable ? null : () {
-                  final int newHours = int.parse(p['val']!.split(':')[0]);
-                  final currentHours = int.parse(currentProtocol.split(':')[0]);
+                onTap: !isEditable
+                    ? null
+                    : () {
+                        final int newHours = int.parse(p['val']!.split(':')[0]);
+                        final currentHours =
+                            int.parse(currentProtocol.split(':')[0]);
 
-                  // Solo permitimos avanzar o mantener si estamos extendiendo
-                  if (state.isContinuingPastGoal && newHours < currentHours) {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                      content: Text(
-                          'Selecciona un objetivo mayor para continuar extendiendo tu ayuno.'),
-                      backgroundColor: Colors.orangeAccent,
-                    ));
-                    return;
-                  }
+                        // Solo permitimos avanzar o mantener si estamos extendiendo
+                        if (state.isContinuingPastGoal &&
+                            newHours < currentHours) {
+                          ScaffoldMessenger.of(context)
+                              .showSnackBar(const SnackBar(
+                            content: Text(
+                                'Selecciona un objetivo mayor para continuar extendiendo tu ayuno.'),
+                            backgroundColor: Colors.orangeAccent,
+                          ));
+                          return;
+                        }
 
-                  ref
-                      .read(fastingControllerProvider.notifier)
-                      .setProtocol(newHours);
-                },
+                        ref
+                            .read(fastingControllerProvider.notifier)
+                            .setProtocol(newHours);
+                      },
                 child: Container(
                   width: 140,
                   margin: const EdgeInsets.only(right: 12),
@@ -1003,7 +1033,7 @@ class _MetabolicMacrosCard extends ConsumerWidget {
     final targets = ElenaBrain.calculateMacros(user);
     final fastingState = ref.watch(fastingControllerProvider).valueOrNull;
     final startTime = fastingState?.startTime;
-    final elapsed = startTime != null 
+    final elapsed = startTime != null
         ? DateTime.now().difference(startTime)
         : Duration.zero;
 
@@ -1028,18 +1058,15 @@ class _MetabolicMacrosCard extends ConsumerWidget {
     );
 
     final phase = ElenaBrain.getMetabolicPhase(
-      currentProtein, 
-      currentCarbs, 
-      currentFats, 
-      elapsed
-    );
+        currentProtein, currentCarbs, currentFats, elapsed);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 0),
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: const Color(0xFF0D0D10),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1), width: 1),
+        border:
+            Border.all(color: Colors.white.withValues(alpha: 0.1), width: 1),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -1071,7 +1098,8 @@ class _MetabolicMacrosCard extends ConsumerWidget {
                 decoration: BoxDecoration(
                   color: AppTheme.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: AppTheme.primary.withValues(alpha: 0.3)),
+                  border: Border.all(
+                      color: AppTheme.primary.withValues(alpha: 0.3)),
                 ),
                 child: Text(
                   phase,
@@ -1229,7 +1257,8 @@ class _MacroProgressItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final double percent = target > 0 ? (current / target).clamp(0.0, 1.0) : 0.0;
+    final double percent =
+        target > 0 ? (current / target).clamp(0.0, 1.0) : 0.0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1398,5 +1427,3 @@ class _MetabolicDonutPainter extends CustomPainter {
   @override
   bool shouldRepaint(CustomPainter oldDelegate) => true;
 }
-
-

@@ -48,8 +48,10 @@ class MetabolicEngine {
     final zoneAdjustment = switch (zone) {
       core_science.MetabolicZone.autophagy => 0.97,
       core_science.MetabolicZone.fatBurning => 0.99,
-      core_science.MetabolicZone.sugarBurning => 1.0,
+      core_science.MetabolicZone.postAbsorption => 1.0,
+      core_science.MetabolicZone.glycogenDepletion => 1.0,
       core_science.MetabolicZone.deepKetosis => 1.0,
+      core_science.MetabolicZone.survivalMode => 1.0,
     };
 
     final calories = (baseCalories * zoneAdjustment)

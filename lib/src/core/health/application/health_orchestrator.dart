@@ -4,9 +4,11 @@ import '../../../features/health/domain/daily_log.dart';
 import '../../../features/nutrition/domain/entities/metabolic_profile.dart';
 import '../../../features/sleep/domain/entities/sleep_log.dart';
 import '../../../features/training/domain/entities/workout_log.dart';
+import '../../engagement/application/engagement_engine.dart';
+import '../../engagement/domain/user_engagement_profile.dart';
 import '../../science/metabolic_engine.dart' as science;
 import '../../science/training_physiology.dart';
-import '../domain/health_snapshot.dart';
+import '../domain/full_user_state.dart';
 import '../domain/user_behavior_profile.dart';
 import '../domain/user_health_state.dart';
 import 'adaptive_engine.dart';
@@ -31,27 +33,29 @@ import 'decision_engine.dart';
 class HealthOrchestrator {
   final DecisionEngine _decisionEngine;
   final AdaptiveEngine _adaptiveEngine;
+  final EngagementEngine _engagementEngine;
   final BehaviorTrackerStore _behaviorStore;
 
   const HealthOrchestrator({
     DecisionEngine decisionEngine = const DecisionEngine(),
     AdaptiveEngine adaptiveEngine = const AdaptiveEngine(),
+    EngagementEngine engagementEngine = const EngagementEngine(),
     BehaviorTrackerStore behaviorStore = const LocalBehaviorTrackerStore(),
   })  : _decisionEngine = decisionEngine,
         _adaptiveEngine = adaptiveEngine,
+        _engagementEngine = engagementEngine,
         _behaviorStore = behaviorStore;
 
   // ═══════════════════════════════════════════════════════════════════════════
   // PUBLIC API
   // ═══════════════════════════════════════════════════════════════════════════
 
-  /// Builds an immutable [UserHealthState] and a unified [DecisionOutput]
-  /// wrapped in [HealthSnapshot].
+  /// Builds a full pipeline output wrapped in [FullUserState].
   ///
   /// All inputs are normalized, fasting state is resolved, and cross-domain
   /// scores (energy, recovery, metabolic) are computed via [UserHealthState]'s
   /// own getters — this method ensures the inputs are clean before assembly.
-  Future<HealthSnapshot> buildState({
+  Future<FullUserState> buildState({
     required DailyLog dailyLog,
     required MetabolicProfile metabolicProfile,
     SleepLog? sleepLog,
@@ -105,42 +109,143 @@ class HealthOrchestrator {
     // ── Step 5: Build deterministic base decision from unified state ─────
     final baseDecision = _decisionEngine.decide(state, now: referenceNow);
 
-    // ── Step 6: Load behavior profile (persisted adaptive signals) ───────
-    final behaviorProfile = await _loadBehaviorProfile();
+    // ── Step 6: Load behavior snapshot/profile (adaptive signals) ────────
+    final behaviorSnapshot = await _loadBehaviorSnapshot();
+    final behaviorProfile = behaviorSnapshot?.profile ?? UserBehaviorProfile();
 
     // ── Step 7: Adapt decision using behavior profile ────────────────────
-    final decision = _adaptiveEngine.adapt(
+    final personalizedDecision = _adaptiveEngine.adapt(
       baseDecision: baseDecision,
       state: state,
       profile: behaviorProfile,
     );
 
+    // ── Step 8: Build engagement profile + user experience output ────────
+    final engagementProfile = _deriveEngagementProfile(
+      behaviorSnapshot: behaviorSnapshot,
+      behaviorProfile: behaviorProfile,
+      now: referenceNow,
+    );
+
+    final experience = _engagementEngine.enhance(
+      decision: personalizedDecision,
+      behavior: behaviorProfile,
+      engagement: engagementProfile,
+    );
+
     developer.log(
-      'HealthOrchestrator.buildState done action="${decision.primaryAction}" '
-      'priority=${decision.priority} base="${baseDecision.primaryAction}" '
+      'HealthOrchestrator.buildState done action="${personalizedDecision.primaryAction}" '
+      'priority=${personalizedDecision.priority} base="${baseDecision.primaryAction}" '
       'energy=${state.energyScore.toStringAsFixed(1)} '
       'recovery=${state.recoveryScore.toStringAsFixed(1)}',
       name: 'core.health.HealthOrchestrator',
     );
 
-    return HealthSnapshot(
-      state: state,
-      decision: decision,
+    return FullUserState(
+      health: state,
+      decision: personalizedDecision,
+      experience: experience,
     );
   }
 
-  Future<UserBehaviorProfile> _loadBehaviorProfile() async {
+  Future<BehaviorTrackerSnapshot?> _loadBehaviorSnapshot() async {
     try {
-      final snapshot = await _behaviorStore.load();
-      if (snapshot == null) return UserBehaviorProfile();
-      return snapshot.profile;
+      return await _behaviorStore.load();
     } catch (error) {
       developer.log(
-        'HealthOrchestrator.loadBehaviorProfile fallback to defaults: $error',
+        'HealthOrchestrator.loadBehaviorSnapshot fallback to defaults: $error',
         name: 'core.health.HealthOrchestrator',
       );
-      return UserBehaviorProfile();
+      return null;
     }
+  }
+
+  UserEngagementProfile _deriveEngagementProfile({
+    required BehaviorTrackerSnapshot? behaviorSnapshot,
+    required UserBehaviorProfile behaviorProfile,
+    required DateTime now,
+  }) {
+    if (behaviorSnapshot == null || behaviorSnapshot.events.isEmpty) {
+      return UserEngagementProfile(
+        adherenceScore: behaviorProfile.nutritionCompliance,
+        motivationLevel: behaviorProfile.trainingRecoveryRate,
+      );
+    }
+
+    final events = behaviorSnapshot.events;
+    final successfulOutcomes = events
+        .where((e) => e.type == BehaviorEventType.outcome && e.success == true)
+        .toList();
+    final allOutcomes =
+        events.where((e) => e.type == BehaviorEventType.outcome).toList();
+
+    final adherence = allOutcomes.isEmpty
+        ? behaviorProfile.nutritionCompliance
+        : (successfulOutcomes.length / allOutcomes.length).clamp(0.0, 1.0);
+
+    final motivation =
+        ((adherence + behaviorProfile.trainingRecoveryRate) / 2.0)
+            .clamp(0.0, 1.0);
+
+    final latestEvent =
+        events.map((e) => e.timestamp).reduce((a, b) => a.isAfter(b) ? a : b);
+
+    final missedDays = now.toUtc().difference(latestEvent.toUtc()).inDays;
+
+    final successfulDays = successfulOutcomes
+        .map((e) =>
+            DateTime.utc(e.timestamp.year, e.timestamp.month, e.timestamp.day))
+        .toSet()
+        .toList()
+      ..sort((a, b) => b.compareTo(a));
+
+    int currentStreak = 0;
+    if (successfulDays.isNotEmpty) {
+      var cursor = DateTime.utc(now.year, now.month, now.day);
+      for (final day in successfulDays) {
+        if (day == cursor) {
+          currentStreak++;
+          cursor = cursor.subtract(const Duration(days: 1));
+        } else if (day.isBefore(cursor)) {
+          break;
+        }
+      }
+    }
+
+    final longestStreak = _longestConsecutiveRun(successfulDays);
+
+    return UserEngagementProfile(
+      currentStreak: currentStreak,
+      longestStreak: longestStreak,
+      totalActionsCompleted: successfulOutcomes.length,
+      adherenceScore: adherence,
+      motivationLevel: motivation,
+      lastActive: latestEvent,
+      missedDays: missedDays < 0 ? 0 : missedDays,
+      completedActionsByType: behaviorProfile.actionHistoryCounts,
+    );
+  }
+
+  int _longestConsecutiveRun(List<DateTime> daysDesc) {
+    if (daysDesc.isEmpty) return 0;
+
+    int best = 1;
+    int current = 1;
+
+    for (var i = 1; i < daysDesc.length; i++) {
+      final prev = daysDesc[i - 1];
+      final currentDay = daysDesc[i];
+      final delta = prev.difference(currentDay).inDays;
+
+      if (delta == 1) {
+        current++;
+        if (current > best) best = current;
+      } else if (delta > 1) {
+        current = 1;
+      }
+    }
+
+    return best;
   }
 
   void _assertValidInputs({

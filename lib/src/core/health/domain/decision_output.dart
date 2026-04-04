@@ -53,6 +53,9 @@ class DecisionOutput {
   /// Backward-compatible default: empty string.
   final String personalizationReason;
 
+  /// Optional extra context for specialized decision flows.
+  final Map<String, dynamic>? metadata;
+
   DecisionOutput({
     required this.primaryAction,
     required this.explanation,
@@ -62,6 +65,7 @@ class DecisionOutput {
     this.priority = 3,
     this.isPersonalized = false,
     this.personalizationReason = '',
+    this.metadata,
   })  : secondaryActions = List.unmodifiable(secondaryActions),
         pillarScores =
             UnmodifiableMapView(Map<String, double>.from(pillarScores)),
@@ -189,6 +193,51 @@ class DecisionOutput {
     );
   }
 
+  /// Deep cognitive work recommendation during circadian peak.
+  factory DecisionOutput.deepWork({
+    required Map<String, double> pillarScores,
+    required String circadianPhase,
+  }) {
+    return DecisionOutput(
+      primaryAction:
+          'Tu cerebro está en su pico: haz ahora la tarea más cognitivamente exigente del día.',
+      explanation:
+          'Entre las 9 y 13 h suele aumentar la claridad mental, la velocidad de procesamiento y la motivación ejecutiva.',
+      secondaryActions: const [
+        'Evita multitarea y redes durante 90 minutos.',
+        'Define una sola tarea crítica y ejecútala sin interrupciones.',
+      ],
+      pillarScores: pillarScores,
+      metabolicState: 'cognitive_peak',
+      priority: 3,
+      metadata: {
+        'circadianPhase': circadianPhase,
+        'type': 'deep_work',
+      },
+    );
+  }
+
+  /// Circadian warning for late feeding windows.
+  factory DecisionOutput.circadianWarning({
+    required Map<String, double> pillarScores,
+    required String message,
+  }) {
+    return DecisionOutput(
+      primaryAction: 'Ajusta tu timing metabólico nocturno.',
+      explanation: message,
+      secondaryActions: const [
+        'Si debes comer, elige algo ligero y bajo en azúcar.',
+        'Evita comidas pesadas y cenas tardías repetidas.',
+      ],
+      pillarScores: pillarScores,
+      metabolicState: 'circadian_protection',
+      priority: 3,
+      metadata: const {
+        'type': 'circadian_warning',
+      },
+    );
+  }
+
   // ─────────────────────────────────────────────────────────────────────────
   // EQUALITY & DEBUG
   // ─────────────────────────────────────────────────────────────────────────
@@ -202,6 +251,7 @@ class DecisionOutput {
     int? priority,
     bool? isPersonalized,
     String? personalizationReason,
+    Map<String, dynamic>? metadata,
   }) {
     return DecisionOutput(
       primaryAction: primaryAction ?? this.primaryAction,
@@ -213,6 +263,7 @@ class DecisionOutput {
       isPersonalized: isPersonalized ?? this.isPersonalized,
       personalizationReason:
           personalizationReason ?? this.personalizationReason,
+      metadata: metadata ?? this.metadata,
     );
   }
 

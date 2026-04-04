@@ -3,7 +3,7 @@ import 'package:elena_app/src/features/health/data/health_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/health/domain/decision_output.dart';
-import '../../../core/health/domain/health_snapshot.dart';
+import '../../../core/health/domain/full_user_state.dart';
 import '../../../core/health/providers/health_snapshot_provider.dart';
 
 class HealthService {
@@ -83,7 +83,7 @@ class HealthService {
   }
 
   /// Thin read adapter to the unified orchestration pipeline.
-  Future<HealthSnapshot?> getHealthSnapshot() async {
+  Future<FullUserState?> getHealthSnapshot() async {
     // Moved to DecisionEngine in Phase 3
     return _ref.read(healthSnapshotProvider.future);
   }
