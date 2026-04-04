@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/providers/metabolic_hub_provider.dart';
+import '../../../core/providers/circadian_phase_provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/blueprint_grid.dart';
 import '../../../core/widgets/elena_header.dart';
@@ -269,7 +270,10 @@ class _FastingView extends ConsumerWidget {
           _formatDuration(isProgrammed ? plannedDuration : displayDuration);
       statusLabel = isProgrammed ? 'PROGRAMADO' : 'QUEDAN:';
     }
-    final subLabel = isProgrammed ? 'POR INICIAR' : currentStage.name;
+    final circadianLabel = ref.watch(circadianWindowLabelProvider);
+    final subLabel = isProgrammed
+        ? 'POR INICIAR'
+        : '${currentStage.name} · $circadianLabel';
 
     // 3. Progreso en vivo para el círculo
 
@@ -660,6 +664,7 @@ class _FeedingView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserStreamProvider).value;
     final hub = ref.watch(metabolicHubProvider);
+    final circadianLabel = ref.watch(circadianWindowLabelProvider);
 
     final feedingHours = 24 - state.plannedHours;
     final totalFeedingDuration = Duration(hours: feedingHours);
@@ -689,7 +694,7 @@ class _FeedingView extends ConsumerWidget {
                   context: hub,
                   durationStr: _formatDuration(displayDuration),
                   statusLabel: 'VENTANA DE',
-                  subLabel: 'ALIMENTACIÓN',
+                  subLabel: circadianLabel,
                   isRestingWarning: state.isRestingWarning,
                 ),
               ),
