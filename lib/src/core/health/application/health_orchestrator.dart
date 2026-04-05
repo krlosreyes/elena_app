@@ -1,5 +1,8 @@
 import 'dart:developer' as developer;
 
+import 'package:flutter/foundation.dart';
+
+import '../../../core/engagement/data/engagement_repository.dart';
 import '../../../features/health/domain/daily_log.dart';
 import '../../../features/nutrition/domain/entities/metabolic_profile.dart';
 import '../../../features/sleep/domain/entities/sleep_log.dart';
@@ -31,12 +34,15 @@ import 'decision_engine.dart';
 // ─────────────────────────────────────────────────────────────────────────────
 
 class HealthOrchestrator {
+  EngagementRepository? _engagementRepository;
+  String? _cachedUid;
+
   final DecisionEngine _decisionEngine;
   final AdaptiveEngine _adaptiveEngine;
   final EngagementEngine _engagementEngine;
   final BehaviorTrackerStore _behaviorStore;
 
-  const HealthOrchestrator({
+  HealthOrchestrator({
     DecisionEngine decisionEngine = const DecisionEngine(),
     AdaptiveEngine adaptiveEngine = const AdaptiveEngine(),
     EngagementEngine engagementEngine = const EngagementEngine(),
@@ -45,6 +51,14 @@ class HealthOrchestrator {
         _adaptiveEngine = adaptiveEngine,
         _engagementEngine = engagementEngine,
         _behaviorStore = behaviorStore;
+
+  void setEngagementRepository(
+    EngagementRepository repo,
+    String uid,
+  ) {
+    _engagementRepository = repo;
+    _cachedUid = uid;
+  }
 
   // ═══════════════════════════════════════════════════════════════════════════
   // PUBLIC API
@@ -126,6 +140,13 @@ class HealthOrchestrator {
       behaviorProfile: behaviorProfile,
       now: referenceNow,
     );
+
+    // Persistir sin bloquear — fire and forget con manejo de error
+    if (_engagementRepository != null && _cachedUid != null) {
+      _engagementRepository!
+          .save(_cachedUid!, engagementProfile)
+          .catchError((e) => debugPrint('⚠️ Engagement persist error: $e'));
+    }
 
     final experience = _engagementEngine.enhance(
       decision: personalizedDecision,

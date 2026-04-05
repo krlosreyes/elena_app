@@ -8,6 +8,7 @@ import '../../../features/profile/application/user_controller.dart';
 import '../../../features/sleep/domain/entities/sleep_log.dart';
 import '../../../features/training/application/training_stats_provider.dart';
 import '../../../features/training/domain/entities/workout_log.dart';
+import '../../engagement/data/engagement_repository.dart';
 import '../application/health_orchestrator.dart';
 import '../domain/full_user_state.dart';
 
@@ -67,7 +68,9 @@ final healthSnapshotProvider =
     workouts = const [];
   }
 
-  const orchestrator = HealthOrchestrator();
+  final orchestrator = HealthOrchestrator();
+  final engagementRepository = ref.read(engagementRepositoryProvider);
+  orchestrator.setEngagementRepository(engagementRepository, user.uid);
 
   try {
     return await orchestrator.buildState(
