@@ -29,15 +29,3 @@ class MetabolicStatusEvaluator {
     }
   }
 }
-
-class DashboardInsight {
-  final String message;
-  final IconData icon;
-  final List<String> riskFlags;
-
-  DashboardInsight({
-    required this.message,
-    required this.icon,
-    this.riskFlags = const [],
-  });
-}

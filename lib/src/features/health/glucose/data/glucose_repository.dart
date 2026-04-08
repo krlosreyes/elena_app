@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../glucose/domain/glucose_model.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:elena_app/src/features/health/glucose/domain/glucose_model.dart';
 
 class GlucoseRepository {
   final FirebaseFirestore _firestore;

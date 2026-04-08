@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/widgets/blueprint_grid.dart';
 import '../../../core/widgets/elena_header.dart';
@@ -9,7 +9,6 @@ import '../../profile/application/user_controller.dart';
 import '../application/elena_today_provider.dart';
 import '../domain/metabolic_status_evaluator.dart';
 import '../domain/metabolic_phase.dart';
-import '../data/metabolic_history_repository.dart';
 import 'widgets/metabolic_pentagon_grid.dart';
 
 class TodayDashboardScreen extends ConsumerWidget {
@@ -21,8 +20,15 @@ class TodayDashboardScreen extends ConsumerWidget {
     final user = ref.watch(currentUserStreamProvider).valueOrNull;
 
     final evaluator = MetabolicStatusEvaluator(state.score.score);
+    
+    // Identificamos si estamos ante una alerta crítica del motor de decisiones
+    final bool isCritical = state.suggestion.contains("CRÍTICA") || state.sleepScore < 40;
     final bool isRepairMode = state.phase == MetabolicPhase.digestiveLock;
-    final Color phaseColor = isRepairMode ? Colors.indigoAccent : evaluator.color;
+    
+    // Colorimetría Dinámica según Estado
+    final Color mainColor = isCritical 
+        ? Colors.redAccent 
+        : (isRepairMode ? Colors.indigoAccent : evaluator.color);
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -38,28 +44,34 @@ class TodayDashboardScreen extends ConsumerWidget {
                 
                 const SizedBox(height: 20),
 
-                if (isRepairMode) 
+                // Indicador de Fase o Protocolo
+                if (isRepairMode && !isCritical) 
                   const _SleepProtocolCard()
+                else if (isCritical)
+                  _StatusIndicator(label: "ALERTA DE SISTEMA", color: Colors.redAccent)
                 else 
-                  _StatusIndicator(label: state.statusLabel, color: phaseColor),
+                  _StatusIndicator(label: state.statusLabel, color: mainColor),
 
                 const SizedBox(height: 12),
                 
+                // Elena Insight con Estética de Autoridad
                 _SuggestionCard(
                   text: state.suggestion,
-                  borderColor: isRepairMode ? Colors.indigoAccent.withOpacity(0.5) : null,
+                  isCritical: isCritical,
+                  accentColor: mainColor,
                 ),
 
                 const SizedBox(height: 10),
 
+                // Contenedor del Pentágono
                 Expanded(
                   child: Container(
                     width: double.infinity,
                     margin: const EdgeInsets.only(top: 10, bottom: 5),
                     decoration: BoxDecoration(
-                      color: isRepairMode ? Colors.indigo.withOpacity(0.05) : Colors.white.withOpacity(0.02),
+                      color: mainColor.withOpacity(0.02),
                       borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: isRepairMode ? Colors.indigoAccent.withOpacity(0.1) : Colors.white.withOpacity(0.05)),
+                      border: Border.all(color: mainColor.withOpacity(0.08)),
                     ),
                     child: const Center(
                       child: SingleChildScrollView(
@@ -71,23 +83,12 @@ class TodayDashboardScreen extends ConsumerWidget {
                   ),
                 ),
 
+                // Feedback de hambre (Sarcopenia/Nutrición)
                 if (!isRepairMode && state.nutritionScore < 40 && state.fastingScore < 50) 
-                  Padding(
-                    padding: const EdgeInsets.only(top: 10),
-                    child: _HungerPanicCard(ref: ref),
+                  const Padding(
+                    padding: EdgeInsets.only(top: 10),
+                    child: _HungerPanicCard(),
                   ),
-
-                // BOTÓN DE DEBUG: INYECCIÓN DE DATOS
-                Center(
-                  child: TextButton.icon(
-                    onPressed: () => _injectMockData(ref),
-                    icon: const Icon(Icons.bug_report_outlined, size: 14, color: Colors.white10),
-                    label: const Text(
-                      "INYECTAR TELEMETRÍA 7D",
-                      style: TextStyle(color: Colors.white10, fontSize: 10, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ),
                   
                 const SizedBox(height: 20),
               ],
@@ -97,41 +98,9 @@ class TodayDashboardScreen extends ConsumerWidget {
       ),
     );
   }
-
-  // Función de Inyección Técnica
-  Future<void> _injectMockData(WidgetRef ref) async {
-    final user = ref.read(currentUserStreamProvider).valueOrNull;
-
-    if (user != null) {
-      final now = DateTime.now();
-      final mockScores = [85.0, 72.0, 90.0, 45.0, 38.0, 60.0, 32.0];
-      
-      for (int i = 0; i < mockScores.length; i++) {
-        final date = now.subtract(Duration(days: (mockScores.length - 1) - i));
-        final dateId = date.toIso8601String().split('T')[0];
-        
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .collection('metabolic_history')
-            .doc(dateId)
-            .set({
-          'score': mockScores[i],
-          'day': _getWeekdayInitial(date.weekday),
-          'timestamp': Timestamp.fromDate(date),
-        });
-      }
-      debugPrint("Ecosistema: Telemetría inyectada correctamente.");
-    }
-  }
-
-  String _getWeekdayInitial(int day) {
-    const days = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
-    return days[day - 1];
-  }
 }
 
-// --- Componentes de UI ---
+// --- COMPONENTES DE UI ---
 
 class _StatusIndicator extends StatelessWidget {
   final String label;
@@ -149,7 +118,12 @@ class _StatusIndicator extends StatelessWidget {
       ),
       child: Text(
         label.toUpperCase(), 
-        style: TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.bold, letterSpacing: 1.1)
+        style: GoogleFonts.jetBrainsMono(
+          fontSize: 10, 
+          color: color, 
+          fontWeight: FontWeight.bold, 
+          letterSpacing: 1.1
+        )
       ),
     );
   }
@@ -157,20 +131,48 @@ class _StatusIndicator extends StatelessWidget {
 
 class _SuggestionCard extends StatelessWidget {
   final String text;
-  final Color? borderColor;
-  const _SuggestionCard({required this.text, this.borderColor});
+  final bool isCritical;
+  final Color accentColor;
+  
+  const _SuggestionCard({
+    required this.text, 
+    required this.isCritical,
+    required this.accentColor
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: isCritical ? Colors.red.withOpacity(0.08) : Colors.white.withOpacity(0.05),
         borderRadius: BorderRadius.circular(16),
-        border: borderColor != null ? Border.all(color: borderColor!) : null,
+        border: Border.all(
+          color: isCritical ? Colors.redAccent.withOpacity(0.3) : accentColor.withOpacity(0.1)
+        ),
       ),
-      child: Text(text, style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.4)),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (isCritical) 
+            const Padding(
+              padding: EdgeInsets.only(right: 12, top: 2),
+              child: Icon(Icons.emergency_share_outlined, color: Colors.redAccent, size: 20),
+            ),
+          Expanded(
+            child: Text(
+              text, 
+              style: GoogleFonts.publicSans(
+                color: isCritical ? Colors.redAccent[100] : Colors.white, 
+                fontSize: 14, 
+                height: 1.5,
+                fontWeight: isCritical ? FontWeight.w600 : FontWeight.normal,
+              )
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -186,15 +188,20 @@ class _SleepProtocolCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.indigoAccent.withOpacity(0.3)),
       ),
-      child: const Row(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.nightlight_round, color: Colors.indigoAccent, size: 20),
-          SizedBox(width: 12),
+          const Icon(Icons.nightlight_round, color: Colors.indigoAccent, size: 20),
+          const SizedBox(width: 12),
           Expanded(
             child: Text(
               "SUEÑO PROFUNDO · PROTOCOLO DE REPARACIÓN CELULAR ACTIVO",
-              style: TextStyle(color: Colors.indigoAccent, fontWeight: FontWeight.bold, fontSize: 12, height: 1.3),
+              style: GoogleFonts.robotoMono(
+                color: Colors.indigoAccent, 
+                fontWeight: FontWeight.bold, 
+                fontSize: 11, 
+                height: 1.3
+              ),
             ),
           ),
         ],
@@ -204,8 +211,7 @@ class _SleepProtocolCard extends StatelessWidget {
 }
 
 class _HungerPanicCard extends StatelessWidget {
-  final WidgetRef ref;
-  const _HungerPanicCard({required this.ref});
+  const _HungerPanicCard();
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -217,9 +223,12 @@ class _HungerPanicCard extends StatelessWidget {
       ),
       child: const Row(
         children: [
-          Icon(Icons.warning_amber, color: Colors.orangeAccent),
+          Icon(Icons.warning_amber, color: Colors.orangeAccent, size: 20),
           SizedBox(width: 12),
-          Text("ALERTA DE HAMBRE", style: TextStyle(color: Colors.orangeAccent, fontWeight: FontWeight.bold)),
+          Text(
+            "ALERTA DE HAMBRE: CATABOLISMO DETECTADO", 
+            style: TextStyle(color: Colors.orangeAccent, fontWeight: FontWeight.bold, fontSize: 11)
+          ),
         ],
       ),
     );

@@ -1,8 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:elena_app/src/features/glucose/data/glucose_repository.dart'
+import 'package:elena_app/src/features/health/glucose/data/glucose_repository.dart'
     hide glucoseRepositoryProvider;
-import 'package:elena_app/src/features/glucose/domain/glucose_model.dart';
+import 'package:elena_app/src/features/health/glucose/domain/glucose_model.dart';
 import 'package:elena_app/src/features/authentication/application/auth_controller.dart';
 
 // 1. Provider del Repositorio (CORREGIDO)

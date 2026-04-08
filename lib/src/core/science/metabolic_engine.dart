@@ -1,67 +1,45 @@
 import 'package:flutter/material.dart';
 
-/// Represents the current state of insulin in the body.
-///
-/// Insulin is the primary anabolic hormone. Correctly managing its curves
-/// is critical for metabolic flexibility.
-enum InsulinState {
-  /// Baseline fasting levels. Optimal for fat oxidation.
-  low,
-
-  /// Rapidly rising levels after high-GI intake.
-  spiking,
-
-  /// Sustained elevated levels. Inhibits lipolysis.
-  high,
-
-  /// Rapid drop leading to reactive hypoglycemia and cravings.
-  crashing,
-}
-
-/// Defines the primary metabolic substrate being used for energy.
-enum MetabolicZone {
-  /// 0–12h: glucosa en sangre, glucógeno activo
-  postAbsorption,
-
-  /// 12–18h: agotamiento glucógeno, inicio cambio combustible
-  glycogenDepletion,
-
-  /// 18–24h: gluconeogénesis + quema de grasa activa, adrenalina sube
-  fatBurning,
-
-  /// 24–48h: cetosis profunda, claridad mental, GH se duplica
-  deepKetosis,
-
-  /// 48–72h: autofagia real, modo clínico, riesgo si no hay adaptación
-  autophagy,
-
-  /// 72h+: estrés metabólico extremo, restricción obligatoria en UI
-  survivalMode,
-}
-
-/// Represents the user's circadian rhythm phase.
-///
-/// Circadian biology dictates hormonal sensitivity (e.g. Cortisol/Melatonin).
 enum CircadianPhase {
-  /// High insulin sensitivity, cortisol peak. Ideal for carbohydrates if needed.
-  morningSensitivity,
-
-  /// Natural energy dip.
-  afternoonDip,
-
-  /// Melatonin secretion begins. Insulin sensitivity drops.
-  melatoninRise,
-
-  /// Glymphatic system active. Recovery.
-  deepSleep,
+  morningActivation, testosteronePeak, cognitivePeak, afternoonDip, 
+  neuromotorWindow, thermalDecompression, melatoninRise, digestiveLock;
+  
+  // 🛡️ Aliases para compatibilidad con código antiguo (Notificaciones/Analytics)
+  static CircadianPhase get morningSensitivity => morningActivation;
 }
 
-/// Core engine for metabolic logic and rules validation.
-///
-/// This service provides pure functions to determine metabolic states and
-/// generate prescriptions based on physiological inputs.
+enum MetabolicZone {
+  postAbsorption, glycogenDepletion, fatBurning, deepKetosis, autophagy, survivalMode
+}
+
+extension MetabolicZoneTheme on MetabolicZone {
+  Color get color {
+    switch (this) {
+      case MetabolicZone.postAbsorption: return const Color(0xFF9E9E9E);
+      case MetabolicZone.glycogenDepletion: return const Color(0xFFFFD600);
+      case MetabolicZone.fatBurning: return const Color(0xFFFF9800);
+      case MetabolicZone.deepKetosis: return const Color(0xFFF44336);
+      case MetabolicZone.autophagy: return const Color(0xFF9C27B0);
+      case MetabolicZone.survivalMode: return const Color(0xFFB71C1C);
+    }
+  }
+
+  double? get nextZoneThresholdHours {
+    switch (this) {
+      case MetabolicZone.postAbsorption: return 12.0;
+      case MetabolicZone.glycogenDepletion: return 18.0;
+      case MetabolicZone.fatBurning: return 24.0;
+      case MetabolicZone.deepKetosis: return 48.0;
+      case MetabolicZone.autophagy: return 72.0;
+      default: return null;
+    }
+  }
+
+  bool get isCritical => this == MetabolicZone.survivalMode;
+}
+
 abstract class MetabolicEngine {
-  /// Calculates the current metabolic zone based on fasting duration.
+  /// Calcula la zona metabólica activa según las horas de ayuno transcurridas.
   static MetabolicZone calculateZone(Duration fastingTime) {
     final h = fastingTime.inMinutes / 60.0;
     if (h >= 72) return MetabolicZone.survivalMode;
@@ -73,113 +51,16 @@ abstract class MetabolicEngine {
   }
 
   static CircadianPhase getCurrentCircadianPhase({DateTime? now}) {
-    final hour = (now ?? DateTime.now()).hour;
-    if (hour >= 21 || hour < 6) return CircadianPhase.deepSleep;
-    if (hour >= 18) return CircadianPhase.melatoninRise;
-    if (hour >= 13) return CircadianPhase.afternoonDip;
-    return CircadianPhase.morningSensitivity;
-  }
+    final time = now ?? DateTime.now();
+    final mins = (time.hour * 60) + time.minute;
 
-  // TODO: Remove in Phase 4 – duplicated metabolic logic
-  // calculateMetaICA is identical to ElenaBrain.calculateWHtR (waist/height).
-  // Phase 4: keep ONE canonical method here, remove ElenaBrain copy.
-  /// Indice Cintura-Altura (metaICA)
-  static double calculateMetaICA(double waistCm, double heightCm) {
-    if (heightCm <= 0) return 0.0;
-    return waistCm / heightCm;
+    if (mins >= 1350 || mins < 360) return CircadianPhase.digestiveLock;
+    if (mins < 540) return CircadianPhase.morningActivation;
+    if (mins < 600) return CircadianPhase.testosteronePeak;
+    if (mins < 780) return CircadianPhase.cognitivePeak;
+    if (mins < 870) return CircadianPhase.afternoonDip;
+    if (mins < 1080) return CircadianPhase.neuromotorWindow;
+    if (mins < 1260) return CircadianPhase.thermalDecompression;
+    return CircadianPhase.melatoninRise;
   }
-
-  // TODO: Remove in Phase 4 – duplicated metabolic logic
-  // calculateMetaICC is identical to ElenaBrain.calculateWHR (waist/hip).
-  // Phase 4: keep ONE canonical method here, remove ElenaBrain copy.
-  /// Indice Cintura-Cadera (metaICC)
-  static double calculateMetaICC(double waistCm, double? hipCm) {
-    if (hipCm == null || hipCm <= 0) return 0.0;
-    return waistCm / hipCm;
-  }
-
-  /// Provides an exercise prescription based on current glucose levels.
-  ///
-  /// *   > 140 mg/dL: Suggests immediate movement to activate GLUT4 transporters
-  ///     independent of insulin, lowering blood sugar.
-  static String getExercisePrescription(double currentGlucose) {
-    if (currentGlucose > 140) {
-      return 'High glucose detected. Recommend 15 min walk or 3 sets of squats to activate GLUT4 and lower blood sugar independently of insulin.';
-    }
-    return 'Glucose levels stable. Maintenance activity recommended.';
-  }
-
-  /// Determines if a meal time is compatible with optimal sleep hygiene.
-  ///
-  /// Eating too close to bedtime keeps core body temperature high and insulin elevated,
-  /// which interferes with Melatonin release and Deep Sleep quality.
-  ///
-  /// Returns `false` if the meal is within 2 hours of bedtime.
-  static bool isMealSafeForSleep(DateTime mealTime, DateTime bedtime) {
-    final difference = bedtime.difference(mealTime);
-    // Unsafe if less than 2 hours (120 minutes) before bed.
-    return difference.inMinutes >= 120;
-  }
-}
-
-/// Visual theme helpers for MetabolicZone.
-/// Co-located with the zone definition to keep science and presentation in sync.
-extension MetabolicZoneTheme on MetabolicZone {
-  /// Brand color for this zone, used in cards, wheel, and badges.
-  Color get color {
-    switch (this) {
-      case MetabolicZone.postAbsorption:
-        return const Color(0xFF9E9E9E);
-      case MetabolicZone.glycogenDepletion:
-        return const Color(0xFFFFD600);
-      case MetabolicZone.fatBurning:
-        return const Color(0xFFFF9800);
-      case MetabolicZone.deepKetosis:
-        return const Color(0xFFF44336);
-      case MetabolicZone.autophagy:
-        return const Color(0xFF9C27B0);
-      case MetabolicZone.survivalMode:
-        return const Color(0xFFB71C1C);
-    }
-  }
-
-  /// Human-readable label for the zone.
-  String get label {
-    switch (this) {
-      case MetabolicZone.postAbsorption:
-        return 'Digestión activa';
-      case MetabolicZone.glycogenDepletion:
-        return 'Quemando glucógeno';
-      case MetabolicZone.fatBurning:
-        return 'Quema de grasa activa';
-      case MetabolicZone.deepKetosis:
-        return 'Cetosis profunda';
-      case MetabolicZone.autophagy:
-        return 'Autofagia iniciada';
-      case MetabolicZone.survivalMode:
-        return 'Modo supervivencia';
-    }
-  }
-
-  /// Hours at which the NEXT zone begins (used for countdown).
-  /// Returns null for survivalMode (no next zone).
-  double? get nextZoneThresholdHours {
-    switch (this) {
-      case MetabolicZone.postAbsorption:
-        return 12.0;
-      case MetabolicZone.glycogenDepletion:
-        return 18.0;
-      case MetabolicZone.fatBurning:
-        return 24.0;
-      case MetabolicZone.deepKetosis:
-        return 48.0;
-      case MetabolicZone.autophagy:
-        return 72.0;
-      case MetabolicZone.survivalMode:
-        return null;
-    }
-  }
-
-  /// Whether this zone requires an emergency warning banner in the UI.
-  bool get isCritical => this == MetabolicZone.survivalMode;
 }

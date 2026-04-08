@@ -110,30 +110,29 @@ class EngagementEngine {
   }
 
   bool _isCriticalHealthDecision(DecisionOutput decision) {
-    if (decision.priority >= 5) return true;
+    // 🛡️ FIX: priority es DecisionPriority (enum), no int.
+    if (decision.priority >= DecisionPriority.critical) return true;
 
     final action = decision.primaryAction.toLowerCase();
     return action.contains('romper el ayuno') || action.contains('descanso');
   }
 
   DecisionOutput _buildRecoveryDecision(DecisionOutput baseDecision) {
+    // 🛡️ FIX: DecisionOutput usa secondaryAction (singular) + metadata para
+    // pillarScores/metabolicState/isPersonalized. No tiene esos named params.
     return DecisionOutput(
       primaryAction: 'Drink water',
+      secondaryAction: 'Walk 10 minutes. Eat something light. No strict fasting or intense training today.',
       explanation:
           'Recovery mode activated due to missed days and low adherence. '
           'Keep it simple and rebuild consistency first.',
-      secondaryActions: const [
-        'Walk 10 minutes',
-        'Eat something light',
-        'No strict fasting today.',
-        'No intense training today.',
-      ],
-      pillarScores: baseDecision.pillarScores,
-      metabolicState: 'recovery',
-      priority: 2,
-      isPersonalized: true,
-      personalizationReason:
-          'Recovery mode was triggered by missed days and low adherence.',
+      priority: DecisionPriority.low,
+      metadata: {
+        ...?baseDecision.metadata,
+        'metabolicState': 'recovery',
+        'isPersonalized': true,
+        'personalizationReason': 'Recovery mode was triggered by missed days and low adherence.',
+      },
     );
   }
 

@@ -1,13 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../health/application/decision_engine.dart';
 import '../health/domain/entities/health_state.dart';
 
+// 🛡️ FIX: computeHealthState() ahora requiere un UserHealthState como argumento.
+// Este provider heredado no tiene acceso al estado completo, por lo que devuelve
+// el estado inicial. El pipeline real corre por healthSnapshotProvider.
 final healthStateProvider = Provider<HealthState>((ref) {
-  try {
-    final engine = DecisionEngine();
-    return engine.computeHealthState();
-  } catch (_) {
-    return HealthState.initial();
-  }
+  return HealthState.initial();
 });

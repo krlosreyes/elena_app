@@ -198,7 +198,7 @@ class NotificationService {
     CircadianPhase circadian,
   ) {
     // Caso especial: mañana temprano — Fenómeno del Amanecer
-    if (circadian == CircadianPhase.morningSensitivity &&
+    if (circadian == CircadianPhase.morningActivation &&
         zone == MetabolicZone.postAbsorption) {
       return {
         'title': 'Tu cuerpo ya se preparó solo ☀️',
