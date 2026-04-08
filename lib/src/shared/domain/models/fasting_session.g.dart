@@ -6,8 +6,8 @@ part of 'fasting_session.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$FastingSessionImpl _$$FastingSessionImplFromJson(Map<String, dynamic> json) =>
-    _$FastingSessionImpl(
+_FastingSession _$FastingSessionFromJson(Map<String, dynamic> json) =>
+    _FastingSession(
       uid: json['uid'] as String,
       startTime: DateTime.parse(json['startTime'] as String),
       endTime: json['endTime'] == null
@@ -17,8 +17,7 @@ _$FastingSessionImpl _$$FastingSessionImplFromJson(Map<String, dynamic> json) =>
       isCompleted: json['isCompleted'] as bool? ?? false,
     );
 
-Map<String, dynamic> _$$FastingSessionImplToJson(
-        _$FastingSessionImpl instance) =>
+Map<String, dynamic> _$FastingSessionToJson(_FastingSession instance) =>
     <String, dynamic>{
       'uid': instance.uid,
       'startTime': instance.startTime.toIso8601String(),

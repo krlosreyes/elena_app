@@ -1,8 +1,9 @@
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../nutrition/data/repositories/food_repository.dart';
+import '../../nutrition/application/food_provider.dart';
 import '../../profile/application/user_controller.dart';
+import '../../../core/services/app_logger.dart';
 import 'auth_controller.dart';
 
 class RegisterController extends StateNotifier<AsyncValue<void>> {
@@ -53,14 +54,13 @@ class RegisterController extends StateNotifier<AsyncValue<void>> {
         await userController.saveUser(baseProfile);
 
         // 🌱 [AUTO-SEED] Sembrar alimentos iniciales en Firestore
-        print(
-            '\n🌱 [AUTO-SEED] Iniciando seeding automático después del registro...');
+        AppLogger.info('🌱 [AUTO-SEED] Iniciando seeding automático después del registro...');
         try {
           await _ref.read(foodRepositoryProvider).seedInitialNutritionData();
-          print('✅ [AUTO-SEED] Seeding completado exitosamente\n');
+          AppLogger.info('✅ [AUTO-SEED] Seeding completado exitosamente\n');
         } catch (e) {
-          print('⚠️ [AUTO-SEED] Error en seeding (no crítico): $e');
-          print('ℹ️ El usuario puede disparar manualmente desde onboarding\n');
+          AppLogger.error('⚠️ [AUTO-SEED] Error en seeding (no crítico): $e');
+          AppLogger.info('ℹ️ El usuario puede disparar manualmente desde onboarding\n');
           // No lanzamos error, es solo seed automático
         }
       }

@@ -23,7 +23,7 @@ class ProgressController extends StateNotifier<void> {
       date: date,
     );
 
-    // TODO: Re-calcular IMX tras registrar la medida mediante un trigger global
+    // TODO: Re-calcular IMR tras registrar la medida mediante un trigger global
   }
 
   Future<MeasurementLog?> getLatest(String uid) {

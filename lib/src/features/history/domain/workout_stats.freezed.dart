@@ -1,5 +1,5 @@
-// coverage:ignore-file
 // GENERATED CODE - DO NOT MODIFY BY HAND
+// coverage:ignore-file
 // ignore_for_file: type=lint
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
@@ -9,197 +9,34 @@ part of 'workout_stats.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// dart format off
 T _$identity<T>(T value) => value;
-
-final _privateConstructorUsedError = UnsupportedError(
-    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
-
-WorkoutStats _$WorkoutStatsFromJson(Map<String, dynamic> json) {
-  return _WorkoutStats.fromJson(json);
-}
 
 /// @nodoc
 mixin _$WorkoutStats {
-  DateTime get date => throw _privateConstructorUsedError;
-  double get totalVolume => throw _privateConstructorUsedError; // kg moved
-  int get durationMinutes => throw _privateConstructorUsedError;
-  int get caloriesBurned => throw _privateConstructorUsedError;
-  String get workoutType => throw _privateConstructorUsedError;
-  int get totalSets => throw _privateConstructorUsedError;
+  DateTime get date;
+  double get totalVolume;
+  int get durationMinutes;
+  int get caloriesBurned;
+  String get workoutType;
+  int get totalSets;
 
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-  @JsonKey(ignore: true)
+  /// Create a copy of WorkoutStats
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
   $WorkoutStatsCopyWith<WorkoutStats> get copyWith =>
-      throw _privateConstructorUsedError;
-}
+      _$WorkoutStatsCopyWithImpl<WorkoutStats>(
+          this as WorkoutStats, _$identity);
 
-/// @nodoc
-abstract class $WorkoutStatsCopyWith<$Res> {
-  factory $WorkoutStatsCopyWith(
-          WorkoutStats value, $Res Function(WorkoutStats) then) =
-      _$WorkoutStatsCopyWithImpl<$Res, WorkoutStats>;
-  @useResult
-  $Res call(
-      {DateTime date,
-      double totalVolume,
-      int durationMinutes,
-      int caloriesBurned,
-      String workoutType,
-      int totalSets});
-}
-
-/// @nodoc
-class _$WorkoutStatsCopyWithImpl<$Res, $Val extends WorkoutStats>
-    implements $WorkoutStatsCopyWith<$Res> {
-  _$WorkoutStatsCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? date = null,
-    Object? totalVolume = null,
-    Object? durationMinutes = null,
-    Object? caloriesBurned = null,
-    Object? workoutType = null,
-    Object? totalSets = null,
-  }) {
-    return _then(_value.copyWith(
-      date: null == date
-          ? _value.date
-          : date // ignore: cast_nullable_to_non_nullable
-              as DateTime,
-      totalVolume: null == totalVolume
-          ? _value.totalVolume
-          : totalVolume // ignore: cast_nullable_to_non_nullable
-              as double,
-      durationMinutes: null == durationMinutes
-          ? _value.durationMinutes
-          : durationMinutes // ignore: cast_nullable_to_non_nullable
-              as int,
-      caloriesBurned: null == caloriesBurned
-          ? _value.caloriesBurned
-          : caloriesBurned // ignore: cast_nullable_to_non_nullable
-              as int,
-      workoutType: null == workoutType
-          ? _value.workoutType
-          : workoutType // ignore: cast_nullable_to_non_nullable
-              as String,
-      totalSets: null == totalSets
-          ? _value.totalSets
-          : totalSets // ignore: cast_nullable_to_non_nullable
-              as int,
-    ) as $Val);
-  }
-}
-
-/// @nodoc
-abstract class _$$WorkoutStatsImplCopyWith<$Res>
-    implements $WorkoutStatsCopyWith<$Res> {
-  factory _$$WorkoutStatsImplCopyWith(
-          _$WorkoutStatsImpl value, $Res Function(_$WorkoutStatsImpl) then) =
-      __$$WorkoutStatsImplCopyWithImpl<$Res>;
-  @override
-  @useResult
-  $Res call(
-      {DateTime date,
-      double totalVolume,
-      int durationMinutes,
-      int caloriesBurned,
-      String workoutType,
-      int totalSets});
-}
-
-/// @nodoc
-class __$$WorkoutStatsImplCopyWithImpl<$Res>
-    extends _$WorkoutStatsCopyWithImpl<$Res, _$WorkoutStatsImpl>
-    implements _$$WorkoutStatsImplCopyWith<$Res> {
-  __$$WorkoutStatsImplCopyWithImpl(
-      _$WorkoutStatsImpl _value, $Res Function(_$WorkoutStatsImpl) _then)
-      : super(_value, _then);
-
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? date = null,
-    Object? totalVolume = null,
-    Object? durationMinutes = null,
-    Object? caloriesBurned = null,
-    Object? workoutType = null,
-    Object? totalSets = null,
-  }) {
-    return _then(_$WorkoutStatsImpl(
-      date: null == date
-          ? _value.date
-          : date // ignore: cast_nullable_to_non_nullable
-              as DateTime,
-      totalVolume: null == totalVolume
-          ? _value.totalVolume
-          : totalVolume // ignore: cast_nullable_to_non_nullable
-              as double,
-      durationMinutes: null == durationMinutes
-          ? _value.durationMinutes
-          : durationMinutes // ignore: cast_nullable_to_non_nullable
-              as int,
-      caloriesBurned: null == caloriesBurned
-          ? _value.caloriesBurned
-          : caloriesBurned // ignore: cast_nullable_to_non_nullable
-              as int,
-      workoutType: null == workoutType
-          ? _value.workoutType
-          : workoutType // ignore: cast_nullable_to_non_nullable
-              as String,
-      totalSets: null == totalSets
-          ? _value.totalSets
-          : totalSets // ignore: cast_nullable_to_non_nullable
-              as int,
-    ));
-  }
-}
-
-/// @nodoc
-@JsonSerializable()
-class _$WorkoutStatsImpl extends _WorkoutStats {
-  const _$WorkoutStatsImpl(
-      {required this.date,
-      required this.totalVolume,
-      required this.durationMinutes,
-      required this.caloriesBurned,
-      required this.workoutType,
-      required this.totalSets})
-      : super._();
-
-  factory _$WorkoutStatsImpl.fromJson(Map<String, dynamic> json) =>
-      _$$WorkoutStatsImplFromJson(json);
-
-  @override
-  final DateTime date;
-  @override
-  final double totalVolume;
-// kg moved
-  @override
-  final int durationMinutes;
-  @override
-  final int caloriesBurned;
-  @override
-  final String workoutType;
-  @override
-  final int totalSets;
-
-  @override
-  String toString() {
-    return 'WorkoutStats(date: $date, totalVolume: $totalVolume, durationMinutes: $durationMinutes, caloriesBurned: $caloriesBurned, workoutType: $workoutType, totalSets: $totalSets)';
-  }
+  /// Serializes this WorkoutStats to a JSON map.
+  Map<String, dynamic> toJson();
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$WorkoutStatsImpl &&
+            other is WorkoutStats &&
             (identical(other.date, date) || other.date == date) &&
             (identical(other.totalVolume, totalVolume) ||
                 other.totalVolume == totalVolume) &&
@@ -213,52 +50,381 @@ class _$WorkoutStatsImpl extends _WorkoutStats {
                 other.totalSets == totalSets));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(runtimeType, date, totalVolume,
       durationMinutes, caloriesBurned, workoutType, totalSets);
 
-  @JsonKey(ignore: true)
   @override
-  @pragma('vm:prefer-inline')
-  _$$WorkoutStatsImplCopyWith<_$WorkoutStatsImpl> get copyWith =>
-      __$$WorkoutStatsImplCopyWithImpl<_$WorkoutStatsImpl>(this, _$identity);
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$WorkoutStatsImplToJson(
-      this,
-    );
+  String toString() {
+    return 'WorkoutStats(date: $date, totalVolume: $totalVolume, durationMinutes: $durationMinutes, caloriesBurned: $caloriesBurned, workoutType: $workoutType, totalSets: $totalSets)';
   }
 }
 
-abstract class _WorkoutStats extends WorkoutStats {
-  const factory _WorkoutStats(
-      {required final DateTime date,
-      required final double totalVolume,
-      required final int durationMinutes,
-      required final int caloriesBurned,
-      required final String workoutType,
-      required final int totalSets}) = _$WorkoutStatsImpl;
-  const _WorkoutStats._() : super._();
-
-  factory _WorkoutStats.fromJson(Map<String, dynamic> json) =
-      _$WorkoutStatsImpl.fromJson;
-
-  @override
-  DateTime get date;
-  @override
-  double get totalVolume;
-  @override // kg moved
-  int get durationMinutes;
-  @override
-  int get caloriesBurned;
-  @override
-  String get workoutType;
-  @override
-  int get totalSets;
-  @override
-  @JsonKey(ignore: true)
-  _$$WorkoutStatsImplCopyWith<_$WorkoutStatsImpl> get copyWith =>
-      throw _privateConstructorUsedError;
+/// @nodoc
+abstract mixin class $WorkoutStatsCopyWith<$Res> {
+  factory $WorkoutStatsCopyWith(
+          WorkoutStats value, $Res Function(WorkoutStats) _then) =
+      _$WorkoutStatsCopyWithImpl;
+  @useResult
+  $Res call(
+      {DateTime date,
+      double totalVolume,
+      int durationMinutes,
+      int caloriesBurned,
+      String workoutType,
+      int totalSets});
 }
+
+/// @nodoc
+class _$WorkoutStatsCopyWithImpl<$Res> implements $WorkoutStatsCopyWith<$Res> {
+  _$WorkoutStatsCopyWithImpl(this._self, this._then);
+
+  final WorkoutStats _self;
+  final $Res Function(WorkoutStats) _then;
+
+  /// Create a copy of WorkoutStats
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? date = null,
+    Object? totalVolume = null,
+    Object? durationMinutes = null,
+    Object? caloriesBurned = null,
+    Object? workoutType = null,
+    Object? totalSets = null,
+  }) {
+    return _then(_self.copyWith(
+      date: null == date
+          ? _self.date
+          : date // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      totalVolume: null == totalVolume
+          ? _self.totalVolume
+          : totalVolume // ignore: cast_nullable_to_non_nullable
+              as double,
+      durationMinutes: null == durationMinutes
+          ? _self.durationMinutes
+          : durationMinutes // ignore: cast_nullable_to_non_nullable
+              as int,
+      caloriesBurned: null == caloriesBurned
+          ? _self.caloriesBurned
+          : caloriesBurned // ignore: cast_nullable_to_non_nullable
+              as int,
+      workoutType: null == workoutType
+          ? _self.workoutType
+          : workoutType // ignore: cast_nullable_to_non_nullable
+              as String,
+      totalSets: null == totalSets
+          ? _self.totalSets
+          : totalSets // ignore: cast_nullable_to_non_nullable
+              as int,
+    ));
+  }
+}
+
+/// Adds pattern-matching-related methods to [WorkoutStats].
+extension WorkoutStatsPatterns on WorkoutStats {
+  /// A variant of `map` that fallback to returning `orElse`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>(
+    TResult Function(_WorkoutStats value)? $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _WorkoutStats() when $default != null:
+        return $default(_that);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// Callbacks receives the raw object, upcasted.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case final Subclass2 value:
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>(
+    TResult Function(_WorkoutStats value) $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _WorkoutStats():
+        return $default(_that);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `map` that fallback to returning `null`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>(
+    TResult? Function(_WorkoutStats value)? $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _WorkoutStats() when $default != null:
+        return $default(_that);
+      case _:
+        return null;
+    }
+  }
+
+  /// A variant of `when` that fallback to an `orElse` callback.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>(
+    TResult Function(DateTime date, double totalVolume, int durationMinutes,
+            int caloriesBurned, String workoutType, int totalSets)?
+        $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _WorkoutStats() when $default != null:
+        return $default(_that.date, _that.totalVolume, _that.durationMinutes,
+            _that.caloriesBurned, _that.workoutType, _that.totalSets);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// As opposed to `map`, this offers destructuring.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case Subclass2(:final field2):
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>(
+    TResult Function(DateTime date, double totalVolume, int durationMinutes,
+            int caloriesBurned, String workoutType, int totalSets)
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _WorkoutStats():
+        return $default(_that.date, _that.totalVolume, _that.durationMinutes,
+            _that.caloriesBurned, _that.workoutType, _that.totalSets);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `when` that fallback to returning `null`
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>(
+    TResult? Function(DateTime date, double totalVolume, int durationMinutes,
+            int caloriesBurned, String workoutType, int totalSets)?
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _WorkoutStats() when $default != null:
+        return $default(_that.date, _that.totalVolume, _that.durationMinutes,
+            _that.caloriesBurned, _that.workoutType, _that.totalSets);
+      case _:
+        return null;
+    }
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _WorkoutStats extends WorkoutStats {
+  const _WorkoutStats(
+      {required this.date,
+      required this.totalVolume,
+      required this.durationMinutes,
+      required this.caloriesBurned,
+      required this.workoutType,
+      required this.totalSets})
+      : super._();
+  factory _WorkoutStats.fromJson(Map<String, dynamic> json) =>
+      _$WorkoutStatsFromJson(json);
+
+  @override
+  final DateTime date;
+  @override
+  final double totalVolume;
+  @override
+  final int durationMinutes;
+  @override
+  final int caloriesBurned;
+  @override
+  final String workoutType;
+  @override
+  final int totalSets;
+
+  /// Create a copy of WorkoutStats
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  _$WorkoutStatsCopyWith<_WorkoutStats> get copyWith =>
+      __$WorkoutStatsCopyWithImpl<_WorkoutStats>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$WorkoutStatsToJson(
+      this,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _WorkoutStats &&
+            (identical(other.date, date) || other.date == date) &&
+            (identical(other.totalVolume, totalVolume) ||
+                other.totalVolume == totalVolume) &&
+            (identical(other.durationMinutes, durationMinutes) ||
+                other.durationMinutes == durationMinutes) &&
+            (identical(other.caloriesBurned, caloriesBurned) ||
+                other.caloriesBurned == caloriesBurned) &&
+            (identical(other.workoutType, workoutType) ||
+                other.workoutType == workoutType) &&
+            (identical(other.totalSets, totalSets) ||
+                other.totalSets == totalSets));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, date, totalVolume,
+      durationMinutes, caloriesBurned, workoutType, totalSets);
+
+  @override
+  String toString() {
+    return 'WorkoutStats(date: $date, totalVolume: $totalVolume, durationMinutes: $durationMinutes, caloriesBurned: $caloriesBurned, workoutType: $workoutType, totalSets: $totalSets)';
+  }
+}
+
+/// @nodoc
+abstract mixin class _$WorkoutStatsCopyWith<$Res>
+    implements $WorkoutStatsCopyWith<$Res> {
+  factory _$WorkoutStatsCopyWith(
+          _WorkoutStats value, $Res Function(_WorkoutStats) _then) =
+      __$WorkoutStatsCopyWithImpl;
+  @override
+  @useResult
+  $Res call(
+      {DateTime date,
+      double totalVolume,
+      int durationMinutes,
+      int caloriesBurned,
+      String workoutType,
+      int totalSets});
+}
+
+/// @nodoc
+class __$WorkoutStatsCopyWithImpl<$Res>
+    implements _$WorkoutStatsCopyWith<$Res> {
+  __$WorkoutStatsCopyWithImpl(this._self, this._then);
+
+  final _WorkoutStats _self;
+  final $Res Function(_WorkoutStats) _then;
+
+  /// Create a copy of WorkoutStats
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? date = null,
+    Object? totalVolume = null,
+    Object? durationMinutes = null,
+    Object? caloriesBurned = null,
+    Object? workoutType = null,
+    Object? totalSets = null,
+  }) {
+    return _then(_WorkoutStats(
+      date: null == date
+          ? _self.date
+          : date // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      totalVolume: null == totalVolume
+          ? _self.totalVolume
+          : totalVolume // ignore: cast_nullable_to_non_nullable
+              as double,
+      durationMinutes: null == durationMinutes
+          ? _self.durationMinutes
+          : durationMinutes // ignore: cast_nullable_to_non_nullable
+              as int,
+      caloriesBurned: null == caloriesBurned
+          ? _self.caloriesBurned
+          : caloriesBurned // ignore: cast_nullable_to_non_nullable
+              as int,
+      workoutType: null == workoutType
+          ? _self.workoutType
+          : workoutType // ignore: cast_nullable_to_non_nullable
+              as String,
+      totalSets: null == totalSets
+          ? _self.totalSets
+          : totalSets // ignore: cast_nullable_to_non_nullable
+              as int,
+    ));
+  }
+}
+
+// dart format on

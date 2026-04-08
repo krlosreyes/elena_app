@@ -6,8 +6,8 @@ part of 'metabolic_state.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$MetabolicStateImpl _$$MetabolicStateImplFromJson(Map<String, dynamic> json) =>
-    _$MetabolicStateImpl(
+_MetabolicState _$MetabolicStateFromJson(Map<String, dynamic> json) =>
+    _MetabolicState(
       date: DateTime.parse(json['date'] as String),
       sleepHours: (json['sleepHours'] as num).toDouble(),
       sorenessLevel: (json['sorenessLevel'] as num).toInt(),
@@ -16,8 +16,7 @@ _$MetabolicStateImpl _$$MetabolicStateImplFromJson(Map<String, dynamic> json) =>
       insightMessage: json['insightMessage'] as String?,
     );
 
-Map<String, dynamic> _$$MetabolicStateImplToJson(
-        _$MetabolicStateImpl instance) =>
+Map<String, dynamic> _$MetabolicStateToJson(_MetabolicState instance) =>
     <String, dynamic>{
       'date': instance.date.toIso8601String(),
       'sleepHours': instance.sleepHours,

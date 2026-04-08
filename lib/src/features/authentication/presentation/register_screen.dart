@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
+
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/blueprint_grid.dart';
 import '../application/register_controller.dart';
@@ -59,7 +60,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               backgroundColor: Colors.redAccent,
               duration: const Duration(seconds: 5),
               action: SnackBarAction(
-                label: 'LOG IN',
+                label: 'INICIAR SESIÓN',
                 textColor: Colors.white,
                 onPressed: () => context.go('/login'),
               ),

@@ -253,9 +253,9 @@ class _SpotlightOverlayState extends ConsumerState<SpotlightOverlay> {
         };
       case 1:
         return {
-          'title': 'NÚCLEO MTI',
+          'title': 'NÚCLEO IMR',
           'content':
-              'Este es tu Índice Metabólico Total. Centraliza datos de hidratación, nutrición, sueño y ejercicio en tiempo real.',
+              'Este es tu Índice de Metamorfosis Real. Centraliza datos de hidratación, nutrición, sueño y ejercicio en tiempo real.',
         };
       case 2:
         return {
@@ -273,7 +273,7 @@ class _SpotlightOverlayState extends ConsumerState<SpotlightOverlay> {
         return {
           'title': 'PILARES OPERATIVOS',
           'content':
-              'Cada segmento monitorea un pilar. Hidratación, Sueño, Nutrición y Ejercicio alimentan tu puntaje IED.',
+              'Cada segmento monitorea un pilar. Hidratación, Sueño, Nutrición y Ejercicio alimentan tu puntaje IMR.',
         };
       case 5:
         return {

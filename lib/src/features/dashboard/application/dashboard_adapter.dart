@@ -10,7 +10,7 @@ import '../../../features/nutrition/domain/entities/metabolic_profile.dart';
 // structures consumed by widgets. Zero UI logic, zero widget modifications.
 //
 // Widgets currently consume:
-//   • MetabolicContext.totalIED           ← energyScore
+//   • MetabolicContext.totalImr           ← energyScore
 //   • MetabolicPentagonGrid (5 pilars)   ← metabolicScore breakdowns
 //   • FastingStatusWidget                 ← fasting state
 //   • HabitCard (progress bars)           ← recovery indicators
@@ -59,7 +59,7 @@ class DashboardAdapter {
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // ENERGY → dashboard energy (totalIED, dailyComplianceScore)
+  // ENERGY → dashboard energy (totalImr, dailyComplianceScore)
   // ═══════════════════════════════════════════════════════════════════════════
 
   DashboardEnergy _mapEnergy(UserHealthState state) {
@@ -213,7 +213,7 @@ class DashboardAdapter {
     final log = state.dailyLog;
     final profile = state.metabolicProfile;
 
-    // 5-pillar IED calculation matching MetabolicHub.build()
+    // 5-pillar IMR calculation matching MetabolicHub.build()
     // Pilar 1: Fasting
     final fastingScore = state.isFastingActive ? 0.0 : 100.0;
 
@@ -225,7 +225,7 @@ class DashboardAdapter {
         : 0.0;
 
     // Pilar 3: Exercise
-    const exerciseGoal = 30.0;
+    final exerciseGoal = profile.dailyExerciseGoalMinutes;
     final exerciseScore =
         (log.exerciseMinutes / exerciseGoal * 100.0).clamp(0.0, 100.0);
 
@@ -256,7 +256,7 @@ class DashboardAdapter {
         (decisionScores?[DecisionOutput.hydrationPillar] ?? hydrationScore)
             .clamp(0.0, 100.0);
 
-    final totalIED = (resolvedFastingScore +
+    final totalImr = (resolvedFastingScore +
             resolvedNutritionScore +
             resolvedExerciseScore +
             resolvedSleepScore +
@@ -264,7 +264,7 @@ class DashboardAdapter {
         5.0;
 
     return DashboardCompliance(
-      totalIED: totalIED,
+      totalImr: totalImr,
       fastingScore: resolvedFastingScore,
       nutritionScore: resolvedNutritionScore,
       exerciseScore: resolvedExerciseScore,
@@ -329,7 +329,7 @@ class DashboardSnapshot {
   });
 }
 
-/// Energy panel data (maps to totalIED / dailyComplianceScore).
+/// Energy panel data (maps to totalImr / dailyComplianceScore).
 class DashboardEnergy {
   final double score; // 0–100
   final String label; // 'Óptima', 'Buena', 'Moderada', 'Baja'
@@ -434,9 +434,9 @@ class DashboardFastingStatus {
   String get statusLabel => isFasting ? 'ESTÁS AYUNANDO' : 'VENTANA ABIERTA';
 }
 
-/// IED compliance data (backward-compatible with MetabolicHub.totalIED).
+/// IMR compliance data (backward-compatible with MetabolicHub.totalImr).
 class DashboardCompliance {
-  final double totalIED; // 0–100 (average of 5 pillars)
+  final double totalImr; // 0–100 (average of 5 pillars)
   final double fastingScore; // 0–100
   final double nutritionScore; // 0–100
   final double exerciseScore; // 0–100
@@ -446,7 +446,7 @@ class DashboardCompliance {
   final int mealsExpected;
 
   const DashboardCompliance({
-    required this.totalIED,
+    required this.totalImr,
     required this.fastingScore,
     required this.nutritionScore,
     required this.exerciseScore,

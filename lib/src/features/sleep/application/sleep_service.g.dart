@@ -6,7 +6,7 @@ part of 'sleep_service.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$sleepRepositoryHash() => r'6d451243b05bff314f755b02d1d7cc59c4c1d397';
+String _$sleepRepositoryHash() => r'bb1c9c69594fb317cbae88d797a7426c3056e7fd';
 
 /// 📱 Riverpod Providers para SleepService
 ///
@@ -24,8 +24,10 @@ final sleepRepositoryProvider = AutoDisposeProvider<SleepRepository>.internal(
   allTransitiveDependencies: null,
 );
 
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
 typedef SleepRepositoryRef = AutoDisposeProviderRef<SleepRepository>;
-String _$sleepServiceHash() => r'27cc3706a7520cadaf9cb3960bb7ed51e6180411';
+String _$sleepServiceHash() => r'a90a8169700c51bdaf3b34a0da7ccc12d9ff78fe';
 
 /// See also [sleepService].
 @ProviderFor(sleepService)
@@ -38,8 +40,10 @@ final sleepServiceProvider = AutoDisposeProvider<SleepService>.internal(
   allTransitiveDependencies: null,
 );
 
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
 typedef SleepServiceRef = AutoDisposeProviderRef<SleepService>;
-String _$recentSleepHash() => r'1ee772b0572fb39e76ca98f7818e45990cc03c0c';
+String _$recentSleepHash() => r'4dc8481995553cd8fb88e28765ab06f2c642ab6d';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -199,6 +203,8 @@ class RecentSleepProvider extends AutoDisposeFutureProvider<List<SleepLog>> {
   }
 }
 
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
 mixin RecentSleepRef on AutoDisposeFutureProviderRef<List<SleepLog>> {
   /// The parameter `uid` of this provider.
   String get uid;
@@ -218,7 +224,7 @@ class _RecentSleepProviderElement
   int get limit => (origin as RecentSleepProvider).limit;
 }
 
-String _$sleepStreamHash() => r'f7fdb2009b896d5591aad1df30110a4f71c757b3';
+String _$sleepStreamHash() => r'43498cc4733511fb13539de4544e862ecf5d8e0e';
 
 /// ✅ Stream provider para sueño en tiempo real
 ///
@@ -357,6 +363,8 @@ class SleepStreamProvider extends AutoDisposeStreamProvider<List<SleepLog>> {
   }
 }
 
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
 mixin SleepStreamRef on AutoDisposeStreamProviderRef<List<SleepLog>> {
   /// The parameter `uid` of this provider.
   String get uid;
@@ -376,7 +384,7 @@ class _SleepStreamProviderElement
   int get limit => (origin as SleepStreamProvider).limit;
 }
 
-String _$averageSleepHash() => r'3d2ae02e8f93dda36170f6e0d28cac843eadbf3e';
+String _$averageSleepHash() => r'4ae187ee766205d51046a491ba6d5a397a7bf341';
 
 /// ✅ Provider para promedio de sueño
 ///
@@ -515,6 +523,8 @@ class AverageSleepProvider extends AutoDisposeFutureProvider<double> {
   }
 }
 
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
 mixin AverageSleepRef on AutoDisposeFutureProviderRef<double> {
   /// The parameter `uid` of this provider.
   String get uid;
@@ -533,4 +543,4 @@ class _AverageSleepProviderElement
   int get limit => (origin as AverageSleepProvider).limit;
 }
 // ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member
+// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

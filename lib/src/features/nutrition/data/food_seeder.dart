@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import '../../../core/services/app_logger.dart';
+import '../domain/entities/food_model.dart';
 
 // ═════════════════════════════════════════════════════════════════════════════
 // FOOD SEEDER — Master Metabolic Database Population
@@ -14,7 +16,7 @@ class FoodSeeder {
   /// Used to purge duplicate entries and ensure clean slate before re-seeding
   /// ═══════════════════════════════════════════════════════════════════════════
   static Future<void> deleteAllFoods() async {
-    print('[DBA] 🗑️ PURGING: Fetching all documents from master_food_db...');
+    AppLogger.info('[DBA] 🗑️ PURGING: Fetching all documents from master_food_db...');
 
     try {
       final batch = FirebaseFirestore.instance.batch();
@@ -26,7 +28,7 @@ class FoodSeeder {
           .collection(_masterFoodCollection)
           .get();
 
-      print('[DBA] Found ${snapshot.docs.length} documents to delete');
+      AppLogger.info('[DBA] Found ${snapshot.docs.length} documents to delete');
 
       // Queue deletions in batch (max 500 per batch)
       for (final doc in snapshot.docs) {
@@ -36,7 +38,7 @@ class FoodSeeder {
         // If batch reaches max size, commit and start new one
         if (deleteCount % maxBatchSize == 0) {
           await batch.commit();
-          print('[DBA] 📦 Batch deleted $deleteCount documents');
+          AppLogger.info('[DBA] 📦 Batch deleted $deleteCount documents');
         }
       }
 
@@ -45,21 +47,18 @@ class FoodSeeder {
         await batch.commit();
       }
 
-      print('[DBA] ✅ PURGE COMPLETE! Deleted $deleteCount documents');
-      print('[DBA] master_food_db is now empty. Ready for re-injection.');
+      AppLogger.info('[DBA] ✅ PURGE COMPLETE! Deleted $deleteCount documents');
+      AppLogger.info('[DBA] master_food_db is now empty. Ready for re-injection.');
     } catch (e) {
-      print('[DBA] ❌ Error in deleteAllFoods: $e');
-      debugPrint('[DBA] $e');
+      AppLogger.error('[DBA] ❌ Error in deleteAllFoods: $e');
       rethrow;
     }
   }
 
-  /// ═══════════════════════════════════════════════════════════════════════════
   /// 🔄 DEDUPLICATION: Consolidate all food datasets into clean Map by ID
   /// Ensures exactly one unique entry per food ID (last one wins)
-  /// ═══════════════════════════════════════════════════════════════════════════
   static Map<String, Map<String, dynamic>> _buildCleanDataset() {
-    print('[DBA] 🧹 DEDUPLICATION: Building clean dataset...');
+    AppLogger.info('[DBA] 🧹 DEDUPLICATION: Building clean dataset...');
 
     final cleanDataset = <String, Map<String, dynamic>>{};
 
@@ -72,38 +71,30 @@ class FoodSeeder {
       ..._getCarbsCompleteList(),
     ];
 
-    print('[DBA] 📊 Total food items collected: ${allFoods.length}');
+    AppLogger.info('[DBA] 📊 Total food items collected: ${allFoods.length}');
 
     // Build clean map with ID as key (last duplicate wins)
-    for (final food in allFoods) {
+    for (final foodDoc in allFoods) {
       try {
-        final id = food['metadata']['id'] as String;
-
-        if (cleanDataset.containsKey(id)) {
-          print('[DBA] ⚠️  DUPLICATE found: $id - Using latest entry');
+        final id = foodDoc['metadata']?['id'] as String?;
+        if (id != null) {
+          // ✅ ENSURE STRICT 4-NODE PROTOCOL:
+          // Roundtrip through FoodModel to normalize any legacy structures
+          final normalizedModel = FoodModel.fromFirestore(foodDoc);
+          cleanDataset[id] = normalizedModel.toJson();
         }
-
-        cleanDataset[id] = food;
       } catch (e) {
-        print('[DBA] ❌ Error processing food item: $e');
+        AppLogger.error('[DBA] Error parsing food for deduplication: $e');
       }
     }
 
-    final uniqueCount = cleanDataset.length;
-    final duplicateCount = allFoods.length - uniqueCount;
-
-    print('[DBA] 📈 DEDUPLICATION RESULTS:');
-    print('[DBA]   Total collected: ${allFoods.length}');
-    print('[DBA]   Unique entries: $uniqueCount');
-    print('[DBA]   Duplicates removed: $duplicateCount');
-
+    AppLogger.info('[DBA] ✅ CLEANED: ${cleanDataset.length} unique foods');
     return cleanDataset;
   }
 
-  /// Seed the master_food_db collection with 25+ verified foods (4-Node structure)
-  /// Auto-checks if empty to prevent duplicates
+  /// 📥 MASTER SEEDER: Initial population of the master_food_db
   static Future<void> seedDatabase() async {
-    print('[SEEDER] Starting Master Metabolic Database population...');
+    AppLogger.info('[SEEDER] Starting Master Metabolic Database population...');
 
     try {
       // Check if collection already has data
@@ -114,58 +105,27 @@ class FoodSeeder {
 
       final docCount = countSnapshot.count ?? 0;
       if (docCount > 0) {
-        print(
+        AppLogger.warning(
           '⚠️ [SEEDER] Database already has data ($docCount documents). Skipping.',
         );
         return;
       }
 
-      print('[SEEDER] Database is empty. Beginning injection of 25+ foods...');
+      AppLogger.info('[SEEDER] Database is empty. Beginning injection...');
 
-      // Get the complete food list
-      final foods = _getCompleteFoodList();
-      print('[SEEDER] Injecting ${foods.length} verified foods...');
+      // Build deduplicated dataset
+      final cleanDataset = _buildCleanDataset();
+      AppLogger.info('[SEEDER] Injecting ${cleanDataset.length} verified foods...');
 
-      // Inject each food
-      for (final foodDoc in foods) {
-        try {
-          final id = foodDoc['metadata']['id'] as String;
-          final name = foodDoc['metadata']['name'] as String;
+      // Inject clean dataset
+      await _injectCleanDataset(cleanDataset);
 
-          await FirebaseFirestore.instance
-              .collection(_masterFoodCollection)
-              .doc(id)
-              .set(foodDoc);
-
-          print('✅ [SEEDER] Food "$name" injected successfully');
-        } catch (e) {
-          print('❌ [SEEDER] Error injecting food: $e');
-          debugPrint('[SEEDER] $e');
-        }
-      }
-
-      print('[SEEDER] ✅ Master Metabolic Database population complete!');
-
-      // Now seed the new Grasas Saludables collection
-      print('[SEEDER] ▶️ Starting Grasas Saludables injection...');
-      await seedGrasasHealthyFats();
-
-      // Now seed the 30 Proteínas collection
-      print('[SEEDER] ▶️ Starting Proteínas injection...');
-      await seedProteinsComplete();
-
-      // Now seed the 15 Vegetales collection
-      print('[SEEDER] ▶️ Starting Vegetales injection...');
-      await seedVegetablesComplete();
-
-      // Now seed the 15 Carbohidratos collection
-      print('[SEEDER] ▶️ Starting Carbohidratos injection...');
-      await seedCarbsComplete();
+      AppLogger.info('[SEEDER] ✅ Master Metabolic Database population complete!');
     } catch (e) {
-      print('[SEEDER] ❌ Error in seedDatabase: $e');
-      debugPrint('[SEEDER] $e');
+      AppLogger.error('[SEEDER] ❌ Error in seedDatabase: $e');
     }
   }
+
 
   /// ═══════════════════════════════════════════════════════════════════════════
   /// 🔄 CLEAN & RESEED: Complete cleanup with deduplication
@@ -174,31 +134,30 @@ class FoodSeeder {
   /// 3. Re-injects unique documents only
   /// ═══════════════════════════════════════════════════════════════════════════
   static Future<void> cleanAndReseed() async {
-    print('[DBA] ╔══════════════════════════════════════════════════════╗');
-    print('[DBA] ║  CLEAN & RESEED: Complete Database Maintenance       ║');
-    print('[DBA] ╚══════════════════════════════════════════════════════╝');
+    AppLogger.info('[DBA] ╔══════════════════════════════════════════════════════╗');
+    AppLogger.info('[DBA] ║  CLEAN & RESEED: Complete Database Maintenance       ║');
+    AppLogger.info('[DBA] ╚══════════════════════════════════════════════════════╝');
 
     try {
       // STEP 1: DELETE ALL DOCUMENTS
-      print('[DBA] STEP 1/3: Purging existing documents...');
+      AppLogger.info('[DBA] STEP 1/3: Purging existing documents...');
       await deleteAllFoods();
 
       // STEP 2: BUILD CLEAN DATASET
-      print('[DBA] STEP 2/3: Building clean, deduplicated dataset...');
+      AppLogger.info('[DBA] STEP 2/3: Building clean, deduplicated dataset...');
       final cleanDataset = _buildCleanDataset();
 
       // STEP 3: RE-INJECT CLEAN DATA
-      print('[DBA] STEP 3/3: Re-injecting clean data...');
+      AppLogger.info('[DBA] STEP 3/3: Re-injecting clean data...');
       await _injectCleanDataset(cleanDataset);
 
-      print('[DBA] ✅ CLEAN & RESEED COMPLETE!');
-      print(
+      AppLogger.info('[DBA] ✅ CLEAN & RESEED COMPLETE!');
+      AppLogger.info(
         '[DBA] Database now has exactly ${cleanDataset.length} unique foods',
       );
-      print('[DBA] ✅ No duplicates, no orphaned entries');
+      AppLogger.info('[DBA] ✅ No duplicates, no orphaned entries');
     } catch (e) {
-      print('[DBA] ❌ Error in cleanAndReseed: $e');
-      debugPrint('[DBA] $e');
+      AppLogger.error('[DBA] ❌ Error in cleanAndReseed: $e');
       rethrow;
     }
   }
@@ -207,7 +166,7 @@ class FoodSeeder {
   static Future<void> _injectCleanDataset(
     Map<String, Map<String, dynamic>> cleanDataset,
   ) async {
-    print(
+    AppLogger.info(
       '[DBA] 💉 INJECTION: Re-injecting ${cleanDataset.length} unique documents...',
     );
 
@@ -234,34 +193,33 @@ class FoodSeeder {
 
           batchCount++;
           totalCount++;
-          print('[DBA] ✅ Queued "$name" (ID: $id, Category: $category)');
+          AppLogger.info('[DBA] ✅ Queued "$name" (ID: $id, Category: $category)');
 
           if (batchCount >= maxBatchSize) {
             await batch.commit();
-            print(
+            AppLogger.info(
               '[DBA] 📦 Batch committed ($batchCount docs). Total: $totalCount',
             );
             batchCount = 0;
           }
         } catch (e) {
-          print('[DBA] ❌ Error processing document "$id": $e');
+          AppLogger.error('[DBA] ❌ Error processing document "$id": $e');
         }
       }
 
       // Commit final batch
       if (batchCount > 0) {
         await batch.commit();
-        print(
+        AppLogger.info(
           '[DBA] 📦 Final batch committed ($batchCount docs). Total: $totalCount',
         );
       }
 
-      print(
+      AppLogger.info(
         '[DBA] ✅ INJECTION COMPLETE! $totalCount documents successfully stored',
       );
     } catch (e) {
-      print('[DBA] ❌ Error in _injectCleanDataset: $e');
-      debugPrint('[DBA] $e');
+      AppLogger.error('[DBA] ❌ Error in _injectCleanDataset: $e');
       rethrow;
     }
   }
@@ -272,10 +230,10 @@ class FoodSeeder {
   /// This ensures 'metadata.category' is correctly set in every document
   /// ═══════════════════════════════════════════════════════════════════════════
   static Future<void> forcedReSeed() async {
-    print(
+    AppLogger.info(
       '[FORCED RE-SEED] 🚨 Starting FORCED RE-SEED - WILL OVERWRITE ALL DOCUMENTS',
     );
-    print(
+    AppLogger.info(
       '[FORCED RE-SEED] This will update all 105 documents with correct metadata structure...',
     );
 
@@ -294,7 +252,7 @@ class FoodSeeder {
         ..._getCarbsCompleteList(), // ~23 Carbohidratos
       ];
 
-      print(
+      AppLogger.info(
         '[FORCED RE-SEED] Processing ${allFoods.length} food items for OVERWRITE...',
       );
 
@@ -315,36 +273,34 @@ class FoodSeeder {
 
           batchCount++;
           totalCount++;
-          print('[FORCED RE-SEED] ✅ Queued "$name" (Category: $category)');
+          AppLogger.info('[FORCED RE-SEED] ✅ Queued "$name" (Category: $category)');
 
           if (batchCount >= maxBatchSize) {
             await batch.commit();
-            print(
+            AppLogger.info(
               '[FORCED RE-SEED] 📦 Batch committed ($batchCount items). Running total: $totalCount',
             );
             batchCount = 0;
           }
         } catch (e) {
-          print('[FORCED RE-SEED] ❌ Error processing "$itemId": $e');
-          debugPrint('[FORCED RE-SEED] $e');
+          AppLogger.error('[FORCED RE-SEED] ❌ Error processing "$itemId": $e');
         }
       }
 
       // Commit final batch
       if (batchCount > 0) {
         await batch.commit();
-        print('[FORCED RE-SEED] 📦 Final batch committed ($batchCount items)');
+        AppLogger.info('[FORCED RE-SEED] 📦 Final batch committed ($batchCount items)');
       }
 
-      print(
+      AppLogger.info(
         '[FORCED RE-SEED] ✅ COMPLETE! All $totalCount documents OVERWRITTEN successfully',
       );
-      print(
+      AppLogger.info(
         '[FORCED RE-SEED] ✅ All documents now have correct metadata.category structure',
       );
     } catch (e) {
-      print('[FORCED RE-SEED] ❌ Error in forcedReSeed: $e');
-      debugPrint('[FORCED RE-SEED] $e');
+      AppLogger.error('[FORCED RE-SEED] ❌ Error in forcedReSeed: $e');
     }
   }
 
@@ -353,7 +309,7 @@ class FoodSeeder {
   /// Uses WriteBatch + SetOptions(merge: true) for atomic updates
   /// ═══════════════════════════════════════════════════════════════════════════
   static Future<void> runMasterSeeding() async {
-    print(
+    AppLogger.info(
       '[MASTER SEEDING] 🔄 Beginning OVERWRITE of all 105 documents with plain-text categories...',
     );
 
@@ -372,14 +328,13 @@ class FoodSeeder {
         ..._getCarbsCompleteList(),
       ];
 
-      print(
+      AppLogger.info(
         '[MASTER SEEDING] Processing ${allFoods.length} food items for OVERWRITE...',
       );
 
       for (final foodItem in allFoods) {
         try {
           final id = foodItem['metadata']['id'] as String;
-          final category = foodItem['metadata']['category'] as String;
 
           final docRef = FirebaseFirestore.instance
               .collection(_masterFoodCollection)
@@ -393,37 +348,35 @@ class FoodSeeder {
 
           if (batchCount >= maxBatchSize) {
             await batch.commit();
-            print(
+            AppLogger.info(
               '[MASTER SEEDING] ✅ Batch committed ($batchCount items). Total: $totalCount',
             );
             batchCount = 0;
           }
         } catch (e) {
-          print('[MASTER SEEDING] ❌ Error preparing item: $e');
-          debugPrint('[MASTER SEEDING] $e');
+          AppLogger.error('[MASTER SEEDING] ❌ Error preparing item: $e');
         }
       }
 
       // Commit final batch
       if (batchCount > 0) {
         await batch.commit();
-        print(
+        AppLogger.info(
           '[MASTER SEEDING] ✅ Final batch committed ($batchCount items). Total: $totalCount',
         );
       }
 
-      print(
+      AppLogger.info(
         '[MASTER SEEDING] ✅ COMPLETE! All $totalCount documents overwritten with plain-text categories',
       );
     } catch (e) {
-      print('[MASTER SEEDING] ❌ Error in runMasterSeeding: $e');
-      debugPrint('[MASTER SEEDING] $e');
+      AppLogger.error('[MASTER SEEDING] ❌ Error in runMasterSeeding: $e');
     }
   }
 
   /// Seed 20 Healthy Fats ('Grasas Saludables') using WriteBatch for atomicity
   static Future<void> seedGrasasHealthyFats() async {
-    print(
+    AppLogger.info(
       '[GRASAS SEEDER] Beginning atomic WriteBatch injection of 20 Grasas Saludables...',
     );
 
@@ -448,36 +401,34 @@ class FoodSeeder {
           if (!docSnapshot.exists) {
             batch.set(docRef, grasaDoc);
             successCount++;
-            print('✅ [GRASAS] Queued "$name" for atomic write');
+            AppLogger.info('✅ [GRASAS] Queued "$name" for atomic write');
           } else {
-            print('⚠️ [GRASAS] "$name" already exists. Skipping.');
+            AppLogger.info('⚠️ [GRASAS] "$name" already exists. Skipping.');
           }
         } catch (e) {
-          print('❌ [GRASAS] Error preparing "$e" for batch: $e');
-          debugPrint('[GRASAS] $e');
+          AppLogger.error('❌ [GRASAS] Error preparing "$e" for batch: $e');
         }
       }
 
       // Commit the batch
       if (successCount > 0) {
         await batch.commit();
-        print(
+        AppLogger.info(
           '[GRASAS] ✅ WriteBatch committed! $successCount Grasas Saludables injected atomically.',
         );
       } else {
-        print(
+        AppLogger.info(
           '[GRASAS] ℹ️ No new Grasas to inject (all exist or were skipped).',
         );
       }
     } catch (e) {
-      print('[GRASAS] ❌ Error in seedGrasasHealthyFats: $e');
-      debugPrint('[GRASAS] $e');
+      AppLogger.error('[GRASAS] ❌ Error in seedGrasasHealthyFats: $e');
     }
   }
 
   /// Seed 30 Complete Proteins using WriteBatch for atomicity
   static Future<void> seedProteinsComplete() async {
-    print(
+    AppLogger.info(
       '[PROTEINS SEEDER] Beginning atomic WriteBatch injection of 30 Proteínas 🍗...',
     );
 
@@ -501,29 +452,27 @@ class FoodSeeder {
           if (!docSnapshot.exists) {
             batch.set(docRef, proteinDoc);
             successCount++;
-            print('✅ [PROTEINS] Queued "$name" for atomic write');
+            AppLogger.info('✅ [PROTEINS] Queued "$name" for atomic write');
           } else {
-            print('⚠️ [PROTEINS] "$name" already exists. Skipping.');
+            AppLogger.info('⚠️ [PROTEINS] "$name" already exists. Skipping.');
           }
         } catch (e) {
-          print('❌ [PROTEINS] Error preparing for batch: $e');
-          debugPrint('[PROTEINS] $e');
+          AppLogger.error('❌ [PROTEINS] Error preparing for batch: $e');
         }
       }
 
       if (successCount > 0) {
         await batch.commit();
-        print(
+        AppLogger.info(
           '[PROTEINS] ✅ WriteBatch committed! $successCount Proteínas injected atomically.',
         );
       } else {
-        print(
+        AppLogger.info(
           '[PROTEINS] ℹ️ No new Proteínas to inject (all exist or were skipped).',
         );
       }
     } catch (e) {
-      print('[PROTEINS] ❌ Error in seedProteinsComplete: $e');
-      debugPrint('[PROTEINS] $e');
+      AppLogger.error('[PROTEINS] ❌ Error in seedProteinsComplete: $e');
     }
   }
 
@@ -2266,7 +2215,7 @@ class FoodSeeder {
 
   /// Seed 15 Complete Vegetables using WriteBatch for atomicity
   static Future<void> seedVegetablesComplete() async {
-    print(
+    AppLogger.info(
       '[VEGETABLES SEEDER] Beginning atomic WriteBatch injection of 15 Vegetales 🥦...',
     );
 
@@ -2290,31 +2239,30 @@ class FoodSeeder {
           if (!docSnapshot.exists) {
             batch.set(docRef, vegetableDoc);
             successCount++;
-            print('✅ [VEGETABLES] Queued "$name" for atomic write');
+            AppLogger.info('✅ [VEGETABLES] Queued "$name" for atomic write');
           } else {
-            print('⚠️ [VEGETABLES] "$name" already exists. Skipping.');
+            AppLogger.info('⚠️ [VEGETABLES] "$name" already exists. Skipping.');
           }
         } catch (e) {
-          print('❌ [VEGETABLES] Error preparing for batch: $e');
-          debugPrint('[VEGETABLES] $e');
+          AppLogger.error('❌ [VEGETABLES] Error preparing for batch: $e');
         }
       }
 
       if (successCount > 0) {
         await batch.commit();
-        print(
+        AppLogger.info(
           '[VEGETABLES] ✅ WriteBatch committed! $successCount Vegetales injected atomically.',
         );
       } else {
-        print(
+        AppLogger.info(
           '[VEGETABLES] ℹ️ No new Vegetales to inject (all exist or were skipped).',
         );
       }
     } catch (e) {
-      print('[VEGETABLES] ❌ Error in seedVegetablesComplete: $e');
-      debugPrint('[VEGETABLES] $e');
+      AppLogger.error('[VEGETABLES] ❌ Error in seedVegetablesComplete: $e');
     }
   }
+
 
   /// Get 15 Complete Vegetables with strict 4-Node structure
   static List<Map<String, dynamic>> _getVegetablesCompleteList() {
@@ -2667,7 +2615,7 @@ class FoodSeeder {
 
   /// Seed 15 Complete Carbs using WriteBatch for atomicity
   static Future<void> seedCarbsComplete() async {
-    print(
+    AppLogger.info(
       '[CARBS SEEDER] Beginning atomic WriteBatch injection of 15 Carbohidratos 🍞...',
     );
 
@@ -2691,31 +2639,30 @@ class FoodSeeder {
           if (!docSnapshot.exists) {
             batch.set(docRef, carbDoc);
             successCount++;
-            print('✅ [CARBS] Queued "$name" for atomic write');
+            AppLogger.info('✅ [CARBS] Queued "$name" for atomic write');
           } else {
-            print('⚠️ [CARBS] "$name" already exists. Skipping.');
+            AppLogger.info('⚠️ [CARBS] "$name" already exists. Skipping.');
           }
         } catch (e) {
-          print('❌ [CARBS] Error preparing for batch: $e');
-          debugPrint('[CARBS] $e');
+          AppLogger.error('❌ [CARBS] Error preparing for batch: $e');
         }
       }
 
       if (successCount > 0) {
         await batch.commit();
-        print(
+        AppLogger.info(
           '[CARBS] ✅ WriteBatch committed! $successCount Carbohidratos injected atomically.',
         );
       } else {
-        print(
+        AppLogger.info(
           '[CARBS] ℹ️ No new Carbohidratos to inject (all exist or were skipped).',
         );
       }
     } catch (e) {
-      print('[CARBS] ❌ Error in seedCarbsComplete: $e');
-      debugPrint('[CARBS] $e');
+      AppLogger.error('[CARBS] ❌ Error in seedCarbsComplete: $e');
     }
   }
+
 
   /// Get 15 Complete Carbs with strict 4-Node structure
   static List<Map<String, dynamic>> _getCarbsCompleteList() {

@@ -13,6 +13,7 @@
 /// ensuring all developers are informed. Status: [INTENTIONALLY RETAINED]
 library;
 
+import '../../../../core/services/app_logger.dart';
 import 'package:elena_app/src/features/nutrition/domain/entities/metabolic_profile.dart';
 import 'package:elena_app/src/features/nutrition/domain/services/macro_calculator.dart';
 
@@ -20,7 +21,7 @@ import 'package:elena_app/src/features/nutrition/domain/services/macro_calculato
 // EJEMPLO 1: Uso Independiente
 // ─────────────────────────────────────────────────────────────────────────────
 
-void example1_standaloneCalculator() {
+void example1StandaloneCalculator() {
   // Crear un calculador para un usuario específico
   final calc = MacroCalculator(
     leanMassKg: 65.0,
@@ -36,13 +37,13 @@ void example1_standaloneCalculator() {
     isTrainingDay: true,
   );
 
-  print('=== Resultado ===');
-  print('Proteína: ${result.proteinGrams.toStringAsFixed(1)}g');
-  print('Grasa: ${result.fatGrams.toStringAsFixed(1)}g');
-  print('Carbos: ${result.carbsGrams.toStringAsFixed(1)}g');
-  print('Calorías: ${result.actualCalories.toStringAsFixed(0)}');
-  print('Distribución: ${result.distribution}');
-  print('Redondeado: ${result.rounded()}');
+  AppLogger.info('=== Resultado ===');
+  AppLogger.info('Proteína: ${result.proteinGrams.toStringAsFixed(1)}g');
+  AppLogger.info('Grasa: ${result.fatGrams.toStringAsFixed(1)}g');
+  AppLogger.info('Carbos: ${result.carbsGrams.toStringAsFixed(1)}g');
+  AppLogger.info('Calorías: ${result.actualCalories.toStringAsFixed(0)}');
+  AppLogger.info('Distribución: ${result.distribution}');
+  AppLogger.info('Redondeado: ${result.rounded()}');
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -133,7 +134,7 @@ void integrateIntoMetabolicEngine() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 void compareScenarios() {
-  print('=== Escenario 1: IR + 18:6 ===');
+  AppLogger.info('=== Escenario 1: IR + 18:6 ===');
   final calc1 = MacroCalculator(
     leanMassKg: 60.0,
     totalWeightKg: 75.0,
@@ -142,10 +143,10 @@ void compareScenarios() {
     insulinSensitivity: InsulinSensitivityLevel.resistant,
   );
   final result1 = calc1.calculateMacros(caloricTarget: 1800.0);
-  print(result1);
-  print('Distribución: ${result1.distribution}');
+  AppLogger.info(result1.toString());
+  AppLogger.info('Distribución: ${result1.distribution}');
 
-  print('\n=== Escenario 2: Sensible + 12h ===');
+  AppLogger.info('\n=== Escenario 2: Sensible + 12h ===');
   final calc2 = MacroCalculator(
     leanMassKg: 65.0,
     totalWeightKg: 82.0,
@@ -155,10 +156,10 @@ void compareScenarios() {
   );
   final result2 =
       calc2.calculateMacros(caloricTarget: 2200.0, isTrainingDay: true);
-  print(result2);
-  print('Distribución: ${result2.distribution}');
+  AppLogger.info(result2.toString());
+  AppLogger.info('Distribución: ${result2.distribution}');
 
-  print('\n=== Escenario 3: Normal + 16:8 ===');
+  AppLogger.info('\n=== Escenario 3: Normal + 16:8 ===');
   final calc3 = MacroCalculator(
     leanMassKg: 70.0,
     totalWeightKg: 90.0,
@@ -168,8 +169,8 @@ void compareScenarios() {
   );
   final result3 =
       calc3.calculateMacros(caloricTarget: 1980.0, isTrainingDay: true);
-  print(result3);
-  print('Distribución: ${result3.distribution}');
+  AppLogger.info(result3.toString());
+  AppLogger.info('Distribución: ${result3.distribution}');
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -198,7 +199,7 @@ void analyzeSensitivityImpact() {
       caloricTarget: baselineParams['caloricTarget'] as double,
     );
 
-    print('$sensitivity: $result');
+    AppLogger.info('$sensitivity: $result');
   }
 }
 
@@ -219,7 +220,7 @@ void analyzeFastingWindowImpact() {
     );
 
     final result = calc.calculateMacros(caloricTarget: 1890.0);
-    print(
+    AppLogger.info(
         '$hours:${24 - hours.toInt()} → Grasa: ${result.fatGrams.toStringAsFixed(1)}g');
   }
 }
@@ -229,31 +230,31 @@ void analyzeFastingWindowImpact() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 void main() {
-  print(
+  AppLogger.info(
       '╔═══════════════════════════════════════════════════════════════════╗');
-  print('║ EJEMPLO 1: Uso Independiente                                     ║');
-  print(
+  AppLogger.info('║ EJEMPLO 1: Uso Independiente                                     ║');
+  AppLogger.info(
       '╚═══════════════════════════════════════════════════════════════════╝');
-  example1_standaloneCalculator();
+  example1StandaloneCalculator();
 
-  print(
+  AppLogger.info(
       '\n╔═══════════════════════════════════════════════════════════════════╗');
-  print('║ EJEMPLO 4: Comparación de Escenarios                             ║');
-  print(
+  AppLogger.info('║ EJEMPLO 4: Comparación de Escenarios                             ║');
+  AppLogger.info(
       '╚═══════════════════════════════════════════════════════════════════╝');
   compareScenarios();
 
-  print(
+  AppLogger.info(
       '\n╔═══════════════════════════════════════════════════════════════════╗');
-  print('║ EJEMPLO 5: Impacto de Sensibilidad a Insulina                    ║');
-  print(
+  AppLogger.info('║ EJEMPLO 5: Impacto de Sensibilidad a Insulina                    ║');
+  AppLogger.info(
       '╚═══════════════════════════════════════════════════════════════════╝');
   analyzeSensitivityImpact();
 
-  print(
+  AppLogger.info(
       '\n╔═══════════════════════════════════════════════════════════════════╗');
-  print('║ EJEMPLO 6: Impacto de Ventana de Ayuno                           ║');
-  print(
+  AppLogger.info('║ EJEMPLO 6: Impacto de Ventana de Ayuno                           ║');
+  AppLogger.info(
       '╚═══════════════════════════════════════════════════════════════════╝');
   analyzeFastingWindowImpact();
 }

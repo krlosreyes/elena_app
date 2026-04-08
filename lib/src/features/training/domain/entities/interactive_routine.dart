@@ -6,7 +6,7 @@ part 'interactive_routine.g.dart';
 /// Represents an exercise within an active/interactive workout session.
 /// Uses Freezed for immutable state with copyWith support.
 @freezed
-class InteractiveExercise with _$InteractiveExercise {
+sealed class InteractiveExercise with _$InteractiveExercise {
   const factory InteractiveExercise({
     required String id,
     required String name,
@@ -21,7 +21,7 @@ class InteractiveExercise with _$InteractiveExercise {
 
 /// Represents a single set within an interactive exercise.
 @freezed
-class InteractiveSet with _$InteractiveSet {
+sealed class InteractiveSet with _$InteractiveSet {
   const factory InteractiveSet({
     required int setIndex,
     @Default('8-12') String targetReps,

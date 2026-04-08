@@ -1,25 +1,30 @@
-import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import '../theme/app_theme.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
-import '../../domain/logic/elena_brain.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-class ElenaHeader extends StatelessWidget {
+import '../../domain/logic/elena_brain.dart';
+import '../engagement/data/engagement_repository.dart';
+import '../theme/app_theme.dart';
+
+class ElenaHeader extends ConsumerWidget {
   final String title;
   final UserModel user;
   final bool showDate;
+  final VoidCallback? onBack;
 
   const ElenaHeader({
     super.key,
     required this.title,
     required this.user,
     this.showDate = true,
+    this.onBack,
   });
 
   @override
-  Widget build(BuildContext context) {
-    // Calculamos el MTI para el círculo
-    final mti = ElenaBrain.calculateMTIForUser(user);
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Calculamos el IMR para el círculo
+    final imr = ElenaBrain.calculateIMRForUser(user);
 
     // Inicial del usuario
     final String initial = user.displayName.isNotEmpty
@@ -41,12 +46,13 @@ class ElenaHeader extends StatelessWidget {
           ),
           overflow: TextOverflow.ellipsis,
         ),
-        if (showDate) ...[
-          const SizedBox(height: 2),
-          _buildDateString(),
-        ],
+        if (showDate) ...[const SizedBox(height: 2), _buildDateString()],
       ],
     );
+
+    // Racha real desde Firestore
+    final streak = ref.watch(streakStreamProvider).valueOrNull ?? 0;
+    final streakText = streak.toString().padLeft(2, '0');
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -54,7 +60,25 @@ class ElenaHeader extends StatelessWidget {
         Expanded(
           child: Row(
             children: [
-              _buildUserAvatar(initial, mti),
+              if (onBack != null) ...[
+                GestureDetector(
+                  onTap: onBack,
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withValues(alpha: 0.05),
+                    ),
+                    child: const Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      color: Colors.white,
+                      size: 14,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+              ],
+              _buildUserAvatar(initial, imr),
               const SizedBox(width: 12),
               Expanded(child: titleWidget),
             ],
@@ -68,18 +92,19 @@ class ElenaHeader extends StatelessWidget {
           decoration: BoxDecoration(
             color: const Color(0xFF0F1115),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: AppTheme.primary.withValues(alpha: 0.2),
-            ),
+            border: Border.all(color: AppTheme.primary.withValues(alpha: 0.2)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.local_fire_department_rounded,
-                  color: AppTheme.primary, size: 16),
+              const Icon(
+                Icons.local_fire_department_rounded,
+                color: AppTheme.primary,
+                size: 16,
+              ),
               const SizedBox(width: 6),
               Text(
-                '07', // Placeholder Racha: Próximamente dinámico
+                streakText, // Racha real del usuario
                 style: GoogleFonts.robotoMono(
                   color: Colors.white,
                   fontSize: 14,
@@ -93,7 +118,7 @@ class ElenaHeader extends StatelessWidget {
     );
   }
 
-  Widget _buildUserAvatar(String initial, double mti) {
+  Widget _buildUserAvatar(String initial, double imr) {
     return Container(
       width: 42,
       height: 42,
@@ -126,7 +151,7 @@ class ElenaHeader extends StatelessWidget {
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
-                mti.toStringAsFixed(0),
+                imr.toStringAsFixed(0),
                 style: const TextStyle(
                   color: Colors.black,
                   fontSize: 8,
@@ -149,7 +174,7 @@ class ElenaHeader extends StatelessWidget {
       'Miércoles',
       'Jueves',
       'Viernes',
-      'Sábado'
+      'Sábado',
     ];
     final months = [
       'enero',
@@ -163,7 +188,7 @@ class ElenaHeader extends StatelessWidget {
       'septiembre',
       'octubre',
       'noviembre',
-      'diciembre'
+      'diciembre',
     ];
 
     // weekday es 1-7 (Lunes-Domingo)

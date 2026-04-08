@@ -1,8 +1,11 @@
 import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../domain/models/metabolic_milestone.dart';
+
 import '../../../core/providers/metabolic_hub_provider.dart';
+import '../../../core/science/metabolic_engine.dart';
+import '../../domain/models/metabolic_milestone.dart';
 
 /// ✅ CIRCADIAN WHEEL WIDGET (Unified)
 ///
@@ -15,7 +18,8 @@ class CircadianWheelWidget extends StatefulWidget {
   final String statusLabel; // E.g. "AYUNO", "DIGESTIÓN"
   final String subLabel; // E.g. "FASE: AUTOFAGIA"
   final bool isRestingWarning;
-  final double? mtiScore;
+  final double? imrScore;
+  final Color? zoneColor; // Reemplaza fastingColor hardcodeado si se pasa
 
   const CircadianWheelWidget({
     super.key,
@@ -24,7 +28,8 @@ class CircadianWheelWidget extends StatefulWidget {
     required this.statusLabel,
     required this.subLabel,
     this.isRestingWarning = false,
-    this.mtiScore,
+    this.imrScore,
+    this.zoneColor,
   });
 
   @override
@@ -69,14 +74,15 @@ class _CircadianWheelWidgetState extends State<CircadianWheelWidget>
     }
 
     final bool isFeeding = widget.context.isFeeding;
-    final Color mainColor =
-        isFeeding ? const Color(0xFFFFD600) : const Color(0xFF00E5FF);
+    final Color mainColor = isFeeding
+        ? const Color(0xFFFFD600)
+        : (widget.zoneColor ?? const Color(0xFF00E5FF));
 
     // 🏷️ Tag Dinámico para Cierre de Ventana
     final String displayStatusLabel =
         widget.context.isWindowClosing && isFeeding
-            ? "CIERRE DE VENTANA"
-            : widget.statusLabel;
+        ? "CIERRE DE VENTANA"
+        : widget.statusLabel;
 
     final List<MetabolicMilestone> allMilestones = [
       if (isFeeding) ...widget.context.mealMilestones,
@@ -98,109 +104,115 @@ class _CircadianWheelWidgetState extends State<CircadianWheelWidget>
       }
     }
 
-    return LayoutBuilder(builder: (context, constraints) {
-      final double availableWidth = constraints.maxWidth;
-      // Usamos un factor conservador para el radio del track principal
-      // para dejar espacio a los hitos y etiquetas que orbitan fuera
-      final double radius = availableWidth * 0.35;
-      final double wheelSize = math.min(radius * 2, 450.0);
-      // El tamaño total del widget incluye los elementos orbitales
-      final double totalWidgetSize = wheelSize * 1.3;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final double availableWidth = constraints.maxWidth;
+        // Usamos un factor conservador para el radio del track principal
+        // para dejar espacio a los hitos y etiquetas que orbitan fuera
+        final double radius = availableWidth * 0.35;
+        final double wheelSize = math.min(radius * 2, 450.0);
+        // El tamaño total del widget incluye los elementos orbitales
+        // Se aumentó el factor de 1.3 a 1.45 para evitar overflow/clipping en Android
+        final double totalWidgetSize = wheelSize * 1.45;
 
-      return SizedBox(
-        width: totalWidgetSize,
-        height: totalWidgetSize,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            // 1. Capa del CustomPainter (Reloj Técnico) - Con RepaintBoundary para reactividad inmediata
-            AnimatedBuilder(
-              animation: _pulseAnimation,
-              builder: (context, child) {
-                return RepaintBoundary(
-                  child: CustomPaint(
-                    size: Size(totalWidgetSize, totalWidgetSize),
-                    painter: _CircadianPainter(
-                      context: widget.context, // Usar widget.context
-                      baseRadius: radius,
-                      fastingColor: const Color(0xFF00E5FF),
-                      feedingColor: const Color(0xFFFFD600),
-                      isRestingWarning: widget.isRestingWarning,
-                      pulseOpacity:
-                          _pulseAnimation.value, // Nueva opacidad pulsante
-                    ),
-                  ),
-                );
-              },
-            ),
-
-            // 2. Iconos de Hitos con Jerarquía Visual (Geometría Dinámica)
-            ...allMilestones.map((milestone) {
-              final isPast = milestone.hour < currentProgress;
-              final isActive = activeMilestone == milestone;
-
-              return _PositionedIcon(
-                milestone: milestone,
-                isPast: isPast,
-                isActive: isActive,
-                radius: radius -
-                    7, // Alineado con el centro del arco (strokeWidth=14)
-                wheelSize: wheelSize,
-              );
-            }),
-
-            // 3. Bloque Central Digital (Jerarquía Unificada y Escalable)
-            SizedBox(
-              width: wheelSize * 0.6,
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Timer Principal (Escala Responsiva)
-                    Text(
-                      widget.durationStr,
-                      style: GoogleFonts.jetBrainsMono(
-                        fontSize: wheelSize * 0.12,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white,
-                        letterSpacing: -1,
+        return SizedBox(
+          width: totalWidgetSize,
+          height: totalWidgetSize,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // 1. Capa del CustomPainter (Reloj Técnico) - Con RepaintBoundary para reactividad inmediata
+              AnimatedBuilder(
+                animation: _pulseAnimation,
+                builder: (context, child) {
+                  return RepaintBoundary(
+                    child: CustomPaint(
+                      size: Size(totalWidgetSize, totalWidgetSize),
+                      painter: _CircadianPainter(
+                        context: widget.context, // Usar widget.context
+                        baseRadius: radius,
+                        fastingColor:
+                            widget.zoneColor ?? const Color(0xFF00E5FF),
+                        feedingColor: const Color(0xFFFFD600),
+                        isRestingWarning: widget.isRestingWarning,
+                        pulseOpacity:
+                            _pulseAnimation.value, // Nueva opacidad pulsante
                       ),
                     ),
+                  );
+                },
+              ),
 
-                    SizedBox(height: wheelSize * 0.02),
+              // 2. Iconos de Hitos con Jerarquía Visual (Geometría Dinámica)
+              ...allMilestones.map((milestone) {
+                final isPast = milestone.hour < currentProgress;
+                final isActive = activeMilestone == milestone;
 
-                    // BOTÓN / PASTILLA DE ESTADO
-                    if (widget.isRestingWarning)
-                      _AvisoResting()
-                    else
-                      _SubLabelTag(
+                return _PositionedIcon(
+                  milestone: milestone,
+                  isPast: isPast,
+                  isActive: isActive,
+                  radius:
+                      radius -
+                      7, // Alineado con el centro del arco (strokeWidth=14)
+                  wheelSize: wheelSize,
+                );
+              }),
+
+              // 3. Bloque Central Digital (Jerarquía Unificada y Escalable)
+              SizedBox(
+                width: wheelSize * 0.6,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Timer Principal (Escala Responsiva)
+                      Text(
+                        widget.durationStr,
+                        style: GoogleFonts.jetBrainsMono(
+                          fontSize: wheelSize * 0.12,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                          letterSpacing: -1,
+                        ),
+                      ),
+
+                      SizedBox(height: wheelSize * 0.02),
+
+                      // BOTÓN / PASTILLA DE ESTADO
+                      if (widget.isRestingWarning)
+                        _AvisoResting()
+                      else
+                        _SubLabelTag(
                           label: displayStatusLabel, // Usar label dinámico
                           color: mainColor,
-                          wheelSize: wheelSize),
+                          wheelSize: wheelSize,
+                        ),
 
-                    SizedBox(height: wheelSize * 0.015),
+                      SizedBox(height: wheelSize * 0.015),
 
-                    // Fase Metabólica
-                    Text(
-                      widget.subLabel.toUpperCase(),
-                      style: GoogleFonts.jetBrainsMono(
-                        fontSize: math.max(8.0, wheelSize * 0.025),
-                        color: Colors.white24,
-                        letterSpacing: 2,
-                        fontWeight: FontWeight.bold,
+                      // Fase Metabólica
+                      Text(
+                        widget.subLabel.toUpperCase(),
+                        style: GoogleFonts.jetBrainsMono(
+                          fontSize: math.max(8.0, wheelSize * 0.025),
+                          color: Colors.white24,
+                          letterSpacing: 2,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
 
-            // 4. Decoración Interior (Blueprint Line Dinámica) - Eliminada para dar "aire"
-          ],
-        ),
-      );
-    });
+              // 4. Decoración Interior (Blueprint Line Dinámica) - Eliminada para dar "aire"
+            ],
+          ),
+        );
+      },
+    );
   }
 }
 
@@ -209,14 +221,19 @@ class _SubLabelTag extends StatelessWidget {
   final Color color;
   final double wheelSize;
 
-  const _SubLabelTag(
-      {required this.label, required this.color, required this.wheelSize});
+  const _SubLabelTag({
+    required this.label,
+    required this.color,
+    required this.wheelSize,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.symmetric(
-          horizontal: wheelSize * 0.04, vertical: wheelSize * 0.012),
+        horizontal: wheelSize * 0.04,
+        vertical: wheelSize * 0.012,
+      ),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(wheelSize * 0.04),
@@ -296,17 +313,15 @@ class _PositionedIcon extends StatelessWidget {
     if (isPast) opacity = 0.25;
     if (isActive) opacity = 1.0;
 
-    final Color baseColor =
-        isMeal ? const Color(0xFFFFD600) : const Color(0xFF00E5FF);
+    final Color baseColor = isMeal
+        ? const Color(0xFFFFD600)
+        : const Color(0xFF00E5FF);
     final Color color = baseColor.withValues(alpha: opacity);
 
     final double sizeMultiplier = isActive ? 1.25 : 1.0;
 
     return Transform.translate(
-      offset: Offset(
-        radius * math.cos(angle),
-        radius * math.sin(angle),
-      ),
+      offset: Offset(radius * math.cos(angle), radius * math.sin(angle)),
       child: Tooltip(
         message:
             '${milestone.label}\n${_formatRealTime(milestone.absoluteHour)}',
@@ -316,17 +331,14 @@ class _PositionedIcon extends StatelessWidget {
           decoration: BoxDecoration(
             color: const Color(0xFF0A0A0A),
             shape: BoxShape.circle,
-            border: Border.all(
-              color: color,
-              width: isActive ? 2.0 : 1.0,
-            ),
+            border: Border.all(color: color, width: isActive ? 2.0 : 1.0),
             boxShadow: [
               if (isActive)
                 BoxShadow(
                   color: baseColor.withValues(alpha: 0.4),
                   blurRadius: 12,
                   spreadRadius: 2,
-                )
+                ),
             ],
           ),
           child: Icon(
@@ -396,7 +408,12 @@ class _CircadianPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth;
     canvas.drawArc(
-        rect, startFeedingAngle, feedingSweep, false, feedingBgPaint);
+      rect,
+      startFeedingAngle,
+      feedingSweep,
+      false,
+      feedingBgPaint,
+    );
 
     // 2. PROGRESO DINÁMICO (Sincronizado con FastingState)
     final double fastingProgress =
@@ -426,11 +443,12 @@ class _CircadianPainter extends CustomPainter {
       // Dibujar progreso de alimentación
       if (feedingProgress > 0) {
         canvas.drawArc(
-            rect,
-            startFeedingAngle,
-            feedingSweep * feedingProgress.clamp(0.0, 1.0),
-            false,
-            activeFeedingPaint);
+          rect,
+          startFeedingAngle,
+          feedingSweep * feedingProgress.clamp(0.0, 1.0),
+          false,
+          activeFeedingPaint,
+        );
 
         // Glow Alimentación
         final glow = Paint()
@@ -441,28 +459,119 @@ class _CircadianPainter extends CustomPainter {
           ..strokeWidth = strokeWidth + 4.0
           ..strokeCap = StrokeCap.round
           ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
-        canvas.drawArc(rect, startFeedingAngle,
-            feedingSweep * feedingProgress.clamp(0.0, 1.0), false, glow);
+        canvas.drawArc(
+          rect,
+          startFeedingAngle,
+          feedingSweep * feedingProgress.clamp(0.0, 1.0),
+          false,
+          glow,
+        );
       }
     } else {
-      // Dibujar progreso de ayuno
+      // Dibujar progreso de ayuno CON ZONAS METABÓLICAS
       if (fastingProgress > 0) {
-        canvas.drawArc(
-            rect,
-            startAngle,
-            fastingSweep * fastingProgress.clamp(0.0, 1.0),
-            false,
-            activeFastingPaint);
+        final totalFastingSweep =
+            fastingSweep * fastingProgress.clamp(0.0, 1.0);
+        final fastingElapsed = context.fastingStatus?.elapsed ?? Duration.zero;
+        final plannedHours = context.fastingStatus?.plannedHours ?? 16;
+        final totalPlannedMinutes = plannedHours * 60.0;
 
-        // Glow Ayuno
-        final glow = Paint()
-          ..color = fastingColor.withValues(alpha: 0.3)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = strokeWidth + 4.0
-          ..strokeCap = StrokeCap.round
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
-        canvas.drawArc(rect, startAngle,
-            fastingSweep * fastingProgress.clamp(0.0, 1.0), false, glow);
+        // MetabolicZone thresholds in hours
+        final zoneThresholds = <double>[0, 12, 18, 24, 48, 72];
+        final zones = <MetabolicZone>[
+          MetabolicZone.postAbsorption,
+          MetabolicZone.glycogenDepletion,
+          MetabolicZone.fatBurning,
+          MetabolicZone.deepKetosis,
+          MetabolicZone.autophagy,
+          MetabolicZone.survivalMode,
+        ];
+
+        final elapsedMinutes = fastingElapsed.inMinutes.toDouble();
+
+        // Ensure we don't exceed total sweep
+        double accumulatedSweep = 0;
+
+        for (int z = 0; z < zones.length; z++) {
+          final zoneStartH = zoneThresholds[z];
+          final zoneEndH = z + 1 < zoneThresholds.length
+              ? zoneThresholds[z + 1]
+              : 100.0; // beyond practical fasting
+          final zoneStartMin = zoneStartH * 60;
+          final zoneEndMin = zoneEndH * 60;
+
+          // Only draw if we've reached this zone
+          if (elapsedMinutes <= zoneStartMin) break;
+
+          final segmentStartMin = zoneStartMin;
+          final segmentEndMin = elapsedMinutes.clamp(zoneStartMin, zoneEndMin);
+          if (segmentEndMin <= segmentStartMin) continue;
+
+          // Convert to sweep angle proportions
+          final segStart = (segmentStartMin / totalPlannedMinutes).clamp(
+            0.0,
+            1.0,
+          );
+          final segEnd = (segmentEndMin / totalPlannedMinutes).clamp(0.0, 1.0);
+          final segStartAngle = startAngle + fastingSweep * segStart;
+          final segSweepAngle = fastingSweep * (segEnd - segStart);
+
+          if (segSweepAngle <= 0 || accumulatedSweep >= totalFastingSweep)
+            continue;
+
+          final zoneColor = zones[z].color;
+
+          // Zone arc
+          canvas.drawArc(
+            rect,
+            segStartAngle,
+            segSweepAngle,
+            false,
+            Paint()
+              ..color = zoneColor
+              ..style = PaintingStyle.stroke
+              ..strokeWidth = strokeWidth
+              ..strokeCap = StrokeCap.round,
+          );
+
+          // Zone glow
+          canvas.drawArc(
+            rect,
+            segStartAngle,
+            segSweepAngle,
+            false,
+            Paint()
+              ..color = zoneColor.withValues(alpha: 0.25)
+              ..style = PaintingStyle.stroke
+              ..strokeWidth = strokeWidth + 4.0
+              ..strokeCap = StrokeCap.round
+              ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
+          );
+
+          accumulatedSweep += segSweepAngle;
+        }
+
+        // Phase icon indicators at zone boundaries on the arc
+        for (int z = 1; z < zoneThresholds.length; z++) {
+          final thresholdMin = zoneThresholds[z] * 60;
+          if (thresholdMin >= totalPlannedMinutes ||
+              thresholdMin >= elapsedMinutes)
+            break;
+
+          final ratio = (thresholdMin / totalPlannedMinutes).clamp(0.0, 1.0);
+          final markerAngle = startAngle + fastingSweep * ratio;
+          final markerPos = Offset(
+            center.dx + activeRadius * math.cos(markerAngle),
+            center.dy + activeRadius * math.sin(markerAngle),
+          );
+
+          // Small diamond marker at zone transitions
+          canvas.drawCircle(
+            markerPos,
+            3,
+            Paint()..color = Colors.white.withValues(alpha: 0.8),
+          );
+        }
       }
     }
 
@@ -512,15 +621,21 @@ class _CircadianPainter extends CustomPainter {
       final r2 = radius + (radius * 0.08);
       canvas.drawLine(
         Offset(
-            center.dx + r1 * math.cos(angle), center.dy + r1 * math.sin(angle)),
+          center.dx + r1 * math.cos(angle),
+          center.dy + r1 * math.sin(angle),
+        ),
         Offset(
-            center.dx + r2 * math.cos(angle), center.dy + r2 * math.sin(angle)),
+          center.dx + r2 * math.cos(angle),
+          center.dy + r2 * math.sin(angle),
+        ),
         markerPaint,
       );
 
       final rLabel = radius + (radius * 0.16);
-      final offset = Offset(center.dx + rLabel * math.cos(angle),
-          center.dy + rLabel * math.sin(angle));
+      final offset = Offset(
+        center.dx + rLabel * math.cos(angle),
+        center.dy + rLabel * math.sin(angle),
+      );
 
       final textPainter = TextPainter(
         text: TextSpan(
@@ -535,13 +650,20 @@ class _CircadianPainter extends CustomPainter {
         textDirection: TextDirection.ltr,
       )..layout();
 
-      textPainter.paint(canvas,
-          offset - Offset(textPainter.width / 2, textPainter.height / 2));
+      textPainter.paint(
+        canvas,
+        offset - Offset(textPainter.width / 2, textPainter.height / 2),
+      );
     }
   }
 
-  void _drawTicks(Canvas canvas, Offset center, double radius,
-      double totalProgress, Color activeColor) {
+  void _drawTicks(
+    Canvas canvas,
+    Offset center,
+    double radius,
+    double totalProgress,
+    Color activeColor,
+  ) {
     final tickPaint = Paint()
       ..color = Colors.white.withValues(alpha: 0.1)
       ..strokeWidth = 1.0;
@@ -555,10 +677,14 @@ class _CircadianPainter extends CustomPainter {
       final angle = (i * 2 * math.pi / count) - math.pi / 2;
       final rInner = radius + 14.0;
       final rOuter = rInner + (i % 5 == 0 ? 8.0 : 4.0);
-      final p1 = Offset(center.dx + rInner * math.cos(angle),
-          center.dy + rInner * math.sin(angle));
-      final p2 = Offset(center.dx + rOuter * math.cos(angle),
-          center.dy + rOuter * math.sin(angle));
+      final p1 = Offset(
+        center.dx + rInner * math.cos(angle),
+        center.dy + rInner * math.sin(angle),
+      );
+      final p2 = Offset(
+        center.dx + rOuter * math.cos(angle),
+        center.dy + rOuter * math.sin(angle),
+      );
 
       if (i / count <= totalProgress) {
         canvas.drawLine(p1, p2, activeTickPaint);

@@ -1,6 +1,7 @@
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/services/analytics_service.dart';
 import '../../../core/services/app_logger.dart';
 import '../../../domain/logic/elena_brain.dart';
 import '../../../shared/domain/models/user_food_preferences.dart';
@@ -22,8 +23,10 @@ class OnboardingController extends StateNotifier<UserModel?> {
     if (state != null) return;
 
     // 1. Intentamos cargar el perfil base de Firestore
-    final existingUser =
-        await _ref.read(authServiceProvider).userStream(uid).first;
+    final existingUser = await _ref
+        .read(authServiceProvider)
+        .userStream(uid)
+        .first;
 
     // 2. Recuperamos el nombre del proveedor temporal si existe
     final tempName = _ref.read(tempRegistrationNameProvider);
@@ -31,10 +34,10 @@ class OnboardingController extends StateNotifier<UserModel?> {
     // 3. Establecemos el nombre final
     final String finalName =
         (existingUser?.name != null && existingUser!.name.isNotEmpty)
-            ? existingUser.name
-            : (tempName != null && tempName.isNotEmpty)
-                ? tempName
-                : displayName;
+        ? existingUser.name
+        : (tempName != null && tempName.isNotEmpty)
+        ? tempName
+        : displayName;
 
     if (existingUser != null) {
       state = existingUser.copyWith(name: finalName);
@@ -71,7 +74,8 @@ class OnboardingController extends StateNotifier<UserModel?> {
   Future<void> submit(UserFoodPreferences? foodPrefs) async {
     if (state == null) {
       AppLogger.warning(
-          'OnboardingController: Intento de submit con state nulo.');
+        'OnboardingController: Intento de submit con state nulo.',
+      );
       return;
     }
 
@@ -79,28 +83,44 @@ class OnboardingController extends StateNotifier<UserModel?> {
       AppLogger.info('OnboardingController: Iniciando persistencia final...');
 
       // 1. Calcular índices metabólicos (metaICA, metaICC)
-      // TODO: Remove in Phase 4 – duplicated metabolic logic
-      // Direct call to ElenaBrain.calculateIndices duplicates core/science logic.
       final indices = ElenaBrain.calculateIndices(
         state!.heightCm,
         state!.waistCircumferenceCm,
         state!.hipCircumferenceCm,
       );
 
-      // 2. Crear el objeto final con todos los datos recogidos
+      // 2. Calcular IMR basal — snapshot del potencial metabólico al registrarse.
+      //    Usa los datos de perfil declarados: sleep según horarios ingresados,
+      //    resto de pilares en cero (sin actividad registrada aún).
+      final double basalImr = ElenaBrain.calculateTotalIMR(
+        state!.copyWith(
+          metaICA: indices['metaICA'],
+          metaICC: indices['metaICC'],
+        ),
+        realTimeFastingHours: 12.0,
+        realTimeNutritionScore: 0.0,
+        realTimeExerciseScore: 0.0,
+        realTimeSleepHours: state!.averageSleepHours ?? 7.0,
+        realTimeHydrationScore: 0.0,
+      );
+
+      // 3. Crear el objeto final con todos los datos recogidos
       final updatedUser = state!.copyWith(
         metaICA: indices['metaICA'],
         metaICC: indices['metaICC'],
+        initialImr: basalImr,
         onboardingCompleted: true,
         updatedAt: DateTime.now(),
       );
 
-      AppLogger.debug('User Data to Save: ${updatedUser.email}');
+      AppLogger.debug(
+        'User Data to Save: ${updatedUser.email} | IMR Basal: ${basalImr.toStringAsFixed(1)}',
+      );
 
-      // 3. Guardar en Firestore usando AuthService
+      // 4. Guardar en Firestore usando AuthService
       await _ref.read(authServiceProvider).completeOnboarding(updatedUser);
 
-      // 4. Guardar preferencias alimentarias si existen
+      // 5. Guardar preferencias alimentarias si existen
       if (foodPrefs != null) {
         AppLogger.info('Guardando preferencias alimentarias...');
         await _ref
@@ -109,18 +129,27 @@ class OnboardingController extends StateNotifier<UserModel?> {
 
         // 🧠 SEEDING PERSONALIZADO: Generar Ecosistema de Nutrición
         AppLogger.info('Generando Ecosistema de Nutrición Personalizado...');
-        await _ref.read(foodServiceProvider).generatePersonalizedPool(
-            updatedUser.uid, foodPrefs.allSelectedIds);
+        await _ref
+            .read(foodServiceProvider)
+            .generatePersonalizedPool(
+              updatedUser.uid,
+              foodPrefs.allSelectedIds,
+            );
       }
 
-      // 5. Actualizar estado local para evitar race conditions en navegación
+      // 6. Actualizar estado local para evitar race conditions en navegación
       state = updatedUser;
       _ref.read(onboardingJustFinishedProvider.notifier).state = true;
 
-      // 6. Generar primer MeasurementLog automático
+      // 7. Generar primer MeasurementLog automático
       await _generateInitialMeasurement(updatedUser);
 
-      AppLogger.info('Onboarding Completado Exitosamente');
+      AppLogger.info(
+        'Onboarding Completado Exitosamente. IMR Basal: ${basalImr.toStringAsFixed(1)}',
+      );
+
+      // 8. Registrar evento de analytics
+      AnalyticsService.logOnboardingComplete(basalImr);
     } catch (e, stack) {
       AppLogger.error('Error en onboarding submit: $e', e, stack);
       rethrow;
@@ -171,11 +200,12 @@ class OnboardingController extends StateNotifier<UserModel?> {
 
 final onboardingControllerProvider =
     StateNotifierProvider<OnboardingController, UserModel?>((ref) {
-  return OnboardingController(ref);
-});
+      return OnboardingController(ref);
+    });
 
-final onboardingFoodPreferencesProvider =
-    StateProvider<UserFoodPreferences>((ref) {
+final onboardingFoodPreferencesProvider = StateProvider<UserFoodPreferences>((
+  ref,
+) {
   return UserFoodPreferences.empty();
 });
 

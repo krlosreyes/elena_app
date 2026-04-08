@@ -1,5 +1,5 @@
-// coverage:ignore-file
 // GENERATED CODE - DO NOT MODIFY BY HAND
+// coverage:ignore-file
 // ignore_for_file: type=lint
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
@@ -9,94 +9,59 @@ part of 'fasting_session.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// dart format off
 T _$identity<T>(T value) => value;
-
-final _privateConstructorUsedError = UnsupportedError(
-    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
-
-FastingSession _$FastingSessionFromJson(Map<String, dynamic> json) {
-  return _FastingSession.fromJson(json);
-}
 
 /// @nodoc
 mixin _$FastingSession {
-  String get uid => throw _privateConstructorUsedError;
-  DateTime get startTime => throw _privateConstructorUsedError;
-  DateTime? get endTime => throw _privateConstructorUsedError;
-  int get plannedDurationHours => throw _privateConstructorUsedError;
-  bool get isCompleted => throw _privateConstructorUsedError;
+  String get uid;
+  DateTime get startTime;
+  DateTime? get endTime;
+  int get plannedDurationHours;
+  bool get isCompleted;
 
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-  @JsonKey(ignore: true)
-  $FastingSessionCopyWith<FastingSession> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $FastingSessionCopyWith<$Res> {
-  factory $FastingSessionCopyWith(
-          FastingSession value, $Res Function(FastingSession) then) =
-      _$FastingSessionCopyWithImpl<$Res, FastingSession>;
-  @useResult
-  $Res call(
-      {String uid,
-      DateTime startTime,
-      DateTime? endTime,
-      int plannedDurationHours,
-      bool isCompleted});
-}
-
-/// @nodoc
-class _$FastingSessionCopyWithImpl<$Res, $Val extends FastingSession>
-    implements $FastingSessionCopyWith<$Res> {
-  _$FastingSessionCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
+  /// Create a copy of FastingSession
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @pragma('vm:prefer-inline')
+  $FastingSessionCopyWith<FastingSession> get copyWith =>
+      _$FastingSessionCopyWithImpl<FastingSession>(
+          this as FastingSession, _$identity);
+
+  /// Serializes this FastingSession to a JSON map.
+  Map<String, dynamic> toJson();
+
   @override
-  $Res call({
-    Object? uid = null,
-    Object? startTime = null,
-    Object? endTime = freezed,
-    Object? plannedDurationHours = null,
-    Object? isCompleted = null,
-  }) {
-    return _then(_value.copyWith(
-      uid: null == uid
-          ? _value.uid
-          : uid // ignore: cast_nullable_to_non_nullable
-              as String,
-      startTime: null == startTime
-          ? _value.startTime
-          : startTime // ignore: cast_nullable_to_non_nullable
-              as DateTime,
-      endTime: freezed == endTime
-          ? _value.endTime
-          : endTime // ignore: cast_nullable_to_non_nullable
-              as DateTime?,
-      plannedDurationHours: null == plannedDurationHours
-          ? _value.plannedDurationHours
-          : plannedDurationHours // ignore: cast_nullable_to_non_nullable
-              as int,
-      isCompleted: null == isCompleted
-          ? _value.isCompleted
-          : isCompleted // ignore: cast_nullable_to_non_nullable
-              as bool,
-    ) as $Val);
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is FastingSession &&
+            (identical(other.uid, uid) || other.uid == uid) &&
+            (identical(other.startTime, startTime) ||
+                other.startTime == startTime) &&
+            (identical(other.endTime, endTime) || other.endTime == endTime) &&
+            (identical(other.plannedDurationHours, plannedDurationHours) ||
+                other.plannedDurationHours == plannedDurationHours) &&
+            (identical(other.isCompleted, isCompleted) ||
+                other.isCompleted == isCompleted));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType, uid, startTime, endTime, plannedDurationHours, isCompleted);
+
+  @override
+  String toString() {
+    return 'FastingSession(uid: $uid, startTime: $startTime, endTime: $endTime, plannedDurationHours: $plannedDurationHours, isCompleted: $isCompleted)';
   }
 }
 
 /// @nodoc
-abstract class _$$FastingSessionImplCopyWith<$Res>
-    implements $FastingSessionCopyWith<$Res> {
-  factory _$$FastingSessionImplCopyWith(_$FastingSessionImpl value,
-          $Res Function(_$FastingSessionImpl) then) =
-      __$$FastingSessionImplCopyWithImpl<$Res>;
-  @override
+abstract mixin class $FastingSessionCopyWith<$Res> {
+  factory $FastingSessionCopyWith(
+          FastingSession value, $Res Function(FastingSession) _then) =
+      _$FastingSessionCopyWithImpl;
   @useResult
   $Res call(
       {String uid,
@@ -107,13 +72,15 @@ abstract class _$$FastingSessionImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$FastingSessionImplCopyWithImpl<$Res>
-    extends _$FastingSessionCopyWithImpl<$Res, _$FastingSessionImpl>
-    implements _$$FastingSessionImplCopyWith<$Res> {
-  __$$FastingSessionImplCopyWithImpl(
-      _$FastingSessionImpl _value, $Res Function(_$FastingSessionImpl) _then)
-      : super(_value, _then);
+class _$FastingSessionCopyWithImpl<$Res>
+    implements $FastingSessionCopyWith<$Res> {
+  _$FastingSessionCopyWithImpl(this._self, this._then);
 
+  final FastingSession _self;
+  final $Res Function(FastingSession) _then;
+
+  /// Create a copy of FastingSession
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -123,43 +90,208 @@ class __$$FastingSessionImplCopyWithImpl<$Res>
     Object? plannedDurationHours = null,
     Object? isCompleted = null,
   }) {
-    return _then(_$FastingSessionImpl(
+    return _then(_self.copyWith(
       uid: null == uid
-          ? _value.uid
+          ? _self.uid
           : uid // ignore: cast_nullable_to_non_nullable
               as String,
       startTime: null == startTime
-          ? _value.startTime
+          ? _self.startTime
           : startTime // ignore: cast_nullable_to_non_nullable
               as DateTime,
       endTime: freezed == endTime
-          ? _value.endTime
+          ? _self.endTime
           : endTime // ignore: cast_nullable_to_non_nullable
               as DateTime?,
       plannedDurationHours: null == plannedDurationHours
-          ? _value.plannedDurationHours
+          ? _self.plannedDurationHours
           : plannedDurationHours // ignore: cast_nullable_to_non_nullable
               as int,
       isCompleted: null == isCompleted
-          ? _value.isCompleted
+          ? _self.isCompleted
           : isCompleted // ignore: cast_nullable_to_non_nullable
               as bool,
     ));
   }
 }
 
+/// Adds pattern-matching-related methods to [FastingSession].
+extension FastingSessionPatterns on FastingSession {
+  /// A variant of `map` that fallback to returning `orElse`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>(
+    TResult Function(_FastingSession value)? $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _FastingSession() when $default != null:
+        return $default(_that);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// Callbacks receives the raw object, upcasted.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case final Subclass2 value:
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>(
+    TResult Function(_FastingSession value) $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _FastingSession():
+        return $default(_that);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `map` that fallback to returning `null`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>(
+    TResult? Function(_FastingSession value)? $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _FastingSession() when $default != null:
+        return $default(_that);
+      case _:
+        return null;
+    }
+  }
+
+  /// A variant of `when` that fallback to an `orElse` callback.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>(
+    TResult Function(String uid, DateTime startTime, DateTime? endTime,
+            int plannedDurationHours, bool isCompleted)?
+        $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _FastingSession() when $default != null:
+        return $default(_that.uid, _that.startTime, _that.endTime,
+            _that.plannedDurationHours, _that.isCompleted);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// As opposed to `map`, this offers destructuring.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case Subclass2(:final field2):
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>(
+    TResult Function(String uid, DateTime startTime, DateTime? endTime,
+            int plannedDurationHours, bool isCompleted)
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _FastingSession():
+        return $default(_that.uid, _that.startTime, _that.endTime,
+            _that.plannedDurationHours, _that.isCompleted);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `when` that fallback to returning `null`
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>(
+    TResult? Function(String uid, DateTime startTime, DateTime? endTime,
+            int plannedDurationHours, bool isCompleted)?
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _FastingSession() when $default != null:
+        return $default(_that.uid, _that.startTime, _that.endTime,
+            _that.plannedDurationHours, _that.isCompleted);
+      case _:
+        return null;
+    }
+  }
+}
+
 /// @nodoc
 @JsonSerializable()
-class _$FastingSessionImpl implements _FastingSession {
-  const _$FastingSessionImpl(
+class _FastingSession implements FastingSession {
+  const _FastingSession(
       {required this.uid,
       required this.startTime,
       this.endTime,
       required this.plannedDurationHours,
       this.isCompleted = false});
-
-  factory _$FastingSessionImpl.fromJson(Map<String, dynamic> json) =>
-      _$$FastingSessionImplFromJson(json);
+  factory _FastingSession.fromJson(Map<String, dynamic> json) =>
+      _$FastingSessionFromJson(json);
 
   @override
   final String uid;
@@ -173,16 +305,26 @@ class _$FastingSessionImpl implements _FastingSession {
   @JsonKey()
   final bool isCompleted;
 
+  /// Create a copy of FastingSession
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'FastingSession(uid: $uid, startTime: $startTime, endTime: $endTime, plannedDurationHours: $plannedDurationHours, isCompleted: $isCompleted)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  _$FastingSessionCopyWith<_FastingSession> get copyWith =>
+      __$FastingSessionCopyWithImpl<_FastingSession>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$FastingSessionToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$FastingSessionImpl &&
+            other is _FastingSession &&
             (identical(other.uid, uid) || other.uid == uid) &&
             (identical(other.startTime, startTime) ||
                 other.startTime == startTime) &&
@@ -193,49 +335,75 @@ class _$FastingSessionImpl implements _FastingSession {
                 other.isCompleted == isCompleted));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(
       runtimeType, uid, startTime, endTime, plannedDurationHours, isCompleted);
 
-  @JsonKey(ignore: true)
   @override
-  @pragma('vm:prefer-inline')
-  _$$FastingSessionImplCopyWith<_$FastingSessionImpl> get copyWith =>
-      __$$FastingSessionImplCopyWithImpl<_$FastingSessionImpl>(
-          this, _$identity);
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$FastingSessionImplToJson(
-      this,
-    );
+  String toString() {
+    return 'FastingSession(uid: $uid, startTime: $startTime, endTime: $endTime, plannedDurationHours: $plannedDurationHours, isCompleted: $isCompleted)';
   }
 }
 
-abstract class _FastingSession implements FastingSession {
-  const factory _FastingSession(
-      {required final String uid,
-      required final DateTime startTime,
-      final DateTime? endTime,
-      required final int plannedDurationHours,
-      final bool isCompleted}) = _$FastingSessionImpl;
-
-  factory _FastingSession.fromJson(Map<String, dynamic> json) =
-      _$FastingSessionImpl.fromJson;
-
+/// @nodoc
+abstract mixin class _$FastingSessionCopyWith<$Res>
+    implements $FastingSessionCopyWith<$Res> {
+  factory _$FastingSessionCopyWith(
+          _FastingSession value, $Res Function(_FastingSession) _then) =
+      __$FastingSessionCopyWithImpl;
   @override
-  String get uid;
-  @override
-  DateTime get startTime;
-  @override
-  DateTime? get endTime;
-  @override
-  int get plannedDurationHours;
-  @override
-  bool get isCompleted;
-  @override
-  @JsonKey(ignore: true)
-  _$$FastingSessionImplCopyWith<_$FastingSessionImpl> get copyWith =>
-      throw _privateConstructorUsedError;
+  @useResult
+  $Res call(
+      {String uid,
+      DateTime startTime,
+      DateTime? endTime,
+      int plannedDurationHours,
+      bool isCompleted});
 }
+
+/// @nodoc
+class __$FastingSessionCopyWithImpl<$Res>
+    implements _$FastingSessionCopyWith<$Res> {
+  __$FastingSessionCopyWithImpl(this._self, this._then);
+
+  final _FastingSession _self;
+  final $Res Function(_FastingSession) _then;
+
+  /// Create a copy of FastingSession
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? uid = null,
+    Object? startTime = null,
+    Object? endTime = freezed,
+    Object? plannedDurationHours = null,
+    Object? isCompleted = null,
+  }) {
+    return _then(_FastingSession(
+      uid: null == uid
+          ? _self.uid
+          : uid // ignore: cast_nullable_to_non_nullable
+              as String,
+      startTime: null == startTime
+          ? _self.startTime
+          : startTime // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      endTime: freezed == endTime
+          ? _self.endTime
+          : endTime // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      plannedDurationHours: null == plannedDurationHours
+          ? _self.plannedDurationHours
+          : plannedDurationHours // ignore: cast_nullable_to_non_nullable
+              as int,
+      isCompleted: null == isCompleted
+          ? _self.isCompleted
+          : isCompleted // ignore: cast_nullable_to_non_nullable
+              as bool,
+    ));
+  }
+}
+
+// dart format on

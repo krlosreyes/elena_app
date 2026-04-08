@@ -6,8 +6,7 @@ part of 'health_plan.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$HealthPlanImpl _$$HealthPlanImplFromJson(Map<String, dynamic> json) =>
-    _$HealthPlanImpl(
+_HealthPlan _$HealthPlanFromJson(Map<String, dynamic> json) => _HealthPlan(
       protocol: json['protocol'] as String,
       hydrationGoal: (json['hydrationGoal'] as num).toInt(),
       maxHeartRate: (json['maxHeartRate'] as num).toInt(),
@@ -20,7 +19,7 @@ _$HealthPlanImpl _$$HealthPlanImplFromJson(Map<String, dynamic> json) =>
       generatedAt: DateTime.parse(json['generatedAt'] as String),
     );
 
-Map<String, dynamic> _$$HealthPlanImplToJson(_$HealthPlanImpl instance) =>
+Map<String, dynamic> _$HealthPlanToJson(_HealthPlan instance) =>
     <String, dynamic>{
       'protocol': instance.protocol,
       'hydrationGoal': instance.hydrationGoal,

@@ -13,7 +13,49 @@ import '../application/health_orchestrator.dart';
 import '../domain/full_user_state.dart';
 
 /// Feature flag for the unified health pipeline.
-final useHealthStatePipelineProvider = StateProvider<bool>((ref) => false);
+final useHealthStatePipelineProvider = StateProvider<bool>((ref) => true);
+
+/// Safe compatibility wrapper for consumers.
+///
+/// Returns the unified pipeline snapshot when available.
+/// Returns `null` on loading/error/null data so legacy providers can continue
+/// rendering without crashes.
+final healthStateProvider = Provider.autoDispose<FullUserState?>((ref) {
+  final isEnabled = ref.watch(useHealthStatePipelineProvider);
+  if (!isEnabled) {
+    debugPrint(
+      'ℹ️ [HealthStateProvider] Pipeline disabled → using legacy providers.',
+    );
+    return null;
+  }
+
+  final snapshot = ref.watch(healthSnapshotProvider);
+  return snapshot.when(
+    data: (data) {
+      if (data != null) {
+        debugPrint('✅ [HealthStateProvider] Unified pipeline active.');
+        return data;
+      }
+      debugPrint(
+        '⚠️ [HealthStateProvider] Pipeline returned null → fallback to legacy providers.',
+      );
+      return null;
+    },
+    loading: () {
+      debugPrint(
+        '⏳ [HealthStateProvider] Pipeline loading → temporary fallback to legacy providers.',
+      );
+      return null;
+    },
+    error: (error, stackTrace) {
+      debugPrint(
+        '❌ [HealthStateProvider] Pipeline error: $error → fallback to legacy providers.',
+      );
+      debugPrint(stackTrace.toString());
+      return null;
+    },
+  );
+});
 
 /// Aggregates domain sources and returns a unified [FullUserState].
 ///

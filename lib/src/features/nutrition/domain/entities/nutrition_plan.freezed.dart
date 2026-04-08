@@ -1,5 +1,5 @@
-// coverage:ignore-file
 // GENERATED CODE - DO NOT MODIFY BY HAND
+// coverage:ignore-file
 // ignore_for_file: type=lint
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
@@ -9,38 +9,69 @@ part of 'nutrition_plan.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// dart format off
 T _$identity<T>(T value) => value;
-
-final _privateConstructorUsedError = UnsupportedError(
-    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
-
-NutritionPlan _$NutritionPlanFromJson(Map<String, dynamic> json) {
-  return _NutritionPlan.fromJson(json);
-}
 
 /// @nodoc
 mixin _$NutritionPlan {
-  String get id => throw _privateConstructorUsedError;
-  String get userId => throw _privateConstructorUsedError;
-  String get algorithmVersion => throw _privateConstructorUsedError;
+  String get id;
+  String get userId;
+  String get algorithmVersion;
   @TimestampConverter()
-  DateTime get calculatedAt => throw _privateConstructorUsedError;
-  BaseMetrics get baseMetrics => throw _privateConstructorUsedError;
-  MacroTargets get macroTargets => throw _privateConstructorUsedError;
-  VisualPlate get visualPlate => throw _privateConstructorUsedError;
-  WeeklyAdjustment get weeklyAdjustment => throw _privateConstructorUsedError;
+  DateTime get calculatedAt;
+  BaseMetrics get baseMetrics;
+  MacroTargets get macroTargets;
+  VisualPlate get visualPlate;
+  WeeklyAdjustment get weeklyAdjustment;
 
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-  @JsonKey(ignore: true)
+  /// Create a copy of NutritionPlan
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
   $NutritionPlanCopyWith<NutritionPlan> get copyWith =>
-      throw _privateConstructorUsedError;
+      _$NutritionPlanCopyWithImpl<NutritionPlan>(
+          this as NutritionPlan, _$identity);
+
+  /// Serializes this NutritionPlan to a JSON map.
+  Map<String, dynamic> toJson();
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is NutritionPlan &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.userId, userId) || other.userId == userId) &&
+            (identical(other.algorithmVersion, algorithmVersion) ||
+                other.algorithmVersion == algorithmVersion) &&
+            (identical(other.calculatedAt, calculatedAt) ||
+                other.calculatedAt == calculatedAt) &&
+            (identical(other.baseMetrics, baseMetrics) ||
+                other.baseMetrics == baseMetrics) &&
+            (identical(other.macroTargets, macroTargets) ||
+                other.macroTargets == macroTargets) &&
+            (identical(other.visualPlate, visualPlate) ||
+                other.visualPlate == visualPlate) &&
+            (identical(other.weeklyAdjustment, weeklyAdjustment) ||
+                other.weeklyAdjustment == weeklyAdjustment));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, id, userId, algorithmVersion,
+      calculatedAt, baseMetrics, macroTargets, visualPlate, weeklyAdjustment);
+
+  @override
+  String toString() {
+    return 'NutritionPlan(id: $id, userId: $userId, algorithmVersion: $algorithmVersion, calculatedAt: $calculatedAt, baseMetrics: $baseMetrics, macroTargets: $macroTargets, visualPlate: $visualPlate, weeklyAdjustment: $weeklyAdjustment)';
+  }
 }
 
 /// @nodoc
-abstract class $NutritionPlanCopyWith<$Res> {
+abstract mixin class $NutritionPlanCopyWith<$Res> {
   factory $NutritionPlanCopyWith(
-          NutritionPlan value, $Res Function(NutritionPlan) then) =
-      _$NutritionPlanCopyWithImpl<$Res, NutritionPlan>;
+          NutritionPlan value, $Res Function(NutritionPlan) _then) =
+      _$NutritionPlanCopyWithImpl;
   @useResult
   $Res call(
       {String id,
@@ -59,15 +90,15 @@ abstract class $NutritionPlanCopyWith<$Res> {
 }
 
 /// @nodoc
-class _$NutritionPlanCopyWithImpl<$Res, $Val extends NutritionPlan>
+class _$NutritionPlanCopyWithImpl<$Res>
     implements $NutritionPlanCopyWith<$Res> {
-  _$NutritionPlanCopyWithImpl(this._value, this._then);
+  _$NutritionPlanCopyWithImpl(this._self, this._then);
 
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
+  final NutritionPlan _self;
+  final $Res Function(NutritionPlan) _then;
 
+  /// Create a copy of NutritionPlan
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -80,165 +111,296 @@ class _$NutritionPlanCopyWithImpl<$Res, $Val extends NutritionPlan>
     Object? visualPlate = null,
     Object? weeklyAdjustment = null,
   }) {
-    return _then(_value.copyWith(
+    return _then(_self.copyWith(
       id: null == id
-          ? _value.id
+          ? _self.id
           : id // ignore: cast_nullable_to_non_nullable
               as String,
       userId: null == userId
-          ? _value.userId
+          ? _self.userId
           : userId // ignore: cast_nullable_to_non_nullable
               as String,
       algorithmVersion: null == algorithmVersion
-          ? _value.algorithmVersion
+          ? _self.algorithmVersion
           : algorithmVersion // ignore: cast_nullable_to_non_nullable
               as String,
       calculatedAt: null == calculatedAt
-          ? _value.calculatedAt
+          ? _self.calculatedAt
           : calculatedAt // ignore: cast_nullable_to_non_nullable
               as DateTime,
       baseMetrics: null == baseMetrics
-          ? _value.baseMetrics
+          ? _self.baseMetrics
           : baseMetrics // ignore: cast_nullable_to_non_nullable
               as BaseMetrics,
       macroTargets: null == macroTargets
-          ? _value.macroTargets
+          ? _self.macroTargets
           : macroTargets // ignore: cast_nullable_to_non_nullable
               as MacroTargets,
       visualPlate: null == visualPlate
-          ? _value.visualPlate
+          ? _self.visualPlate
           : visualPlate // ignore: cast_nullable_to_non_nullable
               as VisualPlate,
       weeklyAdjustment: null == weeklyAdjustment
-          ? _value.weeklyAdjustment
-          : weeklyAdjustment // ignore: cast_nullable_to_non_nullable
-              as WeeklyAdjustment,
-    ) as $Val);
-  }
-
-  @override
-  @pragma('vm:prefer-inline')
-  $BaseMetricsCopyWith<$Res> get baseMetrics {
-    return $BaseMetricsCopyWith<$Res>(_value.baseMetrics, (value) {
-      return _then(_value.copyWith(baseMetrics: value) as $Val);
-    });
-  }
-
-  @override
-  @pragma('vm:prefer-inline')
-  $MacroTargetsCopyWith<$Res> get macroTargets {
-    return $MacroTargetsCopyWith<$Res>(_value.macroTargets, (value) {
-      return _then(_value.copyWith(macroTargets: value) as $Val);
-    });
-  }
-
-  @override
-  @pragma('vm:prefer-inline')
-  $VisualPlateCopyWith<$Res> get visualPlate {
-    return $VisualPlateCopyWith<$Res>(_value.visualPlate, (value) {
-      return _then(_value.copyWith(visualPlate: value) as $Val);
-    });
-  }
-
-  @override
-  @pragma('vm:prefer-inline')
-  $WeeklyAdjustmentCopyWith<$Res> get weeklyAdjustment {
-    return $WeeklyAdjustmentCopyWith<$Res>(_value.weeklyAdjustment, (value) {
-      return _then(_value.copyWith(weeklyAdjustment: value) as $Val);
-    });
-  }
-}
-
-/// @nodoc
-abstract class _$$NutritionPlanImplCopyWith<$Res>
-    implements $NutritionPlanCopyWith<$Res> {
-  factory _$$NutritionPlanImplCopyWith(
-          _$NutritionPlanImpl value, $Res Function(_$NutritionPlanImpl) then) =
-      __$$NutritionPlanImplCopyWithImpl<$Res>;
-  @override
-  @useResult
-  $Res call(
-      {String id,
-      String userId,
-      String algorithmVersion,
-      @TimestampConverter() DateTime calculatedAt,
-      BaseMetrics baseMetrics,
-      MacroTargets macroTargets,
-      VisualPlate visualPlate,
-      WeeklyAdjustment weeklyAdjustment});
-
-  @override
-  $BaseMetricsCopyWith<$Res> get baseMetrics;
-  @override
-  $MacroTargetsCopyWith<$Res> get macroTargets;
-  @override
-  $VisualPlateCopyWith<$Res> get visualPlate;
-  @override
-  $WeeklyAdjustmentCopyWith<$Res> get weeklyAdjustment;
-}
-
-/// @nodoc
-class __$$NutritionPlanImplCopyWithImpl<$Res>
-    extends _$NutritionPlanCopyWithImpl<$Res, _$NutritionPlanImpl>
-    implements _$$NutritionPlanImplCopyWith<$Res> {
-  __$$NutritionPlanImplCopyWithImpl(
-      _$NutritionPlanImpl _value, $Res Function(_$NutritionPlanImpl) _then)
-      : super(_value, _then);
-
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? id = null,
-    Object? userId = null,
-    Object? algorithmVersion = null,
-    Object? calculatedAt = null,
-    Object? baseMetrics = null,
-    Object? macroTargets = null,
-    Object? visualPlate = null,
-    Object? weeklyAdjustment = null,
-  }) {
-    return _then(_$NutritionPlanImpl(
-      id: null == id
-          ? _value.id
-          : id // ignore: cast_nullable_to_non_nullable
-              as String,
-      userId: null == userId
-          ? _value.userId
-          : userId // ignore: cast_nullable_to_non_nullable
-              as String,
-      algorithmVersion: null == algorithmVersion
-          ? _value.algorithmVersion
-          : algorithmVersion // ignore: cast_nullable_to_non_nullable
-              as String,
-      calculatedAt: null == calculatedAt
-          ? _value.calculatedAt
-          : calculatedAt // ignore: cast_nullable_to_non_nullable
-              as DateTime,
-      baseMetrics: null == baseMetrics
-          ? _value.baseMetrics
-          : baseMetrics // ignore: cast_nullable_to_non_nullable
-              as BaseMetrics,
-      macroTargets: null == macroTargets
-          ? _value.macroTargets
-          : macroTargets // ignore: cast_nullable_to_non_nullable
-              as MacroTargets,
-      visualPlate: null == visualPlate
-          ? _value.visualPlate
-          : visualPlate // ignore: cast_nullable_to_non_nullable
-              as VisualPlate,
-      weeklyAdjustment: null == weeklyAdjustment
-          ? _value.weeklyAdjustment
+          ? _self.weeklyAdjustment
           : weeklyAdjustment // ignore: cast_nullable_to_non_nullable
               as WeeklyAdjustment,
     ));
+  }
+
+  /// Create a copy of NutritionPlan
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $BaseMetricsCopyWith<$Res> get baseMetrics {
+    return $BaseMetricsCopyWith<$Res>(_self.baseMetrics, (value) {
+      return _then(_self.copyWith(baseMetrics: value));
+    });
+  }
+
+  /// Create a copy of NutritionPlan
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $MacroTargetsCopyWith<$Res> get macroTargets {
+    return $MacroTargetsCopyWith<$Res>(_self.macroTargets, (value) {
+      return _then(_self.copyWith(macroTargets: value));
+    });
+  }
+
+  /// Create a copy of NutritionPlan
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $VisualPlateCopyWith<$Res> get visualPlate {
+    return $VisualPlateCopyWith<$Res>(_self.visualPlate, (value) {
+      return _then(_self.copyWith(visualPlate: value));
+    });
+  }
+
+  /// Create a copy of NutritionPlan
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $WeeklyAdjustmentCopyWith<$Res> get weeklyAdjustment {
+    return $WeeklyAdjustmentCopyWith<$Res>(_self.weeklyAdjustment, (value) {
+      return _then(_self.copyWith(weeklyAdjustment: value));
+    });
+  }
+}
+
+/// Adds pattern-matching-related methods to [NutritionPlan].
+extension NutritionPlanPatterns on NutritionPlan {
+  /// A variant of `map` that fallback to returning `orElse`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>(
+    TResult Function(_NutritionPlan value)? $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _NutritionPlan() when $default != null:
+        return $default(_that);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// Callbacks receives the raw object, upcasted.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case final Subclass2 value:
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>(
+    TResult Function(_NutritionPlan value) $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _NutritionPlan():
+        return $default(_that);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `map` that fallback to returning `null`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>(
+    TResult? Function(_NutritionPlan value)? $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _NutritionPlan() when $default != null:
+        return $default(_that);
+      case _:
+        return null;
+    }
+  }
+
+  /// A variant of `when` that fallback to an `orElse` callback.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>(
+    TResult Function(
+            String id,
+            String userId,
+            String algorithmVersion,
+            @TimestampConverter() DateTime calculatedAt,
+            BaseMetrics baseMetrics,
+            MacroTargets macroTargets,
+            VisualPlate visualPlate,
+            WeeklyAdjustment weeklyAdjustment)?
+        $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _NutritionPlan() when $default != null:
+        return $default(
+            _that.id,
+            _that.userId,
+            _that.algorithmVersion,
+            _that.calculatedAt,
+            _that.baseMetrics,
+            _that.macroTargets,
+            _that.visualPlate,
+            _that.weeklyAdjustment);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// As opposed to `map`, this offers destructuring.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case Subclass2(:final field2):
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>(
+    TResult Function(
+            String id,
+            String userId,
+            String algorithmVersion,
+            @TimestampConverter() DateTime calculatedAt,
+            BaseMetrics baseMetrics,
+            MacroTargets macroTargets,
+            VisualPlate visualPlate,
+            WeeklyAdjustment weeklyAdjustment)
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _NutritionPlan():
+        return $default(
+            _that.id,
+            _that.userId,
+            _that.algorithmVersion,
+            _that.calculatedAt,
+            _that.baseMetrics,
+            _that.macroTargets,
+            _that.visualPlate,
+            _that.weeklyAdjustment);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `when` that fallback to returning `null`
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>(
+    TResult? Function(
+            String id,
+            String userId,
+            String algorithmVersion,
+            @TimestampConverter() DateTime calculatedAt,
+            BaseMetrics baseMetrics,
+            MacroTargets macroTargets,
+            VisualPlate visualPlate,
+            WeeklyAdjustment weeklyAdjustment)?
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _NutritionPlan() when $default != null:
+        return $default(
+            _that.id,
+            _that.userId,
+            _that.algorithmVersion,
+            _that.calculatedAt,
+            _that.baseMetrics,
+            _that.macroTargets,
+            _that.visualPlate,
+            _that.weeklyAdjustment);
+      case _:
+        return null;
+    }
   }
 }
 
 /// @nodoc
 
 @JsonSerializable(explicitToJson: true)
-class _$NutritionPlanImpl implements _NutritionPlan {
-  const _$NutritionPlanImpl(
+class _NutritionPlan implements NutritionPlan {
+  const _NutritionPlan(
       {required this.id,
       required this.userId,
       this.algorithmVersion = '1.0.0',
@@ -247,9 +409,8 @@ class _$NutritionPlanImpl implements _NutritionPlan {
       required this.macroTargets,
       required this.visualPlate,
       required this.weeklyAdjustment});
-
-  factory _$NutritionPlanImpl.fromJson(Map<String, dynamic> json) =>
-      _$$NutritionPlanImplFromJson(json);
+  factory _NutritionPlan.fromJson(Map<String, dynamic> json) =>
+      _$NutritionPlanFromJson(json);
 
   @override
   final String id;
@@ -270,16 +431,26 @@ class _$NutritionPlanImpl implements _NutritionPlan {
   @override
   final WeeklyAdjustment weeklyAdjustment;
 
+  /// Create a copy of NutritionPlan
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'NutritionPlan(id: $id, userId: $userId, algorithmVersion: $algorithmVersion, calculatedAt: $calculatedAt, baseMetrics: $baseMetrics, macroTargets: $macroTargets, visualPlate: $visualPlate, weeklyAdjustment: $weeklyAdjustment)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  _$NutritionPlanCopyWith<_NutritionPlan> get copyWith =>
+      __$NutritionPlanCopyWithImpl<_NutritionPlan>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$NutritionPlanToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$NutritionPlanImpl &&
+            other is _NutritionPlan &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.userId, userId) || other.userId == userId) &&
             (identical(other.algorithmVersion, algorithmVersion) ||
@@ -296,152 +467,196 @@ class _$NutritionPlanImpl implements _NutritionPlan {
                 other.weeklyAdjustment == weeklyAdjustment));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(runtimeType, id, userId, algorithmVersion,
       calculatedAt, baseMetrics, macroTargets, visualPlate, weeklyAdjustment);
 
-  @JsonKey(ignore: true)
   @override
-  @pragma('vm:prefer-inline')
-  _$$NutritionPlanImplCopyWith<_$NutritionPlanImpl> get copyWith =>
-      __$$NutritionPlanImplCopyWithImpl<_$NutritionPlanImpl>(this, _$identity);
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$NutritionPlanImplToJson(
-      this,
-    );
+  String toString() {
+    return 'NutritionPlan(id: $id, userId: $userId, algorithmVersion: $algorithmVersion, calculatedAt: $calculatedAt, baseMetrics: $baseMetrics, macroTargets: $macroTargets, visualPlate: $visualPlate, weeklyAdjustment: $weeklyAdjustment)';
   }
 }
 
-abstract class _NutritionPlan implements NutritionPlan {
-  const factory _NutritionPlan(
-      {required final String id,
-      required final String userId,
-      final String algorithmVersion,
-      @TimestampConverter() required final DateTime calculatedAt,
-      required final BaseMetrics baseMetrics,
-      required final MacroTargets macroTargets,
-      required final VisualPlate visualPlate,
-      required final WeeklyAdjustment weeklyAdjustment}) = _$NutritionPlanImpl;
+/// @nodoc
+abstract mixin class _$NutritionPlanCopyWith<$Res>
+    implements $NutritionPlanCopyWith<$Res> {
+  factory _$NutritionPlanCopyWith(
+          _NutritionPlan value, $Res Function(_NutritionPlan) _then) =
+      __$NutritionPlanCopyWithImpl;
+  @override
+  @useResult
+  $Res call(
+      {String id,
+      String userId,
+      String algorithmVersion,
+      @TimestampConverter() DateTime calculatedAt,
+      BaseMetrics baseMetrics,
+      MacroTargets macroTargets,
+      VisualPlate visualPlate,
+      WeeklyAdjustment weeklyAdjustment});
 
-  factory _NutritionPlan.fromJson(Map<String, dynamic> json) =
-      _$NutritionPlanImpl.fromJson;
-
   @override
-  String get id;
+  $BaseMetricsCopyWith<$Res> get baseMetrics;
   @override
-  String get userId;
+  $MacroTargetsCopyWith<$Res> get macroTargets;
   @override
-  String get algorithmVersion;
+  $VisualPlateCopyWith<$Res> get visualPlate;
   @override
-  @TimestampConverter()
-  DateTime get calculatedAt;
-  @override
-  BaseMetrics get baseMetrics;
-  @override
-  MacroTargets get macroTargets;
-  @override
-  VisualPlate get visualPlate;
-  @override
-  WeeklyAdjustment get weeklyAdjustment;
-  @override
-  @JsonKey(ignore: true)
-  _$$NutritionPlanImplCopyWith<_$NutritionPlanImpl> get copyWith =>
-      throw _privateConstructorUsedError;
+  $WeeklyAdjustmentCopyWith<$Res> get weeklyAdjustment;
 }
 
-BaseMetrics _$BaseMetricsFromJson(Map<String, dynamic> json) {
-  return _BaseMetrics.fromJson(json);
+/// @nodoc
+class __$NutritionPlanCopyWithImpl<$Res>
+    implements _$NutritionPlanCopyWith<$Res> {
+  __$NutritionPlanCopyWithImpl(this._self, this._then);
+
+  final _NutritionPlan _self;
+  final $Res Function(_NutritionPlan) _then;
+
+  /// Create a copy of NutritionPlan
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? id = null,
+    Object? userId = null,
+    Object? algorithmVersion = null,
+    Object? calculatedAt = null,
+    Object? baseMetrics = null,
+    Object? macroTargets = null,
+    Object? visualPlate = null,
+    Object? weeklyAdjustment = null,
+  }) {
+    return _then(_NutritionPlan(
+      id: null == id
+          ? _self.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      userId: null == userId
+          ? _self.userId
+          : userId // ignore: cast_nullable_to_non_nullable
+              as String,
+      algorithmVersion: null == algorithmVersion
+          ? _self.algorithmVersion
+          : algorithmVersion // ignore: cast_nullable_to_non_nullable
+              as String,
+      calculatedAt: null == calculatedAt
+          ? _self.calculatedAt
+          : calculatedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      baseMetrics: null == baseMetrics
+          ? _self.baseMetrics
+          : baseMetrics // ignore: cast_nullable_to_non_nullable
+              as BaseMetrics,
+      macroTargets: null == macroTargets
+          ? _self.macroTargets
+          : macroTargets // ignore: cast_nullable_to_non_nullable
+              as MacroTargets,
+      visualPlate: null == visualPlate
+          ? _self.visualPlate
+          : visualPlate // ignore: cast_nullable_to_non_nullable
+              as VisualPlate,
+      weeklyAdjustment: null == weeklyAdjustment
+          ? _self.weeklyAdjustment
+          : weeklyAdjustment // ignore: cast_nullable_to_non_nullable
+              as WeeklyAdjustment,
+    ));
+  }
+
+  /// Create a copy of NutritionPlan
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $BaseMetricsCopyWith<$Res> get baseMetrics {
+    return $BaseMetricsCopyWith<$Res>(_self.baseMetrics, (value) {
+      return _then(_self.copyWith(baseMetrics: value));
+    });
+  }
+
+  /// Create a copy of NutritionPlan
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $MacroTargetsCopyWith<$Res> get macroTargets {
+    return $MacroTargetsCopyWith<$Res>(_self.macroTargets, (value) {
+      return _then(_self.copyWith(macroTargets: value));
+    });
+  }
+
+  /// Create a copy of NutritionPlan
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $VisualPlateCopyWith<$Res> get visualPlate {
+    return $VisualPlateCopyWith<$Res>(_self.visualPlate, (value) {
+      return _then(_self.copyWith(visualPlate: value));
+    });
+  }
+
+  /// Create a copy of NutritionPlan
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $WeeklyAdjustmentCopyWith<$Res> get weeklyAdjustment {
+    return $WeeklyAdjustmentCopyWith<$Res>(_self.weeklyAdjustment, (value) {
+      return _then(_self.copyWith(weeklyAdjustment: value));
+    });
+  }
 }
 
 /// @nodoc
 mixin _$BaseMetrics {
-  double get weightKg => throw _privateConstructorUsedError;
-  double get bodyFatPercentage => throw _privateConstructorUsedError;
-  double get fatFreeMassKg => throw _privateConstructorUsedError;
-  double get bmr => throw _privateConstructorUsedError;
-  double get tdee => throw _privateConstructorUsedError;
-  double get activityMultiplier => throw _privateConstructorUsedError;
+  double get weightKg;
+  double get bodyFatPercentage;
+  double get fatFreeMassKg;
+  double get bmr;
+  double get tdee;
+  double get activityMultiplier;
 
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-  @JsonKey(ignore: true)
-  $BaseMetricsCopyWith<BaseMetrics> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $BaseMetricsCopyWith<$Res> {
-  factory $BaseMetricsCopyWith(
-          BaseMetrics value, $Res Function(BaseMetrics) then) =
-      _$BaseMetricsCopyWithImpl<$Res, BaseMetrics>;
-  @useResult
-  $Res call(
-      {double weightKg,
-      double bodyFatPercentage,
-      double fatFreeMassKg,
-      double bmr,
-      double tdee,
-      double activityMultiplier});
-}
-
-/// @nodoc
-class _$BaseMetricsCopyWithImpl<$Res, $Val extends BaseMetrics>
-    implements $BaseMetricsCopyWith<$Res> {
-  _$BaseMetricsCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
+  /// Create a copy of BaseMetrics
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @pragma('vm:prefer-inline')
+  $BaseMetricsCopyWith<BaseMetrics> get copyWith =>
+      _$BaseMetricsCopyWithImpl<BaseMetrics>(this as BaseMetrics, _$identity);
+
+  /// Serializes this BaseMetrics to a JSON map.
+  Map<String, dynamic> toJson();
+
   @override
-  $Res call({
-    Object? weightKg = null,
-    Object? bodyFatPercentage = null,
-    Object? fatFreeMassKg = null,
-    Object? bmr = null,
-    Object? tdee = null,
-    Object? activityMultiplier = null,
-  }) {
-    return _then(_value.copyWith(
-      weightKg: null == weightKg
-          ? _value.weightKg
-          : weightKg // ignore: cast_nullable_to_non_nullable
-              as double,
-      bodyFatPercentage: null == bodyFatPercentage
-          ? _value.bodyFatPercentage
-          : bodyFatPercentage // ignore: cast_nullable_to_non_nullable
-              as double,
-      fatFreeMassKg: null == fatFreeMassKg
-          ? _value.fatFreeMassKg
-          : fatFreeMassKg // ignore: cast_nullable_to_non_nullable
-              as double,
-      bmr: null == bmr
-          ? _value.bmr
-          : bmr // ignore: cast_nullable_to_non_nullable
-              as double,
-      tdee: null == tdee
-          ? _value.tdee
-          : tdee // ignore: cast_nullable_to_non_nullable
-              as double,
-      activityMultiplier: null == activityMultiplier
-          ? _value.activityMultiplier
-          : activityMultiplier // ignore: cast_nullable_to_non_nullable
-              as double,
-    ) as $Val);
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is BaseMetrics &&
+            (identical(other.weightKg, weightKg) ||
+                other.weightKg == weightKg) &&
+            (identical(other.bodyFatPercentage, bodyFatPercentage) ||
+                other.bodyFatPercentage == bodyFatPercentage) &&
+            (identical(other.fatFreeMassKg, fatFreeMassKg) ||
+                other.fatFreeMassKg == fatFreeMassKg) &&
+            (identical(other.bmr, bmr) || other.bmr == bmr) &&
+            (identical(other.tdee, tdee) || other.tdee == tdee) &&
+            (identical(other.activityMultiplier, activityMultiplier) ||
+                other.activityMultiplier == activityMultiplier));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, weightKg, bodyFatPercentage,
+      fatFreeMassKg, bmr, tdee, activityMultiplier);
+
+  @override
+  String toString() {
+    return 'BaseMetrics(weightKg: $weightKg, bodyFatPercentage: $bodyFatPercentage, fatFreeMassKg: $fatFreeMassKg, bmr: $bmr, tdee: $tdee, activityMultiplier: $activityMultiplier)';
   }
 }
 
 /// @nodoc
-abstract class _$$BaseMetricsImplCopyWith<$Res>
-    implements $BaseMetricsCopyWith<$Res> {
-  factory _$$BaseMetricsImplCopyWith(
-          _$BaseMetricsImpl value, $Res Function(_$BaseMetricsImpl) then) =
-      __$$BaseMetricsImplCopyWithImpl<$Res>;
-  @override
+abstract mixin class $BaseMetricsCopyWith<$Res> {
+  factory $BaseMetricsCopyWith(
+          BaseMetrics value, $Res Function(BaseMetrics) _then) =
+      _$BaseMetricsCopyWithImpl;
   @useResult
   $Res call(
       {double weightKg,
@@ -453,13 +668,14 @@ abstract class _$$BaseMetricsImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$BaseMetricsImplCopyWithImpl<$Res>
-    extends _$BaseMetricsCopyWithImpl<$Res, _$BaseMetricsImpl>
-    implements _$$BaseMetricsImplCopyWith<$Res> {
-  __$$BaseMetricsImplCopyWithImpl(
-      _$BaseMetricsImpl _value, $Res Function(_$BaseMetricsImpl) _then)
-      : super(_value, _then);
+class _$BaseMetricsCopyWithImpl<$Res> implements $BaseMetricsCopyWith<$Res> {
+  _$BaseMetricsCopyWithImpl(this._self, this._then);
 
+  final BaseMetrics _self;
+  final $Res Function(BaseMetrics) _then;
+
+  /// Create a copy of BaseMetrics
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -470,48 +686,243 @@ class __$$BaseMetricsImplCopyWithImpl<$Res>
     Object? tdee = null,
     Object? activityMultiplier = null,
   }) {
-    return _then(_$BaseMetricsImpl(
+    return _then(_self.copyWith(
       weightKg: null == weightKg
-          ? _value.weightKg
+          ? _self.weightKg
           : weightKg // ignore: cast_nullable_to_non_nullable
               as double,
       bodyFatPercentage: null == bodyFatPercentage
-          ? _value.bodyFatPercentage
+          ? _self.bodyFatPercentage
           : bodyFatPercentage // ignore: cast_nullable_to_non_nullable
               as double,
       fatFreeMassKg: null == fatFreeMassKg
-          ? _value.fatFreeMassKg
+          ? _self.fatFreeMassKg
           : fatFreeMassKg // ignore: cast_nullable_to_non_nullable
               as double,
       bmr: null == bmr
-          ? _value.bmr
+          ? _self.bmr
           : bmr // ignore: cast_nullable_to_non_nullable
               as double,
       tdee: null == tdee
-          ? _value.tdee
+          ? _self.tdee
           : tdee // ignore: cast_nullable_to_non_nullable
               as double,
       activityMultiplier: null == activityMultiplier
-          ? _value.activityMultiplier
+          ? _self.activityMultiplier
           : activityMultiplier // ignore: cast_nullable_to_non_nullable
               as double,
     ));
   }
 }
 
+/// Adds pattern-matching-related methods to [BaseMetrics].
+extension BaseMetricsPatterns on BaseMetrics {
+  /// A variant of `map` that fallback to returning `orElse`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>(
+    TResult Function(_BaseMetrics value)? $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _BaseMetrics() when $default != null:
+        return $default(_that);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// Callbacks receives the raw object, upcasted.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case final Subclass2 value:
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>(
+    TResult Function(_BaseMetrics value) $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _BaseMetrics():
+        return $default(_that);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `map` that fallback to returning `null`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>(
+    TResult? Function(_BaseMetrics value)? $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _BaseMetrics() when $default != null:
+        return $default(_that);
+      case _:
+        return null;
+    }
+  }
+
+  /// A variant of `when` that fallback to an `orElse` callback.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>(
+    TResult Function(
+            double weightKg,
+            double bodyFatPercentage,
+            double fatFreeMassKg,
+            double bmr,
+            double tdee,
+            double activityMultiplier)?
+        $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _BaseMetrics() when $default != null:
+        return $default(
+            _that.weightKg,
+            _that.bodyFatPercentage,
+            _that.fatFreeMassKg,
+            _that.bmr,
+            _that.tdee,
+            _that.activityMultiplier);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// As opposed to `map`, this offers destructuring.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case Subclass2(:final field2):
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>(
+    TResult Function(
+            double weightKg,
+            double bodyFatPercentage,
+            double fatFreeMassKg,
+            double bmr,
+            double tdee,
+            double activityMultiplier)
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _BaseMetrics():
+        return $default(
+            _that.weightKg,
+            _that.bodyFatPercentage,
+            _that.fatFreeMassKg,
+            _that.bmr,
+            _that.tdee,
+            _that.activityMultiplier);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `when` that fallback to returning `null`
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>(
+    TResult? Function(
+            double weightKg,
+            double bodyFatPercentage,
+            double fatFreeMassKg,
+            double bmr,
+            double tdee,
+            double activityMultiplier)?
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _BaseMetrics() when $default != null:
+        return $default(
+            _that.weightKg,
+            _that.bodyFatPercentage,
+            _that.fatFreeMassKg,
+            _that.bmr,
+            _that.tdee,
+            _that.activityMultiplier);
+      case _:
+        return null;
+    }
+  }
+}
+
 /// @nodoc
 @JsonSerializable()
-class _$BaseMetricsImpl implements _BaseMetrics {
-  const _$BaseMetricsImpl(
+class _BaseMetrics implements BaseMetrics {
+  const _BaseMetrics(
       {required this.weightKg,
       required this.bodyFatPercentage,
       required this.fatFreeMassKg,
       required this.bmr,
       required this.tdee,
       required this.activityMultiplier});
-
-  factory _$BaseMetricsImpl.fromJson(Map<String, dynamic> json) =>
-      _$$BaseMetricsImplFromJson(json);
+  factory _BaseMetrics.fromJson(Map<String, dynamic> json) =>
+      _$BaseMetricsFromJson(json);
 
   @override
   final double weightKg;
@@ -526,16 +937,26 @@ class _$BaseMetricsImpl implements _BaseMetrics {
   @override
   final double activityMultiplier;
 
+  /// Create a copy of BaseMetrics
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'BaseMetrics(weightKg: $weightKg, bodyFatPercentage: $bodyFatPercentage, fatFreeMassKg: $fatFreeMassKg, bmr: $bmr, tdee: $tdee, activityMultiplier: $activityMultiplier)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  _$BaseMetricsCopyWith<_BaseMetrics> get copyWith =>
+      __$BaseMetricsCopyWithImpl<_BaseMetrics>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$BaseMetricsToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$BaseMetricsImpl &&
+            other is _BaseMetrics &&
             (identical(other.weightKg, weightKg) ||
                 other.weightKg == weightKg) &&
             (identical(other.bodyFatPercentage, bodyFatPercentage) ||
@@ -548,201 +969,105 @@ class _$BaseMetricsImpl implements _BaseMetrics {
                 other.activityMultiplier == activityMultiplier));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(runtimeType, weightKg, bodyFatPercentage,
       fatFreeMassKg, bmr, tdee, activityMultiplier);
 
-  @JsonKey(ignore: true)
   @override
-  @pragma('vm:prefer-inline')
-  _$$BaseMetricsImplCopyWith<_$BaseMetricsImpl> get copyWith =>
-      __$$BaseMetricsImplCopyWithImpl<_$BaseMetricsImpl>(this, _$identity);
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$BaseMetricsImplToJson(
-      this,
-    );
-  }
-}
-
-abstract class _BaseMetrics implements BaseMetrics {
-  const factory _BaseMetrics(
-      {required final double weightKg,
-      required final double bodyFatPercentage,
-      required final double fatFreeMassKg,
-      required final double bmr,
-      required final double tdee,
-      required final double activityMultiplier}) = _$BaseMetricsImpl;
-
-  factory _BaseMetrics.fromJson(Map<String, dynamic> json) =
-      _$BaseMetricsImpl.fromJson;
-
-  @override
-  double get weightKg;
-  @override
-  double get bodyFatPercentage;
-  @override
-  double get fatFreeMassKg;
-  @override
-  double get bmr;
-  @override
-  double get tdee;
-  @override
-  double get activityMultiplier;
-  @override
-  @JsonKey(ignore: true)
-  _$$BaseMetricsImplCopyWith<_$BaseMetricsImpl> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-MacroTargets _$MacroTargetsFromJson(Map<String, dynamic> json) {
-  return _MacroTargets.fromJson(json);
-}
-
-/// @nodoc
-mixin _$MacroTargets {
-  int get totalCalories => throw _privateConstructorUsedError;
-  int get proteinGrams => throw _privateConstructorUsedError;
-  int get fatGrams => throw _privateConstructorUsedError;
-  int get carbsGrams => throw _privateConstructorUsedError;
-
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-  @JsonKey(ignore: true)
-  $MacroTargetsCopyWith<MacroTargets> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $MacroTargetsCopyWith<$Res> {
-  factory $MacroTargetsCopyWith(
-          MacroTargets value, $Res Function(MacroTargets) then) =
-      _$MacroTargetsCopyWithImpl<$Res, MacroTargets>;
-  @useResult
-  $Res call(
-      {int totalCalories, int proteinGrams, int fatGrams, int carbsGrams});
-}
-
-/// @nodoc
-class _$MacroTargetsCopyWithImpl<$Res, $Val extends MacroTargets>
-    implements $MacroTargetsCopyWith<$Res> {
-  _$MacroTargetsCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? totalCalories = null,
-    Object? proteinGrams = null,
-    Object? fatGrams = null,
-    Object? carbsGrams = null,
-  }) {
-    return _then(_value.copyWith(
-      totalCalories: null == totalCalories
-          ? _value.totalCalories
-          : totalCalories // ignore: cast_nullable_to_non_nullable
-              as int,
-      proteinGrams: null == proteinGrams
-          ? _value.proteinGrams
-          : proteinGrams // ignore: cast_nullable_to_non_nullable
-              as int,
-      fatGrams: null == fatGrams
-          ? _value.fatGrams
-          : fatGrams // ignore: cast_nullable_to_non_nullable
-              as int,
-      carbsGrams: null == carbsGrams
-          ? _value.carbsGrams
-          : carbsGrams // ignore: cast_nullable_to_non_nullable
-              as int,
-    ) as $Val);
+  String toString() {
+    return 'BaseMetrics(weightKg: $weightKg, bodyFatPercentage: $bodyFatPercentage, fatFreeMassKg: $fatFreeMassKg, bmr: $bmr, tdee: $tdee, activityMultiplier: $activityMultiplier)';
   }
 }
 
 /// @nodoc
-abstract class _$$MacroTargetsImplCopyWith<$Res>
-    implements $MacroTargetsCopyWith<$Res> {
-  factory _$$MacroTargetsImplCopyWith(
-          _$MacroTargetsImpl value, $Res Function(_$MacroTargetsImpl) then) =
-      __$$MacroTargetsImplCopyWithImpl<$Res>;
+abstract mixin class _$BaseMetricsCopyWith<$Res>
+    implements $BaseMetricsCopyWith<$Res> {
+  factory _$BaseMetricsCopyWith(
+          _BaseMetrics value, $Res Function(_BaseMetrics) _then) =
+      __$BaseMetricsCopyWithImpl;
   @override
   @useResult
   $Res call(
-      {int totalCalories, int proteinGrams, int fatGrams, int carbsGrams});
+      {double weightKg,
+      double bodyFatPercentage,
+      double fatFreeMassKg,
+      double bmr,
+      double tdee,
+      double activityMultiplier});
 }
 
 /// @nodoc
-class __$$MacroTargetsImplCopyWithImpl<$Res>
-    extends _$MacroTargetsCopyWithImpl<$Res, _$MacroTargetsImpl>
-    implements _$$MacroTargetsImplCopyWith<$Res> {
-  __$$MacroTargetsImplCopyWithImpl(
-      _$MacroTargetsImpl _value, $Res Function(_$MacroTargetsImpl) _then)
-      : super(_value, _then);
+class __$BaseMetricsCopyWithImpl<$Res> implements _$BaseMetricsCopyWith<$Res> {
+  __$BaseMetricsCopyWithImpl(this._self, this._then);
 
-  @pragma('vm:prefer-inline')
+  final _BaseMetrics _self;
+  final $Res Function(_BaseMetrics) _then;
+
+  /// Create a copy of BaseMetrics
+  /// with the given fields replaced by the non-null parameter values.
   @override
+  @pragma('vm:prefer-inline')
   $Res call({
-    Object? totalCalories = null,
-    Object? proteinGrams = null,
-    Object? fatGrams = null,
-    Object? carbsGrams = null,
+    Object? weightKg = null,
+    Object? bodyFatPercentage = null,
+    Object? fatFreeMassKg = null,
+    Object? bmr = null,
+    Object? tdee = null,
+    Object? activityMultiplier = null,
   }) {
-    return _then(_$MacroTargetsImpl(
-      totalCalories: null == totalCalories
-          ? _value.totalCalories
-          : totalCalories // ignore: cast_nullable_to_non_nullable
-              as int,
-      proteinGrams: null == proteinGrams
-          ? _value.proteinGrams
-          : proteinGrams // ignore: cast_nullable_to_non_nullable
-              as int,
-      fatGrams: null == fatGrams
-          ? _value.fatGrams
-          : fatGrams // ignore: cast_nullable_to_non_nullable
-              as int,
-      carbsGrams: null == carbsGrams
-          ? _value.carbsGrams
-          : carbsGrams // ignore: cast_nullable_to_non_nullable
-              as int,
+    return _then(_BaseMetrics(
+      weightKg: null == weightKg
+          ? _self.weightKg
+          : weightKg // ignore: cast_nullable_to_non_nullable
+              as double,
+      bodyFatPercentage: null == bodyFatPercentage
+          ? _self.bodyFatPercentage
+          : bodyFatPercentage // ignore: cast_nullable_to_non_nullable
+              as double,
+      fatFreeMassKg: null == fatFreeMassKg
+          ? _self.fatFreeMassKg
+          : fatFreeMassKg // ignore: cast_nullable_to_non_nullable
+              as double,
+      bmr: null == bmr
+          ? _self.bmr
+          : bmr // ignore: cast_nullable_to_non_nullable
+              as double,
+      tdee: null == tdee
+          ? _self.tdee
+          : tdee // ignore: cast_nullable_to_non_nullable
+              as double,
+      activityMultiplier: null == activityMultiplier
+          ? _self.activityMultiplier
+          : activityMultiplier // ignore: cast_nullable_to_non_nullable
+              as double,
     ));
   }
 }
 
 /// @nodoc
-@JsonSerializable()
-class _$MacroTargetsImpl implements _MacroTargets {
-  const _$MacroTargetsImpl(
-      {required this.totalCalories,
-      required this.proteinGrams,
-      required this.fatGrams,
-      required this.carbsGrams});
+mixin _$MacroTargets {
+  int get totalCalories;
+  int get proteinGrams;
+  int get fatGrams;
+  int get carbsGrams;
 
-  factory _$MacroTargetsImpl.fromJson(Map<String, dynamic> json) =>
-      _$$MacroTargetsImplFromJson(json);
+  /// Create a copy of MacroTargets
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $MacroTargetsCopyWith<MacroTargets> get copyWith =>
+      _$MacroTargetsCopyWithImpl<MacroTargets>(
+          this as MacroTargets, _$identity);
 
-  @override
-  final int totalCalories;
-  @override
-  final int proteinGrams;
-  @override
-  final int fatGrams;
-  @override
-  final int carbsGrams;
-
-  @override
-  String toString() {
-    return 'MacroTargets(totalCalories: $totalCalories, proteinGrams: $proteinGrams, fatGrams: $fatGrams, carbsGrams: $carbsGrams)';
-  }
+  /// Serializes this MacroTargets to a JSON map.
+  Map<String, dynamic> toJson();
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$MacroTargetsImpl &&
+            other is MacroTargets &&
             (identical(other.totalCalories, totalCalories) ||
                 other.totalCalories == totalCalories) &&
             (identical(other.proteinGrams, proteinGrams) ||
@@ -753,201 +1078,365 @@ class _$MacroTargetsImpl implements _MacroTargets {
                 other.carbsGrams == carbsGrams));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(
       runtimeType, totalCalories, proteinGrams, fatGrams, carbsGrams);
 
-  @JsonKey(ignore: true)
   @override
-  @pragma('vm:prefer-inline')
-  _$$MacroTargetsImplCopyWith<_$MacroTargetsImpl> get copyWith =>
-      __$$MacroTargetsImplCopyWithImpl<_$MacroTargetsImpl>(this, _$identity);
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$MacroTargetsImplToJson(
-      this,
-    );
-  }
-}
-
-abstract class _MacroTargets implements MacroTargets {
-  const factory _MacroTargets(
-      {required final int totalCalories,
-      required final int proteinGrams,
-      required final int fatGrams,
-      required final int carbsGrams}) = _$MacroTargetsImpl;
-
-  factory _MacroTargets.fromJson(Map<String, dynamic> json) =
-      _$MacroTargetsImpl.fromJson;
-
-  @override
-  int get totalCalories;
-  @override
-  int get proteinGrams;
-  @override
-  int get fatGrams;
-  @override
-  int get carbsGrams;
-  @override
-  @JsonKey(ignore: true)
-  _$$MacroTargetsImplCopyWith<_$MacroTargetsImpl> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-VisualPlate _$VisualPlateFromJson(Map<String, dynamic> json) {
-  return _VisualPlate.fromJson(json);
-}
-
-/// @nodoc
-mixin _$VisualPlate {
-  double get vegetablesPercent => throw _privateConstructorUsedError;
-  double get proteinPercent => throw _privateConstructorUsedError;
-  double get carbsPercent => throw _privateConstructorUsedError;
-  String get carbsType => throw _privateConstructorUsedError;
-
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-  @JsonKey(ignore: true)
-  $VisualPlateCopyWith<VisualPlate> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $VisualPlateCopyWith<$Res> {
-  factory $VisualPlateCopyWith(
-          VisualPlate value, $Res Function(VisualPlate) then) =
-      _$VisualPlateCopyWithImpl<$Res, VisualPlate>;
-  @useResult
-  $Res call(
-      {double vegetablesPercent,
-      double proteinPercent,
-      double carbsPercent,
-      String carbsType});
-}
-
-/// @nodoc
-class _$VisualPlateCopyWithImpl<$Res, $Val extends VisualPlate>
-    implements $VisualPlateCopyWith<$Res> {
-  _$VisualPlateCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? vegetablesPercent = null,
-    Object? proteinPercent = null,
-    Object? carbsPercent = null,
-    Object? carbsType = null,
-  }) {
-    return _then(_value.copyWith(
-      vegetablesPercent: null == vegetablesPercent
-          ? _value.vegetablesPercent
-          : vegetablesPercent // ignore: cast_nullable_to_non_nullable
-              as double,
-      proteinPercent: null == proteinPercent
-          ? _value.proteinPercent
-          : proteinPercent // ignore: cast_nullable_to_non_nullable
-              as double,
-      carbsPercent: null == carbsPercent
-          ? _value.carbsPercent
-          : carbsPercent // ignore: cast_nullable_to_non_nullable
-              as double,
-      carbsType: null == carbsType
-          ? _value.carbsType
-          : carbsType // ignore: cast_nullable_to_non_nullable
-              as String,
-    ) as $Val);
+  String toString() {
+    return 'MacroTargets(totalCalories: $totalCalories, proteinGrams: $proteinGrams, fatGrams: $fatGrams, carbsGrams: $carbsGrams)';
   }
 }
 
 /// @nodoc
-abstract class _$$VisualPlateImplCopyWith<$Res>
-    implements $VisualPlateCopyWith<$Res> {
-  factory _$$VisualPlateImplCopyWith(
-          _$VisualPlateImpl value, $Res Function(_$VisualPlateImpl) then) =
-      __$$VisualPlateImplCopyWithImpl<$Res>;
-  @override
+abstract mixin class $MacroTargetsCopyWith<$Res> {
+  factory $MacroTargetsCopyWith(
+          MacroTargets value, $Res Function(MacroTargets) _then) =
+      _$MacroTargetsCopyWithImpl;
   @useResult
   $Res call(
-      {double vegetablesPercent,
-      double proteinPercent,
-      double carbsPercent,
-      String carbsType});
+      {int totalCalories, int proteinGrams, int fatGrams, int carbsGrams});
 }
 
 /// @nodoc
-class __$$VisualPlateImplCopyWithImpl<$Res>
-    extends _$VisualPlateCopyWithImpl<$Res, _$VisualPlateImpl>
-    implements _$$VisualPlateImplCopyWith<$Res> {
-  __$$VisualPlateImplCopyWithImpl(
-      _$VisualPlateImpl _value, $Res Function(_$VisualPlateImpl) _then)
-      : super(_value, _then);
+class _$MacroTargetsCopyWithImpl<$Res> implements $MacroTargetsCopyWith<$Res> {
+  _$MacroTargetsCopyWithImpl(this._self, this._then);
 
+  final MacroTargets _self;
+  final $Res Function(MacroTargets) _then;
+
+  /// Create a copy of MacroTargets
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? vegetablesPercent = null,
-    Object? proteinPercent = null,
-    Object? carbsPercent = null,
-    Object? carbsType = null,
+    Object? totalCalories = null,
+    Object? proteinGrams = null,
+    Object? fatGrams = null,
+    Object? carbsGrams = null,
   }) {
-    return _then(_$VisualPlateImpl(
-      vegetablesPercent: null == vegetablesPercent
-          ? _value.vegetablesPercent
-          : vegetablesPercent // ignore: cast_nullable_to_non_nullable
-              as double,
-      proteinPercent: null == proteinPercent
-          ? _value.proteinPercent
-          : proteinPercent // ignore: cast_nullable_to_non_nullable
-              as double,
-      carbsPercent: null == carbsPercent
-          ? _value.carbsPercent
-          : carbsPercent // ignore: cast_nullable_to_non_nullable
-              as double,
-      carbsType: null == carbsType
-          ? _value.carbsType
-          : carbsType // ignore: cast_nullable_to_non_nullable
-              as String,
+    return _then(_self.copyWith(
+      totalCalories: null == totalCalories
+          ? _self.totalCalories
+          : totalCalories // ignore: cast_nullable_to_non_nullable
+              as int,
+      proteinGrams: null == proteinGrams
+          ? _self.proteinGrams
+          : proteinGrams // ignore: cast_nullable_to_non_nullable
+              as int,
+      fatGrams: null == fatGrams
+          ? _self.fatGrams
+          : fatGrams // ignore: cast_nullable_to_non_nullable
+              as int,
+      carbsGrams: null == carbsGrams
+          ? _self.carbsGrams
+          : carbsGrams // ignore: cast_nullable_to_non_nullable
+              as int,
     ));
+  }
+}
+
+/// Adds pattern-matching-related methods to [MacroTargets].
+extension MacroTargetsPatterns on MacroTargets {
+  /// A variant of `map` that fallback to returning `orElse`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>(
+    TResult Function(_MacroTargets value)? $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _MacroTargets() when $default != null:
+        return $default(_that);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// Callbacks receives the raw object, upcasted.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case final Subclass2 value:
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>(
+    TResult Function(_MacroTargets value) $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _MacroTargets():
+        return $default(_that);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `map` that fallback to returning `null`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>(
+    TResult? Function(_MacroTargets value)? $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _MacroTargets() when $default != null:
+        return $default(_that);
+      case _:
+        return null;
+    }
+  }
+
+  /// A variant of `when` that fallback to an `orElse` callback.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>(
+    TResult Function(
+            int totalCalories, int proteinGrams, int fatGrams, int carbsGrams)?
+        $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _MacroTargets() when $default != null:
+        return $default(_that.totalCalories, _that.proteinGrams, _that.fatGrams,
+            _that.carbsGrams);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// As opposed to `map`, this offers destructuring.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case Subclass2(:final field2):
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>(
+    TResult Function(
+            int totalCalories, int proteinGrams, int fatGrams, int carbsGrams)
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _MacroTargets():
+        return $default(_that.totalCalories, _that.proteinGrams, _that.fatGrams,
+            _that.carbsGrams);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `when` that fallback to returning `null`
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>(
+    TResult? Function(
+            int totalCalories, int proteinGrams, int fatGrams, int carbsGrams)?
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _MacroTargets() when $default != null:
+        return $default(_that.totalCalories, _that.proteinGrams, _that.fatGrams,
+            _that.carbsGrams);
+      case _:
+        return null;
+    }
   }
 }
 
 /// @nodoc
 @JsonSerializable()
-class _$VisualPlateImpl implements _VisualPlate {
-  const _$VisualPlateImpl(
-      {required this.vegetablesPercent,
-      required this.proteinPercent,
-      required this.carbsPercent,
-      required this.carbsType});
-
-  factory _$VisualPlateImpl.fromJson(Map<String, dynamic> json) =>
-      _$$VisualPlateImplFromJson(json);
-
-  @override
-  final double vegetablesPercent;
-  @override
-  final double proteinPercent;
-  @override
-  final double carbsPercent;
-  @override
-  final String carbsType;
+class _MacroTargets implements MacroTargets {
+  const _MacroTargets(
+      {required this.totalCalories,
+      required this.proteinGrams,
+      required this.fatGrams,
+      required this.carbsGrams});
+  factory _MacroTargets.fromJson(Map<String, dynamic> json) =>
+      _$MacroTargetsFromJson(json);
 
   @override
-  String toString() {
-    return 'VisualPlate(vegetablesPercent: $vegetablesPercent, proteinPercent: $proteinPercent, carbsPercent: $carbsPercent, carbsType: $carbsType)';
+  final int totalCalories;
+  @override
+  final int proteinGrams;
+  @override
+  final int fatGrams;
+  @override
+  final int carbsGrams;
+
+  /// Create a copy of MacroTargets
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  _$MacroTargetsCopyWith<_MacroTargets> get copyWith =>
+      __$MacroTargetsCopyWithImpl<_MacroTargets>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$MacroTargetsToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$VisualPlateImpl &&
+            other is _MacroTargets &&
+            (identical(other.totalCalories, totalCalories) ||
+                other.totalCalories == totalCalories) &&
+            (identical(other.proteinGrams, proteinGrams) ||
+                other.proteinGrams == proteinGrams) &&
+            (identical(other.fatGrams, fatGrams) ||
+                other.fatGrams == fatGrams) &&
+            (identical(other.carbsGrams, carbsGrams) ||
+                other.carbsGrams == carbsGrams));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType, totalCalories, proteinGrams, fatGrams, carbsGrams);
+
+  @override
+  String toString() {
+    return 'MacroTargets(totalCalories: $totalCalories, proteinGrams: $proteinGrams, fatGrams: $fatGrams, carbsGrams: $carbsGrams)';
+  }
+}
+
+/// @nodoc
+abstract mixin class _$MacroTargetsCopyWith<$Res>
+    implements $MacroTargetsCopyWith<$Res> {
+  factory _$MacroTargetsCopyWith(
+          _MacroTargets value, $Res Function(_MacroTargets) _then) =
+      __$MacroTargetsCopyWithImpl;
+  @override
+  @useResult
+  $Res call(
+      {int totalCalories, int proteinGrams, int fatGrams, int carbsGrams});
+}
+
+/// @nodoc
+class __$MacroTargetsCopyWithImpl<$Res>
+    implements _$MacroTargetsCopyWith<$Res> {
+  __$MacroTargetsCopyWithImpl(this._self, this._then);
+
+  final _MacroTargets _self;
+  final $Res Function(_MacroTargets) _then;
+
+  /// Create a copy of MacroTargets
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? totalCalories = null,
+    Object? proteinGrams = null,
+    Object? fatGrams = null,
+    Object? carbsGrams = null,
+  }) {
+    return _then(_MacroTargets(
+      totalCalories: null == totalCalories
+          ? _self.totalCalories
+          : totalCalories // ignore: cast_nullable_to_non_nullable
+              as int,
+      proteinGrams: null == proteinGrams
+          ? _self.proteinGrams
+          : proteinGrams // ignore: cast_nullable_to_non_nullable
+              as int,
+      fatGrams: null == fatGrams
+          ? _self.fatGrams
+          : fatGrams // ignore: cast_nullable_to_non_nullable
+              as int,
+      carbsGrams: null == carbsGrams
+          ? _self.carbsGrams
+          : carbsGrams // ignore: cast_nullable_to_non_nullable
+              as int,
+    ));
+  }
+}
+
+/// @nodoc
+mixin _$VisualPlate {
+  double get vegetablesPercent;
+  double get proteinPercent;
+  double get carbsPercent;
+  String get carbsType;
+
+  /// Create a copy of VisualPlate
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $VisualPlateCopyWith<VisualPlate> get copyWith =>
+      _$VisualPlateCopyWithImpl<VisualPlate>(this as VisualPlate, _$identity);
+
+  /// Serializes this VisualPlate to a JSON map.
+  Map<String, dynamic> toJson();
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is VisualPlate &&
             (identical(other.vegetablesPercent, vegetablesPercent) ||
                 other.vegetablesPercent == vegetablesPercent) &&
             (identical(other.proteinPercent, proteinPercent) ||
@@ -958,119 +1447,395 @@ class _$VisualPlateImpl implements _VisualPlate {
                 other.carbsType == carbsType));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(
       runtimeType, vegetablesPercent, proteinPercent, carbsPercent, carbsType);
 
-  @JsonKey(ignore: true)
   @override
-  @pragma('vm:prefer-inline')
-  _$$VisualPlateImplCopyWith<_$VisualPlateImpl> get copyWith =>
-      __$$VisualPlateImplCopyWithImpl<_$VisualPlateImpl>(this, _$identity);
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$VisualPlateImplToJson(
-      this,
-    );
+  String toString() {
+    return 'VisualPlate(vegetablesPercent: $vegetablesPercent, proteinPercent: $proteinPercent, carbsPercent: $carbsPercent, carbsType: $carbsType)';
   }
 }
 
-abstract class _VisualPlate implements VisualPlate {
-  const factory _VisualPlate(
-      {required final double vegetablesPercent,
-      required final double proteinPercent,
-      required final double carbsPercent,
-      required final String carbsType}) = _$VisualPlateImpl;
-
-  factory _VisualPlate.fromJson(Map<String, dynamic> json) =
-      _$VisualPlateImpl.fromJson;
-
-  @override
-  double get vegetablesPercent;
-  @override
-  double get proteinPercent;
-  @override
-  double get carbsPercent;
-  @override
-  String get carbsType;
-  @override
-  @JsonKey(ignore: true)
-  _$$VisualPlateImplCopyWith<_$VisualPlateImpl> get copyWith =>
-      throw _privateConstructorUsedError;
+/// @nodoc
+abstract mixin class $VisualPlateCopyWith<$Res> {
+  factory $VisualPlateCopyWith(
+          VisualPlate value, $Res Function(VisualPlate) _then) =
+      _$VisualPlateCopyWithImpl;
+  @useResult
+  $Res call(
+      {double vegetablesPercent,
+      double proteinPercent,
+      double carbsPercent,
+      String carbsType});
 }
 
-WeeklyAdjustment _$WeeklyAdjustmentFromJson(Map<String, dynamic> json) {
-  return _WeeklyAdjustment.fromJson(json);
+/// @nodoc
+class _$VisualPlateCopyWithImpl<$Res> implements $VisualPlateCopyWith<$Res> {
+  _$VisualPlateCopyWithImpl(this._self, this._then);
+
+  final VisualPlate _self;
+  final $Res Function(VisualPlate) _then;
+
+  /// Create a copy of VisualPlate
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? vegetablesPercent = null,
+    Object? proteinPercent = null,
+    Object? carbsPercent = null,
+    Object? carbsType = null,
+  }) {
+    return _then(_self.copyWith(
+      vegetablesPercent: null == vegetablesPercent
+          ? _self.vegetablesPercent
+          : vegetablesPercent // ignore: cast_nullable_to_non_nullable
+              as double,
+      proteinPercent: null == proteinPercent
+          ? _self.proteinPercent
+          : proteinPercent // ignore: cast_nullable_to_non_nullable
+              as double,
+      carbsPercent: null == carbsPercent
+          ? _self.carbsPercent
+          : carbsPercent // ignore: cast_nullable_to_non_nullable
+              as double,
+      carbsType: null == carbsType
+          ? _self.carbsType
+          : carbsType // ignore: cast_nullable_to_non_nullable
+              as String,
+    ));
+  }
+}
+
+/// Adds pattern-matching-related methods to [VisualPlate].
+extension VisualPlatePatterns on VisualPlate {
+  /// A variant of `map` that fallback to returning `orElse`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>(
+    TResult Function(_VisualPlate value)? $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _VisualPlate() when $default != null:
+        return $default(_that);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// Callbacks receives the raw object, upcasted.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case final Subclass2 value:
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>(
+    TResult Function(_VisualPlate value) $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _VisualPlate():
+        return $default(_that);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `map` that fallback to returning `null`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>(
+    TResult? Function(_VisualPlate value)? $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _VisualPlate() when $default != null:
+        return $default(_that);
+      case _:
+        return null;
+    }
+  }
+
+  /// A variant of `when` that fallback to an `orElse` callback.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>(
+    TResult Function(double vegetablesPercent, double proteinPercent,
+            double carbsPercent, String carbsType)?
+        $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _VisualPlate() when $default != null:
+        return $default(_that.vegetablesPercent, _that.proteinPercent,
+            _that.carbsPercent, _that.carbsType);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// As opposed to `map`, this offers destructuring.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case Subclass2(:final field2):
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>(
+    TResult Function(double vegetablesPercent, double proteinPercent,
+            double carbsPercent, String carbsType)
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _VisualPlate():
+        return $default(_that.vegetablesPercent, _that.proteinPercent,
+            _that.carbsPercent, _that.carbsType);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `when` that fallback to returning `null`
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>(
+    TResult? Function(double vegetablesPercent, double proteinPercent,
+            double carbsPercent, String carbsType)?
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _VisualPlate() when $default != null:
+        return $default(_that.vegetablesPercent, _that.proteinPercent,
+            _that.carbsPercent, _that.carbsType);
+      case _:
+        return null;
+    }
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _VisualPlate implements VisualPlate {
+  const _VisualPlate(
+      {required this.vegetablesPercent,
+      required this.proteinPercent,
+      required this.carbsPercent,
+      required this.carbsType});
+  factory _VisualPlate.fromJson(Map<String, dynamic> json) =>
+      _$VisualPlateFromJson(json);
+
+  @override
+  final double vegetablesPercent;
+  @override
+  final double proteinPercent;
+  @override
+  final double carbsPercent;
+  @override
+  final String carbsType;
+
+  /// Create a copy of VisualPlate
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  _$VisualPlateCopyWith<_VisualPlate> get copyWith =>
+      __$VisualPlateCopyWithImpl<_VisualPlate>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$VisualPlateToJson(
+      this,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _VisualPlate &&
+            (identical(other.vegetablesPercent, vegetablesPercent) ||
+                other.vegetablesPercent == vegetablesPercent) &&
+            (identical(other.proteinPercent, proteinPercent) ||
+                other.proteinPercent == proteinPercent) &&
+            (identical(other.carbsPercent, carbsPercent) ||
+                other.carbsPercent == carbsPercent) &&
+            (identical(other.carbsType, carbsType) ||
+                other.carbsType == carbsType));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType, vegetablesPercent, proteinPercent, carbsPercent, carbsType);
+
+  @override
+  String toString() {
+    return 'VisualPlate(vegetablesPercent: $vegetablesPercent, proteinPercent: $proteinPercent, carbsPercent: $carbsPercent, carbsType: $carbsType)';
+  }
+}
+
+/// @nodoc
+abstract mixin class _$VisualPlateCopyWith<$Res>
+    implements $VisualPlateCopyWith<$Res> {
+  factory _$VisualPlateCopyWith(
+          _VisualPlate value, $Res Function(_VisualPlate) _then) =
+      __$VisualPlateCopyWithImpl;
+  @override
+  @useResult
+  $Res call(
+      {double vegetablesPercent,
+      double proteinPercent,
+      double carbsPercent,
+      String carbsType});
+}
+
+/// @nodoc
+class __$VisualPlateCopyWithImpl<$Res> implements _$VisualPlateCopyWith<$Res> {
+  __$VisualPlateCopyWithImpl(this._self, this._then);
+
+  final _VisualPlate _self;
+  final $Res Function(_VisualPlate) _then;
+
+  /// Create a copy of VisualPlate
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? vegetablesPercent = null,
+    Object? proteinPercent = null,
+    Object? carbsPercent = null,
+    Object? carbsType = null,
+  }) {
+    return _then(_VisualPlate(
+      vegetablesPercent: null == vegetablesPercent
+          ? _self.vegetablesPercent
+          : vegetablesPercent // ignore: cast_nullable_to_non_nullable
+              as double,
+      proteinPercent: null == proteinPercent
+          ? _self.proteinPercent
+          : proteinPercent // ignore: cast_nullable_to_non_nullable
+              as double,
+      carbsPercent: null == carbsPercent
+          ? _self.carbsPercent
+          : carbsPercent // ignore: cast_nullable_to_non_nullable
+              as double,
+      carbsType: null == carbsType
+          ? _self.carbsType
+          : carbsType // ignore: cast_nullable_to_non_nullable
+              as String,
+    ));
+  }
 }
 
 /// @nodoc
 mixin _$WeeklyAdjustment {
-  bool get isAdjusted => throw _privateConstructorUsedError;
+  bool get isAdjusted;
   @TimestampConverter()
-  DateTime? get lastAdjustmentDate => throw _privateConstructorUsedError;
-  String? get adjustmentReason => throw _privateConstructorUsedError;
+  DateTime? get lastAdjustmentDate;
+  String? get adjustmentReason;
 
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-  @JsonKey(ignore: true)
-  $WeeklyAdjustmentCopyWith<WeeklyAdjustment> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $WeeklyAdjustmentCopyWith<$Res> {
-  factory $WeeklyAdjustmentCopyWith(
-          WeeklyAdjustment value, $Res Function(WeeklyAdjustment) then) =
-      _$WeeklyAdjustmentCopyWithImpl<$Res, WeeklyAdjustment>;
-  @useResult
-  $Res call(
-      {bool isAdjusted,
-      @TimestampConverter() DateTime? lastAdjustmentDate,
-      String? adjustmentReason});
-}
-
-/// @nodoc
-class _$WeeklyAdjustmentCopyWithImpl<$Res, $Val extends WeeklyAdjustment>
-    implements $WeeklyAdjustmentCopyWith<$Res> {
-  _$WeeklyAdjustmentCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
+  /// Create a copy of WeeklyAdjustment
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @pragma('vm:prefer-inline')
+  $WeeklyAdjustmentCopyWith<WeeklyAdjustment> get copyWith =>
+      _$WeeklyAdjustmentCopyWithImpl<WeeklyAdjustment>(
+          this as WeeklyAdjustment, _$identity);
+
+  /// Serializes this WeeklyAdjustment to a JSON map.
+  Map<String, dynamic> toJson();
+
   @override
-  $Res call({
-    Object? isAdjusted = null,
-    Object? lastAdjustmentDate = freezed,
-    Object? adjustmentReason = freezed,
-  }) {
-    return _then(_value.copyWith(
-      isAdjusted: null == isAdjusted
-          ? _value.isAdjusted
-          : isAdjusted // ignore: cast_nullable_to_non_nullable
-              as bool,
-      lastAdjustmentDate: freezed == lastAdjustmentDate
-          ? _value.lastAdjustmentDate
-          : lastAdjustmentDate // ignore: cast_nullable_to_non_nullable
-              as DateTime?,
-      adjustmentReason: freezed == adjustmentReason
-          ? _value.adjustmentReason
-          : adjustmentReason // ignore: cast_nullable_to_non_nullable
-              as String?,
-    ) as $Val);
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is WeeklyAdjustment &&
+            (identical(other.isAdjusted, isAdjusted) ||
+                other.isAdjusted == isAdjusted) &&
+            (identical(other.lastAdjustmentDate, lastAdjustmentDate) ||
+                other.lastAdjustmentDate == lastAdjustmentDate) &&
+            (identical(other.adjustmentReason, adjustmentReason) ||
+                other.adjustmentReason == adjustmentReason));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType, isAdjusted, lastAdjustmentDate, adjustmentReason);
+
+  @override
+  String toString() {
+    return 'WeeklyAdjustment(isAdjusted: $isAdjusted, lastAdjustmentDate: $lastAdjustmentDate, adjustmentReason: $adjustmentReason)';
   }
 }
 
 /// @nodoc
-abstract class _$$WeeklyAdjustmentImplCopyWith<$Res>
-    implements $WeeklyAdjustmentCopyWith<$Res> {
-  factory _$$WeeklyAdjustmentImplCopyWith(_$WeeklyAdjustmentImpl value,
-          $Res Function(_$WeeklyAdjustmentImpl) then) =
-      __$$WeeklyAdjustmentImplCopyWithImpl<$Res>;
-  @override
+abstract mixin class $WeeklyAdjustmentCopyWith<$Res> {
+  factory $WeeklyAdjustmentCopyWith(
+          WeeklyAdjustment value, $Res Function(WeeklyAdjustment) _then) =
+      _$WeeklyAdjustmentCopyWithImpl;
   @useResult
   $Res call(
       {bool isAdjusted,
@@ -1079,13 +1844,15 @@ abstract class _$$WeeklyAdjustmentImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$WeeklyAdjustmentImplCopyWithImpl<$Res>
-    extends _$WeeklyAdjustmentCopyWithImpl<$Res, _$WeeklyAdjustmentImpl>
-    implements _$$WeeklyAdjustmentImplCopyWith<$Res> {
-  __$$WeeklyAdjustmentImplCopyWithImpl(_$WeeklyAdjustmentImpl _value,
-      $Res Function(_$WeeklyAdjustmentImpl) _then)
-      : super(_value, _then);
+class _$WeeklyAdjustmentCopyWithImpl<$Res>
+    implements $WeeklyAdjustmentCopyWith<$Res> {
+  _$WeeklyAdjustmentCopyWithImpl(this._self, this._then);
 
+  final WeeklyAdjustment _self;
+  final $Res Function(WeeklyAdjustment) _then;
+
+  /// Create a copy of WeeklyAdjustment
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -1093,33 +1860,204 @@ class __$$WeeklyAdjustmentImplCopyWithImpl<$Res>
     Object? lastAdjustmentDate = freezed,
     Object? adjustmentReason = freezed,
   }) {
-    return _then(_$WeeklyAdjustmentImpl(
+    return _then(_self.copyWith(
       isAdjusted: null == isAdjusted
-          ? _value.isAdjusted
+          ? _self.isAdjusted
           : isAdjusted // ignore: cast_nullable_to_non_nullable
               as bool,
       lastAdjustmentDate: freezed == lastAdjustmentDate
-          ? _value.lastAdjustmentDate
+          ? _self.lastAdjustmentDate
           : lastAdjustmentDate // ignore: cast_nullable_to_non_nullable
               as DateTime?,
       adjustmentReason: freezed == adjustmentReason
-          ? _value.adjustmentReason
+          ? _self.adjustmentReason
           : adjustmentReason // ignore: cast_nullable_to_non_nullable
               as String?,
     ));
   }
 }
 
+/// Adds pattern-matching-related methods to [WeeklyAdjustment].
+extension WeeklyAdjustmentPatterns on WeeklyAdjustment {
+  /// A variant of `map` that fallback to returning `orElse`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>(
+    TResult Function(_WeeklyAdjustment value)? $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _WeeklyAdjustment() when $default != null:
+        return $default(_that);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// Callbacks receives the raw object, upcasted.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case final Subclass2 value:
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>(
+    TResult Function(_WeeklyAdjustment value) $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _WeeklyAdjustment():
+        return $default(_that);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `map` that fallback to returning `null`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>(
+    TResult? Function(_WeeklyAdjustment value)? $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _WeeklyAdjustment() when $default != null:
+        return $default(_that);
+      case _:
+        return null;
+    }
+  }
+
+  /// A variant of `when` that fallback to an `orElse` callback.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>(
+    TResult Function(
+            bool isAdjusted,
+            @TimestampConverter() DateTime? lastAdjustmentDate,
+            String? adjustmentReason)?
+        $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _WeeklyAdjustment() when $default != null:
+        return $default(
+            _that.isAdjusted, _that.lastAdjustmentDate, _that.adjustmentReason);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// As opposed to `map`, this offers destructuring.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case Subclass2(:final field2):
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>(
+    TResult Function(
+            bool isAdjusted,
+            @TimestampConverter() DateTime? lastAdjustmentDate,
+            String? adjustmentReason)
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _WeeklyAdjustment():
+        return $default(
+            _that.isAdjusted, _that.lastAdjustmentDate, _that.adjustmentReason);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `when` that fallback to returning `null`
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>(
+    TResult? Function(
+            bool isAdjusted,
+            @TimestampConverter() DateTime? lastAdjustmentDate,
+            String? adjustmentReason)?
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _WeeklyAdjustment() when $default != null:
+        return $default(
+            _that.isAdjusted, _that.lastAdjustmentDate, _that.adjustmentReason);
+      case _:
+        return null;
+    }
+  }
+}
+
 /// @nodoc
 @JsonSerializable()
-class _$WeeklyAdjustmentImpl implements _WeeklyAdjustment {
-  const _$WeeklyAdjustmentImpl(
+class _WeeklyAdjustment implements WeeklyAdjustment {
+  const _WeeklyAdjustment(
       {this.isAdjusted = false,
       @TimestampConverter() this.lastAdjustmentDate,
       this.adjustmentReason});
-
-  factory _$WeeklyAdjustmentImpl.fromJson(Map<String, dynamic> json) =>
-      _$$WeeklyAdjustmentImplFromJson(json);
+  factory _WeeklyAdjustment.fromJson(Map<String, dynamic> json) =>
+      _$WeeklyAdjustmentFromJson(json);
 
   @override
   @JsonKey()
@@ -1130,16 +2068,26 @@ class _$WeeklyAdjustmentImpl implements _WeeklyAdjustment {
   @override
   final String? adjustmentReason;
 
+  /// Create a copy of WeeklyAdjustment
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'WeeklyAdjustment(isAdjusted: $isAdjusted, lastAdjustmentDate: $lastAdjustmentDate, adjustmentReason: $adjustmentReason)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  _$WeeklyAdjustmentCopyWith<_WeeklyAdjustment> get copyWith =>
+      __$WeeklyAdjustmentCopyWithImpl<_WeeklyAdjustment>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$WeeklyAdjustmentToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$WeeklyAdjustmentImpl &&
+            other is _WeeklyAdjustment &&
             (identical(other.isAdjusted, isAdjusted) ||
                 other.isAdjusted == isAdjusted) &&
             (identical(other.lastAdjustmentDate, lastAdjustmentDate) ||
@@ -1148,44 +2096,63 @@ class _$WeeklyAdjustmentImpl implements _WeeklyAdjustment {
                 other.adjustmentReason == adjustmentReason));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(
       runtimeType, isAdjusted, lastAdjustmentDate, adjustmentReason);
 
-  @JsonKey(ignore: true)
   @override
-  @pragma('vm:prefer-inline')
-  _$$WeeklyAdjustmentImplCopyWith<_$WeeklyAdjustmentImpl> get copyWith =>
-      __$$WeeklyAdjustmentImplCopyWithImpl<_$WeeklyAdjustmentImpl>(
-          this, _$identity);
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$WeeklyAdjustmentImplToJson(
-      this,
-    );
+  String toString() {
+    return 'WeeklyAdjustment(isAdjusted: $isAdjusted, lastAdjustmentDate: $lastAdjustmentDate, adjustmentReason: $adjustmentReason)';
   }
 }
 
-abstract class _WeeklyAdjustment implements WeeklyAdjustment {
-  const factory _WeeklyAdjustment(
-      {final bool isAdjusted,
-      @TimestampConverter() final DateTime? lastAdjustmentDate,
-      final String? adjustmentReason}) = _$WeeklyAdjustmentImpl;
-
-  factory _WeeklyAdjustment.fromJson(Map<String, dynamic> json) =
-      _$WeeklyAdjustmentImpl.fromJson;
-
+/// @nodoc
+abstract mixin class _$WeeklyAdjustmentCopyWith<$Res>
+    implements $WeeklyAdjustmentCopyWith<$Res> {
+  factory _$WeeklyAdjustmentCopyWith(
+          _WeeklyAdjustment value, $Res Function(_WeeklyAdjustment) _then) =
+      __$WeeklyAdjustmentCopyWithImpl;
   @override
-  bool get isAdjusted;
-  @override
-  @TimestampConverter()
-  DateTime? get lastAdjustmentDate;
-  @override
-  String? get adjustmentReason;
-  @override
-  @JsonKey(ignore: true)
-  _$$WeeklyAdjustmentImplCopyWith<_$WeeklyAdjustmentImpl> get copyWith =>
-      throw _privateConstructorUsedError;
+  @useResult
+  $Res call(
+      {bool isAdjusted,
+      @TimestampConverter() DateTime? lastAdjustmentDate,
+      String? adjustmentReason});
 }
+
+/// @nodoc
+class __$WeeklyAdjustmentCopyWithImpl<$Res>
+    implements _$WeeklyAdjustmentCopyWith<$Res> {
+  __$WeeklyAdjustmentCopyWithImpl(this._self, this._then);
+
+  final _WeeklyAdjustment _self;
+  final $Res Function(_WeeklyAdjustment) _then;
+
+  /// Create a copy of WeeklyAdjustment
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? isAdjusted = null,
+    Object? lastAdjustmentDate = freezed,
+    Object? adjustmentReason = freezed,
+  }) {
+    return _then(_WeeklyAdjustment(
+      isAdjusted: null == isAdjusted
+          ? _self.isAdjusted
+          : isAdjusted // ignore: cast_nullable_to_non_nullable
+              as bool,
+      lastAdjustmentDate: freezed == lastAdjustmentDate
+          ? _self.lastAdjustmentDate
+          : lastAdjustmentDate // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      adjustmentReason: freezed == adjustmentReason
+          ? _self.adjustmentReason
+          : adjustmentReason // ignore: cast_nullable_to_non_nullable
+              as String?,
+    ));
+  }
+}
+
+// dart format on

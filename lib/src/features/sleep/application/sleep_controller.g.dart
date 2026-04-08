@@ -20,6 +20,8 @@ final sleepRepositoryProvider = Provider<SleepRepository>.internal(
   allTransitiveDependencies: null,
 );
 
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
 typedef SleepRepositoryRef = ProviderRef<SleepRepository>;
 String _$recentSleepLogsHash() => r'aa24e73e2ae6f9223b2edfa27b70830658203356';
 
@@ -36,8 +38,10 @@ final recentSleepLogsProvider =
   allTransitiveDependencies: null,
 );
 
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
 typedef RecentSleepLogsRef = AutoDisposeStreamProviderRef<List<SleepLog>>;
-String _$sleepControllerHash() => r'992b896900db7e060ce9e350942af547a964065b';
+String _$sleepControllerHash() => r'40e28d737806237c3a49263c90fb994b989e3d2c';
 
 /// See also [SleepController].
 @ProviderFor(SleepController)
@@ -54,4 +58,4 @@ final sleepControllerProvider =
 
 typedef _$SleepController = AutoDisposeNotifier<void>;
 // ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member
+// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

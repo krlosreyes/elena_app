@@ -1,7 +1,7 @@
 import 'dart:math';
 
 import 'package:elena_app/src/shared/domain/models/health_plan.dart';
-import 'package:elena_app/src/shared/domain/models/mti_model.dart';
+import 'package:elena_app/src/shared/domain/models/imr_model.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 
 /// ✅ ELENA BRAIN V2.0 (Metabolic Precision Engine)
@@ -16,13 +16,13 @@ class ElenaBrain {
   static const double metabolicStressMultiplier = 1.07;
 
   // TODO: Remove in Phase 4 cleanup
-  /// MTI Classification Engine
-  static MtiClassification classifyMtiScore(double score) {
-    if (score <= 30) return MtiClassification.highRisk;
-    if (score <= 50) return MtiClassification.warning;
-    if (score <= 70) return MtiClassification.moderate;
-    if (score <= 85) return MtiClassification.good;
-    return MtiClassification.optimal;
+  /// IMR Classification Engine
+  static ImrClassification classifyImrScore(double score) {
+    if (score <= 30) return ImrClassification.highRisk;
+    if (score <= 50) return ImrClassification.warning;
+    if (score <= 70) return ImrClassification.moderate;
+    if (score <= 85) return ImrClassification.good;
+    return ImrClassification.optimal;
   }
 
   // --- 1. Clinical Anthropometry & Body Composition ---
@@ -155,6 +155,35 @@ class ElenaBrain {
     return bmr;
   }
 
+  /// Determina la meta base de minutos de ejercicio según el nivel
+  /// de actividad y el objetivo del usuario.
+  static double getDailyExerciseGoalMinutes(UserModel user) {
+    double baseGoal;
+    switch (user.activityLevel) {
+      case ActivityLevel.sedentary:
+        baseGoal = 20.0;
+        break;
+      case ActivityLevel.light:
+        baseGoal = 30.0;
+        break;
+      case ActivityLevel.moderate:
+        baseGoal = 45.0;
+        break;
+      case ActivityLevel.heavy:
+        baseGoal = 60.0;
+        break;
+    }
+
+    // Ajustes por Health Goal
+    if (user.healthGoal == HealthGoal.fatLoss) {
+      baseGoal += 10.0; // Cardio adicional recomendado
+    } else if (user.healthGoal == HealthGoal.metabolicHealth && user.activityLevel == ActivityLevel.sedentary) {
+      baseGoal += 5.0; // Un poco más activo para resistencia a la insulina
+    }
+
+    return baseGoal;
+  }
+
   // TODO: Remove in Phase 4 cleanup
   // TODO: Remove in Phase 4 – duplicated metabolic logic
   // Macro calculation duplicates nutrition/MetabolicEngine.generate pipeline.
@@ -238,7 +267,7 @@ class ElenaBrain {
     return "EQUILIBRIO";
   }
 
-  // --- 3. MTI (Metabolic Terrain Index) & Sarcopenia ---
+  // --- 3. IMR (Índice de Metamorfosis Real) & Sarcopenia ---
 
   static double calculateSarcopeniaRisk(UserModel user) {
     final bf = calculateBodyFat(
@@ -265,7 +294,7 @@ class ElenaBrain {
   }
 
   // TODO: Remove in Phase 4 cleanup
-  static double calculateTotalMTI(
+  static double calculateTotalIMR(
     UserModel user, {
     double? realTimeFastingHours,
     double? realTimeNutritionScore,
@@ -307,7 +336,7 @@ class ElenaBrain {
   }
 
   // TODO: Remove in Phase 4 cleanup
-  static double calculateMTIForUser(UserModel user) => calculateTotalMTI(user);
+  static double calculateIMRForUser(UserModel user) => calculateTotalIMR(user);
 
   // TODO: Remove in Phase 4 cleanup
   static double calculateBodyScore(double? waistCm, double heightCm,

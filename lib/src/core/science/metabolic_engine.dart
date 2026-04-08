@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 /// Represents the current state of insulin in the body.
 ///
 /// Insulin is the primary anabolic hormone. Correctly managing its curves
@@ -118,4 +120,66 @@ abstract class MetabolicEngine {
     // Unsafe if less than 2 hours (120 minutes) before bed.
     return difference.inMinutes >= 120;
   }
+}
+
+/// Visual theme helpers for MetabolicZone.
+/// Co-located with the zone definition to keep science and presentation in sync.
+extension MetabolicZoneTheme on MetabolicZone {
+  /// Brand color for this zone, used in cards, wheel, and badges.
+  Color get color {
+    switch (this) {
+      case MetabolicZone.postAbsorption:
+        return const Color(0xFF9E9E9E);
+      case MetabolicZone.glycogenDepletion:
+        return const Color(0xFFFFD600);
+      case MetabolicZone.fatBurning:
+        return const Color(0xFFFF9800);
+      case MetabolicZone.deepKetosis:
+        return const Color(0xFFF44336);
+      case MetabolicZone.autophagy:
+        return const Color(0xFF9C27B0);
+      case MetabolicZone.survivalMode:
+        return const Color(0xFFB71C1C);
+    }
+  }
+
+  /// Human-readable label for the zone.
+  String get label {
+    switch (this) {
+      case MetabolicZone.postAbsorption:
+        return 'Digestión activa';
+      case MetabolicZone.glycogenDepletion:
+        return 'Quemando glucógeno';
+      case MetabolicZone.fatBurning:
+        return 'Quema de grasa activa';
+      case MetabolicZone.deepKetosis:
+        return 'Cetosis profunda';
+      case MetabolicZone.autophagy:
+        return 'Autofagia iniciada';
+      case MetabolicZone.survivalMode:
+        return 'Modo supervivencia';
+    }
+  }
+
+  /// Hours at which the NEXT zone begins (used for countdown).
+  /// Returns null for survivalMode (no next zone).
+  double? get nextZoneThresholdHours {
+    switch (this) {
+      case MetabolicZone.postAbsorption:
+        return 12.0;
+      case MetabolicZone.glycogenDepletion:
+        return 18.0;
+      case MetabolicZone.fatBurning:
+        return 24.0;
+      case MetabolicZone.deepKetosis:
+        return 48.0;
+      case MetabolicZone.autophagy:
+        return 72.0;
+      case MetabolicZone.survivalMode:
+        return null;
+    }
+  }
+
+  /// Whether this zone requires an emergency warning banner in the UI.
+  bool get isCritical => this == MetabolicZone.survivalMode;
 }

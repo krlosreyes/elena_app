@@ -1,14 +1,14 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../core/services/app_logger.dart';
+import '../../../shared/domain/models/user_model.dart';
 import '../../profile/data/user_repository.dart';
 import '../data/repositories/food_repository.dart';
 import '../data/repositories/food_suggestions_repository.dart';
 import '../domain/entities/food_model.dart';
 import '../domain/entities/food_suggestion.dart';
 import '../domain/services/recommendation_engine.dart';
-import '../../../shared/domain/models/user_model.dart';
+import 'food_provider.dart';
 
 part 'food_service.g.dart';
 
@@ -51,7 +51,8 @@ class FoodService {
   Future<void> generatePersonalizedPool(
       String userId, List<String> selectedFoodIds) async {
     try {
-      AppLogger.info('Iniciando Seeding Personalizado para el usuario: $userId');
+      AppLogger.info(
+          'Iniciando Seeding Personalizado para el usuario: $userId');
 
       // 1. Get User Profile for scoring context
       final user = await _userRepo.getUser(userId);
@@ -89,9 +90,10 @@ class FoodService {
           bodyFatPercentage: user.currentFatPercentage ?? 25.0,
           lastMonthBodyFat: null, // We don't have history here yet
           userGender: user.gender,
-          healthCondition: user.pathologies.isNotEmpty ? user.pathologies.first : 'general',
+          healthCondition:
+              user.pathologies.isNotEmpty ? user.pathologies.first : 'general',
         );
-        
+
         scoredFoods.add(MapEntry(food, adaptiveScore.adaptiveScore));
       }
 
@@ -129,22 +131,21 @@ class FoodService {
   FoodCategory _mapCategory(String masterCategory) {
     // Map master category labels to the suggestion enum
     final cat = masterCategory.toLowerCase();
-    if (cat.contains('proteína') || cat.contains('grasas') || cat.contains('res')) {
-       return FoodCategory.principal;
+    if (cat.contains('proteína') ||
+        cat.contains('grasas') ||
+        cat.contains('res')) {
+      return FoodCategory.principal;
     }
     if (cat.contains('snack') || cat.contains('huevo')) {
-       return FoodCategory.snack;
+      return FoodCategory.snack;
     }
     return FoodCategory.ruptura;
   }
 }
 
-/// 📱 Riverpod Providers para FoodService
-
-@riverpod
-FoodRepository foodRepository(FoodRepositoryRef ref) {
-  return FoodRepositoryImpl(FirebaseFirestore.instance);
-}
+/// 📱 Riverpod Provider para FoodService
+/// Los providers de foodRepository, foodsByCategory y searchFood están
+/// definidos canónicamente en food_provider.dart (importado arriba).
 
 @riverpod
 FoodService foodService(FoodServiceRef ref) {
@@ -152,18 +153,4 @@ FoodService foodService(FoodServiceRef ref) {
   final suggestionsRepo = ref.watch(foodSuggestionsRepositoryProvider);
   final userRepo = ref.watch(userRepositoryProvider);
   return FoodService(repository, suggestionsRepo, userRepo);
-}
-
-/// ✅ Obtener comidas por categoría (Future)
-@riverpod
-Future<List<FoodModel>> foodsByCategory(ref, String category) async {
-  final service = ref.watch(foodServiceProvider);
-  return await service.getFoodsByCategory(category);
-}
-
-/// ✅ Buscar comida (AsyncValue)
-@riverpod
-Future<FoodModel?> searchFood(ref, String query) async {
-  final service = ref.watch(foodServiceProvider);
-  return await service.searchFood(query);
 }

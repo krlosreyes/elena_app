@@ -5,7 +5,7 @@ part 'sleep_log.freezed.dart';
 part 'sleep_log.g.dart';
 
 @freezed
-class SleepLog with _$SleepLog {
+sealed class SleepLog with _$SleepLog {
   const factory SleepLog({
     required String id,
     required String userId,
@@ -13,6 +13,5 @@ class SleepLog with _$SleepLog {
     @TimestampConverter() required DateTime timestamp,
   }) = _SleepLog;
 
-  factory SleepLog.fromJson(Map<String, dynamic> json) =>
-      _$SleepLogFromJson(json);
+  factory SleepLog.fromJson(Map<String, dynamic> json) => _$SleepLogFromJson(json);
 }

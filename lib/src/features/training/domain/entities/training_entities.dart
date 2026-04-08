@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
+// import 'package:flutter/foundation.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'training_entities.freezed.dart';
@@ -22,50 +22,42 @@ class TimestampConverter implements JsonConverter<DateTime, dynamic> {
   dynamic toJson(DateTime date) => Timestamp.fromDate(date);
 }
 
+
 @freezed
-class WorkoutSession with _$WorkoutSession {
-  @JsonSerializable(fieldRename: FieldRename.snake)
+// NO mezclar DiagnosticableTreeMixin
+sealed class WorkoutSession with _$WorkoutSession {
   const factory WorkoutSession({
     required String id,
     required String userId,
     @TimestampConverter() required DateTime startTime,
     @TimestampConverter() required DateTime endTime,
-    required int intensityLevel, // 1-10
-    required String type, // Fuerza, HIIT, Movilidad
+    required int intensityLevel,
+    required String type,
     TargetMuscle? targetMuscle,
     @Default([]) List<ExerciseSet> sets,
   }) = _WorkoutSession;
 
-  factory WorkoutSession.fromJson(Map<String, dynamic> json) =>
-      _$WorkoutSessionFromJson(json);
+  factory WorkoutSession.fromJson(Map<String, dynamic> json) => _$WorkoutSessionFromJson(json);
 }
-
-extension WorkoutSessionX on WorkoutSession {
-  int get durationMinutes => endTime.difference(startTime).inMinutes;
-  DateTime get date => startTime;
-}
-
-
 
 @freezed
-class ExerciseSet with _$ExerciseSet {
-  @JsonSerializable(fieldRename: FieldRename.snake)
+// NO mezclar DiagnosticableTreeMixin
+sealed class ExerciseSet with _$ExerciseSet {
   const factory ExerciseSet({
     required int setIndex,
     required String exerciseName,
     required double weight,
     required int repsCompleted,
-    required int rir, // 0-4
+    required int rir,
     @Default(false) bool isDone,
   }) = _ExerciseSet;
 
-  factory ExerciseSet.fromJson(Map<String, dynamic> json) =>
-      _$ExerciseSetFromJson(json);
+  factory ExerciseSet.fromJson(Map<String, dynamic> json) => _$ExerciseSetFromJson(json);
 }
 
 @freezed
-class RoutineExercise with _$RoutineExercise {
-  @JsonSerializable(fieldRename: FieldRename.snake)
+// NO mezclar DiagnosticableTreeMixin
+sealed class RoutineExercise with _$RoutineExercise {
   const factory RoutineExercise({
     required String id,
     required String name,
@@ -75,15 +67,14 @@ class RoutineExercise with _$RoutineExercise {
     required int restSeconds,
     @Default('Unknown') String targetMuscle,
     @Default(true) bool requiresWeight,
-  }) = _Exercise;
+  }) = _RoutineExercise;
 
-  factory RoutineExercise.fromJson(Map<String, dynamic> json) =>
-      _$RoutineExerciseFromJson(json);
+  factory RoutineExercise.fromJson(Map<String, dynamic> json) => _$RoutineExerciseFromJson(json);
 }
 
 @freezed
-class WeeklyTrainingStats with _$WeeklyTrainingStats {
-  @JsonSerializable(fieldRename: FieldRename.snake)
+// NO mezclar DiagnosticableTreeMixin
+sealed class WeeklyTrainingStats with _$WeeklyTrainingStats {
   const factory WeeklyTrainingStats({
     required int totalStrengthMins,
     required int totalHiitMins,
@@ -91,43 +82,26 @@ class WeeklyTrainingStats with _$WeeklyTrainingStats {
     required int consecutiveWeeksTrained,
   }) = _WeeklyTrainingStats;
 
-  factory WeeklyTrainingStats.fromJson(Map<String, dynamic> json) =>
-      _$WeeklyTrainingStatsFromJson(json);
+  factory WeeklyTrainingStats.fromJson(Map<String, dynamic> json) => _$WeeklyTrainingStatsFromJson(json);
 }
 
 @freezed
-class WorkoutRecommendation with _$WorkoutRecommendation {
-  @JsonSerializable(fieldRename: FieldRename.snake)
+// NO mezclar DiagnosticableTreeMixin
+sealed class WorkoutRecommendation with _$WorkoutRecommendation {
   const factory WorkoutRecommendation({
-    required String type, // Strength, Cardio, ActiveRecovery, Deload
+    required String type,
     TargetMuscle? targetMuscle,
     required int durationMinutes,
-    required String intensity, // "Zone 2", "RIR 2"
+    required String intensity,
     required String notes,
   }) = _WorkoutRecommendation;
 
-  factory WorkoutRecommendation.fromJson(Map<String, dynamic> json) =>
-      _$WorkoutRecommendationFromJson(json);
-
-  // Factory constructors for common recommendations
-  factory WorkoutRecommendation.deloadWeek() => const WorkoutRecommendation(
-        type: 'Deload',
-        durationMinutes: 30,
-        intensity: 'Light',
-        notes: 'Semana de descarga. Reducir volumen e intensidad al 50%.',
-      );
-
-  factory WorkoutRecommendation.activeRecovery() => const WorkoutRecommendation(
-        type: 'ActiveRecovery',
-        durationMinutes: 45,
-        intensity: 'Zone 1',
-        notes: 'Caminata ligera o movilidad. Priorizar recuperación.',
-      );
+  factory WorkoutRecommendation.fromJson(Map<String, dynamic> json) => _$WorkoutRecommendationFromJson(json);
 }
 
 @freezed
-class TrainingCycle with _$TrainingCycle {
-  @JsonSerializable(fieldRename: FieldRename.snake)
+// NO mezclar DiagnosticableTreeMixin
+sealed class TrainingCycle with _$TrainingCycle {
   const factory TrainingCycle({
     required int sessionCount,
     required bool isDeloadActive,
@@ -135,6 +109,5 @@ class TrainingCycle with _$TrainingCycle {
     DateTime? deloadStartDate,
   }) = _TrainingCycle;
 
-  factory TrainingCycle.fromJson(Map<String, dynamic> json) =>
-      _$TrainingCycleFromJson(json);
+  factory TrainingCycle.fromJson(Map<String, dynamic> json) => _$TrainingCycleFromJson(json);
 }

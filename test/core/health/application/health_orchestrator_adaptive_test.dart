@@ -129,7 +129,7 @@ DailyLog _dailyLog() {
     sleepMinutes: 420,
     fastingStartTime: DateTime(2026, 4, 2, 20),
     fastingEndTime: DateTime(2026, 4, 3, 10),
-    mtiScore: 68,
+  // mtiScore eliminado: parámetro obsoleto en el modelo actualizado
     mealEntries: const [],
     exerciseEntries: const [],
   );
@@ -155,6 +155,7 @@ MetabolicProfile _metabolicProfile() {
     age: 34,
     gender: Gender.male,
     goal: MetabolicGoal.maintenance,
+    dailyExerciseGoalMinutes: 30,
     fastingContext: FastingContext(
       protocol: FastingProtocol.standard16_8,
       fastingWindowHours: 16,

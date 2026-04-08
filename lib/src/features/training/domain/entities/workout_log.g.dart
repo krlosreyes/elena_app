@@ -6,8 +6,7 @@ part of 'workout_log.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$WorkoutLogImpl _$$WorkoutLogImplFromJson(Map<String, dynamic> json) =>
-    _$WorkoutLogImpl(
+_WorkoutLog _$WorkoutLogFromJson(Map<String, dynamic> json) => _WorkoutLog(
       id: json['id'] as String,
       templateId: json['templateId'] as String,
       date: const TimestampConverter().fromJson(json['date']),
@@ -21,7 +20,7 @@ _$WorkoutLogImpl _$$WorkoutLogImplFromJson(Map<String, dynamic> json) =>
       type: json['type'] as String? ?? 'Fuerza',
     );
 
-Map<String, dynamic> _$$WorkoutLogImplToJson(_$WorkoutLogImpl instance) =>
+Map<String, dynamic> _$WorkoutLogToJson(_WorkoutLog instance) =>
     <String, dynamic>{
       'id': instance.id,
       'templateId': instance.templateId,

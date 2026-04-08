@@ -25,7 +25,7 @@ class PermissionsService {
   /// ✅ TASK 1.5.2: Solicitar permiso de calendario
   Future<bool> requestCalendarPermission() async {
     try {
-      final status = await Permission.calendar.request();
+      final status = await Permission.calendarFullAccess.request();
       _logPermissionStatus('Calendar', status);
       return status.isGranted;
     } catch (e) {

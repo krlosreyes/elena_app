@@ -34,7 +34,7 @@ class MetabolicContext {
   final double nutritionScore; // % based on meals logged vs expected
   final int actualMeals; // Number of meals logged today
   final int expectedMeals; // Total meals planned for this protocol
-  final double totalIED;
+  final double totalImr;
   final bool isWindowClosing;
   final double lastSleepScore;
 
@@ -73,7 +73,7 @@ class MetabolicContext {
     this.nutritionScore = 0.0,
     this.actualMeals = 0,
     this.expectedMeals = 1,
-    this.totalIED = 0.0,
+    this.totalImr = 0.0,
     this.isWindowClosing = false,
     this.lastSleepScore = 0.0,
   });
@@ -89,9 +89,15 @@ class MetabolicHub extends Notifier<MetabolicContext> {
   DateTime? _lastReminder;
   bool _isInsistent = false;
   int _lastKnownWater = -1;
+  bool _disposed = false;
 
   @override
   MetabolicContext build() {
+    _disposed = false;
+    ref.onDispose(() {
+      _disposed = true;
+      _hydrationTimer?.cancel();
+    });
     // Moved to DecisionEngine in Phase 3
     // This legacy hub is now a thin adapter over the unified health snapshot.
     final profile = ref.watch(currentUserStreamProvider).valueOrNull;
@@ -100,8 +106,10 @@ class MetabolicHub extends Notifier<MetabolicContext> {
     final movementStatus = ref.watch(exerciseProvider);
     final snapshotData = ref.watch(healthSnapshotProvider).valueOrNull;
     final dashboardSnapshot = snapshotData != null
-        ? const DashboardAdapter()
-            .adapt(snapshotData.state, decision: snapshotData.decision)
+        ? const DashboardAdapter().adapt(
+            snapshotData.state,
+            decision: snapshotData.decision,
+          )
         : null;
 
     // 1. Biometría en tiempo real
@@ -130,9 +138,9 @@ class MetabolicHub extends Notifier<MetabolicContext> {
     }
 
     // Gestion de Timer de Hidratación
-    ref.onDispose(() => _hydrationTimer?.cancel());
-    _hydrationTimer ??=
-        Timer.periodic(const Duration(minutes: 1), (_) => _checkHydration());
+    _hydrationTimer ??= Timer.periodic(const Duration(minutes: 1), (_) {
+      if (!_disposed) _checkHydration();
+    });
 
     // 3. Geometría (Sincronizada con el reloj real 24h)
     final int plannedFastingHours = fastingStatus?.plannedHours ?? 16;
@@ -150,7 +158,8 @@ class MetabolicHub extends Notifier<MetabolicContext> {
       final mealTime = profile.usualLastMealTime ?? '20:00';
       final parts = mealTime.split(':');
       if (parts.length == 2) {
-        startHour = (double.tryParse(parts[0]) ?? 20.0) +
+        startHour =
+            (double.tryParse(parts[0]) ?? 20.0) +
             ((double.tryParse(parts[1]) ?? 0.0) / 60.0);
       }
     }
@@ -171,8 +180,9 @@ class MetabolicHub extends Notifier<MetabolicContext> {
     }
 
     final parts = protocolStr.split(':');
-    final fastingHours =
-        parts.length == 2 ? (int.tryParse(parts[0]) ?? 16) : 16;
+    final fastingHours = parts.length == 2
+        ? (int.tryParse(parts[0]) ?? 16)
+        : 16;
     final feedingWindowVal = 24.0 - fastingHours.toDouble();
 
     final List<double> mealOffsets = MealMilestoneCalculator.calculateOffsets(
@@ -189,36 +199,67 @@ class MetabolicHub extends Notifier<MetabolicContext> {
       final double elapsed = (fastingStatus?.elapsed.inMinutes ?? 0) / 60.0;
       final bool isReached = elapsed >= absoluteOffset;
 
-      mealMilestones.add(_createMilestone(
-        'COMIDA ${i + 1}',
-        Icons.restaurant,
-        absoluteOffset,
-        startHour,
-        isReached: isReached,
-      ));
+      mealMilestones.add(
+        _createMilestone(
+          'COMIDA ${i + 1}',
+          Icons.restaurant,
+          absoluteOffset,
+          startHour,
+          isReached: isReached,
+        ),
+      );
     }
 
     // 5. Hitos Fisiológicos (Fijados al inicio del ayuno)
     final double elapsedHours = (fastingStatus?.elapsed.inMinutes ?? 0) / 60.0;
     final List<MetabolicMilestone> physiologicalMilestones = [
-      _createMilestone('DIGESTIÓN', Icons.timer, 0.0, startHour,
-          isReached: elapsedHours >= 0.0),
-      _createMilestone('NIVEL AZÚCAR ↓', Icons.bloodtype, 3.0, startHour,
-          isReached: elapsedHours >= 3.0),
-      _createMilestone('ESTABILIZACIÓN', Icons.balance, 9.0, startHour,
-          isReached: elapsedHours >= 9.0),
       _createMilestone(
-          'QUEMA DE GRASA', Icons.local_fire_department, 11.0, startHour,
-          isReached: elapsedHours >= 11.0),
-      _createMilestone('CETOSIS', Icons.whatshot, 14.0, startHour,
-          isReached: elapsedHours >= 14.0),
-      _createMilestone('AUTOFAGIA', Icons.autorenew, 16.0, startHour,
-          isReached: elapsedHours >= 16.0),
+        'DIGESTIÓN',
+        Icons.timer,
+        0.0,
+        startHour,
+        isReached: elapsedHours >= 0.0,
+      ),
+      _createMilestone(
+        'NIVEL AZÚCAR ↓',
+        Icons.bloodtype,
+        3.0,
+        startHour,
+        isReached: elapsedHours >= 3.0,
+      ),
+      _createMilestone(
+        'ESTABILIZACIÓN',
+        Icons.balance,
+        9.0,
+        startHour,
+        isReached: elapsedHours >= 9.0,
+      ),
+      _createMilestone(
+        'QUEMA DE GRASA',
+        Icons.local_fire_department,
+        11.0,
+        startHour,
+        isReached: elapsedHours >= 11.0,
+      ),
+      _createMilestone(
+        'CETOSIS',
+        Icons.whatshot,
+        14.0,
+        startHour,
+        isReached: elapsedHours >= 14.0,
+      ),
+      _createMilestone(
+        'AUTOFAGIA',
+        Icons.autorenew,
+        16.0,
+        startHour,
+        isReached: elapsedHours >= 16.0,
+      ),
     ];
 
-    // 6. Sueño y MTI (Requiere Perfil)
+    // 6. Sueño y IMR (Requiere Perfil)
     double sleepMins = 0.0;
-    double mti = dashboardSnapshot?.compliance.totalIED ?? 0.0;
+    double imr = dashboardSnapshot?.compliance.totalImr ?? 0.0;
     double nutritionScore = dashboardSnapshot?.compliance.nutritionScore ?? 0.0;
 
     int actualMealsVal = dashboardSnapshot?.compliance.mealsLogged ?? 0;
@@ -231,7 +272,7 @@ class MetabolicHub extends Notifier<MetabolicContext> {
       sleepMins = (dailyLog?.sleepMinutes ?? 0).toDouble();
 
       // Moved to DecisionEngine in Phase 3
-      // IED and compliance scores now come from HealthOrchestrator + DashboardAdapter.
+      // IMR and compliance scores now come from HealthOrchestrator + DashboardAdapter.
       if (dashboardSnapshot == null) {
         final int expMeals = mealOffsets.length;
         final int actMeals = dailyLog?.mealEntries.length ?? 0;
@@ -261,7 +302,7 @@ class MetabolicHub extends Notifier<MetabolicContext> {
       nutritionScore: nutritionScore,
       actualMeals: actualMealsVal,
       expectedMeals: expectedMealsVal,
-      totalIED: mti,
+      totalImr: imr,
       isWindowClosing: fastingStatus?.isWindowClosing ?? false,
       lastSleepScore: sleepStatus?.lastSleepScore ?? 0.0,
     );
@@ -320,8 +361,12 @@ class MetabolicHub extends Notifier<MetabolicContext> {
   }
 
   MetabolicMilestone _createMilestone(
-      String label, IconData iconType, double offsetFromStart, double startHour,
-      {bool isReached = false}) {
+    String label,
+    IconData iconType,
+    double offsetFromStart,
+    double startHour, {
+    bool isReached = false,
+  }) {
     final double absoluteHour = (startHour + offsetFromStart) % 24.0;
     final double angle = (absoluteHour * 2 * math.pi / 24.0) - (math.pi / 2.0);
 
@@ -336,8 +381,9 @@ class MetabolicHub extends Notifier<MetabolicContext> {
   }
 }
 
-final metabolicHubProvider =
-    NotifierProvider<MetabolicHub, MetabolicContext>(MetabolicHub.new);
+final metabolicHubProvider = NotifierProvider<MetabolicHub, MetabolicContext>(
+  MetabolicHub.new,
+);
 
 final metabolicHubSubLabelProvider = Provider.autoDispose<String>((ref) {
   final hub = ref.watch(metabolicHubProvider);
@@ -352,8 +398,9 @@ final metabolicHubSubLabelProvider = Provider.autoDispose<String>((ref) {
   return circadianLabel;
 });
 
-final metabolicHubCircadianPhaseColorProvider =
-    Provider.autoDispose<int>((ref) {
+final metabolicHubCircadianPhaseColorProvider = Provider.autoDispose<int>((
+  ref,
+) {
   final phaseColor = ref.watch(circadianPhaseColorProvider);
   return phaseColor;
 });

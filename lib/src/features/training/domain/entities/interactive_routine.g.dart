@@ -6,9 +6,8 @@ part of 'interactive_routine.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$InteractiveExerciseImpl _$$InteractiveExerciseImplFromJson(
-        Map<String, dynamic> json) =>
-    _$InteractiveExerciseImpl(
+_InteractiveExercise _$InteractiveExerciseFromJson(Map<String, dynamic> json) =>
+    _InteractiveExercise(
       id: json['id'] as String,
       name: json['name'] as String,
       targetRir: json['targetRir'] as String,
@@ -19,18 +18,18 @@ _$InteractiveExerciseImpl _$$InteractiveExerciseImplFromJson(
       requiresWeight: json['requiresWeight'] as bool? ?? true,
     );
 
-Map<String, dynamic> _$$InteractiveExerciseImplToJson(
-        _$InteractiveExerciseImpl instance) =>
+Map<String, dynamic> _$InteractiveExerciseToJson(
+        _InteractiveExercise instance) =>
     <String, dynamic>{
       'id': instance.id,
       'name': instance.name,
       'targetRir': instance.targetRir,
-      'sets': instance.sets,
+      'sets': instance.sets.map((e) => e.toJson()).toList(),
       'requiresWeight': instance.requiresWeight,
     };
 
-_$InteractiveSetImpl _$$InteractiveSetImplFromJson(Map<String, dynamic> json) =>
-    _$InteractiveSetImpl(
+_InteractiveSet _$InteractiveSetFromJson(Map<String, dynamic> json) =>
+    _InteractiveSet(
       setIndex: (json['setIndex'] as num).toInt(),
       targetReps: json['targetReps'] as String? ?? '8-12',
       weight: (json['weight'] as num?)?.toDouble() ?? 5.0,
@@ -39,8 +38,7 @@ _$InteractiveSetImpl _$$InteractiveSetImplFromJson(Map<String, dynamic> json) =>
       isBonus: json['isBonus'] as bool? ?? false,
     );
 
-Map<String, dynamic> _$$InteractiveSetImplToJson(
-        _$InteractiveSetImpl instance) =>
+Map<String, dynamic> _$InteractiveSetToJson(_InteractiveSet instance) =>
     <String, dynamic>{
       'setIndex': instance.setIndex,
       'targetReps': instance.targetReps,

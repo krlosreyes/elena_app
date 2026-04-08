@@ -68,7 +68,7 @@ void main() {
         );
 
         // Man at 25% body fat (at threshold)
-        final scoreAt = RecommendationEngine.calculateMealScore(
+  RecommendationEngine.calculateMealScore(
           meal: meal,
           bodyFatPercentage: 25.0,
           lastMonthBodyFat: null,
@@ -99,7 +99,7 @@ void main() {
         );
 
         // Woman at 32% body fat (at threshold)
-        final scoreAt = RecommendationEngine.calculateMealScore(
+  RecommendationEngine.calculateMealScore(
           meal: meal,
           bodyFatPercentage: 32.0,
           lastMonthBodyFat: null,
@@ -139,7 +139,7 @@ void main() {
         );
 
         // Woman with improving body fat (30% -> 29%)
-        final score = RecommendationEngine.calculateMealScore(
+  RecommendationEngine.calculateMealScore(
           meal: lowCarbMeal,
           bodyFatPercentage: 29.0, // Below threshold, no bonus
           lastMonthBodyFat: 30.0,

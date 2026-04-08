@@ -1,18 +1,21 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:uuid/uuid.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../authentication/data/auth_repository.dart';
-import '../../profile/data/user_repository.dart';
-import '../domain/entities/sleep_log.dart';
-import '../domain/repositories/sleep_repository.dart';
-import '../data/repositories/sleep_repository_impl.dart';
+import 'package:uuid/uuid.dart';
+
+import '../../../core/services/analytics_service.dart';
 import '../../../core/services/notification_service.dart';
 import '../../../domain/logic/elena_brain.dart';
 import '../../../shared/domain/models/user_model.dart';
-import 'package:intl/intl.dart';
+import '../../authentication/data/auth_repository.dart';
+import '../../health/data/health_repository.dart';
+import '../../profile/data/user_repository.dart';
+import '../data/repositories/sleep_repository_impl.dart';
+import '../domain/entities/sleep_log.dart';
+import '../domain/repositories/sleep_repository.dart';
 
 part 'sleep_controller.g.dart';
 
@@ -36,7 +39,10 @@ class SleepController extends _$SleepController {
 
   /// ✅ WAKE TRIGGER: Detecta la primera interacción después de la hora meta
   Future<void> checkWakeInteraction(
-      UserModel user, bool isResting, BuildContext context) async {
+    UserModel user,
+    bool isResting,
+    BuildContext context,
+  ) async {
     if (user.wakeUpTime == null || !isResting) return;
 
     final prefs = await SharedPreferences.getInstance();
@@ -59,7 +65,12 @@ class SleepController extends _$SleepController {
         if (pickedTime != null) {
           final now = DateTime.now();
           final wakeDateTime = DateTime(
-              now.year, now.month, now.day, pickedTime.hour, pickedTime.minute);
+            now.year,
+            now.month,
+            now.day,
+            pickedTime.hour,
+            pickedTime.minute,
+          );
 
           // Buscar el inicio del sueño (ayer o hoy temprano)
           final lastSleepStart = await _getLastSleepStart(user.uid);
@@ -100,8 +111,10 @@ class SleepController extends _$SleepController {
   }
 
   Future<DateTime?> _getLastSleepStart(String uid) async {
-    final doc =
-        await FirebaseFirestore.instance.collection('users').doc(uid).get();
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .get();
     final data = doc.data();
     if (data == null || data['lastSleepStart'] == null) return null;
     return (data['lastSleepStart'] as Timestamp).toDate();
@@ -124,8 +137,9 @@ class SleepController extends _$SleepController {
     for (var m in meals) {
       final ts = m['timestamp'];
       if (ts != null) {
-        final dt =
-            ts is Timestamp ? ts.toDate() : DateTime.tryParse(ts.toString());
+        final dt = ts is Timestamp
+            ? ts.toDate()
+            : DateTime.tryParse(ts.toString());
         if (dt != null && (last == null || dt.isAfter(last))) {
           last = dt;
         }
@@ -138,7 +152,12 @@ class SleepController extends _$SleepController {
     final parts = time.split(':');
     final now = DateTime.now();
     return DateTime(
-        now.year, now.month, now.day, int.parse(parts[0]), int.parse(parts[1]));
+      now.year,
+      now.month,
+      now.day,
+      int.parse(parts[0]),
+      int.parse(parts[1]),
+    );
   }
 
   Future<void> saveRoutine({
@@ -155,15 +174,19 @@ class SleepController extends _$SleepController {
     });
 
     // Programar notificación de preparación (1h antes)
-    final prepTime =
-        _parseTimeToToday(bedTime).subtract(const Duration(hours: 1));
+    final prepTime = _parseTimeToToday(
+      bedTime,
+    ).subtract(const Duration(hours: 1));
     if (prepTime.isAfter(DateTime.now())) {
       await NotificationService.scheduleSleepPrep(prepTime);
     }
   }
 
-  Future<void> logSleep(double hours,
-      {double score = 0.0, DateTime? date}) async {
+  Future<void> logSleep(
+    double hours, {
+    double score = 0.0,
+    DateTime? date,
+  }) async {
     final user = ref.read(authRepositoryProvider).currentUser;
     if (user == null) return;
 
@@ -175,32 +198,40 @@ class SleepController extends _$SleepController {
     );
 
     await ref.read(sleepRepositoryProvider).saveSleepLog(log);
+
+    // ✅ Sync to DailyLog so IMR recalculates with real sleep data
+    await ref
+        .read(healthRepositoryProvider)
+        .logSleepToDailyLog(user.uid, hours);
+
+    AnalyticsService.logSleepLogged(hours);
   }
 }
 
 /// ✅ MANUAL PROVIDER (Bypasses build_runner mismatch)
 final sleepStatusProvider =
     StreamProvider<({bool isResting, double lastSleepScore})>((ref) {
-  final user = ref.watch(authRepositoryProvider).currentUser;
-  if (user == null) {
-    return Stream.value((isResting: false, lastSleepScore: 0.0));
-  }
+      final user = ref.watch(authRepositoryProvider).currentUser;
+      if (user == null) {
+        return Stream.value((isResting: false, lastSleepScore: 0.0));
+      }
 
-  return FirebaseFirestore.instance
-      .collection('users')
-      .doc(user.uid)
-      .snapshots()
-      .map((snapshot) {
-    if (!snapshot.exists || snapshot.data() == null) {
-      return (isResting: false, lastSleepScore: 0.0);
-    }
-    final data = snapshot.data()!;
-    return (
-      isResting: data['isResting'] as bool? ?? false,
-      lastSleepScore: (data['lastSleepScore'] as num?)?.toDouble() ?? 0.0,
-    );
-  });
-});
+      return FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .snapshots()
+          .map((snapshot) {
+            if (!snapshot.exists || snapshot.data() == null) {
+              return (isResting: false, lastSleepScore: 0.0);
+            }
+            final data = snapshot.data()!;
+            return (
+              isResting: data['isResting'] as bool? ?? false,
+              lastSleepScore:
+                  (data['lastSleepScore'] as num?)?.toDouble() ?? 0.0,
+            );
+          });
+    });
 
 final lastMealProvider = FutureProvider<DateTime?>((ref) async {
   final user = ref.watch(authRepositoryProvider).currentUser;

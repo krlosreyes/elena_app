@@ -1,12 +1,12 @@
+
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
 part 'nutrition_plan.freezed.dart';
 part 'nutrition_plan.g.dart';
 
+
 @freezed
-sealed class NutritionPlan with _$NutritionPlan {
-  // Fix for Firestore: Force nested objects to convert to Map
+abstract class NutritionPlan with _$NutritionPlan {
   @JsonSerializable(explicitToJson: true)
   const factory NutritionPlan({
     required String id,
@@ -19,12 +19,11 @@ sealed class NutritionPlan with _$NutritionPlan {
     required WeeklyAdjustment weeklyAdjustment,
   }) = _NutritionPlan;
 
-  factory NutritionPlan.fromJson(Map<String, dynamic> json) =>
-      _$NutritionPlanFromJson(json);
+  factory NutritionPlan.fromJson(Map<String, dynamic> json) => _$NutritionPlanFromJson(json);
 }
 
 @freezed
-sealed class BaseMetrics with _$BaseMetrics {
+abstract class BaseMetrics with _$BaseMetrics {
   const factory BaseMetrics({
     required double weightKg,
     required double bodyFatPercentage,
@@ -34,12 +33,11 @@ sealed class BaseMetrics with _$BaseMetrics {
     required double activityMultiplier,
   }) = _BaseMetrics;
 
-  factory BaseMetrics.fromJson(Map<String, dynamic> json) =>
-      _$BaseMetricsFromJson(json);
+  factory BaseMetrics.fromJson(Map<String, dynamic> json) => _$BaseMetricsFromJson(json);
 }
 
 @freezed
-sealed class MacroTargets with _$MacroTargets {
+abstract class MacroTargets with _$MacroTargets {
   const factory MacroTargets({
     required int totalCalories,
     required int proteinGrams,
@@ -47,33 +45,30 @@ sealed class MacroTargets with _$MacroTargets {
     required int carbsGrams,
   }) = _MacroTargets;
 
-  factory MacroTargets.fromJson(Map<String, dynamic> json) =>
-      _$MacroTargetsFromJson(json);
+  factory MacroTargets.fromJson(Map<String, dynamic> json) => _$MacroTargetsFromJson(json);
 }
 
 @freezed
-sealed class VisualPlate with _$VisualPlate {
+abstract class VisualPlate with _$VisualPlate {
   const factory VisualPlate({
     required double vegetablesPercent,
     required double proteinPercent,
     required double carbsPercent,
-    required String carbsType, // e.g., "complex_low_gi"
+    required String carbsType,
   }) = _VisualPlate;
 
-  factory VisualPlate.fromJson(Map<String, dynamic> json) =>
-      _$VisualPlateFromJson(json);
+  factory VisualPlate.fromJson(Map<String, dynamic> json) => _$VisualPlateFromJson(json);
 }
 
 @freezed
-sealed class WeeklyAdjustment with _$WeeklyAdjustment {
+abstract class WeeklyAdjustment with _$WeeklyAdjustment {
   const factory WeeklyAdjustment({
     @Default(false) bool isAdjusted,
     @TimestampConverter() DateTime? lastAdjustmentDate,
     String? adjustmentReason,
   }) = _WeeklyAdjustment;
 
-  factory WeeklyAdjustment.fromJson(Map<String, dynamic> json) =>
-      _$WeeklyAdjustmentFromJson(json);
+  factory WeeklyAdjustment.fromJson(Map<String, dynamic> json) => _$WeeklyAdjustmentFromJson(json);
 }
 
 class TimestampConverter implements JsonConverter<DateTime, Object> {

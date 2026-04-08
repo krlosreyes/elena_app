@@ -6,8 +6,8 @@ part of 'nutrition_plan.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$NutritionPlanImpl _$$NutritionPlanImplFromJson(Map<String, dynamic> json) =>
-    _$NutritionPlanImpl(
+_NutritionPlan _$NutritionPlanFromJson(Map<String, dynamic> json) =>
+    _NutritionPlan(
       id: json['id'] as String,
       userId: json['userId'] as String,
       algorithmVersion: json['algorithmVersion'] as String? ?? '1.0.0',
@@ -23,7 +23,7 @@ _$NutritionPlanImpl _$$NutritionPlanImplFromJson(Map<String, dynamic> json) =>
           json['weeklyAdjustment'] as Map<String, dynamic>),
     );
 
-Map<String, dynamic> _$$NutritionPlanImplToJson(_$NutritionPlanImpl instance) =>
+Map<String, dynamic> _$NutritionPlanToJson(_NutritionPlan instance) =>
     <String, dynamic>{
       'id': instance.id,
       'userId': instance.userId,
@@ -35,8 +35,7 @@ Map<String, dynamic> _$$NutritionPlanImplToJson(_$NutritionPlanImpl instance) =>
       'weeklyAdjustment': instance.weeklyAdjustment.toJson(),
     };
 
-_$BaseMetricsImpl _$$BaseMetricsImplFromJson(Map<String, dynamic> json) =>
-    _$BaseMetricsImpl(
+_BaseMetrics _$BaseMetricsFromJson(Map<String, dynamic> json) => _BaseMetrics(
       weightKg: (json['weightKg'] as num).toDouble(),
       bodyFatPercentage: (json['bodyFatPercentage'] as num).toDouble(),
       fatFreeMassKg: (json['fatFreeMassKg'] as num).toDouble(),
@@ -45,7 +44,7 @@ _$BaseMetricsImpl _$$BaseMetricsImplFromJson(Map<String, dynamic> json) =>
       activityMultiplier: (json['activityMultiplier'] as num).toDouble(),
     );
 
-Map<String, dynamic> _$$BaseMetricsImplToJson(_$BaseMetricsImpl instance) =>
+Map<String, dynamic> _$BaseMetricsToJson(_BaseMetrics instance) =>
     <String, dynamic>{
       'weightKg': instance.weightKg,
       'bodyFatPercentage': instance.bodyFatPercentage,
@@ -55,15 +54,15 @@ Map<String, dynamic> _$$BaseMetricsImplToJson(_$BaseMetricsImpl instance) =>
       'activityMultiplier': instance.activityMultiplier,
     };
 
-_$MacroTargetsImpl _$$MacroTargetsImplFromJson(Map<String, dynamic> json) =>
-    _$MacroTargetsImpl(
+_MacroTargets _$MacroTargetsFromJson(Map<String, dynamic> json) =>
+    _MacroTargets(
       totalCalories: (json['totalCalories'] as num).toInt(),
       proteinGrams: (json['proteinGrams'] as num).toInt(),
       fatGrams: (json['fatGrams'] as num).toInt(),
       carbsGrams: (json['carbsGrams'] as num).toInt(),
     );
 
-Map<String, dynamic> _$$MacroTargetsImplToJson(_$MacroTargetsImpl instance) =>
+Map<String, dynamic> _$MacroTargetsToJson(_MacroTargets instance) =>
     <String, dynamic>{
       'totalCalories': instance.totalCalories,
       'proteinGrams': instance.proteinGrams,
@@ -71,15 +70,14 @@ Map<String, dynamic> _$$MacroTargetsImplToJson(_$MacroTargetsImpl instance) =>
       'carbsGrams': instance.carbsGrams,
     };
 
-_$VisualPlateImpl _$$VisualPlateImplFromJson(Map<String, dynamic> json) =>
-    _$VisualPlateImpl(
+_VisualPlate _$VisualPlateFromJson(Map<String, dynamic> json) => _VisualPlate(
       vegetablesPercent: (json['vegetablesPercent'] as num).toDouble(),
       proteinPercent: (json['proteinPercent'] as num).toDouble(),
       carbsPercent: (json['carbsPercent'] as num).toDouble(),
       carbsType: json['carbsType'] as String,
     );
 
-Map<String, dynamic> _$$VisualPlateImplToJson(_$VisualPlateImpl instance) =>
+Map<String, dynamic> _$VisualPlateToJson(_VisualPlate instance) =>
     <String, dynamic>{
       'vegetablesPercent': instance.vegetablesPercent,
       'proteinPercent': instance.proteinPercent,
@@ -87,17 +85,15 @@ Map<String, dynamic> _$$VisualPlateImplToJson(_$VisualPlateImpl instance) =>
       'carbsType': instance.carbsType,
     };
 
-_$WeeklyAdjustmentImpl _$$WeeklyAdjustmentImplFromJson(
-        Map<String, dynamic> json) =>
-    _$WeeklyAdjustmentImpl(
+_WeeklyAdjustment _$WeeklyAdjustmentFromJson(Map<String, dynamic> json) =>
+    _WeeklyAdjustment(
       isAdjusted: json['isAdjusted'] as bool? ?? false,
       lastAdjustmentDate: _$JsonConverterFromJson<Object, DateTime>(
           json['lastAdjustmentDate'], const TimestampConverter().fromJson),
       adjustmentReason: json['adjustmentReason'] as String?,
     );
 
-Map<String, dynamic> _$$WeeklyAdjustmentImplToJson(
-        _$WeeklyAdjustmentImpl instance) =>
+Map<String, dynamic> _$WeeklyAdjustmentToJson(_WeeklyAdjustment instance) =>
     <String, dynamic>{
       'isAdjusted': instance.isAdjusted,
       'lastAdjustmentDate': _$JsonConverterToJson<Object, DateTime>(

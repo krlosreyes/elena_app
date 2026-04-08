@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../application/sleep_controller.dart';
-import '../../../shared/domain/models/user_model.dart';
-import '../../../features/profile/application/user_controller.dart';
-import '../../sleep/application/circadian_controller.dart';
+
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/app_error_screen.dart';
+import '../../../core/widgets/elena_header.dart';
+import '../../../features/profile/application/user_controller.dart';
+import '../../../shared/domain/models/user_model.dart';
+import '../../sleep/application/circadian_controller.dart';
+import '../application/sleep_controller.dart';
 
 class SleepAnalysisScreen extends ConsumerWidget {
   const SleepAnalysisScreen({super.key});
@@ -13,31 +16,47 @@ class SleepAnalysisScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final userAsync = ref.watch(currentUserStreamProvider);
-    final sleepStatus = ref.watch(sleepStatusProvider).valueOrNull ??
+    final sleepStatus =
+        ref.watch(sleepStatusProvider).valueOrNull ??
         (isResting: false, lastSleepScore: 0.0);
 
     return Scaffold(
       backgroundColor: Colors.black,
       body: userAsync.when(
         data: (user) => user == null
-            ? const Center(child: Text('Usuario no encontrado'))
+            ? const AppErrorScreen(
+                message: 'No se encontraron datos de usuario.',
+              )
             : _buildContent(context, ref, user, sleepStatus),
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, st) => Center(child: Text('Error: $e')),
+        error: (e, st) => AppErrorScreen(
+          message: 'Error cargando análisis de sueño.',
+          onRetry: () => ref.invalidate(currentUserStreamProvider),
+        ),
       ),
     );
   }
 
-  Widget _buildContent(BuildContext context, WidgetRef ref, UserModel user,
-      ({bool isResting, double lastSleepScore}) status) {
+  Widget _buildContent(
+    BuildContext context,
+    WidgetRef ref,
+    UserModel user,
+    ({bool isResting, double lastSleepScore}) status,
+  ) {
     final lastMealAsync = ref.watch(lastMealProvider);
     final lastMealTime = lastMealAsync.valueOrNull;
-    final bool isDigesting = lastMealTime != null &&
+    final bool isDigesting =
+        lastMealTime != null &&
         DateTime.now().difference(lastMealTime).inHours < 3;
 
     return CustomScrollView(
       slivers: [
-        _buildSliverAppBar(context),
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+            child: ElenaHeader(title: 'ANÁLISIS CIRCADIANO', user: user),
+          ),
+        ),
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.all(20.0),
@@ -62,48 +81,6 @@ class SleepAnalysisScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSliverAppBar(BuildContext context) {
-    return SliverAppBar(
-      expandedHeight: 120,
-      backgroundColor: Colors.black,
-      floating: false,
-      pinned: true,
-      flexibleSpace: FlexibleSpaceBar(
-        titlePadding: const EdgeInsets.only(left: 20, bottom: 16),
-        title: Text(
-          'ANÁLISIS CIRCADIANO',
-          style: GoogleFonts.outfit(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 2,
-            color: Colors.white,
-          ),
-        ),
-        background: Opacity(
-          opacity: 0.1,
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Colors.indigoAccent.withValues(alpha: 0.15),
-                  Colors.deepPurple.withValues(alpha: 0.1),
-                  Colors.black,
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-      leading: IconButton(
-        icon:
-            const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
-        onPressed: () => Navigator.of(context).pop(),
-      ),
-    );
-  }
-
   Widget _buildScoreHeader(double score) {
     final color = score > 80
         ? AppTheme.primary
@@ -120,7 +97,7 @@ class SleepAnalysisScreen extends ConsumerWidget {
             color: color.withValues(alpha: 0.05),
             blurRadius: 20,
             spreadRadius: 2,
-          )
+          ),
         ],
       ),
       child: Row(
@@ -194,23 +171,43 @@ class SleepAnalysisScreen extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 16),
-        _buildMetricRow('META DE DESCANSO', user.bedTime ?? '--:--',
-            Icons.dark_mode_outlined, Colors.indigoAccent),
+        _buildMetricRow(
+          'META DE DESCANSO',
+          user.bedTime ?? '--:--',
+          Icons.dark_mode_outlined,
+          Colors.indigoAccent,
+        ),
         const SizedBox(height: 12),
-        _buildMetricRow('VENTANA METABÓLICA', '10:00 PM - 02:00 AM', Icons.bolt,
-            Colors.amber),
+        _buildMetricRow(
+          'VENTANA METABÓLICA',
+          '10:00 PM - 02:00 AM',
+          Icons.bolt,
+          Colors.amber,
+        ),
         const SizedBox(height: 12),
-        _buildMetricRow('INERCIA DEL SUEÑO', '90 MIN CYCLES', Icons.refresh,
-            Colors.cyanAccent),
+        _buildMetricRow(
+          'INERCIA DEL SUEÑO',
+          '90 MIN CYCLES',
+          Icons.refresh,
+          Colors.cyanAccent,
+        ),
         const SizedBox(height: 12),
-        _buildMetricRow('LATENCIA ESTIMADA', '20 MIN', Icons.hourglass_bottom,
-            Colors.blueAccent),
+        _buildMetricRow(
+          'LATENCIA ESTIMADA',
+          '20 MIN',
+          Icons.hourglass_bottom,
+          Colors.blueAccent,
+        ),
       ],
     );
   }
 
   Widget _buildMetricRow(
-      String label, String value, IconData icon, Color color) {
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -230,7 +227,10 @@ class SleepAnalysisScreen extends ConsumerWidget {
           Text(
             value,
             style: GoogleFonts.jetBrainsMono(
-                color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ],
       ),
@@ -238,7 +238,11 @@ class SleepAnalysisScreen extends ConsumerWidget {
   }
 
   Widget _buildActionCard(
-      WidgetRef ref, UserModel user, bool isResting, BuildContext context) {
+    WidgetRef ref,
+    UserModel user,
+    bool isResting,
+    BuildContext context,
+  ) {
     final color = isResting ? Colors.cyanAccent : AppTheme.primary;
 
     return GestureDetector(
@@ -282,8 +286,8 @@ class SleepAnalysisScreen extends ConsumerWidget {
               isResting
                   ? 'ESTOY DESPIERTO'
                   : (ref.watch(circadianStatusProvider).isCriticalWindow
-                      ? 'CONFIRMAR APAGADO BIOLÓGICO'
-                      : 'INICIAR PROTOCOLO SUEÑO'),
+                        ? 'CONFIRMAR APAGADO BIOLÓGICO'
+                        : 'INICIAR PROTOCOLO SUEÑO'),
               style: GoogleFonts.outfit(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
@@ -321,11 +325,15 @@ class SleepAnalysisScreen extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 16),
-        _buildInsightItem('Reparación Celular',
-            'El sueño entre 10PM y 2AM maximiza la hormona de crecimiento y la regeneración mitocondrial.'),
+        _buildInsightItem(
+          'Reparación Celular',
+          'El sueño entre 10PM y 2AM maximiza la hormona de crecimiento y la regeneración mitocondrial.',
+        ),
         const SizedBox(height: 16),
-        _buildInsightItem('Control Glucémico',
-            'La deprivación de sueño aumenta la resistencia a la insulina en un 30% al día siguiente.'),
+        _buildInsightItem(
+          'Control Glucémico',
+          'La deprivación de sueño aumenta la resistencia a la insulina en un 30% al día siguiente.',
+        ),
       ],
     );
   }
@@ -352,10 +360,7 @@ class SleepAnalysisScreen extends ConsumerWidget {
           const SizedBox(height: 4),
           Text(
             description,
-            style: GoogleFonts.outfit(
-              color: Colors.white54,
-              fontSize: 13,
-            ),
+            style: GoogleFonts.outfit(color: Colors.white54, fontSize: 13),
           ),
         ],
       ),
@@ -391,8 +396,10 @@ class SleepAnalysisScreen extends ConsumerWidget {
                 const SizedBox(height: 6),
                 Text(
                   'Digestión activa detectada. Tu temperatura central no bajará lo suficiente para el sueño profundo.',
-                  style:
-                      GoogleFonts.outfit(fontSize: 13, color: Colors.white70),
+                  style: GoogleFonts.outfit(
+                    fontSize: 13,
+                    color: Colors.white70,
+                  ),
                 ),
               ],
             ),

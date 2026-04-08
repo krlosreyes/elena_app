@@ -6,8 +6,7 @@ part of 'exercise.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$ExerciseImpl _$$ExerciseImplFromJson(Map<String, dynamic> json) =>
-    _$ExerciseImpl(
+_Exercise _$ExerciseFromJson(Map<String, dynamic> json) => _Exercise(
       id: json['id'] as String,
       name: json['name'] as String,
       targetMuscle: json['targetMuscle'] as String,
@@ -17,8 +16,7 @@ _$ExerciseImpl _$$ExerciseImplFromJson(Map<String, dynamic> json) =>
       requiresWeight: json['requiresWeight'] as bool? ?? true,
     );
 
-Map<String, dynamic> _$$ExerciseImplToJson(_$ExerciseImpl instance) =>
-    <String, dynamic>{
+Map<String, dynamic> _$ExerciseToJson(_Exercise instance) => <String, dynamic>{
       'id': instance.id,
       'name': instance.name,
       'targetMuscle': instance.targetMuscle,

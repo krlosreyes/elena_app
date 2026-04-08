@@ -2,12 +2,17 @@ import 'dart:developer' as developer;
 
 import '../../science/metabolic_engine.dart';
 import '../domain/decision_output.dart';
+import '../domain/entities/health_state.dart';
 import '../domain/user_health_state.dart';
 
 /// Rule-based decision engine (no AI) that resolves cross-pillar conflicts
 /// and returns a single prioritized decision.
 class DecisionEngine {
   const DecisionEngine();
+
+  HealthState computeHealthState() {
+    return HealthState.initial();
+  }
 
   DecisionOutput decide(UserHealthState state, {DateTime? now}) {
     final referenceNow = now ?? DateTime.now();

@@ -1,6 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+
+import '../../../features/authentication/data/auth_repository.dart';
+import '../../../features/health/data/health_repository.dart';
 import '../domain/user_engagement_profile.dart';
 
 final engagementRepositoryProvider = Provider<EngagementRepository>((ref) {
@@ -50,16 +54,16 @@ class EngagementRepository {
   }
 
   Map<String, dynamic> _toMap(UserEngagementProfile p) => {
-        'current_streak': p.currentStreak,
-        'longest_streak': p.longestStreak,
-        'total_actions_completed': p.totalActionsCompleted,
-        'adherence_score': p.adherenceScore,
-        'motivation_level': p.motivationLevel,
-        'last_active': p.lastActive,
-        'missed_days': p.missedDays,
-        'completed_actions_by_type': p.completedActionsByType,
-        'last_updated': FieldValue.serverTimestamp(),
-      };
+    'current_streak': p.currentStreak,
+    'longest_streak': p.longestStreak,
+    'total_actions_completed': p.totalActionsCompleted,
+    'adherence_score': p.adherenceScore,
+    'motivation_level': p.motivationLevel,
+    'last_active': p.lastActive,
+    'missed_days': p.missedDays,
+    'completed_actions_by_type': p.completedActionsByType,
+    'last_updated': FieldValue.serverTimestamp(),
+  };
 
   UserEngagementProfile _fromMap(Map<String, dynamic> map) {
     DateTime lastActive;
@@ -91,3 +95,30 @@ class EngagementRepository {
     );
   }
 }
+
+/// Stream reactivo de la racha actual del usuario autenticado.
+/// Calcula días consecutivos (hasta hoy) con imrScore > 0 desde daily_logs.
+/// Misma lógica que ProgressData.fromLogs para garantizar coherencia.
+final streakStreamProvider = StreamProvider.autoDispose<int>((ref) {
+  final user = ref.watch(authStateChangesProvider).valueOrNull;
+  if (user == null) return Stream.value(0);
+
+  final repo = ref.read(healthRepositoryProvider);
+  return repo.watchLogsHistory(user.uid, 30).map((logs) {
+    final now = DateTime.now();
+    int streak = 0;
+    final sortedDesc = [...logs]..sort((a, b) => b.id.compareTo(a.id));
+    for (int i = 0; i < sortedDesc.length; i++) {
+      final expectedDate = now.subtract(Duration(days: i));
+      final expectedId = DateFormat('yyyy-MM-dd').format(expectedDate);
+      if (i < sortedDesc.length &&
+          sortedDesc[i].id == expectedId &&
+          sortedDesc[i].imrScore > 0) {
+        streak++;
+      } else {
+        break;
+      }
+    }
+    return streak;
+  });
+});

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../../shared/domain/models/user_model.dart';
+
 import '../../../../domain/logic/elena_brain.dart';
+import '../../../../shared/domain/models/user_model.dart';
 
 class CompositionTelemetryCard extends StatelessWidget {
   final UserModel user;
@@ -29,8 +30,17 @@ class CompositionTelemetryCard extends StatelessWidget {
 
     // Fallbacks si no hay perímetros suficientes
     final String fatText = fat != null ? '${fat.toStringAsFixed(1)}%' : '--';
-    final String muscleText =
-        muscle != null ? '${muscle.toStringAsFixed(1)}%' : '--';
+    final String muscleText = muscle != null
+        ? '${muscle.toStringAsFixed(1)}%'
+        : '--';
+
+    // 3. Delta de peso real (actual vs inicio)
+    final double startWeight = user.startWeightKg ?? user.currentWeightKg;
+    final double delta = user.currentWeightKg - startWeight;
+    final String deltaSign = delta > 0 ? '+' : '';
+    final Color deltaColor = delta <= 0
+        ? const Color(0xFF00FF00) // Perdida = verde
+        : const Color(0xFFFF2D55); // Ganancia = rojo
 
     return Container(
       width: double.infinity,
@@ -76,11 +86,11 @@ class CompositionTelemetryCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              // Delta (Ejemplo: Δ -0.5kg como pide el prompt)
+              // Delta real (actual - inicio)
               Text(
-                'Δ -0.5kg',
+                'Δ $deltaSign${delta.toStringAsFixed(1)}kg',
                 style: GoogleFonts.jetBrainsMono(
-                  color: const Color(0xFF00FF00),
+                  color: deltaColor,
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
                 ),

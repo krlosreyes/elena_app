@@ -1,15 +1,15 @@
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/exceptions/exceptions.dart';
+import '../../../core/widgets/elena_header.dart';
 import '../../authentication/application/auth_controller.dart';
 import '../../nutrition/application/food_provider.dart';
 import '../application/biometric_provider.dart';
 import '../application/user_controller.dart';
-import '../data/user_repository.dart';
-
 import '../domain/biometric_calculator.dart';
 import 'widgets/profile_avatar.dart';
 
@@ -65,10 +65,7 @@ class _BiometricContent extends ConsumerWidget {
   final UserModel user;
   final BiometricResult biometricResult;
 
-  const _BiometricContent({
-    required this.user,
-    required this.biometricResult,
-  });
+  const _BiometricContent({required this.user, required this.biometricResult});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -83,7 +80,7 @@ class _BiometricContent extends ConsumerWidget {
               // ─────────────────────────────────────────────────────────
               // HEADER: Title
               // ─────────────────────────────────────────────────────────
-              _buildHeader(context),
+              ElenaHeader(title: 'PERFIL BIOMÉTRICO', user: user),
               const SizedBox(height: 24),
 
               // ─────────────────────────────────────────────────────────
@@ -100,11 +97,7 @@ class _BiometricContent extends ConsumerWidget {
                       biometricResult: biometricResult,
                       scale: 1.35,
                       onHotspotTap: (hotspotType) {
-                        _handleHotspotTap(
-                          context,
-                          hotspotType,
-                          user,
-                        );
+                        _handleHotspotTap(context, hotspotType, user);
                       },
                     ),
 
@@ -155,36 +148,6 @@ class _BiometricContent extends ConsumerWidget {
     );
   }
 
-  /// Build screen header
-  Widget _buildHeader(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          'Perfil Biométrico',
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ) ??
-              const TextStyle(
-                color: Colors.white,
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Análisis corporal personalizado',
-          style: TextStyle(
-            color: Colors.grey[400],
-            fontSize: 14,
-          ),
-          textAlign: TextAlign.center,
-        ),
-      ],
-    );
-  }
-
   /// Build minimal metabolic radar indicator for Top-Left
   Widget _buildMetabolicRadarIndicator() {
     return Container(
@@ -192,10 +155,7 @@ class _BiometricContent extends ConsumerWidget {
       height: 60,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(
-          color: _neonGreen,
-          width: 2,
-        ),
+        border: Border.all(color: _neonGreen, width: 2),
         color: _neonGreen.withValues(alpha: 0.1),
       ),
       child: Center(
@@ -218,10 +178,7 @@ class _BiometricContent extends ConsumerWidget {
       decoration: BoxDecoration(
         color: Colors.grey[900],
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: _neonGreen.withValues(alpha: 0.3),
-          width: 1,
-        ),
+        border: Border.all(color: _neonGreen.withValues(alpha: 0.3), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -266,10 +223,7 @@ class _BiometricContent extends ConsumerWidget {
       decoration: BoxDecoration(
         color: Colors.grey[900],
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: _neonGreen.withValues(alpha: 0.3),
-          width: 1,
-        ),
+        border: Border.all(color: _neonGreen.withValues(alpha: 0.3), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -322,18 +276,15 @@ class _BiometricContent extends ConsumerWidget {
     final riskColor = biometricResult.imrRiskLevel == IMRRiskLevel.red
         ? _riskRed
         : biometricResult.imrRiskLevel == IMRRiskLevel.yellow
-            ? _riskYellow
-            : _neonGreen;
+        ? _riskYellow
+        : _neonGreen;
 
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.grey[900],
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: riskColor.withValues(alpha: 0.5),
-          width: 2,
-        ),
+        border: Border.all(color: riskColor.withValues(alpha: 0.5), width: 2),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -398,10 +349,7 @@ class _BiometricContent extends ConsumerWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF0D0D0D),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: _neonGreen.withValues(alpha: 0.2),
-          width: 1,
-        ),
+        border: Border.all(color: _neonGreen.withValues(alpha: 0.2), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -450,52 +398,56 @@ class _BiometricContent extends ConsumerWidget {
                         width: 20,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       ),
-                      error: (_, __) => const Text('ERROR'),
+                      error: (_, __) => const Text(
+                        'ERROR',
+                        style: TextStyle(color: Colors.redAccent, fontSize: 12),
+                      ),
                     ),
                   ],
                 ),
               ),
-              ElevatedButton.icon(
-                onPressed: () async {
-                  try {
-                    await ref
-                        .read(foodRepositoryProvider)
-                        .seedInitialNutritionData();
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            '🟢 DATABASE SEEDED: 11 items created in Firestore',
-                            style: TextStyle(fontWeight: FontWeight.bold),
+              if (kDebugMode)
+                ElevatedButton.icon(
+                  onPressed: () async {
+                    try {
+                      await ref
+                          .read(foodRepositoryProvider)
+                          .seedInitialNutritionData();
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              '🟢 DATABASE SEEDED: 11 items created in Firestore',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            backgroundColor: Color(0xFF1B5E20),
+                            behavior: SnackBarBehavior.floating,
                           ),
-                          backgroundColor: Color(0xFF1B5E20),
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
+                        );
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('❌ Error Seeding: $e'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
                     }
-                  } catch (e) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('❌ Error Seeding: $e'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    }
-                  }
-                },
-                icon: const Icon(Icons.storage, size: 16),
-                label: const Text('RUN SEEDER'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _neonGreen.withValues(alpha: 0.1),
-                  foregroundColor: _neonGreen,
-                  side: const BorderSide(color: _neonGreen),
-                  textStyle: GoogleFonts.outfit(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
+                  },
+                  icon: const Icon(Icons.storage, size: 16),
+                  label: const Text('RUN SEEDER'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _neonGreen.withValues(alpha: 0.1),
+                    foregroundColor: _neonGreen,
+                    side: const BorderSide(color: _neonGreen),
+                    textStyle: GoogleFonts.outfit(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
-              ),
             ],
           ),
         ],
@@ -618,14 +570,14 @@ class _BiometricContent extends ConsumerWidget {
     final measure = hotspotType == HotspotType.neck
         ? user.neckCircumferenceCm
         : hotspotType == HotspotType.waist
-            ? user.waistCircumferenceCm
-            : user.hipCircumferenceCm;
+        ? user.waistCircumferenceCm
+        : user.hipCircumferenceCm;
 
     final target = hotspotType == HotspotType.neck
         ? 35.0 // Example target
         : hotspotType == HotspotType.waist
-            ? 80.0
-            : 90.0;
+        ? 80.0
+        : 90.0;
 
     showHotspotBanner(
       context,
@@ -647,11 +599,7 @@ class _LoadingScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _darkBg,
-      body: const Center(
-        child: CircularProgressIndicator(
-          color: _neonGreen,
-        ),
-      ),
+      body: const Center(child: CircularProgressIndicator(color: _neonGreen)),
     );
   }
 }
@@ -673,18 +621,11 @@ class _ErrorScreen extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.error_outline,
-              color: Colors.red,
-              size: 48,
-            ),
+            const Icon(Icons.error_outline, color: Colors.red, size: 48),
             const SizedBox(height: 16),
             Text(
               message,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-              ),
+              style: const TextStyle(color: Colors.white, fontSize: 16),
               textAlign: TextAlign.center,
             ),
           ],
@@ -702,22 +643,13 @@ class _MetricColumn extends StatelessWidget {
   final String label;
   final String value;
 
-  const _MetricColumn({
-    required this.label,
-    required this.value,
-  });
+  const _MetricColumn({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(
-          label,
-          style: const TextStyle(
-            color: Colors.grey,
-            fontSize: 12,
-          ),
-        ),
+        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
         const SizedBox(height: 6),
         Text(
           value,
@@ -765,10 +697,7 @@ class _TableCell extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Text(
         text,
-        style: const TextStyle(
-          color: Colors.white70,
-          fontSize: 14,
-        ),
+        style: const TextStyle(color: Colors.white70, fontSize: 14),
         textAlign: TextAlign.center,
       ),
     );
@@ -799,17 +728,14 @@ class _HUDSecurityButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: color.withValues(alpha: 0.3),
-            width: 1,
-          ),
+          border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
           boxShadow: isUrgent
               ? [
                   BoxShadow(
                     color: color.withValues(alpha: 0.1),
                     blurRadius: 10,
                     spreadRadius: 1,
-                  )
+                  ),
                 ]
               : [],
         ),

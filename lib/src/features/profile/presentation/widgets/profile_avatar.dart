@@ -257,8 +257,9 @@ Future<void> showHotspotBanner(
     ),
   );
 
+  final messenger = ScaffoldMessenger.of(context);
   return Future.delayed(const Duration(seconds: 4), () {
-    ScaffoldMessenger.of(context).clearMaterialBanners();
+    messenger.clearMaterialBanners();
   });
 }
 

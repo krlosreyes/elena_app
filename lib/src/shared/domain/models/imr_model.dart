@@ -1,9 +1,9 @@
+
 import 'package:freezed_annotation/freezed_annotation.dart';
+part 'imr_model.freezed.dart';
+part 'imr_model.g.dart';
 
-part 'mti_model.freezed.dart';
-part 'mti_model.g.dart';
-
-enum MtiClassification {
+enum ImrClassification {
   @JsonValue('highRisk')
   highRisk, // 0 - 30
   @JsonValue('warning')
@@ -17,17 +17,16 @@ enum MtiClassification {
 }
 
 @freezed
-class MtiModel with _$MtiModel {
-  const factory MtiModel({
+abstract class ImrModel with _$ImrModel {
+  const factory ImrModel({
     required String id,
     required double score,
     required double bodyScore,
     required double metabolicScore,
     required double lifestyleScore,
-    required MtiClassification classification,
+    required ImrClassification classification,
     required DateTime calculatedAt,
-  }) = _MtiModel;
+  }) = _ImrModel;
 
-  factory MtiModel.fromJson(Map<String, dynamic> json) =>
-      _$MtiModelFromJson(json);
+  factory ImrModel.fromJson(Map<String, dynamic> json) => _$ImrModelFromJson(json);
 }

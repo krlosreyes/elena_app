@@ -171,7 +171,7 @@ UserHealthState _buildState({
     sleepMinutes: sleepMinutes,
     fastingStartTime: DateTime(2026, 4, 2, 20),
     fastingEndTime: isCurrentlyFasting ? null : DateTime(2026, 4, 3, 10),
-    mtiScore: 65,
+    imrScore: 65,
     mealEntries: const [],
     exerciseEntries: const [],
   );
@@ -195,6 +195,7 @@ UserHealthState _buildState({
     age: 34,
     gender: Gender.male,
     goal: MetabolicGoal.maintenance,
+    dailyExerciseGoalMinutes: 30,
     fastingContext: FastingContext(
       protocol: FastingProtocol.standard16_8,
       fastingWindowHours: 16,

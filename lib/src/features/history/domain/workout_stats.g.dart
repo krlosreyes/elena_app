@@ -6,8 +6,8 @@ part of 'workout_stats.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$WorkoutStatsImpl _$$WorkoutStatsImplFromJson(Map<String, dynamic> json) =>
-    _$WorkoutStatsImpl(
+_WorkoutStats _$WorkoutStatsFromJson(Map<String, dynamic> json) =>
+    _WorkoutStats(
       date: DateTime.parse(json['date'] as String),
       totalVolume: (json['totalVolume'] as num).toDouble(),
       durationMinutes: (json['durationMinutes'] as num).toInt(),
@@ -16,7 +16,7 @@ _$WorkoutStatsImpl _$$WorkoutStatsImplFromJson(Map<String, dynamic> json) =>
       totalSets: (json['totalSets'] as num).toInt(),
     );
 
-Map<String, dynamic> _$$WorkoutStatsImplToJson(_$WorkoutStatsImpl instance) =>
+Map<String, dynamic> _$WorkoutStatsToJson(_WorkoutStats instance) =>
     <String, dynamic>{
       'date': instance.date.toIso8601String(),
       'totalVolume': instance.totalVolume,

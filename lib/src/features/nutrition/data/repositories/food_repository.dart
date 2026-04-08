@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../nutrition/domain/entities/food_model.dart';
 import '../food_master_list.dart';
@@ -103,7 +102,6 @@ class FoodRepositoryImpl implements FoodRepository {
     await FoodMasterList.seedMasterDatabase();
   }
 
-  /// App-side search logic if full text not available
   Future<FoodModel?> _searchSovereignDatabase(String query) async {
     try {
       final normalizedQuery = query.toLowerCase().trim();
@@ -138,8 +136,3 @@ class FoodRepositoryImpl implements FoodRepository {
     }
   }
 }
-
-// RIVERPOD PROVIDER
-final foodRepositoryProvider = Provider<FoodRepository>((ref) {
-  return FoodRepositoryImpl(FirebaseFirestore.instance);
-});

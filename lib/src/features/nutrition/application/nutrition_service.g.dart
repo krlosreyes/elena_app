@@ -21,6 +21,8 @@ final nutritionRepositoryProvider = Provider<NutritionRepository>.internal(
   allTransitiveDependencies: null,
 );
 
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
 typedef NutritionRepositoryRef = ProviderRef<NutritionRepository>;
 String _$activeMetabolicPlanHash() =>
     r'7db92070630459e4354d475cc1bc0c4fba751945';
@@ -38,6 +40,8 @@ final activeMetabolicPlanProvider =
   allTransitiveDependencies: null,
 );
 
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
 typedef ActiveMetabolicPlanRef
     = AutoDisposeStreamProviderRef<MetabolicNutritionPlan?>;
 String _$todayMacroTargetsHash() => r'c6c67b86efff04e7ac28267a0abc25601ae26ae1';
@@ -57,6 +61,8 @@ final todayMacroTargetsProvider = AutoDisposeProvider<
   allTransitiveDependencies: null,
 );
 
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
 typedef TodayMacroTargetsRef = AutoDisposeProviderRef<
     ({int calories, int protein, int fat, int carbs})?>;
 String _$activeStrategyNameHash() =>
@@ -76,6 +82,8 @@ final activeStrategyNameProvider = AutoDisposeProvider<String>.internal(
   allTransitiveDependencies: null,
 );
 
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
 typedef ActiveStrategyNameRef = AutoDisposeProviderRef<String>;
 String _$nutritionServiceHash() => r'23e4872e72c2a3a9d83fc0488b4544cf95d7f3b8';
 
@@ -95,4 +103,4 @@ final nutritionServiceProvider = AutoDisposeNotifierProvider<NutritionService,
 typedef _$NutritionService
     = AutoDisposeNotifier<AsyncValue<MetabolicNutritionPlan?>>;
 // ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member
+// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

@@ -6,9 +6,8 @@ part of 'routine_template.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$RoutineExerciseImpl _$$RoutineExerciseImplFromJson(
-        Map<String, dynamic> json) =>
-    _$RoutineExerciseImpl(
+_RoutineExercise _$RoutineExerciseFromJson(Map<String, dynamic> json) =>
+    _RoutineExercise(
       exerciseId: json['exerciseId'] as String,
       order: (json['order'] as num).toInt(),
       sets: (json['sets'] as num).toInt(),
@@ -17,8 +16,7 @@ _$RoutineExerciseImpl _$$RoutineExerciseImplFromJson(
       restSeconds: (json['restSeconds'] as num).toInt(),
     );
 
-Map<String, dynamic> _$$RoutineExerciseImplToJson(
-        _$RoutineExerciseImpl instance) =>
+Map<String, dynamic> _$RoutineExerciseToJson(_RoutineExercise instance) =>
     <String, dynamic>{
       'exerciseId': instance.exerciseId,
       'order': instance.order,
@@ -28,9 +26,8 @@ Map<String, dynamic> _$$RoutineExerciseImplToJson(
       'restSeconds': instance.restSeconds,
     };
 
-_$RoutineTemplateImpl _$$RoutineTemplateImplFromJson(
-        Map<String, dynamic> json) =>
-    _$RoutineTemplateImpl(
+_RoutineTemplate _$RoutineTemplateFromJson(Map<String, dynamic> json) =>
+    _RoutineTemplate(
       id: json['id'] as String,
       goal: json['goal'] as String,
       level: json['level'] as String,
@@ -41,13 +38,12 @@ _$RoutineTemplateImpl _$$RoutineTemplateImplFromJson(
           .toList(),
     );
 
-Map<String, dynamic> _$$RoutineTemplateImplToJson(
-        _$RoutineTemplateImpl instance) =>
+Map<String, dynamic> _$RoutineTemplateToJson(_RoutineTemplate instance) =>
     <String, dynamic>{
       'id': instance.id,
       'goal': instance.goal,
       'level': instance.level,
       'target': instance.target,
       'estimatedMinutes': instance.estimatedMinutes,
-      'exercises': instance.exercises,
+      'exercises': instance.exercises.map((e) => e.toJson()).toList(),
     };

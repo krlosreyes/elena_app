@@ -6,8 +6,7 @@ part of 'user_model.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$UserModelImpl _$$UserModelImplFromJson(Map<String, dynamic> json) =>
-    _$UserModelImpl(
+_UserModel _$UserModelFromJson(Map<String, dynamic> json) => _UserModel(
       uid: json['uid'] as String,
       email: json['email'] as String,
       displayName: json['displayName'] as String,
@@ -61,6 +60,7 @@ _$UserModelImpl _$$UserModelImplFromJson(Map<String, dynamic> json) =>
       checkInDay: (json['checkInDay'] as num?)?.toInt(),
       averageSleepHours: (json['averageSleepHours'] as num?)?.toDouble(),
       energyLevel1To10: (json['energyLevel1To10'] as num?)?.toInt(),
+      initialImr: (json['initialImr'] as num?)?.toDouble(),
       metaICA: (json['metaICA'] as num?)?.toDouble(),
       metaICC: (json['metaICC'] as num?)?.toDouble(),
       numberOfMeals: (json['numberOfMeals'] as num?)?.toInt() ?? 2,
@@ -70,7 +70,7 @@ _$UserModelImpl _$$UserModelImplFromJson(Map<String, dynamic> json) =>
       updatedAt: const OptionalTimestampConverter().fromJson(json['updatedAt']),
     );
 
-Map<String, dynamic> _$$UserModelImplToJson(_$UserModelImpl instance) =>
+Map<String, dynamic> _$UserModelToJson(_UserModel instance) =>
     <String, dynamic>{
       'uid': instance.uid,
       'email': instance.email,
@@ -110,6 +110,7 @@ Map<String, dynamic> _$$UserModelImplToJson(_$UserModelImpl instance) =>
       'checkInDay': instance.checkInDay,
       'averageSleepHours': instance.averageSleepHours,
       'energyLevel1To10': instance.energyLevel1To10,
+      'initialImr': instance.initialImr,
       'metaICA': instance.metaICA,
       'metaICC': instance.metaICC,
       'numberOfMeals': instance.numberOfMeals,

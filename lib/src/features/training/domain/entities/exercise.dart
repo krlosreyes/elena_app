@@ -4,7 +4,7 @@ part 'exercise.freezed.dart';
 part 'exercise.g.dart';
 
 @freezed
-class Exercise with _$Exercise {
+sealed class Exercise with _$Exercise {
   const factory Exercise({
     required String id,
     required String name,
@@ -15,6 +15,5 @@ class Exercise with _$Exercise {
     @Default(true) bool requiresWeight,
   }) = _Exercise;
 
-  factory Exercise.fromJson(Map<String, dynamic> json) =>
-      _$ExerciseFromJson(json);
+  factory Exercise.fromJson(Map<String, dynamic> json) => _$ExerciseFromJson(json);
 }

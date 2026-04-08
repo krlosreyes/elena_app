@@ -4,10 +4,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/blueprint_grid.dart';
+import '../../../fasting/application/fasting_controller.dart';
 import '../../../health/data/health_repository.dart';
 import '../../../health/domain/daily_log.dart';
-import '../../../fasting/application/fasting_controller.dart';
-import '../../../../core/widgets/blueprint_grid.dart';
 
 class MealReviewSheet extends ConsumerWidget {
   final String uid;
@@ -58,7 +58,8 @@ class MealReviewSheet extends ConsumerWidget {
                       color: Colors.orange.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(Icons.restaurant_menu, color: Colors.orange),
+                    child:
+                        const Icon(Icons.restaurant_menu, color: Colors.orange),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -82,8 +83,11 @@ class MealReviewSheet extends ConsumerWidget {
               Expanded(
                 child: logAsync.when(
                   data: (log) => _buildMealList(log),
-                  loading: () => const Center(child: CircularProgressIndicator()),
-                  error: (err, _) => Center(child: Text('Error: $err')),
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
+                  error: (err, _) => const Center(
+                      child: Text('Error cargando comidas',
+                          style: TextStyle(color: Colors.white54))),
                 ),
               ),
               const SizedBox(height: 24),
@@ -109,7 +113,7 @@ class MealReviewSheet extends ConsumerWidget {
       itemBuilder: (context, index) {
         final meal = log.mealEntries[index];
         final time = _parseTime(meal['timestamp']);
-        
+
         return Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -140,8 +144,8 @@ class MealReviewSheet extends ConsumerWidget {
               ),
               Text(
                 '${meal['calories']} kcal',
-                style: GoogleFonts.robotoMono(
-                    color: Colors.white70, fontSize: 13),
+                style:
+                    GoogleFonts.robotoMono(color: Colors.white70, fontSize: 13),
               ),
             ],
           ),
@@ -175,13 +179,16 @@ class MealReviewSheet extends ConsumerWidget {
               builder: (context) => AlertDialog(
                 backgroundColor: AppTheme.surface,
                 title: const Text('¿BORRAR TODO?'),
-                content: const Text('Esta acción limpiará todos los registros de comida de hoy para iniciar una ventana con telemetría pura.'),
+                content: const Text(
+                    'Esta acción limpiará todos los registros de comida de hoy para iniciar una ventana con telemetría pura.'),
                 actions: [
-                  TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('CANCELAR')),
                   TextButton(
-                    onPressed: () => Navigator.pop(context, true), 
-                    child: const Text('SÍ, BORRAR', style: TextStyle(color: Colors.red))
-                  ),
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('CANCELAR')),
+                  TextButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      child: const Text('SÍ, BORRAR',
+                          style: TextStyle(color: Colors.red))),
                 ],
               ),
             );
@@ -196,7 +203,10 @@ class MealReviewSheet extends ConsumerWidget {
             }
           },
           child: Text('BORRAR TODO Y EMPEZAR DE CERO',
-              style: GoogleFonts.robotoMono(color: Colors.redAccent, fontSize: 12, fontWeight: FontWeight.bold)),
+              style: GoogleFonts.robotoMono(
+                  color: Colors.redAccent,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold)),
         ),
       ],
     );

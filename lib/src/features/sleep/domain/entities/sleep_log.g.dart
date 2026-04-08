@@ -6,8 +6,7 @@ part of 'sleep_log.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$SleepLogImpl _$$SleepLogImplFromJson(Map<String, dynamic> json) =>
-    _$SleepLogImpl(
+_SleepLog _$SleepLogFromJson(Map<String, dynamic> json) => _SleepLog(
       id: json['id'] as String,
       userId: json['userId'] as String,
       hours: (json['hours'] as num).toDouble(),
@@ -15,8 +14,7 @@ _$SleepLogImpl _$$SleepLogImplFromJson(Map<String, dynamic> json) =>
           const TimestampConverter().fromJson(json['timestamp'] as Object),
     );
 
-Map<String, dynamic> _$$SleepLogImplToJson(_$SleepLogImpl instance) =>
-    <String, dynamic>{
+Map<String, dynamic> _$SleepLogToJson(_SleepLog instance) => <String, dynamic>{
       'id': instance.id,
       'userId': instance.userId,
       'hours': instance.hours,

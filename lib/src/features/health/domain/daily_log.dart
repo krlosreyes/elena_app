@@ -5,9 +5,9 @@ part 'daily_log.freezed.dart';
 part 'daily_log.g.dart';
 
 @freezed
-class DailyLog with _$DailyLog {
+sealed class DailyLog with _$DailyLog {
   const factory DailyLog({
-    required String id, // YYYY-MM-DD
+    required String id,
     @Default(0) int waterGlasses,
     @Default(0) int calories,
     @Default(0) int proteinGrams,
@@ -17,11 +17,10 @@ class DailyLog with _$DailyLog {
     @Default(0) int sleepMinutes,
     @OptionalTimestampConverter() DateTime? fastingStartTime,
     @OptionalTimestampConverter() DateTime? fastingEndTime,
-    @Default(0.0) double mtiScore,
+    @Default(0.0) @JsonKey(name: 'mtiScore') double imrScore,
     @Default([]) List<Map<String, dynamic>> mealEntries,
     @Default([]) List<Map<String, dynamic>> exerciseEntries,
   }) = _DailyLog;
 
-  factory DailyLog.fromJson(Map<String, dynamic> json) =>
-      _$DailyLogFromJson(json);
+  factory DailyLog.fromJson(Map<String, dynamic> json) => _$DailyLogFromJson(json);
 }

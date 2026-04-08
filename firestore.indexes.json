@@ -4,16 +4,42 @@
       "collectionGroup": "user_food_suggestions",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "preferences_match", "order": "ASCENDING" },
-        { "fieldPath": "last_shown", "order": "ASCENDING" }
+        {
+          "fieldPath": "preferences_match",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "last_shown",
+          "order": "ASCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "fasting_history",
       "queryScope": "COLLECTION_GROUP",
       "fields": [
-        { "fieldPath": "is_completed", "order": "ASCENDING" },
-        { "fieldPath": "start_time", "order": "ASCENDING" }
+        {
+          "fieldPath": "is_completed",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "start_time",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "metamorfosis_posts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "tags",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
       ]
     }
   ],

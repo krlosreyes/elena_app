@@ -6,7 +6,7 @@ part 'routine_cycle.g.dart';
 
 /// Represents a complete 8-week structured training cycle
 @freezed
-class RoutineCycle with _$RoutineCycle {
+sealed class RoutineCycle with _$RoutineCycle {
   const factory RoutineCycle({
     required DateTime startDate,
     required List<RoutineWeek> weeks,
@@ -20,7 +20,7 @@ class RoutineCycle with _$RoutineCycle {
 
 /// Represents a single week within the 8-week cycle
 @freezed
-class RoutineWeek with _$RoutineWeek {
+sealed class RoutineWeek with _$RoutineWeek {
   const factory RoutineWeek({
     required int weekNumber, // 1 through 8
     @Default(false) bool isDeload, // True if weekNumber == 5
@@ -33,7 +33,7 @@ class RoutineWeek with _$RoutineWeek {
 
 /// Represents a specific day inside a routine week
 @freezed
-class RoutineDay with _$RoutineDay {
+sealed class RoutineDay with _$RoutineDay {
   const factory RoutineDay({
     required int dayNumber, // 1 through 7
     required bool isRestDay,

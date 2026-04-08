@@ -1,10 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:elena_app/src/shared/domain/models/health_plan.dart';
+import 'package:elena_app/src/shared/domain/models/user_food_preferences.dart';
+import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:elena_app/src/shared/domain/models/health_plan.dart';
-import 'package:elena_app/src/shared/domain/models/user_model.dart';
-import 'package:elena_app/src/shared/domain/models/user_food_preferences.dart';
+
 import '../../../core/exceptions/exceptions.dart';
 
 class UserRepository {
@@ -103,25 +104,38 @@ class UserRepository {
   }
 
   /// Registra una nueva entrada de medidas corporales y actualiza el usuario.
-  Future<void> saveBodyLog(String uid, Map<String, double> metrics) async {
+  /// Guarda un registro de medidas corporales.
+  /// Si [date] es null → usa la fecha actual y actualiza el perfil principal.
+  /// Si [date] tiene valor → registro retroactivo, solo guarda en body_logs.
+  Future<void> saveBodyLog(
+    String uid,
+    Map<String, double> metrics, {
+    DateTime? date,
+  }) async {
     final logData = Map<String, dynamic>.from(metrics);
     logData['userId'] = uid;
-    logData['date'] = FieldValue.serverTimestamp();
+    logData['date'] =
+        date != null ? Timestamp.fromDate(date) : FieldValue.serverTimestamp();
+    if (date != null) {
+      logData['retroactive'] = true;
+    }
 
     // 1. Guardar en el histórico
     await _usersCollection.doc(uid).collection('body_logs').add(logData);
 
-    // 2. Actualizar el documento principal del usuario para sincronización inmediata
-    final userUpdates = <String, dynamic>{
-      'waistCircumferenceCm': metrics['cintura'],
-      'hipCircumferenceCm': metrics['cadera'],
-      'neckCircumferenceCm': metrics['cuello'],
-      'currentWeightKg': metrics['peso'],
-      'estimated_fat_percentage': metrics['grasa'],
-      'estimated_muscle_percentage': metrics['musculo'],
-      'updatedAt': FieldValue.serverTimestamp(),
-    };
-    await _usersCollection.doc(uid).update(userUpdates);
+    // 2. Solo si es registro de hoy → actualizar el documento principal
+    if (date == null) {
+      final userUpdates = <String, dynamic>{
+        'waistCircumferenceCm': metrics['cintura'],
+        'hipCircumferenceCm': metrics['cadera'],
+        'neckCircumferenceCm': metrics['cuello'],
+        'currentWeightKg': metrics['peso'],
+        'estimated_fat_percentage': metrics['grasa'],
+        'estimated_muscle_percentage': metrics['musculo'],
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
+      await _usersCollection.doc(uid).update(userUpdates);
+    }
   }
 
   /// Stream del historial de medidas corporales (últimos 2 docs)
@@ -204,17 +218,17 @@ class UserRepository {
 
     // 1. Borrar subcolecciones conocidas
     final subcollections = [
-          'plans',
-          'user_food_preferences',
-          'daily_logs',
-          'current_status',
-          'fasting_history',
-          'meals',
-          'nutrition',
-          'workouts',
-          'sleep_logs',
-          'measurements',
-        ];
+      'plans',
+      'user_food_preferences',
+      'daily_logs',
+      'current_status',
+      'fasting_history',
+      'meals',
+      'nutrition',
+      'workouts',
+      'sleep_logs',
+      'measurements',
+    ];
 
     await Future.wait(subcollections.map((sub) async {
       try {
@@ -258,4 +272,3 @@ final userFoodPreferencesProvider =
     StreamProvider.family.autoDispose<UserFoodPreferences, String>((ref, uid) {
   return ref.watch(userRepositoryProvider).watchUserFoodPreferences(uid);
 });
-

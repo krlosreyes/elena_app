@@ -1,9 +1,12 @@
+import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../data/user_repository.dart';
-import 'package:elena_app/src/shared/domain/models/user_model.dart';
+import 'package:intl/intl.dart';
+
 import '../../../../domain/logic/elena_brain.dart';
+import '../../../../features/health/data/health_repository.dart';
+import '../../data/user_repository.dart';
 
 class MeasureUpdateDialog extends ConsumerStatefulWidget {
   final UserModel user;
@@ -30,31 +33,13 @@ class _MeasureUpdateDialogState extends ConsumerState<MeasureUpdateDialog> {
   late TextEditingController _brazo;
   late TextEditingController _muslo;
   late TextEditingController _peso;
+  late DateTime _selectedDate;
 
-  @override
-  void initState() {
-    super.initState();
-    _cintura = TextEditingController(
-        text: widget.user.waistCircumferenceCm?.toStringAsFixed(1) ?? '80.0');
-    _cadera = TextEditingController(
-        text: widget.user.hipCircumferenceCm?.toStringAsFixed(1) ?? '100.0');
-    _cuello = TextEditingController(
-        text: widget.user.neckCircumferenceCm?.toStringAsFixed(1) ?? '35.0');
-    _brazo = TextEditingController(text: '0.0');
-    _muslo = TextEditingController(text: '0.0');
-    _peso = TextEditingController(
-        text: widget.user.currentWeightKg.toStringAsFixed(1));
-  }
-
-  @override
-  void dispose() {
-    _cintura.dispose();
-    _cadera.dispose();
-    _cuello.dispose();
-    _brazo.dispose();
-    _muslo.dispose();
-    _peso.dispose();
-    super.dispose();
+  bool get _isToday {
+    final now = DateTime.now();
+    return _selectedDate.year == now.year &&
+        _selectedDate.month == now.month &&
+        _selectedDate.day == now.day;
   }
 
   @override
@@ -95,7 +80,79 @@ class _MeasureUpdateDialogState extends ConsumerState<MeasureUpdateDialog> {
                 letterSpacing: 2,
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
+            // ─── Date picker ───────────────────────────────────────
+            Builder(
+              builder: (localContext) => GestureDetector(
+                onTap: () => _pickDate(localContext),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _isToday
+                        ? Colors.white.withOpacity(0.04)
+                        : const Color(0xFFFF9D00).withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: _isToday
+                          ? Colors.white12
+                          : const Color(0xFFFF9D00).withOpacity(0.3),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.calendar_today_rounded,
+                        size: 16,
+                        color: _isToday
+                            ? Colors.white38
+                            : const Color(0xFFFF9D00),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          _isToday
+                              ? 'HOY — ${DateFormat('d MMM yyyy', 'es').format(_selectedDate)}'
+                              : DateFormat(
+                                  'EEEE d MMM yyyy',
+                                  'es',
+                                ).format(_selectedDate).toUpperCase(),
+                          style: GoogleFonts.jetBrainsMono(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: _isToday
+                                ? Colors.white54
+                                : const Color(0xFFFF9D00),
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                      Icon(
+                        Icons.arrow_drop_down,
+                        color: _isToday
+                            ? Colors.white24
+                            : const Color(0xFFFF9D00).withOpacity(0.6),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            if (!_isToday) ...[
+              const SizedBox(height: 8),
+              Text(
+                '⏪ Registro retroactivo — solo se guardará en el historial',
+                style: GoogleFonts.jetBrainsMono(
+                  fontSize: 9,
+                  color: Colors.white30,
+                ),
+              ),
+            ],
+
+            const SizedBox(height: 20),
             Row(
               children: [
                 Expanded(child: _buildField('CUELLO (cm)', _cuello)),
@@ -182,16 +239,49 @@ class _MeasureUpdateDialogState extends ConsumerState<MeasureUpdateDialog> {
     );
   }
 
+  Future<void> _pickDate([BuildContext? localContext]) async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: localContext ?? context,
+      initialDate: _selectedDate,
+      firstDate: now.subtract(const Duration(days: 90)),
+      lastDate: now,
+      locale: const Locale('es'),
+      builder: (context, child) {
+        return Theme(
+          data: ThemeData.dark().copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: Color(0xFFFF9D00),
+              onPrimary: Colors.black,
+              surface: Color(0xFF121212),
+              onSurface: Colors.white,
+            ),
+            dialogTheme: const DialogThemeData(
+              backgroundColor: Color(0xFF0A0A0A),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      setState(() => _selectedDate = picked);
+    }
+  }
+
   Future<void> _save() async {
     final double weight =
         double.tryParse(_peso.text) ?? widget.user.currentWeightKg;
-    final double waist = double.tryParse(_cintura.text) ??
+    final double waist =
+        double.tryParse(_cintura.text) ??
         widget.user.waistCircumferenceCm ??
         80.0;
     final double neck =
-        double.tryParse(_cuello.text) ?? widget.user.neckCircumferenceCm ?? 35.0;
-    final double? hip = double.tryParse(_cadera.text) ??
-        widget.user.hipCircumferenceCm;
+        double.tryParse(_cuello.text) ??
+        widget.user.neckCircumferenceCm ??
+        35.0;
+    final double? hip =
+        double.tryParse(_cadera.text) ?? widget.user.hipCircumferenceCm;
 
     final double? fat = ElenaBrain.calculateFatPercentage(
       heightCm: widget.user.heightCm,
@@ -205,7 +295,7 @@ class _MeasureUpdateDialogState extends ConsumerState<MeasureUpdateDialog> {
 
     final Map<String, double> metrics = {
       'cintura': waist,
-      'cadera': hip ?? (waist * 1.1), // Fallback sensible
+      'cadera': hip ?? (waist * 1.1),
       'cuello': neck,
       'brazo': double.tryParse(_brazo.text) ?? 0,
       'muslo': double.tryParse(_muslo.text) ?? 0,
@@ -215,17 +305,30 @@ class _MeasureUpdateDialogState extends ConsumerState<MeasureUpdateDialog> {
     };
 
     try {
+      // 1. Guardar en body_logs (con fecha seleccionada)
+      //    Si es hoy → también actualiza el doc principal del usuario
       await ref
           .read(userRepositoryProvider)
-          .saveBodyLog(widget.user.uid, metrics);
+          .saveBodyLog(
+            widget.user.uid,
+            metrics,
+            date: _isToday ? null : _selectedDate,
+          );
+
+      // 2. Si es hoy, recalcular imrScore del día
+      if (_isToday) {
+        await ref
+            .read(healthRepositoryProvider)
+            .recalculateImrForToday(widget.user.uid);
+      }
+
       if (mounted) Navigator.pop(context);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al guardar: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error al guardar: $e')));
       }
     }
   }
 }
-

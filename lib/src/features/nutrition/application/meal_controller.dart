@@ -1,12 +1,14 @@
+import 'package:elena_app/src/core/services/notification_service.dart';
+import 'package:elena_app/src/shared/domain/models/meal_log.dart';
+import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:uuid/uuid.dart';
-import 'package:flutter/foundation.dart';
-import '../../authentication/data/auth_repository.dart';
-import 'package:elena_app/src/shared/domain/models/meal_log.dart';
-import '../data/repositories/meal_repository_impl.dart';
-import '../../health/data/health_repository.dart';
+
 import '../../../core/providers/metabolic_hub_provider.dart';
-import 'package:elena_app/src/core/services/notification_service.dart';
+import '../../../core/services/analytics_service.dart';
+import '../../authentication/data/auth_repository.dart';
+import '../../health/data/health_repository.dart';
+import '../data/repositories/meal_repository_impl.dart';
 
 part 'meal_controller.g.dart';
 
@@ -41,17 +43,22 @@ class MealController extends _$MealController {
 
     // 1. Check if we already reached max meals for the protocol
     if (nextMealIndex >= hub.expectedMeals) {
-      debugPrint('⚠️ [MEAL CONTROLLER] Protocol full: $nextMealIndex/${hub.expectedMeals}');
+      debugPrint(
+        '⚠️ [MEAL CONTROLLER] Protocol full: $nextMealIndex/${hub.expectedMeals}',
+      );
       return false;
     }
 
     // 2. Check if the specific milestone is reached (Fasting break or inter-meal gap)
-    final isLocked = nextMealIndex > 0 && 
-                    nextMealIndex < hub.mealMilestones.length && 
-                    !hub.mealMilestones[nextMealIndex].isReached;
-    
+    final isLocked =
+        nextMealIndex > 0 &&
+        nextMealIndex < hub.mealMilestones.length &&
+        !hub.mealMilestones[nextMealIndex].isReached;
+
     if (isLocked) {
-      debugPrint('⚠️ [MEAL CONTROLLER] Locked: Milestone at ${hub.mealMilestones[nextMealIndex].absoluteHour} not reached.');
+      debugPrint(
+        '⚠️ [MEAL CONTROLLER] Locked: Milestone at ${hub.mealMilestones[nextMealIndex].absoluteHour} not reached.',
+      );
       return false;
     }
 
@@ -70,25 +77,26 @@ class MealController extends _$MealController {
     try {
       await ref.read(mealRepositoryProvider).saveMeal(meal);
 
-      // Sincronizar con DailyLog para disparar actualización del IED
-      await ref.read(healthRepositoryProvider).logNutrition(
-        user.uid,
-        {
-          'id': meal.id,
-          'userId': user.uid,
-          'name': meal.name,
-          'type': meal.type.name,
-          'calories': meal.calories,
-          'protein': meal.proteinGrams,
-          'carbs': meal.carbsGrams,
-          'fats': meal.fatGrams,
-          'timestamp': meal.timestamp.toIso8601String(),
-        },
-      );
+      // Sincronizar con DailyLog para disparar actualización del IMR
+      await ref.read(healthRepositoryProvider).logNutrition(user.uid, {
+        'id': meal.id,
+        'userId': user.uid,
+        'name': meal.name,
+        'type': meal.type.name,
+        'calories': meal.calories,
+        'protein': meal.proteinGrams,
+        'carbs': meal.carbsGrams,
+        'fats': meal.fatGrams,
+        'timestamp': meal.timestamp.toIso8601String(),
+      });
 
       await NotificationService.schedulePostPrandialWalking(meal.timestamp);
-      
-      debugPrint('✅ [MealController] Successfully registered meal: ${meal.name}');
+
+      AnalyticsService.logMealLogged();
+
+      debugPrint(
+        '✅ [MealController] Successfully registered meal: ${meal.name}',
+      );
       return true;
     } catch (e) {
       debugPrint('❌ [MealController] Error registering meal: $e');

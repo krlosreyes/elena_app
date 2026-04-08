@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../core/services/app_logger.dart';
@@ -192,14 +193,14 @@ class ProgressService {
 
 /// 🔌 ProgressService provider (singleton)
 @riverpod
-ProgressService progressService(ref) {
+ProgressService progressService(Ref ref) {
   final oldService = old_service.ProgressService(FirebaseFirestore.instance);
   return ProgressService(oldService);
 }
 
 /// 🔌 Latest measurement provider
 @riverpod
-Future<MeasurementLog?> latestMeasurement(ref, String uid) async {
+Future<MeasurementLog?> latestMeasurement(Ref ref, String uid) async {
   final service = ref.watch(progressServiceProvider);
   return await service.getLatest(uid);
 }
@@ -207,7 +208,7 @@ Future<MeasurementLog?> latestMeasurement(ref, String uid) async {
 /// 🔌 Measurement history provider
 @riverpod
 Future<List<MeasurementLog>> measurementHistory(
-  ref,
+  Ref ref,
   String uid, {
   int days = 30,
 }) async {
@@ -218,7 +219,7 @@ Future<List<MeasurementLog>> measurementHistory(
 /// 🔌 Weight progress provider
 @riverpod
 Future<double?> weightProgress(
-  ref,
+  Ref ref,
   String uid, {
   int days = 30,
 }) async {
@@ -229,7 +230,7 @@ Future<double?> weightProgress(
 /// 🔌 Measurement statistics provider
 @riverpod
 Future<Map<String, double>> measurementStats(
-  ref,
+  Ref ref,
   String uid, {
   int days = 30,
 }) async {
@@ -239,7 +240,7 @@ Future<Map<String, double>> measurementStats(
 
 /// 🔌 Watch measurement history (stream)
 @riverpod
-Stream<List<MeasurementLog>> watchMeasurements(ref, String uid) {
+Stream<List<MeasurementLog>> watchMeasurements(Ref ref, String uid) {
   final service = ref.watch(progressServiceProvider);
   return service.watchHistory(uid);
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../core/providers/health_state_provider.dart';
 import '../../../core/providers/metabolic_hub_provider.dart';
 import '../../../core/widgets/blueprint_grid.dart';
 import '../../../core/widgets/elena_header.dart';
@@ -28,6 +29,11 @@ class HydrationScreen extends ConsumerWidget {
     final currentLiters = currentGlasses * 0.25;
     final goalLiters = hydrationGoal * 0.25;
     final progress = (currentGlasses / hydrationGoal).clamp(0.0, 1.0);
+
+    final healthState = ref.watch(healthStateProvider);
+    final hydrationScore = healthState.hydrationScore > 0
+        ? healthState.hydrationScore
+        : progress * 100;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -66,6 +72,18 @@ class HydrationScreen extends ConsumerWidget {
                       current: currentLiters,
                       goal: goalLiters,
                       progress: progress,
+                    ),
+
+                    const SizedBox(height: 6),
+                    Center(
+                      child: Text(
+                        'HS: ${hydrationScore.toStringAsFixed(1)}',
+                        style: GoogleFonts.jetBrainsMono(
+                          fontSize: 9,
+                          color: Colors.white.withValues(alpha: 0.2),
+                          letterSpacing: 1,
+                        ),
+                      ),
                     ),
 
                     const SizedBox(height: 24),

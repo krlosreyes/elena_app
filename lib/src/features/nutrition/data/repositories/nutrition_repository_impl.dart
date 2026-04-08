@@ -252,6 +252,7 @@ class NutritionRepositoryImpl implements NutritionRepository {
         (e) => e.name == goalName,
         orElse: () => MetabolicGoal.maintenance,
       ),
+      dailyExerciseGoalMinutes: 30,
       fastingContext: FastingContext(
         protocol: FastingProtocol.values.firstWhere(
           (e) => e.name == fastingName,

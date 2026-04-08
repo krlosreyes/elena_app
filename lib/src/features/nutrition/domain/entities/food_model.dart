@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'food_suggestion.dart';
 
@@ -128,45 +129,51 @@ class FoodModel {
 
   /// Create from Firestore document (4-node protocol)
   factory FoodModel.fromFirestore(Map<String, dynamic> data) {
-    final rawMetadata = data['metadata'];
-    final rawAppIntegration = data['app_integration'];
+    final rawMetadata = data['metadata'] as Map<String, dynamic>? ?? {};
+    final rawContent = data['content'] as Map<String, dynamic>? ?? {};
+    final rawAppIntegration =
+        data['app_integration'] as Map<String, dynamic>? ?? {};
 
-    // If either critical node is missing, return a safe default model
-    if (rawMetadata == null || rawAppIntegration == null) {
-      return FoodModel.defaultModel(id: (data['id'] as String?) ?? 'unknown');
-    }
+    // Standardized macro mapping (app_integration.macros.p/g/c/kcal)
+    final macros = (rawAppIntegration['macros'] as Map<String, dynamic>?) ?? {};
 
-    final metadata = rawMetadata as Map<String, dynamic>;
-    final content = (data['content'] as Map<String, dynamic>?) ?? {};
-    final appIntegration = rawAppIntegration as Map<String, dynamic>;
-    final macros = (appIntegration['macros'] as Map<String, dynamic>?) ?? {};
-
-    // Resolve document ID: app_integration.food_id → metadata.id → Firestore doc key
-    final resolvedId = (appIntegration['food_id'] as String?) ??
-        (metadata['id'] as String?) ??
+    // Resolve document ID: app_integration.food_id → metadata.id → data['id']
+    final resolvedId = (rawAppIntegration['food_id'] as String?) ??
+        (rawMetadata['id'] as String?) ??
         (data['id'] as String?) ??
         'unknown';
 
     return FoodModel(
       id: resolvedId,
-      name: (metadata['name'] as String?) ?? 'Alimento no identificado',
-      category: (metadata['category'] as String?) ?? 'General',
-      imrScore: (metadata['imrScore'] ?? 0).toDouble(),
-      tip: (content['tip'] as String?) ?? 'Sin descripción técnica',
-      protein: (macros['p'] ?? 0).toDouble(),
-      fat: (macros['g'] ?? 0).toDouble(),
-      netCarbs: (macros['c'] ?? 0).toDouble(),
-      calories: (macros['kcal'] ?? 0).toDouble(),
-      searchTags: (metadata['tags'] as List<dynamic>?)
-              ?.cast<String>()
-              .toList() ??
-          (metadata['searchTags'] as List<dynamic>?)?.cast<String>().toList() ??
-          const [],
-      svgNode: appIntegration['svg_node'] as String?,
-      impact: (content['impact'] as String?) ?? 'general',
-      level: (content['level'] as num?)?.toInt() ?? 1,
-      createdAt: (data['createdAt'] as dynamic)?.toDate() ?? DateTime.now(),
-      updatedAt: (data['updatedAt'] as dynamic)?.toDate() ?? DateTime.now(),
+      name: (rawMetadata['name'] as String?) ?? 'Alimento no identificado',
+      category: (rawMetadata['category'] as String?) ?? 'General',
+      // Fallback: imrScore (new) -> imr_score (old)
+      imrScore: (rawMetadata['imrScore'] ?? rawAppIntegration['imr_score'] ?? 0)
+          .toDouble(),
+      searchTags:
+          (rawMetadata['tags'] as List<dynamic>?)?.cast<String>().toList() ??
+              (rawMetadata['searchTags'] as List<dynamic>?)
+                  ?.cast<String>()
+                  .toList() ??
+              const [],
+      // Fallback: content.tip (new) -> app_integration.tip (old)
+      tip: (rawContent['tip'] as String?) ??
+          (rawAppIntegration['tip'] as String?) ??
+          'Sin descripción técnica',
+      impact: (rawContent['impact'] as String?) ?? 'general',
+      level: (rawContent['level'] as num?)?.toInt() ?? 1,
+      // Fallback: app_integration.macros.p (new) -> content.proteins (old)
+      protein: (macros['p'] ?? rawContent['proteins'] ?? 0).toDouble(),
+      fat: (macros['g'] ?? rawContent['fats'] ?? 0).toDouble(),
+      netCarbs: (macros['c'] ?? rawContent['net_carbs'] ?? 0).toDouble(),
+      calories: (macros['kcal'] ?? rawContent['calories'] ?? 0).toDouble(),
+      svgNode: rawAppIntegration['svg_node'] as String?,
+      createdAt: (data['createdAt'] is Timestamp)
+          ? (data['createdAt'] as Timestamp).toDate()
+          : DateTime.now(),
+      updatedAt: (data['updatedAt'] is Timestamp)
+          ? (data['updatedAt'] as Timestamp).toDate()
+          : DateTime.now(),
     );
   }
 
@@ -194,6 +201,7 @@ class FoodModel {
   Map<String, dynamic> toJson() {
     return {
       'metadata': {
+        'id': id,
         'name': name,
         'category': category,
         'imrScore': imrScore,
@@ -212,6 +220,7 @@ class FoodModel {
           'kcal': calories,
         },
         'food_id': id,
+        'svg_node': svgNode,
       },
       'quiz': {
         'last_reviewed': null,

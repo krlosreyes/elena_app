@@ -68,12 +68,12 @@ class NotificationService {
       );
 
       await _notificationsPlugin.initialize(
-        initializationSettings,
-        onDidReceiveNotificationResponse: (details) {
-          _handleActionLogic(details);
-        },
-        onDidReceiveBackgroundNotificationResponse:
-            onDidReceiveBackgroundNotificationResponse,
+          settings: initializationSettings,
+          onDidReceiveNotificationResponse: (details) {
+            _handleActionLogic(details);
+          },
+          onDidReceiveBackgroundNotificationResponse:
+              onDidReceiveBackgroundNotificationResponse,
       );
 
       _isInitialized = true;
@@ -166,29 +166,27 @@ class NotificationService {
 
     try {
       await _notificationsPlugin.zonedSchedule(
-        hydrationNotificationId,
-        "💧 Hidratación Metabólica",
-        body ?? "Es hora de hidratarse, ¿ya tomaste tu vaso de agua?",
-        tz.TZDateTime.from(scheduledTime, tz.local),
-        const NotificationDetails(
-          android: AndroidNotificationDetails(
-            hydrationChannelId,
-            'Canal de Hidratación',
-            channelDescription: 'Recordatorios técnicos de consumo de agua',
-            importance: Importance.max,
-            priority: Priority.high,
-            actions: [
-              AndroidNotificationAction(yesAction, 'Sí, ya lo tomé'),
-              AndroidNotificationAction(noAction, 'Aún no'),
-            ],
+          id: hydrationNotificationId,
+          title: "💧 Hidratación Metabólica",
+          body: body ?? "Es hora de hidratarse, ¿ya tomaste tu vaso de agua?",
+          scheduledDate: tz.TZDateTime.from(scheduledTime, tz.local),
+          notificationDetails: const NotificationDetails(
+            android: AndroidNotificationDetails(
+              hydrationChannelId,
+              'Canal de Hidratación',
+              channelDescription: 'Recordatorios técnicos de consumo de agua',
+              importance: Importance.max,
+              priority: Priority.high,
+              actions: [
+                AndroidNotificationAction(yesAction, 'Sí, ya lo tomé'),
+                AndroidNotificationAction(noAction, 'Aún no'),
+              ],
+            ),
+            iOS: DarwinNotificationDetails(
+              categoryIdentifier: 'hydration_category',
+            ),
           ),
-          iOS: DarwinNotificationDetails(
-            categoryIdentifier: 'hydration_category',
-          ),
-        ),
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
+          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       );
     } catch (e) {
       debugPrint("ERROR scheduling hydration: $e");
@@ -297,12 +295,12 @@ class NotificationService {
         NotificationDetails(android: androidDetails);
 
     await _notificationsPlugin.show(
-      zone.index + 100, // ID único por zona
-      message['title'],
-      needsElectrolytes
-          ? '${message['body']} · Recuerda: Na, K, Mg.'
-          : message['body'],
-      details,
+    id: zone.index + 100,
+    title: message['title'],
+    body: needsElectrolytes
+      ? '${message['body']} · Recuerda: Na, K, Mg.'
+      : message['body'],
+    notificationDetails: details,
     );
   }
 
@@ -326,13 +324,13 @@ class NotificationService {
         NotificationDetails(android: androidDetails);
 
     await _notificationsPlugin.show(
-      999,
-      '⚠️ Revisión de Seguridad Requerida',
-      'Llevas más de 72 horas en ayuno. '
-          'El riesgo de arritmias y pérdida de masa muscular es real. '
-          'Elena no puede acompañar ayunos sin supervisión médica '
-          'más allá de este punto.',
-      details,
+    id: 999,
+    title: '⚠️ Revisión de Seguridad Requerida',
+    body: 'Llevas más de 72 horas en ayuno. '
+      'El riesgo de arritmias y pérdida de masa muscular es real. '
+      'Elena no puede acompañar ayunos sin supervisión médica '
+      'más allá de este punto.',
+    notificationDetails: details,
     );
   }
 
@@ -476,10 +474,10 @@ class NotificationService {
 
     debugPrint("DEBUG: Lanzando notificación de prueba inmediata");
     await _notificationsPlugin.show(
-      9999,
-      "🧪 ElenaApp Test",
-      "Charlie, hidratación técnica activada. Canal Metabolic_Alerts verificado.",
-      const NotificationDetails(
+      id: 9999,
+      title: "🧪 ElenaApp Test",
+      body: "Charlie, hidratación técnica activada. Canal Metabolic_Alerts verificado.",
+      notificationDetails: const NotificationDetails(
         android: AndroidNotificationDetails(
           metabolicChannelId,
           metabolicChannelName,
@@ -505,23 +503,21 @@ class NotificationService {
 
     try {
       await _notificationsPlugin.zonedSchedule(
-        id,
-        title,
-        body,
-        tz.TZDateTime.from(scheduledTime, tz.local),
-        NotificationDetails(
-          android: AndroidNotificationDetails(
-            channelId ?? 'fasting_channel',
-            channelName ?? 'Notificaciones de Ayuno',
-            channelDescription: 'Avisos sobre hitos metabólicos',
-            importance: Importance.max,
-            priority: Priority.high,
+          id: id,
+          title: title,
+          body: body,
+          scheduledDate: tz.TZDateTime.from(scheduledTime, tz.local),
+          notificationDetails: NotificationDetails(
+            android: AndroidNotificationDetails(
+              channelId ?? 'fasting_channel',
+              channelName ?? 'Notificaciones de Ayuno',
+              channelDescription: 'Avisos sobre hitos metabólicos',
+              importance: Importance.max,
+              priority: Priority.high,
+            ),
+            iOS: const DarwinNotificationDetails(),
           ),
-          iOS: const DarwinNotificationDetails(),
-        ),
-        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       );
     } catch (e) {
       debugPrint("ERROR scheduling single notification (id $id): $e");
@@ -531,13 +527,14 @@ class NotificationService {
   static Future<void> cancelFastingNotifications() async {
     if (kIsWeb || !_isInitialized) return;
     try {
-      await _notificationsPlugin.cancel(12);
-      await _notificationsPlugin.cancel(14);
-      await _notificationsPlugin.cancel(16);
-      await _notificationsPlugin.cancel(999);
-      await _notificationsPlugin.cancel(99);
-      await _notificationsPlugin.cancel(888); // Anti-snacking
-      await _notificationsPlugin.cancel(7771); // Walking
+  // Eliminadas llamadas posicionales inválidas, solo se usa la versión con id nombrado más abajo.
+    await _notificationsPlugin.cancel(id: 12);
+    await _notificationsPlugin.cancel(id: 14);
+    await _notificationsPlugin.cancel(id: 16);
+    await _notificationsPlugin.cancel(id: 999);
+    await _notificationsPlugin.cancel(id: 99);
+    await _notificationsPlugin.cancel(id: 888); // Anti-snacking
+    await _notificationsPlugin.cancel(id: 7771); // Walking
     } catch (e) {
       debugPrint("ERROR canceling fasting notifications: $e");
     }
@@ -546,7 +543,8 @@ class NotificationService {
   static Future<void> cancelHydrationReminder() async {
     if (kIsWeb || !_isInitialized) return;
     try {
-      await _notificationsPlugin.cancel(hydrationNotificationId);
+  // Eliminada llamada posicional inválida, solo se usa la versión con id nombrado más abajo.
+    await _notificationsPlugin.cancel(id: hydrationNotificationId);
     } catch (e) {
       debugPrint("ERROR canceling hydration reminder: $e");
     }
@@ -556,6 +554,7 @@ class NotificationService {
     if (kIsWeb || !_isInitialized) return;
     try {
       await _notificationsPlugin.cancelAll();
+    await _notificationsPlugin.cancelAll();
     } catch (e) {
       debugPrint("ERROR canceling all notifications: $e");
     }

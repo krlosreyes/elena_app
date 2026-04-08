@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../../core/services/app_logger.dart';
 import '../domain/entities/food_model.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1003,7 +1004,7 @@ class FoodMasterList {
   /// Returns the number of documents deleted.
   static Future<int> clearMasterDatabase() async {
     final firestore = FirebaseFirestore.instance;
-    print(
+    AppLogger.info(
         '[SEED] 🧹 PURGE PHASE — Deleting ALL documents from $_collection...');
 
     int totalDeleted = 0;
@@ -1022,11 +1023,11 @@ class FoodMasterList {
       await batch.commit();
 
       totalDeleted += snapshot.docs.length;
-      print(
+      AppLogger.info(
           '[SEED] 🗑️  Batch deleted: ${snapshot.docs.length} docs (total: $totalDeleted)');
     } while (snapshot.docs.length == 400);
 
-    print(
+    AppLogger.info(
         '[SEED] 🧹 DB Cleared — $totalDeleted documents removed. Collection is now empty.');
     return totalDeleted;
   }
@@ -1034,10 +1035,10 @@ class FoodMasterList {
   /// 🚀 FULL DEEP CLEAN — Purge + Re-seed with 4-node schema.
   /// This is the primary entry point for database maintenance.
   static Future<void> deepCleanAndSeed() async {
-    print('[SEED] ════════════════════════════════════════════════');
-    print('[SEED] 🚀 DEEP CLEAN PROTOCOL — master_food_db');
-    print('[SEED] Total foods in dataset: ${foods.length}');
-    print('[SEED] ════════════════════════════════════════════════');
+    AppLogger.info('[SEED] ════════════════════════════════════════════════');
+    AppLogger.info('[SEED] 🚀 DEEP CLEAN PROTOCOL — master_food_db');
+    AppLogger.info('[SEED] Total foods in dataset: ${foods.length}');
+    AppLogger.info('[SEED] ════════════════════════════════════════════════');
 
     // Phase 1: Purge
     await clearMasterDatabase();
@@ -1045,10 +1046,10 @@ class FoodMasterList {
     // Phase 2: Inject
     await _injectAllFoods();
 
-    print('[SEED] ════════════════════════════════════════════════');
-    print(
+    AppLogger.info('[SEED] ════════════════════════════════════════════════');
+    AppLogger.info(
         '[SEED] ✅ DEEP CLEAN COMPLETE — ${foods.length} foods in 4-node schema');
-    print('[SEED] ════════════════════════════════════════════════');
+    AppLogger.info('[SEED] ════════════════════════════════════════════════');
   }
 
   /// Legacy entry point — now calls deepCleanAndSeed for full reset.
@@ -1057,7 +1058,7 @@ class FoodMasterList {
   /// 🚀 INJECTION PHASE — Writes all foods in normalized 4-node format.
   static Future<void> _injectAllFoods() async {
     final firestore = FirebaseFirestore.instance;
-    print('[SEED] 🚀 INJECTION PHASE — Writing ${foods.length} foods...');
+    AppLogger.info('[SEED] 🚀 INJECTION PHASE — Writing ${foods.length} foods...');
 
     const batchSize = 100;
 
@@ -1100,12 +1101,12 @@ class FoodMasterList {
         };
 
         batch.set(docRef, nestedData);
-        print(
+        AppLogger.info(
             '[SEED] 🚀 Injecting [${food.name}] into 4-node schema (IMR: ${food.imrScore.toInt()})');
       }
 
       await batch.commit();
-      print(
+      AppLogger.info(
           '[SEED] ✅ Batch committed: ${slice.length} documents ($i → ${end - 1})');
     }
   }

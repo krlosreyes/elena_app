@@ -1,5 +1,5 @@
-// coverage:ignore-file
 // GENERATED CODE - DO NOT MODIFY BY HAND
+// coverage:ignore-file
 // ignore_for_file: type=lint
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
@@ -9,91 +9,68 @@ part of 'routine_cycle.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// dart format off
 T _$identity<T>(T value) => value;
-
-final _privateConstructorUsedError = UnsupportedError(
-    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
-
-RoutineCycle _$RoutineCycleFromJson(Map<String, dynamic> json) {
-  return _RoutineCycle.fromJson(json);
-}
 
 /// @nodoc
 mixin _$RoutineCycle {
-  DateTime get startDate => throw _privateConstructorUsedError;
-  List<RoutineWeek> get weeks => throw _privateConstructorUsedError;
-  String get goalDescriptive => throw _privateConstructorUsedError;
+  DateTime get startDate;
+  List<RoutineWeek> get weeks;
+  String get goalDescriptive;
 
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-  @JsonKey(ignore: true)
-  $RoutineCycleCopyWith<RoutineCycle> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $RoutineCycleCopyWith<$Res> {
-  factory $RoutineCycleCopyWith(
-          RoutineCycle value, $Res Function(RoutineCycle) then) =
-      _$RoutineCycleCopyWithImpl<$Res, RoutineCycle>;
-  @useResult
-  $Res call(
-      {DateTime startDate, List<RoutineWeek> weeks, String goalDescriptive});
-}
-
-/// @nodoc
-class _$RoutineCycleCopyWithImpl<$Res, $Val extends RoutineCycle>
-    implements $RoutineCycleCopyWith<$Res> {
-  _$RoutineCycleCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
+  /// Create a copy of RoutineCycle
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @pragma('vm:prefer-inline')
+  $RoutineCycleCopyWith<RoutineCycle> get copyWith =>
+      _$RoutineCycleCopyWithImpl<RoutineCycle>(
+          this as RoutineCycle, _$identity);
+
+  /// Serializes this RoutineCycle to a JSON map.
+  Map<String, dynamic> toJson();
+
   @override
-  $Res call({
-    Object? startDate = null,
-    Object? weeks = null,
-    Object? goalDescriptive = null,
-  }) {
-    return _then(_value.copyWith(
-      startDate: null == startDate
-          ? _value.startDate
-          : startDate // ignore: cast_nullable_to_non_nullable
-              as DateTime,
-      weeks: null == weeks
-          ? _value.weeks
-          : weeks // ignore: cast_nullable_to_non_nullable
-              as List<RoutineWeek>,
-      goalDescriptive: null == goalDescriptive
-          ? _value.goalDescriptive
-          : goalDescriptive // ignore: cast_nullable_to_non_nullable
-              as String,
-    ) as $Val);
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is RoutineCycle &&
+            (identical(other.startDate, startDate) ||
+                other.startDate == startDate) &&
+            const DeepCollectionEquality().equals(other.weeks, weeks) &&
+            (identical(other.goalDescriptive, goalDescriptive) ||
+                other.goalDescriptive == goalDescriptive));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, startDate,
+      const DeepCollectionEquality().hash(weeks), goalDescriptive);
+
+  @override
+  String toString() {
+    return 'RoutineCycle(startDate: $startDate, weeks: $weeks, goalDescriptive: $goalDescriptive)';
   }
 }
 
 /// @nodoc
-abstract class _$$RoutineCycleImplCopyWith<$Res>
-    implements $RoutineCycleCopyWith<$Res> {
-  factory _$$RoutineCycleImplCopyWith(
-          _$RoutineCycleImpl value, $Res Function(_$RoutineCycleImpl) then) =
-      __$$RoutineCycleImplCopyWithImpl<$Res>;
-  @override
+abstract mixin class $RoutineCycleCopyWith<$Res> {
+  factory $RoutineCycleCopyWith(
+          RoutineCycle value, $Res Function(RoutineCycle) _then) =
+      _$RoutineCycleCopyWithImpl;
   @useResult
   $Res call(
       {DateTime startDate, List<RoutineWeek> weeks, String goalDescriptive});
 }
 
 /// @nodoc
-class __$$RoutineCycleImplCopyWithImpl<$Res>
-    extends _$RoutineCycleCopyWithImpl<$Res, _$RoutineCycleImpl>
-    implements _$$RoutineCycleImplCopyWith<$Res> {
-  __$$RoutineCycleImplCopyWithImpl(
-      _$RoutineCycleImpl _value, $Res Function(_$RoutineCycleImpl) _then)
-      : super(_value, _then);
+class _$RoutineCycleCopyWithImpl<$Res> implements $RoutineCycleCopyWith<$Res> {
+  _$RoutineCycleCopyWithImpl(this._self, this._then);
 
+  final RoutineCycle _self;
+  final $Res Function(RoutineCycle) _then;
+
+  /// Create a copy of RoutineCycle
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -101,34 +78,196 @@ class __$$RoutineCycleImplCopyWithImpl<$Res>
     Object? weeks = null,
     Object? goalDescriptive = null,
   }) {
-    return _then(_$RoutineCycleImpl(
+    return _then(_self.copyWith(
       startDate: null == startDate
-          ? _value.startDate
+          ? _self.startDate
           : startDate // ignore: cast_nullable_to_non_nullable
               as DateTime,
       weeks: null == weeks
-          ? _value._weeks
+          ? _self.weeks
           : weeks // ignore: cast_nullable_to_non_nullable
               as List<RoutineWeek>,
       goalDescriptive: null == goalDescriptive
-          ? _value.goalDescriptive
+          ? _self.goalDescriptive
           : goalDescriptive // ignore: cast_nullable_to_non_nullable
               as String,
     ));
   }
 }
 
+/// Adds pattern-matching-related methods to [RoutineCycle].
+extension RoutineCyclePatterns on RoutineCycle {
+  /// A variant of `map` that fallback to returning `orElse`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>(
+    TResult Function(_RoutineCycle value)? $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _RoutineCycle() when $default != null:
+        return $default(_that);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// Callbacks receives the raw object, upcasted.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case final Subclass2 value:
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>(
+    TResult Function(_RoutineCycle value) $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _RoutineCycle():
+        return $default(_that);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `map` that fallback to returning `null`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>(
+    TResult? Function(_RoutineCycle value)? $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _RoutineCycle() when $default != null:
+        return $default(_that);
+      case _:
+        return null;
+    }
+  }
+
+  /// A variant of `when` that fallback to an `orElse` callback.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>(
+    TResult Function(DateTime startDate, List<RoutineWeek> weeks,
+            String goalDescriptive)?
+        $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _RoutineCycle() when $default != null:
+        return $default(_that.startDate, _that.weeks, _that.goalDescriptive);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// As opposed to `map`, this offers destructuring.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case Subclass2(:final field2):
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>(
+    TResult Function(
+            DateTime startDate, List<RoutineWeek> weeks, String goalDescriptive)
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _RoutineCycle():
+        return $default(_that.startDate, _that.weeks, _that.goalDescriptive);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `when` that fallback to returning `null`
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>(
+    TResult? Function(DateTime startDate, List<RoutineWeek> weeks,
+            String goalDescriptive)?
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _RoutineCycle() when $default != null:
+        return $default(_that.startDate, _that.weeks, _that.goalDescriptive);
+      case _:
+        return null;
+    }
+  }
+}
+
 /// @nodoc
 @JsonSerializable()
-class _$RoutineCycleImpl implements _RoutineCycle {
-  const _$RoutineCycleImpl(
+class _RoutineCycle implements RoutineCycle {
+  const _RoutineCycle(
       {required this.startDate,
       required final List<RoutineWeek> weeks,
       required this.goalDescriptive})
       : _weeks = weeks;
-
-  factory _$RoutineCycleImpl.fromJson(Map<String, dynamic> json) =>
-      _$$RoutineCycleImplFromJson(json);
+  factory _RoutineCycle.fromJson(Map<String, dynamic> json) =>
+      _$RoutineCycleFromJson(json);
 
   @override
   final DateTime startDate;
@@ -143,16 +282,26 @@ class _$RoutineCycleImpl implements _RoutineCycle {
   @override
   final String goalDescriptive;
 
+  /// Create a copy of RoutineCycle
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'RoutineCycle(startDate: $startDate, weeks: $weeks, goalDescriptive: $goalDescriptive)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  _$RoutineCycleCopyWith<_RoutineCycle> get copyWith =>
+      __$RoutineCycleCopyWithImpl<_RoutineCycle>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$RoutineCycleToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$RoutineCycleImpl &&
+            other is _RoutineCycle &&
             (identical(other.startDate, startDate) ||
                 other.startDate == startDate) &&
             const DeepCollectionEquality().equals(other._weeks, _weeks) &&
@@ -160,125 +309,120 @@ class _$RoutineCycleImpl implements _RoutineCycle {
                 other.goalDescriptive == goalDescriptive));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(runtimeType, startDate,
       const DeepCollectionEquality().hash(_weeks), goalDescriptive);
 
-  @JsonKey(ignore: true)
   @override
-  @pragma('vm:prefer-inline')
-  _$$RoutineCycleImplCopyWith<_$RoutineCycleImpl> get copyWith =>
-      __$$RoutineCycleImplCopyWithImpl<_$RoutineCycleImpl>(this, _$identity);
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$RoutineCycleImplToJson(
-      this,
-    );
+  String toString() {
+    return 'RoutineCycle(startDate: $startDate, weeks: $weeks, goalDescriptive: $goalDescriptive)';
   }
 }
 
-abstract class _RoutineCycle implements RoutineCycle {
-  const factory _RoutineCycle(
-      {required final DateTime startDate,
-      required final List<RoutineWeek> weeks,
-      required final String goalDescriptive}) = _$RoutineCycleImpl;
-
-  factory _RoutineCycle.fromJson(Map<String, dynamic> json) =
-      _$RoutineCycleImpl.fromJson;
-
+/// @nodoc
+abstract mixin class _$RoutineCycleCopyWith<$Res>
+    implements $RoutineCycleCopyWith<$Res> {
+  factory _$RoutineCycleCopyWith(
+          _RoutineCycle value, $Res Function(_RoutineCycle) _then) =
+      __$RoutineCycleCopyWithImpl;
   @override
-  DateTime get startDate;
-  @override
-  List<RoutineWeek> get weeks;
-  @override
-  String get goalDescriptive;
-  @override
-  @JsonKey(ignore: true)
-  _$$RoutineCycleImplCopyWith<_$RoutineCycleImpl> get copyWith =>
-      throw _privateConstructorUsedError;
+  @useResult
+  $Res call(
+      {DateTime startDate, List<RoutineWeek> weeks, String goalDescriptive});
 }
 
-RoutineWeek _$RoutineWeekFromJson(Map<String, dynamic> json) {
-  return _RoutineWeek.fromJson(json);
+/// @nodoc
+class __$RoutineCycleCopyWithImpl<$Res>
+    implements _$RoutineCycleCopyWith<$Res> {
+  __$RoutineCycleCopyWithImpl(this._self, this._then);
+
+  final _RoutineCycle _self;
+  final $Res Function(_RoutineCycle) _then;
+
+  /// Create a copy of RoutineCycle
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? startDate = null,
+    Object? weeks = null,
+    Object? goalDescriptive = null,
+  }) {
+    return _then(_RoutineCycle(
+      startDate: null == startDate
+          ? _self.startDate
+          : startDate // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      weeks: null == weeks
+          ? _self._weeks
+          : weeks // ignore: cast_nullable_to_non_nullable
+              as List<RoutineWeek>,
+      goalDescriptive: null == goalDescriptive
+          ? _self.goalDescriptive
+          : goalDescriptive // ignore: cast_nullable_to_non_nullable
+              as String,
+    ));
+  }
 }
 
 /// @nodoc
 mixin _$RoutineWeek {
-  int get weekNumber => throw _privateConstructorUsedError; // 1 through 8
-  bool get isDeload =>
-      throw _privateConstructorUsedError; // True if weekNumber == 5
-  List<RoutineDay> get days => throw _privateConstructorUsedError;
+  int get weekNumber; // 1 through 8
+  bool get isDeload; // True if weekNumber == 5
+  List<RoutineDay> get days;
 
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-  @JsonKey(ignore: true)
-  $RoutineWeekCopyWith<RoutineWeek> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $RoutineWeekCopyWith<$Res> {
-  factory $RoutineWeekCopyWith(
-          RoutineWeek value, $Res Function(RoutineWeek) then) =
-      _$RoutineWeekCopyWithImpl<$Res, RoutineWeek>;
-  @useResult
-  $Res call({int weekNumber, bool isDeload, List<RoutineDay> days});
-}
-
-/// @nodoc
-class _$RoutineWeekCopyWithImpl<$Res, $Val extends RoutineWeek>
-    implements $RoutineWeekCopyWith<$Res> {
-  _$RoutineWeekCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
+  /// Create a copy of RoutineWeek
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @pragma('vm:prefer-inline')
+  $RoutineWeekCopyWith<RoutineWeek> get copyWith =>
+      _$RoutineWeekCopyWithImpl<RoutineWeek>(this as RoutineWeek, _$identity);
+
+  /// Serializes this RoutineWeek to a JSON map.
+  Map<String, dynamic> toJson();
+
   @override
-  $Res call({
-    Object? weekNumber = null,
-    Object? isDeload = null,
-    Object? days = null,
-  }) {
-    return _then(_value.copyWith(
-      weekNumber: null == weekNumber
-          ? _value.weekNumber
-          : weekNumber // ignore: cast_nullable_to_non_nullable
-              as int,
-      isDeload: null == isDeload
-          ? _value.isDeload
-          : isDeload // ignore: cast_nullable_to_non_nullable
-              as bool,
-      days: null == days
-          ? _value.days
-          : days // ignore: cast_nullable_to_non_nullable
-              as List<RoutineDay>,
-    ) as $Val);
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is RoutineWeek &&
+            (identical(other.weekNumber, weekNumber) ||
+                other.weekNumber == weekNumber) &&
+            (identical(other.isDeload, isDeload) ||
+                other.isDeload == isDeload) &&
+            const DeepCollectionEquality().equals(other.days, days));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, weekNumber, isDeload,
+      const DeepCollectionEquality().hash(days));
+
+  @override
+  String toString() {
+    return 'RoutineWeek(weekNumber: $weekNumber, isDeload: $isDeload, days: $days)';
   }
 }
 
 /// @nodoc
-abstract class _$$RoutineWeekImplCopyWith<$Res>
-    implements $RoutineWeekCopyWith<$Res> {
-  factory _$$RoutineWeekImplCopyWith(
-          _$RoutineWeekImpl value, $Res Function(_$RoutineWeekImpl) then) =
-      __$$RoutineWeekImplCopyWithImpl<$Res>;
-  @override
+abstract mixin class $RoutineWeekCopyWith<$Res> {
+  factory $RoutineWeekCopyWith(
+          RoutineWeek value, $Res Function(RoutineWeek) _then) =
+      _$RoutineWeekCopyWithImpl;
   @useResult
   $Res call({int weekNumber, bool isDeload, List<RoutineDay> days});
 }
 
 /// @nodoc
-class __$$RoutineWeekImplCopyWithImpl<$Res>
-    extends _$RoutineWeekCopyWithImpl<$Res, _$RoutineWeekImpl>
-    implements _$$RoutineWeekImplCopyWith<$Res> {
-  __$$RoutineWeekImplCopyWithImpl(
-      _$RoutineWeekImpl _value, $Res Function(_$RoutineWeekImpl) _then)
-      : super(_value, _then);
+class _$RoutineWeekCopyWithImpl<$Res> implements $RoutineWeekCopyWith<$Res> {
+  _$RoutineWeekCopyWithImpl(this._self, this._then);
 
+  final RoutineWeek _self;
+  final $Res Function(RoutineWeek) _then;
+
+  /// Create a copy of RoutineWeek
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -286,34 +430,193 @@ class __$$RoutineWeekImplCopyWithImpl<$Res>
     Object? isDeload = null,
     Object? days = null,
   }) {
-    return _then(_$RoutineWeekImpl(
+    return _then(_self.copyWith(
       weekNumber: null == weekNumber
-          ? _value.weekNumber
+          ? _self.weekNumber
           : weekNumber // ignore: cast_nullable_to_non_nullable
               as int,
       isDeload: null == isDeload
-          ? _value.isDeload
+          ? _self.isDeload
           : isDeload // ignore: cast_nullable_to_non_nullable
               as bool,
       days: null == days
-          ? _value._days
+          ? _self.days
           : days // ignore: cast_nullable_to_non_nullable
               as List<RoutineDay>,
     ));
   }
 }
 
+/// Adds pattern-matching-related methods to [RoutineWeek].
+extension RoutineWeekPatterns on RoutineWeek {
+  /// A variant of `map` that fallback to returning `orElse`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>(
+    TResult Function(_RoutineWeek value)? $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _RoutineWeek() when $default != null:
+        return $default(_that);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// Callbacks receives the raw object, upcasted.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case final Subclass2 value:
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>(
+    TResult Function(_RoutineWeek value) $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _RoutineWeek():
+        return $default(_that);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `map` that fallback to returning `null`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>(
+    TResult? Function(_RoutineWeek value)? $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _RoutineWeek() when $default != null:
+        return $default(_that);
+      case _:
+        return null;
+    }
+  }
+
+  /// A variant of `when` that fallback to an `orElse` callback.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>(
+    TResult Function(int weekNumber, bool isDeload, List<RoutineDay> days)?
+        $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _RoutineWeek() when $default != null:
+        return $default(_that.weekNumber, _that.isDeload, _that.days);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// As opposed to `map`, this offers destructuring.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case Subclass2(:final field2):
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>(
+    TResult Function(int weekNumber, bool isDeload, List<RoutineDay> days)
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _RoutineWeek():
+        return $default(_that.weekNumber, _that.isDeload, _that.days);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `when` that fallback to returning `null`
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>(
+    TResult? Function(int weekNumber, bool isDeload, List<RoutineDay> days)?
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _RoutineWeek() when $default != null:
+        return $default(_that.weekNumber, _that.isDeload, _that.days);
+      case _:
+        return null;
+    }
+  }
+}
+
 /// @nodoc
 @JsonSerializable()
-class _$RoutineWeekImpl implements _RoutineWeek {
-  const _$RoutineWeekImpl(
+class _RoutineWeek implements RoutineWeek {
+  const _RoutineWeek(
       {required this.weekNumber,
       this.isDeload = false,
       required final List<RoutineDay> days})
       : _days = days;
-
-  factory _$RoutineWeekImpl.fromJson(Map<String, dynamic> json) =>
-      _$$RoutineWeekImplFromJson(json);
+  factory _RoutineWeek.fromJson(Map<String, dynamic> json) =>
+      _$RoutineWeekFromJson(json);
 
   @override
   final int weekNumber;
@@ -331,16 +634,26 @@ class _$RoutineWeekImpl implements _RoutineWeek {
     return EqualUnmodifiableListView(_days);
   }
 
+  /// Create a copy of RoutineWeek
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'RoutineWeek(weekNumber: $weekNumber, isDeload: $isDeload, days: $days)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  _$RoutineWeekCopyWith<_RoutineWeek> get copyWith =>
+      __$RoutineWeekCopyWithImpl<_RoutineWeek>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$RoutineWeekToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$RoutineWeekImpl &&
+            other is _RoutineWeek &&
             (identical(other.weekNumber, weekNumber) ||
                 other.weekNumber == weekNumber) &&
             (identical(other.isDeload, isDeload) ||
@@ -348,130 +661,110 @@ class _$RoutineWeekImpl implements _RoutineWeek {
             const DeepCollectionEquality().equals(other._days, _days));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(runtimeType, weekNumber, isDeload,
       const DeepCollectionEquality().hash(_days));
 
-  @JsonKey(ignore: true)
   @override
-  @pragma('vm:prefer-inline')
-  _$$RoutineWeekImplCopyWith<_$RoutineWeekImpl> get copyWith =>
-      __$$RoutineWeekImplCopyWithImpl<_$RoutineWeekImpl>(this, _$identity);
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$RoutineWeekImplToJson(
-      this,
-    );
+  String toString() {
+    return 'RoutineWeek(weekNumber: $weekNumber, isDeload: $isDeload, days: $days)';
   }
 }
 
-abstract class _RoutineWeek implements RoutineWeek {
-  const factory _RoutineWeek(
-      {required final int weekNumber,
-      final bool isDeload,
-      required final List<RoutineDay> days}) = _$RoutineWeekImpl;
-
-  factory _RoutineWeek.fromJson(Map<String, dynamic> json) =
-      _$RoutineWeekImpl.fromJson;
-
+/// @nodoc
+abstract mixin class _$RoutineWeekCopyWith<$Res>
+    implements $RoutineWeekCopyWith<$Res> {
+  factory _$RoutineWeekCopyWith(
+          _RoutineWeek value, $Res Function(_RoutineWeek) _then) =
+      __$RoutineWeekCopyWithImpl;
   @override
-  int get weekNumber;
-  @override // 1 through 8
-  bool get isDeload;
-  @override // True if weekNumber == 5
-  List<RoutineDay> get days;
-  @override
-  @JsonKey(ignore: true)
-  _$$RoutineWeekImplCopyWith<_$RoutineWeekImpl> get copyWith =>
-      throw _privateConstructorUsedError;
+  @useResult
+  $Res call({int weekNumber, bool isDeload, List<RoutineDay> days});
 }
 
-RoutineDay _$RoutineDayFromJson(Map<String, dynamic> json) {
-  return _RoutineDay.fromJson(json);
+/// @nodoc
+class __$RoutineWeekCopyWithImpl<$Res> implements _$RoutineWeekCopyWith<$Res> {
+  __$RoutineWeekCopyWithImpl(this._self, this._then);
+
+  final _RoutineWeek _self;
+  final $Res Function(_RoutineWeek) _then;
+
+  /// Create a copy of RoutineWeek
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? weekNumber = null,
+    Object? isDeload = null,
+    Object? days = null,
+  }) {
+    return _then(_RoutineWeek(
+      weekNumber: null == weekNumber
+          ? _self.weekNumber
+          : weekNumber // ignore: cast_nullable_to_non_nullable
+              as int,
+      isDeload: null == isDeload
+          ? _self.isDeload
+          : isDeload // ignore: cast_nullable_to_non_nullable
+              as bool,
+      days: null == days
+          ? _self._days
+          : days // ignore: cast_nullable_to_non_nullable
+              as List<RoutineDay>,
+    ));
+  }
 }
 
 /// @nodoc
 mixin _$RoutineDay {
-  int get dayNumber => throw _privateConstructorUsedError; // 1 through 7
-  bool get isRestDay => throw _privateConstructorUsedError;
-  String get type =>
-      throw _privateConstructorUsedError; // "Full Body", "Cardio Zona 2", "Descanso Activo"
-  String get description => throw _privateConstructorUsedError;
-  List<RoutineExercise> get exercises => throw _privateConstructorUsedError;
+  int get dayNumber; // 1 through 7
+  bool get isRestDay;
+  String get type; // "Full Body", "Cardio Zona 2", "Descanso Activo"
+  String get description;
+  List<RoutineExercise> get exercises;
 
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-  @JsonKey(ignore: true)
-  $RoutineDayCopyWith<RoutineDay> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $RoutineDayCopyWith<$Res> {
-  factory $RoutineDayCopyWith(
-          RoutineDay value, $Res Function(RoutineDay) then) =
-      _$RoutineDayCopyWithImpl<$Res, RoutineDay>;
-  @useResult
-  $Res call(
-      {int dayNumber,
-      bool isRestDay,
-      String type,
-      String description,
-      List<RoutineExercise> exercises});
-}
-
-/// @nodoc
-class _$RoutineDayCopyWithImpl<$Res, $Val extends RoutineDay>
-    implements $RoutineDayCopyWith<$Res> {
-  _$RoutineDayCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
+  /// Create a copy of RoutineDay
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @pragma('vm:prefer-inline')
+  $RoutineDayCopyWith<RoutineDay> get copyWith =>
+      _$RoutineDayCopyWithImpl<RoutineDay>(this as RoutineDay, _$identity);
+
+  /// Serializes this RoutineDay to a JSON map.
+  Map<String, dynamic> toJson();
+
   @override
-  $Res call({
-    Object? dayNumber = null,
-    Object? isRestDay = null,
-    Object? type = null,
-    Object? description = null,
-    Object? exercises = null,
-  }) {
-    return _then(_value.copyWith(
-      dayNumber: null == dayNumber
-          ? _value.dayNumber
-          : dayNumber // ignore: cast_nullable_to_non_nullable
-              as int,
-      isRestDay: null == isRestDay
-          ? _value.isRestDay
-          : isRestDay // ignore: cast_nullable_to_non_nullable
-              as bool,
-      type: null == type
-          ? _value.type
-          : type // ignore: cast_nullable_to_non_nullable
-              as String,
-      description: null == description
-          ? _value.description
-          : description // ignore: cast_nullable_to_non_nullable
-              as String,
-      exercises: null == exercises
-          ? _value.exercises
-          : exercises // ignore: cast_nullable_to_non_nullable
-              as List<RoutineExercise>,
-    ) as $Val);
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is RoutineDay &&
+            (identical(other.dayNumber, dayNumber) ||
+                other.dayNumber == dayNumber) &&
+            (identical(other.isRestDay, isRestDay) ||
+                other.isRestDay == isRestDay) &&
+            (identical(other.type, type) || other.type == type) &&
+            (identical(other.description, description) ||
+                other.description == description) &&
+            const DeepCollectionEquality().equals(other.exercises, exercises));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, dayNumber, isRestDay, type,
+      description, const DeepCollectionEquality().hash(exercises));
+
+  @override
+  String toString() {
+    return 'RoutineDay(dayNumber: $dayNumber, isRestDay: $isRestDay, type: $type, description: $description, exercises: $exercises)';
   }
 }
 
 /// @nodoc
-abstract class _$$RoutineDayImplCopyWith<$Res>
-    implements $RoutineDayCopyWith<$Res> {
-  factory _$$RoutineDayImplCopyWith(
-          _$RoutineDayImpl value, $Res Function(_$RoutineDayImpl) then) =
-      __$$RoutineDayImplCopyWithImpl<$Res>;
-  @override
+abstract mixin class $RoutineDayCopyWith<$Res> {
+  factory $RoutineDayCopyWith(
+          RoutineDay value, $Res Function(RoutineDay) _then) =
+      _$RoutineDayCopyWithImpl;
   @useResult
   $Res call(
       {int dayNumber,
@@ -482,13 +775,14 @@ abstract class _$$RoutineDayImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$RoutineDayImplCopyWithImpl<$Res>
-    extends _$RoutineDayCopyWithImpl<$Res, _$RoutineDayImpl>
-    implements _$$RoutineDayImplCopyWith<$Res> {
-  __$$RoutineDayImplCopyWithImpl(
-      _$RoutineDayImpl _value, $Res Function(_$RoutineDayImpl) _then)
-      : super(_value, _then);
+class _$RoutineDayCopyWithImpl<$Res> implements $RoutineDayCopyWith<$Res> {
+  _$RoutineDayCopyWithImpl(this._self, this._then);
 
+  final RoutineDay _self;
+  final $Res Function(RoutineDay) _then;
+
+  /// Create a copy of RoutineDay
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -498,44 +792,209 @@ class __$$RoutineDayImplCopyWithImpl<$Res>
     Object? description = null,
     Object? exercises = null,
   }) {
-    return _then(_$RoutineDayImpl(
+    return _then(_self.copyWith(
       dayNumber: null == dayNumber
-          ? _value.dayNumber
+          ? _self.dayNumber
           : dayNumber // ignore: cast_nullable_to_non_nullable
               as int,
       isRestDay: null == isRestDay
-          ? _value.isRestDay
+          ? _self.isRestDay
           : isRestDay // ignore: cast_nullable_to_non_nullable
               as bool,
       type: null == type
-          ? _value.type
+          ? _self.type
           : type // ignore: cast_nullable_to_non_nullable
               as String,
       description: null == description
-          ? _value.description
+          ? _self.description
           : description // ignore: cast_nullable_to_non_nullable
               as String,
       exercises: null == exercises
-          ? _value._exercises
+          ? _self.exercises
           : exercises // ignore: cast_nullable_to_non_nullable
               as List<RoutineExercise>,
     ));
   }
 }
 
+/// Adds pattern-matching-related methods to [RoutineDay].
+extension RoutineDayPatterns on RoutineDay {
+  /// A variant of `map` that fallback to returning `orElse`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>(
+    TResult Function(_RoutineDay value)? $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _RoutineDay() when $default != null:
+        return $default(_that);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// Callbacks receives the raw object, upcasted.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case final Subclass2 value:
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>(
+    TResult Function(_RoutineDay value) $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _RoutineDay():
+        return $default(_that);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `map` that fallback to returning `null`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>(
+    TResult? Function(_RoutineDay value)? $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _RoutineDay() when $default != null:
+        return $default(_that);
+      case _:
+        return null;
+    }
+  }
+
+  /// A variant of `when` that fallback to an `orElse` callback.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>(
+    TResult Function(int dayNumber, bool isRestDay, String type,
+            String description, List<RoutineExercise> exercises)?
+        $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _RoutineDay() when $default != null:
+        return $default(_that.dayNumber, _that.isRestDay, _that.type,
+            _that.description, _that.exercises);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// As opposed to `map`, this offers destructuring.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case Subclass2(:final field2):
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>(
+    TResult Function(int dayNumber, bool isRestDay, String type,
+            String description, List<RoutineExercise> exercises)
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _RoutineDay():
+        return $default(_that.dayNumber, _that.isRestDay, _that.type,
+            _that.description, _that.exercises);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `when` that fallback to returning `null`
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>(
+    TResult? Function(int dayNumber, bool isRestDay, String type,
+            String description, List<RoutineExercise> exercises)?
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _RoutineDay() when $default != null:
+        return $default(_that.dayNumber, _that.isRestDay, _that.type,
+            _that.description, _that.exercises);
+      case _:
+        return null;
+    }
+  }
+}
+
 /// @nodoc
 @JsonSerializable()
-class _$RoutineDayImpl implements _RoutineDay {
-  const _$RoutineDayImpl(
+class _RoutineDay implements RoutineDay {
+  const _RoutineDay(
       {required this.dayNumber,
       required this.isRestDay,
       this.type = 'Descanso',
       this.description = '',
       final List<RoutineExercise> exercises = const []})
       : _exercises = exercises;
-
-  factory _$RoutineDayImpl.fromJson(Map<String, dynamic> json) =>
-      _$$RoutineDayImplFromJson(json);
+  factory _RoutineDay.fromJson(Map<String, dynamic> json) =>
+      _$RoutineDayFromJson(json);
 
   @override
   final int dayNumber;
@@ -558,16 +1017,26 @@ class _$RoutineDayImpl implements _RoutineDay {
     return EqualUnmodifiableListView(_exercises);
   }
 
+  /// Create a copy of RoutineDay
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'RoutineDay(dayNumber: $dayNumber, isRestDay: $isRestDay, type: $type, description: $description, exercises: $exercises)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  _$RoutineDayCopyWith<_RoutineDay> get copyWith =>
+      __$RoutineDayCopyWithImpl<_RoutineDay>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$RoutineDayToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$RoutineDayImpl &&
+            other is _RoutineDay &&
             (identical(other.dayNumber, dayNumber) ||
                 other.dayNumber == dayNumber) &&
             (identical(other.isRestDay, isRestDay) ||
@@ -579,48 +1048,74 @@ class _$RoutineDayImpl implements _RoutineDay {
                 .equals(other._exercises, _exercises));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(runtimeType, dayNumber, isRestDay, type,
       description, const DeepCollectionEquality().hash(_exercises));
 
-  @JsonKey(ignore: true)
   @override
-  @pragma('vm:prefer-inline')
-  _$$RoutineDayImplCopyWith<_$RoutineDayImpl> get copyWith =>
-      __$$RoutineDayImplCopyWithImpl<_$RoutineDayImpl>(this, _$identity);
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$RoutineDayImplToJson(
-      this,
-    );
+  String toString() {
+    return 'RoutineDay(dayNumber: $dayNumber, isRestDay: $isRestDay, type: $type, description: $description, exercises: $exercises)';
   }
 }
 
-abstract class _RoutineDay implements RoutineDay {
-  const factory _RoutineDay(
-      {required final int dayNumber,
-      required final bool isRestDay,
-      final String type,
-      final String description,
-      final List<RoutineExercise> exercises}) = _$RoutineDayImpl;
-
-  factory _RoutineDay.fromJson(Map<String, dynamic> json) =
-      _$RoutineDayImpl.fromJson;
-
+/// @nodoc
+abstract mixin class _$RoutineDayCopyWith<$Res>
+    implements $RoutineDayCopyWith<$Res> {
+  factory _$RoutineDayCopyWith(
+          _RoutineDay value, $Res Function(_RoutineDay) _then) =
+      __$RoutineDayCopyWithImpl;
   @override
-  int get dayNumber;
-  @override // 1 through 7
-  bool get isRestDay;
-  @override
-  String get type;
-  @override // "Full Body", "Cardio Zona 2", "Descanso Activo"
-  String get description;
-  @override
-  List<RoutineExercise> get exercises;
-  @override
-  @JsonKey(ignore: true)
-  _$$RoutineDayImplCopyWith<_$RoutineDayImpl> get copyWith =>
-      throw _privateConstructorUsedError;
+  @useResult
+  $Res call(
+      {int dayNumber,
+      bool isRestDay,
+      String type,
+      String description,
+      List<RoutineExercise> exercises});
 }
+
+/// @nodoc
+class __$RoutineDayCopyWithImpl<$Res> implements _$RoutineDayCopyWith<$Res> {
+  __$RoutineDayCopyWithImpl(this._self, this._then);
+
+  final _RoutineDay _self;
+  final $Res Function(_RoutineDay) _then;
+
+  /// Create a copy of RoutineDay
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? dayNumber = null,
+    Object? isRestDay = null,
+    Object? type = null,
+    Object? description = null,
+    Object? exercises = null,
+  }) {
+    return _then(_RoutineDay(
+      dayNumber: null == dayNumber
+          ? _self.dayNumber
+          : dayNumber // ignore: cast_nullable_to_non_nullable
+              as int,
+      isRestDay: null == isRestDay
+          ? _self.isRestDay
+          : isRestDay // ignore: cast_nullable_to_non_nullable
+              as bool,
+      type: null == type
+          ? _self.type
+          : type // ignore: cast_nullable_to_non_nullable
+              as String,
+      description: null == description
+          ? _self.description
+          : description // ignore: cast_nullable_to_non_nullable
+              as String,
+      exercises: null == exercises
+          ? _self._exercises
+          : exercises // ignore: cast_nullable_to_non_nullable
+              as List<RoutineExercise>,
+    ));
+  }
+}
+
+// dart format on

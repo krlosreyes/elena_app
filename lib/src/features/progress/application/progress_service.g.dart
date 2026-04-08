@@ -6,7 +6,7 @@ part of 'progress_service.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$progressServiceHash() => r'fb1d8d1883c7b89067da829d6267765092c503ac';
+String _$progressServiceHash() => r'261122d87d60ac8218575da08eda8573ea239fc9';
 
 /// 🔌 ProgressService provider (singleton)
 ///
@@ -22,8 +22,10 @@ final progressServiceProvider = AutoDisposeProvider<ProgressService>.internal(
   allTransitiveDependencies: null,
 );
 
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
 typedef ProgressServiceRef = AutoDisposeProviderRef<ProgressService>;
-String _$latestMeasurementHash() => r'2b9caa3827e96f0b83eea8ecc27ac21a569a1f77';
+String _$latestMeasurementHash() => r'a2c39c4e07be1a6a1b1a719b4f1cce3ac75f9d66';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -172,6 +174,8 @@ class LatestMeasurementProvider
   }
 }
 
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
 mixin LatestMeasurementRef on AutoDisposeFutureProviderRef<MeasurementLog?> {
   /// The parameter `uid` of this provider.
   String get uid;
@@ -187,7 +191,7 @@ class _LatestMeasurementProviderElement
 }
 
 String _$measurementHistoryHash() =>
-    r'f6943775108cb0fcc9788ff0c54a96924fb9b6f1';
+    r'3435c3ab76710dc181a81fb5d5dc09c536fd214b';
 
 /// 🔌 Measurement history provider
 ///
@@ -329,6 +333,8 @@ class MeasurementHistoryProvider
   }
 }
 
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
 mixin MeasurementHistoryRef
     on AutoDisposeFutureProviderRef<List<MeasurementLog>> {
   /// The parameter `uid` of this provider.
@@ -349,7 +355,7 @@ class _MeasurementHistoryProviderElement
   int get days => (origin as MeasurementHistoryProvider).days;
 }
 
-String _$weightProgressHash() => r'7c69214a624ba53793e830eba3e6b6633fb36540';
+String _$weightProgressHash() => r'717750b7ea15953ce6867ffaa326ebf118ebf9ed';
 
 /// 🔌 Weight progress provider
 ///
@@ -488,6 +494,8 @@ class WeightProgressProvider extends AutoDisposeFutureProvider<double?> {
   }
 }
 
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
 mixin WeightProgressRef on AutoDisposeFutureProviderRef<double?> {
   /// The parameter `uid` of this provider.
   String get uid;
@@ -506,7 +514,7 @@ class _WeightProgressProviderElement
   int get days => (origin as WeightProgressProvider).days;
 }
 
-String _$measurementStatsHash() => r'f2c7b1d460dd360c79d97fbd0821c079068cb728';
+String _$measurementStatsHash() => r'427959eaf4e26589fc2923244033d53f81da389c';
 
 /// 🔌 Measurement statistics provider
 ///
@@ -646,6 +654,8 @@ class MeasurementStatsProvider
   }
 }
 
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
 mixin MeasurementStatsRef on AutoDisposeFutureProviderRef<Map<String, double>> {
   /// The parameter `uid` of this provider.
   String get uid;
@@ -665,7 +675,7 @@ class _MeasurementStatsProviderElement
   int get days => (origin as MeasurementStatsProvider).days;
 }
 
-String _$watchMeasurementsHash() => r'ee4a3c660528ba62d45949a86c549859c165cda2';
+String _$watchMeasurementsHash() => r'a16d2ed457d0217151a75572630eff7cacf36ac8';
 
 /// 🔌 Watch measurement history (stream)
 ///
@@ -793,6 +803,8 @@ class WatchMeasurementsProvider
   }
 }
 
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
 mixin WatchMeasurementsRef
     on AutoDisposeStreamProviderRef<List<MeasurementLog>> {
   /// The parameter `uid` of this provider.
@@ -808,4 +820,4 @@ class _WatchMeasurementsProviderElement
   String get uid => (origin as WatchMeasurementsProvider).uid;
 }
 // ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member
+// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

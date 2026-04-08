@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/science/metabolic_engine.dart';
+import '../../../core/services/analytics_service.dart';
 import '../../../core/services/notification_service.dart';
 import '../../authentication/application/auth_controller.dart'
     show authStateChangesProvider, authControllerProvider;
@@ -121,12 +122,15 @@ class FastingController extends AutoDisposeNotifier<AsyncValue<FastingState>> {
   StreamSubscription? _metabolicSubscription;
   MetabolicZone? _lastNotifiedZone;
   bool _autoTriggerChecked = false;
+  bool _disposed = false;
 
   @override
   AsyncValue<FastingState> build() {
     final authState = ref.watch(authStateChangesProvider);
 
+    _disposed = false;
     ref.onDispose(() {
+      _disposed = true;
       _timer?.cancel();
       _metabolicSubscription?.cancel();
     });
@@ -151,193 +155,234 @@ class FastingController extends AutoDisposeNotifier<AsyncValue<FastingState>> {
 
       // Suscripción al Estado Atómico de Firestore
       _metabolicSubscription?.cancel();
-      _metabolicSubscription = repo.getMetabolicStateStream(uid).listen(
-        (data) {
-          // debugPrint("📡 Firestore Snapshot RAW: $data"); // Silenciado para limpiar terminal
-          if (data != null) {
-            final String phase = data['current_phase'] ?? phaseFeeding;
-            final rawStartTime = data['start_time'] ?? data['startTime'];
-            final DateTime? startTime =
-                rawStartTime != null ? _parseDateTime(rawStartTime) : null;
+      _metabolicSubscription = repo
+          .getMetabolicStateStream(uid)
+          .listen(
+            (data) {
+              if (_disposed) return; // 🛡️ Guard post-dispose
+              // debugPrint("📡 Firestore Snapshot RAW: $data"); // Silenciado para limpiar terminal
+              if (data != null) {
+                final String phase = data['current_phase'] ?? phaseFeeding;
+                final rawStartTime = data['start_time'] ?? data['startTime'];
+                final DateTime? startTime = rawStartTime != null
+                    ? _parseDateTime(rawStartTime)
+                    : null;
 
-            final rawFeedingStart =
-                data['feeding_start_time'] ?? data['feedingStartTime'];
-            final DateTime? feedingStartTime = rawFeedingStart != null
-                ? _parseDateTime(rawFeedingStart)
-                : null;
-            final int targetHours = data['target_hours'] ?? 16;
-            final int originalTargetHours =
-                data['original_target_hours'] ?? targetHours;
-            bool effectiveHasConfirmed =
-                data['has_completed_confirmation_shown'] ?? false;
-            final bool isContinuing = data['is_continuing_past_goal'] ?? false;
-            final bool initialMealLogged =
-                data['has_initial_meal_been_logged'] ?? false;
-            final bool feedingEndDialogShown =
-                data['has_feeding_end_dialog_shown'] ?? false;
-            final now = DateTime.now();
-            // debugPrint("🔄 Sync Snapshot: Phase=$phase, Start=$startTime, Confirmed=$effectiveHasConfirmed, Continuing=$isContinuing"); // Silenciado
+                final rawFeedingStart =
+                    data['feeding_start_time'] ?? data['feedingStartTime'];
+                final DateTime? feedingStartTime = rawFeedingStart != null
+                    ? _parseDateTime(rawFeedingStart)
+                    : null;
+                final int targetHours = data['target_hours'] ?? 16;
+                final int originalTargetHours =
+                    data['original_target_hours'] ?? targetHours;
+                bool effectiveHasConfirmed =
+                    data['has_completed_confirmation_shown'] ?? false;
+                final bool isContinuing =
+                    data['is_continuing_past_goal'] ?? false;
+                final bool initialMealLogged =
+                    data['has_initial_meal_been_logged'] ?? false;
+                final bool feedingEndDialogShown =
+                    data['has_feeding_end_dialog_shown'] ?? false;
+                final now = DateTime.now();
+                // debugPrint("🔄 Sync Snapshot: Phase=$phase, Start=$startTime, Confirmed=$effectiveHasConfirmed, Continuing=$isContinuing"); // Silenciado
 
-            // 🧪 VALIDACIÓN DE FASE EN TIEMPO REAL
-            String effectivePhase = phase;
-            DateTime? effectiveFeedingStart = feedingStartTime;
+                // 🧪 VALIDACIÓN DE FASE EN TIEMPO REAL
+                String effectivePhase = phase;
+                DateTime? effectiveFeedingStart = feedingStartTime;
 
-            // 🛡️ GUARDIA DE CONFIRMACIÓN: Si Firestore dice que estamos alimentándonos
-            // pero el usuario NUNCA confirmó el fin del ayuno (o viceversa),
-            // lo revertimos localmente a fase de AYUNO para que la UI pueda disparar el diálogo.
-            if ((effectivePhase == phaseFeeding && !effectiveHasConfirmed) ||
-                (effectivePhase == phaseFasting &&
-                    effectiveHasConfirmed &&
-                    !isContinuing &&
-                    startTime != null &&
-                    now.isAfter(startTime.add(Duration(hours: targetHours))))) {
-              effectivePhase = phaseFasting;
-              // Si el flag de confirmación estaba en true pero seguimos en ayuno sin bandera de continuar, lo reseteamos.
-              // Esto desbloquea el diálogo en la UI.
-              if (effectiveHasConfirmed) {
-                Future.delayed(Duration.zero, () {
-                  repo.updateMetabolicState(
-                      uid: uid,
-                      phase: phaseFasting,
-                      hasCompletedConfirmationShown: false);
-                });
-                // debugPrint("🔄 Auto-Recovery: Reseteando flag de confirmación para mostrar diálogo bloqueado.");
-              } else {
-                // debugPrint("🛡️ Safe Revert: Forzando fase AYUNO para mostrar confirmación pendiente.");
-              }
-            }
+                // 🛡️ GUARDIA DE CONFIRMACIÓN: Si Firestore dice que estamos alimentándonos
+                // pero el usuario NUNCA confirmó el fin del ayuno (o viceversa),
+                // lo revertimos localmente a fase de AYUNO para que la UI pueda disparar el diálogo.
+                if ((effectivePhase == phaseFeeding &&
+                        !effectiveHasConfirmed) ||
+                    (effectivePhase == phaseFasting &&
+                        effectiveHasConfirmed &&
+                        !isContinuing &&
+                        startTime != null &&
+                        now.isAfter(
+                          startTime.add(Duration(hours: targetHours)),
+                        ))) {
+                  effectivePhase = phaseFasting;
+                  // Si el flag de confirmación estaba en true pero seguimos en ayuno sin bandera de continuar, lo reseteamos.
+                  // Esto desbloquea el diálogo en la UI.
+                  if (effectiveHasConfirmed) {
+                    Future.delayed(Duration.zero, () {
+                      repo.updateMetabolicState(
+                        uid: uid,
+                        phase: phaseFasting,
+                        hasCompletedConfirmationShown: false,
+                      );
+                    });
+                    // debugPrint("🔄 Auto-Recovery: Reseteando flag de confirmación para mostrar diálogo bloqueado.");
+                  } else {
+                    // debugPrint("🛡️ Safe Revert: Forzando fase AYUNO para mostrar confirmación pendiente.");
+                  }
+                }
 
-            effectiveFeedingStart ??=
-                (effectivePhase == phaseFeeding && feedingStartTime == null)
+                effectiveFeedingStart ??=
+                    (effectivePhase == phaseFeeding && feedingStartTime == null)
                     ? (startTime?.add(Duration(hours: targetHours)) ?? now)
                     : feedingStartTime;
 
-            // 🛡️ RECOVERY: If confirmed but phase is still FASTING and time is past goal,
-            // ensure UI reflects the need for confirmation OR transition.
-            if (effectivePhase == phaseFasting &&
-                effectiveHasConfirmed &&
-                !isContinuing) {
-              final goalTime = startTime?.add(Duration(hours: targetHours));
-              if (goalTime != null && now.isAfter(goalTime)) {
-                // If confirmed but not continuing, it means they clicked "Terminar" and picked a time.
-                // Usually Firestore will update 'phase' to Feeding, but if it's lagging,
-                // we prevent a flicker back to 'meta completada' dialog.
-                effectiveHasConfirmed = true;
-              }
-            }
-
-            final baseTime = (effectivePhase == phaseFasting)
-                ? (startTime ?? now)
-                : (effectiveFeedingStart ?? now);
-            final elapsed = now.isAfter(baseTime)
-                ? now.difference(baseTime)
-                : Duration.zero;
-
-            state = AsyncValue.data(FastingState(
-              startTime: startTime,
-              feedingStartTime: effectiveFeedingStart,
-              elapsed: elapsed,
-              plannedHours: targetHours,
-              originalPlannedHours: originalTargetHours,
-              currentPhase: effectivePhase,
-              fastingPercent: (elapsed.inSeconds / (targetHours * 3600)) * 100,
-              feedingPercent:
-                  (elapsed.inSeconds / ((24 - targetHours) * 3600)) * 100,
-              hasCompletedConfirmationShown: effectiveHasConfirmed,
-              isContinuingPastGoal: isContinuing,
-              hasInitialMealBeenLogged: initialMealLogged,
-              hasFeedingEndDialogShown: feedingEndDialogShown,
-            ));
-
-            // 🥗 TRIGGER AUTOMÁTICO DE REGISTRO
-            if (effectivePhase == phaseFeeding &&
-                effectiveHasConfirmed && // 🛡️ CRITICAL: Solo si el usuario confirmó fin de ayuno
-                !_autoTriggerChecked &&
-                ref.read(mealModalTriggerProvider) == false) {
-              _autoTriggerChecked = true;
-              debugPrint(
-                  "🥗 FastingController: Verificando auto-trigger de comida.");
-
-              Future.delayed(Duration.zero, () async {
-                try {
-                  // Solo disparamos si el perfil existe y el onboarding está completo
-                  final userAsync = await ref
-                      .read(currentUserStreamProvider.future)
-                      .timeout(const Duration(seconds: 3));
-                  if (userAsync == null || !userAsync.onboardingCompleted) {
-                    debugPrint("🥗 Skip Trigger: Onboarding incompleto.");
-                    return;
+                // 🛡️ RECOVERY: If confirmed but phase is still FASTING and time is past goal,
+                // ensure UI reflects the need for confirmation OR transition.
+                if (effectivePhase == phaseFasting &&
+                    effectiveHasConfirmed &&
+                    !isContinuing) {
+                  final goalTime = startTime?.add(Duration(hours: targetHours));
+                  if (goalTime != null && now.isAfter(goalTime)) {
+                    // If confirmed but not continuing, it means they clicked "Terminar" and picked a time.
+                    // Usually Firestore will update 'phase' to Feeding, but if it's lagging,
+                    // we prevent a flicker back to 'meta completada' dialog.
+                    effectiveHasConfirmed = true;
                   }
-
-                  final DailyLog? log = await ref
-                      .read(todayLogProvider(uid).future)
-                      .timeout(const Duration(seconds: 5));
-
-                  // Actualizar flag hasInitialMealBeenLogged si hay comidas
-                  if (log != null && log.mealEntries.isNotEmpty) {
-                    state = AsyncValue.data(
-                        state.value!.copyWith(hasInitialMealBeenLogged: true));
-                  }
-
-                  if (log != null &&
-                      log.mealEntries.isEmpty &&
-                      state.value?.hasInitialMealBeenLogged == false) {
-                    debugPrint(
-                        "🥗 Auto-Trigger: Abriendo registro de comida (Ventana con 0 comidas).");
-                    ref.read(mealModalTriggerProvider.notifier).state = true;
-                  } else if (log != null && log.mealEntries.isNotEmpty) {
-                    debugPrint(
-                        "🥗 Skip Trigger: Ya hay comidas registradas hoy.");
-                    // En un futuro podríamos reactivar el modal si pasó suficiente tiempo,
-                    // pero por ahora el usuario quiere evitar bucles automáticos.
-                    // ref.read(mealModalTriggerProvider.notifier).state = false;
-                  }
-                } catch (e) {
-                  debugPrint("❌ Error en trigger de comida: $e");
-                  _autoTriggerChecked = false; // Reset on error so we can retry
                 }
-              });
-            } else if (effectivePhase == phaseFasting) {
-              // Reset auto-trigger check for the next feeding window
-              _autoTriggerChecked = false;
-            } else if (effectivePhase == phaseFeeding &&
-                !effectiveHasConfirmed) {
-              debugPrint(
-                  "🥗 Skip Trigger: En Alimentación pero SIN CONFIRMACIÓN. Esperando diálogo.");
-            }
 
-            _startTicker();
-          } else {
-            // 🆕 CASO: No hay datos en Firestore. Inicializamos un estado de alimentación base.
-            final now = DateTime.now();
-            final defaultFeedingStart =
-                now.subtract(const Duration(seconds: 1));
+                final baseTime = (effectivePhase == phaseFasting)
+                    ? (startTime ?? now)
+                    : (effectiveFeedingStart ?? now);
+                final elapsed = now.isAfter(baseTime)
+                    ? now.difference(baseTime)
+                    : Duration.zero;
 
-            state = AsyncValue.data(FastingState.initial().copyWith(
-              feedingStartTime: defaultFeedingStart,
-            ));
+                // 🛡️ Wrappear mutación de state (Firestore listener)
+                try {
+                  if (_disposed) return;
+                  state = AsyncValue.data(
+                    FastingState(
+                      startTime: startTime,
+                      feedingStartTime: effectiveFeedingStart,
+                      elapsed: elapsed,
+                      plannedHours: targetHours,
+                      originalPlannedHours: originalTargetHours,
+                      currentPhase: effectivePhase,
+                      fastingPercent:
+                          (elapsed.inSeconds / (targetHours * 3600)) * 100,
+                      feedingPercent:
+                          (elapsed.inSeconds / ((24 - targetHours) * 3600)) *
+                          100,
+                      hasCompletedConfirmationShown: effectiveHasConfirmed,
+                      isContinuingPastGoal: isContinuing,
+                      hasInitialMealBeenLogged: initialMealLogged,
+                      hasFeedingEndDialogShown: feedingEndDialogShown,
+                    ),
+                  );
+                } catch (_) {
+                  // Disposed — silenciar
+                  return;
+                }
 
-            // Persistimos para que el timer sea estable en el próximo snapshot
-            Future.delayed(
-                Duration.zero,
-                () => repo.updateMetabolicState(
-                      uid: uid,
-                      phase: phaseFeeding,
-                      feedingStartTime: defaultFeedingStart,
-                      isActive: true,
-                    ));
+                // 🥗 TRIGGER AUTOMÁTICO DE REGISTRO
+                if (effectivePhase == phaseFeeding &&
+                    effectiveHasConfirmed && // 🛡️ CRITICAL: Solo si el usuario confirmó fin de ayuno
+                    !_autoTriggerChecked &&
+                    ref.read(mealModalTriggerProvider) == false) {
+                  _autoTriggerChecked = true;
+                  debugPrint(
+                    "🥗 FastingController: Verificando auto-trigger de comida.",
+                  );
 
-            _startTicker();
-          }
-        },
-        onError: (e, stack) {
-          debugPrint("❌ Stream Error [MetabolicState]: $e");
-          // No matamos el estado, dejamos el último conocido o initial si es el primero
-          if (state is AsyncLoading) {
-            state = AsyncValue.error(e, stack);
-          }
-        },
-      );
+                  Future.delayed(Duration.zero, () async {
+                    if (_disposed) return; // 🛡️ Guard post-dispose
+                    try {
+                      // Solo disparamos si el perfil existe y el onboarding está completo
+                      final userAsync = await ref
+                          .read(currentUserStreamProvider.future)
+                          .timeout(const Duration(seconds: 3));
+                      if (userAsync == null || !userAsync.onboardingCompleted) {
+                        debugPrint("🥗 Skip Trigger: Onboarding incompleto.");
+                        return;
+                      }
+
+                      final DailyLog? log = await ref
+                          .read(todayLogProvider(uid).future)
+                          .timeout(const Duration(seconds: 5));
+
+                      // Actualizar flag hasInitialMealBeenLogged si hay comidas
+                      if (log != null &&
+                          log.mealEntries.isNotEmpty &&
+                          !_disposed) {
+                        try {
+                          state = AsyncValue.data(
+                            state.value!.copyWith(
+                              hasInitialMealBeenLogged: true,
+                            ),
+                          );
+                        } catch (_) {
+                          return;
+                        }
+                      }
+
+                      if (_disposed) return;
+                      if (log != null &&
+                          log.mealEntries.isEmpty &&
+                          state.value?.hasInitialMealBeenLogged == false) {
+                        debugPrint(
+                          "🥗 Auto-Trigger: Abriendo registro de comida (Ventana con 0 comidas).",
+                        );
+                        ref.read(mealModalTriggerProvider.notifier).state =
+                            true;
+                      } else if (log != null && log.mealEntries.isNotEmpty) {
+                        debugPrint(
+                          "🥗 Skip Trigger: Ya hay comidas registradas hoy.",
+                        );
+                        // En un futuro podríamos reactivar el modal si pasó suficiente tiempo,
+                        // pero por ahora el usuario quiere evitar bucles automáticos.
+                        // ref.read(mealModalTriggerProvider.notifier).state = false;
+                      }
+                    } catch (e) {
+                      debugPrint("❌ Error en trigger de comida: $e");
+                      _autoTriggerChecked =
+                          false; // Reset on error so we can retry
+                    }
+                  });
+                } else if (effectivePhase == phaseFasting) {
+                  // Reset auto-trigger check for the next feeding window
+                  _autoTriggerChecked = false;
+                } else if (effectivePhase == phaseFeeding &&
+                    !effectiveHasConfirmed) {
+                  debugPrint(
+                    "🥗 Skip Trigger: En Alimentación pero SIN CONFIRMACIÓN. Esperando diálogo.",
+                  );
+                }
+
+                _startTicker();
+              } else {
+                // 🆕 CASO: No hay datos en Firestore. Inicializamos un estado de alimentación base.
+                final now = DateTime.now();
+                final defaultFeedingStart = now.subtract(
+                  const Duration(seconds: 1),
+                );
+
+                state = AsyncValue.data(
+                  FastingState.initial().copyWith(
+                    feedingStartTime: defaultFeedingStart,
+                  ),
+                );
+
+                // Persistimos para que el timer sea estable en el próximo snapshot
+                Future.delayed(
+                  Duration.zero,
+                  () => repo.updateMetabolicState(
+                    uid: uid,
+                    phase: phaseFeeding,
+                    feedingStartTime: defaultFeedingStart,
+                    isActive: true,
+                  ),
+                );
+
+                _startTicker();
+              }
+            },
+            onError: (e, stack) {
+              debugPrint("❌ Stream Error [MetabolicState]: $e");
+              // No matamos el estado, dejamos el último conocido o initial si es el primero
+              if (state is AsyncLoading) {
+                state = AsyncValue.error(e, stack);
+              }
+            },
+          );
     } catch (e, stack) {
       debugPrint("❌ Error en _initMetabolicMachine: $e");
       state = AsyncValue.error(e, stack);
@@ -346,10 +391,22 @@ class FastingController extends AutoDisposeNotifier<AsyncValue<FastingState>> {
 
   void _startTicker() {
     _timer?.cancel();
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) => _tick());
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (_disposed) {
+        _timer?.cancel();
+        return;
+      }
+      _tick();
+    });
   }
 
   void _tick() {
+    // 🛡️ Guard: No actualizar state si el notifier ya fue disposed
+    if (_disposed) {
+      _timer?.cancel();
+      return;
+    }
+
     final currentState = state.value;
     if (currentState == null) return;
 
@@ -360,8 +417,9 @@ class FastingController extends AutoDisposeNotifier<AsyncValue<FastingState>> {
         ? (currentState.startTime ?? now)
         : (currentState.feedingStartTime ?? now);
 
-    final elapsed =
-        now.isAfter(baseTime) ? now.difference(baseTime) : Duration.zero;
+    final elapsed = now.isAfter(baseTime)
+        ? now.difference(baseTime)
+        : Duration.zero;
 
     final feedingGoal = (24 - currentState.plannedHours).toDouble();
     if (feedingGoal <= 0) return;
@@ -384,13 +442,22 @@ class FastingController extends AutoDisposeNotifier<AsyncValue<FastingState>> {
       }
     }
 
-    state = AsyncValue.data(currentState.copyWith(
-      elapsed: elapsed,
-      fastingPercent:
-          (elapsed.inSeconds / (currentState.plannedHours * 3600)) * 100,
-      feedingPercent: (elapsed.inSeconds / (feedingGoal * 3600)) * 100,
-      isWindowClosing: windowClosing,
-    ));
+    // 🛡️ Wrappear mutación de state para prevenir render en view disposed (web)
+    try {
+      state = AsyncValue.data(
+        currentState.copyWith(
+          elapsed: elapsed,
+          fastingPercent:
+              (elapsed.inSeconds / (currentState.plannedHours * 3600)) * 100,
+          feedingPercent: (elapsed.inSeconds / (feedingGoal * 3600)) * 100,
+          isWindowClosing: windowClosing,
+        ),
+      );
+    } catch (_) {
+      // Si state setter falla (disposed), cancelar timer silenciosamente
+      _timer?.cancel();
+      return;
+    }
 
     if (currentState.isFasting) {
       // Detectar cambio de zona — solo notificar en transiciones
@@ -413,14 +480,18 @@ class FastingController extends AutoDisposeNotifier<AsyncValue<FastingState>> {
     // }
   }
 
-  Future<void> startFast(
-      {required int hours, DateTime? manualStartTime}) async {
+  Future<void> startFast({
+    required int hours,
+    DateTime? manualStartTime,
+  }) async {
     final uid = ref.read(authControllerProvider.notifier).currentUser?.uid;
     if (uid == null) return;
 
     final startTime = manualStartTime ?? DateTime.now();
 
-    await ref.read(fastingRepositoryProvider).updateMetabolicState(
+    await ref
+        .read(fastingRepositoryProvider)
+        .updateMetabolicState(
           uid: uid,
           phase: phaseFasting,
           startTime: startTime,
@@ -443,7 +514,11 @@ class FastingController extends AutoDisposeNotifier<AsyncValue<FastingState>> {
     await ref.read(fastingRepositoryProvider).startFast(uid, session);
 
     await NotificationService.scheduleFastingNotifications(
-        startTime, Duration(hours: hours));
+      startTime,
+      Duration(hours: hours),
+    );
+
+    AnalyticsService.logFastingStarted('${hours}h');
   }
 
   Future<void> endFasting({DateTime? manualEndTime}) async {
@@ -455,18 +530,27 @@ class FastingController extends AutoDisposeNotifier<AsyncValue<FastingState>> {
     final startTime = currentState.startTime ?? now;
 
     debugPrint(
-        "🎬 [FastingController] endFasting() Invocado (Reactive Overlay)...");
+      "🎬 [FastingController] endFasting() Invocado (Reactive Overlay)...",
+    );
 
     // 1. ACTUALIZACIÓN LOCAL INMEDIATA: Transición instantánea a FEEDING
     // para que la UI responda sin esperar a Firestore.
-    state = AsyncValue.data(currentState.copyWith(
-      currentPhase: phaseFeeding,
-      feedingStartTime: now, // La ventana de alimentación comienza AHORA
-      hasCompletedConfirmationShown: true,
-      isContinuingPastGoal: false,
-      hasInitialMealBeenLogged: false,
-      hasFeedingEndDialogShown: false,
-    ));
+    // ⚠️ CRÍTICO: Resetear elapsed a Duration.zero para evitar que el listener
+    // de expiración de ventana dispare el diálogo inmediatamente (el elapsed
+    // anterior pertenece a la fase de ayuno, no a la nueva alimentación).
+    state = AsyncValue.data(
+      currentState.copyWith(
+        currentPhase: phaseFeeding,
+        feedingStartTime: now, // La ventana de alimentación comienza AHORA
+        elapsed: Duration.zero, // 🛡️ Reset: nueva ventana, nuevo elapsed
+        fastingPercent: 0.0,
+        feedingPercent: 0.0,
+        hasCompletedConfirmationShown: true,
+        isContinuingPastGoal: false,
+        hasInitialMealBeenLogged: false,
+        hasFeedingEndDialogShown: false,
+      ),
+    );
 
     try {
       final repo = ref.read(fastingRepositoryProvider);
@@ -474,15 +558,19 @@ class FastingController extends AutoDisposeNotifier<AsyncValue<FastingState>> {
       // 2. Transición Atómica en DB con Timeout de 5s
       await repo
           .performEndFastingBatch(
-        uid: uid,
-        endTime: now,
-        startTime: startTime,
-        targetHours: currentState.plannedHours,
-      )
-          .timeout(const Duration(seconds: 5), onTimeout: () {
-        throw TimeoutException(
-            "La conexión con Firestore ha tardado demasiado (5s). Reintente.");
-      });
+            uid: uid,
+            endTime: now,
+            startTime: startTime,
+            targetHours: currentState.plannedHours,
+          )
+          .timeout(
+            const Duration(seconds: 5),
+            onTimeout: () {
+              throw TimeoutException(
+                "La conexión con Firestore ha tardado demasiado (5s). Reintente.",
+              );
+            },
+          );
 
       debugPrint("✅ [FastingController] Transición Atómica en DB: EXITOSA");
 
@@ -498,7 +586,12 @@ class FastingController extends AutoDisposeNotifier<AsyncValue<FastingState>> {
 
       // 5. Notificaciones de ventana de alimentación
       await NotificationService.scheduleFeedingNotifications(
-          now, 24 - currentState.plannedHours);
+        now,
+        24 - currentState.plannedHours,
+      );
+
+      final fastingHours = now.difference(startTime).inMinutes / 60.0;
+      AnalyticsService.logFastingCompleted(fastingHours);
 
       debugPrint("🚀 [FastingController] endFasting() Finalizado con éxito.");
     } catch (e) {
@@ -539,11 +632,9 @@ class FastingController extends AutoDisposeNotifier<AsyncValue<FastingState>> {
       }
     }
 
-    await ref.read(fastingRepositoryProvider).updateMetabolicState(
-          uid: uid,
-          phase: targetPhase,
-          targetHours: hours,
-        );
+    await ref
+        .read(fastingRepositoryProvider)
+        .updateMetabolicState(uid: uid, phase: targetPhase, targetHours: hours);
   }
 
   Future<void> setConfirmationShown(bool shown) async {
@@ -552,9 +643,12 @@ class FastingController extends AutoDisposeNotifier<AsyncValue<FastingState>> {
     if (uid == null || currentState == null) return;
 
     state = AsyncValue.data(
-        currentState.copyWith(hasCompletedConfirmationShown: shown));
+      currentState.copyWith(hasCompletedConfirmationShown: shown),
+    );
 
-    await ref.read(fastingRepositoryProvider).updateMetabolicState(
+    await ref
+        .read(fastingRepositoryProvider)
+        .updateMetabolicState(
           uid: uid,
           phase: currentState.currentPhase,
           hasCompletedConfirmationShown: shown,
@@ -566,13 +660,17 @@ class FastingController extends AutoDisposeNotifier<AsyncValue<FastingState>> {
     final currentState = state.valueOrNull;
     if (uid == null || currentState == null) return;
 
-    state = AsyncValue.data(currentState.copyWith(
-      isContinuingPastGoal: continuing,
-      hasCompletedConfirmationShown:
-          true, // Al decir que continúa, marcamos que ya se preguntó
-    ));
+    state = AsyncValue.data(
+      currentState.copyWith(
+        isContinuingPastGoal: continuing,
+        hasCompletedConfirmationShown:
+            true, // Al decir que continúa, marcamos que ya se preguntó
+      ),
+    );
 
-    await ref.read(fastingRepositoryProvider).updateMetabolicState(
+    await ref
+        .read(fastingRepositoryProvider)
+        .updateMetabolicState(
           uid: uid,
           phase: currentState.currentPhase,
           isContinuingPastGoal: continuing,
@@ -584,7 +682,9 @@ class FastingController extends AutoDisposeNotifier<AsyncValue<FastingState>> {
     final uid = ref.read(authControllerProvider.notifier).currentUser?.uid;
     if (uid == null || state.valueOrNull == null) return;
 
-    await ref.read(fastingRepositoryProvider).updateMetabolicState(
+    await ref
+        .read(fastingRepositoryProvider)
+        .updateMetabolicState(
           uid: uid,
           phase: state.value!.currentPhase,
           startTime: time,
@@ -599,7 +699,7 @@ class FastingController extends AutoDisposeNotifier<AsyncValue<FastingState>> {
     if (uid == null) return false;
 
     try {
-      // 1. Limpiamos en HealthRepository (recalcula IED a 0)
+      // 1. Limpiamos en HealthRepository (recalcula IMR a 0)
       await ref.read(healthRepositoryProvider).clearTodayMeals(uid);
 
       // 2. Disparamos inmediatamente el modal de registro para que inicie "desde cero"
@@ -628,7 +728,8 @@ class FastingController extends AutoDisposeNotifier<AsyncValue<FastingState>> {
         final int? nano = dVal['nanoseconds'] ?? dVal['_nanoseconds'];
         if (sec != null) {
           return DateTime.fromMillisecondsSinceEpoch(
-              sec * 1000 + ((nano ?? 0) ~/ 1000000));
+            sec * 1000 + ((nano ?? 0) ~/ 1000000),
+          );
         }
       }
 
@@ -645,11 +746,13 @@ class FastingController extends AutoDisposeNotifier<AsyncValue<FastingState>> {
     final currentState = state.value;
     if (uid == null || currentState == null) return;
 
-    state = AsyncValue.data(currentState.copyWith(
-      hasFeedingEndDialogShown: true,
-    ));
+    state = AsyncValue.data(
+      currentState.copyWith(hasFeedingEndDialogShown: true),
+    );
 
-    await ref.read(fastingRepositoryProvider).updateMetabolicState(
+    await ref
+        .read(fastingRepositoryProvider)
+        .updateMetabolicState(
           uid: uid,
           phase: currentState.currentPhase,
           hasFeedingEndDialogShown: true,
@@ -659,4 +762,5 @@ class FastingController extends AutoDisposeNotifier<AsyncValue<FastingState>> {
 
 final fastingControllerProvider =
     AutoDisposeNotifierProvider<FastingController, AsyncValue<FastingState>>(
-        FastingController.new);
+      FastingController.new,
+    );

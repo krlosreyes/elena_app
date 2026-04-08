@@ -1,5 +1,5 @@
-// coverage:ignore-file
 // GENERATED CODE - DO NOT MODIFY BY HAND
+// coverage:ignore-file
 // ignore_for_file: type=lint
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
@@ -9,107 +9,63 @@ part of 'exercise.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// dart format off
 T _$identity<T>(T value) => value;
-
-final _privateConstructorUsedError = UnsupportedError(
-    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
-
-Exercise _$ExerciseFromJson(Map<String, dynamic> json) {
-  return _Exercise.fromJson(json);
-}
 
 /// @nodoc
 mixin _$Exercise {
-  String get id => throw _privateConstructorUsedError;
-  String get name => throw _privateConstructorUsedError;
-  String get targetMuscle => throw _privateConstructorUsedError;
-  String get mechanics => throw _privateConstructorUsedError;
-  String get description => throw _privateConstructorUsedError;
-  String? get videoUrl => throw _privateConstructorUsedError;
-  bool get requiresWeight => throw _privateConstructorUsedError;
+  String get id;
+  String get name;
+  String get targetMuscle;
+  String get mechanics;
+  String get description;
+  String? get videoUrl;
+  bool get requiresWeight;
 
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-  @JsonKey(ignore: true)
-  $ExerciseCopyWith<Exercise> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $ExerciseCopyWith<$Res> {
-  factory $ExerciseCopyWith(Exercise value, $Res Function(Exercise) then) =
-      _$ExerciseCopyWithImpl<$Res, Exercise>;
-  @useResult
-  $Res call(
-      {String id,
-      String name,
-      String targetMuscle,
-      String mechanics,
-      String description,
-      String? videoUrl,
-      bool requiresWeight});
-}
-
-/// @nodoc
-class _$ExerciseCopyWithImpl<$Res, $Val extends Exercise>
-    implements $ExerciseCopyWith<$Res> {
-  _$ExerciseCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
+  /// Create a copy of Exercise
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @pragma('vm:prefer-inline')
+  $ExerciseCopyWith<Exercise> get copyWith =>
+      _$ExerciseCopyWithImpl<Exercise>(this as Exercise, _$identity);
+
+  /// Serializes this Exercise to a JSON map.
+  Map<String, dynamic> toJson();
+
   @override
-  $Res call({
-    Object? id = null,
-    Object? name = null,
-    Object? targetMuscle = null,
-    Object? mechanics = null,
-    Object? description = null,
-    Object? videoUrl = freezed,
-    Object? requiresWeight = null,
-  }) {
-    return _then(_value.copyWith(
-      id: null == id
-          ? _value.id
-          : id // ignore: cast_nullable_to_non_nullable
-              as String,
-      name: null == name
-          ? _value.name
-          : name // ignore: cast_nullable_to_non_nullable
-              as String,
-      targetMuscle: null == targetMuscle
-          ? _value.targetMuscle
-          : targetMuscle // ignore: cast_nullable_to_non_nullable
-              as String,
-      mechanics: null == mechanics
-          ? _value.mechanics
-          : mechanics // ignore: cast_nullable_to_non_nullable
-              as String,
-      description: null == description
-          ? _value.description
-          : description // ignore: cast_nullable_to_non_nullable
-              as String,
-      videoUrl: freezed == videoUrl
-          ? _value.videoUrl
-          : videoUrl // ignore: cast_nullable_to_non_nullable
-              as String?,
-      requiresWeight: null == requiresWeight
-          ? _value.requiresWeight
-          : requiresWeight // ignore: cast_nullable_to_non_nullable
-              as bool,
-    ) as $Val);
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is Exercise &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.name, name) || other.name == name) &&
+            (identical(other.targetMuscle, targetMuscle) ||
+                other.targetMuscle == targetMuscle) &&
+            (identical(other.mechanics, mechanics) ||
+                other.mechanics == mechanics) &&
+            (identical(other.description, description) ||
+                other.description == description) &&
+            (identical(other.videoUrl, videoUrl) ||
+                other.videoUrl == videoUrl) &&
+            (identical(other.requiresWeight, requiresWeight) ||
+                other.requiresWeight == requiresWeight));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, id, name, targetMuscle,
+      mechanics, description, videoUrl, requiresWeight);
+
+  @override
+  String toString() {
+    return 'Exercise(id: $id, name: $name, targetMuscle: $targetMuscle, mechanics: $mechanics, description: $description, videoUrl: $videoUrl, requiresWeight: $requiresWeight)';
   }
 }
 
 /// @nodoc
-abstract class _$$ExerciseImplCopyWith<$Res>
-    implements $ExerciseCopyWith<$Res> {
-  factory _$$ExerciseImplCopyWith(
-          _$ExerciseImpl value, $Res Function(_$ExerciseImpl) then) =
-      __$$ExerciseImplCopyWithImpl<$Res>;
-  @override
+abstract mixin class $ExerciseCopyWith<$Res> {
+  factory $ExerciseCopyWith(Exercise value, $Res Function(Exercise) _then) =
+      _$ExerciseCopyWithImpl;
   @useResult
   $Res call(
       {String id,
@@ -122,13 +78,14 @@ abstract class _$$ExerciseImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$ExerciseImplCopyWithImpl<$Res>
-    extends _$ExerciseCopyWithImpl<$Res, _$ExerciseImpl>
-    implements _$$ExerciseImplCopyWith<$Res> {
-  __$$ExerciseImplCopyWithImpl(
-      _$ExerciseImpl _value, $Res Function(_$ExerciseImpl) _then)
-      : super(_value, _then);
+class _$ExerciseCopyWithImpl<$Res> implements $ExerciseCopyWith<$Res> {
+  _$ExerciseCopyWithImpl(this._self, this._then);
 
+  final Exercise _self;
+  final $Res Function(Exercise) _then;
+
+  /// Create a copy of Exercise
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -140,43 +97,245 @@ class __$$ExerciseImplCopyWithImpl<$Res>
     Object? videoUrl = freezed,
     Object? requiresWeight = null,
   }) {
-    return _then(_$ExerciseImpl(
+    return _then(_self.copyWith(
       id: null == id
-          ? _value.id
+          ? _self.id
           : id // ignore: cast_nullable_to_non_nullable
               as String,
       name: null == name
-          ? _value.name
+          ? _self.name
           : name // ignore: cast_nullable_to_non_nullable
               as String,
       targetMuscle: null == targetMuscle
-          ? _value.targetMuscle
+          ? _self.targetMuscle
           : targetMuscle // ignore: cast_nullable_to_non_nullable
               as String,
       mechanics: null == mechanics
-          ? _value.mechanics
+          ? _self.mechanics
           : mechanics // ignore: cast_nullable_to_non_nullable
               as String,
       description: null == description
-          ? _value.description
+          ? _self.description
           : description // ignore: cast_nullable_to_non_nullable
               as String,
       videoUrl: freezed == videoUrl
-          ? _value.videoUrl
+          ? _self.videoUrl
           : videoUrl // ignore: cast_nullable_to_non_nullable
               as String?,
       requiresWeight: null == requiresWeight
-          ? _value.requiresWeight
+          ? _self.requiresWeight
           : requiresWeight // ignore: cast_nullable_to_non_nullable
               as bool,
     ));
   }
 }
 
+/// Adds pattern-matching-related methods to [Exercise].
+extension ExercisePatterns on Exercise {
+  /// A variant of `map` that fallback to returning `orElse`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>(
+    TResult Function(_Exercise value)? $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _Exercise() when $default != null:
+        return $default(_that);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// Callbacks receives the raw object, upcasted.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case final Subclass2 value:
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>(
+    TResult Function(_Exercise value) $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _Exercise():
+        return $default(_that);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `map` that fallback to returning `null`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>(
+    TResult? Function(_Exercise value)? $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _Exercise() when $default != null:
+        return $default(_that);
+      case _:
+        return null;
+    }
+  }
+
+  /// A variant of `when` that fallback to an `orElse` callback.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>(
+    TResult Function(
+            String id,
+            String name,
+            String targetMuscle,
+            String mechanics,
+            String description,
+            String? videoUrl,
+            bool requiresWeight)?
+        $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _Exercise() when $default != null:
+        return $default(
+            _that.id,
+            _that.name,
+            _that.targetMuscle,
+            _that.mechanics,
+            _that.description,
+            _that.videoUrl,
+            _that.requiresWeight);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// As opposed to `map`, this offers destructuring.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case Subclass2(:final field2):
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>(
+    TResult Function(
+            String id,
+            String name,
+            String targetMuscle,
+            String mechanics,
+            String description,
+            String? videoUrl,
+            bool requiresWeight)
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _Exercise():
+        return $default(
+            _that.id,
+            _that.name,
+            _that.targetMuscle,
+            _that.mechanics,
+            _that.description,
+            _that.videoUrl,
+            _that.requiresWeight);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `when` that fallback to returning `null`
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>(
+    TResult? Function(
+            String id,
+            String name,
+            String targetMuscle,
+            String mechanics,
+            String description,
+            String? videoUrl,
+            bool requiresWeight)?
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _Exercise() when $default != null:
+        return $default(
+            _that.id,
+            _that.name,
+            _that.targetMuscle,
+            _that.mechanics,
+            _that.description,
+            _that.videoUrl,
+            _that.requiresWeight);
+      case _:
+        return null;
+    }
+  }
+}
+
 /// @nodoc
 @JsonSerializable()
-class _$ExerciseImpl implements _Exercise {
-  const _$ExerciseImpl(
+class _Exercise implements Exercise {
+  const _Exercise(
       {required this.id,
       required this.name,
       required this.targetMuscle,
@@ -184,9 +343,8 @@ class _$ExerciseImpl implements _Exercise {
       required this.description,
       this.videoUrl,
       this.requiresWeight = true});
-
-  factory _$ExerciseImpl.fromJson(Map<String, dynamic> json) =>
-      _$$ExerciseImplFromJson(json);
+  factory _Exercise.fromJson(Map<String, dynamic> json) =>
+      _$ExerciseFromJson(json);
 
   @override
   final String id;
@@ -204,16 +362,26 @@ class _$ExerciseImpl implements _Exercise {
   @JsonKey()
   final bool requiresWeight;
 
+  /// Create a copy of Exercise
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'Exercise(id: $id, name: $name, targetMuscle: $targetMuscle, mechanics: $mechanics, description: $description, videoUrl: $videoUrl, requiresWeight: $requiresWeight)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  _$ExerciseCopyWith<_Exercise> get copyWith =>
+      __$ExerciseCopyWithImpl<_Exercise>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$ExerciseToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$ExerciseImpl &&
+            other is _Exercise &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.name, name) || other.name == name) &&
             (identical(other.targetMuscle, targetMuscle) ||
@@ -228,54 +396,85 @@ class _$ExerciseImpl implements _Exercise {
                 other.requiresWeight == requiresWeight));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(runtimeType, id, name, targetMuscle,
       mechanics, description, videoUrl, requiresWeight);
 
-  @JsonKey(ignore: true)
   @override
-  @pragma('vm:prefer-inline')
-  _$$ExerciseImplCopyWith<_$ExerciseImpl> get copyWith =>
-      __$$ExerciseImplCopyWithImpl<_$ExerciseImpl>(this, _$identity);
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$ExerciseImplToJson(
-      this,
-    );
+  String toString() {
+    return 'Exercise(id: $id, name: $name, targetMuscle: $targetMuscle, mechanics: $mechanics, description: $description, videoUrl: $videoUrl, requiresWeight: $requiresWeight)';
   }
 }
 
-abstract class _Exercise implements Exercise {
-  const factory _Exercise(
-      {required final String id,
-      required final String name,
-      required final String targetMuscle,
-      required final String mechanics,
-      required final String description,
-      final String? videoUrl,
-      final bool requiresWeight}) = _$ExerciseImpl;
-
-  factory _Exercise.fromJson(Map<String, dynamic> json) =
-      _$ExerciseImpl.fromJson;
-
+/// @nodoc
+abstract mixin class _$ExerciseCopyWith<$Res>
+    implements $ExerciseCopyWith<$Res> {
+  factory _$ExerciseCopyWith(_Exercise value, $Res Function(_Exercise) _then) =
+      __$ExerciseCopyWithImpl;
   @override
-  String get id;
-  @override
-  String get name;
-  @override
-  String get targetMuscle;
-  @override
-  String get mechanics;
-  @override
-  String get description;
-  @override
-  String? get videoUrl;
-  @override
-  bool get requiresWeight;
-  @override
-  @JsonKey(ignore: true)
-  _$$ExerciseImplCopyWith<_$ExerciseImpl> get copyWith =>
-      throw _privateConstructorUsedError;
+  @useResult
+  $Res call(
+      {String id,
+      String name,
+      String targetMuscle,
+      String mechanics,
+      String description,
+      String? videoUrl,
+      bool requiresWeight});
 }
+
+/// @nodoc
+class __$ExerciseCopyWithImpl<$Res> implements _$ExerciseCopyWith<$Res> {
+  __$ExerciseCopyWithImpl(this._self, this._then);
+
+  final _Exercise _self;
+  final $Res Function(_Exercise) _then;
+
+  /// Create a copy of Exercise
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? id = null,
+    Object? name = null,
+    Object? targetMuscle = null,
+    Object? mechanics = null,
+    Object? description = null,
+    Object? videoUrl = freezed,
+    Object? requiresWeight = null,
+  }) {
+    return _then(_Exercise(
+      id: null == id
+          ? _self.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      name: null == name
+          ? _self.name
+          : name // ignore: cast_nullable_to_non_nullable
+              as String,
+      targetMuscle: null == targetMuscle
+          ? _self.targetMuscle
+          : targetMuscle // ignore: cast_nullable_to_non_nullable
+              as String,
+      mechanics: null == mechanics
+          ? _self.mechanics
+          : mechanics // ignore: cast_nullable_to_non_nullable
+              as String,
+      description: null == description
+          ? _self.description
+          : description // ignore: cast_nullable_to_non_nullable
+              as String,
+      videoUrl: freezed == videoUrl
+          ? _self.videoUrl
+          : videoUrl // ignore: cast_nullable_to_non_nullable
+              as String?,
+      requiresWeight: null == requiresWeight
+          ? _self.requiresWeight
+          : requiresWeight // ignore: cast_nullable_to_non_nullable
+              as bool,
+    ));
+  }
+}
+
+// dart format on

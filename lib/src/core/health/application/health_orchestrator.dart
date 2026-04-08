@@ -446,6 +446,7 @@ class HealthOrchestrator {
       gender: p.gender,
       goal: p.goal,
       fastingContext: ctx,
+      dailyExerciseGoalMinutes: p.dailyExerciseGoalMinutes,
       recentHighIntensityWorkout: p.recentHighIntensityWorkout,
       targetWeightKg: p.targetWeightKg,
       targetFatPercent: p.targetFatPercent,

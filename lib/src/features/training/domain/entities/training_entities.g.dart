@@ -6,33 +6,32 @@ part of 'training_entities.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$WorkoutSessionImpl _$$WorkoutSessionImplFromJson(Map<String, dynamic> json) =>
-    _$WorkoutSessionImpl(
+_WorkoutSession _$WorkoutSessionFromJson(Map<String, dynamic> json) =>
+    _WorkoutSession(
       id: json['id'] as String,
-      userId: json['user_id'] as String,
-      startTime: const TimestampConverter().fromJson(json['start_time']),
-      endTime: const TimestampConverter().fromJson(json['end_time']),
-      intensityLevel: (json['intensity_level'] as num).toInt(),
+      userId: json['userId'] as String,
+      startTime: const TimestampConverter().fromJson(json['startTime']),
+      endTime: const TimestampConverter().fromJson(json['endTime']),
+      intensityLevel: (json['intensityLevel'] as num).toInt(),
       type: json['type'] as String,
       targetMuscle:
-          $enumDecodeNullable(_$TargetMuscleEnumMap, json['target_muscle']),
+          $enumDecodeNullable(_$TargetMuscleEnumMap, json['targetMuscle']),
       sets: (json['sets'] as List<dynamic>?)
               ?.map((e) => ExerciseSet.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const [],
     );
 
-Map<String, dynamic> _$$WorkoutSessionImplToJson(
-        _$WorkoutSessionImpl instance) =>
+Map<String, dynamic> _$WorkoutSessionToJson(_WorkoutSession instance) =>
     <String, dynamic>{
       'id': instance.id,
-      'user_id': instance.userId,
-      'start_time': const TimestampConverter().toJson(instance.startTime),
-      'end_time': const TimestampConverter().toJson(instance.endTime),
-      'intensity_level': instance.intensityLevel,
+      'userId': instance.userId,
+      'startTime': const TimestampConverter().toJson(instance.startTime),
+      'endTime': const TimestampConverter().toJson(instance.endTime),
+      'intensityLevel': instance.intensityLevel,
       'type': instance.type,
-      'target_muscle': _$TargetMuscleEnumMap[instance.targetMuscle],
-      'sets': instance.sets,
+      'targetMuscle': _$TargetMuscleEnumMap[instance.targetMuscle],
+      'sets': instance.sets.map((e) => e.toJson()).toList(),
     };
 
 const _$TargetMuscleEnumMap = {
@@ -46,104 +45,101 @@ const _$TargetMuscleEnumMap = {
   TargetMuscle.movilidad: 'movilidad',
 };
 
-_$ExerciseSetImpl _$$ExerciseSetImplFromJson(Map<String, dynamic> json) =>
-    _$ExerciseSetImpl(
-      setIndex: (json['set_index'] as num).toInt(),
-      exerciseName: json['exercise_name'] as String,
+_ExerciseSet _$ExerciseSetFromJson(Map<String, dynamic> json) => _ExerciseSet(
+      setIndex: (json['setIndex'] as num).toInt(),
+      exerciseName: json['exerciseName'] as String,
       weight: (json['weight'] as num).toDouble(),
-      repsCompleted: (json['reps_completed'] as num).toInt(),
+      repsCompleted: (json['repsCompleted'] as num).toInt(),
       rir: (json['rir'] as num).toInt(),
-      isDone: json['is_done'] as bool? ?? false,
+      isDone: json['isDone'] as bool? ?? false,
     );
 
-Map<String, dynamic> _$$ExerciseSetImplToJson(_$ExerciseSetImpl instance) =>
+Map<String, dynamic> _$ExerciseSetToJson(_ExerciseSet instance) =>
     <String, dynamic>{
-      'set_index': instance.setIndex,
-      'exercise_name': instance.exerciseName,
+      'setIndex': instance.setIndex,
+      'exerciseName': instance.exerciseName,
       'weight': instance.weight,
-      'reps_completed': instance.repsCompleted,
+      'repsCompleted': instance.repsCompleted,
       'rir': instance.rir,
-      'is_done': instance.isDone,
+      'isDone': instance.isDone,
     };
 
-_$ExerciseImpl _$$ExerciseImplFromJson(Map<String, dynamic> json) =>
-    _$ExerciseImpl(
+_RoutineExercise _$RoutineExerciseFromJson(Map<String, dynamic> json) =>
+    _RoutineExercise(
       id: json['id'] as String,
       name: json['name'] as String,
       sets: (json['sets'] as num).toInt(),
-      targetReps: json['target_reps'] as String,
+      targetReps: json['targetReps'] as String,
       rir: (json['rir'] as num).toInt(),
-      restSeconds: (json['rest_seconds'] as num).toInt(),
-      targetMuscle: json['target_muscle'] as String? ?? 'Unknown',
-      requiresWeight: json['requires_weight'] as bool? ?? true,
+      restSeconds: (json['restSeconds'] as num).toInt(),
+      targetMuscle: json['targetMuscle'] as String? ?? 'Unknown',
+      requiresWeight: json['requiresWeight'] as bool? ?? true,
     );
 
-Map<String, dynamic> _$$ExerciseImplToJson(_$ExerciseImpl instance) =>
+Map<String, dynamic> _$RoutineExerciseToJson(_RoutineExercise instance) =>
     <String, dynamic>{
       'id': instance.id,
       'name': instance.name,
       'sets': instance.sets,
-      'target_reps': instance.targetReps,
+      'targetReps': instance.targetReps,
       'rir': instance.rir,
-      'rest_seconds': instance.restSeconds,
-      'target_muscle': instance.targetMuscle,
-      'requires_weight': instance.requiresWeight,
+      'restSeconds': instance.restSeconds,
+      'targetMuscle': instance.targetMuscle,
+      'requiresWeight': instance.requiresWeight,
     };
 
-_$WeeklyTrainingStatsImpl _$$WeeklyTrainingStatsImplFromJson(
-        Map<String, dynamic> json) =>
-    _$WeeklyTrainingStatsImpl(
-      totalStrengthMins: (json['total_strength_mins'] as num).toInt(),
-      totalHiitMins: (json['total_hiit_mins'] as num).toInt(),
-      zone2Mins: (json['zone2_mins'] as num).toInt(),
-      consecutiveWeeksTrained:
-          (json['consecutive_weeks_trained'] as num).toInt(),
+_WeeklyTrainingStats _$WeeklyTrainingStatsFromJson(Map<String, dynamic> json) =>
+    _WeeklyTrainingStats(
+      totalStrengthMins: (json['totalStrengthMins'] as num).toInt(),
+      totalHiitMins: (json['totalHiitMins'] as num).toInt(),
+      zone2Mins: (json['zone2Mins'] as num).toInt(),
+      consecutiveWeeksTrained: (json['consecutiveWeeksTrained'] as num).toInt(),
     );
 
-Map<String, dynamic> _$$WeeklyTrainingStatsImplToJson(
-        _$WeeklyTrainingStatsImpl instance) =>
+Map<String, dynamic> _$WeeklyTrainingStatsToJson(
+        _WeeklyTrainingStats instance) =>
     <String, dynamic>{
-      'total_strength_mins': instance.totalStrengthMins,
-      'total_hiit_mins': instance.totalHiitMins,
-      'zone2_mins': instance.zone2Mins,
-      'consecutive_weeks_trained': instance.consecutiveWeeksTrained,
+      'totalStrengthMins': instance.totalStrengthMins,
+      'totalHiitMins': instance.totalHiitMins,
+      'zone2Mins': instance.zone2Mins,
+      'consecutiveWeeksTrained': instance.consecutiveWeeksTrained,
     };
 
-_$WorkoutRecommendationImpl _$$WorkoutRecommendationImplFromJson(
+_WorkoutRecommendation _$WorkoutRecommendationFromJson(
         Map<String, dynamic> json) =>
-    _$WorkoutRecommendationImpl(
+    _WorkoutRecommendation(
       type: json['type'] as String,
       targetMuscle:
-          $enumDecodeNullable(_$TargetMuscleEnumMap, json['target_muscle']),
-      durationMinutes: (json['duration_minutes'] as num).toInt(),
+          $enumDecodeNullable(_$TargetMuscleEnumMap, json['targetMuscle']),
+      durationMinutes: (json['durationMinutes'] as num).toInt(),
       intensity: json['intensity'] as String,
       notes: json['notes'] as String,
     );
 
-Map<String, dynamic> _$$WorkoutRecommendationImplToJson(
-        _$WorkoutRecommendationImpl instance) =>
+Map<String, dynamic> _$WorkoutRecommendationToJson(
+        _WorkoutRecommendation instance) =>
     <String, dynamic>{
       'type': instance.type,
-      'target_muscle': _$TargetMuscleEnumMap[instance.targetMuscle],
-      'duration_minutes': instance.durationMinutes,
+      'targetMuscle': _$TargetMuscleEnumMap[instance.targetMuscle],
+      'durationMinutes': instance.durationMinutes,
       'intensity': instance.intensity,
       'notes': instance.notes,
     };
 
-_$TrainingCycleImpl _$$TrainingCycleImplFromJson(Map<String, dynamic> json) =>
-    _$TrainingCycleImpl(
-      sessionCount: (json['session_count'] as num).toInt(),
-      isDeloadActive: json['is_deload_active'] as bool,
-      cycleNumber: (json['cycle_number'] as num).toInt(),
-      deloadStartDate: json['deload_start_date'] == null
+_TrainingCycle _$TrainingCycleFromJson(Map<String, dynamic> json) =>
+    _TrainingCycle(
+      sessionCount: (json['sessionCount'] as num).toInt(),
+      isDeloadActive: json['isDeloadActive'] as bool,
+      cycleNumber: (json['cycleNumber'] as num).toInt(),
+      deloadStartDate: json['deloadStartDate'] == null
           ? null
-          : DateTime.parse(json['deload_start_date'] as String),
+          : DateTime.parse(json['deloadStartDate'] as String),
     );
 
-Map<String, dynamic> _$$TrainingCycleImplToJson(_$TrainingCycleImpl instance) =>
+Map<String, dynamic> _$TrainingCycleToJson(_TrainingCycle instance) =>
     <String, dynamic>{
-      'session_count': instance.sessionCount,
-      'is_deload_active': instance.isDeloadActive,
-      'cycle_number': instance.cycleNumber,
-      'deload_start_date': instance.deloadStartDate?.toIso8601String(),
+      'sessionCount': instance.sessionCount,
+      'isDeloadActive': instance.isDeloadActive,
+      'cycleNumber': instance.cycleNumber,
+      'deloadStartDate': instance.deloadStartDate?.toIso8601String(),
     };

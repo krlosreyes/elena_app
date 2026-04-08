@@ -19,8 +19,10 @@ final recentMealsProvider = AutoDisposeStreamProvider<List<MealLog>>.internal(
   allTransitiveDependencies: null,
 );
 
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
 typedef RecentMealsRef = AutoDisposeStreamProviderRef<List<MealLog>>;
-String _$mealControllerHash() => r'862da7477d854b1ed495447ac78e9390f83edfbb';
+String _$mealControllerHash() => r'92ee6c0db187abc60aa8301930fb5129ced6edd1';
 
 /// See also [MealController].
 @ProviderFor(MealController)
@@ -37,4 +39,4 @@ final mealControllerProvider =
 
 typedef _$MealController = AutoDisposeNotifier<void>;
 // ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member
+// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

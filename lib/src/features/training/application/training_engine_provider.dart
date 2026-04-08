@@ -16,7 +16,7 @@ enum TrainingStatus { needsDiagnostic, calculating, active }
 // ==============================================================================
 
 @freezed
-class TrainingSessionState with _$TrainingSessionState {
+sealed class TrainingSessionState with _$TrainingSessionState {
   const factory TrainingSessionState({
     @Default(0) int currentIndex,
     @Default(false) bool isDeload,

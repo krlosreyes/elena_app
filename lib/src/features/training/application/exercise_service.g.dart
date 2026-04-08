@@ -26,6 +26,8 @@ final trainingRepositoryProvider =
   allTransitiveDependencies: null,
 );
 
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
 typedef TrainingRepositoryRef = AutoDisposeProviderRef<TrainingRepository>;
 String _$exerciseServiceHash() => r'8e36545f4fe2e4a4f2d1ed011dff5db31253b3b6';
 
@@ -41,6 +43,8 @@ final exerciseServiceProvider = AutoDisposeProvider<ExerciseService>.internal(
   allTransitiveDependencies: null,
 );
 
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
 typedef ExerciseServiceRef = AutoDisposeProviderRef<ExerciseService>;
 String _$recentWorkoutsHash() => r'73379d570f8b079aceaf7b6b1de3500f359ee663';
 
@@ -194,6 +198,8 @@ class RecentWorkoutsProvider
   }
 }
 
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
 mixin RecentWorkoutsRef
     on AutoDisposeFutureProviderRef<List<RecordedWorkoutSession>> {
   /// The parameter `uid` of this provider.
@@ -359,6 +365,8 @@ class WorkoutLogsProvider extends AutoDisposeFutureProvider<List<WorkoutLog>> {
   }
 }
 
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
 mixin WorkoutLogsRef on AutoDisposeFutureProviderRef<List<WorkoutLog>> {
   /// The parameter `uid` of this provider.
   String get uid;
@@ -510,6 +518,8 @@ class ActiveMusclesProvider extends AutoDisposeFutureProvider<Set<String>> {
   }
 }
 
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
 mixin ActiveMusclesRef on AutoDisposeFutureProviderRef<Set<String>> {
   /// The parameter `uid` of this provider.
   String get uid;
@@ -524,4 +534,4 @@ class _ActiveMusclesProviderElement
   String get uid => (origin as ActiveMusclesProvider).uid;
 }
 // ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member
+// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

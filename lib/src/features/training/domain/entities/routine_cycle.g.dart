@@ -6,8 +6,8 @@ part of 'routine_cycle.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$RoutineCycleImpl _$$RoutineCycleImplFromJson(Map<String, dynamic> json) =>
-    _$RoutineCycleImpl(
+_RoutineCycle _$RoutineCycleFromJson(Map<String, dynamic> json) =>
+    _RoutineCycle(
       startDate: DateTime.parse(json['startDate'] as String),
       weeks: (json['weeks'] as List<dynamic>)
           .map((e) => RoutineWeek.fromJson(e as Map<String, dynamic>))
@@ -15,15 +15,14 @@ _$RoutineCycleImpl _$$RoutineCycleImplFromJson(Map<String, dynamic> json) =>
       goalDescriptive: json['goalDescriptive'] as String,
     );
 
-Map<String, dynamic> _$$RoutineCycleImplToJson(_$RoutineCycleImpl instance) =>
+Map<String, dynamic> _$RoutineCycleToJson(_RoutineCycle instance) =>
     <String, dynamic>{
       'startDate': instance.startDate.toIso8601String(),
-      'weeks': instance.weeks,
+      'weeks': instance.weeks.map((e) => e.toJson()).toList(),
       'goalDescriptive': instance.goalDescriptive,
     };
 
-_$RoutineWeekImpl _$$RoutineWeekImplFromJson(Map<String, dynamic> json) =>
-    _$RoutineWeekImpl(
+_RoutineWeek _$RoutineWeekFromJson(Map<String, dynamic> json) => _RoutineWeek(
       weekNumber: (json['weekNumber'] as num).toInt(),
       isDeload: json['isDeload'] as bool? ?? false,
       days: (json['days'] as List<dynamic>)
@@ -31,15 +30,14 @@ _$RoutineWeekImpl _$$RoutineWeekImplFromJson(Map<String, dynamic> json) =>
           .toList(),
     );
 
-Map<String, dynamic> _$$RoutineWeekImplToJson(_$RoutineWeekImpl instance) =>
+Map<String, dynamic> _$RoutineWeekToJson(_RoutineWeek instance) =>
     <String, dynamic>{
       'weekNumber': instance.weekNumber,
       'isDeload': instance.isDeload,
-      'days': instance.days,
+      'days': instance.days.map((e) => e.toJson()).toList(),
     };
 
-_$RoutineDayImpl _$$RoutineDayImplFromJson(Map<String, dynamic> json) =>
-    _$RoutineDayImpl(
+_RoutineDay _$RoutineDayFromJson(Map<String, dynamic> json) => _RoutineDay(
       dayNumber: (json['dayNumber'] as num).toInt(),
       isRestDay: json['isRestDay'] as bool,
       type: json['type'] as String? ?? 'Descanso',
@@ -50,11 +48,11 @@ _$RoutineDayImpl _$$RoutineDayImplFromJson(Map<String, dynamic> json) =>
           const [],
     );
 
-Map<String, dynamic> _$$RoutineDayImplToJson(_$RoutineDayImpl instance) =>
+Map<String, dynamic> _$RoutineDayToJson(_RoutineDay instance) =>
     <String, dynamic>{
       'dayNumber': instance.dayNumber,
       'isRestDay': instance.isRestDay,
       'type': instance.type,
       'description': instance.description,
-      'exercises': instance.exercises,
+      'exercises': instance.exercises.map((e) => e.toJson()).toList(),
     };

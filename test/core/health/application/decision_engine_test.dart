@@ -187,7 +187,7 @@ UserHealthState _buildState({
     sleepMinutes: sleepMinutes,
     fastingStartTime: DateTime(2026, 4, 2, 20),
     fastingEndTime: isCurrentlyFasting ? null : DateTime(2026, 4, 3, 10),
-    mtiScore: 65,
+    imrScore: 65,
     mealEntries: mealEntries,
     exerciseEntries: const [],
   );
@@ -221,6 +221,7 @@ UserHealthState _buildState({
     age: 34,
     gender: Gender.male,
     goal: MetabolicGoal.maintenance,
+    dailyExerciseGoalMinutes: 30,
     fastingContext: FastingContext(
       protocol: fastingContext.protocol,
       fastingWindowHours: fastingContext.fastingWindowHours,
@@ -308,7 +309,7 @@ UserHealthState _stateWith({
     sleepMinutes: (sleepHours * 60).round(),
     fastingStartTime: DateTime(2025, 1, 14, 20),
     fastingEndTime: currentlyFasting ? null : DateTime(2025, 1, 15, 10),
-    mtiScore: 65,
+    imrScore: 65,
     mealEntries: currentlyFasting
         ? const []
         : [
@@ -350,6 +351,7 @@ UserHealthState _stateWith({
     age: 34,
     gender: Gender.male,
     goal: MetabolicGoal.maintenance,
+    dailyExerciseGoalMinutes: 30,
     fastingContext: FastingContext(
       protocol: fastingContext.protocol,
       fastingWindowHours: fastingContext.fastingWindowHours,

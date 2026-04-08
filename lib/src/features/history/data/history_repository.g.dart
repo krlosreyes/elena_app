@@ -21,6 +21,8 @@ final historyRepositoryProvider =
   allTransitiveDependencies: null,
 );
 
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
 typedef HistoryRepositoryRef = AutoDisposeProviderRef<HistoryRepository>;
 String _$workoutStatsHash() => r'103d31eeca54715b91e84f780f8635fa3a6b3547';
 
@@ -158,6 +160,8 @@ class WorkoutStatsProvider extends AutoDisposeFutureProvider<WorkoutStats?> {
   }
 }
 
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
 mixin WorkoutStatsRef on AutoDisposeFutureProviderRef<WorkoutStats?> {
   /// The parameter `date` of this provider.
   DateTime get date;
@@ -172,4 +176,4 @@ class _WorkoutStatsProviderElement
   DateTime get date => (origin as WorkoutStatsProvider).date;
 }
 // ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member
+// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

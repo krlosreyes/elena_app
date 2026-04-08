@@ -186,6 +186,7 @@ class MetabolicProfile {
 
   // ── Training ──
   final bool recentHighIntensityWorkout;
+  final double dailyExerciseGoalMinutes;
 
   // ── Fasting ──
   final FastingContext fastingContext;
@@ -210,6 +211,7 @@ class MetabolicProfile {
     required this.gender,
     required this.goal,
     required this.fastingContext,
+    required this.dailyExerciseGoalMinutes,
     this.recentHighIntensityWorkout = false,
     this.targetWeightKg,
     this.targetFatPercent,
@@ -343,6 +345,7 @@ class MetabolicProfile {
       goal: goal,
       fastingContext: fCtx,
       recentHighIntensityWorkout: hiitDetected,
+      dailyExerciseGoalMinutes: ElenaBrain.getDailyExerciseGoalMinutes(user),
       targetWeightKg: user.targetWeightKg,
       targetFatPercent: user.targetFatPercentage,
     );

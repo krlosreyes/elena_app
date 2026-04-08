@@ -1,7 +1,7 @@
+
 import 'dart:math' as math;
 import 'package:freezed_annotation/freezed_annotation.dart';
 import '../../../core/converters/timestamp_converter.dart';
-
 part 'user_model.freezed.dart';
 part 'user_model.g.dart';
 
@@ -20,16 +20,11 @@ enum HealthGoal { fatLoss, muscleGain, metabolicHealth }
 enum TypographyStyle { technical, human }
 
 @freezed
-class UserModel with _$UserModel {
+abstract class UserModel with _$UserModel {
   const UserModel._();
-
-  @Assert('heightCm >= 50 && heightCm <= 250',
-      'La altura debe estar entre 50 y 250cm.')
-  @Assert('currentWeightKg >= 20 && currentWeightKg <= 350',
-      'El peso actual debe estar entre 20kg y 350kg.')
-  @Assert(
-      'waistCircumferenceCm == null || (waistCircumferenceCm >= 30 && waistCircumferenceCm <= 250)',
-      'La circunferencia de cintura es ilógica.')
+  @Assert('heightCm >= 50 && heightCm <= 250', 'La altura debe estar entre 50 y 250cm.')
+  @Assert('currentWeightKg >= 20 && currentWeightKg <= 350', 'El peso actual debe estar entre 20kg y 350kg.')
+  @Assert('waistCircumferenceCm == null || (waistCircumferenceCm >= 30 && waistCircumferenceCm <= 250)', 'La circunferencia de cintura es ilógica.')
   const factory UserModel({
     // 1. Identificación
     required String uid,
@@ -79,15 +74,16 @@ class UserModel with _$UserModel {
     // Configuración
     int? checkInDay,
 
-    // IMX Specific Overrides
+    // IMR Specific Overrides
     double? averageSleepHours,
     int? energyLevel1To10,
+    double? initialImr, // IMR basal calculado al completar onboarding
 
     // Legacy / Calculated (Can be stored or calculated)
     double? metaICA,
     double? metaICC,
-
-    @Default(2) int numberOfMeals, // 2 is typically the default for fasting, but see MetabolicHub for overrides.
+    @Default(2)
+    int numberOfMeals, // 2 is typically the default for fasting, but see MetabolicHub for overrides.
 
     // Metadata
     @Default(false) bool onboardingCompleted,
@@ -96,8 +92,7 @@ class UserModel with _$UserModel {
     @OptionalTimestampConverter() DateTime? updatedAt,
   }) = _UserModel;
 
-  factory UserModel.fromJson(Map<String, dynamic> json) =>
-      _$UserModelFromJson(json);
+  factory UserModel.fromJson(Map<String, dynamic> json) => _$UserModelFromJson(json);
 
   // Helper getter for age
   int get age {
@@ -192,17 +187,17 @@ extension UserModelX on UserModel {
         final hip = hipCircumferenceCm;
         if (hip != null) {
           // Female: 163.205 × log10(waist + hip − neck) − 97.684 × log10(height) − 78.387
-          final val = 163.205 * math.log(waist + hip - neck) / math.ln10
-              - 97.684 * math.log(height) / math.ln10
-              - 78.387;
+          final val = 163.205 * math.log(waist + hip - neck) / math.ln10 -
+              97.684 * math.log(height) / math.ln10 -
+              78.387;
           return val.clamp(5.0, 50.0);
         }
       } else {
         // Male: 86.010 × log10(waist − neck) − 70.041 × log10(height) + 36.76
         if (waist > neck) {
-          final val = 86.010 * math.log(waist - neck) / math.ln10
-              - 70.041 * math.log(height) / math.ln10
-              + 36.76;
+          final val = 86.010 * math.log(waist - neck) / math.ln10 -
+              70.041 * math.log(height) / math.ln10 +
+              36.76;
           return val.clamp(5.0, 50.0);
         }
       }
