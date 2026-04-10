@@ -1,72 +1,47 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/core/rules/circadian_rules.dart';
+import 'package:elena_app/src/shared/domain/services/user_repository.dart';
+import 'package:elena_app/src/features/dashboard/presentation/dashboard_screen.dart'; // Para el stream del usuario
+import '../domain/fasting_status.dart';
 
-/// Fases biológicas extendidas según el mapa cronológico del ayuno
-enum FastingPhase {
-  postAbsorption, // 0-12h: Digestión activa. Estado base.
-  transition,     // 12-18h: Agotamiento de glucógeno. Cambio de combustible.
-  fatBurning,     // 18-24h: Cetosis temprana. Quema de grasa activa.
-  autophagy,      // 24-48h: Renovación celular profunda.
-  survival        // 72h+: Restricción del sistema por seguridad.
-}
-
-class FastingState {
-  final DateTime? startTime;
-  final Duration duration;
-  final FastingPhase phase;
-  final String circadianPhase; // Fase según el reloj maestro (Cortisol, Melatonina, etc)
-  final Duration timeUntilLock; // Tiempo restante hasta el bloqueo intestinal (22:30)
-  final bool isActive;
-
-  FastingState({
-    this.startTime,
-    this.duration = Duration.zero,
-    this.phase = FastingPhase.postAbsorption,
-    this.circadianPhase = "Iniciando...",
-    this.timeUntilLock = Duration.zero,
-    this.isActive = false,
-  });
-
-  FastingState copyWith({
-    DateTime? startTime, 
-    Duration? duration, 
-    FastingPhase? phase, 
-    String? circadianPhase,
-    Duration? timeUntilLock,
-    bool? isActive
-  }) {
-    return FastingState(
-      startTime: startTime ?? this.startTime,
-      duration: duration ?? this.duration,
-      phase: phase ?? this.phase,
-      circadianPhase: circadianPhase ?? this.circadianPhase,
-      timeUntilLock: timeUntilLock ?? this.timeUntilLock,
-      isActive: isActive ?? this.isActive,
-    );
-  }
-}
+// ... (Mantenemos FastingPhase y FastingState igual a como los definiste) ...
 
 class FastingNotifier extends StateNotifier<FastingState> {
+  final Ref _ref; // Necesitamos el Ref para leer otros providers
   Timer? _timer;
 
-  FastingNotifier() : super(FastingState());
+  FastingNotifier(this._ref) : super(FastingState()) {
+    // Iniciamos el tick de inmediato para actualizar fases circadianas constantes
+    _tick();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) => _tick());
+  }
 
-  /// Inicia el cronómetro metabólico
-  void startFasting() {
+  /// Inicia el ayuno y lo persiste en nam5
+  Future<void> startFasting() async {
     final now = DateTime.now();
+    
+    // 1. Actualización de UI inmediata (Optimistic UI)
     state = state.copyWith(
       startTime: now, 
       isActive: true,
       circadianPhase: CircadianRules.getPhaseName(now),
       timeUntilLock: CircadianRules.timeUntilLock(now),
     );
-    _tick();
-    // Actualizamos cada segundo para la fluidez de la UI del Dashboard
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) => _tick());
+
+    // 2. Persistencia en Firestore
+    final userRepo = _ref.read(userRepositoryProvider);
+    final currentUser = _ref.read(currentUserStreamProvider).value;
+
+    if (currentUser != null) {
+      // Actualizamos el modelo con la nueva marca de inicio (lastMealGoal)
+      final updatedUser = currentUser.copyWith(
+        profile: currentUser.profile.copyWith(lastMealGoal: now),
+      );
+      await userRepo.saveUser(updatedUser);
+    }
   }
 
-  /// Detiene el proceso y resetea el estado
   void stopFasting() {
     _timer?.cancel();
     state = FastingState();
@@ -75,7 +50,21 @@ class FastingNotifier extends StateNotifier<FastingState> {
   void _tick() {
     final now = DateTime.now();
     
-    // Si no está ayunando, aún actualizamos la fase circadiana y el bloqueo
+    // Lógica para detectar si hay un ayuno en curso desde los datos del usuario
+    // Si el estado local no tiene startTime, intentamos recuperarlo del Stream de Firebase
+    if (!state.isActive) {
+      final userFromFirebase = _ref.read(currentUserStreamProvider).value;
+      final savedStart = userFromFirebase?.profile.lastMealGoal;
+
+      // Si el tiempo guardado en Firebase es válido (no es "ahora" por defecto)
+      if (savedStart != null && savedStart.isBefore(now.subtract(const Duration(seconds: 1)))) {
+        state = state.copyWith(
+          startTime: savedStart,
+          isActive: true,
+        );
+      }
+    }
+
     if (!state.isActive) {
       state = state.copyWith(
         circadianPhase: CircadianRules.getPhaseName(now),
@@ -84,9 +73,9 @@ class FastingNotifier extends StateNotifier<FastingState> {
       return;
     }
 
-    if (state.startTime == null) return;
+    final startTime = state.startTime ?? now;
+    final duration = now.difference(startTime);
     
-    final duration = now.difference(state.startTime!);
     state = state.copyWith(
       duration: duration,
       phase: _calculateFastingPhase(duration),
@@ -95,7 +84,6 @@ class FastingNotifier extends StateNotifier<FastingState> {
     );
   }
 
-  /// Lógica de fases basada en el Mapa Cronológico de ElenaApp
   FastingPhase _calculateFastingPhase(Duration d) {
     final hours = d.inHours;
     if (hours < 12) return FastingPhase.postAbsorption;
@@ -112,6 +100,7 @@ class FastingNotifier extends StateNotifier<FastingState> {
   }
 }
 
+// Actualizamos la definición del provider para pasarle el Ref
 final fastingProvider = StateNotifierProvider<FastingNotifier, FastingState>((ref) {
-  return FastingNotifier();
+  return FastingNotifier(ref);
 });

@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart'; // <-- Agrega esto
 
 class IMRv2Result {
   final int totalScore;
@@ -89,3 +90,4 @@ class ScoreEngine {
     return "Estado metabólico funcional con margen de mejora.";
   }
 }
+final scoreEngineProvider = Provider<ScoreEngine>((ref) => ScoreEngine());
