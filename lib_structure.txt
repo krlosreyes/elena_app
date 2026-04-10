@@ -1,0 +1,48 @@
+lib
+├── firebase_options.dart
+├── main.dart
+└── src
+    ├── app.dart
+    ├── core
+    │   ├── constants
+    │   │   └── constants.dart
+    │   ├── engine
+    │   │   └── score_engine.dart
+    │   ├── exceptions
+    │   │   ├── empty_preferences_error.dart
+    │   │   └── exceptions.dart
+    │   ├── providers
+    │   │   └── shared_preferences_provider.dart
+    │   ├── rules
+    │   │   └── circadian_rules.dart
+    │   ├── services
+    │   │   ├── app_logger.dart
+    │   │   └── notification_service.dart
+    │   ├── theme
+    │   │   └── app_theme.dart
+    │   ├── utils
+    │   │   └── utils.dart
+    │   └── widgets
+    │       ├── app_error_screen.dart
+    │       └── elena_header.dart
+    ├── features
+    │   ├── dashboard
+    │   │   ├── application
+    │   │   │   └── fasting_notifier.dart
+    │   │   └── presentation
+    │   │       └── dashboard_screen.dart
+    │   └── onboarding
+    │       ├── application
+    │       │   └── onboarding_controller.dart
+    │       └── presentation
+    │           └── onboarding_screen.dart
+    └── shared
+        └── domain
+            ├── models
+            │   ├── user_model.dart
+            │   ├── user_model.freezed.dart
+            │   └── user_model.g.dart
+            └── services
+                └── size_mapper_service.dart
+
+23 directories, 23 files

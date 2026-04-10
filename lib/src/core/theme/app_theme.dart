@@ -2,59 +2,74 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppColors {
-  static const Color elenaGreen = Color(0xFF00C853); // Elena Green
-  static const Color deepEmerald = Color(0xFF27AE60); // Deep Emerald
-  static const Color black = Color(0xFF000000);
-  static const Color surface = Color(0xFF161616);
-  static const Color outline = Color(0xFF333333);
+  static const Color metabolicGreen = Color(0xFF2D5A47);
+  static const Color optimalCyan = Color(0xFFB3E5FC);
+  static const Color circadianAmber = Color(0xFFFFB74D);
+  static const Color background = Color(0xFFF8FAFC);
+  static const Color surface = Colors.white;
+  static const Color border = Color(0xFFE2E8F0);
+  static const Color textPrimary = Color(0xFF0F172A);
+  static const Color textSecondary = Color(0xFF64748B);
 }
 
 class AppTheme {
-  static const Color primary = AppColors.elenaGreen;
-  static const Color background = AppColors.black;
-  static const Color surface = AppColors.surface;
-  static const Color outline = AppColors.outline;
-  static const Color textBody = Colors.white;
-  static const Color textDim = Color(0xFF999999);
-
-  static ThemeData get darkTheme {
+  static ThemeData get lightTheme {
     TextTheme baseTextTheme = const TextTheme(
-      bodyLarge: TextStyle(color: Colors.white),
-      bodyMedium: TextStyle(color: Colors.white),
-      displayLarge: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-      titleLarge: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+      displayLarge: TextStyle(
+        color: AppColors.metabolicGreen, 
+        fontWeight: FontWeight.w900, 
+        fontSize: 84, 
+        letterSpacing: -2,
+      ),
+      titleLarge: TextStyle(
+        color: AppColors.textPrimary, 
+        fontWeight: FontWeight.w800, 
+        fontSize: 22,
+      ),
+      bodyLarge: TextStyle(
+        color: AppColors.textPrimary, 
+        fontSize: 16, 
+        fontWeight: FontWeight.w600,
+      ),
+      bodyMedium: TextStyle(
+        color: AppColors.textSecondary, 
+        fontSize: 14,
+      ),
     );
-
-    TextTheme robustTextTheme;
-    try {
-      robustTextTheme = GoogleFonts.publicSansTextTheme(baseTextTheme);
-    } catch (e) {
-      debugPrint('⚠️ Fallback de Fuentes: Error cargando GoogleFonts: $e');
-      robustTextTheme = baseTextTheme;
-    }
 
     return ThemeData(
       useMaterial3: true,
-      brightness: Brightness.dark,
-      scaffoldBackgroundColor: background,
-      primaryColor: primary,
-      colorScheme: const ColorScheme.dark(
-        primary: primary,
-        onPrimary: Colors.black,
-        secondary: primary,
-        surface: surface,
-        onSurface: Colors.white,
-        outline: outline,
+      brightness: Brightness.light,
+      scaffoldBackgroundColor: AppColors.background,
+      primaryColor: AppColors.metabolicGreen,
+      
+      colorScheme: const ColorScheme.light(
+        primary: AppColors.metabolicGreen,
+        secondary: AppColors.optimalCyan,
+        surface: AppColors.surface,
+        onSurface: AppColors.textPrimary,
+        outline: AppColors.border,
       ),
-      textTheme: robustTextTheme,
-      bottomAppBarTheme: const BottomAppBarThemeData(
-        color: surface,
+
+      textTheme: GoogleFonts.publicSansTextTheme(baseTextTheme),
+
+      // CORRECCIÓN: Usamos CardThemeData en lugar de CardTheme
+      cardTheme: CardThemeData(
+        color: AppColors.surface,
         elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: const BorderSide(color: AppColors.border, width: 1),
+        ),
       ),
-      floatingActionButtonTheme: const FloatingActionButtonThemeData(
-        backgroundColor: primary,
-        foregroundColor: Colors.black,
-        elevation: 8,
+
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+        backgroundColor: AppColors.surface,
+        selectedItemColor: AppColors.metabolicGreen,
+        unselectedItemColor: AppColors.textSecondary,
+        showSelectedLabels: true,
+        showUnselectedLabels: true,
+        type: BottomNavigationBarType.fixed,
       ),
     );
   }
