@@ -21,13 +21,27 @@ lib
     │   │   ├── app_logger.dart
     │   │   └── notification_service.dart
     │   ├── theme
-    │   │   └── app_theme.dart
+    │   │   ├── app_theme.dart
+    │   │   └── app_typography.dart
     │   ├── utils
     │   │   └── utils.dart
     │   └── widgets
     │       ├── app_error_screen.dart
     │       └── elena_header.dart
     ├── features
+    │   ├── auth
+    │   │   ├── application
+    │   │   │   └── auth_controller.dart
+    │   │   ├── data
+    │   │   │   └── firebase_auth_repository.dart
+    │   │   ├── domain
+    │   │   │   └── auth_repository.dart
+    │   │   ├── presentation
+    │   │   │   ├── forgot_password_screen.dart
+    │   │   │   ├── login_screen.dart
+    │   │   │   └── register_screen.dart
+    │   │   └── providers
+    │   │       └── auth_providers.dart
     │   ├── dashboard
     │   │   ├── application
     │   │   │   └── fasting_notifier.dart
@@ -53,4 +67,4 @@ lib
                 ├── size_mapper_service.dart
                 └── user_repository.dart
 
-27 directories, 27 files
+33 directories, 35 files

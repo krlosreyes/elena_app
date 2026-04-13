@@ -36,7 +36,10 @@ mixin _$UserModel {
   bool get isMeasurementEstimated => throw _privateConstructorUsedError;
   double get imrStdDev => throw _privateConstructorUsedError;
   String get confidenceLevel =>
-      throw _privateConstructorUsedError; // --- Hábitos ---
+      throw _privateConstructorUsedError; // --- Hábitos Metabólicos (NUEVOS CAMPOS) ---
+  int get mealsPerDay => throw _privateConstructorUsedError;
+  String get fastingProtocol => throw _privateConstructorUsedError;
+  List<String> get pathologies => throw _privateConstructorUsedError;
   double get activityLevel => throw _privateConstructorUsedError;
   CircadianProfile get profile => throw _privateConstructorUsedError;
 
@@ -70,6 +73,9 @@ abstract class $UserModelCopyWith<$Res> {
       bool isMeasurementEstimated,
       double imrStdDev,
       String confidenceLevel,
+      int mealsPerDay,
+      String fastingProtocol,
+      List<String> pathologies,
       double activityLevel,
       CircadianProfile profile});
 
@@ -105,6 +111,9 @@ class _$UserModelCopyWithImpl<$Res, $Val extends UserModel>
     Object? isMeasurementEstimated = null,
     Object? imrStdDev = null,
     Object? confidenceLevel = null,
+    Object? mealsPerDay = null,
+    Object? fastingProtocol = null,
+    Object? pathologies = null,
     Object? activityLevel = null,
     Object? profile = null,
   }) {
@@ -165,6 +174,18 @@ class _$UserModelCopyWithImpl<$Res, $Val extends UserModel>
           ? _value.confidenceLevel
           : confidenceLevel // ignore: cast_nullable_to_non_nullable
               as String,
+      mealsPerDay: null == mealsPerDay
+          ? _value.mealsPerDay
+          : mealsPerDay // ignore: cast_nullable_to_non_nullable
+              as int,
+      fastingProtocol: null == fastingProtocol
+          ? _value.fastingProtocol
+          : fastingProtocol // ignore: cast_nullable_to_non_nullable
+              as String,
+      pathologies: null == pathologies
+          ? _value.pathologies
+          : pathologies // ignore: cast_nullable_to_non_nullable
+              as List<String>,
       activityLevel: null == activityLevel
           ? _value.activityLevel
           : activityLevel // ignore: cast_nullable_to_non_nullable
@@ -210,6 +231,9 @@ abstract class _$$UserModelImplCopyWith<$Res>
       bool isMeasurementEstimated,
       double imrStdDev,
       String confidenceLevel,
+      int mealsPerDay,
+      String fastingProtocol,
+      List<String> pathologies,
       double activityLevel,
       CircadianProfile profile});
 
@@ -244,6 +268,9 @@ class __$$UserModelImplCopyWithImpl<$Res>
     Object? isMeasurementEstimated = null,
     Object? imrStdDev = null,
     Object? confidenceLevel = null,
+    Object? mealsPerDay = null,
+    Object? fastingProtocol = null,
+    Object? pathologies = null,
     Object? activityLevel = null,
     Object? profile = null,
   }) {
@@ -304,6 +331,18 @@ class __$$UserModelImplCopyWithImpl<$Res>
           ? _value.confidenceLevel
           : confidenceLevel // ignore: cast_nullable_to_non_nullable
               as String,
+      mealsPerDay: null == mealsPerDay
+          ? _value.mealsPerDay
+          : mealsPerDay // ignore: cast_nullable_to_non_nullable
+              as int,
+      fastingProtocol: null == fastingProtocol
+          ? _value.fastingProtocol
+          : fastingProtocol // ignore: cast_nullable_to_non_nullable
+              as String,
+      pathologies: null == pathologies
+          ? _value._pathologies
+          : pathologies // ignore: cast_nullable_to_non_nullable
+              as List<String>,
       activityLevel: null == activityLevel
           ? _value.activityLevel
           : activityLevel // ignore: cast_nullable_to_non_nullable
@@ -334,8 +373,12 @@ class _$UserModelImpl implements _UserModel {
       this.isMeasurementEstimated = true,
       this.imrStdDev = 0.0,
       this.confidenceLevel = 'BAJA',
+      this.mealsPerDay = 3,
+      this.fastingProtocol = 'Ninguno',
+      final List<String> pathologies = const ['Ninguna'],
       this.activityLevel = 1.2,
-      required this.profile});
+      required this.profile})
+      : _pathologies = pathologies;
 
   factory _$UserModelImpl.fromJson(Map<String, dynamic> json) =>
       _$$UserModelImplFromJson(json);
@@ -378,7 +421,22 @@ class _$UserModelImpl implements _UserModel {
   @override
   @JsonKey()
   final String confidenceLevel;
-// --- Hábitos ---
+// --- Hábitos Metabólicos (NUEVOS CAMPOS) ---
+  @override
+  @JsonKey()
+  final int mealsPerDay;
+  @override
+  @JsonKey()
+  final String fastingProtocol;
+  final List<String> _pathologies;
+  @override
+  @JsonKey()
+  List<String> get pathologies {
+    if (_pathologies is EqualUnmodifiableListView) return _pathologies;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_pathologies);
+  }
+
   @override
   @JsonKey()
   final double activityLevel;
@@ -387,7 +445,7 @@ class _$UserModelImpl implements _UserModel {
 
   @override
   String toString() {
-    return 'UserModel(id: $id, name: $name, age: $age, gender: $gender, weight: $weight, height: $height, waistCircumference: $waistCircumference, neckCircumference: $neckCircumference, bodyFatPercentage: $bodyFatPercentage, pantSize: $pantSize, shirtSize: $shirtSize, isMeasurementEstimated: $isMeasurementEstimated, imrStdDev: $imrStdDev, confidenceLevel: $confidenceLevel, activityLevel: $activityLevel, profile: $profile)';
+    return 'UserModel(id: $id, name: $name, age: $age, gender: $gender, weight: $weight, height: $height, waistCircumference: $waistCircumference, neckCircumference: $neckCircumference, bodyFatPercentage: $bodyFatPercentage, pantSize: $pantSize, shirtSize: $shirtSize, isMeasurementEstimated: $isMeasurementEstimated, imrStdDev: $imrStdDev, confidenceLevel: $confidenceLevel, mealsPerDay: $mealsPerDay, fastingProtocol: $fastingProtocol, pathologies: $pathologies, activityLevel: $activityLevel, profile: $profile)';
   }
 
   @override
@@ -417,6 +475,12 @@ class _$UserModelImpl implements _UserModel {
                 other.imrStdDev == imrStdDev) &&
             (identical(other.confidenceLevel, confidenceLevel) ||
                 other.confidenceLevel == confidenceLevel) &&
+            (identical(other.mealsPerDay, mealsPerDay) ||
+                other.mealsPerDay == mealsPerDay) &&
+            (identical(other.fastingProtocol, fastingProtocol) ||
+                other.fastingProtocol == fastingProtocol) &&
+            const DeepCollectionEquality()
+                .equals(other._pathologies, _pathologies) &&
             (identical(other.activityLevel, activityLevel) ||
                 other.activityLevel == activityLevel) &&
             (identical(other.profile, profile) || other.profile == profile));
@@ -424,24 +488,28 @@ class _$UserModelImpl implements _UserModel {
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(
-      runtimeType,
-      id,
-      name,
-      age,
-      gender,
-      weight,
-      height,
-      waistCircumference,
-      neckCircumference,
-      bodyFatPercentage,
-      pantSize,
-      shirtSize,
-      isMeasurementEstimated,
-      imrStdDev,
-      confidenceLevel,
-      activityLevel,
-      profile);
+  int get hashCode => Object.hashAll([
+        runtimeType,
+        id,
+        name,
+        age,
+        gender,
+        weight,
+        height,
+        waistCircumference,
+        neckCircumference,
+        bodyFatPercentage,
+        pantSize,
+        shirtSize,
+        isMeasurementEstimated,
+        imrStdDev,
+        confidenceLevel,
+        mealsPerDay,
+        fastingProtocol,
+        const DeepCollectionEquality().hash(_pathologies),
+        activityLevel,
+        profile
+      ]);
 
   /// Create a copy of UserModel
   /// with the given fields replaced by the non-null parameter values.
@@ -475,6 +543,9 @@ abstract class _UserModel implements UserModel {
       final bool isMeasurementEstimated,
       final double imrStdDev,
       final String confidenceLevel,
+      final int mealsPerDay,
+      final String fastingProtocol,
+      final List<String> pathologies,
       final double activityLevel,
       required final CircadianProfile profile}) = _$UserModelImpl;
 
@@ -508,7 +579,13 @@ abstract class _UserModel implements UserModel {
   @override
   double get imrStdDev;
   @override
-  String get confidenceLevel; // --- Hábitos ---
+  String get confidenceLevel; // --- Hábitos Metabólicos (NUEVOS CAMPOS) ---
+  @override
+  int get mealsPerDay;
+  @override
+  String get fastingProtocol;
+  @override
+  List<String> get pathologies;
   @override
   double get activityLevel;
   @override
@@ -530,8 +607,8 @@ CircadianProfile _$CircadianProfileFromJson(Map<String, dynamic> json) {
 mixin _$CircadianProfile {
   DateTime get wakeUpTime => throw _privateConstructorUsedError;
   DateTime get sleepTime => throw _privateConstructorUsedError;
-  DateTime get firstMealGoal => throw _privateConstructorUsedError;
-  DateTime get lastMealGoal => throw _privateConstructorUsedError;
+  DateTime? get firstMealGoal => throw _privateConstructorUsedError;
+  DateTime? get lastMealGoal => throw _privateConstructorUsedError;
 
   /// Serializes this CircadianProfile to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -552,8 +629,8 @@ abstract class $CircadianProfileCopyWith<$Res> {
   $Res call(
       {DateTime wakeUpTime,
       DateTime sleepTime,
-      DateTime firstMealGoal,
-      DateTime lastMealGoal});
+      DateTime? firstMealGoal,
+      DateTime? lastMealGoal});
 }
 
 /// @nodoc
@@ -573,8 +650,8 @@ class _$CircadianProfileCopyWithImpl<$Res, $Val extends CircadianProfile>
   $Res call({
     Object? wakeUpTime = null,
     Object? sleepTime = null,
-    Object? firstMealGoal = null,
-    Object? lastMealGoal = null,
+    Object? firstMealGoal = freezed,
+    Object? lastMealGoal = freezed,
   }) {
     return _then(_value.copyWith(
       wakeUpTime: null == wakeUpTime
@@ -585,14 +662,14 @@ class _$CircadianProfileCopyWithImpl<$Res, $Val extends CircadianProfile>
           ? _value.sleepTime
           : sleepTime // ignore: cast_nullable_to_non_nullable
               as DateTime,
-      firstMealGoal: null == firstMealGoal
+      firstMealGoal: freezed == firstMealGoal
           ? _value.firstMealGoal
           : firstMealGoal // ignore: cast_nullable_to_non_nullable
-              as DateTime,
-      lastMealGoal: null == lastMealGoal
+              as DateTime?,
+      lastMealGoal: freezed == lastMealGoal
           ? _value.lastMealGoal
           : lastMealGoal // ignore: cast_nullable_to_non_nullable
-              as DateTime,
+              as DateTime?,
     ) as $Val);
   }
 }
@@ -608,8 +685,8 @@ abstract class _$$CircadianProfileImplCopyWith<$Res>
   $Res call(
       {DateTime wakeUpTime,
       DateTime sleepTime,
-      DateTime firstMealGoal,
-      DateTime lastMealGoal});
+      DateTime? firstMealGoal,
+      DateTime? lastMealGoal});
 }
 
 /// @nodoc
@@ -627,8 +704,8 @@ class __$$CircadianProfileImplCopyWithImpl<$Res>
   $Res call({
     Object? wakeUpTime = null,
     Object? sleepTime = null,
-    Object? firstMealGoal = null,
-    Object? lastMealGoal = null,
+    Object? firstMealGoal = freezed,
+    Object? lastMealGoal = freezed,
   }) {
     return _then(_$CircadianProfileImpl(
       wakeUpTime: null == wakeUpTime
@@ -639,14 +716,14 @@ class __$$CircadianProfileImplCopyWithImpl<$Res>
           ? _value.sleepTime
           : sleepTime // ignore: cast_nullable_to_non_nullable
               as DateTime,
-      firstMealGoal: null == firstMealGoal
+      firstMealGoal: freezed == firstMealGoal
           ? _value.firstMealGoal
           : firstMealGoal // ignore: cast_nullable_to_non_nullable
-              as DateTime,
-      lastMealGoal: null == lastMealGoal
+              as DateTime?,
+      lastMealGoal: freezed == lastMealGoal
           ? _value.lastMealGoal
           : lastMealGoal // ignore: cast_nullable_to_non_nullable
-              as DateTime,
+              as DateTime?,
     ));
   }
 }
@@ -657,8 +734,8 @@ class _$CircadianProfileImpl implements _CircadianProfile {
   const _$CircadianProfileImpl(
       {required this.wakeUpTime,
       required this.sleepTime,
-      required this.firstMealGoal,
-      required this.lastMealGoal});
+      this.firstMealGoal,
+      this.lastMealGoal});
 
   factory _$CircadianProfileImpl.fromJson(Map<String, dynamic> json) =>
       _$$CircadianProfileImplFromJson(json);
@@ -668,9 +745,9 @@ class _$CircadianProfileImpl implements _CircadianProfile {
   @override
   final DateTime sleepTime;
   @override
-  final DateTime firstMealGoal;
+  final DateTime? firstMealGoal;
   @override
-  final DateTime lastMealGoal;
+  final DateTime? lastMealGoal;
 
   @override
   String toString() {
@@ -718,8 +795,8 @@ abstract class _CircadianProfile implements CircadianProfile {
   const factory _CircadianProfile(
       {required final DateTime wakeUpTime,
       required final DateTime sleepTime,
-      required final DateTime firstMealGoal,
-      required final DateTime lastMealGoal}) = _$CircadianProfileImpl;
+      final DateTime? firstMealGoal,
+      final DateTime? lastMealGoal}) = _$CircadianProfileImpl;
 
   factory _CircadianProfile.fromJson(Map<String, dynamic> json) =
       _$CircadianProfileImpl.fromJson;
@@ -729,9 +806,9 @@ abstract class _CircadianProfile implements CircadianProfile {
   @override
   DateTime get sleepTime;
   @override
-  DateTime get firstMealGoal;
+  DateTime? get firstMealGoal;
   @override
-  DateTime get lastMealGoal;
+  DateTime? get lastMealGoal;
 
   /// Create a copy of CircadianProfile
   /// with the given fields replaced by the non-null parameter values.

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart'; 
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/core/engine/score_engine.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
@@ -7,11 +8,22 @@ import 'package:elena_app/src/features/dashboard/application/fasting_notifier.da
 import 'package:elena_app/src/shared/domain/services/user_repository.dart';
 import 'package:elena_app/src/core/widgets/elena_header.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/circadian_clock.dart';
+import 'package:elena_app/src/features/auth/providers/auth_providers.dart'; // IMPORTANTE
 import '../domain/fasting_status.dart';
 
+// --- PROVIDER CORREGIDO: DINÁMICO Y REACTIVO ---
 final currentUserStreamProvider = StreamProvider<UserModel?>((ref) {
   final repository = ref.watch(userRepositoryProvider);
-  return repository.watchUser('carlos_01');
+  // Escuchamos el authState para obtener el UID real del usuario logueado
+  final authState = ref.watch(authStateProvider);
+  
+  final uid = authState.value?.id;
+  
+  if (uid == null) {
+    return Stream.value(null);
+  }
+  
+  return repository.watchUser(uid);
 });
 
 class DashboardScreen extends ConsumerWidget {
@@ -22,33 +34,36 @@ class DashboardScreen extends ConsumerWidget {
     final fastingState = ref.watch(fastingProvider);
     final userAsync = ref.watch(currentUserStreamProvider);
     final engine = ref.watch(scoreEngineProvider);
+    
+    const double verticalSymmGap = 20.0; 
 
     return userAsync.when(
       loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
-      error: (err, stack) => Scaffold(body: Center(child: Text('Error: $err'))),
+      error: (err, stack) => Scaffold(body: Center(child: Text('Error de Hardware: $err'))),
       data: (user) {
-        final currentUser = user ?? UserModel(
-          id: 'carlos_01',
-          name: 'Carlos Reyes Ortega',
-          age: 48,
-          gender: 'M',
-          weight: 85,
-          height: 180,
-          profile: CircadianProfile(
-            wakeUpTime: DateTime.now(),
-            sleepTime: DateTime.now(),
-            firstMealGoal: DateTime.now(),
-            lastMealGoal: DateTime.now(),
-          ),
-        );
+        // Si el usuario es null, significa que el Stream aún no encuentra el doc en Firestore
+        if (user == null) {
+          return const Scaffold(
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(color: AppColors.metabolicGreen),
+                  SizedBox(height: 16),
+                  Text("Sincronizando identidad...", style: TextStyle(color: Colors.grey)),
+                ],
+              ),
+            ),
+          );
+        }
 
         final result = engine.calculateIMR(
-          currentUser,
-          fastingHours: fastingState.duration.inSeconds / 3600, 
+          user,
+          fastingHours: fastingState.isActive ? fastingState.duration.inSeconds / 3600 : 0, 
           weeklyAdherence: 0.85, 
           exerciseMin: 45, 
           sleepHours: 7.7,
-          lastMealTime: fastingState.startTime ?? DateTime.now(),
+          lastMealTime: user.profile.lastMealGoal ?? DateTime.now(),
         );
 
         return Scaffold(
@@ -59,28 +74,26 @@ class DashboardScreen extends ConsumerWidget {
                 children: [
                   const SizedBox(height: 10),
                   const ElenaHeader(title: "Metamorfosis Real"),
-                  const SizedBox(height: 20),
+                  
+                  const SizedBox(height: verticalSymmGap),
                   
                   CircadianClock(
-                    user: currentUser,
+                    user: user,
                     fastingState: fastingState,
                     score: result.totalScore.toDouble(),
                     zone: result.zone,
                   ),
                   
-                  const SizedBox(height: 20),
-                  _buildCircadianInsight(context, fastingState),
+                  const SizedBox(height: verticalSymmGap), 
+                  
+                  _buildMetabolicControlConsole(context, ref, fastingState),
+                  
                   const SizedBox(height: 32),
                   _buildMetricsGrid(context),
-                  const SizedBox(height: 100),
+                  const SizedBox(height: 40),
                 ],
               ),
             ),
-          ),
-          floatingActionButton: FloatingActionButton(
-            backgroundColor: AppColors.metabolicGreen,
-            onPressed: () => _showFastRegistration(context, ref, currentUser),
-            child: const Icon(Icons.add, color: Colors.white, size: 30),
           ),
           bottomNavigationBar: _buildBottomNav(context),
         );
@@ -88,39 +101,78 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildCircadianInsight(BuildContext context, FastingState state) {
+  Widget _buildMetabolicControlConsole(BuildContext context, WidgetRef ref, FastingState state) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     String twoDigits(int n) => n.toString().padLeft(2, "0");
-    final hours = twoDigits(state.duration.inHours);
-    final minutes = twoDigits(state.duration.inMinutes.remainder(60));
-    final seconds = twoDigits(state.duration.inSeconds.remainder(60));
+    final remaining = state.timeRemainingForNextMilestone;
+    
+    final hours = twoDigits(remaining.inHours);
+    final minutes = twoDigits(remaining.inMinutes.remainder(60));
+    final seconds = twoDigits(remaining.inSeconds.remainder(60));
+    
+    final bool isActive = state.isActive;
+    final color = isActive ? AppColors.metabolicGreen : Colors.orangeAccent;
+    final actionColor = isActive ? Colors.redAccent : AppColors.metabolicGreen;
 
-    return Column(
-      children: [
-        Text(
-          state.circadianPhase.toUpperCase(), 
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            letterSpacing: 1.5,
-            fontWeight: FontWeight.w900,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: AppColors.metabolicGreen.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Text(
-            "RESTAURACIÓN: $hours:$minutes:$seconds",
-            style: const TextStyle(
-              color: AppColors.metabolicGreen, 
-              fontWeight: FontWeight.bold,
-              fontFamily: 'monospace',
-              fontSize: 18,
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.border.withOpacity(isDark ? 0.1 : 1.0)),
+      ),
+      child: Column(
+        children: [
+          Text(
+            state.nextMilestoneLabel.toUpperCase(),
+            style: TextStyle(
+              color: color.withOpacity(0.7),
+              fontSize: 10,
+              letterSpacing: 1.5,
+              fontWeight: FontWeight.w900,
             ),
           ),
-        ),
-      ],
+          const SizedBox(height: 8),
+          Text(
+            "$hours:$minutes:$seconds",
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.bold,
+              fontFamily: 'monospace',
+              fontSize: 32,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Divider(color: AppColors.border.withOpacity(0.05)),
+          const SizedBox(height: 16),
+          
+          SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                if (isActive) {
+                  ref.read(fastingProvider.notifier).stopFasting();
+                } else {
+                  ref.read(fastingProvider.notifier).startFasting();
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: actionColor,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              icon: Icon(isActive ? Icons.stop_circle_outlined : Icons.play_circle_fill_rounded, size: 24),
+              label: Text(
+                isActive ? "FINALIZAR AYUNO" : "INICIAR AYUNO",
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 1.1),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -131,7 +183,7 @@ class DashboardScreen extends ConsumerWidget {
       crossAxisCount: 2,
       crossAxisSpacing: 16,
       mainAxisSpacing: 16,
-      childAspectRatio: 1.3,
+      childAspectRatio: 1.4,
       children: [
         _buildStatCard(context, "SUEÑO", "7h 42m", Icons.nightlight_round, Colors.indigo),
         _buildStatCard(context, "AGUA", "1.8L / 2.5L", Icons.water_drop, Colors.blue),
@@ -143,69 +195,51 @@ class DashboardScreen extends ConsumerWidget {
 
   Widget _buildStatCard(BuildContext context, String label, String value, IconData icon, Color color) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E293B) : Colors.white,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: AppColors.border.withOpacity(isDark ? 0.1 : 1.0)),
-        boxShadow: isDark ? [] : [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: color, size: 22),
+          Icon(icon, color: color, size: 20),
           const Spacer(),
-          Text(label, style: Theme.of(context).textTheme.labelSmall),
-          const SizedBox(height: 4),
-          Text(value, style: Theme.of(context).textTheme.bodyLarge),
+          Text(label, style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 10)),
+          const SizedBox(height: 2),
+          Text(value, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold)),
         ],
       ),
     );
   }
 
   Widget _buildBottomNav(BuildContext context) {
-    return BottomNavigationBar(
-      elevation: 10,
-      currentIndex: 0,
-      type: BottomNavigationBarType.fixed,
-      items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.dashboard_customize), label: "Dashboard"),
-        BottomNavigationBarItem(icon: Icon(Icons.analytics_outlined), label: "Análisis"),
-        BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: "Perfil"),
-      ],
-    );
-  }
+    final String location = GoRouterState.of(context).matchedLocation;
+    int currentIndex = 0;
+    if (location == '/analysis') currentIndex = 1;
+    if (location == '/profile') currentIndex = 2;
 
-  void _showFastRegistration(BuildContext context, WidgetRef ref, UserModel user) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(32))),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              "REGISTRO METABÓLICO", 
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 16)
-            ),
-            const SizedBox(height: 24),
-            ListTile(
-              leading: const Icon(Icons.restaurant, color: AppColors.metabolicGreen),
-              title: Text("Última Ingesta", style: Theme.of(context).textTheme.bodyLarge),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () async {
-                Navigator.of(context).pop(); 
-                await ref.read(fastingProvider.notifier).startFasting();
-              },
-            ),
-          ],
-        ),
-      ),
+    return BottomNavigationBar(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      elevation: 0,
+      currentIndex: currentIndex,
+      type: BottomNavigationBarType.fixed,
+      selectedItemColor: AppColors.metabolicGreen,
+      unselectedItemColor: Colors.grey,
+      onTap: (index) {
+        switch (index) {
+          case 0: context.go('/dashboard'); break;
+          case 1: /* context.go('/analysis'); */ break; 
+          case 2: context.go('/profile'); break; 
+        }
+      },
+      items: const [
+        BottomNavigationBarItem(icon: Icon(Icons.grid_view_rounded), label: "Dashboard"),
+        BottomNavigationBarItem(icon: Icon(Icons.insights_rounded), label: "Análisis"),
+        BottomNavigationBarItem(icon: Icon(Icons.person_2_outlined), label: "Perfil"),
+      ],
     );
   }
 }

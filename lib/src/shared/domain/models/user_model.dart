@@ -25,7 +25,11 @@ class UserModel with _$UserModel {
     @Default(0.0) double imrStdDev,
     @Default('BAJA') String confidenceLevel,
     
-    // --- Hábitos ---
+    // --- Hábitos Metabólicos (NUEVOS CAMPOS) ---
+    @Default(3) int mealsPerDay,
+    @Default('Ninguno') String fastingProtocol,
+    @Default(['Ninguna']) List<String> pathologies,
+    
     @Default(1.2) double activityLevel, 
     required CircadianProfile profile,
   }) = _UserModel;
@@ -38,8 +42,8 @@ class CircadianProfile with _$CircadianProfile {
   const factory CircadianProfile({
     required DateTime wakeUpTime,
     required DateTime sleepTime,
-    required DateTime firstMealGoal,
-    required DateTime lastMealGoal,
+    DateTime? firstMealGoal,
+    DateTime? lastMealGoal,
   }) = _CircadianProfile;
 
   factory CircadianProfile.fromJson(Map<String, dynamic> json) => _$CircadianProfileFromJson(json);

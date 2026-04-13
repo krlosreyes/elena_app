@@ -23,6 +23,12 @@ _$UserModelImpl _$$UserModelImplFromJson(Map<String, dynamic> json) =>
       isMeasurementEstimated: json['isMeasurementEstimated'] as bool? ?? true,
       imrStdDev: (json['imrStdDev'] as num?)?.toDouble() ?? 0.0,
       confidenceLevel: json['confidenceLevel'] as String? ?? 'BAJA',
+      mealsPerDay: (json['mealsPerDay'] as num?)?.toInt() ?? 3,
+      fastingProtocol: json['fastingProtocol'] as String? ?? 'Ninguno',
+      pathologies: (json['pathologies'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const ['Ninguna'],
       activityLevel: (json['activityLevel'] as num?)?.toDouble() ?? 1.2,
       profile:
           CircadianProfile.fromJson(json['profile'] as Map<String, dynamic>),
@@ -44,6 +50,9 @@ Map<String, dynamic> _$$UserModelImplToJson(_$UserModelImpl instance) =>
       'isMeasurementEstimated': instance.isMeasurementEstimated,
       'imrStdDev': instance.imrStdDev,
       'confidenceLevel': instance.confidenceLevel,
+      'mealsPerDay': instance.mealsPerDay,
+      'fastingProtocol': instance.fastingProtocol,
+      'pathologies': instance.pathologies,
       'activityLevel': instance.activityLevel,
       'profile': instance.profile.toJson(),
     };
@@ -53,8 +62,12 @@ _$CircadianProfileImpl _$$CircadianProfileImplFromJson(
     _$CircadianProfileImpl(
       wakeUpTime: DateTime.parse(json['wakeUpTime'] as String),
       sleepTime: DateTime.parse(json['sleepTime'] as String),
-      firstMealGoal: DateTime.parse(json['firstMealGoal'] as String),
-      lastMealGoal: DateTime.parse(json['lastMealGoal'] as String),
+      firstMealGoal: json['firstMealGoal'] == null
+          ? null
+          : DateTime.parse(json['firstMealGoal'] as String),
+      lastMealGoal: json['lastMealGoal'] == null
+          ? null
+          : DateTime.parse(json['lastMealGoal'] as String),
     );
 
 Map<String, dynamic> _$$CircadianProfileImplToJson(
@@ -62,6 +75,6 @@ Map<String, dynamic> _$$CircadianProfileImplToJson(
     <String, dynamic>{
       'wakeUpTime': instance.wakeUpTime.toIso8601String(),
       'sleepTime': instance.sleepTime.toIso8601String(),
-      'firstMealGoal': instance.firstMealGoal.toIso8601String(),
-      'lastMealGoal': instance.lastMealGoal.toIso8601String(),
+      'firstMealGoal': instance.firstMealGoal?.toIso8601String(),
+      'lastMealGoal': instance.lastMealGoal?.toIso8601String(),
     };

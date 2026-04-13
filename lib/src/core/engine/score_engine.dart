@@ -1,6 +1,6 @@
 import 'dart:math' as math;
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart'; // <-- Agrega esto
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class IMRv2Result {
   final int totalScore;
@@ -53,11 +53,18 @@ class ScoreEngine {
 
     // 3. CONDUCTA Y CIRCADIANO (25%)
     double circadianScore = 1.0;
+    
+    // CORRECCIÓN TÉCNICA: Manejo de nulos para lastMealGoal
+    final DateTime? goal = user.profile.lastMealGoal;
+
     if (lastMealTime.hour >= 22 && lastMealTime.minute >= 30 || lastMealTime.hour > 22) {
+      // Penalización por comer después del bloqueo intestinal
       circadianScore = 0.5;
-    } else if (lastMealTime.isBefore(user.profile.lastMealGoal)) {
+    } else if (goal != null && lastMealTime.isBefore(goal)) {
+      // Bonus por comer antes de la meta establecida (eTRF)
       circadianScore = 1.1;
     }
+    
     double sSleep = (sleepHours >= 7 && sleepHours <= 9) ? 1.0 : 0.6;
     double sExercise = (exerciseMin / 60).clamp(0.0, 1.2);
     double behaviorBlock = (0.40 * circadianScore.clamp(0.0, 1.0)) + (0.30 * sSleep) + (0.30 * sExercise);
@@ -90,4 +97,5 @@ class ScoreEngine {
     return "Estado metabólico funcional con margen de mejora.";
   }
 }
+
 final scoreEngineProvider = Provider<ScoreEngine>((ref) => ScoreEngine());
