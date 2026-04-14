@@ -8,7 +8,7 @@ plugins {
 
 android {
     namespace = "com.metamorfosis.elena.elena_app"
-    compileSdk = 36
+    compileSdk = 35
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -24,11 +24,9 @@ android {
     }
 
     kotlinOptions {
-        // Suppress warnings about deprecated APIs and obsolete compiler options
+        // Suppress Kotlin compiler warnings about deprecated APIs
         freeCompilerArgs = listOf(
-            "-Xlint:-deprecation",
-            "-Xlint:-options",
-            "-Xlint:-unchecked"
+            "-Xsuppress-warning=DEPRECATION"
         )
     }
 

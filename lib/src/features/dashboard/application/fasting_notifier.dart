@@ -1,9 +1,22 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/core/rules/circadian_rules.dart';
 import 'package:elena_app/src/shared/domain/services/user_repository.dart';
 import 'package:elena_app/src/features/dashboard/presentation/dashboard_screen.dart';
+import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
+import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import '../domain/fasting_status.dart';
+import 'package:elena_app/src/shared/providers/user_provider.dart';
+
+final lastFastingIntervalProvider = StreamProvider<FastingInterval?>((ref) {
+  final userRepo = ref.watch(userRepositoryProvider);
+  final authState = ref.watch(authStateProvider);
+  final uid = authState.value?.id;
+
+  if (uid == null) return Stream.value(null);
+  return userRepo.watchLastInterval(uid);
+});
 
 class FastingNotifier extends StateNotifier<FastingState> {
   final Ref _ref;
@@ -17,81 +30,102 @@ class FastingNotifier extends StateNotifier<FastingState> {
     _ref.listen(currentUserStreamProvider, (previous, next) {
       final user = next.value;
       if (user != null) {
-        final lastMeal = user.profile.lastMealGoal;
-        final firstMeal = user.profile.firstMealGoal;
-
-        bool isFasting = false;
-        DateTime? activeStartTime;
-
-        // Lógica de decisión: El evento más reciente define el estado actual
-        if (lastMeal != null) {
-          if (firstMeal == null || lastMeal.isAfter(firstMeal)) {
-            isFasting = true;
-            activeStartTime = lastMeal;
-          } else {
-            isFasting = false;
-            activeStartTime = firstMeal;
-          }
-        }
-
-        state = state.copyWith(
-          startTime: activeStartTime,
-          isActive: isFasting,
-        );
+        state = state.copyWith(fastingProtocol: user.fastingProtocol);
       }
+    }, fireImmediately: true);
+
+    _ref.listen(lastFastingIntervalProvider, (previous, next) {
+      next.when(
+        data: (interval) {
+          if (interval == null) {
+            state = state.copyWith(
+              startTime: null,
+              isActive: false,
+              duration: Duration.zero,
+              phase: FastingPhase.none,
+            );
+          } else {
+            final now = DateTime.now();
+            final duration = now.difference(interval.startTime);
+
+            state = state.copyWith(
+              startTime: interval.startTime,
+              isActive: interval.isFasting,
+              duration: duration,
+              phase: interval.isFasting 
+                  ? FastingState.determinePhase(duration) 
+                  : FastingPhase.none,
+            );
+          }
+        },
+        loading: () => debugPrint("⏳ Sincronizando coordenadas metabólicas..."),
+        error: (err, stack) => debugPrint("⚠️ Error en historial: $err"),
+      );
     }, fireImmediately: true);
 
     _timer = Timer.periodic(const Duration(seconds: 1), (_) => _tick());
   }
 
   Future<void> startFasting() async {
-    final now = DateTime.now();
-    await _updateUserGoal(lastMeal: now);
+    final uid = _ref.read(authStateProvider).value?.id;
+    if (uid == null) return;
+    final userRepo = _ref.read(userRepositoryProvider);
+    await userRepo.startNewInterval(uid, true);
   }
 
   Future<void> stopFasting() async {
-    final now = DateTime.now();
-    await _updateUserGoal(firstMeal: now);
-  }
-
-  Future<void> _updateUserGoal({DateTime? lastMeal, DateTime? firstMeal}) async {
+    final uid = _ref.read(authStateProvider).value?.id;
+    if (uid == null) return;
     final userRepo = _ref.read(userRepositoryProvider);
-    final currentUser = _ref.read(currentUserStreamProvider).value;
-
-    if (currentUser != null) {
-      final updatedUser = currentUser.copyWith(
-        profile: currentUser.profile.copyWith(
-          lastMealGoal: lastMeal ?? currentUser.profile.lastMealGoal,
-          firstMealGoal: firstMeal ?? currentUser.profile.firstMealGoal,
-        ),
-      );
-      await userRepo.saveUser(updatedUser);
-    }
+    await userRepo.startNewInterval(uid, false);
   }
 
   void _tick() {
+    if (!mounted) return;
     final now = DateTime.now();
-    final currentCircadian = CircadianRules.getPhaseName(now);
-    final timeToLock = CircadianRules.timeUntilLock(now);
+    final user = _ref.read(currentUserStreamProvider).value;
+
+    // --- LÓGICA DE PROACTIVIDAD ELENA (PRE-SLEEP ALERT) ---
+    bool shouldShowPreSleepWarning = false;
+    
+    if (user != null && !state.isActive) {
+      // Normalizamos la hora de dormir a hoy
+      final sleepToday = DateTime(now.year, now.month, now.day, 
+          user.profile.sleepTime.hour, user.profile.sleepTime.minute);
+      
+      final diffToSleep = sleepToday.difference(now);
+      
+      // Si faltan menos de 3 horas para dormir y sigue comiendo...
+      if (diffToSleep.inHours >= 0 && diffToSleep.inHours < 3) {
+        shouldShowPreSleepWarning = true;
+      }
+    }
 
     if (state.startTime == null) {
       state = state.copyWith(
-        circadianPhase: currentCircadian, 
-        timeUntilLock: timeToLock
+        circadianPhase: CircadianRules.getPhaseName(now),
+        timeUntilLock: CircadianRules.timeUntilLock(now),
+        // Aquí podrías añadir una propiedad 'nearSleepWarning' a tu FastingState si la creas
       );
       return;
     }
 
     final duration = now.difference(state.startTime!);
     
-    // Actualizamos el estado con la duración actual. 
-    // Los getters proactivos en el domain se encargarán del resto en la UI.
     state = state.copyWith(
       duration: duration,
-      phase: state.isActive ? FastingState.determinePhase(duration) : FastingPhase.none,
-      circadianPhase: currentCircadian,
-      timeUntilLock: timeToLock,
+      circadianPhase: CircadianRules.getPhaseName(now),
+      timeUntilLock: CircadianRules.timeUntilLock(now),
+      phase: state.isActive 
+          ? FastingState.determinePhase(duration) 
+          : FastingPhase.none,
     );
+
+    // Monitorización por consola para debug técnico
+    if (shouldShowPreSleepWarning) {
+      // En el futuro esto disparará la notificación push
+      debugPrint("📢 ALERTA METABÓLICA: Faltan menos de 3h para dormir. Cerrar ventana.");
+    }
   }
 
   @override

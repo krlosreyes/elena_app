@@ -39,6 +39,7 @@ lib
     │   │   ├── presentation
     │   │   │   ├── forgot_password_screen.dart
     │   │   │   ├── login_screen.dart
+    │   │   │   ├── profile_screen.dart
     │   │   │   └── register_screen.dart
     │   │   └── providers
     │   │       └── auth_providers.dart
@@ -67,4 +68,4 @@ lib
                 ├── size_mapper_service.dart
                 └── user_repository.dart
 
-33 directories, 35 files
+33 directories, 36 files

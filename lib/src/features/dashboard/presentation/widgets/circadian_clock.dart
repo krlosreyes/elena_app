@@ -25,51 +25,107 @@ class CircadianClock extends StatelessWidget {
     final colorDeTexto = Theme.of(context).colorScheme.onBackground;
     final now = DateTime.now();
 
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        // CAPA 1: Ciclos Biológicos (Fondo)
-        SizedBox(
-          height: 440, width: 440,
-          child: CustomPaint(
-            painter: BiologicalCyclesPainter(indicatorColor: colorDeTexto, currentTime: now),
-          ),
-        ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final size = constraints.maxWidth;
 
-        // CAPA 2: INTERRUPTOR DINÁMICO (Ayuno vs Ventana)
-        SizedBox(
-          height: 440, width: 440,
-          child: CustomPaint(
-            painter: fastingState.isActive 
-              ? FastingRingPainter(
-                  fastingProgress: (fastingState.duration.inSeconds / (24 * 3600)).clamp(0.0, 1.0),
-                  phaseColor: _getPhaseColor(fastingState.phase),
-                  indicatorColor: colorDeTexto,
-                )
-              : EatingWindowPainter(
-                  // Asumimos una ventana estándar de 8 horas para el progreso visual
-                  windowProgress: (fastingState.duration.inSeconds / (8 * 3600)).clamp(0.0, 1.0),
-                  indicatorColor: colorDeTexto,
-                ),
-          ),
-        ),
-
-        // CAPA 3: IMR SCORE
-        Column(
-          mainAxisSize: MainAxisSize.min,
+        return Stack(
+          alignment: Alignment.center,
           children: [
-            Text("IMR SCORE", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: colorDeTexto.withOpacity(0.6), letterSpacing: 1.2)),
-            Text("${score.toInt()}", style: Theme.of(context).textTheme.displayLarge?.copyWith(fontSize: 85, height: 1.1, color: colorDeTexto)),
-            Row(
+            // CAPA 1: Ciclos Biológicos (Fondo estático de 24h)
+            SizedBox(
+              height: size, width: size,
+              child: CustomPaint(
+                painter: BiologicalCyclesPainter(
+                  indicatorColor: colorDeTexto, 
+                  currentTime: now
+                ),
+              ),
+            ),
+
+            // CAPA 2: Radar Metabólico Activo (COORDENADAS REALES)
+            SizedBox(
+              height: size, width: size,
+              child: CustomPaint(
+                painter: fastingState.isActive 
+                  ? FastingRingPainter(
+                      // IMPORTANTE: Pasamos el startTime para que el Painter 
+                      // sepa el ángulo de inicio real en el círculo de 24h
+                      startTime: fastingState.startTime ?? now,
+                      duration: fastingState.duration,
+                      phaseColor: _getPhaseColor(fastingState.phase),
+                      indicatorColor: colorDeTexto,
+                    )
+                  : EatingWindowPainter(
+                      // Lo mismo para la ventana de comida
+                      startTime: fastingState.startTime ?? now,
+                      duration: fastingState.duration,
+                      indicatorColor: colorDeTexto,
+                    ),
+              ),
+            ),
+
+            // CAPA 3: IMR SCORE Central
+            Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.bolt, color: AppColors.metabolicGreen, size: 18),
-                Text(zone.toUpperCase(), style: const TextStyle(color: AppColors.metabolicGreen, fontWeight: FontWeight.w900)),
+                Text(
+                  "IMR SCORE", 
+                  style: TextStyle(
+                    color: colorDeTexto.withOpacity(0.5), 
+                    letterSpacing: 2.0,
+                    fontSize: size * 0.035,
+                    fontWeight: FontWeight.w600,
+                  )
+                ),
+                Text(
+                  "${score.toInt()}", 
+                  style: TextStyle(
+                    fontSize: size * 0.25, 
+                    height: 1.0, 
+                    color: colorDeTexto,
+                    fontWeight: FontWeight.w900,
+                    fontFamily: 'monospace',
+                  )
+                ),
+                const SizedBox(height: 6),
+                
+                _buildZoneBadge(size),
               ],
             ),
           ],
+        );
+      },
+    );
+  }
+
+  Widget _buildZoneBadge(double size) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.metabolicGreen.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: AppColors.metabolicGreen.withOpacity(0.3),
+          width: 1,
         ),
-      ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.bolt, color: AppColors.metabolicGreen, size: size * 0.04),
+          const SizedBox(width: 4),
+          Text(
+            zone.toUpperCase(), 
+            style: TextStyle(
+              color: AppColors.metabolicGreen, 
+              fontWeight: FontWeight.w900,
+              fontSize: size * 0.035,
+              letterSpacing: 1.0,
+            )
+          ),
+        ],
+      ),
     );
   }
 

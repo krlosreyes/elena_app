@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'dart:math' as math;
 
 class FastingRingPainter extends CustomPainter {
-  final double fastingProgress;
-  final Color phaseColor;
-  final Color indicatorColor;
+  final DateTime startTime; // Coordenada de inicio real (0h)
+  final Duration duration;  // Longitud del arco de progreso
+  final Color phaseColor;   // Color de la fase biológica actual
+  final Color indicatorColor; // Color de contraste (azul Elena)
 
   FastingRingPainter({
-    required this.fastingProgress,
+    required this.startTime,
+    required this.duration,
     required this.phaseColor,
     required this.indicatorColor,
   });
@@ -15,31 +17,40 @@ class FastingRingPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-
-    final double radiusPhases = size.width / 2 - 55;
-    const double strokeWidthPhases = 22.0;
-    const double strokeWidthFasting = 10.0;
-    const double indicatorPointRadius = 6.0;
-    const double netGap = 12.0; 
+    
+    // --- MEDIDAS PROPORCIONALES SISTEMA ELENA (Calibración de Hardware) ---
+    final double radiusPhases = size.width * 0.38; 
+    final double strokeWidthPhases = size.width * 0.05; 
+    final double strokeWidthFasting = size.width * 0.035; // Aro de ayuno un poco más robusto
+    final double indicatorPointRadius = size.width * 0.015;
+    final double netGap = size.width * 0.03; 
 
     final double radiusFasting = radiusPhases - (strokeWidthPhases / 2) - netGap - (strokeWidthFasting / 2);
     final double orbitRadius = (radiusPhases - (strokeWidthPhases / 2)) - (netGap / 2);
 
-    // 1. Anillo de fondo (estático)
+    // 1. Anillo de fondo (Soporte visual técnico)
     canvas.drawCircle(center, radiusFasting, Paint()
-      ..color = indicatorColor.withOpacity(0.05) // Opacidad baja para no ensuciar
+      ..color = indicatorColor.withOpacity(0.05)
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidthFasting);
 
-    // 2. Hitos del Ayuno (Iconografía técnica RESALTADA)
-    _drawFastingMilestones(canvas, center, radiusFasting);
+    // --- CÁLCULO DE COORDENADAS BASE ---
+    // Convertimos el startTime a ángulo en el reloj de 24h
+    double startHour = startTime.hour + (startTime.minute / 60.0);
+    double startAngle = (startHour * (2 * math.pi / 24)) - (math.pi / 2);
 
-    // 3. Progreso de ayuno (Dinámico)
-    if (fastingProgress > 0) {
+    // 2. HITOS DINÁMICOS (Adaptados al inicio, ubicados EN EL INTERIOR)
+    _drawFastingMilestones(canvas, center, radiusFasting, size.width, startAngle, strokeWidthFasting);
+
+    // 3. PROGRESO DE AYUNO (Arco reactivo)
+    final double fastingHours = duration.inSeconds / 3600;
+    double sweepAngle = (fastingHours * (2 * math.pi / 24));
+
+    if (sweepAngle > 0) {
       canvas.drawArc(
         Rect.fromCircle(center: center, radius: radiusFasting),
-        -math.pi / 2,
-        math.pi * 2 * fastingProgress,
+        startAngle,
+        sweepAngle.clamp(0.0, math.pi * 2), // Límite de 24h para el arco
         false,
         Paint()
           ..color = phaseColor
@@ -49,47 +60,60 @@ class FastingRingPainter extends CustomPainter {
       );
     }
 
-    // 4. Punto Indicador de Tiempo Real
+    // 4. Punto Indicador de Tiempo Real (Manecilla azul)
     _drawLiveIndicator(canvas, center, orbitRadius, indicatorPointRadius);
   }
 
-  void _drawFastingMilestones(Canvas canvas, Offset center, double radius) {
-    // Definimos los hitos metabólicos reales de Metamorfosis Real
+  void _drawFastingMilestones(Canvas canvas, Offset center, double radius, double fullWidth, double startAngle, double fastingStrokeWidth) {
+    // Definimos los Checkpoints metabólicos del sistema ElenaApp
     final milestones = {
-      12: Icons.water_drop_outlined, // Descenso de Insulina (Gota)
-      18: Icons.whatshot_rounded,    // Quema de Grasa (Fuego)
-      24: Icons.published_with_changes_rounded, // Autofagia (Reciclaje)
+      12: Icons.water_drop_outlined,              // Descenso de Insulina (12h)
+      18: Icons.local_fire_department_rounded,    // Quema de Grasa (18h)
+      24: Icons.published_with_changes_rounded,    // Autofagia (24h)
     };
 
-    for (var hour in milestones.keys) {
-      // El anillo representa un ciclo completo para el progreso
-      double angle = (hour * (2 * math.pi / 24)) - (math.pi / 2);
+    // CALIBRACIÓN DE TAMAÑO COHERENTE
+    // Iconos más grandes y robustos para que sean el "Target" visual
+    final double iconSize = fullWidth * 0.06; // Tamaño robusto (6% del ancho total)
+    
+    // DISTANCIA INTERNA: Los movemos hacia ADENTRO del aro
+    // Calculamos la distancia restando el ancho del trazo y un gap de seguridad
+    final double internalDistance = radius - (fastingStrokeWidth / 2) - (fullWidth * 0.045);
+
+    for (var milestoneHour in milestones.keys) {
+      // CALIBRACIÓN DINÁMICA:
+      // Calculamos el ángulo sumando las horas del hito al ángulo de inicio
+      double milestoneAngle = startAngle + (milestoneHour * (2 * math.pi / 24));
       
-      // Marca visual técnica sobre el anillo
-      final pos = Offset(center.dx + radius * math.cos(angle), center.dy + radius * math.sin(angle));
+      // Posición del punto de control SOBRE el aro (como referencia)
+      final dotPos = Offset(
+        center.dx + radius * math.cos(milestoneAngle), 
+        center.dy + radius * math.sin(milestoneAngle)
+      );
       
-      canvas.drawCircle(pos, 2, Paint()
-        ..color = indicatorColor.withOpacity(0.5)
+      // Dibujamos el "Checkpoint" sobre el aro
+      canvas.drawCircle(dotPos, 2.5, Paint()
+        ..color = indicatorColor.withOpacity(0.6)
         ..style = PaintingStyle.fill);
 
-      // Renderizado del icono con NUEVAS MEDIDAS
+      // Dibujamos el icono descriptivo del hito (INTERNO y ROBUSTO)
       final tp = TextPainter(
         text: TextSpan(
-          text: String.fromCharCode(milestones[hour]!.codePoint),
+          text: String.fromCharCode(milestones[milestoneHour]!.codePoint),
           style: TextStyle(
-            fontSize: 20.0, // AUMENTO COHERENTE DE TAMAÑO
-            fontFamily: milestones[hour]!.fontFamily,
-            package: milestones[hour]!.fontPackage,
-            color: Colors.white, // CAMBIO DE COLOR A BLANCO (MÁXIMO CONTRASTE)
+            fontSize: iconSize, 
+            fontFamily: milestones[milestoneHour]!.fontFamily,
+            package: milestones[milestoneHour]!.fontPackage,
+            color: indicatorColor.withOpacity(0.4), // Sutil pero visible
           ),
         ),
         textDirection: TextDirection.ltr,
       )..layout();
 
-      // Desplazamiento hacia el interior ajustado para iconos más grandes
+      // Posicionamos el icono en la coordenada interna calculada
       final iconPos = Offset(
-        center.dx + (radius - 22) * math.cos(angle) - tp.width / 2,
-        center.dy + (radius - 22) * math.sin(angle) - tp.height / 2,
+        center.dx + internalDistance * math.cos(milestoneAngle) - tp.width / 2,
+        center.dy + internalDistance * math.sin(milestoneAngle) - tp.height / 2,
       );
       
       tp.paint(canvas, iconPos);
@@ -102,25 +126,23 @@ class FastingRingPainter extends CustomPainter {
     double angle = (currentHour * (2 * math.pi / 24)) - (math.pi / 2);
     final pos = Offset(center.dx + orbitRadius * math.cos(angle), center.dy + orbitRadius * math.sin(angle));
 
-    // Glow suave
-    canvas.drawCircle(pos, pointRadius + 2, Paint()
-      ..color = Colors.blueAccent.withOpacity(0.3)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3));
+    canvas.drawCircle(pos, pointRadius + 3, Paint()
+      ..color = const Color(0xFF60A5FA).withOpacity(0.2)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4));
 
-    // Borde (Contacto visual)
     canvas.drawCircle(pos, pointRadius, Paint()
       ..color = indicatorColor
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5);
+      ..strokeWidth = 2);
 
-    // Centro (Giro dinámico)
-    canvas.drawCircle(pos, pointRadius - 2, Paint()
-      ..color = Colors.blueAccent
+    canvas.drawCircle(pos, pointRadius - 1.5, Paint()
+      ..color = const Color(0xFF60A5FA)
       ..style = PaintingStyle.fill);
   }
 
   @override
   bool shouldRepaint(FastingRingPainter oldDelegate) =>
-      oldDelegate.fastingProgress != fastingProgress ||
+      oldDelegate.duration != duration ||
+      oldDelegate.startTime != startTime ||
       oldDelegate.phaseColor != phaseColor;
 }

@@ -13,7 +13,7 @@ class UserModel with _$UserModel {
     required double weight, 
     required double height, 
     
-    // --- Biometría (cm) ---
+    // --- Biometría ---
     double? waistCircumference, 
     double? neckCircumference,  
     @Default(20.0) double bodyFatPercentage, 
@@ -25,12 +25,12 @@ class UserModel with _$UserModel {
     @Default(0.0) double imrStdDev,
     @Default('BAJA') String confidenceLevel,
     
-    // --- Hábitos Metabólicos (NUEVOS CAMPOS) ---
+    // --- Hábitos ---
     @Default(3) int mealsPerDay,
     @Default('Ninguno') String fastingProtocol,
     @Default(['Ninguna']) List<String> pathologies,
-    
     @Default(1.2) double activityLevel, 
+    
     required CircadianProfile profile,
   }) = _UserModel;
 
@@ -47,4 +47,19 @@ class CircadianProfile with _$CircadianProfile {
   }) = _CircadianProfile;
 
   factory CircadianProfile.fromJson(Map<String, dynamic> json) => _$CircadianProfileFromJson(json);
+}
+
+// --- NUEVO MODELO PARA EL HISTORIAL (COORDENADAS TEMPORALES) ---
+@freezed
+class FastingInterval with _$FastingInterval {
+  const factory FastingInterval({
+    required String id,
+    required String userId,
+    required DateTime startTime, // La "coordenada" de inicio en el círculo
+    DateTime? endTime,           // Si es null, el ayuno sigue activo
+    @Default(true) bool isFasting, // true = Ayuno, false = Ventana de comida
+    String? note,
+  }) = _FastingInterval;
+
+  factory FastingInterval.fromJson(Map<String, dynamic> json) => _$FastingIntervalFromJson(json);
 }

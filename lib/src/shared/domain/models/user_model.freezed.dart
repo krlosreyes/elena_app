@@ -25,8 +25,7 @@ mixin _$UserModel {
   int get age => throw _privateConstructorUsedError;
   String get gender => throw _privateConstructorUsedError;
   double get weight => throw _privateConstructorUsedError;
-  double get height =>
-      throw _privateConstructorUsedError; // --- Biometría (cm) ---
+  double get height => throw _privateConstructorUsedError; // --- Biometría ---
   double? get waistCircumference => throw _privateConstructorUsedError;
   double? get neckCircumference => throw _privateConstructorUsedError;
   double get bodyFatPercentage =>
@@ -36,7 +35,7 @@ mixin _$UserModel {
   bool get isMeasurementEstimated => throw _privateConstructorUsedError;
   double get imrStdDev => throw _privateConstructorUsedError;
   String get confidenceLevel =>
-      throw _privateConstructorUsedError; // --- Hábitos Metabólicos (NUEVOS CAMPOS) ---
+      throw _privateConstructorUsedError; // --- Hábitos ---
   int get mealsPerDay => throw _privateConstructorUsedError;
   String get fastingProtocol => throw _privateConstructorUsedError;
   List<String> get pathologies => throw _privateConstructorUsedError;
@@ -397,7 +396,7 @@ class _$UserModelImpl implements _UserModel {
   final double weight;
   @override
   final double height;
-// --- Biometría (cm) ---
+// --- Biometría ---
   @override
   final double? waistCircumference;
   @override
@@ -421,7 +420,7 @@ class _$UserModelImpl implements _UserModel {
   @override
   @JsonKey()
   final String confidenceLevel;
-// --- Hábitos Metabólicos (NUEVOS CAMPOS) ---
+// --- Hábitos ---
   @override
   @JsonKey()
   final int mealsPerDay;
@@ -563,7 +562,7 @@ abstract class _UserModel implements UserModel {
   @override
   double get weight;
   @override
-  double get height; // --- Biometría (cm) ---
+  double get height; // --- Biometría ---
   @override
   double? get waistCircumference;
   @override
@@ -579,7 +578,7 @@ abstract class _UserModel implements UserModel {
   @override
   double get imrStdDev;
   @override
-  String get confidenceLevel; // --- Hábitos Metabólicos (NUEVOS CAMPOS) ---
+  String get confidenceLevel; // --- Hábitos ---
   @override
   int get mealsPerDay;
   @override
@@ -815,5 +814,269 @@ abstract class _CircadianProfile implements CircadianProfile {
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
   _$$CircadianProfileImplCopyWith<_$CircadianProfileImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+FastingInterval _$FastingIntervalFromJson(Map<String, dynamic> json) {
+  return _FastingInterval.fromJson(json);
+}
+
+/// @nodoc
+mixin _$FastingInterval {
+  String get id => throw _privateConstructorUsedError;
+  String get userId => throw _privateConstructorUsedError;
+  DateTime get startTime =>
+      throw _privateConstructorUsedError; // La "coordenada" de inicio en el círculo
+  DateTime? get endTime =>
+      throw _privateConstructorUsedError; // Si es null, el ayuno sigue activo
+  bool get isFasting =>
+      throw _privateConstructorUsedError; // true = Ayuno, false = Ventana de comida
+  String? get note => throw _privateConstructorUsedError;
+
+  /// Serializes this FastingInterval to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of FastingInterval
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $FastingIntervalCopyWith<FastingInterval> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $FastingIntervalCopyWith<$Res> {
+  factory $FastingIntervalCopyWith(
+          FastingInterval value, $Res Function(FastingInterval) then) =
+      _$FastingIntervalCopyWithImpl<$Res, FastingInterval>;
+  @useResult
+  $Res call(
+      {String id,
+      String userId,
+      DateTime startTime,
+      DateTime? endTime,
+      bool isFasting,
+      String? note});
+}
+
+/// @nodoc
+class _$FastingIntervalCopyWithImpl<$Res, $Val extends FastingInterval>
+    implements $FastingIntervalCopyWith<$Res> {
+  _$FastingIntervalCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of FastingInterval
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = null,
+    Object? userId = null,
+    Object? startTime = null,
+    Object? endTime = freezed,
+    Object? isFasting = null,
+    Object? note = freezed,
+  }) {
+    return _then(_value.copyWith(
+      id: null == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      userId: null == userId
+          ? _value.userId
+          : userId // ignore: cast_nullable_to_non_nullable
+              as String,
+      startTime: null == startTime
+          ? _value.startTime
+          : startTime // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      endTime: freezed == endTime
+          ? _value.endTime
+          : endTime // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      isFasting: null == isFasting
+          ? _value.isFasting
+          : isFasting // ignore: cast_nullable_to_non_nullable
+              as bool,
+      note: freezed == note
+          ? _value.note
+          : note // ignore: cast_nullable_to_non_nullable
+              as String?,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$FastingIntervalImplCopyWith<$Res>
+    implements $FastingIntervalCopyWith<$Res> {
+  factory _$$FastingIntervalImplCopyWith(_$FastingIntervalImpl value,
+          $Res Function(_$FastingIntervalImpl) then) =
+      __$$FastingIntervalImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call(
+      {String id,
+      String userId,
+      DateTime startTime,
+      DateTime? endTime,
+      bool isFasting,
+      String? note});
+}
+
+/// @nodoc
+class __$$FastingIntervalImplCopyWithImpl<$Res>
+    extends _$FastingIntervalCopyWithImpl<$Res, _$FastingIntervalImpl>
+    implements _$$FastingIntervalImplCopyWith<$Res> {
+  __$$FastingIntervalImplCopyWithImpl(
+      _$FastingIntervalImpl _value, $Res Function(_$FastingIntervalImpl) _then)
+      : super(_value, _then);
+
+  /// Create a copy of FastingInterval
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = null,
+    Object? userId = null,
+    Object? startTime = null,
+    Object? endTime = freezed,
+    Object? isFasting = null,
+    Object? note = freezed,
+  }) {
+    return _then(_$FastingIntervalImpl(
+      id: null == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      userId: null == userId
+          ? _value.userId
+          : userId // ignore: cast_nullable_to_non_nullable
+              as String,
+      startTime: null == startTime
+          ? _value.startTime
+          : startTime // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      endTime: freezed == endTime
+          ? _value.endTime
+          : endTime // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      isFasting: null == isFasting
+          ? _value.isFasting
+          : isFasting // ignore: cast_nullable_to_non_nullable
+              as bool,
+      note: freezed == note
+          ? _value.note
+          : note // ignore: cast_nullable_to_non_nullable
+              as String?,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$FastingIntervalImpl implements _FastingInterval {
+  const _$FastingIntervalImpl(
+      {required this.id,
+      required this.userId,
+      required this.startTime,
+      this.endTime,
+      this.isFasting = true,
+      this.note});
+
+  factory _$FastingIntervalImpl.fromJson(Map<String, dynamic> json) =>
+      _$$FastingIntervalImplFromJson(json);
+
+  @override
+  final String id;
+  @override
+  final String userId;
+  @override
+  final DateTime startTime;
+// La "coordenada" de inicio en el círculo
+  @override
+  final DateTime? endTime;
+// Si es null, el ayuno sigue activo
+  @override
+  @JsonKey()
+  final bool isFasting;
+// true = Ayuno, false = Ventana de comida
+  @override
+  final String? note;
+
+  @override
+  String toString() {
+    return 'FastingInterval(id: $id, userId: $userId, startTime: $startTime, endTime: $endTime, isFasting: $isFasting, note: $note)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$FastingIntervalImpl &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.userId, userId) || other.userId == userId) &&
+            (identical(other.startTime, startTime) ||
+                other.startTime == startTime) &&
+            (identical(other.endTime, endTime) || other.endTime == endTime) &&
+            (identical(other.isFasting, isFasting) ||
+                other.isFasting == isFasting) &&
+            (identical(other.note, note) || other.note == note));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode =>
+      Object.hash(runtimeType, id, userId, startTime, endTime, isFasting, note);
+
+  /// Create a copy of FastingInterval
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$FastingIntervalImplCopyWith<_$FastingIntervalImpl> get copyWith =>
+      __$$FastingIntervalImplCopyWithImpl<_$FastingIntervalImpl>(
+          this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$FastingIntervalImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _FastingInterval implements FastingInterval {
+  const factory _FastingInterval(
+      {required final String id,
+      required final String userId,
+      required final DateTime startTime,
+      final DateTime? endTime,
+      final bool isFasting,
+      final String? note}) = _$FastingIntervalImpl;
+
+  factory _FastingInterval.fromJson(Map<String, dynamic> json) =
+      _$FastingIntervalImpl.fromJson;
+
+  @override
+  String get id;
+  @override
+  String get userId;
+  @override
+  DateTime get startTime; // La "coordenada" de inicio en el círculo
+  @override
+  DateTime? get endTime; // Si es null, el ayuno sigue activo
+  @override
+  bool get isFasting; // true = Ayuno, false = Ventana de comida
+  @override
+  String? get note;
+
+  /// Create a copy of FastingInterval
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$FastingIntervalImplCopyWith<_$FastingIntervalImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

@@ -78,3 +78,27 @@ Map<String, dynamic> _$$CircadianProfileImplToJson(
       'firstMealGoal': instance.firstMealGoal?.toIso8601String(),
       'lastMealGoal': instance.lastMealGoal?.toIso8601String(),
     };
+
+_$FastingIntervalImpl _$$FastingIntervalImplFromJson(
+        Map<String, dynamic> json) =>
+    _$FastingIntervalImpl(
+      id: json['id'] as String,
+      userId: json['userId'] as String,
+      startTime: DateTime.parse(json['startTime'] as String),
+      endTime: json['endTime'] == null
+          ? null
+          : DateTime.parse(json['endTime'] as String),
+      isFasting: json['isFasting'] as bool? ?? true,
+      note: json['note'] as String?,
+    );
+
+Map<String, dynamic> _$$FastingIntervalImplToJson(
+        _$FastingIntervalImpl instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'userId': instance.userId,
+      'startTime': instance.startTime.toIso8601String(),
+      'endTime': instance.endTime?.toIso8601String(),
+      'isFasting': instance.isFasting,
+      'note': instance.note,
+    };
