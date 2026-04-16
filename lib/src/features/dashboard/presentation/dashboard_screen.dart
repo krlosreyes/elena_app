@@ -51,9 +51,9 @@ class DashboardScreen extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Column(
                 children: [
-                  const SizedBox(height: 15),
+                  const SizedBox(height: 10),
                   const ElenaHeader(title: "Metamorfosis Real"),
-                  const SizedBox(height: 15), 
+                  const SizedBox(height: 10), 
                   
                   Stack(
                     alignment: Alignment.center,
@@ -73,27 +73,32 @@ class DashboardScreen extends ConsumerWidget {
                         ),
                       ),
                       if (sleepState.isWaitingForWakeUp)
-                        _buildWakeUpOverlay(context, ref),
+                        _buildWakeUpOverlay(context, ref, sleepState.isSaving),
+                      if (fastingState.isWaitingForFastingEnd)
+                        _buildFastingEndOverlay(context, ref, fastingState),
+                      if (fastingState.isWaitingForFeedingEnd)
+                        _buildFeedingEndOverlay(context, ref, fastingState),
                     ],
                   ),
                   
-                  const SizedBox(height: 25), 
+                  const SizedBox(height: 20), 
 
                   if (fastingState.metabolicAlert != null) ...[
                     _buildMetabolicAlertBanner(fastingState.metabolicAlert!),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                   ],
 
+                  // CONSOLAS COMPACTADAS
                   fastingState.startTime == null 
                       ? _buildFirstTimerWelcome(context, ref, fastingState.fastingProtocol)
                       : _buildMetabolicControlConsole(context, ref, fastingState),
                   
-                  const SizedBox(height: 35),
+                  const SizedBox(height: 25),
                   _buildSectionLabel("ESTADO DE PILARES"),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   
                   _buildMetricsGrid(context, ref, sleepState, hydrationState),
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 30),
                 ],
               ),
             ),
@@ -104,20 +109,74 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  // --- COMPONENTES PRIVADOS ---
+  // --- COMPONENTES PRIVADOS AJUSTADOS ---
+
+  Widget _buildMetabolicControlConsole(BuildContext context, WidgetRef ref, FastingState state) {
+    String twoDigits(int n) => n.toString().padLeft(2, "0");
+    final displayTime = state.isActive ? state.duration : state.timeRemainingForNextMilestone;
+    final color = state.isActive ? AppColors.metabolicGreen : (state.nearSleepWarning ? Colors.redAccent : Colors.orangeAccent);
+    
+    return Container(
+      width: double.infinity, 
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16), // Padding reducido
+      decoration: BoxDecoration(color: const Color(0xFF1E293B), borderRadius: BorderRadius.circular(24)),
+      child: Column(children: [
+        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+          Text(state.isActive ? "OBJETIVO: ${state.fastingProtocol}" : "VENTANA NUTRICIONAL", 
+            style: TextStyle(color: color.withOpacity(0.6), fontSize: 8, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+          Text(state.isActive ? state.metabolicMilestone.toUpperCase() : "ABSORCIÓN", 
+            style: TextStyle(color: color, fontSize: 8, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+        ]),
+        const SizedBox(height: 12),
+        Text("${twoDigits(displayTime.inHours)}:${twoDigits(displayTime.inMinutes.remainder(60))}:${twoDigits(displayTime.inSeconds.remainder(60))}", 
+          style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 38, fontFamily: 'monospace')), // Fuente un poco más pequeña
+        const SizedBox(height: 16),
+        SizedBox(width: double.infinity, height: 44, child: ElevatedButton.icon( // Altura reducida a 44
+          onPressed: state.isSaving ? null : () => _showManualTimePicker(context, ref, isFeeding: false),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: state.isActive ? Colors.redAccent : AppColors.metabolicGreen, 
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            elevation: 0,
+          ),
+          icon: state.isSaving 
+            ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+            : Icon(state.isActive ? Icons.stop_circle_outlined : Icons.play_circle_outline, color: Colors.white, size: 20),
+          label: Text(state.isActive ? "FINALIZAR AYUNO" : "INICIAR AYUNO", 
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+        )),
+      ]),
+    );
+  }
+
+  Widget _buildFirstTimerWelcome(BuildContext context, WidgetRef ref, String protocol) {
+    return Container(
+      width: double.infinity, 
+      padding: const EdgeInsets.all(20), // Compactado
+      decoration: BoxDecoration(color: const Color(0xFF1E293B), borderRadius: BorderRadius.circular(24)),
+      child: Column(children: [
+        const Icon(Icons.auto_awesome, color: AppColors.metabolicGreen, size: 20),
+        const SizedBox(height: 8),
+        const Text("LISTO PARA TU METAMORFOSIS", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.5)),
+        const SizedBox(height: 16),
+        SizedBox(width: double.infinity, height: 44, child: ElevatedButton( // Altura reducida
+          onPressed: () => ref.read(fastingProvider.notifier).startFasting(),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.metabolicGreen, 
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            elevation: 0,
+          ),
+          child: const Text("INICIAR PRIMER AYUNO", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+        )),
+      ]),
+    );
+  }
+
+  // --- RESTO DE MÉTODOS (GRID Y NAV MANTIENEN SU DISEÑO) ---
 
   Widget _buildSectionLabel(String label) {
     return Align(
       alignment: Alignment.centerLeft,
-      child: Text(
-        label,
-        style: TextStyle(
-          color: Colors.white.withOpacity(0.3), 
-          fontSize: 11, 
-          letterSpacing: 2.0, 
-          fontWeight: FontWeight.bold
-        ),
-      ),
+      child: Text(label, style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 10, letterSpacing: 1.5, fontWeight: FontWeight.bold)),
     );
   }
 
@@ -146,10 +205,7 @@ class DashboardScreen extends ConsumerWidget {
     final imrTag = log.duration.inHours >= 7 ? "+8 IMR" : "+4 IMR";
 
     return GestureDetector(
-      onTap: () {
-        debugPrint("🌙 Trigger Manual: Despertar");
-        ref.read(sleepProvider.notifier).confirmManualWakeUp();
-      },
+      onTap: state.isSaving ? null : () => ref.read(sleepProvider.notifier).confirmManualWakeUp(),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -163,16 +219,16 @@ class DashboardScreen extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Icon(Icons.nightlight_round, color: color, size: 20),
-                Text(imrTag, style: TextStyle(color: color, fontSize: 9, fontWeight: FontWeight.bold)),
+                Icon(Icons.nightlight_round, color: color, size: 18),
+                if (state.isSaving)
+                  const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2))
+                else
+                  Text(imrTag, style: TextStyle(color: color, fontSize: 8, fontWeight: FontWeight.bold)),
               ],
             ),
             const Spacer(),
-            Text("SUEÑO", style: TextStyle(fontSize: 9, color: Colors.grey.withOpacity(0.6), fontWeight: FontWeight.w800)),
-            const SizedBox(height: 2),
-            Text("${log.duration.inHours}h ${log.duration.inMinutes.remainder(60)}m", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 2),
-            Text("BRECHA: ${gap}h", style: TextStyle(fontSize: 8, color: Colors.grey.withOpacity(0.5), fontWeight: FontWeight.w600)),
+            Text("SUEÑO", style: TextStyle(fontSize: 8, color: Colors.grey.withOpacity(0.6), fontWeight: FontWeight.w800)),
+            Text("${log.duration.inHours}h ${log.duration.inMinutes.remainder(60)}m", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           ],
         ),
       ),
@@ -199,23 +255,13 @@ class DashboardScreen extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Icon(Icons.water_drop, color: color, size: 20),
-                if (state.isSaving) const SizedBox(width: 10, height: 10, child: CircularProgressIndicator(strokeWidth: 2))
-                else Text(pct, style: TextStyle(color: color, fontSize: 9, fontWeight: FontWeight.bold)),
+                Icon(Icons.water_drop, color: color, size: 18),
+                Text(pct, style: TextStyle(color: color, fontSize: 8, fontWeight: FontWeight.bold)),
               ],
             ),
             const Spacer(),
-            Text("HIDRATACIÓN", style: TextStyle(fontSize: 9, color: Colors.grey.withOpacity(0.6), fontWeight: FontWeight.w800)),
-            const SizedBox(height: 2),
-            RichText(
-              text: TextSpan(
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                children: [
-                  TextSpan(text: "${state.currentFormatted}L"),
-                  TextSpan(text: " / ${state.goalFormatted}L", style: TextStyle(fontSize: 11, color: Colors.grey.withOpacity(0.5), fontWeight: FontWeight.w600)),
-                ],
-              ),
-            ),
+            Text("HIDRATACIÓN", style: TextStyle(fontSize: 8, color: Colors.grey.withOpacity(0.6), fontWeight: FontWeight.w800)),
+            Text("${state.currentFormatted}L", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           ],
         ),
       ),
@@ -232,133 +278,84 @@ class DashboardScreen extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Icon(icon, color: color, size: 20),
-              Text(imrTag, style: TextStyle(color: color, fontSize: 9, fontWeight: FontWeight.bold)),
+              Icon(icon, color: color, size: 18),
+              Text(imrTag, style: TextStyle(color: color, fontSize: 8, fontWeight: FontWeight.bold)),
             ],
           ),
           const Spacer(),
-          Text(label, style: TextStyle(fontSize: 9, color: Colors.grey.withOpacity(0.6), fontWeight: FontWeight.w800)), 
-          const SizedBox(height: 2), 
-          Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          Text(label, style: TextStyle(fontSize: 8, color: Colors.grey.withOpacity(0.6), fontWeight: FontWeight.w800)), 
+          Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         ],
       ),
     );
   }
 
-  Widget _buildWakeUpOverlay(BuildContext context, WidgetRef ref) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      margin: const EdgeInsets.symmetric(horizontal: 40),
-      decoration: BoxDecoration(
-        color: const Color(0xFF0F172A).withOpacity(0.98),
-        borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: AppColors.metabolicGreen, width: 2),
-        boxShadow: [BoxShadow(color: AppColors.metabolicGreen.withOpacity(0.2), blurRadius: 15)],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.wb_sunny_rounded, color: Colors.orangeAccent, size: 32),
-          const SizedBox(height: 12),
-          const Text("¿YA DESPERTASTE?", style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14)),
-          const SizedBox(height: 20),
-          SizedBox(
-            width: double.infinity, height: 48,
-            child: ElevatedButton(
-              onPressed: () => ref.read(sleepProvider.notifier).confirmManualWakeUp(),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.metabolicGreen,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              ),
-              child: const Text("SÍ, DESPERTÉ", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-            ),
-          ),
-        ],
-      ),
+  // --- OVERLAYS Y PICKERS SE MANTIENEN ---
+
+  Widget _buildFastingEndOverlay(BuildContext context, WidgetRef ref, FastingState state) {
+    return _buildBaseOverlay(
+      context: context, icon: Icons.emoji_events_rounded, iconColor: AppColors.metabolicGreen,
+      title: "¡META ALCANZADA!", subtitle: "Has completado tus ${state.targetHours}h de ayuno.",
+      buttonLabel: "CONFIRMAR HITO REAL", isSaving: state.isSaving,
+      onConfirm: () => _showManualTimePicker(context, ref, isFeeding: false),
     );
+  }
+
+  Widget _buildFeedingEndOverlay(BuildContext context, WidgetRef ref, FastingState state) {
+    return _buildBaseOverlay(
+      context: context, icon: Icons.timer_off_rounded, iconColor: Colors.orangeAccent,
+      title: "FIN DE VENTANA", subtitle: "Tu ventana de alimentación ha terminado.",
+      buttonLabel: "CONFIRMAR CIERRE", isSaving: state.isSaving,
+      onConfirm: () => _showManualTimePicker(context, ref, isFeeding: true),
+    );
+  }
+
+  Widget _buildWakeUpOverlay(BuildContext context, WidgetRef ref, bool isSaving) {
+    return _buildBaseOverlay(
+      context: context, icon: Icons.wb_sunny_rounded, iconColor: Colors.orangeAccent,
+      title: "¿YA DESPERTASTE?", subtitle: "Elena detecta actividad matutina.",
+      buttonLabel: "SÍ, DESPERTÉ", isSaving: isSaving,
+      onConfirm: () => ref.read(sleepProvider.notifier).confirmManualWakeUp(),
+    );
+  }
+
+  Widget _buildBaseOverlay({required BuildContext context, required IconData icon, required Color iconColor, required String title, required String subtitle, required String buttonLabel, required bool isSaving, required VoidCallback onConfirm}) {
+    return Container(
+      padding: const EdgeInsets.all(20), margin: const EdgeInsets.symmetric(horizontal: 40),
+      decoration: BoxDecoration(color: const Color(0xFF0F172A).withOpacity(0.98), borderRadius: BorderRadius.circular(30), border: Border.all(color: iconColor, width: 2), boxShadow: [BoxShadow(color: iconColor.withOpacity(0.2), blurRadius: 15)]),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Icon(icon, color: iconColor, size: 28),
+        const SizedBox(height: 12),
+        Text(title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13)),
+        const SizedBox(height: 8),
+        Text(subtitle, textAlign: TextAlign.center, style: TextStyle(fontSize: 10, color: Colors.white.withOpacity(0.7))),
+        const SizedBox(height: 16),
+        SizedBox(width: double.infinity, height: 42, child: ElevatedButton(onPressed: isSaving ? null : onConfirm, style: ElevatedButton.styleFrom(backgroundColor: iconColor, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))), child: isSaving ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : Text(buttonLabel, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 12)))),
+      ]),
+    );
+  }
+
+  Future<void> _showManualTimePicker(BuildContext context, WidgetRef ref, {required bool isFeeding}) async {
+    final DateTime now = DateTime.now();
+    final fastingState = ref.read(fastingProvider);
+    final Color primaryColor = isFeeding ? Colors.orangeAccent : AppColors.metabolicGreen;
+    final DateTime? pickedDate = await showDatePicker(context: context, initialDate: now, firstDate: now.subtract(const Duration(days: 7)), lastDate: now.add(const Duration(days: 1)), builder: (context, child) => Theme(data: ThemeData.dark().copyWith(colorScheme: ColorScheme.dark(primary: primaryColor), dialogBackgroundColor: const Color(0xFF1E293B)), child: child!));
+    if (pickedDate == null) return;
+    final TimeOfDay? pickedTime = await showTimePicker(context: context, initialTime: TimeOfDay.fromDateTime(now), builder: (context, child) => Theme(data: ThemeData.dark().copyWith(colorScheme: ColorScheme.dark(primary: primaryColor), dialogBackgroundColor: const Color(0xFF1E293B)), child: child!));
+    if (pickedTime == null) return;
+    final DateTime finalDateTime = DateTime(pickedDate.year, pickedDate.month, pickedDate.day, pickedTime.hour, pickedTime.minute);
+    if (isFeeding) { ref.read(fastingProvider.notifier).confirmFeedingEnd(finalDateTime); } else { if (fastingState.isActive) { ref.read(fastingProvider.notifier).confirmManualFastingEnd(finalDateTime); } else { ref.read(fastingProvider.notifier).startFastingManual(finalDateTime); } }
   }
 
   Widget _buildMetabolicAlertBanner(String message) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(color: Colors.redAccent.withOpacity(0.1), borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.redAccent.withOpacity(0.3))),
-      child: Row(
-        children: [
-          const Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 18),
-          const SizedBox(width: 12),
-          Expanded(child: Text(message, style: const TextStyle(color: Colors.redAccent, fontSize: 10, fontWeight: FontWeight.bold))),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMetabolicControlConsole(BuildContext context, WidgetRef ref, FastingState state) {
-    String twoDigits(int n) => n.toString().padLeft(2, "0");
-    final displayTime = state.isActive ? state.duration : state.timeRemainingForNextMilestone;
-    final color = state.isActive ? AppColors.metabolicGreen : (state.nearSleepWarning ? Colors.redAccent : Colors.orangeAccent);
-    
-    return Container(
-      width: double.infinity, padding: const EdgeInsets.all(24), 
-      decoration: BoxDecoration(color: const Color(0xFF1E293B), borderRadius: BorderRadius.circular(28)),
-      child: Column(children: [
-        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          Text(state.isActive ? "OBJETIVO: ${state.fastingProtocol}" : "VENTANA NUTRICIONAL", style: TextStyle(color: color.withOpacity(0.6), fontSize: 9, fontWeight: FontWeight.w900)),
-          Text(state.isActive ? state.metabolicMilestone.toUpperCase() : "ABSORCIÓN", style: TextStyle(color: color, fontSize: 9, fontWeight: FontWeight.bold)),
-        ]),
-        const SizedBox(height: 16),
-        Text("${twoDigits(displayTime.inHours)}:${twoDigits(displayTime.inMinutes.remainder(60))}:${twoDigits(displayTime.inSeconds.remainder(60))}", style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 44, fontFamily: 'monospace')),
-        const SizedBox(height: 20),
-        SizedBox(width: double.infinity, height: 54, child: ElevatedButton.icon(
-          onPressed: () => state.isActive ? ref.read(fastingProvider.notifier).stopFasting() : ref.read(fastingProvider.notifier).startFasting(),
-          style: ElevatedButton.styleFrom(backgroundColor: state.isActive ? Colors.redAccent : AppColors.metabolicGreen, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
-          icon: Icon(state.isActive ? Icons.stop_circle : Icons.play_arrow, color: Colors.white),
-          label: Text(state.isActive ? "FINALIZAR AYUNO" : "INICIAR AYUNO", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        )),
-      ]),
-    );
-  }
-
-  Widget _buildFirstTimerWelcome(BuildContext context, WidgetRef ref, String protocol) {
-    return Container(
-      width: double.infinity, padding: const EdgeInsets.all(24), decoration: BoxDecoration(color: const Color(0xFF1E293B), borderRadius: BorderRadius.circular(28)),
-      child: Column(children: [
-        const Icon(Icons.auto_awesome, color: AppColors.metabolicGreen, size: 24),
-        const SizedBox(height: 12),
-        const Text("LISTO PARA TU METAMORFOSIS", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-        const SizedBox(height: 20),
-        SizedBox(width: double.infinity, height: 48, child: ElevatedButton(
-          onPressed: () => ref.read(fastingProvider.notifier).startFasting(),
-          style: ElevatedButton.styleFrom(backgroundColor: AppColors.metabolicGreen, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
-          child: const Text("INICIAR PRIMER AYUNO", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        )),
-      ]),
-    );
+    return Container(width: double.infinity, padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10), decoration: BoxDecoration(color: Colors.redAccent.withOpacity(0.1), borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.redAccent.withOpacity(0.2))), child: Row(children: [const Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 16), const SizedBox(width: 10), Expanded(child: Text(message, style: const TextStyle(color: Colors.redAccent, fontSize: 9, fontWeight: FontWeight.bold)))]));
   }
 
   Widget _buildBottomNav(BuildContext context) {
     final String location = GoRouterState.of(context).matchedLocation;
-    
     int currentIndex = 0;
     if (location.startsWith('/analysis')) currentIndex = 1;
     if (location.startsWith('/profile')) currentIndex = 2;
-
-    return BottomNavigationBar(
-      backgroundColor: const Color(0xFF0F172A),
-      selectedItemColor: AppColors.metabolicGreen,
-      unselectedItemColor: Colors.grey.withOpacity(0.5),
-      currentIndex: currentIndex,
-      type: BottomNavigationBarType.fixed,
-      onTap: (index) {
-        if (index == 0) context.go('/dashboard');
-        if (index == 1) context.go('/analysis');
-        if (index == 2) context.go('/profile');
-      },
-      items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.grid_view_rounded), label: "Dashboard"),
-        BottomNavigationBarItem(icon: Icon(Icons.insights_rounded), label: "Análisis"),
-        BottomNavigationBarItem(icon: Icon(Icons.person), label: "Perfil"),
-      ],
-    );
+    return BottomNavigationBar(backgroundColor: const Color(0xFF0F172A), selectedItemColor: AppColors.metabolicGreen, unselectedItemColor: Colors.grey.withOpacity(0.5), currentIndex: currentIndex, type: BottomNavigationBarType.fixed, onTap: (index) { if (index == 0) context.go('/dashboard'); if (index == 1) context.go('/analysis'); if (index == 2) context.go('/profile'); }, items: const [BottomNavigationBarItem(icon: Icon(Icons.grid_view_rounded), label: "Dashboard"), BottomNavigationBarItem(icon: Icon(Icons.insights_rounded), label: "Análisis"), BottomNavigationBarItem(icon: Icon(Icons.person), label: "Perfil")]);
   }
 }

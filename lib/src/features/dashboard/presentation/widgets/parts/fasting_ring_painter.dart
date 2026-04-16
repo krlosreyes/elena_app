@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'dart:math' as math;
 
 class FastingRingPainter extends CustomPainter {
-  final DateTime startTime; // Coordenada de inicio real (0h)
-  final Duration duration;  // Longitud del arco de progreso
+  final DateTime startTime; // Coordenada de inicio real (Hito en el tiempo)
+  final Duration duration;  // Diferencia real: DateTime.now() - startTime
   final Color phaseColor;   // Color de la fase biológica actual
   final Color indicatorColor; // Color de contraste (azul Elena)
 
@@ -18,10 +18,10 @@ class FastingRingPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     
-    // --- MEDIDAS PROPORCIONALES SISTEMA ELENA (Calibración de Hardware) ---
+    // --- MEDIDAS PROPORCIONALES SISTEMA ELENA ---
     final double radiusPhases = size.width * 0.38; 
     final double strokeWidthPhases = size.width * 0.05; 
-    final double strokeWidthFasting = size.width * 0.035; // Aro de ayuno un poco más robusto
+    final double strokeWidthFasting = size.width * 0.035; 
     final double indicatorPointRadius = size.width * 0.015;
     final double netGap = size.width * 0.03; 
 
@@ -34,23 +34,28 @@ class FastingRingPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidthFasting);
 
-    // --- CÁLCULO DE COORDENADAS BASE ---
-    // Convertimos el startTime a ángulo en el reloj de 24h
-    double startHour = startTime.hour + (startTime.minute / 60.0);
-    double startAngle = (startHour * (2 * math.pi / 24)) - (math.pi / 2);
+    // --- CÁLCULO DE COORDENADAS CIRCADIANAS (VIAJE EN EL TIEMPO) ---
+    // En Flutter, -pi/2 es el "Norte" (12:00 AM en nuestro reloj de 24h)
+    // 24 horas = 2*pi radianes. 1 hora = pi/12 radianes.
+    
+    double startHour = startTime.hour + (startTime.minute / 60.0) + (startTime.second / 3600.0);
+    double startAngle = (startHour * (math.pi / 12)) - (math.pi / 2);
 
-    // 2. HITOS DINÁMICOS (Adaptados al inicio, ubicados EN EL INTERIOR)
+    // 2. HITOS DINÁMICOS (Checkpoint Metabólicos)
     _drawFastingMilestones(canvas, center, radiusFasting, size.width, startAngle, strokeWidthFasting);
 
     // 3. PROGRESO DE AYUNO (Arco reactivo)
-    final double fastingHours = duration.inSeconds / 3600;
-    double sweepAngle = (fastingHours * (2 * math.pi / 24));
+    // Calculamos las horas totales transcurridas desde el startTime hasta el presente
+    final double fastingHours = duration.inSeconds / 3600.0;
+    
+    // El sweepAngle debe representar cuánto espacio del círculo de 24h ocupa la duración
+    double sweepAngle = (fastingHours * (math.pi / 12));
 
     if (sweepAngle > 0) {
       canvas.drawArc(
         Rect.fromCircle(center: center, radius: radiusFasting),
         startAngle,
-        sweepAngle.clamp(0.0, math.pi * 2), // Límite de 24h para el arco
+        sweepAngle.clamp(0.0, math.pi * 2), // Límite de un ciclo completo de 24h
         false,
         Paint()
           ..color = phaseColor
@@ -60,43 +65,33 @@ class FastingRingPainter extends CustomPainter {
       );
     }
 
-    // 4. Punto Indicador de Tiempo Real (Manecilla azul)
+    // 4. Punto Indicador de Tiempo Real (Ubicación actual en el reloj de 24h)
     _drawLiveIndicator(canvas, center, orbitRadius, indicatorPointRadius);
   }
 
   void _drawFastingMilestones(Canvas canvas, Offset center, double radius, double fullWidth, double startAngle, double fastingStrokeWidth) {
-    // Definimos los Checkpoints metabólicos del sistema ElenaApp
     final milestones = {
       12: Icons.water_drop_outlined,              // Descenso de Insulina (12h)
       18: Icons.local_fire_department_rounded,    // Quema de Grasa (18h)
       24: Icons.published_with_changes_rounded,    // Autofagia (24h)
     };
 
-    // CALIBRACIÓN DE TAMAÑO COHERENTE
-    // Iconos más grandes y robustos para que sean el "Target" visual
-    final double iconSize = fullWidth * 0.06; // Tamaño robusto (6% del ancho total)
-    
-    // DISTANCIA INTERNA: Los movemos hacia ADENTRO del aro
-    // Calculamos la distancia restando el ancho del trazo y un gap de seguridad
+    final double iconSize = fullWidth * 0.05; 
     final double internalDistance = radius - (fastingStrokeWidth / 2) - (fullWidth * 0.045);
 
     for (var milestoneHour in milestones.keys) {
-      // CALIBRACIÓN DINÁMICA:
-      // Calculamos el ángulo sumando las horas del hito al ángulo de inicio
-      double milestoneAngle = startAngle + (milestoneHour * (2 * math.pi / 24));
+      // El hito se posiciona sumando sus horas al ángulo de inicio del ayuno
+      double milestoneAngle = startAngle + (milestoneHour * (math.pi / 12));
       
-      // Posición del punto de control SOBRE el aro (como referencia)
       final dotPos = Offset(
         center.dx + radius * math.cos(milestoneAngle), 
         center.dy + radius * math.sin(milestoneAngle)
       );
       
-      // Dibujamos el "Checkpoint" sobre el aro
-      canvas.drawCircle(dotPos, 2.5, Paint()
-        ..color = indicatorColor.withOpacity(0.6)
+      canvas.drawCircle(dotPos, 2.0, Paint()
+        ..color = indicatorColor.withOpacity(0.3)
         ..style = PaintingStyle.fill);
 
-      // Dibujamos el icono descriptivo del hito (INTERNO y ROBUSTO)
       final tp = TextPainter(
         text: TextSpan(
           text: String.fromCharCode(milestones[milestoneHour]!.codePoint),
@@ -104,13 +99,12 @@ class FastingRingPainter extends CustomPainter {
             fontSize: iconSize, 
             fontFamily: milestones[milestoneHour]!.fontFamily,
             package: milestones[milestoneHour]!.fontPackage,
-            color: indicatorColor.withOpacity(0.4), // Sutil pero visible
+            color: indicatorColor.withOpacity(0.3),
           ),
         ),
         textDirection: TextDirection.ltr,
       )..layout();
 
-      // Posicionamos el icono en la coordenada interna calculada
       final iconPos = Offset(
         center.dx + internalDistance * math.cos(milestoneAngle) - tp.width / 2,
         center.dy + internalDistance * math.sin(milestoneAngle) - tp.height / 2,
@@ -123,7 +117,7 @@ class FastingRingPainter extends CustomPainter {
   void _drawLiveIndicator(Canvas canvas, Offset center, double orbitRadius, double pointRadius) {
     final now = DateTime.now();
     double currentHour = now.hour + (now.minute / 60.0);
-    double angle = (currentHour * (2 * math.pi / 24)) - (math.pi / 2);
+    double angle = (currentHour * (math.pi / 12)) - (math.pi / 2);
     final pos = Offset(center.dx + orbitRadius * math.cos(angle), center.dy + orbitRadius * math.sin(angle));
 
     canvas.drawCircle(pos, pointRadius + 3, Paint()
@@ -141,8 +135,5 @@ class FastingRingPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(FastingRingPainter oldDelegate) =>
-      oldDelegate.duration != duration ||
-      oldDelegate.startTime != startTime ||
-      oldDelegate.phaseColor != phaseColor;
+  bool shouldRepaint(FastingRingPainter oldDelegate) => true;
 }

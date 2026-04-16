@@ -8,6 +8,7 @@ import 'package:elena_app/src/features/auth/presentation/forgot_password_screen.
 import 'package:elena_app/src/features/onboarding/presentation/onboarding_screen.dart';
 import 'package:elena_app/src/features/dashboard/presentation/dashboard_screen.dart';
 import 'package:elena_app/src/features/auth/presentation/profile_screen.dart';
+import 'package:elena_app/src/features/analysis/presentation/analysis_screen.dart';
 
 final goRouterProvider = Provider<GoRouter>((ref) {
   // Escuchamos el estado de autenticación
@@ -87,6 +88,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/profile',
         name: 'profile',
         builder: (context, state) => const ProfileScreen(),
+      ),
+      GoRoute(
+        path: '/analysis',
+        name: 'analysis',
+        builder: (context, state) => const AnalysisScreen(),
       ),
     ],
   );

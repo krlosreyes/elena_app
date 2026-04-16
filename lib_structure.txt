@@ -45,27 +45,36 @@ lib
     │   │       └── auth_providers.dart
     │   ├── dashboard
     │   │   ├── application
-    │   │   │   └── fasting_notifier.dart
+    │   │   │   ├── fasting_notifier.dart
+    │   │   │   ├── hydration_notifier.dart
+    │   │   │   └── sleep_notifier.dart
     │   │   ├── domain
-    │   │   │   └── fasting_status.dart
+    │   │   │   ├── fasting_status.dart
+    │   │   │   ├── hydration_log.dart
+    │   │   │   └── sleep_log.dart
     │   │   └── presentation
     │   │       ├── dashboard_screen.dart
     │   │       └── widgets
-    │   └── onboarding
-    │       ├── application
-    │       │   └── onboarding_controller.dart
-    │       └── presentation
-    │           └── onboarding_screen.dart
+    │   ├── onboarding
+    │   │   ├── application
+    │   │   │   └── onboarding_controller.dart
+    │   │   └── presentation
+    │   │       └── onboarding_screen.dart
+    │   └── sleep
+    │       └── domain
+    │           └── sleep_log.dart
     ├── router
     │   └── app_router.dart
     └── shared
-        └── domain
-            ├── models
-            │   ├── user_model.dart
-            │   ├── user_model.freezed.dart
-            │   └── user_model.g.dart
-            └── services
-                ├── size_mapper_service.dart
-                └── user_repository.dart
+        ├── domain
+        │   ├── models
+        │   │   ├── user_model.dart
+        │   │   ├── user_model.freezed.dart
+        │   │   └── user_model.g.dart
+        │   └── services
+        │       ├── size_mapper_service.dart
+        │       └── user_repository.dart
+        └── providers
+            └── user_provider.dart
 
-33 directories, 36 files
+36 directories, 42 files

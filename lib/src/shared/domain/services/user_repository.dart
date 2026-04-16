@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/features/dashboard/domain/sleep_log.dart';
-import 'package:elena_app/src/features/dashboard/domain/hydration_log.dart'; // Nueva importación
+import 'package:elena_app/src/features/dashboard/domain/hydration_log.dart';
 
 final userRepositoryProvider = Provider<UserRepository>((ref) {
   return UserRepository();
@@ -73,7 +73,6 @@ class UserRepository {
 
   // --- LÓGICA DE HIDRATACIÓN (PILAR: SOLVENTE METABÓLICO) ---
 
-  /// Registra una ingesta de agua en la sub-colección del usuario.
   Future<void> saveHydrationLog(String userId, HydrationLog log) async {
     try {
       await _usersCollection
@@ -108,34 +107,41 @@ class UserRepository {
     });
   }
 
-  Future<void> startNewInterval(String userId, bool isFasting) async {
-    final now = DateTime.now();
+  /// Inicia un nuevo hito metabólico respetando fechas manuales para pruebas.
+  Future<void> startNewInterval(String userId, bool isFasting, {DateTime? startTime}) async {
+    final effectiveTime = startTime ?? DateTime.now();
     final batch = _firestore.batch();
 
     try {
+      // 1. Buscamos CUALQUIER intervalo abierto para cerrarlo con el effectiveTime
+      // Esto evita solapamientos si estás forzando fechas pasadas
       final activeQuery = await _historyCollection
           .where('userId', isEqualTo: userId)
           .where('endTime', isNull: true)
           .get();
 
       for (var doc in activeQuery.docs) {
-        batch.update(doc.reference, {'endTime': Timestamp.fromDate(now)});
+        batch.update(doc.reference, {
+          'endTime': Timestamp.fromDate(effectiveTime),
+        });
       }
 
+      // 2. Creamos el nuevo hito (Ayuno o Ventana)
       final newDocRef = _historyCollection.doc();
       final newInterval = FastingInterval(
         id: newDocRef.id,
         userId: userId,
-        startTime: now,
+        startTime: effectiveTime,
         isFasting: isFasting,
       );
 
       batch.set(newDocRef, newInterval.toJson());
       
       await batch.commit();
-      debugPrint("🚀 Nuevo hito iniciado: ${isFasting ? 'Ayuno' : 'Ventana'}");
+      debugPrint("🚀 Sincronización manual: ${isFasting ? 'AYUNO' : 'VENTANA'} desde ${effectiveTime.toString()}");
     } catch (e) {
       debugPrint("❌ Error en startNewInterval: $e");
+      rethrow;
     }
   }
 }

@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/features/dashboard/application/fasting_notifier.dart';
-import 'package:elena_app/src/features/dashboard/presentation/dashboard_screen.dart';
 import 'package:elena_app/src/shared/domain/services/user_repository.dart';
 import '../domain/sleep_log.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 
+/// CLASE DE ESTADO (El contrato que el compilador no encontraba)
 class SleepState {
   final SleepLog? lastLog;
   final bool isSleepMode;
   final bool isSaving;
-  final bool isWaitingForWakeUp; // Bandera para mostrar el Widget de despertar
+  final bool isWaitingForWakeUp;
 
   SleepState({
     this.lastLog, 
@@ -36,6 +36,7 @@ class SleepState {
 
 class SleepNotifier extends StateNotifier<SleepState> {
   final Ref _ref;
+  bool _manualWakeUpConfirmedToday = false;
 
   SleepNotifier(this._ref) : super(SleepState());
 
@@ -48,16 +49,19 @@ class SleepNotifier extends StateNotifier<SleepState> {
 
       final now = DateTime.now();
       
-      // 1. Normalización de horas teóricas
       final sleepTime = DateTime(now.year, now.month, now.day, 
           user.profile.sleepTime.hour, user.profile.sleepTime.minute);
       
       final wakeTime = DateTime(now.year, now.month, now.day, 
           user.profile.wakeUpTime.hour, user.profile.wakeUpTime.minute);
 
-      // 2. Lógica de Ventana de Despertar
-      // Si ya pasó la hora de despertar teórica, pero aún no ha confirmado manualmente
-      final bool inWakeUpWindow = now.isAfter(wakeTime) && now.isBefore(wakeTime.add(const Duration(hours: 4)));
+      // Reset de bandera a mediodía para el ciclo siguiente
+      if (now.hour == 12) _manualWakeUpConfirmedToday = false;
+
+      // Solo mostramos el overlay si está en rango Y NO ha confirmado manualmente
+      final bool inWakeUpWindow = now.isAfter(wakeTime) && 
+                                 now.isBefore(wakeTime.add(const Duration(hours: 4))) &&
+                                 !_manualWakeUpConfirmedToday;
 
       final log = SleepLog(
         id: 'sync_${now.year}${now.month}${now.day}',
@@ -76,21 +80,19 @@ class SleepNotifier extends StateNotifier<SleepState> {
     });
   }
 
-  /// CIERRE DE CICLO MANUAL: Se dispara cuando el usuario oprime "¿Ya despertaste?"
   Future<void> confirmManualWakeUp() async {
     final now = DateTime.now();
     final userAsync = _ref.read(currentUserStreamProvider);
     final repo = _ref.read(userRepositoryProvider);
     
-    if (state.lastLog == null) return;
+    if (state.lastLog == null || state.isSaving) return;
 
     state = state.copyWith(isSaving: true);
     
-    // Sobreescribimos el log con la hora REAL de despertar (ahora mismo)
     final realLog = SleepLog(
       id: state.lastLog!.id,
       fellAsleep: state.lastLog!.fellAsleep,
-      wokeUp: now, // <--- Hito real
+      wokeUp: now,
       lastMealTime: state.lastLog!.lastMealTime,
     );
 
@@ -98,19 +100,22 @@ class SleepNotifier extends StateNotifier<SleepState> {
     if (user != null && user.id.isNotEmpty) {
       try {
         await repo.saveSleepLog(user.id, realLog);
-        // Al confirmar, limpiamos la espera de despertar
+        _manualWakeUpConfirmedToday = true; 
+
         state = state.copyWith(
           lastLog: realLog, 
           isWaitingForWakeUp: false,
           isSleepMode: false,
+          isSaving: false,
         );
-        debugPrint("🚀 Ciclo de sueño cerrado manualmente a las: $now");
+        debugPrint("🚀 Ciclo cerrado correctamente.");
       } catch (e) {
-        debugPrint("❌ Error al cerrar ciclo: $e");
+        debugPrint("❌ Error al cerrar: $e");
+        state = state.copyWith(isSaving: false);
       }
+    } else {
+       state = state.copyWith(isSaving: false);
     }
-
-    state = state.copyWith(isSaving: false);
   }
 }
 

@@ -22,6 +22,11 @@ class FastingState {
   // --- PROACTIVIDAD: ALERTA DE VENTANA CRÍTICA ---
   final bool nearSleepWarning; 
 
+  // --- ESTADOS DE CONFIRMACIÓN MANUAL ---
+  final bool isWaitingForFastingEnd;
+  final bool isWaitingForFeedingEnd;
+  final bool isSaving;
+
   FastingState({
     this.startTime,
     this.duration = Duration.zero,
@@ -31,6 +36,9 @@ class FastingState {
     this.isActive = false,
     this.fastingProtocol = "16:8",
     this.nearSleepWarning = false, 
+    this.isWaitingForFastingEnd = false,
+    this.isWaitingForFeedingEnd = false,
+    this.isSaving = false,
   });
 
   factory FastingState.initial() => FastingState();
@@ -110,6 +118,9 @@ class FastingState {
     bool? isActive,
     String? fastingProtocol,
     bool? nearSleepWarning,
+    bool? isWaitingForFastingEnd,
+    bool? isWaitingForFeedingEnd,
+    bool? isSaving,
   }) {
     return FastingState(
       startTime: startTime ?? this.startTime,
@@ -120,6 +131,9 @@ class FastingState {
       isActive: isActive ?? this.isActive,
       fastingProtocol: fastingProtocol ?? this.fastingProtocol,
       nearSleepWarning: nearSleepWarning ?? this.nearSleepWarning,
+      isWaitingForFastingEnd: isWaitingForFastingEnd ?? this.isWaitingForFastingEnd,
+      isWaitingForFeedingEnd: isWaitingForFeedingEnd ?? this.isWaitingForFeedingEnd,
+      isSaving: isSaving ?? this.isSaving,
     );
   }
 }
