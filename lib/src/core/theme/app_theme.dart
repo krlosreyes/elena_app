@@ -8,7 +8,9 @@ class AppColors {
   static const Color circadianAmber = Color(0xFFFFB74D);
   
   static const Color background = Color(0xFFF1F5F9); 
+  static const Color backgroundDark = Colors.black;
   static const Color surface = Colors.white;
+  static const Color surfaceDark = Color(0xFF111827); // Gris muy oscuro para contraste
   static const Color border = Color(0xFFE2E8F0);
   
   static const Color textPrimary = Color(0xFF0F172A);
@@ -48,7 +50,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
-      scaffoldBackgroundColor: const Color(0xFF0F172A),
+      scaffoldBackgroundColor: AppColors.backgroundDark,
       
       textTheme: AppTypography.textTheme.apply(
         bodyColor: Colors.white,       
@@ -59,10 +61,10 @@ class AppTheme {
       colorScheme: const ColorScheme.dark(
         primary: AppColors.metabolicGreen,
         secondary: AppColors.optimalCyan,
-        surface: Color(0xFF1E293B),
+        surface: AppColors.surfaceDark,
         onSurface: Colors.white,       
         // ignore: deprecated_member_use
-        background: Color(0xFF0F172A),
+        background: AppColors.backgroundDark,
         // ignore: deprecated_member_use
         onBackground: Colors.white,    
       ),

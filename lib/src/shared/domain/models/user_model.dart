@@ -30,6 +30,8 @@ class UserModel with _$UserModel {
     @Default('Ninguno') String fastingProtocol,
     @Default(['Ninguna']) List<String> pathologies,
     @Default(1.2) double activityLevel, 
+    @Default(0.85) double weeklyAdherence,
+    @Default(20) int exerciseGoalMinutes,
     
     required CircadianProfile profile,
   }) = _UserModel;

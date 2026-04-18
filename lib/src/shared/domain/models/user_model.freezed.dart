@@ -40,6 +40,8 @@ mixin _$UserModel {
   String get fastingProtocol => throw _privateConstructorUsedError;
   List<String> get pathologies => throw _privateConstructorUsedError;
   double get activityLevel => throw _privateConstructorUsedError;
+  double get weeklyAdherence => throw _privateConstructorUsedError;
+  int get exerciseGoalMinutes => throw _privateConstructorUsedError;
   CircadianProfile get profile => throw _privateConstructorUsedError;
 
   /// Serializes this UserModel to a JSON map.
@@ -76,6 +78,8 @@ abstract class $UserModelCopyWith<$Res> {
       String fastingProtocol,
       List<String> pathologies,
       double activityLevel,
+      double weeklyAdherence,
+      int exerciseGoalMinutes,
       CircadianProfile profile});
 
   $CircadianProfileCopyWith<$Res> get profile;
@@ -114,6 +118,8 @@ class _$UserModelCopyWithImpl<$Res, $Val extends UserModel>
     Object? fastingProtocol = null,
     Object? pathologies = null,
     Object? activityLevel = null,
+    Object? weeklyAdherence = null,
+    Object? exerciseGoalMinutes = null,
     Object? profile = null,
   }) {
     return _then(_value.copyWith(
@@ -189,6 +195,14 @@ class _$UserModelCopyWithImpl<$Res, $Val extends UserModel>
           ? _value.activityLevel
           : activityLevel // ignore: cast_nullable_to_non_nullable
               as double,
+      weeklyAdherence: null == weeklyAdherence
+          ? _value.weeklyAdherence
+          : weeklyAdherence // ignore: cast_nullable_to_non_nullable
+              as double,
+      exerciseGoalMinutes: null == exerciseGoalMinutes
+          ? _value.exerciseGoalMinutes
+          : exerciseGoalMinutes // ignore: cast_nullable_to_non_nullable
+              as int,
       profile: null == profile
           ? _value.profile
           : profile // ignore: cast_nullable_to_non_nullable
@@ -234,6 +248,8 @@ abstract class _$$UserModelImplCopyWith<$Res>
       String fastingProtocol,
       List<String> pathologies,
       double activityLevel,
+      double weeklyAdherence,
+      int exerciseGoalMinutes,
       CircadianProfile profile});
 
   @override
@@ -271,6 +287,8 @@ class __$$UserModelImplCopyWithImpl<$Res>
     Object? fastingProtocol = null,
     Object? pathologies = null,
     Object? activityLevel = null,
+    Object? weeklyAdherence = null,
+    Object? exerciseGoalMinutes = null,
     Object? profile = null,
   }) {
     return _then(_$UserModelImpl(
@@ -346,6 +364,14 @@ class __$$UserModelImplCopyWithImpl<$Res>
           ? _value.activityLevel
           : activityLevel // ignore: cast_nullable_to_non_nullable
               as double,
+      weeklyAdherence: null == weeklyAdherence
+          ? _value.weeklyAdherence
+          : weeklyAdherence // ignore: cast_nullable_to_non_nullable
+              as double,
+      exerciseGoalMinutes: null == exerciseGoalMinutes
+          ? _value.exerciseGoalMinutes
+          : exerciseGoalMinutes // ignore: cast_nullable_to_non_nullable
+              as int,
       profile: null == profile
           ? _value.profile
           : profile // ignore: cast_nullable_to_non_nullable
@@ -376,6 +402,8 @@ class _$UserModelImpl implements _UserModel {
       this.fastingProtocol = 'Ninguno',
       final List<String> pathologies = const ['Ninguna'],
       this.activityLevel = 1.2,
+      this.weeklyAdherence = 0.85,
+      this.exerciseGoalMinutes = 20,
       required this.profile})
       : _pathologies = pathologies;
 
@@ -440,11 +468,17 @@ class _$UserModelImpl implements _UserModel {
   @JsonKey()
   final double activityLevel;
   @override
+  @JsonKey()
+  final double weeklyAdherence;
+  @override
+  @JsonKey()
+  final int exerciseGoalMinutes;
+  @override
   final CircadianProfile profile;
 
   @override
   String toString() {
-    return 'UserModel(id: $id, name: $name, age: $age, gender: $gender, weight: $weight, height: $height, waistCircumference: $waistCircumference, neckCircumference: $neckCircumference, bodyFatPercentage: $bodyFatPercentage, pantSize: $pantSize, shirtSize: $shirtSize, isMeasurementEstimated: $isMeasurementEstimated, imrStdDev: $imrStdDev, confidenceLevel: $confidenceLevel, mealsPerDay: $mealsPerDay, fastingProtocol: $fastingProtocol, pathologies: $pathologies, activityLevel: $activityLevel, profile: $profile)';
+    return 'UserModel(id: $id, name: $name, age: $age, gender: $gender, weight: $weight, height: $height, waistCircumference: $waistCircumference, neckCircumference: $neckCircumference, bodyFatPercentage: $bodyFatPercentage, pantSize: $pantSize, shirtSize: $shirtSize, isMeasurementEstimated: $isMeasurementEstimated, imrStdDev: $imrStdDev, confidenceLevel: $confidenceLevel, mealsPerDay: $mealsPerDay, fastingProtocol: $fastingProtocol, pathologies: $pathologies, activityLevel: $activityLevel, weeklyAdherence: $weeklyAdherence, exerciseGoalMinutes: $exerciseGoalMinutes, profile: $profile)';
   }
 
   @override
@@ -482,6 +516,10 @@ class _$UserModelImpl implements _UserModel {
                 .equals(other._pathologies, _pathologies) &&
             (identical(other.activityLevel, activityLevel) ||
                 other.activityLevel == activityLevel) &&
+            (identical(other.weeklyAdherence, weeklyAdherence) ||
+                other.weeklyAdherence == weeklyAdherence) &&
+            (identical(other.exerciseGoalMinutes, exerciseGoalMinutes) ||
+                other.exerciseGoalMinutes == exerciseGoalMinutes) &&
             (identical(other.profile, profile) || other.profile == profile));
   }
 
@@ -507,6 +545,8 @@ class _$UserModelImpl implements _UserModel {
         fastingProtocol,
         const DeepCollectionEquality().hash(_pathologies),
         activityLevel,
+        weeklyAdherence,
+        exerciseGoalMinutes,
         profile
       ]);
 
@@ -546,6 +586,8 @@ abstract class _UserModel implements UserModel {
       final String fastingProtocol,
       final List<String> pathologies,
       final double activityLevel,
+      final double weeklyAdherence,
+      final int exerciseGoalMinutes,
       required final CircadianProfile profile}) = _$UserModelImpl;
 
   factory _UserModel.fromJson(Map<String, dynamic> json) =
@@ -587,6 +629,10 @@ abstract class _UserModel implements UserModel {
   List<String> get pathologies;
   @override
   double get activityLevel;
+  @override
+  double get weeklyAdherence;
+  @override
+  int get exerciseGoalMinutes;
   @override
   CircadianProfile get profile;
 

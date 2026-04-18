@@ -6,8 +6,13 @@ import 'package:elena_app/src/core/engine/score_engine.dart';
 /// Estructura (50%), Metabólico (25%), Conducta y Circadiano (25%)
 class IMRBreakdownCard extends StatelessWidget {
   final IMRv2Result result;
+  final bool isHardcoded;
 
-  const IMRBreakdownCard({super.key, required this.result});
+  const IMRBreakdownCard({
+    super.key, 
+    required this.result,
+    this.isHardcoded = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -15,7 +20,7 @@ class IMRBreakdownCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(24),
       ),
       child: Column(
@@ -37,6 +42,7 @@ class IMRBreakdownCard extends StatelessWidget {
             value: result.structureScore,
             weight: '50%',
             color: const Color(0xFF3B82F6),
+            isHardcoded: isHardcoded,
           ),
           const SizedBox(height: 12),
           _BlockRow(
@@ -66,6 +72,7 @@ class _BlockRow extends StatelessWidget {
   final double value; // 0.0 – 1.0
   final String weight;
   final Color color;
+  final bool isHardcoded;
 
   const _BlockRow({
     required this.label,
@@ -73,6 +80,7 @@ class _BlockRow extends StatelessWidget {
     required this.value,
     required this.weight,
     required this.color,
+    this.isHardcoded = false,
   });
 
   @override
@@ -88,13 +96,39 @@ class _BlockRow extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  label,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.5,
-                  ),
+                Row(
+                  children: [
+                    Text(
+                      label,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    if (isHardcoded) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 5, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(
+                              color: Colors.amber.withOpacity(0.3), width: 1),
+                        ),
+                        child: const Text(
+                          'ESTIMADO',
+                          style: TextStyle(
+                            fontSize: 7,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.amber,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
                 Text(
                   subtitle,

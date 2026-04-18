@@ -29,6 +29,9 @@ class ScoreEngine {
     required double exerciseMin,
     required double sleepHours,
     required DateTime lastMealTime,
+    // SPEC-04: Score nutricional 0.0-1.0 calculado por NutritionNotifier.
+    // Default 0.0 cuando no hay comidas registradas aún en el día.
+    double nutritionScore = 0.0,
   }) {
     final bool isMale = user.gender.toUpperCase() == 'M' || user.gender.toUpperCase() == 'MALE';
 
@@ -67,7 +70,12 @@ class ScoreEngine {
     
     double sSleep = (sleepHours >= 7 && sleepHours <= 9) ? 1.0 : 0.6;
     double sExercise = (exerciseMin / 60).clamp(0.0, 1.2);
-    double behaviorBlock = (0.40 * circadianScore.clamp(0.0, 1.0)) + (0.30 * sSleep) + (0.30 * sExercise);
+    // SPEC-04: Pesos del bloque Conducta ajustados para incluir nutrición.
+    // Circadiano 35% + Sueño 25% + Ejercicio 25% + Nutrición 15% = 100%
+    double behaviorBlock = (0.35 * circadianScore.clamp(0.0, 1.0))
+        + (0.25 * sSleep)
+        + (0.25 * sExercise)
+        + (0.15 * nutritionScore.clamp(0.0, 1.0));
 
     double raw = (0.50 * structureBlock) + (0.25 * metabolicBlock.clamp(0.0, 1.0)) + (0.25 * behaviorBlock);
     int score = (raw * 100).round().clamp(0, 100);

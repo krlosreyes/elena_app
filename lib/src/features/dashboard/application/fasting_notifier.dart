@@ -6,6 +6,7 @@ import 'package:elena_app/src/shared/domain/services/user_repository.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/core/services/notification_service.dart';
+import 'package:elena_app/src/core/services/notification_scheduler.dart';
 import '../domain/fasting_status.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 
@@ -30,7 +31,7 @@ class FastingNotifier extends StateNotifier<FastingState> {
   void _init() {
     _ref.listen(currentUserStreamProvider, (previous, next) {
       final user = next.value;
-      if (user != null) {
+      if (user != null && state.fastingProtocol != user.fastingProtocol) {
         state = state.copyWith(fastingProtocol: user.fastingProtocol);
       }
     }, fireImmediately: true);
@@ -90,7 +91,10 @@ class FastingNotifier extends StateNotifier<FastingState> {
         duration: duration,
         phase: FastingState.determinePhase(duration),
       );
-      
+
+      // SPEC-05: Programar hitos de ayuno (12h, 18h, 24h) desde el inicio real.
+      await NotificationScheduler.scheduleFastingMilestones(startTime);
+
       debugPrint("🚀 Ayuno iniciado manualmente a las $startTime (Duración inicial: ${duration.inHours}h)");
     } catch (e) {
       state = state.copyWith(isSaving: false);
@@ -109,33 +113,43 @@ class FastingNotifier extends StateNotifier<FastingState> {
     state = state.copyWith(isSaving: true);
     final userRepo = _ref.read(userRepositoryProvider);
 
+    // 1. Persistencia en Firestore (Bloque Crítico)
     try {
-      await userRepo.startNewInterval(uid, false, startTime: manualTime); 
+      await userRepo.startNewInterval(uid, false, startTime: manualTime);
       _fastingEndConfirmedToday = true;
+      debugPrint("✅ Ayuno cerrado y guardado exitosamente.");
+    } catch (e) {
+      debugPrint("❌ Error crítico en persistencia: $e");
+      state = state.copyWith(isSaving: false);
+      return; // Si la persistencia falla, no seguimos
+    }
 
-      // Programar fin de ventana (basado en el protocolo)
+    // 2. Gestión de Notificaciones (Bloque Secundario - No debe bloquear)
+    try {
+      await NotificationService.cancelFasting();
       final parts = state.fastingProtocol.split(':');
       final feedingHours = parts.length > 1 ? int.tryParse(parts[1]) ?? 8 : 8;
       final feedingEndTime = manualTime.add(Duration(hours: feedingHours));
-      
-      await NotificationService.scheduleNotification(
-        id: 101,
-        title: "Elena: Ventana de alimentación",
-        body: "¿Ya terminaste tu última comida? La ventana cierra pronto.",
-        scheduledTime: feedingEndTime.subtract(const Duration(minutes: 30)),
-      );
 
-      state = state.copyWith(
-        isSaving: false,
-        isWaitingForFastingEnd: false,
-        isActive: false,
-        startTime: manualTime, // El inicio de la ventana es el fin del ayuno
-        duration: DateTime.now().difference(manualTime),
+      await NotificationService.scheduleAt(
+        id: NotificationIds.lastMealWarning,
+        title: '⏰ Cierre de ventana en 30 min',
+        body: 'Última comida dentro del protocolo ${state.fastingProtocol}.',
+        scheduledTime: feedingEndTime.subtract(const Duration(minutes: 30)),
+        repeatsDaily: false,
       );
-      debugPrint("✅ Ayuno cerrado manualmente a las $manualTime");
     } catch (e) {
-      state = state.copyWith(isSaving: false);
+      debugPrint("⚠️ Error no crítico en notificaciones: $e");
     }
+
+    // 3. Actualización de UI
+    state = state.copyWith(
+      isSaving: false,
+      isWaitingForFastingEnd: false,
+      isActive: false,
+      startTime: manualTime,
+      duration: DateTime.now().difference(manualTime),
+    );
   }
 
   Future<void> stopFasting() async {

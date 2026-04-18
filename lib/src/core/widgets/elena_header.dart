@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/dashboard/presentation/dashboard_screen.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
+import 'package:elena_app/src/features/streak/application/streak_notifier.dart';
 
 class ElenaHeader extends ConsumerWidget {
   final String title;
@@ -15,6 +16,7 @@ class ElenaHeader extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final userAsync = ref.watch(currentUserStreamProvider);
+    final streakState = ref.watch(streakProvider);
 
     return userAsync.when(
       data: (user) {
@@ -42,7 +44,7 @@ class ElenaHeader extends ConsumerWidget {
               ],
             ),
             const Spacer(),
-            _buildStreakBadge("7"),
+            _buildStreakBadge(streakState.currentStreak.toString()),
           ],
         );
       },
@@ -52,13 +54,23 @@ class ElenaHeader extends ConsumerWidget {
   }
 
   Widget _buildStreakBadge(String days) {
+    final int count = int.tryParse(days) ?? 0;
+    final String label = count == 1 ? "DÍA" : "DÍAS";
+    
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: Colors.orange.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Text("$days DÍAS 🔥", style: const TextStyle(color: Colors.orange, fontSize: 10, fontWeight: FontWeight.bold)),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text("$count $label", style: const TextStyle(color: Colors.orange, fontSize: 10, fontWeight: FontWeight.bold)),
+          const SizedBox(width: 4),
+          const Icon(Icons.local_fire_department_rounded, color: Colors.orange, size: 12),
+        ],
+      ),
     );
   }
 }

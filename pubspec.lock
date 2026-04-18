@@ -169,30 +169,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "5.2.0"
-  cloud_functions:
-    dependency: "direct main"
-    description:
-      name: cloud_functions
-      sha256: "506ee80e68a7c67679150f79f00faa47da96698d8deb57a4f0844ae556c07b1e"
-      url: "https://pub.dev"
-    source: hosted
-    version: "6.1.0"
-  cloud_functions_platform_interface:
-    dependency: transitive
-    description:
-      name: cloud_functions_platform_interface
-      sha256: "1b215fccef28a8f9ebe0866c9455081c98cc9f699709e15192b64e493937827c"
-      url: "https://pub.dev"
-    source: hosted
-    version: "5.8.11"
-  cloud_functions_web:
-    dependency: transitive
-    description:
-      name: cloud_functions_web
-      sha256: "04d97196681b36ea0bb195be4afafb623227bc6704ce7ec9c0a3e1ee96c8c55c"
-      url: "https://pub.dev"
-    source: hosted
-    version: "5.1.4"
   code_assets:
     dependency: transitive
     description:
@@ -233,6 +209,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.7"
+  cupertino_icons:
+    dependency: "direct main"
+    description:
+      name: cupertino_icons
+      sha256: "41e005c33bd814be4d3096aff55b1908d419fde52ca656c8c47719ec745873cd"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.9"
   custom_lint_core:
     dependency: transitive
     description:
@@ -504,6 +488,14 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  flutter_timezone:
+    dependency: "direct main"
+    description:
+      name: flutter_timezone
+      sha256: e8d63f50f2806a3a71a08697286a0369e1d8f0902961327810459871c0bb01c2
+      url: "https://pub.dev"
+    source: hosted
+    version: "5.0.2"
   flutter_web_plugins:
     dependency: transitive
     description: flutter
@@ -949,14 +941,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.6.4"
-  rxdart:
-    dependency: "direct main"
-    description:
-      name: rxdart
-      sha256: "5c3004a4a8dbb94bd4bf5412a4def4acdaa12e12f269737a5751369e12d1a962"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.28.0"
   shared_preferences:
     dependency: "direct main"
     description:

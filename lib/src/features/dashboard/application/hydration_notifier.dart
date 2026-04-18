@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:async';
 // IMPORTANTE: Esta es la ruta al archivo que creamos para centralizar el usuario
 import 'package:elena_app/src/shared/providers/user_provider.dart'; 
 import 'package:elena_app/src/features/dashboard/domain/hydration_log.dart';
@@ -44,6 +45,7 @@ class HydrationState {
 
 class HydrationNotifier extends StateNotifier<HydrationState> {
   final Ref _ref;
+  StreamSubscription? _hydrationSubscription;
 
   HydrationNotifier(this._ref) : super(HydrationState()) {
     _init();
@@ -53,17 +55,46 @@ class HydrationNotifier extends StateNotifier<HydrationState> {
     _ref.listen<AsyncValue<UserModel?>>(currentUserStreamProvider, (previous, next) {
       next.whenData((user) {
         if (user != null) {
-          // CORRECCIÓN: Acceso directo a weight en la raíz del UserModel
           final double weight = user.weight > 0 ? user.weight : 75.0;
           final calculatedGoal = (weight * 0.035);
-          
+
           state = state.copyWith(
             dailyGoalLiters: calculatedGoal,
             isGoalReached: state.currentAmountLiters >= calculatedGoal,
           );
+
+          // Iniciar suscripción a hidratación real
+          _initHydrationSubscription(user.id);
+        } else {
+          // SPEC-11: Usuario cerró sesión — cancelar suscripción activa y
+          // resetear estado al valor inicial para aislar al próximo usuario.
+          _hydrationSubscription?.cancel();
+          _hydrationSubscription = null;
+          if (mounted) state = HydrationState();
         }
       });
     }, fireImmediately: true);
+  }
+
+  void _initHydrationSubscription(String userId) {
+    _hydrationSubscription?.cancel();
+    _hydrationSubscription = _ref
+        .read(userRepositoryProvider)
+        .watchTodayHydration(userId)
+        .listen((totalLiters) {
+      if (mounted) {
+        state = state.copyWith(
+          currentAmountLiters: totalLiters,
+          isGoalReached: totalLiters >= state.dailyGoalLiters,
+        );
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _hydrationSubscription?.cancel();
+    super.dispose();
   }
 
   Future<void> addWater(double amount) async {

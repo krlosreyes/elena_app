@@ -61,10 +61,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // Identidad de marca técnica
-                  const Icon(Icons.shield_moon_outlined, size: 80, color: AppColors.metabolicGreen),
+                  Image.asset(
+                    'assets/images/elena_logo.png',
+                    height: 100,
+                    errorBuilder: (ctx, err, st) => const Icon(
+                      Icons.shield_moon_outlined, 
+                      size: 80, 
+                      color: AppColors.metabolicGreen,
+                    ),
+                  ),
                   const SizedBox(height: 24),
                   Text(
-                    "ELENA APP",
+                    "Bienvenid@",
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.w900,
@@ -72,7 +80,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                   ),
                   Text(
-                    "Ecosistema Metamorfosis Real",
+                    "Vida solo hay una...Y TODO CUENTA!",
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.labelLarge?.copyWith(
                       color: Colors.grey,
@@ -86,7 +94,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
                     decoration: const InputDecoration(
-                      labelText: "Email Institucional / Personal",
+                      labelText: "Email",
                       prefixIcon: Icon(Icons.email_outlined),
                     ),
                     validator: (val) => (val == null || !val.contains('@')) ? "Email no válido" : null,
@@ -98,7 +106,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     controller: _passwordController,
                     obscureText: true,
                     decoration: const InputDecoration(
-                      labelText: "Contraseña de Seguridad",
+                      labelText: "Contraseña",
                       prefixIcon: Icon(Icons.lock_outline),
                     ),
                     validator: (val) => (val == null || val.length < 6) ? "Mínimo 6 caracteres" : null,
@@ -125,7 +133,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                       child: isLoading 
                         ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text("ACCEDER AL PANEL", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),
+                        : const Text("Iniciar METAMORFOSIS", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),
                     ),
                   ),
                   const SizedBox(height: 24),

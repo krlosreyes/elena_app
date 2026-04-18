@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/core/engine/score_engine.dart';
 import 'package:elena_app/src/features/auth/application/profile_controller.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
 import 'package:elena_app/src/features/dashboard/application/fasting_notifier.dart';
 import 'package:elena_app/src/features/dashboard/application/sleep_notifier.dart';
+import 'package:elena_app/src/features/exercise/application/exercise_notifier.dart';
+import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 
@@ -42,7 +45,7 @@ class ProfileScreen extends ConsumerWidget {
     });
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: AppColors.backgroundDark,
       appBar: AppBar(
         title: const Text(
           'EXPEDIENTE METABÓLICO',
@@ -50,7 +53,7 @@ class ProfileScreen extends ConsumerWidget {
               fontWeight: FontWeight.w900, fontSize: 14, letterSpacing: 1.2),
         ),
         centerTitle: true,
-        backgroundColor: const Color(0xFF1E293B),
+        backgroundColor: AppColors.surfaceDark,
         elevation: 0,
         automaticallyImplyLeading: false,
         actions: [
@@ -84,7 +87,7 @@ class ProfileScreen extends ConsumerWidget {
 
   Widget _buildBottomNav(BuildContext context) {
     return BottomNavigationBar(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: AppColors.backgroundDark,
       selectedItemColor: const Color(0xFF10B981),
       unselectedItemColor: Colors.grey.withOpacity(0.5),
       currentIndex: 2,
@@ -188,6 +191,8 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
   Widget build(BuildContext context) {
     final fastingState = ref.watch(fastingProvider);
     final sleepState = ref.watch(sleepProvider);
+    final exerciseState = ref.watch(exerciseProvider);    // SPEC-03
+    final nutritionState = ref.watch(nutritionProvider);  // SPEC-04
     final engine = ref.watch(scoreEngineProvider);
 
     // Calcula IMR del día para mostrarlo en el perfil (RF-02-03)
@@ -203,9 +208,10 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
       widget.user,
       fastingHours: fastingHours,
       weeklyAdherence: 0.85,
-      exerciseMin: 45,
+      exerciseMin: exerciseState.todayMinutes.toDouble(), // SPEC-03
       sleepHours: sleepHours,
       lastMealTime: lastMealTime,
+      nutritionScore: nutritionState.nutritionScore,     // SPEC-04
     );
 
     return ListView(
@@ -294,7 +300,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
+        color: AppColors.surfaceDark,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: zoneColor.withOpacity(0.25), width: 1.5),
       ),
@@ -378,7 +384,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
+        color: AppColors.surfaceDark,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -468,7 +474,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1E293B),
+        backgroundColor: AppColors.surfaceDark,
         shape:
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Cerrar sesión',
@@ -511,7 +517,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
       barrierDismissible: false,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setModalState) => AlertDialog(
-          backgroundColor: const Color(0xFF1E293B),
+          backgroundColor: AppColors.surfaceDark,
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20)),
           title: const Row(
@@ -549,7 +555,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
                   hintStyle: const TextStyle(
                       color: Color(0xFF475569), fontSize: 13),
                   filled: true,
-                  fillColor: const Color(0xFF0F172A),
+                  fillColor: AppColors.backgroundDark,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide:
@@ -644,7 +650,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
+        color: AppColors.surfaceDark,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
@@ -676,7 +682,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
         decoration: BoxDecoration(
-          color: const Color(0xFF1E293B),
+          color: AppColors.surfaceDark,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: color.withOpacity(0.2)),
         ),

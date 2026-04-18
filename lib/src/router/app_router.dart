@@ -9,6 +9,12 @@ import 'package:elena_app/src/features/onboarding/presentation/onboarding_screen
 import 'package:elena_app/src/features/dashboard/presentation/dashboard_screen.dart';
 import 'package:elena_app/src/features/auth/presentation/profile_screen.dart';
 import 'package:elena_app/src/features/analysis/presentation/analysis_screen.dart';
+// SPEC-12: Composición Corporal
+import 'package:elena_app/src/features/profile/presentation/body_composition_screen.dart';
+// SPEC-14: Objetivos del Usuario
+import 'package:elena_app/src/features/goals/presentation/goal_setup_screen.dart';
+// SPEC-15: Road Map de Avance Personal
+import 'package:elena_app/src/features/progress/presentation/progress_screen.dart';
 
 final goRouterProvider = Provider<GoRouter>((ref) {
   // Escuchamos el estado de autenticación
@@ -93,6 +99,24 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/analysis',
         name: 'analysis',
         builder: (context, state) => const AnalysisScreen(),
+      ),
+      // SPEC-12: Pantalla de detalle de composición corporal
+      GoRoute(
+        path: '/profile/body-composition',
+        name: 'body-composition',
+        builder: (context, state) => const BodyCompositionScreen(),
+      ),
+      // SPEC-14: Pantalla de configuración de objetivos
+      GoRoute(
+        path: '/goals/setup',
+        name: 'goals-setup',
+        builder: (context, state) => const GoalSetupScreen(),
+      ),
+      // SPEC-15: Road Map de Avance Personal
+      GoRoute(
+        path: '/progress',
+        name: 'progress',
+        builder: (context, state) => const ProgressScreen(),
       ),
     ],
   );

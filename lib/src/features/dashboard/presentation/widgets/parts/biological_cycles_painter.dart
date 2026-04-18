@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import 'package:elena_app/src/core/rules/circadian_rules.dart';
+import 'package:elena_app/src/core/theme/circadian_theme.dart';
 
 class BiologicalCyclesPainter extends CustomPainter {
   final Color indicatorColor;
@@ -28,7 +29,7 @@ class BiologicalCyclesPainter extends CustomPainter {
       final bool isActive = CircadianRules.isPhaseActive(phase, currentTime);
       
       final Color displayColor = isActive 
-          ? phase.activeColor 
+          ? CircadianTheme.getColorForPhase(phase.label) 
           : Colors.grey.withOpacity(0.15); // Un poco más tenue para Android
 
       _drawPhase(

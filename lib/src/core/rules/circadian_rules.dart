@@ -1,66 +1,22 @@
-import 'package:flutter/material.dart';
+import 'circadian_phase.dart';
 
-/// Modelo interno para definir las fases y sus propiedades visuales
-class CircadianPhaseData {
-  final String label;
-  final double startHour;
-  final double endHour;
-  final Color activeColor;
-
-  CircadianPhaseData({
-    required this.label,
-    required this.startHour,
-    required this.endHour,
-    required this.activeColor,
-  });
-}
-
+/// Reglas lógicas del ciclo circadiano (Dart Puro - SPEC-10/DT-07)
 class CircadianRules {
   static const int intestinalLockHour = 22;
   static const int intestinalLockMinute = 30;
 
   /// Definición maestra de las fases biológicas
-  static List<CircadianPhaseData> get allPhases => [
-    CircadianPhaseData(
-      label: "SUEÑO", 
-      startHour: 22.5, 
-      endHour: 6.0, 
-      activeColor: const Color(0xFF1E293B),
-    ),
-    CircadianPhaseData(
-      label: "ALERTA", 
-      startHour: 6.0, 
-      endHour: 9.0, 
-      activeColor: const Color(0xFF334155),
-    ),
-    CircadianPhaseData(
-      label: "COGNITIVO", 
-      startHour: 9.0, 
-      endHour: 13.0, 
-      activeColor: const Color(0xFFF97316),
-    ),
-    CircadianPhaseData(
-      label: "RECESO", 
-      startHour: 13.0, 
-      endHour: 15.0, 
-      activeColor: const Color(0xFF3B82F6),
-    ),
-    CircadianPhaseData(
-      label: "MOTOR / FUERZA", 
-      startHour: 15.0, 
-      endHour: 20.0, 
-      activeColor: const Color(0xFFEF4444),
-    ),
-    CircadianPhaseData(
-      label: "CREATIVIDAD", 
-      startHour: 20.0, 
-      endHour: 22.5, 
-      activeColor: const Color(0xFFEAB308),
-    ),
+  static const List<CircadianPhase> allPhases = [
+    CircadianPhase(label: "SUEÑO", startHour: 22.5, endHour: 6.0),
+    CircadianPhase(label: "ALERTA", startHour: 6.0, endHour: 9.0),
+    CircadianPhase(label: "COGNITIVO", startHour: 9.0, endHour: 13.0),
+    CircadianPhase(label: "RECESO", startHour: 13.0, endHour: 15.0),
+    CircadianPhase(label: "MOTOR / FUERZA", startHour: 15.0, endHour: 20.0),
+    CircadianPhase(label: "CREATIVIDAD", startHour: 20.0, endHour: 22.5),
   ];
 
   /// Determina si una fase específica está activa en este momento
-  static bool isPhaseActive(CircadianPhaseData phase, DateTime now) {
+  static bool isPhaseActive(CircadianPhase phase, DateTime now) {
     double current = now.hour + (now.minute / 60.0);
     if (phase.startHour < phase.endHour) {
       return current >= phase.startHour && current < phase.endHour;

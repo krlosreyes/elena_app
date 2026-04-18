@@ -30,6 +30,8 @@ _$UserModelImpl _$$UserModelImplFromJson(Map<String, dynamic> json) =>
               .toList() ??
           const ['Ninguna'],
       activityLevel: (json['activityLevel'] as num?)?.toDouble() ?? 1.2,
+      weeklyAdherence: (json['weeklyAdherence'] as num?)?.toDouble() ?? 0.85,
+      exerciseGoalMinutes: (json['exerciseGoalMinutes'] as num?)?.toInt() ?? 20,
       profile:
           CircadianProfile.fromJson(json['profile'] as Map<String, dynamic>),
     );
@@ -54,6 +56,8 @@ Map<String, dynamic> _$$UserModelImplToJson(_$UserModelImpl instance) =>
       'fastingProtocol': instance.fastingProtocol,
       'pathologies': instance.pathologies,
       'activityLevel': instance.activityLevel,
+      'weeklyAdherence': instance.weeklyAdherence,
+      'exerciseGoalMinutes': instance.exerciseGoalMinutes,
       'profile': instance.profile.toJson(),
     };
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/features/onboarding/application/onboarding_controller.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
@@ -67,7 +68,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+      backgroundColor: isDark ? AppColors.backgroundDark : const Color(0xFFF8FAFC),
       body: SafeArea(
         child: Column(
           children: [
