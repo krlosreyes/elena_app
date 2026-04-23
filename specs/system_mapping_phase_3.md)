@@ -1,0 +1,221 @@
+# FASE 3 — SYSTEM MAPPING
+Sistema: Elena App
+Estado: COMPLETADO
+
+---
+
+# 🎯 OBJETIVO
+
+Convertir el código existente en una representación explícita del sistema:
+
+- Identificar modelos reales
+- Definir flujo de datos correcto
+- Establecer fuente de verdad
+- Detectar problemas estructurales
+
+---
+
+# ⚠️ PRINCIPIOS DE LA FASE
+
+- NO se escribe código
+- NO se refactoriza
+- NO se corrigen errores
+- Solo se analiza y se formaliza
+
+---
+
+# 1. MODELOS DEL SISTEMA
+
+## 🟥 MODELOS PERSISTIDOS (FUENTE DE VERDAD)
+
+Estos representan datos almacenados en Firestore:
+
+- user_model
+- biometric_checkin
+- exercise_log
+- nutrition_log
+- hydration_log
+- sleep_log
+- user_goal
+- daily_record (NO FORMALIZADO — DEBE CREARSE)
+
+---
+
+## 🟨 MODELOS DE DOMINIO (NO PERSISTIDOS)
+
+Representan lógica y estados derivados:
+
+- metabolic_state
+- fasting_interval
+- fasting_status
+- recommendation
+
+---
+
+## 🟦 ESTADO DERIVADO (TRANSITORIO)
+
+No es fuente de verdad:
+
+- orchestrator_state
+- daily_ui_state
+
+---
+
+# 2. FLUJO DE DATOS (ARQUITECTURA DEFINIDA)
+
+Flujo correcto del sistema:
+
+UI  
+→ DTO (input crudo)  
+→ Application (Notifier / UseCase)  
+→ Domain (validación)  
+→ Engine (transformación)  
+→ Repository (persistencia)  
+→ Provider (estado)  
+→ UI  
+
+---
+
+## REGLAS DEL FLUJO
+
+- La UI no contiene lógica de negocio
+- El dominio valida todos los datos
+- El engine transforma el estado
+- Firestore solo persiste datos
+- Providers solo reflejan estado
+
+---
+
+# 3. FUENTE DE VERDAD
+
+## DECISIÓN ARQUITECTÓNICA
+
+Firestore es la única fuente de verdad persistente.
+
+---
+
+## DATOS QUE SE PERSISTEN
+
+- eventos del usuario (logs)
+- datos base del usuario
+- objetivos
+
+---
+
+## DATOS QUE NO SE PERSISTEN DIRECTAMENTE
+
+- estado metabólico
+- recomendaciones
+- estados de UI
+
+---
+
+## PRINCIPIO
+
+Estado del sistema = f(eventos persistidos)
+
+---
+
+# 4. PROBLEMAS CRÍTICOS IDENTIFICADOS
+
+---
+
+## 🔴 1. AUSENCIA DE daily_record
+
+- No existe como entidad formal
+- Datos fragmentados
+- Sin unidad de consistencia
+
+---
+
+## 🔴 2. VALIDACIÓN FUERA DEL DOMINIO
+
+- Validadores separados
+- Lógica duplicada
+- Inconsistencia
+
+---
+
+## 🔴 3. LÓGICA MEZCLADA
+
+- Notifiers contienen lógica de negocio
+- Falta separación de capas
+
+---
+
+## 🔴 4. ENGINE SIN CONTRATO
+
+- No hay spec
+- Inputs/outputs no definidos
+- Comportamiento implícito
+
+---
+
+## 🔴 5. DATA LAYER INCONSISTENTE
+
+- Repositorios no estandarizados
+- Acceso a Firestore disperso
+
+---
+
+## 🔴 6. ESTADO DUPLICADO
+
+- Firestore + Providers + Engine
+- Riesgo de inconsistencia
+
+---
+
+## 🔴 7. FALTA DE CONTRATOS
+
+- No hay invariantes
+- No hay validación formal
+
+---
+
+## 🔴 8. SISTEMA NO RECONSTRUIBLE
+
+- No se puede reconstruir el estado completo
+- No es determinista
+
+---
+
+# 5. CONCLUSIÓN
+
+El sistema actual:
+
+- Funciona
+- Pero no está formalizado
+- Tiene alto riesgo de inconsistencia
+
+---
+
+# 6. RESULTADO DE LA FASE
+
+Se ha definido:
+
+- Modelos del sistema
+- Flujo de datos correcto
+- Fuente de verdad
+- Problemas estructurales
+
+---
+
+# 7. SIGUIENTE PASO
+
+FASE 4 — CREACIÓN DE SPEC
+
+Primer spec:
+
+persistence.spec.md
+
+---
+
+# PRINCIPIO FINAL
+
+El sistema deja de ser implícito.
+
+Se convierte en:
+
+- explícito
+- trazable
+- controlado
