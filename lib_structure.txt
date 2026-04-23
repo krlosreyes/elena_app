@@ -5,33 +5,84 @@ lib
     ├── app.dart
     ├── core
     │   ├── constants
-    │   │   └── constants.dart
+    │   │   ├── constants.dart
+    │   │   └── pillar_constants.dart
     │   ├── converters
     │   │   └── timestamp_converter.dart
     │   ├── engine
+    │   │   ├── metabolic_observer.dart
+    │   │   ├── metabolic_state.dart
+    │   │   ├── metabolic_state_builder.dart
+    │   │   ├── metabolic_state_provider.dart
     │   │   └── score_engine.dart
+    │   ├── events
+    │   │   └── event_bus.dart
     │   ├── exceptions
+    │   │   ├── app_exceptions.dart
     │   │   ├── empty_preferences_error.dart
     │   │   └── exceptions.dart
+    │   ├── orchestrator
+    │   │   ├── IMPLEMENTATION_NOTES.md
+    │   │   ├── biological_phases.dart
+    │   │   ├── models
+    │   │   │   ├── orchestrator_state.dart
+    │   │   │   ├── orchestrator_state.freezed.dart
+    │   │   │   └── orchestrator_state.g.dart
+    │   │   ├── orchestrator_engine.dart
+    │   │   ├── orchestrator_notifier.dart
+    │   │   ├── orchestrator_provider.dart
+    │   │   ├── orchestrator_service.dart
+    │   │   ├── orchestrator_state_v2.dart
+    │   │   ├── orchestrator_state_v2.freezed.dart
+    │   │   ├── phase_info_mapper.dart
+    │   │   └── recommendation.dart
     │   ├── providers
-    │   │   └── shared_preferences_provider.dart
+    │   │   ├── notification_provider.dart
+    │   │   ├── shared_preferences_provider.dart
+    │   │   └── ticker_providers.dart
     │   ├── rules
+    │   │   ├── circadian_phase.dart
     │   │   └── circadian_rules.dart
     │   ├── services
     │   │   ├── app_logger.dart
-    │   │   └── notification_service.dart
+    │   │   ├── daily_reset_service.dart
+    │   │   ├── notification_scheduler.dart
+    │   │   ├── notification_service.dart
+    │   │   ├── notification_service_mobile.dart
+    │   │   └── notification_service_web.dart
     │   ├── theme
     │   │   ├── app_theme.dart
-    │   │   └── app_typography.dart
+    │   │   ├── app_typography.dart
+    │   │   └── circadian_theme.dart
     │   ├── utils
     │   │   └── utils.dart
     │   └── widgets
     │       ├── app_error_screen.dart
-    │       └── elena_header.dart
+    │       ├── elena_header.dart
+    │       └── phase_info_sheet.dart
     ├── features
+    │   ├── adaptive
+    │   │   ├── application
+    │   │   │   └── adaptive_engine.dart
+    │   │   ├── domain
+    │   │   └── presentation
+    │   │       └── widgets
+    │   ├── analysis
+    │   │   ├── application
+    │   │   │   ├── analysis_service.dart
+    │   │   │   └── imr_explanation_service.dart
+    │   │   ├── domain
+    │   │   │   ├── analysis_models.dart
+    │   │   │   └── imr_explanation.dart
+    │   │   └── presentation
+    │   │       ├── analysis_screen.dart
+    │   │       ├── imr_detail_sheet.dart
+    │   │       ├── providers
+    │   │       └── widgets
     │   ├── auth
     │   │   ├── application
-    │   │   │   └── auth_controller.dart
+    │   │   │   ├── auth_controller.dart
+    │   │   │   └── profile_controller.dart
     │   │   ├── data
     │   │   │   └── firebase_auth_repository.dart
     │   │   ├── domain
@@ -46,28 +97,113 @@ lib
     │   ├── dashboard
     │   │   ├── application
     │   │   │   ├── fasting_notifier.dart
+    │   │   │   ├── fasting_prediction_notifier.dart
+    │   │   │   ├── fasting_prediction_provider.dart
+    │   │   │   ├── fasting_predictor_service.dart
     │   │   │   ├── hydration_notifier.dart
-    │   │   │   └── sleep_notifier.dart
+    │   │   │   ├── sleep_notifier.dart
+    │   │   │   └── ui_interaction_notifier.dart
     │   │   ├── domain
+    │   │   │   ├── fasting_interval.dart
+    │   │   │   ├── fasting_protocol_advisor.dart
     │   │   │   ├── fasting_status.dart
     │   │   │   ├── hydration_log.dart
     │   │   │   └── sleep_log.dart
     │   │   └── presentation
     │   │       ├── dashboard_screen.dart
+    │   │       ├── sleep_input_sheet.dart
+    │   │       ├── sleep_prompt_sheet.dart
+    │   │       └── widgets
+    │   ├── engagement
+    │   │   └── application
+    │   │       └── engagement_service.dart
+    │   ├── exercise
+    │   │   ├── application
+    │   │   │   ├── exercise_intensity_notifier.dart
+    │   │   │   ├── exercise_intensity_validator.dart
+    │   │   │   ├── exercise_notifier.dart
+    │   │   │   ├── exercise_state.dart
+    │   │   │   ├── exercise_state.freezed.dart
+    │   │   │   └── exercise_validator.dart
+    │   │   ├── domain
+    │   │   │   ├── exercise_log.dart
+    │   │   │   ├── exercise_log.freezed.dart
+    │   │   │   └── exercise_log.g.dart
+    │   │   └── presentation
+    │   │       ├── exercise_input_sheet.dart
+    │   │       └── widgets
+    │   ├── fasting
+    │   │   ├── application
+    │   │   │   ├── fasting_prediction_notifier.dart
+    │   │   │   ├── fasting_prediction_provider.dart
+    │   │   │   └── fasting_predictor_service.dart
+    │   │   ├── domain
+    │   │   │   └── models
+    │   │   └── presentation
+    │   ├── goals
+    │   │   ├── application
+    │   │   │   ├── goal_notifier.dart
+    │   │   │   └── goal_suggestion_engine.dart
+    │   │   ├── data
+    │   │   │   └── goal_repository.dart
+    │   │   ├── domain
+    │   │   │   └── user_goal.dart
+    │   │   └── presentation
+    │   │       ├── goal_setup_screen.dart
+    │   │       └── widgets
+    │   ├── nutrition
+    │   │   ├── application
+    │   │   │   ├── nutrition_notifier.dart
+    │   │   │   ├── nutrition_validator.dart
+    │   │   │   └── nutrition_validator_notifier.dart
+    │   │   ├── domain
+    │   │   │   └── nutrition_log.dart
+    │   │   └── presentation
+    │   │       ├── add_past_meal_sheet.dart
+    │   │       ├── fasting_prompt_sheet.dart
     │   │       └── widgets
     │   ├── onboarding
     │   │   ├── application
     │   │   │   └── onboarding_controller.dart
     │   │   └── presentation
     │   │       └── onboarding_screen.dart
-    │   └── sleep
-    │       └── domain
-    │           └── sleep_log.dart
+    │   ├── profile
+    │   │   ├── domain
+    │   │   │   ├── body_composition_validator.dart
+    │   │   │   └── body_fat_calculator.dart
+    │   │   └── presentation
+    │   │       ├── body_composition_editor_sheet.dart
+    │   │       ├── body_composition_screen.dart
+    │   │       └── widgets
+    │   ├── progress
+    │   │   ├── application
+    │   │   │   └── progress_notifier.dart
+    │   │   ├── data
+    │   │   │   └── biometric_repository.dart
+    │   │   ├── domain
+    │   │   │   └── biometric_checkin.dart
+    │   │   └── presentation
+    │   │       ├── biometric_checkin_sheet.dart
+    │   │       └── progress_screen.dart
+    │   ├── sleep
+    │   │   └── domain
+    │   ├── streak
+    │   │   ├── application
+    │   │   │   └── streak_notifier.dart
+    │   │   └── domain
+    │   │       ├── streak_engine.dart
+    │   │       └── streak_entry.dart
+    │   └── welcome
+    │       ├── application
+    │       │   └── welcome_service.dart
+    │       └── presentation
+    │           └── welcome_flow_screen.dart
     ├── router
     │   └── app_router.dart
     └── shared
         ├── domain
         │   ├── models
+        │   │   ├── daily_ui_state.dart
         │   │   ├── user_model.dart
         │   │   ├── user_model.freezed.dart
         │   │   └── user_model.g.dart
@@ -75,6 +211,8 @@ lib
         │       ├── size_mapper_service.dart
         │       └── user_repository.dart
         └── providers
+            ├── daily_ui_state_provider.dart
+            ├── sleep_provider.dart
             └── user_provider.dart
 
-36 directories, 42 files
+88 directories, 128 files
