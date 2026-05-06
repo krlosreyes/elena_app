@@ -310,7 +310,7 @@ class DashboardScreen extends ConsumerWidget {
     final bool hasLogs = logged > 0;
     final int scorePct = (state.nutritionScore.clamp(0.0, 1.0) * 100).round();
 
-    final color = hasLogs ? Colors.orange : Colors.orange.withOpacity(0.5);
+    final color = hasLogs ? Colors.orange : Colors.orange.withValues(alpha: 0.5);
     final String imrTag = hasLogs ? '+$scorePct% pilar' : '+0% pilar';
     final String mainText = hasLogs
         ? '$logged / $target comidas'
@@ -332,7 +332,7 @@ class DashboardScreen extends ConsumerWidget {
           color: AppColors.surfaceDark,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: color.withOpacity(hasLogs ? 0.6 : 0.2),
+            color: color.withValues(alpha: hasLogs ? 0.6 : 0.2),
             width: hasLogs ? 2 : 1,
           ),
         ),
@@ -365,7 +365,7 @@ class DashboardScreen extends ConsumerWidget {
               'NUTRICIÓN',
               style: TextStyle(
                 fontSize: 8,
-                color: Colors.grey.withOpacity(0.6),
+                color: Colors.grey.withValues(alpha: 0.6),
                 fontWeight: FontWeight.w800,
               ),
             ),
@@ -374,7 +374,7 @@ class DashboardScreen extends ConsumerWidget {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: hasLogs ? Colors.white : Colors.white.withOpacity(0.4),
+                color: hasLogs ? Colors.white : Colors.white.withValues(alpha: 0.4),
               ),
             ),
             Text(
@@ -382,7 +382,7 @@ class DashboardScreen extends ConsumerWidget {
               style: TextStyle(
                 fontSize: 9,
                 color: hasLogs
-                    ? Colors.white.withOpacity(0.5)
+                    ? Colors.white.withValues(alpha: 0.5)
                     : color,
                 fontWeight: FontWeight.w600,
               ),
