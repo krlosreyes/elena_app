@@ -97,25 +97,31 @@ final metabolicStateProvider = Provider<MetabolicState>((ref) {
 final imrProvider = Provider<IMRv2Result>((ref) {
   final state = ref.watch(metabolicStateProvider);
   final user = ref.watch(currentUserStreamProvider).valueOrNull;
-  if (user == null) return IMRv2Result(
-    totalScore: 0,
-    structureScore: 0,
-    metabolicScore: 0,
-    behaviorScore: 0,
-    circadianAlignment: 0,
-    zone: 'N/A',
-    description: 'Cargando...',
-  );
+
+  // SPEC-60: si user es null o el state está vacío (lastMealTime null),
+  // devolvemos un IMR vacío sin invocar al engine. Evita inventar
+  // `DateTime.now()` como fallback dentro del cálculo.
+  if (user == null || state.lastMealTime == null) {
+    return IMRv2Result(
+      totalScore: 0,
+      structureScore: 0,
+      metabolicScore: 0,
+      behaviorScore: 0,
+      circadianAlignment: 0,
+      zone: 'N/A',
+      description: 'Cargando...',
+    );
+  }
 
   final engine = ref.watch(scoreEngineProvider);
-  
+
   return engine.calculateIMR(
     user,
     fastingHours: state.fastingHoursRaw,
     weeklyAdherence: 0.0, // Nota: La adherencia semanal se integra en StreakNotifier
     exerciseMin: state.exerciseMinutesRaw,
     sleepHours: state.sleepHoursRaw,
-    lastMealTime: state.lastMealTime,
+    lastMealTime: state.lastMealTime!,
     nutritionScore: state.nutritionScoreRaw,
   );
 });

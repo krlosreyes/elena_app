@@ -106,6 +106,10 @@ class MetabolicStateBuilder {
       fastingHours: maxFastingHoursToday,
     );
 
+    // SPEC-60: el builder es el único productor de MetabolicState con
+    // `lastMealTime` y `timestamp` no nulos. Cualquier consumidor que reciba
+    // un state desde aquí puede asumirlos no-null. Para el caso "sin datos"
+    // se usa `MetabolicState.empty()` que retorna ambos como null.
     return MetabolicState(
       // Normalizados
       fastingHours: fastingNormalized,

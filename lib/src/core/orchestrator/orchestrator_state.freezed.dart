@@ -40,7 +40,8 @@ mixin _$OrchestratorState {
   double get hoursSinceLastMeal => throw _privateConstructorUsedError;
   int? get minutesToWindowClose =>
       throw _privateConstructorUsedError; // ── Timestamp de la fuente de datos ─────────────────────────────────
-  DateTime get sourceTimestamp => throw _privateConstructorUsedError;
+// SPEC-60: nullable. `null` indica state inicial sin lectura del reloj.
+  DateTime? get sourceTimestamp => throw _privateConstructorUsedError;
 
   /// Create a copy of OrchestratorState
   /// with the given fields replaced by the non-null parameter values.
@@ -72,7 +73,7 @@ abstract class $OrchestratorStateCopyWith<$Res> {
       double fastedHours,
       double hoursSinceLastMeal,
       int? minutesToWindowClose,
-      DateTime sourceTimestamp});
+      DateTime? sourceTimestamp});
 }
 
 /// @nodoc
@@ -106,7 +107,7 @@ class _$OrchestratorStateCopyWithImpl<$Res, $Val extends OrchestratorState>
     Object? fastedHours = null,
     Object? hoursSinceLastMeal = null,
     Object? minutesToWindowClose = freezed,
-    Object? sourceTimestamp = null,
+    Object? sourceTimestamp = freezed,
   }) {
     return _then(_value.copyWith(
       fastingPhase: null == fastingPhase
@@ -173,10 +174,10 @@ class _$OrchestratorStateCopyWithImpl<$Res, $Val extends OrchestratorState>
           ? _value.minutesToWindowClose
           : minutesToWindowClose // ignore: cast_nullable_to_non_nullable
               as int?,
-      sourceTimestamp: null == sourceTimestamp
+      sourceTimestamp: freezed == sourceTimestamp
           ? _value.sourceTimestamp
           : sourceTimestamp // ignore: cast_nullable_to_non_nullable
-              as DateTime,
+              as DateTime?,
     ) as $Val);
   }
 }
@@ -206,7 +207,7 @@ abstract class _$$OrchestratorStateImplCopyWith<$Res>
       double fastedHours,
       double hoursSinceLastMeal,
       int? minutesToWindowClose,
-      DateTime sourceTimestamp});
+      DateTime? sourceTimestamp});
 }
 
 /// @nodoc
@@ -238,7 +239,7 @@ class __$$OrchestratorStateImplCopyWithImpl<$Res>
     Object? fastedHours = null,
     Object? hoursSinceLastMeal = null,
     Object? minutesToWindowClose = freezed,
-    Object? sourceTimestamp = null,
+    Object? sourceTimestamp = freezed,
   }) {
     return _then(_$OrchestratorStateImpl(
       fastingPhase: null == fastingPhase
@@ -305,10 +306,10 @@ class __$$OrchestratorStateImplCopyWithImpl<$Res>
           ? _value.minutesToWindowClose
           : minutesToWindowClose // ignore: cast_nullable_to_non_nullable
               as int?,
-      sourceTimestamp: null == sourceTimestamp
+      sourceTimestamp: freezed == sourceTimestamp
           ? _value.sourceTimestamp
           : sourceTimestamp // ignore: cast_nullable_to_non_nullable
-              as DateTime,
+              as DateTime?,
     ));
   }
 }
@@ -333,7 +334,7 @@ class _$OrchestratorStateImpl extends _OrchestratorState {
       required this.fastedHours,
       required this.hoursSinceLastMeal,
       this.minutesToWindowClose,
-      required this.sourceTimestamp})
+      this.sourceTimestamp})
       : _recommendations = recommendations,
         _activeSyncViolations = activeSyncViolations,
         super._();
@@ -394,8 +395,9 @@ class _$OrchestratorStateImpl extends _OrchestratorState {
   @override
   final int? minutesToWindowClose;
 // ── Timestamp de la fuente de datos ─────────────────────────────────
+// SPEC-60: nullable. `null` indica state inicial sin lectura del reloj.
   @override
-  final DateTime sourceTimestamp;
+  final DateTime? sourceTimestamp;
 
   @override
   String toString() {
@@ -497,7 +499,7 @@ abstract class _OrchestratorState extends OrchestratorState {
       required final double fastedHours,
       required final double hoursSinceLastMeal,
       final int? minutesToWindowClose,
-      required final DateTime sourceTimestamp}) = _$OrchestratorStateImpl;
+      final DateTime? sourceTimestamp}) = _$OrchestratorStateImpl;
   const _OrchestratorState._() : super._();
 
 // ── Fases biológicas (tipadas) ──────────────────────────────────────
@@ -539,8 +541,9 @@ abstract class _OrchestratorState extends OrchestratorState {
   @override
   int?
       get minutesToWindowClose; // ── Timestamp de la fuente de datos ─────────────────────────────────
+// SPEC-60: nullable. `null` indica state inicial sin lectura del reloj.
   @override
-  DateTime get sourceTimestamp;
+  DateTime? get sourceTimestamp;
 
   /// Create a copy of OrchestratorState
   /// with the given fields replaced by the non-null parameter values.

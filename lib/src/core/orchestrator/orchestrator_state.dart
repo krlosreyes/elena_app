@@ -60,14 +60,18 @@ class OrchestratorState with _$OrchestratorState {
     int? minutesToWindowClose,
 
     // ── Timestamp de la fuente de datos ─────────────────────────────────
-    required DateTime sourceTimestamp,
+    // SPEC-60: nullable. `null` indica state inicial sin lectura del reloj.
+    DateTime? sourceTimestamp,
   }) = _OrchestratorState;
 
   const OrchestratorState._();
 
   /// Estado inicial seguro (sin datos).
-  /// NOTA: DateTime.now() permitido SOLO aquí (factory estático).
-  factory OrchestratorState.initial() => OrchestratorState(
+  ///
+  /// SPEC-60: cumple la Ley de Factories Puras — sin `DateTime.now()`,
+  /// sin `Random()`, sin efectos secundarios. La instancia es const y
+  /// equivalente entre llamadas.
+  factory OrchestratorState.initial() => const OrchestratorState(
         fastingPhase: FastingPhase.alerta,
         circadianPhase: CircadianPhase.alerta,
         canExerciseNow: false,
@@ -76,13 +80,13 @@ class OrchestratorState with _$OrchestratorState {
         isInNutritionWindow: false,
         exerciseSafetyMultiplier: 1.0,
         nutritionPhaseMultiplier: 1.0,
-        recommendations: const [],
+        recommendations: [],
         exerciseRecommendedIntensity: 0,
         metabolicCoherence: 0.0,
-        activeSyncViolations: const [],
+        activeSyncViolations: [],
         fastedHours: 0.0,
         hoursSinceLastMeal: 0.0,
-        sourceTimestamp: DateTime.now(),
+        sourceTimestamp: null,
       );
 
   // ── Computed getters (lógica trivial, no de negocio) ─────────────────

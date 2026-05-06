@@ -64,11 +64,19 @@ class MetabolicState {
   /// Adherencia semanal (0-1) pre-calculada por StreakEngine.
   final double weeklyAdherence;
 
-  /// DateTime estable de la última comida.
-  final DateTime lastMealTime;
+  /// DateTime de la última comida real registrada.
+  ///
+  /// SPEC-60: nullable. `null` indica "estado vacío sin lectura del reloj"
+  /// (factory `empty()`). Solo `MetabolicStateBuilder.build` puede asignar
+  /// un valor concreto.
+  final DateTime? lastMealTime;
 
-  /// Timestamp de la última actualización del estado.
-  final DateTime timestamp;
+  /// Timestamp de la construcción de este snapshot.
+  ///
+  /// SPEC-60: nullable. `null` indica estado vacío sin reloj. Los engines
+  /// que reciben este state DEBEN tratar `null` como "sin datos" y usar
+  /// fallbacks explícitos en lugar de inventar valores.
+  final DateTime? timestamp;
 
   const MetabolicState({
     required this.fastingHours,
@@ -88,24 +96,35 @@ class MetabolicState {
     required this.timestamp,
   });
 
+  /// Instancia única e inmutable del estado vacío.
+  ///
+  /// SPEC-60 (Ley de Factories Puras): construida en tiempo de compilación,
+  /// sin `DateTime.now()` ni cualquier otra fuente de no-determinismo.
+  /// Garantiza que `MetabolicState.empty() == MetabolicState.empty()`
+  /// y `hashCode` idéntico entre invocaciones — base para evitar rebuilds
+  /// innecesarios cuando el state está vacío.
+  static const MetabolicState _empty = MetabolicState(
+    fastingHours: 0.0,
+    glycogenLevel: 1.0,
+    circadianAlignment: 0.5,
+    sleepQuality: 0.0,
+    exerciseLoad: 0.0,
+    glycemicLoad: 0.0,
+    hydrationLevel: 0.0,
+    metabolicCoherence: 0.8,
+    fastingHoursRaw: 0.0,
+    sleepHoursRaw: 0.0,
+    exerciseMinutesRaw: 0.0,
+    nutritionScoreRaw: 0.0,
+    weeklyAdherence: 0.0,
+    lastMealTime: null,
+    timestamp: null,
+  );
+
   /// Factory para estado inicial (sin datos).
-  factory MetabolicState.empty() => MetabolicState(
-        fastingHours: 0.0,
-        glycogenLevel: 1.0,
-        circadianAlignment: 0.5,
-        sleepQuality: 0.0,
-        exerciseLoad: 0.0,
-        glycemicLoad: 0.0,
-        hydrationLevel: 0.0,
-        metabolicCoherence: 0.8,
-        fastingHoursRaw: 0.0,
-        sleepHoursRaw: 0.0,
-        exerciseMinutesRaw: 0.0,
-        nutritionScoreRaw: 0.0,
-        weeklyAdherence: 0.0,
-        lastMealTime: DateTime.now(),
-        timestamp: DateTime.now(),
-      );
+  ///
+  /// Retorna siempre la misma instancia singleton — ver [_empty].
+  factory MetabolicState.empty() => _empty;
 
   /// Score promedio de los pilares normalizados (utilidad para dashboards).
   double get overallScore =>

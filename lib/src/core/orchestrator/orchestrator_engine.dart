@@ -43,13 +43,21 @@ class OrchestratorEngine {
   /// [user] — UserModel con perfil circadiano
   /// [streak] — StreakState con adherencia semanal y pilares completados
   ///
-  /// Retorna: OrchestratorState determinista.
+  /// Retorna: OrchestratorState determinista. Si `state` es vacío
+  /// (`timestamp == null` o `lastMealTime == null` — ver SPEC-60), retorna
+  /// `OrchestratorState.initial()` sin invocar lógica de negocio.
   static OrchestratorState calculate({
     required MetabolicState state,
     required UserModel user,
     required StreakState streak,
   }) {
+    // SPEC-60: el state vacío no se procesa. Retornamos el initial seguro
+    // para no inventar `now` con `DateTime.now()` ni manipular timestamps null.
     final now = state.timestamp;
+    final lastMealTime = state.lastMealTime;
+    if (now == null || lastMealTime == null) {
+      return OrchestratorState.initial();
+    }
 
     // ── 1. Fases biológicas ──────────────────────────────────────────────
     final fastingPhase = _determineFastingPhase(state.fastingHoursRaw);
@@ -100,7 +108,7 @@ class OrchestratorEngine {
 
     // ── 9. Horas desde última comida ─────────────────────────────────────
     final hoursSinceLastMeal =
-        now.difference(state.lastMealTime).inMinutes / 60.0;
+        now.difference(lastMealTime).inMinutes / 60.0;
 
     // ── 10. Recomendaciones tipadas ──────────────────────────────────────
     final recommendations = _generateRecommendations(
