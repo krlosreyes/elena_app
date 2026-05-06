@@ -228,6 +228,21 @@ class FastingNotifier extends StateNotifier<FastingState> {
     );
   }
 
+  /// SPEC-58: Reset diario idempotente.
+  ///
+  /// **RF-58-04:** NO elimina el `FastingInterval` activo del día anterior.
+  /// El ayuno es por diseño multi-día: protocolos como 16:8 o 18:6 cruzan
+  /// la medianoche por su propia naturaleza. Si el usuario inició ayuno
+  /// ayer a las 18:00, sigue activo.
+  ///
+  /// Solo limpia el flag efímero `_fastingEndConfirmedToday` para que el
+  /// overlay de "meta alcanzada" pueda volver a mostrarse en el nuevo día
+  /// cuando el ayuno cumpla su target.
+  void resetDaily() {
+    if (!mounted) return;
+    _fastingEndConfirmedToday = false;
+  }
+
   @override
   void dispose() {
     _timer?.cancel();

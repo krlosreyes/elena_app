@@ -97,6 +97,21 @@ class HydrationNotifier extends StateNotifier<HydrationState> {
     super.dispose();
   }
 
+  /// SPEC-58: Reset diario idempotente.
+  ///
+  /// Limpia el contador en caché (currentAmountLiters, history, isGoalReached).
+  /// El stream `watchTodayHydration` re-emitirá automáticamente el conteo
+  /// correcto del nuevo día — esto solo evita que el usuario vea los litros
+  /// del día anterior durante la fracción de segundo previa al re-emit.
+  ///
+  /// Conserva `dailyGoalLiters` porque depende del peso del usuario, no del día.
+  void resetDaily() {
+    if (!mounted) return;
+    state = HydrationState(
+      dailyGoalLiters: state.dailyGoalLiters,
+    );
+  }
+
   Future<void> addWater(double amount) async {
     // Usamos el .value del AsyncValue del provider centralizado
     final user = _ref.read(currentUserStreamProvider).value;

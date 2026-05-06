@@ -1,15 +1,31 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
+
+import 'package:elena_app/src/core/providers/shared_preferences_provider.dart';
+import 'package:elena_app/src/features/dashboard/application/fasting_notifier.dart';
+import 'package:elena_app/src/features/dashboard/application/hydration_notifier.dart';
+import 'package:elena_app/src/features/dashboard/application/sleep_notifier.dart';
+import 'package:elena_app/src/features/exercise/application/exercise_notifier.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
 
-/// SPEC-33: Servicio que detecta cambios de día y triggeriza resets circadianos.
-/// RF-33-05: Chequea en app startup si pasó medianoche desde última sesión.
+/// SPEC-33 + SPEC-58: Servicio que detecta cambios de día y triggeriza
+/// resets circadianos de los 5 pilares.
+///
+/// SPEC-58:
+/// - Reset sistémico: ayuno, nutrición, hidratación, ejercicio, sueño.
+/// - Detección en startup (vía SharedPreferences) y en runtime (timer).
+/// - Idempotente: invocarlo dos veces produce el mismo resultado.
+/// - El ayuno NO elimina su FastingInterval — el ayuno es multi-día por
+///   diseño; sólo se limpian flags efímeros del notifier.
 class DailyResetService {
   static const String _lastResetKey = '_lastMidnightReset';
 
   /// Chequea si pasó medianoche desde la última sesión.
   /// Retorna true si sí pasó medianoche (necesita reset).
+  ///
+  /// Idempotente: la segunda llamada el mismo día retorna false.
   static Future<bool> hasPassedMidnight(SharedPreferences prefs) async {
     final lastReset = prefs.getString(_lastResetKey);
     final now = DateTime.now();
@@ -30,36 +46,109 @@ class DailyResetService {
   }
 }
 
-/// SPEC-33: Notifier que detecta medianoche y triggeriza resets diarios.
+/// SPEC-58: Notifier que detecta medianoche y triggeriza resets diarios.
+///
 /// Patrón: StateNotifier sin estado visible (void) — solo efectos secundarios.
+///
+/// Ciclo de vida:
+/// 1. Bootstrap al construirse: si pasó medianoche desde la última sesión
+///    persistida en SharedPreferences, dispara `triggerDailyReset()`.
+/// 2. Programa un Timer hasta las 00:00:00 del día siguiente para disparar
+///    el reset automáticamente sin requerir reapertura de la app.
+/// 3. El timer se re-arma tras cada disparo (loop infinito controlado).
+/// 4. El notifier se mantiene vivo durante toda la sesión vía
+///    `ref.watch(dailyResetProvider)` en el widget root (`app.dart`).
 class DailyResetNotifier extends StateNotifier<void> {
   final Ref _ref;
+  Timer? _midnightTimer;
 
   DailyResetNotifier(this._ref) : super(null) {
-    _initMidnightListener();
+    _bootstrap();
   }
 
-  void _initMidnightListener() {
-    // Escuchar cambios en SharedPreferences para detectar si pasó medianoche
-    // En app startup, se llamará a hasPassedMidnight() desde main.dart
-    // Si retorna true, se dispara este notifier manualmente
+  /// Bootstrap: chequea si pasó medianoche desde la última sesión y, si así,
+  /// dispara el reset. Después arma el timer hacia la próxima medianoche.
+  Future<void> _bootstrap() async {
+    try {
+      final prefs = _ref.read(sharedPreferencesProvider);
+      final passed = await DailyResetService.hasPassedMidnight(prefs);
+      if (passed) {
+        await triggerDailyReset();
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('⚠️ SPEC-58 bootstrap fallo: $e');
+      }
+    }
+    _scheduleMidnightTimer();
   }
 
-  /// SPEC-33 RF-33-01: Dispara reset de todos los pilares diarios.
-  /// Llamado desde app startup o cuando se detecta medianoche.
+  /// Programa un Timer one-shot hasta las 00:00:00 del día siguiente.
+  /// Al disparar: triggerDailyReset() + re-armar para el siguiente día.
+  void _scheduleMidnightTimer() {
+    _midnightTimer?.cancel();
+    final now = DateTime.now();
+    final nextMidnight = DateTime(now.year, now.month, now.day + 1);
+    final duration = nextMidnight.difference(now);
+
+    if (kDebugMode) {
+      debugPrint('🕛 SPEC-58: próximo reset programado en ${duration.inMinutes} min.');
+    }
+
+    _midnightTimer = Timer(duration, () async {
+      await triggerDailyReset();
+      if (mounted) _scheduleMidnightTimer();
+    });
+  }
+
+  /// SPEC-58 RF-58-02: Dispara reset de los 5 pilares.
+  ///
+  /// Idempotente (RF-58-03): cada notifier individual debe ser idempotente
+  /// en su `resetDaily()`. Una segunda invocación produce el mismo state.
+  ///
+  /// Llamado desde:
+  /// - bootstrap (si pasó medianoche desde la última sesión)
+  /// - timer al cruzar 00:00:00
   Future<void> triggerDailyReset() async {
     try {
-      // Resetear NutritionNotifier
-      await _ref.read(nutritionProvider.notifier).resetDaily();
+      // Nutrición: limpia logs en memoria del día y resetea score.
+      _ref.read(nutritionProvider.notifier).resetDaily();
 
-      debugPrint('✅ SPEC-33: Reset diario completado. Todos los pilares reiniciados.');
+      // Hidratación: limpia el contador en caché. El stream de Firestore
+      // re-emitirá automáticamente el conteo correcto del nuevo día.
+      _ref.read(hydrationProvider.notifier).resetDaily();
+
+      // Ejercicio: limpia minutos en caché. Mismo principio que hidratación.
+      _ref.read(exerciseProvider.notifier).resetDaily();
+
+      // Sueño: resetea flags de wake-up; conserva el último log persistido.
+      _ref.read(sleepProvider.notifier).resetDaily();
+
+      // Ayuno: solo limpia el flag efímero `_fastingEndConfirmedToday`.
+      // RF-58-04: NO elimina el FastingInterval del día anterior — el ayuno
+      // es por diseño multi-día y puede cruzar la medianoche.
+      _ref.read(fastingProvider.notifier).resetDaily();
+
+      if (kDebugMode) {
+        debugPrint('✅ SPEC-58: reset diario completado en 5 pilares.');
+      }
     } catch (e) {
-      debugPrint('❌ Error en triggerDailyReset: $e');
+      if (kDebugMode) {
+        debugPrint('❌ SPEC-58: error en triggerDailyReset: $e');
+      }
     }
+  }
+
+  @override
+  void dispose() {
+    _midnightTimer?.cancel();
+    super.dispose();
   }
 }
 
 /// Provider que mantiene vivo el DailyResetNotifier durante toda la sesión.
+/// Se debe consumir en `app.dart` con `ref.watch(dailyResetProvider)` para
+/// que el bootstrap y el timer se inicien al arrancar la app.
 final dailyResetProvider =
     StateNotifierProvider<DailyResetNotifier, void>((ref) {
       return DailyResetNotifier(ref);

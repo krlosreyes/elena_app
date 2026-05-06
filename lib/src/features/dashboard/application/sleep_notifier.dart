@@ -80,6 +80,21 @@ class SleepNotifier extends StateNotifier<SleepState> {
     super.dispose();
   }
 
+  /// SPEC-58: Reset diario idempotente.
+  ///
+  /// Limpia los flags efímeros del ciclo wake-up (`_manualWakeUpConfirmedToday`,
+  /// `isWaitingForWakeUp`, `isSleepMode`). Conserva `lastLog` porque proviene
+  /// de Firestore y representa el último sueño real registrado, sin importar
+  /// el día actual.
+  void resetDaily() {
+    if (!mounted) return;
+    _manualWakeUpConfirmedToday = false;
+    state = state.copyWith(
+      isSleepMode: false,
+      isWaitingForWakeUp: false,
+    );
+  }
+
   void updateSleepConsciousness() {
     final userAsync = _ref.read(currentUserStreamProvider);
 
