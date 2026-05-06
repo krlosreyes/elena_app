@@ -101,16 +101,19 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
     );
   }
 
-  /// Registra una comida en el momento actual.
-  /// [label] — etiqueta semántica opcional; si no se provee se infiere por índice.
-  Future<void> logMeal({String? label}) async {
-    final now = DateTime.now();
+  /// Registra una comida.
+  ///
+  /// [label]    — etiqueta semántica opcional; si no se provee se infiere por índice.
+  /// [mealTime] — timestamp opcional de la comida; si no se provee se usa `DateTime.now()`.
+  ///              Permite registrar una comida pasada (caso `AddPastMealSheet`).
+  Future<void> logMeal({String? label, DateTime? mealTime}) async {
+    final timestamp = mealTime ?? DateTime.now();
     final effectiveLabel = label ?? state.nextMealLabel;
-    final withinWindow = _isWithinCircadianWindow(now);
+    final withinWindow = _isWithinCircadianWindow(timestamp);
 
     final log = NutritionLog(
       id: const Uuid().v4(),
-      timestamp: now,
+      timestamp: timestamp,
       label: effectiveLabel,
       withinCircadianWindow: withinWindow,
     );
