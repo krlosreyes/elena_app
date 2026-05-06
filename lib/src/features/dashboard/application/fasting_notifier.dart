@@ -1,6 +1,6 @@
-import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:elena_app/src/core/providers/ticker_providers.dart';
 import 'package:elena_app/src/core/rules/circadian_rules.dart';
 import 'package:elena_app/src/shared/domain/services/user_repository.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
@@ -21,7 +21,6 @@ final lastFastingIntervalProvider = StreamProvider<FastingInterval?>((ref) {
 
 class FastingNotifier extends StateNotifier<FastingState> {
   final Ref _ref;
-  Timer? _timer;
   bool _fastingEndConfirmedToday = false;
 
   FastingNotifier(this._ref) : super(FastingState.initial()) {
@@ -54,8 +53,8 @@ class FastingNotifier extends StateNotifier<FastingState> {
               startTime: interval.startTime,
               isActive: interval.isFasting,
               duration: duration,
-              phase: interval.isFasting 
-                  ? FastingState.determinePhase(duration) 
+              phase: interval.isFasting
+                  ? FastingState.determinePhase(duration)
                   : FastingPhase.none,
             );
           }
@@ -65,7 +64,16 @@ class FastingNotifier extends StateNotifier<FastingState> {
       );
     }, fireImmediately: true);
 
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) => _tick());
+    // SPEC-61: el ticker de 1s interno fue eliminado. Ahora consumimos el
+    // pulso central (metabolicPulseProvider, cada 10s) que ya alimenta a
+    // metabolicStateProvider y al resto del core. Esto reduce los rebuilds
+    // de cualquier widget suscrito a fastingProvider de 60/min a 6/min.
+    //
+    // El display HH:MM:SS visible al usuario corre en el widget
+    // LiveFastingClock con su propio Timer local; no muta fastingProvider.
+    _ref.listen(metabolicPulseProvider, (previous, next) {
+      if (next.value != null) _tick();
+    });
   }
 
   /// INICIO MANUAL (Viaje en el tiempo para pruebas)
@@ -243,11 +251,8 @@ class FastingNotifier extends StateNotifier<FastingState> {
     _fastingEndConfirmedToday = false;
   }
 
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
+  // SPEC-61: ya no hay Timer interno. Riverpod libera la suscripción a
+  // metabolicPulseProvider automáticamente cuando el notifier se dispone.
 }
 
 final fastingProvider = StateNotifierProvider<FastingNotifier, FastingState>((ref) {

@@ -11,6 +11,7 @@ import 'package:elena_app/src/features/dashboard/application/sleep_notifier.dart
 import 'package:elena_app/src/features/dashboard/application/hydration_notifier.dart';
 import 'package:elena_app/src/features/dashboard/domain/fasting_status.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/circadian_clock.dart';
+import 'package:elena_app/src/features/dashboard/presentation/widgets/live_fasting_clock.dart';
 import 'package:elena_app/src/features/exercise/application/exercise_notifier.dart';
 import 'package:elena_app/src/features/exercise/application/exercise_state.dart';
 import 'package:elena_app/src/features/exercise/presentation/exercise_input_sheet.dart';
@@ -455,16 +456,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     WidgetRef ref,
     FastingState state,
   ) {
-    String twoDigits(int n) => n.toString().padLeft(2, '0');
     final isActive = state.isActive;
     final accent = isActive ? AppColors.metabolicGreen : AppColors.metabolicGreen;
     final pct = (state.progressPercentage.clamp(0.0, 1.0) * 100).round();
 
-    final timerText = isActive
-        ? '${twoDigits(state.duration.inHours)}:'
-            '${twoDigits(state.duration.inMinutes.remainder(60))}:'
-            '${twoDigits(state.duration.inSeconds.remainder(60))}'
-        : '— — : — — : — —';
+    // SPEC-61: el display HH:MM:SS lo renderiza LiveFastingClock con su
+    // propio Timer local, sin disparar rebuilds del fastingProvider.
 
     final stateLabel = isActive ? 'En curso' : 'En espera';
 
@@ -518,19 +515,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             ],
           ),
           const SizedBox(height: 14),
-          // Display de tiempo + protocolo
+          // Display de tiempo + protocolo. El reloj corre con su propio
+          // Timer local de 1s (SPEC-61) y no muta fastingProvider.
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(
-                timerText,
-                style: TextStyle(
-                  color: accent,
-                  fontFamily: 'monospace',
-                  fontSize: 28,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1.5,
-                ),
+              LiveFastingClock(
+                startTime: state.startTime,
+                isActive: isActive,
+                color: accent,
               ),
               const SizedBox(width: 10),
               Padding(
