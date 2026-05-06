@@ -14,7 +14,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
-import 'package:elena_app/src/features/welcome/application/welcome_service.dart';
+import 'package:elena_app/src/features/welcome/data/firebase_welcome_repository.dart';
 // SPEC-17: Vocabulario funcional de pilares
 import 'package:elena_app/src/core/constants/pillar_constants.dart';
 
@@ -89,7 +89,9 @@ class _WelcomeFlowScreenState extends ConsumerState<WelcomeFlowScreen> {
     if (user == null) return;
 
     setState(() => _isCompleting = true);
-    await WelcomeService.markWelcomeSeen(user.uid);
+    // SPEC-48: capa application/presentation consume el repositorio,
+    // no Firestore directamente.
+    await ref.read(welcomeRepositoryProvider).markWelcomeSeen(user.uid);
     if (mounted) context.go('/dashboard');
   }
 
