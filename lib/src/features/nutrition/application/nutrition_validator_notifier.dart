@@ -132,7 +132,7 @@ class NutritionValidatorNotifier extends StateNotifier<NutritionValidationState?
       final proteinPercent = totalCalories > 0 ? (proteinG * 4) / totalCalories : 0;
       final fatPercent = totalCalories > 0 ? (fatG * 9) / totalCalories : 0;
 
-      // Obtener estado del orchestrator (SPEC-01: OrchestratorStateV2)
+      // Obtener estado del orchestrator (SPEC-01 / SPEC-46: OrchestratorState)
       final orchestratorState = _ref.read(orchestratorProvider);
 
       // Validar contra estado metabólico

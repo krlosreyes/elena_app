@@ -1,10 +1,14 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// SPEC-01: OrchestratorState determinista (Freezed, no-nullable)
+// SPEC-01 / SPEC-46: OrchestratorState determinista (Freezed, no-nullable)
 // ─────────────────────────────────────────────────────────────────────────────
 //
-// Reemplaza models/orchestrator_state.dart (que usa strings para fases).
-// Usa enums tipados de biological_phases.dart.
+// Modelo único del orquestador. Usa enums tipados de biological_phases.dart.
 // 100% no-nullable excepto campos opcionalmente ausentes.
+//
+// Historia:
+//   - SPEC-46 (6-may-2026): unificación. Antes existían dos versiones
+//     (OrchestratorState con strings + OrchestratorState con enums).
+//     La v1 fue eliminada y la v2 renombrada a este archivo.
 //
 // SPEC-00: Dart puro — sin imports de providers, notifiers o repositorios.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -13,7 +17,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:elena_app/src/core/orchestrator/biological_phases.dart';
 import 'package:elena_app/src/core/orchestrator/recommendation.dart';
 
-part 'orchestrator_state_v2.freezed.dart';
+part 'orchestrator_state.freezed.dart';
 
 /// Estado sincronizado de todos los pilares metabólicos.
 ///
@@ -23,8 +27,8 @@ part 'orchestrator_state_v2.freezed.dart';
 /// NO contiene lógica. NO tiene side effects.
 /// Todos los campos de fase usan enums tipados (no strings).
 @freezed
-class OrchestratorStateV2 with _$OrchestratorStateV2 {
-  const factory OrchestratorStateV2({
+class OrchestratorState with _$OrchestratorState {
+  const factory OrchestratorState({
     // ── Fases biológicas (tipadas) ──────────────────────────────────────
     required FastingPhase fastingPhase,
     required CircadianPhase circadianPhase,
@@ -57,13 +61,13 @@ class OrchestratorStateV2 with _$OrchestratorStateV2 {
 
     // ── Timestamp de la fuente de datos ─────────────────────────────────
     required DateTime sourceTimestamp,
-  }) = _OrchestratorStateV2;
+  }) = _OrchestratorState;
 
-  const OrchestratorStateV2._();
+  const OrchestratorState._();
 
   /// Estado inicial seguro (sin datos).
   /// NOTA: DateTime.now() permitido SOLO aquí (factory estático).
-  factory OrchestratorStateV2.initial() => OrchestratorStateV2(
+  factory OrchestratorState.initial() => OrchestratorState(
         fastingPhase: FastingPhase.alerta,
         circadianPhase: CircadianPhase.alerta,
         canExerciseNow: false,

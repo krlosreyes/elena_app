@@ -3,7 +3,7 @@
 // ignore_for_file: type=lint
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
-part of 'orchestrator_state_v2.dart';
+part of 'orchestrator_state.dart';
 
 // **************************************************************************
 // FreezedGenerator
@@ -15,7 +15,7 @@ final _privateConstructorUsedError = UnsupportedError(
     'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
 
 /// @nodoc
-mixin _$OrchestratorStateV2 {
+mixin _$OrchestratorState {
 // ── Fases biológicas (tipadas) ──────────────────────────────────────
   FastingPhase get fastingPhase => throw _privateConstructorUsedError;
   CircadianPhase get circadianPhase =>
@@ -42,18 +42,18 @@ mixin _$OrchestratorStateV2 {
       throw _privateConstructorUsedError; // ── Timestamp de la fuente de datos ─────────────────────────────────
   DateTime get sourceTimestamp => throw _privateConstructorUsedError;
 
-  /// Create a copy of OrchestratorStateV2
+  /// Create a copy of OrchestratorState
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
-  $OrchestratorStateV2CopyWith<OrchestratorStateV2> get copyWith =>
+  $OrchestratorStateCopyWith<OrchestratorState> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class $OrchestratorStateV2CopyWith<$Res> {
-  factory $OrchestratorStateV2CopyWith(
-          OrchestratorStateV2 value, $Res Function(OrchestratorStateV2) then) =
-      _$OrchestratorStateV2CopyWithImpl<$Res, OrchestratorStateV2>;
+abstract class $OrchestratorStateCopyWith<$Res> {
+  factory $OrchestratorStateCopyWith(
+          OrchestratorState value, $Res Function(OrchestratorState) then) =
+      _$OrchestratorStateCopyWithImpl<$Res, OrchestratorState>;
   @useResult
   $Res call(
       {FastingPhase fastingPhase,
@@ -76,16 +76,16 @@ abstract class $OrchestratorStateV2CopyWith<$Res> {
 }
 
 /// @nodoc
-class _$OrchestratorStateV2CopyWithImpl<$Res, $Val extends OrchestratorStateV2>
-    implements $OrchestratorStateV2CopyWith<$Res> {
-  _$OrchestratorStateV2CopyWithImpl(this._value, this._then);
+class _$OrchestratorStateCopyWithImpl<$Res, $Val extends OrchestratorState>
+    implements $OrchestratorStateCopyWith<$Res> {
+  _$OrchestratorStateCopyWithImpl(this._value, this._then);
 
   // ignore: unused_field
   final $Val _value;
   // ignore: unused_field
   final $Res Function($Val) _then;
 
-  /// Create a copy of OrchestratorStateV2
+  /// Create a copy of OrchestratorState
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
@@ -182,11 +182,11 @@ class _$OrchestratorStateV2CopyWithImpl<$Res, $Val extends OrchestratorStateV2>
 }
 
 /// @nodoc
-abstract class _$$OrchestratorStateV2ImplCopyWith<$Res>
-    implements $OrchestratorStateV2CopyWith<$Res> {
-  factory _$$OrchestratorStateV2ImplCopyWith(_$OrchestratorStateV2Impl value,
-          $Res Function(_$OrchestratorStateV2Impl) then) =
-      __$$OrchestratorStateV2ImplCopyWithImpl<$Res>;
+abstract class _$$OrchestratorStateImplCopyWith<$Res>
+    implements $OrchestratorStateCopyWith<$Res> {
+  factory _$$OrchestratorStateImplCopyWith(_$OrchestratorStateImpl value,
+          $Res Function(_$OrchestratorStateImpl) then) =
+      __$$OrchestratorStateImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -210,14 +210,14 @@ abstract class _$$OrchestratorStateV2ImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$OrchestratorStateV2ImplCopyWithImpl<$Res>
-    extends _$OrchestratorStateV2CopyWithImpl<$Res, _$OrchestratorStateV2Impl>
-    implements _$$OrchestratorStateV2ImplCopyWith<$Res> {
-  __$$OrchestratorStateV2ImplCopyWithImpl(_$OrchestratorStateV2Impl _value,
-      $Res Function(_$OrchestratorStateV2Impl) _then)
+class __$$OrchestratorStateImplCopyWithImpl<$Res>
+    extends _$OrchestratorStateCopyWithImpl<$Res, _$OrchestratorStateImpl>
+    implements _$$OrchestratorStateImplCopyWith<$Res> {
+  __$$OrchestratorStateImplCopyWithImpl(_$OrchestratorStateImpl _value,
+      $Res Function(_$OrchestratorStateImpl) _then)
       : super(_value, _then);
 
-  /// Create a copy of OrchestratorStateV2
+  /// Create a copy of OrchestratorState
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
@@ -240,7 +240,7 @@ class __$$OrchestratorStateV2ImplCopyWithImpl<$Res>
     Object? minutesToWindowClose = freezed,
     Object? sourceTimestamp = null,
   }) {
-    return _then(_$OrchestratorStateV2Impl(
+    return _then(_$OrchestratorStateImpl(
       fastingPhase: null == fastingPhase
           ? _value.fastingPhase
           : fastingPhase // ignore: cast_nullable_to_non_nullable
@@ -315,8 +315,8 @@ class __$$OrchestratorStateV2ImplCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$OrchestratorStateV2Impl extends _OrchestratorStateV2 {
-  const _$OrchestratorStateV2Impl(
+class _$OrchestratorStateImpl extends _OrchestratorState {
+  const _$OrchestratorStateImpl(
       {required this.fastingPhase,
       required this.circadianPhase,
       required this.canExerciseNow,
@@ -399,14 +399,14 @@ class _$OrchestratorStateV2Impl extends _OrchestratorStateV2 {
 
   @override
   String toString() {
-    return 'OrchestratorStateV2(fastingPhase: $fastingPhase, circadianPhase: $circadianPhase, canExerciseNow: $canExerciseNow, canEatNow: $canEatNow, isOptimalForFasting: $isOptimalForFasting, isInNutritionWindow: $isInNutritionWindow, exerciseSafetyMultiplier: $exerciseSafetyMultiplier, nutritionPhaseMultiplier: $nutritionPhaseMultiplier, recommendations: $recommendations, exerciseRecommendedType: $exerciseRecommendedType, exerciseRecommendedIntensity: $exerciseRecommendedIntensity, metabolicCoherence: $metabolicCoherence, activeSyncViolations: $activeSyncViolations, fastedHours: $fastedHours, hoursSinceLastMeal: $hoursSinceLastMeal, minutesToWindowClose: $minutesToWindowClose, sourceTimestamp: $sourceTimestamp)';
+    return 'OrchestratorState(fastingPhase: $fastingPhase, circadianPhase: $circadianPhase, canExerciseNow: $canExerciseNow, canEatNow: $canEatNow, isOptimalForFasting: $isOptimalForFasting, isInNutritionWindow: $isInNutritionWindow, exerciseSafetyMultiplier: $exerciseSafetyMultiplier, nutritionPhaseMultiplier: $nutritionPhaseMultiplier, recommendations: $recommendations, exerciseRecommendedType: $exerciseRecommendedType, exerciseRecommendedIntensity: $exerciseRecommendedIntensity, metabolicCoherence: $metabolicCoherence, activeSyncViolations: $activeSyncViolations, fastedHours: $fastedHours, hoursSinceLastMeal: $hoursSinceLastMeal, minutesToWindowClose: $minutesToWindowClose, sourceTimestamp: $sourceTimestamp)';
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$OrchestratorStateV2Impl &&
+            other is _$OrchestratorStateImpl &&
             (identical(other.fastingPhase, fastingPhase) ||
                 other.fastingPhase == fastingPhase) &&
             (identical(other.circadianPhase, circadianPhase) ||
@@ -469,18 +469,18 @@ class _$OrchestratorStateV2Impl extends _OrchestratorStateV2 {
       minutesToWindowClose,
       sourceTimestamp);
 
-  /// Create a copy of OrchestratorStateV2
+  /// Create a copy of OrchestratorState
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
-  _$$OrchestratorStateV2ImplCopyWith<_$OrchestratorStateV2Impl> get copyWith =>
-      __$$OrchestratorStateV2ImplCopyWithImpl<_$OrchestratorStateV2Impl>(
+  _$$OrchestratorStateImplCopyWith<_$OrchestratorStateImpl> get copyWith =>
+      __$$OrchestratorStateImplCopyWithImpl<_$OrchestratorStateImpl>(
           this, _$identity);
 }
 
-abstract class _OrchestratorStateV2 extends OrchestratorStateV2 {
-  const factory _OrchestratorStateV2(
+abstract class _OrchestratorState extends OrchestratorState {
+  const factory _OrchestratorState(
       {required final FastingPhase fastingPhase,
       required final CircadianPhase circadianPhase,
       required final bool canExerciseNow,
@@ -497,8 +497,8 @@ abstract class _OrchestratorStateV2 extends OrchestratorStateV2 {
       required final double fastedHours,
       required final double hoursSinceLastMeal,
       final int? minutesToWindowClose,
-      required final DateTime sourceTimestamp}) = _$OrchestratorStateV2Impl;
-  const _OrchestratorStateV2._() : super._();
+      required final DateTime sourceTimestamp}) = _$OrchestratorStateImpl;
+  const _OrchestratorState._() : super._();
 
 // ── Fases biológicas (tipadas) ──────────────────────────────────────
   @override
@@ -542,10 +542,10 @@ abstract class _OrchestratorStateV2 extends OrchestratorStateV2 {
   @override
   DateTime get sourceTimestamp;
 
-  /// Create a copy of OrchestratorStateV2
+  /// Create a copy of OrchestratorState
   /// with the given fields replaced by the non-null parameter values.
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$OrchestratorStateV2ImplCopyWith<_$OrchestratorStateV2Impl> get copyWith =>
+  _$$OrchestratorStateImplCopyWith<_$OrchestratorStateImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

@@ -1,8 +1,8 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// SPEC-01: OrchestratorEngine — Motor de sincronización determinista
+// SPEC-01 / SPEC-46: OrchestratorEngine — Motor de sincronización determinista
 // ─────────────────────────────────────────────────────────────────────────────
 //
-// Función pura: (MetabolicState, UserModel, StreakState) → OrchestratorStateV2
+// Función pura: (MetabolicState, UserModel, StreakState) → OrchestratorState
 //
 // INVARIANTES SPEC-00:
 //   - Sin ref.watch / ref.read / ref.listen
@@ -14,16 +14,18 @@
 //   - Mismo input → mismo output (determinista)
 //
 // REUTILIZACIÓN:
-//   - FastingPhase: mapeo directo de OrchestratorService.determineFastingPhase
-//   - CircadianPhase: mapeo directo de CircadianRules.getPhaseName
+//   - FastingPhase: clasificación por horas de ayuno (umbrales 4/8/12h).
+//   - CircadianPhase: tabla horaria interna (alineada con CircadianRules).
+//     SPEC-51 unificará ambas en CircadianEngine.
 //   - metabolicCoherence: usa MetabolicState.metabolicCoherence (ya calculado
-//     por MetabolicStateBuilder._calculateCoherence)
+//     por MetabolicStateBuilder._calculateCoherence). SPEC-71 unificará la
+//     coherencia para evitar doble penalización.
 //   - NO duplica fórmulas de ScoreEngine ni MetabolicStateBuilder
 // ─────────────────────────────────────────────────────────────────────────────
 
 import 'package:elena_app/src/core/engine/metabolic_state.dart';
 import 'package:elena_app/src/core/orchestrator/biological_phases.dart';
-import 'package:elena_app/src/core/orchestrator/orchestrator_state_v2.dart';
+import 'package:elena_app/src/core/orchestrator/orchestrator_state.dart';
 import 'package:elena_app/src/core/orchestrator/recommendation.dart';
 import 'package:elena_app/src/features/streak/application/streak_notifier.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
@@ -41,8 +43,8 @@ class OrchestratorEngine {
   /// [user] — UserModel con perfil circadiano
   /// [streak] — StreakState con adherencia semanal y pilares completados
   ///
-  /// Retorna: OrchestratorStateV2 determinista.
-  static OrchestratorStateV2 calculate({
+  /// Retorna: OrchestratorState determinista.
+  static OrchestratorState calculate({
     required MetabolicState state,
     required UserModel user,
     required StreakState streak,
@@ -108,7 +110,7 @@ class OrchestratorEngine {
       streak: streak,
     );
 
-    return OrchestratorStateV2(
+    return OrchestratorState(
       fastingPhase: fastingPhase,
       circadianPhase: circadianPhase,
       canExerciseNow: canExercise,
@@ -135,8 +137,7 @@ class OrchestratorEngine {
 
   /// Determina FastingPhase tipado desde horas de ayuno.
   ///
-  /// Mapeo idéntico a OrchestratorService.determineFastingPhase
-  /// pero retorna enum en lugar de String.
+  /// Umbrales: <4h alerta, 4-8h gluconeogénesis, 8-12h cetosis, ≥12h autofagia.
   static FastingPhase _determineFastingPhase(double fastingHoursRaw) {
     if (fastingHoursRaw < 4) return FastingPhase.alerta;
     if (fastingHoursRaw < 8) return FastingPhase.gluconeogenesis;
@@ -146,8 +147,8 @@ class OrchestratorEngine {
 
   /// Determina CircadianPhase tipado desde timestamp.
   ///
-  /// Mapeo idéntico a CircadianRules.getPhaseName pero retorna enum.
-  /// NO duplica la lógica de isPhaseActive — usa la misma tabla de horas.
+  /// Tabla horaria alineada con CircadianRules. SPEC-51 unificará ambas en
+  /// un único `CircadianEngine` para eliminar la duplicación.
   static CircadianPhase _determineCircadianPhase(DateTime now) {
     final current = now.hour + (now.minute / 60.0);
 
@@ -194,9 +195,9 @@ class OrchestratorEngine {
 
   /// Determina si es seguro ejercitar ahora.
   ///
-  /// Lógica portada de OrchestratorService.canExerciseNow:
-  ///   - No ejercitar en autofagia + sueño deficiente
-  ///   - No ejercitar en fase de sueño circadiano
+  /// Reglas:
+  ///   - No ejercitar en autofagia + sueño deficiente.
+  ///   - No ejercitar en fase de sueño circadiano.
   static bool _canExerciseNow({
     required FastingPhase fastingPhase,
     required CircadianPhase circadianPhase,
@@ -217,7 +218,7 @@ class OrchestratorEngine {
 
   /// Determina si es óptimo continuar en ayuno.
   ///
-  /// Lógica portada de OrchestratorService.isOptimalForFasting.
+  /// Óptimo si la fase es cetosis o autofagia y la calidad de sueño > 0.6.
   static bool _isOptimalForFasting({
     required FastingPhase fastingPhase,
     required double sleepQuality,
@@ -230,7 +231,8 @@ class OrchestratorEngine {
 
   /// Multiplicador de seguridad para ejercicio según fase de ayuno.
   ///
-  /// Valores portados de OrchestratorService.getExerciseSafetyMultiplier.
+  /// Reduce la intensidad recomendada conforme avanza el ayuno: alerta=1.0,
+  /// gluconeogénesis=0.95, cetosis=0.85, autofagia=0.6.
   static double _exerciseSafetyMultiplier(FastingPhase phase) {
     return switch (phase) {
       FastingPhase.alerta => 1.0,
@@ -242,8 +244,8 @@ class OrchestratorEngine {
 
   /// Multiplicador de nutrición según fase circadiana.
   ///
-  /// Valores portados de OrchestratorService.getNutritionPhaseMultiplier.
-  /// Adaptados de las fases string a los enums tipados.
+  /// Pondera la calidad de la ingesta según la fase del día (digestión activa
+  /// vs intestino en reposo). SPEC-70 documentará la base bibliográfica.
   static double _nutritionPhaseMultiplier(CircadianPhase phase) {
     return switch (phase) {
       CircadianPhase.sueno => 0.6, // Muy malo — intestino en reposo
@@ -257,8 +259,9 @@ class OrchestratorEngine {
 
   /// Recomendación de tipo y porcentaje de ejercicio.
   ///
-  /// Lógica portada de OrchestratorService.getExerciseRecommendation.
-  /// Retorna: (tipo?, intensidad%)
+  /// Retorna: (tipo?, intensidad%) basado en la fase de ayuno, la fase
+  /// circadiana y la calidad de sueño. SPEC-68 sustituirá los strings
+  /// por un enum tipado de tipo de ejercicio.
   static (String?, int) _exerciseRecommendation({
     required FastingPhase fastingPhase,
     required CircadianPhase circadianPhase,
@@ -287,8 +290,8 @@ class OrchestratorEngine {
 
   /// Detecta violaciones de sincronización inter-pilar.
   ///
-  /// Lógica portada de OrchestratorService.detectSyncViolations,
-  /// adaptada para usar MetabolicState en lugar de parámetros individuales.
+  /// Recibe el MetabolicState (no parámetros individuales) y devuelve la
+  /// lista de mensajes de violación detectados.
   static List<String> _detectViolations({
     required FastingPhase fastingPhase,
     required CircadianPhase circadianPhase,

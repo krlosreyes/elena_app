@@ -1,6 +1,6 @@
 import 'package:elena_app/src/core/engine/metabolic_state_provider.dart';
 import 'package:elena_app/src/core/orchestrator/orchestrator_engine.dart';
-import 'package:elena_app/src/core/orchestrator/orchestrator_state_v2.dart';
+import 'package:elena_app/src/core/orchestrator/orchestrator_state.dart';
 import 'package:elena_app/src/features/streak/application/streak_notifier.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,13 +11,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// - Es un Provider puro (mismo input -> mismo output).
 /// - No contiene lógica propia (delega al OrchestratorEngine).
 /// - No tiene efectos secundarios ni estado mutable.
-final orchestratorProvider = Provider<OrchestratorStateV2>((ref) {
+final orchestratorProvider = Provider<OrchestratorState>((ref) {
   final metabolicState = ref.watch(metabolicStateProvider);
   final user = ref.watch(currentUserStreamProvider).valueOrNull;
   final streak = ref.watch(streakProvider);
 
   if (user == null) {
-    return OrchestratorStateV2.initial();
+    return OrchestratorState.initial();
   }
 
   return OrchestratorEngine.calculate(
