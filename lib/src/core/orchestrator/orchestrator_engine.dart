@@ -15,14 +15,14 @@
 //
 // REUTILIZACIÓN:
 //   - FastingPhase: clasificación por horas de ayuno (umbrales 4/8/12h).
-//   - CircadianPhase: tabla horaria interna (alineada con CircadianRules).
-//     SPEC-51 unificará ambas en CircadianEngine.
+//   - CircadianPhase: delegada a CircadianEngine.currentPhase (SPEC-51 cerrado).
 //   - metabolicCoherence: usa MetabolicState.metabolicCoherence (ya calculado
 //     por MetabolicStateBuilder._calculateCoherence). SPEC-71 unificará la
 //     coherencia para evitar doble penalización.
 //   - NO duplica fórmulas de ScoreEngine ni MetabolicStateBuilder
 // ─────────────────────────────────────────────────────────────────────────────
 
+import 'package:elena_app/src/core/engine/circadian_engine.dart';
 import 'package:elena_app/src/core/engine/metabolic_state.dart';
 import 'package:elena_app/src/core/orchestrator/biological_phases.dart';
 import 'package:elena_app/src/core/orchestrator/orchestrator_state.dart';
@@ -61,7 +61,8 @@ class OrchestratorEngine {
 
     // ── 1. Fases biológicas ──────────────────────────────────────────────
     final fastingPhase = _determineFastingPhase(state.fastingHoursRaw);
-    final circadianPhase = _determineCircadianPhase(now);
+    // SPEC-51: la fase circadiana viene del CircadianEngine (fuente única).
+    final circadianPhase = CircadianEngine.currentPhase(now);
 
     // ── 2. Ventana nutricional ───────────────────────────────────────────
     final (canEat, isInWindow, minutesToClose) =
@@ -153,26 +154,8 @@ class OrchestratorEngine {
     return FastingPhase.autofagia;
   }
 
-  /// Determina CircadianPhase tipado desde timestamp.
-  ///
-  /// Tabla horaria alineada con CircadianRules. SPEC-51 unificará ambas en
-  /// un único `CircadianEngine` para eliminar la duplicación.
-  static CircadianPhase _determineCircadianPhase(DateTime now) {
-    final current = now.hour + (now.minute / 60.0);
-
-    // SUEÑO: 22:30–06:00 (cruza medianoche)
-    if (current >= 22.5 || current < 6.0) return CircadianPhase.sueno;
-    // ALERTA: 06:00–09:00
-    if (current < 9.0) return CircadianPhase.alerta;
-    // COGNITIVO: 09:00–13:00
-    if (current < 13.0) return CircadianPhase.cognitivo;
-    // RECESO: 13:00–15:00
-    if (current < 15.0) return CircadianPhase.receso;
-    // MOTOR/FUERZA: 15:00–20:00
-    if (current < 20.0) return CircadianPhase.motorFuerza;
-    // CREATIVIDAD: 20:00–22:30
-    return CircadianPhase.creatividad;
-  }
+  // SPEC-51: _determineCircadianPhase eliminado. La determinación de fase
+  // circadiana ahora vive en CircadianEngine.currentPhase (fuente única).
 
   /// Evalúa si se puede comer ahora basado en ventana circadiana del usuario.
   ///
