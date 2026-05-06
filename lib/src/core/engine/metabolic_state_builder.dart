@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:elena_app/src/core/engine/coherence_engine.dart';
 import 'package:elena_app/src/core/engine/metabolic_state.dart';
 import 'package:elena_app/src/core/rules/circadian_rules.dart';
 import 'package:elena_app/src/features/dashboard/application/fasting_notifier.dart';
@@ -96,9 +97,10 @@ class MetabolicStateBuilder {
         : 0.0;
 
     // ── metabolicCoherence ───────────────────────────────────────────────
-    // Calculado localmente desde los datos de todos los pilares.
-    // NO depende del Orchestrator.
-    final double metabolicCoherence = _calculateCoherence(
+    // SPEC-71: delega a CoherenceEngine (fuente única). El builder ya no
+    // contiene lógica de penalización propia. OrchestratorEngine usa este
+    // valor directamente — sin recalcular con `violations.length * 0.05`.
+    final double metabolicCoherence = CoherenceEngine.calculate(
       sleepHours: sleepHours,
       hydrationLevel: hydrationLevel,
       circadianAlignment: circadianAlignment,
@@ -186,48 +188,6 @@ class MetabolicStateBuilder {
     return 1.0;
   }
 
-  /// Calcula coherencia metabólica desde los datos de pilares.
-  /// Mide qué tan bien alineados están los pilares entre sí.
-  ///
-  /// Base 1.0, se reduce por inconsistencias detectadas:
-  /// - Sueño insuficiente (<6.5h): penaliza coherencia sistémica.
-  /// - Deshidratación (<50% goal): afecta todos los procesos.
-  /// - Desalineación circadiana: indica disrupción de ritmos.
-  /// - Ejercicio sin descanso adecuado: riesgo de catabolismo.
-  static double _calculateCoherence({
-    required double sleepHours,
-    required double hydrationLevel,
-    required double circadianAlignment,
-    required double exerciseLoad,
-    required double fastingHours,
-  }) {
-    var score = 1.0;
-
-    // Sueño insuficiente penaliza coherencia global
-    if (sleepHours < 6.5) {
-      score -= 0.20;
-    }
-
-    // Deshidratación significativa
-    if (hydrationLevel < 0.5) {
-      score -= 0.15;
-    }
-
-    // Desalineación circadiana (comida fuera de ventana)
-    if (circadianAlignment < 0.7) {
-      score -= 0.15;
-    }
-
-    // Ejercicio intenso (>1h) con sueño pobre (<6h) = incoherencia
-    if (exerciseLoad > 0.8 && sleepHours < 6.0) {
-      score -= 0.10;
-    }
-
-    // Ayuno prolongado (>16h) sin hidratación adecuada = riesgo
-    if (fastingHours > 16 && hydrationLevel < 0.6) {
-      score -= 0.10;
-    }
-
-    return score.clamp(0.0, 1.0);
-  }
+  // SPEC-71: _calculateCoherence eliminado. La lógica vive ahora en
+  // CoherenceEngine.calculate (core/engine/coherence_engine.dart).
 }

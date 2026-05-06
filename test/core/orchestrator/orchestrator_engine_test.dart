@@ -195,6 +195,44 @@ void main() {
     });
   });
 
+  group('SPEC-71: orchestrator no descuenta por violations', () {
+    final user = _user();
+    const streak = StreakState();
+
+    test('orchestrator.metabolicCoherence == state.metabolicCoherence (sin ajuste)', () {
+      // Construyo un state con un valor de coherencia conocido (0.6) y
+      // varias dimensiones malas que el orchestrator detectará como
+      // violations. Verifica que el orchestrator NO descuenta ese 0.6.
+      final state = MetabolicState(
+        fastingHours: 0.95,
+        glycogenLevel: 0.1,
+        circadianAlignment: 0.3,
+        sleepQuality: 0.3,
+        exerciseLoad: 0.9,
+        glycemicLoad: 0.5,
+        hydrationLevel: 0.3,
+        metabolicCoherence: 0.6, // valor conocido
+        fastingHoursRaw: 16,
+        sleepHoursRaw: 5,
+        exerciseMinutesRaw: 90,
+        nutritionScoreRaw: 0.5,
+        weeklyAdherence: 0.5,
+        lastMealTime: DateTime(2026, 5, 6, 8),
+        timestamp: DateTime(2026, 5, 6, 12),
+      );
+
+      final out = OrchestratorEngine.calculate(
+        state: state,
+        user: user,
+        streak: streak,
+      );
+      expect(out.metabolicCoherence, 0.6,
+          reason: 'No debe ajustarse downstream por violations.length');
+      expect(out.activeSyncViolations, isNotEmpty,
+          reason: 'Las violations siguen detectándose como info al usuario');
+    });
+  });
+
   group('OrchestratorState.initial() es const e idempotente', () {
     test('dos llamadas a initial() producen instancias idénticas', () {
       final a = OrchestratorState.initial();

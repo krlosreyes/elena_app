@@ -16,9 +16,10 @@
 // REUTILIZACIÓN:
 //   - FastingPhase: clasificación por horas de ayuno (umbrales 4/8/12h).
 //   - CircadianPhase: delegada a CircadianEngine.currentPhase (SPEC-51 cerrado).
-//   - metabolicCoherence: usa MetabolicState.metabolicCoherence (ya calculado
-//     por MetabolicStateBuilder._calculateCoherence). SPEC-71 unificará la
-//     coherencia para evitar doble penalización.
+//   - metabolicCoherence: usa state.metabolicCoherence directo (calculado
+//     por CoherenceEngine desde MetabolicStateBuilder). SPEC-71 cerrado:
+//     ya no recalculamos con `violations.length * 0.05`. Las violaciones
+//     son mensajes informativos al usuario, no afectan el score numérico.
 //   - NO duplica fórmulas de ScoreEngine ni MetabolicStateBuilder
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -100,12 +101,13 @@ class OrchestratorEngine {
     );
 
     // ── 8. Coherencia metabólica ─────────────────────────────────────────
-    // Usa el valor ya calculado por MetabolicStateBuilder._calculateCoherence
-    // (NO duplicar la fórmula). Solo ajusta si hay violaciones detectadas
-    // por el orchestrator que el builder no conoce.
-    final baseCoherence = state.metabolicCoherence;
-    final adjustedCoherence =
-        (baseCoherence - (violations.length * 0.05)).clamp(0.0, 1.0);
+    // SPEC-71: fuente única — CoherenceEngine ya produjo este valor desde
+    // MetabolicStateBuilder. NO se descuenta nada adicional por
+    // `violations.length * 0.05`: las violaciones detectadas siempre
+    // duplicaban dimensiones que el state ya penalizaba (sueño, hidratación,
+    // alineación circadiana, ejercicio). Las violaciones siguen siendo
+    // mensajes informativos al usuario, pero NO afectan el score numérico.
+    final coherence = state.metabolicCoherence;
 
     // ── 9. Horas desde última comida ─────────────────────────────────────
     final hoursSinceLastMeal =
@@ -131,7 +133,7 @@ class OrchestratorEngine {
       recommendations: recommendations,
       exerciseRecommendedType: exerciseType,
       exerciseRecommendedIntensity: exerciseIntensity,
-      metabolicCoherence: adjustedCoherence,
+      metabolicCoherence: coherence,
       activeSyncViolations: violations,
       fastedHours: state.fastingHoursRaw,
       hoursSinceLastMeal: hoursSinceLastMeal,
