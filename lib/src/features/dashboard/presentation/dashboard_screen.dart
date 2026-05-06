@@ -8,7 +8,6 @@ import 'package:elena_app/src/shared/providers/user_provider.dart';
 import 'package:elena_app/src/features/dashboard/application/fasting_notifier.dart';
 import 'package:elena_app/src/features/dashboard/application/sleep_notifier.dart';
 import 'package:elena_app/src/features/dashboard/application/hydration_notifier.dart';
-import 'package:elena_app/src/features/dashboard/domain/sleep_log.dart';
 import 'package:elena_app/src/features/dashboard/domain/fasting_status.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/circadian_clock.dart';
 import 'package:elena_app/src/features/exercise/application/exercise_notifier.dart';
@@ -17,21 +16,29 @@ import 'package:elena_app/src/features/exercise/presentation/exercise_input_shee
 import 'package:elena_app/src/features/streak/application/streak_notifier.dart';
 import 'package:elena_app/src/features/engagement/presentation/widgets/engagement_banner.dart';
 import 'package:elena_app/src/features/adaptive/presentation/widgets/adaptive_suggestion_card.dart';
-import 'package:elena_app/src/features/adaptive/application/adaptive_engine.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
 import 'package:elena_app/src/features/nutrition/presentation/add_past_meal_sheet.dart';
 import 'package:elena_app/src/features/dashboard/presentation/sleep_input_sheet.dart';
 // SPEC-12: Composición Corporal Visible
 import 'package:elena_app/src/features/profile/presentation/widgets/body_composition_card.dart';
-// SPEC-13: IMR Explicado al Usuario
-import 'package:elena_app/src/features/dashboard/presentation/widgets/imr_score_card.dart';
 // SPEC-14: Objetivos del Usuario
 import 'package:elena_app/src/features/goals/presentation/widgets/goals_dashboard_widget.dart';
-class DashboardScreen extends ConsumerWidget {
+/// SPEC-72.4: pilar seleccionado en la fila "PILARES HOY".
+/// Determina qué tarjeta de soporte se renderiza debajo.
+enum SelectedPillar { ayuno, sueno, hidratacion, ejercicio, comidas }
+
+class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+  SelectedPillar _selectedPillar = SelectedPillar.ayuno;
+
+  @override
+  Widget build(BuildContext context) {
     final userAsync = ref.watch(currentUserStreamProvider);
     final fastingState = ref.watch(fastingProvider);
     final sleepState = ref.watch(sleepProvider);
@@ -109,42 +116,55 @@ class DashboardScreen extends ConsumerWidget {
                     ],
                   ),
                   
-                  const SizedBox(height: 20), 
+                  const SizedBox(height: 16),
 
                   if (fastingState.metabolicAlert != null) ...[
                     _buildMetabolicAlertBanner(fastingState.metabolicAlert!),
                     const SizedBox(height: 12),
                   ],
 
-                  // CONSOLAS COMPACTADAS
-                  fastingState.startTime == null 
-                      ? _buildFirstTimerWelcome(context, ref, fastingState.fastingProtocol)
-                      : _buildMetabolicControlConsole(context, ref, fastingState),
-                  
-                  const SizedBox(height: 25),
-                  // SPEC-13: IMR Score Card con desglose interactivo
-                  IMRScoreCard(
-                    result: result,
-                    fastingHours: realFastingHours,
-                    sleepHours: sleepState.lastLog?.duration.inHours.toDouble() ?? 0,
-                    exerciseMin: exerciseState.todayMinutes.toDouble(),
+                  // 3 indicadores horizontales: FASE / BLOQUEO INTESTINAL / ALINEACIÓN
+                  _buildPhaseIndicators(
+                    fastingState: fastingState,
+                    alignmentPct: (result.circadianAlignment * 100).round(),
                   ),
-                  const SizedBox(height: 16),
-                  // SPEC-12: Tarjeta de composición corporal
+                  const SizedBox(height: 20),
+
+                  // PILARES HOY (5 anillos circulares interactivos)
+                  _buildPillarsRow(
+                    context: context,
+                    ref: ref,
+                    fastingState: fastingState,
+                    sleep: sleepState,
+                    hydration: hydrationState,
+                    exercise: exerciseState,
+                    nutrition: nutritionState,
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Tarjeta de soporte del pilar seleccionado.
+                  // Cambia dinámicamente al tocar un anillo de la fila "PILARES HOY".
+                  _buildSelectedPillarCard(
+                    context: context,
+                    ref: ref,
+                    fastingState: fastingState,
+                    sleep: sleepState,
+                    hydration: hydrationState,
+                    exercise: exerciseState,
+                    nutrition: nutritionState,
+                    user: user,
+                  ),
+                  const SizedBox(height: 20),
+
+                  // SPEC-12: Composición corporal (conservada)
                   const BodyCompositionCard(),
                   const SizedBox(height: 20),
 
-                  _buildSectionLabel("ESTADO DE PILARES"),
-                  const SizedBox(height: 12),
-
-                  _buildMetricsGrid(context, ref, sleepState, hydrationState, exerciseState, nutritionState),
-                  const SizedBox(height: 20),
-
-                  // SPEC-14: Objetivos del Usuario
+                  // SPEC-14: Objetivos del Usuario (conservado)
                   const GoalsDashboardWidget(),
                   const SizedBox(height: 16),
 
-                  // SPEC-15: Acceso al Road Map
+                  // SPEC-15: Road Map (conservado)
                   _buildProgressCTA(context),
                   const SizedBox(height: 30),
                 ],
@@ -157,69 +177,1117 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  // --- COMPONENTES PRIVADOS AJUSTADOS ---
+  // --- COMPONENTES PRIVADOS DEL REDISEÑO ---
+  //
+  // Los antiguos _buildMetabolicControlConsole y _buildFirstTimerWelcome
+  // (consola de "Ventana Nutricional" + countdown + botón "Iniciar Ayuno")
+  // fueron reemplazados por _buildFastingConsciousnessCard, que ofrece
+  // la misma capacidad de control con estado, beneficios y dos CTAs.
+  //
+  // Los antiguos _buildSectionLabel, _buildMetricsGrid y los 4 cards por
+  // pilar (sueño, hidratación, ejercicio, nutrición) fueron reemplazados
+  // por _buildPillarsRow, una fila compacta de anillos circulares.
+  //
+  // Toda la lógica de negocio (start/stop fasting, abrir sheets, registrar
+  // hidratación) se mantiene intacta en los notifiers; solo cambió la UI.
 
-  Widget _buildMetabolicControlConsole(BuildContext context, WidgetRef ref, FastingState state) {
-    String twoDigits(int n) => n.toString().padLeft(2, "0");
-    final displayTime = state.isActive ? state.duration : state.timeRemainingForNextMilestone;
-    final color = state.isActive ? AppColors.metabolicGreen : (state.nearSleepWarning ? Colors.redAccent : Colors.orangeAccent);
-    
+  // ───────────────────────────────────────────────────────────────────────
+  //  Nuevos componentes del rediseño
+  // ───────────────────────────────────────────────────────────────────────
+
+  /// Tarjeta horizontal con 3 indicadores: FASE / BLOQUEO / ALINEACIÓN.
+  /// Datos derivados de `fastingState` (que ya incluye circadianPhase
+  /// y timeUntilLock vía CircadianRules) y `result.circadianAlignment`.
+  Widget _buildPhaseIndicators({
+    required FastingState fastingState,
+    required int alignmentPct,
+  }) {
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    final lock = fastingState.timeUntilLock;
+    final lockText = lock <= Duration.zero
+        ? 'Activo'
+        : '${lock.inHours}h ${twoDigits(lock.inMinutes.remainder(60))}m';
+
     return Container(
-      width: double.infinity, 
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16), // Padding reducido
-      decoration: BoxDecoration(color: const Color(0xFF1E293B), borderRadius: BorderRadius.circular(24)),
-      child: Column(children: [
-        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          Text(state.isActive ? "OBJETIVO: ${state.fastingProtocol}" : "VENTANA NUTRICIONAL", 
-            style: TextStyle(color: color.withOpacity(0.6), fontSize: 8, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
-          Text(state.isActive ? state.metabolicMilestone.toUpperCase() : "ABSORCIÓN", 
-            style: TextStyle(color: color, fontSize: 8, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
-        ]),
-        const SizedBox(height: 12),
-        Text("${twoDigits(displayTime.inHours)}:${twoDigits(displayTime.inMinutes.remainder(60))}:${twoDigits(displayTime.inSeconds.remainder(60))}", 
-          style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 38, fontFamily: 'monospace')), // Fuente un poco más pequeña
-        const SizedBox(height: 16),
-        SizedBox(width: double.infinity, height: 44, child: ElevatedButton.icon( // Altura reducida a 44
-          onPressed: state.isSaving ? null : () => _showManualTimePicker(context, ref, isFeeding: false),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: state.isActive ? Colors.redAccent : AppColors.metabolicGreen, 
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            elevation: 0,
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E293B),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _phaseIndicatorTile(
+            icon: Icons.wb_sunny_rounded,
+            iconColor: const Color(0xFFFBBF24),
+            label: 'FASE ACTUAL',
+            value: fastingState.circadianPhase.toUpperCase(),
+            valueColor: const Color(0xFFFBBF24),
           ),
-          icon: state.isSaving 
-            ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-            : Icon(state.isActive ? Icons.stop_circle_outlined : Icons.play_circle_outline, color: Colors.white, size: 20),
-          label: Text(state.isActive ? "FINALIZAR AYUNO" : "INICIAR AYUNO", 
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-        )),
-      ]),
+          _phaseIndicatorTile(
+            icon: Icons.lock_clock_rounded,
+            iconColor: AppColors.metabolicGreen,
+            label: 'BLOQUEO INTESTINAL',
+            value: lockText,
+            valueColor: AppColors.metabolicGreen,
+          ),
+          _phaseIndicatorTile(
+            icon: Icons.tune_rounded,
+            iconColor: const Color(0xFF8B5CF6),
+            label: 'ALINEACIÓN',
+            value: '$alignmentPct%',
+            valueColor: const Color(0xFF8B5CF6),
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildFirstTimerWelcome(BuildContext context, WidgetRef ref, String protocol) {
-    return Container(
-      width: double.infinity, 
-      padding: const EdgeInsets.all(20), // Compactado
-      decoration: BoxDecoration(color: const Color(0xFF1E293B), borderRadius: BorderRadius.circular(24)),
-      child: Column(children: [
-        const Icon(Icons.auto_awesome, color: AppColors.metabolicGreen, size: 20),
-        const SizedBox(height: 8),
-        const Text("LISTO PARA TU METAMORFOSIS", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.5)),
-        const SizedBox(height: 16),
-        SizedBox(width: double.infinity, height: 44, child: ElevatedButton( // Altura reducida
-          onPressed: () => ref.read(fastingProvider.notifier).startFasting(),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.metabolicGreen, 
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            elevation: 0,
+  Widget _phaseIndicatorTile({
+    required IconData icon,
+    required Color iconColor,
+    required String label,
+    required String value,
+    required Color valueColor,
+  }) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, color: iconColor, size: 22),
+        const SizedBox(height: 6),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 8,
+            color: Colors.white.withValues(alpha: 0.5),
+            fontWeight: FontWeight.w900,
+            letterSpacing: 0.6,
           ),
-          child: const Text("INICIAR PRIMER AYUNO", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-        )),
-      ]),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 14,
+            color: valueColor,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ],
     );
   }
 
-  // --- RESTO DE MÉTODOS (GRID Y NAV MANTIENEN SU DISEÑO) ---
+  /// Fila horizontal de 5 anillos circulares — uno por pilar.
+  /// Cada anillo es interactivo y abre su sheet de input correspondiente.
+  /// El pilar de Ayuno está visualmente destacado cuando está activo.
+  Widget _buildPillarsRow({
+    required BuildContext context,
+    required WidgetRef ref,
+    required FastingState fastingState,
+    required SleepState sleep,
+    required HydrationState hydration,
+    required ExerciseState exercise,
+    required NutritionState nutrition,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'PILARES HOY',
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.4),
+            fontSize: 10,
+            letterSpacing: 1.5,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1E293B),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _pillarRing(
+                icon: Icons.timer_rounded,
+                color: AppColors.metabolicGreen,
+                progress: fastingState.progressPercentage,
+                label: 'Ayuno',
+                isSelected: _selectedPillar == SelectedPillar.ayuno,
+                completed: fastingState.progressPercentage >= 1.0,
+                onTap: () => setState(() => _selectedPillar = SelectedPillar.ayuno),
+              ),
+              _pillarRing(
+                icon: Icons.nightlight_round,
+                color: const Color(0xFF818CF8),
+                progress: sleep.lastLog == null
+                    ? 0.0
+                    : (sleep.lastLog!.duration.inMinutes / (8 * 60))
+                        .clamp(0.0, 1.0),
+                label: 'Sueño',
+                isSelected: _selectedPillar == SelectedPillar.sueno,
+                completed: sleep.lastLog != null &&
+                    sleep.lastLog!.duration.inHours >= 7,
+                onTap: () => setState(() => _selectedPillar = SelectedPillar.sueno),
+              ),
+              _pillarRing(
+                icon: Icons.water_drop_rounded,
+                color: Colors.blueAccent,
+                progress: hydration.progressPercentage,
+                label: 'Hidratación',
+                isSelected: _selectedPillar == SelectedPillar.hidratacion,
+                completed: hydration.isGoalReached,
+                onTap: () =>
+                    setState(() => _selectedPillar = SelectedPillar.hidratacion),
+              ),
+              _pillarRing(
+                icon: Icons.fitness_center_rounded,
+                color: Colors.tealAccent,
+                progress: (exercise.todayMinutes / 60.0).clamp(0.0, 1.0),
+                label: 'Ejercicio',
+                isSelected: _selectedPillar == SelectedPillar.ejercicio,
+                completed: exercise.todayMinutes >= 30,
+                onTap: () =>
+                    setState(() => _selectedPillar = SelectedPillar.ejercicio),
+              ),
+              _pillarRing(
+                icon: Icons.restaurant_rounded,
+                color: Colors.orangeAccent,
+                progress: nutrition.progressPercentage,
+                label: 'Comidas',
+                isSelected: _selectedPillar == SelectedPillar.comidas,
+                completed:
+                    nutrition.mealsLoggedToday >= nutrition.targetMeals,
+                onTap: () =>
+                    setState(() => _selectedPillar = SelectedPillar.comidas),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _pillarRing({
+    required IconData icon,
+    required Color color,
+    required double progress,
+    required String label,
+    required VoidCallback onTap,
+    bool isSelected = false,
+    bool completed = false,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 56,
+            height: 56,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                if (isSelected)
+                  Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: color.withValues(alpha: 0.45),
+                          blurRadius: 18,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                  ),
+                SizedBox(
+                  width: 56,
+                  height: 56,
+                  child: CircularProgressIndicator(
+                    value: progress.clamp(0.0, 1.0),
+                    strokeWidth: 3,
+                    backgroundColor: color.withValues(alpha: 0.15),
+                    valueColor: AlwaysStoppedAnimation<Color>(color),
+                  ),
+                ),
+                Icon(icon, color: color, size: 22),
+                if (completed)
+                  Positioned(
+                    right: 2,
+                    bottom: 2,
+                    child: Container(
+                      width: 16,
+                      height: 16,
+                      decoration: const BoxDecoration(
+                        color: AppColors.metabolicGreen,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.check_rounded,
+                        color: Colors.white,
+                        size: 12,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              color: isSelected
+                  ? color
+                  : Colors.white.withValues(alpha: 0.6),
+              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Tarjeta extendida de control de Ayuno con beneficios y 2 CTAs.
+  /// Reemplaza la antigua "VENTANA NUTRICIONAL" + IMRScoreCard.
+  ///
+  /// Lógica intacta: el botón principal ejecuta el mismo flujo de
+  /// `fastingProvider.startFasting()` / `confirmManualFastingEnd`. El
+  /// botón secundario abre el time picker existente.
+  Widget _buildFastingConsciousnessCard(
+    BuildContext context,
+    WidgetRef ref,
+    FastingState state,
+  ) {
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    final isActive = state.isActive;
+    final accent = isActive ? AppColors.metabolicGreen : AppColors.metabolicGreen;
+    final pct = (state.progressPercentage.clamp(0.0, 1.0) * 100).round();
+
+    final timerText = isActive
+        ? '${twoDigits(state.duration.inHours)}:'
+            '${twoDigits(state.duration.inMinutes.remainder(60))}:'
+            '${twoDigits(state.duration.inSeconds.remainder(60))}'
+        : '— — : — — : — —';
+
+    final stateLabel = isActive ? 'En curso' : 'En espera';
+
+    final benefits = isActive
+        ? const [
+            'Estás reduciendo glucosa y mejorando sensibilidad a la insulina.',
+            'A partir de 12h se activa la cetosis y la autofagia inicial.',
+          ]
+        : const [
+            'Reduce resistencia a la insulina desde la 1ª hora',
+            'Regula glucosa en ayunas y mejora sensibilidad metabólica',
+          ];
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E293B),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Cabecera: título + estado
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Ayuno Consciente',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: accent.withValues(alpha: 0.6)),
+                ),
+                child: Text(
+                  stateLabel,
+                  style: TextStyle(
+                    color: accent,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          // Display de tiempo + protocolo
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                timerText,
+                style: TextStyle(
+                  color: accent,
+                  fontFamily: 'monospace',
+                  fontSize: 28,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.5,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text(
+                  state.fastingProtocol,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.6),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          // Barra de progreso fina
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: state.progressPercentage.clamp(0.0, 1.0),
+              minHeight: 4,
+              backgroundColor: Colors.white.withValues(alpha: 0.08),
+              valueColor: AlwaysStoppedAnimation<Color>(accent),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '$pct% completado',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.5),
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 18),
+          // Beneficios
+          Text(
+            isActive ? 'BENEFICIOS ACTUALES' : 'BENEFICIOS AL INICIAR',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.4),
+              fontSize: 10,
+              letterSpacing: 1.2,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 10),
+          ...benefits.map(
+            (b) => Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.check_rounded, color: accent, size: 16),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      b,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        height: 1.35,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 18),
+          // Botón principal: iniciar / finalizar
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: ElevatedButton.icon(
+              onPressed: state.isSaving
+                  ? null
+                  : () {
+                      if (isActive) {
+                        _showManualTimePicker(context, ref, isFeeding: false);
+                      } else {
+                        ref.read(fastingProvider.notifier).startFasting();
+                      }
+                    },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isActive ? Colors.redAccent : accent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                elevation: 0,
+              ),
+              icon: state.isSaving
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : Icon(
+                      isActive
+                          ? Icons.stop_circle_outlined
+                          : Icons.play_circle_outline,
+                      color: Colors.white,
+                      size: 22,
+                    ),
+              label: Text(
+                isActive ? 'Finalizar Ayuno' : 'Iniciar Ayuno',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          // Botón secundario: corregir hora
+          SizedBox(
+            width: double.infinity,
+            height: 44,
+            child: OutlinedButton.icon(
+              onPressed: state.isSaving
+                  ? null
+                  : () => _showManualTimePicker(context, ref, isFeeding: false),
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              icon: Icon(
+                Icons.access_time_rounded,
+                color: Colors.white.withValues(alpha: 0.7),
+                size: 18,
+              ),
+              label: Text(
+                'Corregir hora de inicio',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.8),
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ───────────────────────────────────────────────────────────────────────
+  //  Tarjetas por pilar — SPEC-72.4
+  //  El dispatcher elige cuál renderizar según _selectedPillar.
+  //  Cada tarjeta tiene su propia paleta y CTAs específicas.
+  // ───────────────────────────────────────────────────────────────────────
+
+  Widget _buildSelectedPillarCard({
+    required BuildContext context,
+    required WidgetRef ref,
+    required FastingState fastingState,
+    required SleepState sleep,
+    required HydrationState hydration,
+    required ExerciseState exercise,
+    required NutritionState nutrition,
+    required user,
+  }) {
+    return switch (_selectedPillar) {
+      SelectedPillar.ayuno =>
+        _buildFastingConsciousnessCard(context, ref, fastingState),
+      SelectedPillar.sueno => _buildSuenoCard(context, ref, sleep),
+      SelectedPillar.hidratacion =>
+        _buildHidratacionCard(context, ref, hydration),
+      SelectedPillar.ejercicio =>
+        _buildEjercicioCard(context, ref, exercise, user),
+      SelectedPillar.comidas => _buildComidasCard(context, ref, nutrition),
+    };
+  }
+
+  // ─── SUEÑO: "Soporte Metabólico" ──────────────────────────────────────
+  Widget _buildSuenoCard(BuildContext context, WidgetRef ref, SleepState state) {
+    const accent = Color(0xFF818CF8);
+    final log = state.lastLog;
+    final hasLog = log != null;
+    final hours = hasLog ? log.duration.inHours : 0;
+    final minutes = hasLog ? log.duration.inMinutes.remainder(60) : 0;
+    final progress = hasLog
+        ? (log.duration.inMinutes / (8 * 60)).clamp(0.0, 1.0)
+        : 0.0;
+    final pct = (progress * 100).round();
+
+    String fmt(DateTime? dt) {
+      if (dt == null) return '—';
+      final h = dt.hour.toString().padLeft(2, '0');
+      final m = dt.minute.toString().padLeft(2, '0');
+      return '$h:$m';
+    }
+
+    return _pillarCardShell(
+      title: 'Soporte Metabólico',
+      badge: 'Sueño',
+      accent: accent,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _miniStat('Dormiste', hasLog ? '${hours}h ${minutes}m' : '—',
+                accent, big: true),
+            _miniStat('Acostado', fmt(log?.fellAsleep), Colors.white),
+            _miniStat('Despertaste', fmt(log?.wokeUp), Colors.white),
+          ],
+        ),
+        const SizedBox(height: 14),
+        Row(
+          children: [
+            const Text('🚩', style: TextStyle(fontSize: 14)),
+            const SizedBox(width: 6),
+            Text(
+              'Meta: 7-9 horas',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.7),
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        _progressBar(progress, accent),
+        const SizedBox(height: 6),
+        _completionLabel(pct),
+        const SizedBox(height: 16),
+        _benefitChip(
+          accent: accent,
+          text: hasLog && hours >= 7
+              ? '✓ Sueño reparador — GH pulsátil activa durante ciclos REM'
+              : 'Buscas sueño reparador: 7-9h activan la GH pulsátil que repara músculo y reduce inflamación.',
+        ),
+        const SizedBox(height: 18),
+        _primaryButton(
+          label: 'Actualizar Registro',
+          icon: Icons.nightlight_round,
+          color: accent,
+          onPressed: () => showModalBottomSheet<void>(
+            context: context,
+            isScrollControlled: true,
+            backgroundColor: Colors.transparent,
+            builder: (_) => const SleepInputSheet(),
+          ),
+        ),
+        const SizedBox(height: 10),
+        _secondaryButton(
+          label: 'Eliminar registro y volver a registrar',
+          icon: Icons.delete_outline_rounded,
+          onPressed: () => _showPendingFeatureSnack(
+            context,
+            'Eliminar registro de sueño',
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ─── HIDRATACIÓN: "Soporte Metabólico" ────────────────────────────────
+  Widget _buildHidratacionCard(
+      BuildContext context, WidgetRef ref, HydrationState state) {
+    const accent = Color(0xFF38BDF8);
+    final progress = state.progressPercentage;
+    final pct = (progress * 100).round();
+
+    return _pillarCardShell(
+      title: 'Soporte Metabólico',
+      badge: 'Hidratación',
+      accent: accent,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(
+              '${state.currentFormatted} L',
+              style: TextStyle(
+                color: accent,
+                fontSize: 32,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Text(
+                '/ ${state.goalFormatted} L',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.5),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        _progressBar(progress, accent),
+        const SizedBox(height: 6),
+        _completionLabel(pct),
+        const SizedBox(height: 16),
+        _benefitChip(
+          accent: accent,
+          text: 'Cada 250ml mejora el flujo linfático y la eliminación de metabolitos',
+        ),
+        const SizedBox(height: 18),
+        Row(
+          children: [
+            Expanded(
+              child: _outlinedActionButton(
+                label: '+250 ml',
+                accent: accent,
+                onPressed: state.isSaving
+                    ? null
+                    : () => ref
+                        .read(hydrationProvider.notifier)
+                        .addWater(0.250),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _outlinedActionButton(
+                label: '+500 ml',
+                accent: accent,
+                onPressed: state.isSaving
+                    ? null
+                    : () => ref
+                        .read(hydrationProvider.notifier)
+                        .addWater(0.500),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        _secondaryButton(
+          label: 'Descontar último vaso (-250 ml)',
+          icon: Icons.remove_circle_outline_rounded,
+          onPressed: () => _showPendingFeatureSnack(
+            context,
+            'Descontar último vaso',
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ─── EJERCICIO: "Sarcopenia & Resistencia" ────────────────────────────
+  Widget _buildEjercicioCard(BuildContext context, WidgetRef ref,
+      ExerciseState state, dynamic user) {
+    const accent = Color(0xFF2DD4BF);
+    final goal = (user?.exerciseGoalMinutes ?? 30) as int;
+    final minutes = state.todayMinutes;
+    final progress = goal > 0 ? (minutes / goal).clamp(0.0, 1.0) : 0.0;
+    final pct = (progress * 100).round();
+    final achieved = minutes >= goal;
+
+    return _pillarCardShell(
+      title: 'Sarcopenia & Resistencia',
+      badge: achieved ? 'ACTIVO' : 'Ejercicio',
+      accent: accent,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(
+              '$minutes min',
+              style: TextStyle(
+                color: accent,
+                fontSize: 32,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Text(
+                '/ $goal min meta',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.5),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        _progressBar(progress, accent),
+        const SizedBox(height: 6),
+        _completionLabel(pct),
+        const SizedBox(height: 16),
+        _benefitChip(
+          accent: accent,
+          text: achieved
+              ? '✓ Meta cumplida — síntesis proteica muscular activa 24-48h post sesión'
+              : 'Acumula minutos para activar la síntesis proteica muscular post-ejercicio.',
+        ),
+        const SizedBox(height: 18),
+        _primaryButton(
+          label: 'Agregar Sesión',
+          icon: Icons.fitness_center_rounded,
+          color: accent,
+          onPressed: () => showModalBottomSheet<void>(
+            context: context,
+            isScrollControlled: true,
+            backgroundColor: Colors.transparent,
+            builder: (_) => const ExerciseInputSheet(),
+          ),
+        ),
+        const SizedBox(height: 10),
+        _secondaryButton(
+          label: 'Eliminar última sesión',
+          icon: Icons.delete_outline_rounded,
+          onPressed: () => _showPendingFeatureSnack(
+            context,
+            'Eliminar última sesión de ejercicio',
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ─── COMIDAS: "Nutrición Científica" ──────────────────────────────────
+  Widget _buildComidasCard(
+      BuildContext context, WidgetRef ref, NutritionState state) {
+    const accent = Color(0xFFFB923C);
+    final progress = state.progressPercentage;
+    final pct = (progress * 100).round();
+    final scoreNum = (state.nutritionScore.clamp(0.0, 1.0) * 100).round();
+
+    return _pillarCardShell(
+      title: 'Nutrición Científica',
+      badge: '${state.mealsLoggedToday}/${state.targetMeals} comidas',
+      accent: accent,
+      children: [
+        _progressBar(progress, accent),
+        const SizedBox(height: 6),
+        _completionLabel(pct),
+        const SizedBox(height: 14),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _miniStat('Próxima', state.nextMealLabel, accent, big: true),
+            _miniStat('En', _estimateNextMealIn(state), accent, big: true),
+            _miniStat('Score nutricional', '$scoreNum', Colors.white,
+                big: true),
+          ],
+        ),
+        const SizedBox(height: 16),
+        _benefitChip(
+          accent: accent,
+          text: state.windowAdherence >= 0.5
+              ? '✓ Comidas dentro de ventana circadiana — alineación con ritmo metabólico óptima'
+              : 'Mantén tus comidas dentro de la ventana circadiana para alinear tu ritmo metabólico.',
+        ),
+        const SizedBox(height: 18),
+        _primaryButton(
+          label: 'Registrar ${state.nextMealLabel}',
+          icon: Icons.restaurant_rounded,
+          color: accent,
+          onPressed: state.isSaving
+              ? null
+              : () =>
+                  ref.read(nutritionProvider.notifier).logMeal(),
+        ),
+        const SizedBox(height: 10),
+        _secondaryButton(
+          label: 'Registrar comida pasada',
+          icon: Icons.history_rounded,
+          onPressed: () => showModalBottomSheet<void>(
+            context: context,
+            isScrollControlled: true,
+            backgroundColor: Colors.transparent,
+            builder: (_) => const AddPastMealSheet(),
+          ),
+        ),
+        const SizedBox(height: 10),
+        _secondaryButton(
+          label: 'Deshacer última comida registrada',
+          icon: Icons.undo_rounded,
+          onPressed: state.todayLogs.isEmpty
+              ? null
+              : () => ref.read(nutritionProvider.notifier).removeLastMeal(),
+        ),
+      ],
+    );
+  }
+
+  // ─── Estimador simple para "Próxima comida en X" ──────────────────────
+  // Solo UI: usa horarios estándar (Desayuno 8:00, Almuerzo 13:00, Cena
+  // 19:00, Snack 16:00) y devuelve la diferencia hasta now. Es un placeholder
+  // hasta que SPEC-64 introduzca la lógica de ventana real.
+  String _estimateNextMealIn(NutritionState state) {
+    if (state.mealsLoggedToday >= state.targetMeals) return '—';
+    const targets = {
+      'Desayuno': 8,
+      'Almuerzo': 13,
+      'Cena': 19,
+      'Snack': 16,
+    };
+    final hour = targets[state.nextMealLabel];
+    if (hour == null) return '—';
+    final now = DateTime.now();
+    final target = DateTime(now.year, now.month, now.day, hour);
+    final diff = target.difference(now);
+    if (diff.isNegative) return 'Ahora';
+    if (diff.inHours >= 1) {
+      return '${diff.inHours}h ${diff.inMinutes.remainder(60)}m';
+    }
+    return '${diff.inMinutes}m';
+  }
+
+  // ─── Helpers visuales reutilizables ───────────────────────────────────
+  Widget _pillarCardShell({
+    required String title,
+    required String badge,
+    required Color accent,
+    required List<Widget> children,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E293B),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: accent.withValues(alpha: 0.6)),
+                ),
+                child: Text(
+                  badge,
+                  style: TextStyle(
+                    color: accent,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          ...children,
+        ],
+      ),
+    );
+  }
+
+  Widget _miniStat(String label, String value, Color valueColor,
+      {bool big = false}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.5),
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: TextStyle(
+            color: valueColor,
+            fontSize: big ? 22 : 16,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _progressBar(double progress, Color accent) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(4),
+      child: LinearProgressIndicator(
+        value: progress.clamp(0.0, 1.0),
+        minHeight: 6,
+        backgroundColor: Colors.white.withValues(alpha: 0.08),
+        valueColor: AlwaysStoppedAnimation<Color>(accent),
+      ),
+    );
+  }
+
+  Widget _completionLabel(int pct) {
+    return Text(
+      '$pct% completado',
+      style: TextStyle(
+        color: Colors.white.withValues(alpha: 0.5),
+        fontSize: 11,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+  }
+
+  Widget _benefitChip({required Color accent, required String text}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 12.5,
+          fontWeight: FontWeight.w500,
+          height: 1.4,
+        ),
+      ),
+    );
+  }
+
+  Widget _primaryButton({
+    required String label,
+    required IconData icon,
+    required Color color,
+    required VoidCallback? onPressed,
+  }) {
+    return SizedBox(
+      width: double.infinity,
+      height: 48,
+      child: ElevatedButton.icon(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: color,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          elevation: 0,
+        ),
+        icon: Icon(icon, color: Colors.white, size: 20),
+        label: Text(
+          label,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w800,
+            fontSize: 14,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _secondaryButton({
+    required String label,
+    required IconData icon,
+    required VoidCallback? onPressed,
+  }) {
+    return SizedBox(
+      width: double.infinity,
+      height: 44,
+      child: OutlinedButton.icon(
+        onPressed: onPressed,
+        style: OutlinedButton.styleFrom(
+          side: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+        ),
+        icon: Icon(
+          icon,
+          color: Colors.white.withValues(alpha: 0.7),
+          size: 18,
+        ),
+        label: Text(
+          label,
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.8),
+            fontWeight: FontWeight.w600,
+            fontSize: 13,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _outlinedActionButton({
+    required String label,
+    required Color accent,
+    required VoidCallback? onPressed,
+  }) {
+    return SizedBox(
+      height: 48,
+      child: OutlinedButton(
+        onPressed: onPressed,
+        style: OutlinedButton.styleFrom(
+          side: BorderSide(color: accent.withValues(alpha: 0.6), width: 1.5),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          backgroundColor: accent.withValues(alpha: 0.08),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: accent,
+            fontWeight: FontWeight.w800,
+            fontSize: 14,
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showPendingFeatureSnack(BuildContext context, String featureName) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$featureName: función disponible próximamente'),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  // ───────────────────────────────────────────────────────────────────────
+  //  Componentes conservados del rediseño anterior
+  // ───────────────────────────────────────────────────────────────────────
 
   // SPEC-15: Botón de acceso al Road Map de Avance Personal
   Widget _buildProgressCTA(BuildContext context) {
@@ -274,259 +1342,11 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSectionLabel(String label) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Text(label, style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 10, letterSpacing: 1.5, fontWeight: FontWeight.bold)),
-    );
-  }
-
-  Widget _buildMetricsGrid(BuildContext context, WidgetRef ref, SleepState sleep, HydrationState hydration, ExerciseState exercise, NutritionState nutrition) {
-    return GridView.count(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 2,
-      crossAxisSpacing: 16,
-      mainAxisSpacing: 16,
-      childAspectRatio: 1.55,
-      children: [
-        _buildSleepCard(context, ref, sleep),
-        _buildHydrationCard(context, ref, hydration),
-        _buildExerciseCard(context, ref, exercise),
-        _buildNutritionCard(context, ref, nutrition),
-      ],
-    );
-  }
-
-  /// SPEC-57: Tarjeta de Nutrición conectada al estado real.
-  /// Reemplaza el placeholder estático "1,420 kcal" por la lectura del
-  /// `nutritionProvider`. NO muestra calorías hasta que SPEC-64 introduzca
-  /// macros — el indicador primario es el avance de comidas registradas.
-  Widget _buildNutritionCard(BuildContext context, WidgetRef ref, NutritionState state) {
-    final int logged = state.mealsLoggedToday;
-    final int target = state.targetMeals;
-    final bool hasLogs = logged > 0;
-    final int scorePct = (state.nutritionScore.clamp(0.0, 1.0) * 100).round();
-
-    final color = hasLogs ? Colors.orange : Colors.orange.withValues(alpha: 0.5);
-    final String imrTag = hasLogs ? '+$scorePct% pilar' : '+0% pilar';
-    final String mainText = hasLogs
-        ? '$logged / $target comidas'
-        : 'Sin registro';
-    final String hintText = hasLogs ? state.nextMealLabel : 'Registrar comida';
-
-    return GestureDetector(
-      onTap: () {
-        showModalBottomSheet<void>(
-          context: context,
-          isScrollControlled: true,
-          backgroundColor: Colors.transparent,
-          builder: (context) => const AddPastMealSheet(),
-        );
-      },
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceDark,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: color.withValues(alpha: hasLogs ? 0.6 : 0.2),
-            width: hasLogs ? 2 : 1,
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Icon(Icons.restaurant_menu, color: color, size: 18),
-                if (state.isSaving)
-                  const SizedBox(
-                    width: 12,
-                    height: 12,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                else
-                  Text(
-                    imrTag,
-                    style: TextStyle(
-                      color: color,
-                      fontSize: 8,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-              ],
-            ),
-            const Spacer(),
-            Text(
-              'NUTRICIÓN',
-              style: TextStyle(
-                fontSize: 8,
-                color: Colors.grey.withValues(alpha: 0.6),
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            Text(
-              mainText,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: hasLogs ? Colors.white : Colors.white.withValues(alpha: 0.4),
-              ),
-            ),
-            Text(
-              hintText,
-              style: TextStyle(
-                fontSize: 9,
-                color: hasLogs
-                    ? Colors.white.withValues(alpha: 0.5)
-                    : color,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSleepCard(BuildContext context, WidgetRef ref, SleepState state) {
-    final log = state.lastLog;
-    final bool hasLog = log != null;
-    
-    // Si no hay log, usamos valores de pilar 'vacío' pero visible
-    final int hours = hasLog ? log.duration.inHours : 0;
-    final int minutes = hasLog ? log.duration.inMinutes.remainder(60) : 0;
-    final int gap = hasLog ? log.metabolicGap.inHours : 0;
-    
-    final color = !hasLog 
-        ? Colors.indigoAccent.withOpacity(0.5)
-        : (gap >= 3 ? AppColors.metabolicGreen : (gap >= 2 ? Colors.orangeAccent : Colors.redAccent));
-        
-    final imrTag = !hasLog ? "+0 IMR" : (hours >= 7 ? "+8 IMR" : "+4 IMR");
-
-    return GestureDetector(
-      onTap: () {
-        showModalBottomSheet(
-          context: context,
-          isScrollControlled: true,
-          backgroundColor: Colors.transparent,
-          builder: (context) => const SleepInputSheet(),
-        );
-      },
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceDark,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: color.withOpacity(hasLog ? 0.4 : 0.1), width: 2),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Icon(Icons.nightlight_round, color: color, size: 18),
-                if (state.isSaving)
-                  const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2))
-                else
-                  Text(imrTag, style: TextStyle(color: color, fontSize: 8, fontWeight: FontWeight.bold)),
-              ],
-            ),
-            const Spacer(),
-            Text("SUEÑO", style: TextStyle(fontSize: 8, color: Colors.grey.withOpacity(0.6), fontWeight: FontWeight.w800)),
-            Text(hasLog ? "${hours}h ${minutes}m" : "Sin registro", 
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: hasLog ? Colors.white : Colors.white.withOpacity(0.4))),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHydrationCard(BuildContext context, WidgetRef ref, HydrationState state) {
-    final bool isReached = state.isGoalReached;
-    final color = isReached ? AppColors.metabolicGreen : Colors.blueAccent;
-    final pct = "${(state.progressPercentage * 100).toStringAsFixed(0)}%";
-
-    return GestureDetector(
-      onTap: () => ref.read(hydrationProvider.notifier).addWater(0.250),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceDark,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: color.withOpacity(isReached ? 0.6 : 0.2), width: isReached ? 2 : 1),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Icon(Icons.water_drop, color: color, size: 18),
-                Text(pct, style: TextStyle(color: color, fontSize: 8, fontWeight: FontWeight.bold)),
-              ],
-            ),
-            const Spacer(),
-            Text("HIDRATACIÓN", style: TextStyle(fontSize: 8, color: Colors.grey.withOpacity(0.6), fontWeight: FontWeight.w800)),
-            Text("${state.currentFormatted}L", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildExerciseCard(BuildContext context, WidgetRef ref, ExerciseState state) {
-    final int minutes = state.todayMinutes;
-    final color = minutes > 0 ? AppColors.metabolicGreen : Colors.teal;
-    
-    final double sExercise = (minutes / 60.0).clamp(0.0, 1.2);
-    final double imrPoints = (sExercise * 7.5);
-    final String imrTag = "+${imrPoints.toStringAsFixed(1)} IMR";
-
-    return GestureDetector(
-      onTap: () {
-        showModalBottomSheet(
-          context: context,
-          isScrollControlled: true,
-          backgroundColor: Colors.transparent,
-          builder: (context) => const ExerciseInputSheet(),
-        );
-      },
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceDark,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: color.withOpacity(minutes > 0 ? 0.6 : 0.2), width: minutes > 0 ? 2 : 1),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Icon(Icons.fitness_center, color: color, size: 18),
-                if (state.isSaving)
-                  const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2))
-                else
-                  Text(imrTag, style: TextStyle(color: color, fontSize: 8, fontWeight: FontWeight.bold)),
-              ],
-            ),
-            const Spacer(),
-            Text("EJERCICIO", style: TextStyle(fontSize: 8, color: Colors.grey.withOpacity(0.6), fontWeight: FontWeight.w800)),
-            Text("$minutes min", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // SPEC-57: _buildStatCard eliminado. Era el helper genérico de la tarjeta
-  // hardcoded "1,420 kcal". Tras conectar Nutrición al estado real
-  // (_buildNutritionCard), ya no tiene consumidores.
+  // _buildSectionLabel, _buildMetricsGrid, _buildSleepCard, _buildHydrationCard,
+  // _buildExerciseCard y _buildNutritionCard eliminados en el rediseño:
+  // su rol lo absorbió _buildPillarsRow (más arriba), una fila compacta de
+  // anillos circulares interactivos. La lógica de tap (abrir sheets, sumar
+  // agua) se preservó intacta dentro de _pillarRing.onTap.
 
   // --- OVERLAYS Y PICKERS SE MANTIENEN ---
 
