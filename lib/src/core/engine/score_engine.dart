@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'package:elena_app/src/core/rules/circadian_rules.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -56,12 +57,19 @@ class ScoreEngine {
 
     // 3. CONDUCTA Y CIRCADIANO (25%)
     double circadianScore = 1.0;
-    
+
     // CORRECCIÓN TÉCNICA: Manejo de nulos para lastMealGoal
     final DateTime? goal = user.profile.lastMealGoal;
 
-    if (lastMealTime.hour >= 22 && lastMealTime.minute >= 30 || lastMealTime.hour > 22) {
-      // Penalización por comer después del bloqueo intestinal
+    // SPEC-59: Comparación normalizada en minutos totales desde la medianoche.
+    // Sustituye la condición booleana original `hour>=22 && minute>=30 || hour>22`
+    // que tenía un bug de precedencia (no penalizaba comidas entre 22:00 y 22:29).
+    // Ahora la frontera es exactamente 22:30 (`CircadianRules.intestinalLockMinutes`).
+    final int mealMinutes =
+        lastMealTime.hour * 60 + lastMealTime.minute;
+
+    if (mealMinutes >= CircadianRules.intestinalLockMinutes) {
+      // Penalización por comer en o después del bloqueo intestinal (22:30).
       circadianScore = 0.5;
     } else if (goal != null && lastMealTime.isBefore(goal)) {
       // Bonus por comer antes de la meta establecida (eTRF)

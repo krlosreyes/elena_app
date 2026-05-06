@@ -5,6 +5,14 @@ class CircadianRules {
   static const int intestinalLockHour = 22;
   static const int intestinalLockMinute = 30;
 
+  /// Bloqueo intestinal expresado en minutos totales desde la medianoche
+  /// (SPEC-59). Permite comparaciones lineales sin condiciones booleanas
+  /// con `&&/||` sobre `hour` y `minute` separados.
+  ///
+  /// Valor: 22 * 60 + 30 = 1350.
+  static const int intestinalLockMinutes =
+      (intestinalLockHour * 60) + intestinalLockMinute;
+
   /// Definición maestra de las fases biológicas
   static const List<CircadianPhase> allPhases = [
     CircadianPhase(label: "SUEÑO", startHour: 22.5, endHour: 6.0),

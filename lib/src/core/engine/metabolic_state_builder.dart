@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:elena_app/src/core/engine/metabolic_state.dart';
+import 'package:elena_app/src/core/rules/circadian_rules.dart';
 import 'package:elena_app/src/features/dashboard/application/fasting_notifier.dart';
 import 'package:elena_app/src/features/dashboard/application/hydration_notifier.dart';
 import 'package:elena_app/src/features/dashboard/domain/fasting_status.dart';
@@ -170,9 +171,12 @@ class MetabolicStateBuilder {
       return 1.0;
     }
 
-    // Sin goal: penalización por ingesta nocturna (después de 22:30)
-    if (lastMealTime.hour > 22 ||
-        (lastMealTime.hour == 22 && lastMealTime.minute >= 30)) {
+    // Sin goal: penalización por ingesta nocturna (en o después de 22:30).
+    // SPEC-59: comparación normalizada en minutos totales desde la medianoche
+    // para evitar expresiones `hour`/`minute` separadas con `&&/||`.
+    final int mealMinutes =
+        lastMealTime.hour * 60 + lastMealTime.minute;
+    if (mealMinutes >= CircadianRules.intestinalLockMinutes) {
       return 0.5;
     }
     return 1.0;
