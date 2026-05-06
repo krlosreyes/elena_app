@@ -19,6 +19,7 @@ import 'package:elena_app/src/features/engagement/application/engagement_service
 import 'package:elena_app/src/features/adaptive/presentation/widgets/adaptive_suggestion_card.dart';
 import 'package:elena_app/src/features/adaptive/application/adaptive_engine.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
+import 'package:elena_app/src/features/nutrition/presentation/add_past_meal_sheet.dart';
 import 'package:elena_app/src/features/dashboard/presentation/sleep_input_sheet.dart';
 // SPEC-12: Composición Corporal Visible
 import 'package:elena_app/src/features/profile/presentation/widgets/body_composition_card.dart';
@@ -138,7 +139,7 @@ class DashboardScreen extends ConsumerWidget {
                   _buildSectionLabel("ESTADO DE PILARES"),
                   const SizedBox(height: 12),
 
-                  _buildMetricsGrid(context, ref, sleepState, hydrationState, exerciseState),
+                  _buildMetricsGrid(context, ref, sleepState, hydrationState, exerciseState, nutritionState),
                   const SizedBox(height: 20),
 
                   // SPEC-14: Objetivos del Usuario
@@ -282,20 +283,113 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildMetricsGrid(BuildContext context, WidgetRef ref, SleepState sleep, HydrationState hydration, ExerciseState exercise) {
+  Widget _buildMetricsGrid(BuildContext context, WidgetRef ref, SleepState sleep, HydrationState hydration, ExerciseState exercise, NutritionState nutrition) {
     return GridView.count(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       crossAxisCount: 2,
-      crossAxisSpacing: 16, 
+      crossAxisSpacing: 16,
       mainAxisSpacing: 16,
       childAspectRatio: 1.55,
       children: [
         _buildSleepCard(context, ref, sleep),
         _buildHydrationCard(context, ref, hydration),
         _buildExerciseCard(context, ref, exercise),
-        _buildStatCard(context, "NUTRICIÓN", "1,420 kcal", Icons.restaurant_menu, Colors.orange, "+7 IMR"),
+        _buildNutritionCard(context, ref, nutrition),
       ],
+    );
+  }
+
+  /// SPEC-57: Tarjeta de Nutrición conectada al estado real.
+  /// Reemplaza el placeholder estático "1,420 kcal" por la lectura del
+  /// `nutritionProvider`. NO muestra calorías hasta que SPEC-64 introduzca
+  /// macros — el indicador primario es el avance de comidas registradas.
+  Widget _buildNutritionCard(BuildContext context, WidgetRef ref, NutritionState state) {
+    final int logged = state.mealsLoggedToday;
+    final int target = state.targetMeals;
+    final bool hasLogs = logged > 0;
+    final int scorePct = (state.nutritionScore.clamp(0.0, 1.0) * 100).round();
+
+    final color = hasLogs ? Colors.orange : Colors.orange.withOpacity(0.5);
+    final String imrTag = hasLogs ? '+$scorePct% pilar' : '+0% pilar';
+    final String mainText = hasLogs
+        ? '$logged / $target comidas'
+        : 'Sin registro';
+    final String hintText = hasLogs ? state.nextMealLabel : 'Registrar comida';
+
+    return GestureDetector(
+      onTap: () {
+        showModalBottomSheet<void>(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (context) => const AddPastMealSheet(),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceDark,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: color.withOpacity(hasLogs ? 0.6 : 0.2),
+            width: hasLogs ? 2 : 1,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Icon(Icons.restaurant_menu, color: color, size: 18),
+                if (state.isSaving)
+                  const SizedBox(
+                    width: 12,
+                    height: 12,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                else
+                  Text(
+                    imrTag,
+                    style: TextStyle(
+                      color: color,
+                      fontSize: 8,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+              ],
+            ),
+            const Spacer(),
+            Text(
+              'NUTRICIÓN',
+              style: TextStyle(
+                fontSize: 8,
+                color: Colors.grey.withOpacity(0.6),
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            Text(
+              mainText,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: hasLogs ? Colors.white : Colors.white.withOpacity(0.4),
+              ),
+            ),
+            Text(
+              hintText,
+              style: TextStyle(
+                fontSize: 9,
+                color: hasLogs
+                    ? Colors.white.withOpacity(0.5)
+                    : color,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -432,27 +526,9 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatCard(BuildContext context, String label, String value, IconData icon, Color color, String imrTag) {
-    return Container(
-      padding: const EdgeInsets.all(16), 
-      decoration: BoxDecoration(color: const Color(0xFF1E293B), borderRadius: BorderRadius.circular(24)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start, 
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Icon(icon, color: color, size: 18),
-              Text(imrTag, style: TextStyle(color: color, fontSize: 8, fontWeight: FontWeight.bold)),
-            ],
-          ),
-          const Spacer(),
-          Text(label, style: TextStyle(fontSize: 8, color: Colors.grey.withOpacity(0.6), fontWeight: FontWeight.w800)), 
-          Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-        ],
-      ),
-    );
-  }
+  // SPEC-57: _buildStatCard eliminado. Era el helper genérico de la tarjeta
+  // hardcoded "1,420 kcal". Tras conectar Nutrición al estado real
+  // (_buildNutritionCard), ya no tiene consumidores.
 
   // --- OVERLAYS Y PICKERS SE MANTIENEN ---
 
