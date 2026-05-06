@@ -10,18 +10,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
-import 'package:elena_app/src/core/engine/score_engine.dart';
+import 'package:elena_app/src/core/engine/metabolic_state_provider.dart';
 import 'package:elena_app/src/features/progress/application/progress_notifier.dart';
 import 'package:elena_app/src/features/progress/domain/biometric_checkin.dart';
 import 'package:elena_app/src/features/progress/presentation/biometric_checkin_sheet.dart';
 import 'package:elena_app/src/features/goals/domain/user_goal.dart';
 import 'package:elena_app/src/features/goals/application/goal_notifier.dart';
-import 'package:elena_app/src/features/dashboard/application/fasting_notifier.dart';
-import 'package:elena_app/src/features/dashboard/application/sleep_notifier.dart';
-import 'package:elena_app/src/features/exercise/application/exercise_notifier.dart';
 import 'package:elena_app/src/features/streak/application/streak_notifier.dart';
-import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
-import 'package:elena_app/src/features/dashboard/application/hydration_notifier.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/trend_chart.dart';
 
 class ProgressScreen extends ConsumerWidget {
@@ -29,34 +24,15 @@ class ProgressScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final progress      = ref.watch(progressProvider);
-    final goals         = ref.watch(goalsProvider);
-    final userAsync     = ref.watch(currentUserStreamProvider);
-    final streakState   = ref.watch(streakProvider);
-    final fastingState  = ref.watch(fastingProvider);
-    final sleepState    = ref.watch(sleepProvider);
-    final exerciseState = ref.watch(exerciseProvider);
-    final nutritionState = ref.watch(nutritionProvider);
-    final engine        = ref.watch(scoreEngineProvider);
+    final progress    = ref.watch(progressProvider);
+    final goals       = ref.watch(goalsProvider);
+    final userAsync   = ref.watch(currentUserStreamProvider);
+    final streakState = ref.watch(streakProvider);
 
     final user = userAsync.valueOrNull;
 
-    // IMR actual
-    int currentImr = 0;
-    if (user != null) {
-      final double realFastingHours = fastingState.isActive
-          ? fastingState.duration.inSeconds / 3600
-          : 0;
-      currentImr = engine.calculateIMR(
-        user,
-        fastingHours:    realFastingHours,
-        weeklyAdherence: streakState.weeklyAdherence,
-        exerciseMin:     exerciseState.todayMinutes.toDouble(),
-        sleepHours:      sleepState.lastLog?.duration.inHours.toDouble() ?? 7.0,
-        lastMealTime:    fastingState.startTime ?? user.profile.lastMealGoal ?? DateTime.now(),
-        nutritionScore:  nutritionState.nutritionScore,
-      ).totalScore;
-    }
+    // SPEC-52: IMR central desde el provider — sin cálculos locales.
+    final int currentImr = ref.watch(imrProvider).totalScore;
 
     final activeGoals = goals.values.where((g) => g.isActive).toList()
       ..sort((a, b) => a.type.index.compareTo(b.type.index));

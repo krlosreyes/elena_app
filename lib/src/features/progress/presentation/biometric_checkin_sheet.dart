@@ -7,14 +7,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
-import 'package:elena_app/src/core/engine/score_engine.dart';
+import 'package:elena_app/src/core/engine/metabolic_state_provider.dart';
 import 'package:elena_app/src/features/progress/domain/biometric_checkin.dart';
 import 'package:elena_app/src/features/progress/application/progress_notifier.dart';
-import 'package:elena_app/src/features/streak/application/streak_notifier.dart';
-import 'package:elena_app/src/features/dashboard/application/fasting_notifier.dart';
-import 'package:elena_app/src/features/dashboard/application/sleep_notifier.dart';
-import 'package:elena_app/src/features/exercise/application/exercise_notifier.dart';
-import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
 
 // ─── Entry point ─────────────────────────────────────────────────────────────
 
@@ -74,29 +69,11 @@ class _BiometricCheckInSheetState
     if (!(_formKey.currentState?.validate() ?? false)) return;
     setState(() => _isSaving = true);
 
-    final user         = ref.read(currentUserStreamProvider).valueOrNull;
-    final streakState  = ref.read(streakProvider);
-    final fastingState = ref.read(fastingProvider);
-    final sleepState   = ref.read(sleepProvider);
-    final exerciseState = ref.read(exerciseProvider);
-    final nutritionState = ref.read(nutritionProvider);
-    final engine       = ref.read(scoreEngineProvider);
-
+    final user = ref.read(currentUserStreamProvider).valueOrNull;
     if (user == null) return;
 
-    // Captura snapshot del IMR en este momento
-    final double realFastingHours = fastingState.isActive
-        ? fastingState.duration.inSeconds / 3600
-        : 0;
-    final imrResult = engine.calculateIMR(
-      user,
-      fastingHours:    realFastingHours,
-      weeklyAdherence: streakState.weeklyAdherence,
-      exerciseMin:     exerciseState.todayMinutes.toDouble(),
-      sleepHours:      sleepState.lastLog?.duration.inHours.toDouble() ?? 7.0,
-      lastMealTime:    fastingState.startTime ?? user.profile.lastMealGoal ?? DateTime.now(),
-      nutritionScore:  nutritionState.nutritionScore,
-    );
+    // SPEC-52: snapshot del IMR central — sin recalcular con defaults locales.
+    final imrResult = ref.read(imrProvider);
 
     final today = DateTime.now();
     final dateKey =

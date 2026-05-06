@@ -3,13 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
-import 'package:elena_app/src/core/engine/score_engine.dart';
+import 'package:elena_app/src/core/engine/metabolic_state_provider.dart';
 import 'package:elena_app/src/features/auth/application/profile_controller.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
-import 'package:elena_app/src/features/dashboard/application/fasting_notifier.dart';
-import 'package:elena_app/src/features/dashboard/application/sleep_notifier.dart';
-import 'package:elena_app/src/features/exercise/application/exercise_notifier.dart';
-import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 
@@ -189,30 +185,8 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
 
   @override
   Widget build(BuildContext context) {
-    final fastingState = ref.watch(fastingProvider);
-    final sleepState = ref.watch(sleepProvider);
-    final exerciseState = ref.watch(exerciseProvider);    // SPEC-03
-    final nutritionState = ref.watch(nutritionProvider);  // SPEC-04
-    final engine = ref.watch(scoreEngineProvider);
-
-    // Calcula IMR del día para mostrarlo en el perfil (RF-02-03)
-    final double fastingHours = fastingState.isActive
-        ? fastingState.duration.inSeconds / 3600.0
-        : 0.0;
-    final double sleepHours =
-        sleepState.lastLog?.duration.inHours.toDouble() ?? 7.0;
-    final DateTime lastMealTime =
-        fastingState.startTime ?? widget.user.profile.lastMealGoal ?? DateTime.now();
-
-    final imrResult = engine.calculateIMR(
-      widget.user,
-      fastingHours: fastingHours,
-      weeklyAdherence: 0.85,
-      exerciseMin: exerciseState.todayMinutes.toDouble(), // SPEC-03
-      sleepHours: sleepHours,
-      lastMealTime: lastMealTime,
-      nutritionScore: nutritionState.nutritionScore,     // SPEC-04
-    );
+    // SPEC-52: IMR central desde el provider — sin cálculos locales.
+    final imrResult = ref.watch(imrProvider);
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),

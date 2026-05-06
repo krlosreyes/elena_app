@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:elena_app/src/core/engine/metabolic_state_provider.dart';
 import 'package:elena_app/src/core/engine/score_engine.dart';
 import 'package:elena_app/src/core/rules/circadian_rules.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
@@ -54,8 +55,9 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
     final hydrationState = ref.watch(hydrationProvider);
     final exerciseState = ref.watch(exerciseProvider);    // SPEC-03
     final nutritionState = ref.watch(nutritionProvider);  // SPEC-04
-    final streakState = ref.watch(streakProvider);         // SPEC-06
-    final engine = ref.watch(scoreEngineProvider);
+
+    // SPEC-52: IMR central desde el provider — no más cálculos locales.
+    final IMRv2Result result = ref.watch(imrProvider);
 
     return Scaffold(
       body: SafeArea(
@@ -69,7 +71,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
               return const Center(child: CircularProgressIndicator());
             }
 
-            // ── Datos reales de cada pilar ──────────────────────────────
+            // ── Datos reales de cada pilar (para visualizaciones) ───────
             final double fastingHours = fastingState.isActive
                 ? fastingState.duration.inSeconds / 3600.0
                 : 0.0;
@@ -79,24 +81,12 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
 
             final double hydrationLiters = hydrationState.currentAmountLiters;
 
-            // Minutos de ejercicio reales desde ExerciseNotifier (SPEC-03)
             final double exerciseMin = exerciseState.todayMinutes.toDouble();
 
             final DateTime lastMealTime =
                 fastingState.startTime ??
                 user.profile.lastMealGoal ??
                 _now;
-
-            // ── Cálculo IMR con datos reales del día ────────────────────
-            final IMRv2Result result = engine.calculateIMR(
-              user,
-              fastingHours: fastingHours,
-              weeklyAdherence: streakState.weeklyAdherence, // SPEC-06: real desde StreakEngine
-              exerciseMin: exerciseMin,
-              sleepHours: sleepHours > 0 ? sleepHours : 7.0,
-              lastMealTime: lastMealTime,
-              nutritionScore: nutritionState.nutritionScore, // SPEC-04
-            );
 
             // SPEC-06: Registrar IMR del día en el historial de racha
             WidgetsBinding.instance.addPostFrameCallback((_) {

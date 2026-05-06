@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart'; 
 import 'package:elena_app/src/core/theme/app_theme.dart';
+import 'package:elena_app/src/core/engine/metabolic_state_provider.dart';
 import 'package:elena_app/src/core/engine/score_engine.dart';
 import 'package:elena_app/src/core/widgets/elena_header.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
@@ -13,7 +14,6 @@ import 'package:elena_app/src/features/dashboard/presentation/widgets/circadian_
 import 'package:elena_app/src/features/exercise/application/exercise_notifier.dart';
 import 'package:elena_app/src/features/exercise/application/exercise_state.dart';
 import 'package:elena_app/src/features/exercise/presentation/exercise_input_sheet.dart';
-import 'package:elena_app/src/features/streak/application/streak_notifier.dart';
 import 'package:elena_app/src/features/engagement/presentation/widgets/engagement_banner.dart';
 import 'package:elena_app/src/features/adaptive/presentation/widgets/adaptive_suggestion_card.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
@@ -45,7 +45,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final hydrationState = ref.watch(hydrationProvider);
     final exerciseState = ref.watch(exerciseProvider);
     final nutritionState = ref.watch(nutritionProvider);
-    final engine = ref.watch(scoreEngineProvider);
+
+    // SPEC-52: el IMR viene del provider central — una sola fuente de verdad.
+    final result = ref.watch(imrProvider);
 
     return userAsync.when(
       loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
@@ -56,20 +58,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           ref.read(sleepProvider.notifier).updateSleepConsciousness();
         });
-
-        final double realFastingHours = fastingState.isActive ? fastingState.duration.inSeconds / 3600 : 0;
-
-        final streakState = ref.watch(streakProvider);
-
-        final result = engine.calculateIMR(
-          user,
-          fastingHours: realFastingHours, 
-          weeklyAdherence: streakState.weeklyAdherence, 
-          exerciseMin: exerciseState.todayMinutes.toDouble(), 
-          sleepHours: sleepState.lastLog?.duration.inHours.toDouble() ?? 7.0,
-          lastMealTime: fastingState.startTime ?? user.profile.lastMealGoal ?? DateTime.now(),
-          nutritionScore: nutritionState.nutritionScore,
-        );
 
         return Scaffold(
           body: SafeArea(
