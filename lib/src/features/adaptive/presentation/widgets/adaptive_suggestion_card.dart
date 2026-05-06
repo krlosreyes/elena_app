@@ -1,18 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/features/adaptive/application/adaptive_engine.dart';
+import 'package:elena_app/src/features/dashboard/application/ui_interaction_notifier.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 import 'package:elena_app/src/shared/domain/services/user_repository.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 
+/// SPEC-72.2: el descarte ("Ahora no") consume `uiInteractionProvider`.
+/// Persiste solo en la sesión actual; SPEC-58 invoca `resetDismissals()` cada
+/// día para que la sugerencia reaparezca si la condición sigue activa.
 class AdaptiveSuggestionCard extends ConsumerWidget {
   const AdaptiveSuggestionCard({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final suggestion = ref.watch(adaptiveProvider);
-    if (suggestion == null) return const SizedBox.shrink();
+    final dismissed = ref.watch(uiInteractionProvider).isAdaptiveSuggestionDismissed;
+
+    if (suggestion == null || dismissed) return const SizedBox.shrink();
 
     final isLevelUp = suggestion.type == SuggestionType.levelUp;
     final primaryColor = isLevelUp ? const Color(0xFF818CF8) : const Color(0xFFFBBF24);
@@ -83,13 +89,13 @@ class AdaptiveSuggestionCard extends ConsumerWidget {
             children: [
               Expanded(
                 child: TextButton(
-                  onPressed: () {
-                    // Logic to dismiss/ignore (could be added later if needed)
-                  },
+                  onPressed: () => ref
+                      .read(uiInteractionProvider.notifier)
+                      .dismissAdaptiveSuggestion(),
                   child: Text(
                     'Ahora no',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.4),
+                      color: Colors.white.withValues(alpha: 0.4),
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                     ),

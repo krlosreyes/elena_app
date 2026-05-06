@@ -15,7 +15,7 @@ import 'package:elena_app/src/features/exercise/application/exercise_notifier.da
 import 'package:elena_app/src/features/exercise/application/exercise_state.dart';
 import 'package:elena_app/src/features/exercise/presentation/exercise_input_sheet.dart';
 import 'package:elena_app/src/features/streak/application/streak_notifier.dart';
-import 'package:elena_app/src/features/engagement/application/engagement_service.dart';
+import 'package:elena_app/src/features/engagement/presentation/widgets/engagement_banner.dart';
 import 'package:elena_app/src/features/adaptive/presentation/widgets/adaptive_suggestion_card.dart';
 import 'package:elena_app/src/features/adaptive/application/adaptive_engine.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
@@ -51,9 +51,8 @@ class DashboardScreen extends ConsumerWidget {
         });
 
         final double realFastingHours = fastingState.isActive ? fastingState.duration.inSeconds / 3600 : 0;
-        
+
         final streakState = ref.watch(streakProvider);
-        final engagement = ref.watch(engagementProvider);
 
         final result = engine.calculateIMR(
           user,
@@ -76,10 +75,9 @@ class DashboardScreen extends ConsumerWidget {
                   const ElenaHeader(title: "Metamorfosis Real"),
                   const SizedBox(height: 10), 
 
-                  // BANNER DE ENGAGEMENT (SPEC-07)
-                  if (engagement.level != EngagementLevel.neutro)
-                    _buildEngagementBanner(engagement),
-                  const SizedBox(height: 16), 
+                  // BANNER DE ENGAGEMENT (SPEC-07 + SPEC-72.2 dismiss por sesión)
+                  const EngagementBanner(),
+                  const SizedBox(height: 16),
 
                   // MOTOR ADAPTATIVO (SPEC-08)
                   const AdaptiveSuggestionCard(),
@@ -591,74 +589,9 @@ class DashboardScreen extends ConsumerWidget {
     return Container(width: double.infinity, padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10), decoration: BoxDecoration(color: Colors.redAccent.withOpacity(0.1), borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.redAccent.withOpacity(0.2))), child: Row(children: [const Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 16), const SizedBox(width: 10), Expanded(child: Text(message, style: const TextStyle(color: Colors.redAccent, fontSize: 9, fontWeight: FontWeight.bold)))]));
   }
 
-  Widget _buildEngagementBanner(EngagementState engagement) {
-    Color statusColor;
-    IconData statusIcon;
-
-    switch (engagement.level) {
-      case EngagementLevel.excelente:
-        statusColor = const Color(0xFF10B981);
-        statusIcon = Icons.stars_rounded;
-        break;
-      case EngagementLevel.bueno:
-        statusColor = const Color(0xFF34D399);
-        statusIcon = Icons.check_circle_rounded;
-        break;
-      case EngagementLevel.regular:
-        statusColor = const Color(0xFFFBBF24);
-        statusIcon = Icons.info_outline_rounded;
-        break;
-      case EngagementLevel.critico:
-        statusColor = const Color(0xFFF87171);
-        statusIcon = Icons.error_outline_rounded;
-        break;
-      case EngagementLevel.neutro:
-        statusColor = Colors.grey;
-        statusIcon = Icons.hourglass_empty_rounded;
-        break;
-    }
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: statusColor.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: statusColor.withOpacity(0.3)),
-      ),
-      child: Row(
-        children: [
-          Icon(statusIcon, color: statusColor, size: 24),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'COMPROMISO: ${engagement.status.toUpperCase()}',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w900,
-                    color: statusColor,
-                    letterSpacing: 1,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  engagement.message,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.white.withOpacity(0.7),
-                    height: 1.3,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // SPEC-72.2: _buildEngagementBanner eliminado. Reemplazado por
+  // EngagementBanner widget en features/engagement/presentation/widgets/
+  // que añade dismiss por sesión.
 
   Widget _buildBottomNav(BuildContext context) {
     final String location = GoRouterState.of(context).matchedLocation;

@@ -7,6 +7,7 @@ import 'package:elena_app/src/core/providers/shared_preferences_provider.dart';
 import 'package:elena_app/src/features/dashboard/application/fasting_notifier.dart';
 import 'package:elena_app/src/features/dashboard/application/hydration_notifier.dart';
 import 'package:elena_app/src/features/dashboard/application/sleep_notifier.dart';
+import 'package:elena_app/src/features/dashboard/application/ui_interaction_notifier.dart';
 import 'package:elena_app/src/features/exercise/application/exercise_notifier.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
 
@@ -129,8 +130,12 @@ class DailyResetNotifier extends StateNotifier<void> {
       // es por diseño multi-día y puede cruzar la medianoche.
       _ref.read(fastingProvider.notifier).resetDaily();
 
+      // SPEC-72.2: limpiar descartes de banners para que reaparezcan en el
+      // nuevo día si la condición que los origina sigue activa.
+      _ref.read(uiInteractionProvider.notifier).resetDismissals();
+
       if (kDebugMode) {
-        debugPrint('✅ SPEC-58: reset diario completado en 5 pilares.');
+        debugPrint('✅ SPEC-58: reset diario completado en 5 pilares + descartes UI.');
       }
     } catch (e) {
       if (kDebugMode) {

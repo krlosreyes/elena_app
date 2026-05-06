@@ -1,10 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:elena_app/src/core/providers/shared_preferences_provider.dart';
-
-const essentialFocusKey = "essential_focus_shown";
 
 /// Notifier para gestionar la visibilidad temporal de elementos de la UI
 /// que el usuario decide descartar durante su sesión actual.
+///
+/// SPEC-72.2: refactor — descartes solo en memoria. La persistencia previa
+/// con `SharedPreferences` y la clave `essential_focus_shown` se eliminó
+/// porque silenciaba la sugerencia para siempre, sin mecanismo en la UI
+/// para reactivarla. Ahora `resetDismissals()` se invoca desde
+/// `DailyResetNotifier.triggerDailyReset()` (SPEC-58), por lo que los
+/// descartes desaparecen cada día naturalmente.
 class UiInteractionState {
   final bool isEngagementBannerDismissed;
   final bool isAdaptiveSuggestionDismissed;
@@ -26,18 +30,7 @@ class UiInteractionState {
 }
 
 class UiInteractionNotifier extends StateNotifier<UiInteractionState> {
-  final Ref _ref;
-
-  UiInteractionNotifier(this._ref) : super(const UiInteractionState()) {
-    _init();
-  }
-
-  void _init() {
-    final prefs = _ref.read(sharedPreferencesProvider);
-    state = state.copyWith(
-      isAdaptiveSuggestionDismissed: prefs.getBool(essentialFocusKey) ?? false,
-    );
-  }
+  UiInteractionNotifier() : super(const UiInteractionState());
 
   void dismissEngagementBanner() {
     state = state.copyWith(isEngagementBannerDismissed: true);
@@ -45,15 +38,17 @@ class UiInteractionNotifier extends StateNotifier<UiInteractionState> {
 
   void dismissAdaptiveSuggestion() {
     state = state.copyWith(isAdaptiveSuggestionDismissed: true);
-    _ref.read(sharedPreferencesProvider).setBool(essentialFocusKey, true);
   }
 
-  /// Resetea los descartes (útil al cambiar de día o refrescar datos profundos)
+  /// Resetea los descartes. Invocado por `DailyResetNotifier` al cruzar
+  /// medianoche (SPEC-58) para que los banners reaparezcan cada nuevo día
+  /// si la condición que los origina sigue activa.
   void resetDismissals() {
+    if (!mounted) return;
     state = const UiInteractionState();
   }
 }
 
 final uiInteractionProvider = StateNotifierProvider<UiInteractionNotifier, UiInteractionState>((ref) {
-  return UiInteractionNotifier(ref);
+  return UiInteractionNotifier();
 });
