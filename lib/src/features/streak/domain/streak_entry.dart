@@ -103,13 +103,12 @@ class StreakEntry {
   /// Pondera las magnitudes disponibles. Si todas están `null`, cae a
   /// `pillarsCompleted / 5.0` (señal binaria pura — comportamiento previo).
   ///
-  /// Pesos por pilar (suman 1.0):
-  /// - Sueño 0.25 (mayor evidencia, dimensión más estudiada)
-  /// - Ayuno 0.20
-  /// - Ejercicio 0.20
-  /// - Hidratación 0.20 (afecta sistémicamente)
-  /// - Nutrición 0.15
-  /// La calibración bibliográfica completa se documentará en SPEC-70 R2.
+  /// Pesos por pilar (suman 1.0). SPEC-70: ref IMR_BIBLIOGRAPHY.md §6.
+  /// - Sueño 0.25 — §6.1 MEDIUM (mayor evidencia + efectos sistémicos).
+  /// - Ayuno/Ejercicio/Hidratación 0.20 — §6.2 ENGINEERING JUDGMENT
+  ///   (co-iguales por dosis-respuesta comparable).
+  /// - Nutrición 0.15 — §6.3 ENGINEERING JUDGMENT (conservador hasta
+  ///   que macros de SPEC-64 entren al cómputo).
   double get dailyQualityScore {
     const wFasting = 0.20;
     const wSleep = 0.25;

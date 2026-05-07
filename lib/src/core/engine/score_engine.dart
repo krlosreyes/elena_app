@@ -59,21 +59,24 @@ class ScoreEngine {
     final bool isMale =
         user.gender.toUpperCase() == 'M' || user.gender.toUpperCase() == 'MALE';
 
-    // 1. ESTRUCTURA (50%)
+    // 1. ESTRUCTURA (50%) — SPEC-70: ref §1.1, §2
     double s1 = 0.5;
     if (user.waistCircumference != null && user.waistCircumference! > 0) {
       final double whtr = user.waistCircumference! / user.height;
+      // SPEC-70: ref §2.3 — umbrales WHtR 0.45–0.60 (Browning 2010).
       s1 = ((0.60 - whtr) / 0.15).clamp(0.0, 1.0);
     }
     final double hMeter = user.height / 100;
     final double leanMass = user.weight * (1 - (user.bodyFatPercentage / 100));
     final double ffmi = leanMass / math.pow(hMeter, 2);
+    // SPEC-70: ref §2.4 — FFMI baseline/range derivados de Schutz 2002.
     final double baseFFMI = isMale ? 16.0 : 14.0;
     final double rangeFFMI = isMale ? 6.0 : 5.0;
     final double s2 = ((ffmi - baseFFMI) / rangeFFMI).clamp(0.0, 1.0);
+    // SPEC-70: ref §2.1, §2.2 — pesos 0.65 WHtR + 0.35 FFMI.
     final double structureBlock = (0.65 * s1) + (0.35 * s2);
 
-    // 2. METABOLISMO (25%)
+    // 2. METABOLISMO (25%) — SPEC-70: ref §1.2, §3
     final double fastingHours = state.fastingHoursRaw;
     // SPEC-53: el bloque metabólico ahora consume `weeklyQualityScore`
     // (continuo, ponderado por magnitudes de SPEC-65) en lugar de
@@ -81,8 +84,12 @@ class ScoreEngine {
     // que un usuario con 7 días apenas calificados puntúe distinto de
     // uno con 7 días al tope, aunque ambos cuenten como "adheridos".
     final double weeklySignal = state.weeklyQualityScore;
+    // SPEC-70: ref §3.1 — sigmoid centrada en 14h, ancho 1.5
+    // (Mattson 2017, Anton 2018).
     final double s4 = 1 / (1 + math.exp(-(fastingHours - 14) / 1.5));
+    // SPEC-70: ref §3.3 — bonus eTRF 1.15 (Sutton 2018).
     final double etrfBonus = (lastMealTime.hour < 18) ? 1.15 : 1.0;
+    // SPEC-70: ref §3.2 — pesos 0.70 sigmoid + 0.30 calidad semanal.
     final double metabolicBlock =
         ((0.70 * s4) + (0.30 * weeklySignal.clamp(0.0, 1.0))) * etrfBonus;
 
@@ -94,7 +101,8 @@ class ScoreEngine {
     final int mealMinutes = lastMealTime.hour * 60 + lastMealTime.minute;
 
     if (mealMinutes >= CircadianRules.intestinalLockMinutes) {
-      // Penalización por comer en o después del bloqueo intestinal (22:30).
+      // SPEC-70: ref §4.6 — penalización al 0.5 por bloqueo intestinal
+      // 22:30 (Hood & Amir 2017, melatonina endógena).
       circadianScore = 0.5;
     } else if (goal != null && lastMealTime.isBefore(goal)) {
       // Bonus eTRF por comer antes de la meta establecida.
@@ -116,18 +124,20 @@ class ScoreEngine {
     // (currentAmountLiters / dailyGoalLiters).
     final double sHydration = state.hydrationLevel.clamp(0.0, 1.0);
 
-    // SPEC-04 + SPEC-67: Pesos del bloque Conducta — Circadiano 28% +
-    // Sueño 20% + Ejercicio 20% + Nutrición 12% + Hidratación 20%.
-    // Suma = 100%. Hidratación recibe peso alto porque la deshidratación
-    // afecta sistémicamente todos los procesos metabólicos (la calibración
-    // bibliográfica completa se documentará en SPEC-70 R2 final con
-    // referencias ACSM/EFSA/NHANES).
+    // SPEC-70: ref §4 — pesos del bloque Conducta. Circadiano 28%
+    // (§4.1, Panda 2018, Wehrens 2017), Sueño 20% (§4.2, AASM, Walker),
+    // Ejercicio 20% (§4.3, ACSM 2021, Pedersen 2015), Nutrición 12%
+    // (§4.4, conservador hasta que macros de SPEC-64 entren al cómputo),
+    // Hidratación 20% (§4.5, EFSA 2010, Popkin 2010). Suma = 100%.
     final double behaviorBlock = (0.28 * circadianScore.clamp(0.0, 1.0)) +
         (0.20 * sSleep) +
         (0.20 * sExercise) +
         (0.12 * nutritionScore.clamp(0.0, 1.0)) +
         (0.20 * sHydration);
 
+    // SPEC-70: ref §1 — macro 50/25/25 (Estructura/Metabolismo/Conducta).
+    // ENGINEERING JUDGMENT del split exacto; estructura domina por
+    // mayor estabilidad bibliográfica de su asociación con outcomes.
     final double raw = (0.50 * structureBlock) +
         (0.25 * metabolicBlock.clamp(0.0, 1.0)) +
         (0.25 * behaviorBlock);

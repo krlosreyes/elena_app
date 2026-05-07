@@ -16,6 +16,8 @@ class StreakEngine {
   // ─────────────────────────────────────────────────────────────────────────
 
   /// Evalúa si el ayuno del día cumple el umbral.
+  /// SPEC-70 §7.5 — ENGINEERING JUDGMENT (80% deja margen para días
+  /// imperfectos; 10h sin protocolo cubre ayuno nocturno saludable).
   ///
   /// - Protocolo activo: ≥80% de las horas objetivo.
   /// - Sin protocolo ('Ninguno'): ≥10h (ayuno nocturno natural suficiente).
@@ -31,19 +33,24 @@ class StreakEngine {
     return fastingHours >= targetHours * 0.8;
   }
 
-  /// Evalúa si el sueño cumple el mínimo restaurador (6.5h = umbral AASM).
+  /// Evalúa si el sueño cumple el mínimo restaurador.
+  /// SPEC-70 §7.1 — MEDIUM (6.5h umbral inferior AASM).
   static bool evaluateSleep({required double sleepHours}) =>
       sleepHours >= 6.5;
 
   /// Evalúa si la hidratación alcanzó el 75% de la meta.
+  /// SPEC-70 §7.2 — ENGINEERING JUDGMENT (mínimo funcional sin
+  /// requerir perfección; el goal mismo ya es conservadoramente alto).
   static bool evaluateHydration({required double progressPercentage}) =>
       progressPercentage >= 0.75;
 
-  /// Evalúa si se registró ejercicio suficiente (≥20 min = dosis mínima ACSM).
+  /// Evalúa si se registró ejercicio suficiente.
+  /// SPEC-70 §7.3 — MEDIUM (20 min ≈ ACSM 150min/sem ÷ 7).
   static bool evaluateExercise({required int exerciseMinutes}) =>
       exerciseMinutes >= 20;
 
   /// Evalúa si se registró al menos 1 comida en el día.
+  /// SPEC-70 §7.4 — LOW (proxy de engagement, no de calidad nutricional).
   static bool evaluateNutrition({required int mealsLogged}) =>
       mealsLogged >= 1;
 

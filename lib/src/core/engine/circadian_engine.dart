@@ -50,6 +50,8 @@ class CircadianEngine {
   // ── Constantes horarias (fuente única) ─────────────────────────────────
 
   /// Hora de inicio del bloqueo intestinal nocturno (22:30).
+  /// SPEC-70: ref IMR_BIBLIOGRAPHY.md §4.6 — LOW (Hood & Amir 2017,
+  /// melatonina endógena empieza a subir a esa hora en cronotipos promedio).
   static const int intestinalLockHour = 22;
   static const int intestinalLockMinute = 30;
 

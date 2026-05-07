@@ -15,22 +15,18 @@
 class SleepQualityCalculator {
   SleepQualityCalculator._();
 
-  // ── Constantes de pesos (SPEC-70 R2 final añadirá referencias) ──────────
+  // ── Constantes de pesos — SPEC-70: ref IMR_BIBLIOGRAPHY.md §5 ───────────
 
-  /// Peso de la duración del sueño. Es la dimensión más estudiada y
-  /// con mayor evidencia (AASM Guidelines, Walker 2017).
+  /// Peso de la duración. SPEC-70 §5.1 — HIGH (AASM, Walker 2017).
   static const double _wDuration = 0.50;
 
-  /// Peso de la brecha metabólica (lastMealTime → fellAsleep).
-  /// Importante para autofagia nocturna y reparación celular.
+  /// Peso de la brecha metabólica. SPEC-70 §5.2 — MEDIUM (Crispim 2011).
   static const double _wMetabolicGap = 0.20;
 
-  /// Peso de la latencia para conciliar el sueño.
-  /// > 30 min sugiere insomnio/ansiedad (Spielman et al.).
+  /// Peso de la latencia. SPEC-70 §5.3 — MEDIUM (Spielman 1987).
   static const double _wLatency = 0.15;
 
-  /// Peso de los despertares nocturnos (fragmentación).
-  /// Relacionado con calidad de fases REM y onda lenta.
+  /// Peso de los despertares. SPEC-70 §5.4 — MEDIUM (Bonnet & Arand 2003).
   static const double _wAwakenings = 0.15;
 
   // ── API ────────────────────────────────────────────────────────────────
@@ -99,24 +95,27 @@ class SleepQualityCalculator {
     return (1.0 - ((hours - 9) / 5.0)).clamp(0.6, 1.0);
   }
 
-  /// Brecha metabólica: > 3h es óptimo (autofagia inicia ~12h ayuno
-  /// pero el ayuno nocturno tradicional necesita 3h para vaciar gástrico).
+  /// Brecha metabólica: > 3h es óptimo. SPEC-70 §5.5 — escalones LOW
+  /// (gradación lineal-aproximada del riesgo, sin literatura directa
+  /// para los puntos intermedios).
   static double _scoreMetabolicGap(int minutes) {
-    if (minutes >= 180) return 1.0; // ≥ 3h
+    if (minutes >= 180) return 1.0; // ≥ 3h (Crispim 2011)
     if (minutes >= 120) return 0.7; // 2-3h
     if (minutes >= 60) return 0.4; // 1-2h
     return 0.1; // < 1h: digestión activa al dormir
   }
 
-  /// Latencia: < 20 min es saludable; > 30 min sugiere problema.
+  /// Latencia. SPEC-70 §5.6 — umbral 30min MEDIUM (modelo 3P de
+  /// Spielman); demás escalones LOW.
   static double _scoreLatency(int minutes) {
     if (minutes <= 20) return 1.0;
-    if (minutes <= 30) return 0.7;
+    if (minutes <= 30) return 0.7; // umbral diagnóstico Spielman
     if (minutes <= 60) return 0.4;
     return 0.1; // > 1h
   }
 
-  /// Despertares: 0-1 es normal; ≥ 3 sugiere fragmentación severa.
+  /// Despertares. SPEC-70 §5.7 — ENGINEERING JUDGMENT (sin umbral
+  /// clínico universal; gradación proporcional 0-1 normal → 4+ patológico).
   static double _scoreAwakenings(int count) {
     if (count <= 1) return 1.0;
     if (count == 2) return 0.7;
@@ -125,6 +124,9 @@ class SleepQualityCalculator {
   }
 
   /// Factor multiplicativo por calidad subjetiva 1-5.
+  /// SPEC-70 §5.8 — ENGINEERING JUDGMENT (rango asimétrico 0.85–1.10
+  /// porque "muy mal" reportado tiende a tener más fundamento que
+  /// "muy bien"; el ajuste subjetivo nunca domina al objetivo).
   /// Mapeo lineal: 1→0.85, 2→0.92, 3→1.00, 4→1.05, 5→1.10.
   static double _subjectiveFactor(int rating) {
     switch (rating) {

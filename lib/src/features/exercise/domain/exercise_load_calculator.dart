@@ -15,8 +15,8 @@ import 'package:elena_app/src/features/exercise/domain/exercise_log.dart';
 class ExerciseLoadCalculator {
   ExerciseLoadCalculator._();
 
-  /// Multiplicador por tipo (relativo a LISS = 1.0).
-  /// Justificación heurística (SPEC-70 R2 final añadirá referencias):
+  /// Multiplicador por tipo. SPEC-70: ref IMR_BIBLIOGRAPHY.md §8.1.
+  /// MEDIUM (LaForgia 2006: HIIT EPOC ~50% mayor que LISS).
   /// - HIIT genera mayor estímulo metabólico (EPOC, sensibilidad insulínica).
   /// - STRENGTH activa síntesis proteica muscular durante 24-48h.
   /// - MOBILITY tiene impacto metabólico bajo pero contribuye a recuperación.
@@ -28,6 +28,8 @@ class ExerciseLoadCalculator {
   };
 
   /// Multiplicador por intensidad subjetiva.
+  /// SPEC-70 §8.2 — ENGINEERING JUDGMENT (mismo principio dosis-respuesta
+  /// que tipo, pero a nivel de RPE; asimetría conservadora 0.3 abajo/arriba).
   static const Map<ExerciseIntensity, double> _intensityMultiplier = {
     ExerciseIntensity.low: 0.7,
     ExerciseIntensity.moderate: 1.0,
