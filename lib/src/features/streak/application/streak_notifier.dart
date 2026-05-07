@@ -26,9 +26,15 @@ class StreakState {
   /// Mejor racha histórica.
   final int longestStreak;
 
-  /// Adherencia de los últimos 7 días (0.0-1.0).
-  /// Reemplaza el `weeklyAdherence: 0.85` hardcodeado en el ScoreEngine.
+  /// Adherencia de los últimos 7 días (0.0-1.0). Métrica binaria:
+  /// proporción de días que cruzaron el umbral (3 pilares + IMR≥60).
   final double weeklyAdherence;
+
+  /// SPEC-53: calidad ponderada de los últimos 7 días (0.0-1.0).
+  /// Promedio del `dailyQualityScore` de las entradas en ventana —
+  /// captura magnitudes continuas (no solo "cruzó/no cruzó").
+  /// Es lo que el ScoreEngine consume para el bloque metabólico.
+  final double weeklyQualityScore;
 
   /// Estado de pilares del día de hoy.
   final StreakEntry? todayEntry;
@@ -46,6 +52,7 @@ class StreakState {
     this.currentStreak = 0,
     this.longestStreak = 0,
     this.weeklyAdherence = 0.0,
+    this.weeklyQualityScore = 0.0,
     this.todayEntry,
     this.history = const [],
   });
@@ -54,6 +61,7 @@ class StreakState {
     int? currentStreak,
     int? longestStreak,
     double? weeklyAdherence,
+    double? weeklyQualityScore,
     StreakEntry? todayEntry,
     List<StreakEntry>? history,
   }) =>
@@ -61,6 +69,7 @@ class StreakState {
         currentStreak: currentStreak ?? this.currentStreak,
         longestStreak: longestStreak ?? this.longestStreak,
         weeklyAdherence: weeklyAdherence ?? this.weeklyAdherence,
+        weeklyQualityScore: weeklyQualityScore ?? this.weeklyQualityScore,
         todayEntry: todayEntry ?? this.todayEntry,
         history: history ?? this.history,
       );
@@ -250,6 +259,8 @@ class StreakNotifier extends StateNotifier<StreakState> {
 
     final prevAdherence = state.weeklyAdherence;
     final newAdherence = StreakEngine.computeWeeklyAdherence(history);
+    // SPEC-53: calidad continua de los últimos 7 días.
+    final newQualityScore = StreakEngine.computeWeeklyQualityScore(history);
 
     state = state.copyWith(
       history: history,
@@ -257,6 +268,7 @@ class StreakNotifier extends StateNotifier<StreakState> {
       currentStreak: StreakEngine.computeCurrentStreak(history),
       longestStreak: StreakEngine.computeLongestStreak(history),
       weeklyAdherence: newAdherence,
+      weeklyQualityScore: newQualityScore,
     );
 
     // Persistir el ratio global solo si cambió (evita loops circulares)

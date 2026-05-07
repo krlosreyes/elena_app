@@ -75,11 +75,16 @@ class ScoreEngine {
 
     // 2. METABOLISMO (25%)
     final double fastingHours = state.fastingHoursRaw;
-    final double weeklyAdherence = state.weeklyAdherence;
+    // SPEC-53: el bloque metabólico ahora consume `weeklyQualityScore`
+    // (continuo, ponderado por magnitudes de SPEC-65) en lugar de
+    // `weeklyAdherence` (binario "días que cruzaron umbral"). Esto hace
+    // que un usuario con 7 días apenas calificados puntúe distinto de
+    // uno con 7 días al tope, aunque ambos cuenten como "adheridos".
+    final double weeklySignal = state.weeklyQualityScore;
     final double s4 = 1 / (1 + math.exp(-(fastingHours - 14) / 1.5));
     final double etrfBonus = (lastMealTime.hour < 18) ? 1.15 : 1.0;
     final double metabolicBlock =
-        ((0.70 * s4) + (0.30 * weeklyAdherence.clamp(0.0, 1.0))) * etrfBonus;
+        ((0.70 * s4) + (0.30 * weeklySignal.clamp(0.0, 1.0))) * etrfBonus;
 
     // 3. CONDUCTA Y CIRCADIANO (25%)
     double circadianScore = 1.0;
@@ -96,8 +101,13 @@ class ScoreEngine {
       circadianScore = 1.1;
     }
 
-    final double sleepHours = state.sleepHoursRaw;
-    final double sSleep = (sleepHours >= 7 && sleepHours <= 9) ? 1.0 : 0.6;
+    // SPEC-53: el bloque Conducta ahora consume `state.sleepQuality`
+    // (multidimensional desde SPEC-69) en lugar de la curva binaria
+    // antigua `(sleepHours >=7 && <=9) ? 1.0 : 0.6`. Esto hace que un
+    // usuario con 8h de sueño fragmentado (latencia alta + 4 despertares
+    // + cena tarde) puntúe distinto de uno con 8h reparadoras. La curva
+    // binaria asignaba el mismo 1.0 a ambos.
+    final double sSleep = state.sleepQuality.clamp(0.0, 1.0);
     final double exerciseMin = state.exerciseMinutesRaw;
     final double sExercise = (exerciseMin / 60).clamp(0.0, 1.2);
     final double nutritionScore = state.nutritionScoreRaw;

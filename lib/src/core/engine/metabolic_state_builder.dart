@@ -38,7 +38,10 @@ class MetabolicStateBuilder {
   /// - [nutrition]: Estado actual del NutritionNotifier.
   /// - [hydration]: Estado actual del HydrationNotifier.
   /// - [maxFastingHoursToday]: Máximo de horas de ayuno hoy (activo o completado).
-  /// - [weeklyAdherence]: Adherencia semanal pre-calculada por StreakEngine.
+  /// - [weeklyAdherence]: Adherencia semanal binaria pre-calculada por StreakEngine.
+  /// - [weeklyQualityScore]: SPEC-53. Promedio continuo del dailyQualityScore
+  ///   de los últimos 7 días. Si no se pasa, default 0.0 (mismo comportamiento
+  ///   que weeklyAdherence para usuario nuevo).
   /// - [lastSleepLog]: SPEC-69. Último ciclo de sueño persistido. Si no es
   ///   null, alimenta dimensiones extra (gap metabólico, latencia, despertares,
   ///   percepción subjetiva) al SleepQualityCalculator.
@@ -51,6 +54,7 @@ class MetabolicStateBuilder {
     required HydrationState hydration,
     required double maxFastingHoursToday,
     required double weeklyAdherence,
+    double weeklyQualityScore = 0.0,
     SleepLog? lastSleepLog,
   }) {
     final now = DateTime.now();
@@ -142,6 +146,7 @@ class MetabolicStateBuilder {
       exerciseMinutesRaw: exercise.todayMinutes.toDouble(),
       nutritionScoreRaw: glycemicLoad, // El builder es la fuente de verdad
       weeklyAdherence: weeklyAdherence,
+      weeklyQualityScore: weeklyQualityScore,
       lastMealTime: stableLastMeal,
       timestamp: now,
     );

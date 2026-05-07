@@ -375,4 +375,111 @@ void main() {
       expect(updated.sleepQualityScore, 0.9);
     });
   });
+
+  group('SPEC-53: computeWeeklyQualityScore', () {
+    /// Crea una entrada con todas las magnitudes a un mismo valor `q`
+    /// y fecha `date`. Útil para construir historiales donde el
+    /// `dailyQualityScore` resultante coincide con `q`.
+    StreakEntry uniformEntry(String date, double q) => StreakEntry(
+          date: date,
+          fastingCompleted: q >= 0.5,
+          sleepCompleted: q >= 0.5,
+          hydrationCompleted: q >= 0.5,
+          exerciseLogged: q >= 0.5,
+          nutritionLogged: q >= 0.5,
+          imrScore: 70,
+          fastingMagnitude: q,
+          sleepQualityScore: q,
+          hydrationMagnitude: q,
+          exerciseMagnitude: q,
+          nutritionMagnitude: q,
+        );
+
+    /// Clave de fecha relativa a hoy (0 = hoy, -1 = ayer, etc.).
+    String dayKey(int offset) {
+      final d = DateTime.now().add(Duration(days: offset));
+      return '${d.year.toString().padLeft(4, '0')}-'
+          '${d.month.toString().padLeft(2, '0')}-'
+          '${d.day.toString().padLeft(2, '0')}';
+    }
+
+    test('Historial vacío → 0.0', () {
+      expect(StreakEngine.computeWeeklyQualityScore([]), 0.0);
+    });
+
+    test('Solo entradas fuera de la ventana de 7 días → 0.0', () {
+      // Entradas hace más de 7 días.
+      final old = [
+        uniformEntry(dayKey(-15), 1.0),
+        uniformEntry(dayKey(-30), 1.0),
+      ];
+      expect(StreakEngine.computeWeeklyQualityScore(old), 0.0);
+    });
+
+    test('Una entrada en la ventana con q=0.8 → 0.8', () {
+      final h = [uniformEntry(dayKey(-2), 0.8)];
+      expect(
+        StreakEngine.computeWeeklyQualityScore(h),
+        closeTo(0.8, 1e-9),
+      );
+    });
+
+    test('7 días llenos al tope → 1.0', () {
+      final h = List.generate(7, (i) => uniformEntry(dayKey(-i), 1.0));
+      expect(StreakEngine.computeWeeklyQualityScore(h), 1.0);
+    });
+
+    test('Promedio: 4 días a 1.0 + 3 días a 0.0 → 4/7', () {
+      final h = [
+        uniformEntry(dayKey(0), 1.0),
+        uniformEntry(dayKey(-1), 1.0),
+        uniformEntry(dayKey(-2), 1.0),
+        uniformEntry(dayKey(-3), 1.0),
+        uniformEntry(dayKey(-4), 0.0),
+        uniformEntry(dayKey(-5), 0.0),
+        uniformEntry(dayKey(-6), 0.0),
+      ];
+      expect(
+        StreakEngine.computeWeeklyQualityScore(h),
+        closeTo(4.0 / 7.0, 1e-9),
+      );
+    });
+
+    test('Mezcla legacy (sin magnitudes) + modernas usa fallback', () {
+      // Día legacy con 5 pilares completados → fallback 1.0.
+      final legacy = StreakEntry(
+        date: dayKey(-1),
+        fastingCompleted: true,
+        sleepCompleted: true,
+        hydrationCompleted: true,
+        exerciseLogged: true,
+        nutritionLogged: true,
+        imrScore: 80,
+      );
+      // Día moderno con magnitudes promedio 0.5.
+      final modern = uniformEntry(dayKey(0), 0.5);
+
+      final score = StreakEngine.computeWeeklyQualityScore([legacy, modern]);
+      // (1.0 + 0.5) / 2 = 0.75
+      expect(score, closeTo(0.75, 1e-9));
+    });
+
+    test('Divisor es nº de entradas en ventana, NO 7 (no penaliza usuario nuevo)',
+        () {
+      // Solo 3 días registrados, todos al tope → 1.0 (no 3/7).
+      final h = [
+        uniformEntry(dayKey(0), 1.0),
+        uniformEntry(dayKey(-1), 1.0),
+        uniformEntry(dayKey(-2), 1.0),
+      ];
+      expect(StreakEngine.computeWeeklyQualityScore(h), 1.0);
+    });
+
+    test('Resultado siempre clamped en [0.0, 1.0]', () {
+      final h = [uniformEntry(dayKey(-1), 1.5)]; // valor fuera de rango
+      final score = StreakEngine.computeWeeklyQualityScore(h);
+      expect(score, lessThanOrEqualTo(1.0));
+      expect(score, greaterThanOrEqualTo(0.0));
+    });
+  });
 }

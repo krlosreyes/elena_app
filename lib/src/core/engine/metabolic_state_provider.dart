@@ -53,6 +53,10 @@ final metabolicStateProvider = Provider<MetabolicState>((ref) {
   // `select` evita reconstruir cuando otros campos del StreakState cambian.
   final weeklyAdherence =
       ref.watch(streakProvider.select((s) => s.weeklyAdherence));
+  // SPEC-53: calidad continua de los últimos 7 días, ya promediada por
+  // StreakEngine sobre dailyQualityScore (SPEC-65).
+  final weeklyQualityScore =
+      ref.watch(streakProvider.select((s) => s.weeklyQualityScore));
 
   final user = userAsync.valueOrNull;
   if (user == null) return MetabolicState.empty();
@@ -77,6 +81,7 @@ final metabolicStateProvider = Provider<MetabolicState>((ref) {
     hydration: hydration,
     maxFastingHoursToday: maxFastingHoursToday,
     weeklyAdherence: weeklyAdherence,
+    weeklyQualityScore: weeklyQualityScore,
     lastSleepLog: lastSleepLog,
   );
 });

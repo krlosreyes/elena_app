@@ -61,8 +61,15 @@ class MetabolicState {
   /// Se pasa al ScoreEngine como nutritionScore.
   final double nutritionScoreRaw;
 
-  /// Adherencia semanal (0-1) pre-calculada por StreakEngine.
+  /// Adherencia semanal (0-1) pre-calculada por StreakEngine. Métrica
+  /// binaria — proporción de días que cruzaron el umbral.
   final double weeklyAdherence;
+
+  /// SPEC-53: calidad ponderada de los últimos 7 días (0-1). Promedio
+  /// continuo del `dailyQualityScore` (SPEC-65) de las entradas en la
+  /// ventana. ScoreEngine la usa en el bloque metabólico en lugar de
+  /// `weeklyAdherence` para capturar el "cuánto" además del "cuánto/sí".
+  final double weeklyQualityScore;
 
   /// DateTime de la última comida real registrada.
   ///
@@ -92,6 +99,7 @@ class MetabolicState {
     required this.exerciseMinutesRaw,
     required this.nutritionScoreRaw,
     required this.weeklyAdherence,
+    this.weeklyQualityScore = 0.0,
     required this.lastMealTime,
     required this.timestamp,
   });

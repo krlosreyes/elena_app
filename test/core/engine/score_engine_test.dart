@@ -38,20 +38,32 @@ UserModel _user({
 
 /// Helper para construir un MetabolicState con valores sensatos por defecto.
 /// Solo se sobreescriben los campos que el test necesita variar.
+///
+/// SPEC-53:
+/// - `weeklyQualityScore` defaultea al valor de `weeklyAdherence` para
+///   preservar la aritmética de los tests pre-SPEC-53. Tests nuevos
+///   pueden pasarlo explícitamente.
+/// - `sleepQuality` defaultea a la curva binaria histórica
+///   `(7<=h<=9) ? 1.0 : 0.6` para que tests que variaban solo
+///   `sleepHoursRaw` sigan dando el mismo número.
 MetabolicState _state({
   double fastingHoursRaw = 12,
   double weeklyAdherence = 0.7,
+  double? weeklyQualityScore,
   double exerciseMinutesRaw = 30,
   double sleepHoursRaw = 8,
+  double? sleepQuality,
   double nutritionScoreRaw = 0.5,
   double hydrationLevel = 0.5,
   DateTime? lastMealTime,
 }) {
+  final effectiveSleepQuality = sleepQuality ??
+      ((sleepHoursRaw >= 7 && sleepHoursRaw <= 9) ? 1.0 : 0.6);
   return MetabolicState(
     fastingHours: 0.5,
     glycogenLevel: 0.5,
     circadianAlignment: 1.0,
-    sleepQuality: 1.0,
+    sleepQuality: effectiveSleepQuality,
     exerciseLoad: 0.5,
     glycemicLoad: nutritionScoreRaw,
     hydrationLevel: hydrationLevel,
@@ -61,6 +73,7 @@ MetabolicState _state({
     exerciseMinutesRaw: exerciseMinutesRaw,
     nutritionScoreRaw: nutritionScoreRaw,
     weeklyAdherence: weeklyAdherence,
+    weeklyQualityScore: weeklyQualityScore ?? weeklyAdherence,
     lastMealTime: lastMealTime ?? DateTime(2026, 5, 6, 19),
     timestamp: DateTime(2026, 5, 6, 20),
   );
@@ -217,6 +230,65 @@ void main() {
         'Nutrición 12 + Hidratación 20)', () {
       const total = 0.28 + 0.20 + 0.20 + 0.12 + 0.20;
       expect(total, closeTo(1.0, 1e-9));
+    });
+  });
+
+  group('SPEC-53: rebalanceo del IMR con señales continuas', () {
+    final user = _user(waist: 85);
+
+    test('CA-53-01: misma duración de sueño, mejor sleepQuality → score mayor',
+        () {
+      // 8h de sueño en ambos casos. La diferencia es la calidad
+      // multidimensional (SPEC-69) que ahora alimenta el bloque Conducta.
+      final fragmented = engine.calculateIMR(
+        user,
+        _state(sleepHoursRaw: 8, sleepQuality: 0.55),
+      );
+      final restorative = engine.calculateIMR(
+        user,
+        _state(sleepHoursRaw: 8, sleepQuality: 1.0),
+      );
+      expect(restorative.behaviorScore, greaterThan(fragmented.behaviorScore));
+      expect(restorative.totalScore, greaterThan(fragmented.totalScore));
+    });
+
+    test('weeklyQualityScore más alto → metabolicScore más alto', () {
+      // Mismas horas de ayuno y eTRF. La diferencia es la calidad
+      // semanal continua (SPEC-65) en lugar del binario weeklyAdherence.
+      final low = engine.calculateIMR(
+        user,
+        _state(weeklyQualityScore: 0.2),
+      );
+      final high = engine.calculateIMR(
+        user,
+        _state(weeklyQualityScore: 0.95),
+      );
+      expect(high.metabolicScore, greaterThan(low.metabolicScore));
+    });
+
+    test('weeklyAdherence binario YA NO afecta el metabolicScore directo',
+        () {
+      // Si dos states comparten weeklyQualityScore pero difieren en
+      // weeklyAdherence, el metabolicScore debe ser idéntico — el engine
+      // ya no consume el binario.
+      final a = engine.calculateIMR(
+        user,
+        _state(weeklyAdherence: 0.0, weeklyQualityScore: 0.7),
+      );
+      final b = engine.calculateIMR(
+        user,
+        _state(weeklyAdherence: 1.0, weeklyQualityScore: 0.7),
+      );
+      expect(a.metabolicScore, b.metabolicScore);
+    });
+
+    test('Backward compat: tests pre-SPEC-53 sin weeklyQualityScore '
+        'siguen dando un score determinista', () {
+      // El helper defaultea weeklyQualityScore al valor de weeklyAdherence,
+      // así que la aritmética antigua se preserva.
+      final r1 = engine.calculateIMR(user, _state(weeklyAdherence: 0.7));
+      final r2 = engine.calculateIMR(user, _state(weeklyAdherence: 0.7));
+      expect(r1.totalScore, r2.totalScore);
     });
   });
 }
