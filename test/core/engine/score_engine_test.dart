@@ -14,6 +14,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 UserModel _user({
   String gender = 'M',
+  int age = 30,
   double weight = 75,
   double height = 175,
   double bodyFatPct = 20,
@@ -22,7 +23,7 @@ UserModel _user({
 }) {
   return UserModel(
     id: 'test',
-    age: 30,
+    age: age,
     gender: gender,
     weight: weight,
     height: height,
@@ -289,6 +290,88 @@ void main() {
       final r1 = engine.calculateIMR(user, _state(weeklyAdherence: 0.7));
       final r2 = engine.calculateIMR(user, _state(weeklyAdherence: 0.7));
       expect(r1.totalScore, r2.totalScore);
+    });
+  });
+
+  group('SPEC-70.3: FFMI baseline ajustado por edad', () {
+    /// Helper: construye un user con FFMI computado igual al objetivo.
+    /// Dado FFMI = leanMass / hMeter², con leanMass = weight*(1-bf/100):
+    /// si fijamos height y bf, el peso requerido es FFMI * hMeter² / (1-bf/100).
+    UserModel userWithFFMI(double targetFFMI, int age, {String gender = 'M'}) {
+      const height = 175.0;
+      const bf = 20.0;
+      final hMeter = height / 100;
+      final weight = targetFFMI * (hMeter * hMeter) / (1 - bf / 100);
+      return _user(
+        gender: gender,
+        age: age,
+        weight: weight,
+        height: height,
+        bodyFatPct: bf,
+        waist: 78, // WHtR sano para que estructura no colapse por s1.
+      );
+    }
+
+    test('Mismo FFMI=17, joven (25) vs mayor (70) → mayor puntúa más alto',
+        () {
+      final young = userWithFFMI(17.0, 25);
+      final old = userWithFFMI(17.0, 70);
+      final state = _state();
+      final rYoung = engine.calculateIMR(young, state);
+      final rOld = engine.calculateIMR(old, state);
+      // Joven con FFMI=17 está en bottom-percentile (baseline=17 → s2=0).
+      // Adulto mayor con mismo FFMI ya supera el umbral de sarcopenia
+      // (baseline=15.5 → s2=1.5/6=0.25). Su estructura debe puntuar más.
+      expect(rOld.structureScore, greaterThan(rYoung.structureScore));
+    });
+
+    test('FFMI=17 a los 70 supera el umbral de sarcopenia (s2 > 0)', () {
+      final old = userWithFFMI(17.0, 70);
+      final r = engine.calculateIMR(old, _state());
+      // structureBlock = 0.65*s1 + 0.35*s2. Con s1≈1 (waist=78) y s2>0,
+      // el structureBlock debe estar claramente arriba de 0.65.
+      expect(r.structureScore, greaterThan(0.65));
+    });
+
+    test('FFMI=17 a los 25 está en el percentil ~5 (s2 ≈ 0)', () {
+      final young = userWithFFMI(17.0, 25);
+      final r = engine.calculateIMR(young, _state());
+      // Con baseline=17.0, s2 = (17-17)/6 = 0.
+      // structureBlock ≈ 0.65 * s1 (sólo WHtR aporta).
+      expect(r.structureScore, closeTo(0.65, 0.01));
+    });
+
+    test('Misma edad >70, FFMI 21 vs FFMI 16: 21 puntúa cerca del peak', () {
+      final athletic = userWithFFMI(21.0, 75);
+      final lean = userWithFFMI(16.0, 75);
+      final state = _state();
+      final rAthletic = engine.calculateIMR(athletic, state);
+      final rLean = engine.calculateIMR(lean, state);
+      expect(rAthletic.structureScore, greaterThan(rLean.structureScore));
+      // 21 a los 75: s2 = (21-15.5)/6 = 0.917. Excelente para edad.
+      expect(rAthletic.structureScore, greaterThan(0.85));
+    });
+
+    test('Mujeres: baseline más bajo, mismo patrón de envejecimiento', () {
+      final youngWoman = userWithFFMI(14.5, 25, gender: 'F');
+      final olderWoman = userWithFFMI(14.5, 70, gender: 'F');
+      final state = _state();
+      final rYoung = engine.calculateIMR(youngWoman, state);
+      final rOlder = engine.calculateIMR(olderWoman, state);
+      // 14.5 es bottom para mujer joven (s2=0). Para mujer >70 ya supera
+      // el umbral (baseline=13.0 → s2=1.5/5=0.3).
+      expect(rOlder.structureScore, greaterThan(rYoung.structureScore));
+    });
+
+    test('Backward compat: usuario edad 30 (default helper) sigue funcionando',
+        () {
+      // Tests pre-SPEC-70.3 usaban age=30 implícito. Verificamos que no
+      // rompen — el baseline a los 30 es 17.0 hombres / 14.5 mujeres
+      // (cae en peak, < 50 años).
+      final user = _user(weight: 75, height: 180, waist: 78);
+      final r = engine.calculateIMR(user, _state());
+      expect(r.totalScore, greaterThan(0));
+      expect(r.totalScore, lessThanOrEqualTo(100));
     });
   });
 }

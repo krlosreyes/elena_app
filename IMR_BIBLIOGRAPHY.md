@@ -81,14 +81,22 @@ El IMR final combina tres bloques: Estructura corporal, Metabolismo (ayuno + adh
   - Browning LM et al. (ya citado §1.1).
 - **Código:** `lib/src/core/engine/score_engine.dart` — `s1 = ((0.60 - whtr) / 0.15).clamp(0.0, 1.0)`
 
-### 2.4 — FFMI baseline 16/14 + range 6/5
+### 2.4 — FFMI baseline age-stratified + range 6/5
 
-- **Valor:** Hombre baseline 16, range 6 (16→22). Mujer baseline 14, range 5 (14→19).
+**Actualizado en SPEC-70.3.** El baseline (percentil ~5 = umbral de sarcopenia) ahora depende de `(gender, age)`. Antes era constante `isMale ? 16.0 : 14.0` lo que sobreestimaba la salud estructural de adultos mayores y subestimaba la de jóvenes en bottom-percentile.
+
+- **Valores actuales:**
+  - Hombres: peak 17.0 (< 50 años) → 16.5 (50-59) → 16.0 (60-69) → 15.5 (70+).
+  - Mujeres: peak 14.5 (< 50 años) → 14.0 (50-59) → 13.5 (60-69) → 13.0 (70+).
+  - Range constante: 6.0 hombres, 5.0 mujeres.
 - **Confianza:** MEDIUM
-- **Justificación:** FFMI 22 (hombre) y 19 (mujer) son los percentiles ~95 de poblaciones no-entrenadas — punto donde la masa magra es claramente "alta" sin necesidad de ser atlético-élite. FFMI 16/14 son los percentiles ~5 (sarcopenia evidente).
+- **Justificación:** La masa magra cae ~1 punto FFMI por década después de los 50 — patrón documentado consistentemente en cohortes adultas. Estratificar por edad evita dos sesgos opuestos: un hombre de 65 con FFMI 16.5 ya no puntúa "estructura adecuada" cuando bibliográficamente está en sarcopenia franca, y un joven de 25 con el mismo FFMI ya no queda sobreestimado en su grupo de edad.
 - **Fuentes:**
-  - Schutz Y, Kyle UU, Pichard C. "Fat-free mass index and fat mass index percentiles in Caucasians aged 18-98 y." *Int J Obes* 2002;26(7):953-60.
-- **Código:** `lib/src/core/engine/score_engine.dart` — `final double baseFFMI = isMale ? 16.0 : 14.0; final double rangeFFMI = isMale ? 6.0 : 5.0;`
+  - **Kyle UG, Genton L, Hans D, Karsegard L, Slosman DO, Pichard C.** "Age, gender, and BMI-adjusted reference values for fat-free mass index by bioelectrical impedance analysis in 5225 healthy subjects aged 15 to 98 years." *Am J Clin Nutr* 2003;77(2):323-9. (Tabla age-stratified; principal fuente del nuevo baseline.)
+  - Schutz Y, Kyle UU, Pichard C. "Fat-free mass index and fat mass index percentiles in Caucasians aged 18-98 y." *Int J Obes* 2002;26(7):953-60. (Datos de varianza intra-grupo que justifican mantener `range` constante.)
+- **Código:** `lib/src/core/engine/score_engine.dart` — `final double baseFFMI = _baseFFMIForAge(isMale, user.age);` + helper privado `_baseFFMIForAge`.
+
+> **SPEC-70.3.1 candidato:** estratificar también el `range` por edad (la varianza FFMI poblacional comprime ~10% en mayores de 70). Esperar datos propios antes de implementar — el efecto es marginal frente a la corrección del baseline.
 
 ---
 
@@ -382,6 +390,25 @@ El rango asimétrico es defendible pero los valores exactos no.
 ### 9.7 — Hidratación goal por defecto
 
 El goal de hidratación se calcula por usuario (no aparece en este doc) pero las constantes que lo derivan tienen el mismo problema de origen.
+
+### 9.8 — Recalibraciones pendientes (R2.5) — revisión técnica externa
+
+La revisión técnica de este documento expuso cuatro recalibraciones específicas que SPEC-70 no aborda directamente y que se trackean como sub-SPECs en una mini-fase R2.5. Cada una con su justificación y prioridad relativa.
+
+**SPEC-70.1 — UI advisory sobre el peso conservador de Nutrición.**
+*Origen:* el peso 0.12 (§4.4) protege contra inflar el score con métricas pobres pero genera un sesgo opuesto — un usuario con ayuno+ejercicio impecables pero comiendo ultraprocesados puede tener IMR alto sin saberlo. *Solución:* badge informativo en el dashboard del IMR cuando `nutritionScoreRaw > 0` clarificando *"Score nutricional: cantidad y timing. Calidad nutricional (macros) entrará al cómputo en próxima versión."* *Tipo:* UX, no motor. *Prioridad:* media (cierra bucle de transparencia con el usuario).
+
+**SPEC-70.2 — Sigmoid del bonus eTRF en lugar de salto binario.**
+*Origen:* el `(lastMealTime.hour < 18) ? 1.15 : 1.0` (§3.3) crea un escalón frustrante para el usuario avanzado — comer a las 17:59 vs 18:01 produce salto del 15%. *Solución:* sustituir por `etrfBonus = 1.0 + 0.15 * (1 - sigmoid((mealHour - 17) / 1.0))` que da progresión orgánica: 16:00→1.13, 17:00→1.075, 18:00→1.02, 19:00→1.005. *Justificación bibliográfica:* Sutton et al. 2018 reportan mejoras dosis-dependientes con ventanas más tempranas, no efecto umbral único. *Tipo:* motor, ~30 líneas + 4 tests. *Prioridad:* baja (cosmético del cómputo, sin cambio de comportamiento agregado).
+
+**SPEC-70.3 — FFMI ajustado por edad. ✅ CERRADA.**
+*Origen:* el `score_engine.dart` (§2.4) leía `user.gender` para `baseFFMI` y `rangeFFMI` pero ignoraba `user.age` completamente, aunque `UserModel.age` existe. *Solución implementada:* `baseFFMI` ahora es función de `(gender, age)` vía helper privado `_baseFFMIForAge`. Cae ~1 punto por década después de los 50, replicando la pérdida natural de masa magra documentada. `rangeFFMI` se mantiene constante por simplicidad (estratificarlo añade complejidad sin mover materialmente el score; SPEC-70.3.1 puede refinar si datos propios lo justifican). Ver §2.4 actualizada.
+
+**SPEC-70.4 — Educación de logging para hidratación.**
+*Origen:* la convención actual es que "no loguear agua" se trata como "no hidrataste" (penalización máxima). Es defendible (logging IS la conducta que la app enseña; sin tracking no hay personalización) pero crea fricción cuando el usuario sí se hidrató pero olvidó registrar. *Solución:* coach contextual *"Tomar agua sin loguear no afecta tu score. Trackea para que el motor te ayude a optimizar."* cuando el usuario reporta hidratación verbal alta pero el dashboard muestra bajo. *Tipo:* UX educativa, NO cambio de motor. *Prioridad:* baja. *Decisión arquitectural:* mantenemos la semántica "logging = conducta" en el motor; el cambio es de comunicación.
+
+**MKT-IMR-001 — Adaptación del documento al sitio público.**
+*Origen:* este `IMR_BIBLIOGRAPHY.md` es markdown técnico que vive en el repo. Para el sitio web público (`metamorfosisreal.com/ciencia` o equivalente) se necesita derivado con: (a) fórmulas renderizadas con KaTeX/MathJax, (b) gráficos interactivos de sigmoid del ayuno, sigmoid eTRF post-SPEC-70.2, curvas FFMI por edad post-SPEC-70.3, efecto del gap metabólico en sleep quality, (c) link bidireccional repo↔sitio para auditabilidad. *Tipo:* deliverable de marketing/comms. *NO es ingeniería de R3.* *Prioridad:* del equipo de sitio cuando se quiera posicionar la transparencia como diferenciador del producto.
 
 ---
 

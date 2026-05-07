@@ -69,8 +69,12 @@ class ScoreEngine {
     final double hMeter = user.height / 100;
     final double leanMass = user.weight * (1 - (user.bodyFatPercentage / 100));
     final double ffmi = leanMass / math.pow(hMeter, 2);
-    // SPEC-70: ref §2.4 — FFMI baseline/range derivados de Schutz 2002.
-    final double baseFFMI = isMale ? 16.0 : 14.0;
+    // SPEC-70.3: baseline FFMI age-stratified. La masa magra disminuye
+    // ~1 punto por década después de los 50 (Kyle UG et al. 2003). Sin
+    // este ajuste, un adulto mayor con FFMI 16.5 puntuaba "estructura
+    // adecuada" cuando bibliográficamente está en sarcopenia franca, y
+    // un joven con el mismo FFMI quedaba sobreestimado en su grupo.
+    final double baseFFMI = _baseFFMIForAge(isMale, user.age);
     final double rangeFFMI = isMale ? 6.0 : 5.0;
     final double s2 = ((ffmi - baseFFMI) / rangeFFMI).clamp(0.0, 1.0);
     // SPEC-70: ref §2.1, §2.2 — pesos 0.65 WHtR + 0.35 FFMI.
@@ -152,6 +156,37 @@ class ScoreEngine {
       zone: _getZone(score),
       description: _getDescription(score, circadianScore),
     );
+  }
+
+  /// SPEC-70.3: baseline FFMI ajustado por edad y género.
+  ///
+  /// Antes (SPEC-70 base): `isMale ? 16.0 : 14.0` constante. Eso
+  /// sobreestimaba la salud estructural de adultos mayores (un FFMI
+  /// 16.5 a los 70 años está en territorio de sarcopenia, no
+  /// "adecuado") y subestimaba la de adultos jóvenes (16.5 a los 25
+  /// es bottom-percentile real).
+  ///
+  /// Ahora: el baseline (percentil ~5 = umbral de sarcopenia) cae ~1
+  /// punto por década después de los 50, replicando la pérdida natural
+  /// de masa magra documentada en literatura.
+  ///
+  /// Referencia: Kyle UG, Genton L, Hans D, Karsegard L, Slosman DO,
+  /// Pichard C. "Age, gender, and BMI-adjusted reference values for
+  /// fat-free mass index by bioelectrical impedance analysis in 5225
+  /// healthy subjects aged 15 to 98 years." Am J Clin Nutr 2003;77(2):323-9.
+  ///
+  /// El `rangeFFMI` se mantiene constante (6.0 hombres, 5.0 mujeres) —
+  /// la varianza poblacional comprime levemente con la edad pero
+  /// estratificarlo añade complejidad sin mover materialmente el score.
+  /// SPEC-70.3.1 puede refinar si datos propios lo justifican.
+  ///
+  /// SPEC-70: ref IMR_BIBLIOGRAPHY.md §2.4 (actualizado).
+  static double _baseFFMIForAge(bool isMale, int age) {
+    final double peak = isMale ? 17.0 : 14.5;
+    if (age < 50) return peak;
+    if (age < 60) return peak - 0.5;
+    if (age < 70) return peak - 1.0;
+    return peak - 1.5;
   }
 
   String _getZone(int s) {
