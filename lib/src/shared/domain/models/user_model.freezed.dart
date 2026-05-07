@@ -650,9 +650,13 @@ CircadianProfile _$CircadianProfileFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$CircadianProfile {
+  @TimestampConverter()
   DateTime get wakeUpTime => throw _privateConstructorUsedError;
+  @TimestampConverter()
   DateTime get sleepTime => throw _privateConstructorUsedError;
+  @OptionalTimestampConverter()
   DateTime? get firstMealGoal => throw _privateConstructorUsedError;
+  @OptionalTimestampConverter()
   DateTime? get lastMealGoal => throw _privateConstructorUsedError;
 
   /// Serializes this CircadianProfile to a JSON map.
@@ -672,10 +676,10 @@ abstract class $CircadianProfileCopyWith<$Res> {
       _$CircadianProfileCopyWithImpl<$Res, CircadianProfile>;
   @useResult
   $Res call(
-      {DateTime wakeUpTime,
-      DateTime sleepTime,
-      DateTime? firstMealGoal,
-      DateTime? lastMealGoal});
+      {@TimestampConverter() DateTime wakeUpTime,
+      @TimestampConverter() DateTime sleepTime,
+      @OptionalTimestampConverter() DateTime? firstMealGoal,
+      @OptionalTimestampConverter() DateTime? lastMealGoal});
 }
 
 /// @nodoc
@@ -728,10 +732,10 @@ abstract class _$$CircadianProfileImplCopyWith<$Res>
   @override
   @useResult
   $Res call(
-      {DateTime wakeUpTime,
-      DateTime sleepTime,
-      DateTime? firstMealGoal,
-      DateTime? lastMealGoal});
+      {@TimestampConverter() DateTime wakeUpTime,
+      @TimestampConverter() DateTime sleepTime,
+      @OptionalTimestampConverter() DateTime? firstMealGoal,
+      @OptionalTimestampConverter() DateTime? lastMealGoal});
 }
 
 /// @nodoc
@@ -777,21 +781,25 @@ class __$$CircadianProfileImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$CircadianProfileImpl implements _CircadianProfile {
   const _$CircadianProfileImpl(
-      {required this.wakeUpTime,
-      required this.sleepTime,
-      this.firstMealGoal,
-      this.lastMealGoal});
+      {@TimestampConverter() required this.wakeUpTime,
+      @TimestampConverter() required this.sleepTime,
+      @OptionalTimestampConverter() this.firstMealGoal,
+      @OptionalTimestampConverter() this.lastMealGoal});
 
   factory _$CircadianProfileImpl.fromJson(Map<String, dynamic> json) =>
       _$$CircadianProfileImplFromJson(json);
 
   @override
+  @TimestampConverter()
   final DateTime wakeUpTime;
   @override
+  @TimestampConverter()
   final DateTime sleepTime;
   @override
+  @OptionalTimestampConverter()
   final DateTime? firstMealGoal;
   @override
+  @OptionalTimestampConverter()
   final DateTime? lastMealGoal;
 
   @override
@@ -838,21 +846,26 @@ class _$CircadianProfileImpl implements _CircadianProfile {
 
 abstract class _CircadianProfile implements CircadianProfile {
   const factory _CircadianProfile(
-      {required final DateTime wakeUpTime,
-      required final DateTime sleepTime,
-      final DateTime? firstMealGoal,
-      final DateTime? lastMealGoal}) = _$CircadianProfileImpl;
+          {@TimestampConverter() required final DateTime wakeUpTime,
+          @TimestampConverter() required final DateTime sleepTime,
+          @OptionalTimestampConverter() final DateTime? firstMealGoal,
+          @OptionalTimestampConverter() final DateTime? lastMealGoal}) =
+      _$CircadianProfileImpl;
 
   factory _CircadianProfile.fromJson(Map<String, dynamic> json) =
       _$CircadianProfileImpl.fromJson;
 
   @override
+  @TimestampConverter()
   DateTime get wakeUpTime;
   @override
+  @TimestampConverter()
   DateTime get sleepTime;
   @override
+  @OptionalTimestampConverter()
   DateTime? get firstMealGoal;
   @override
+  @OptionalTimestampConverter()
   DateTime? get lastMealGoal;
 
   /// Create a copy of CircadianProfile
@@ -871,10 +884,10 @@ FastingInterval _$FastingIntervalFromJson(Map<String, dynamic> json) {
 mixin _$FastingInterval {
   String get id => throw _privateConstructorUsedError;
   String get userId => throw _privateConstructorUsedError;
-  DateTime get startTime =>
-      throw _privateConstructorUsedError; // La "coordenada" de inicio en el círculo
-  DateTime? get endTime =>
-      throw _privateConstructorUsedError; // Si es null, el ayuno sigue activo
+  @TimestampConverter()
+  DateTime get startTime => throw _privateConstructorUsedError;
+  @OptionalTimestampConverter()
+  DateTime? get endTime => throw _privateConstructorUsedError;
   bool get isFasting =>
       throw _privateConstructorUsedError; // true = Ayuno, false = Ventana de comida
   String? get note => throw _privateConstructorUsedError;
@@ -898,8 +911,8 @@ abstract class $FastingIntervalCopyWith<$Res> {
   $Res call(
       {String id,
       String userId,
-      DateTime startTime,
-      DateTime? endTime,
+      @TimestampConverter() DateTime startTime,
+      @OptionalTimestampConverter() DateTime? endTime,
       bool isFasting,
       String? note});
 }
@@ -966,8 +979,8 @@ abstract class _$$FastingIntervalImplCopyWith<$Res>
   $Res call(
       {String id,
       String userId,
-      DateTime startTime,
-      DateTime? endTime,
+      @TimestampConverter() DateTime startTime,
+      @OptionalTimestampConverter() DateTime? endTime,
       bool isFasting,
       String? note});
 }
@@ -1027,8 +1040,8 @@ class _$FastingIntervalImpl implements _FastingInterval {
   const _$FastingIntervalImpl(
       {required this.id,
       required this.userId,
-      required this.startTime,
-      this.endTime,
+      @TimestampConverter() required this.startTime,
+      @OptionalTimestampConverter() this.endTime,
       this.isFasting = true,
       this.note});
 
@@ -1040,11 +1053,11 @@ class _$FastingIntervalImpl implements _FastingInterval {
   @override
   final String userId;
   @override
+  @TimestampConverter()
   final DateTime startTime;
-// La "coordenada" de inicio en el círculo
   @override
+  @OptionalTimestampConverter()
   final DateTime? endTime;
-// Si es null, el ayuno sigue activo
   @override
   @JsonKey()
   final bool isFasting;
@@ -1098,8 +1111,8 @@ abstract class _FastingInterval implements FastingInterval {
   const factory _FastingInterval(
       {required final String id,
       required final String userId,
-      required final DateTime startTime,
-      final DateTime? endTime,
+      @TimestampConverter() required final DateTime startTime,
+      @OptionalTimestampConverter() final DateTime? endTime,
       final bool isFasting,
       final String? note}) = _$FastingIntervalImpl;
 
@@ -1111,9 +1124,11 @@ abstract class _FastingInterval implements FastingInterval {
   @override
   String get userId;
   @override
-  DateTime get startTime; // La "coordenada" de inicio en el círculo
+  @TimestampConverter()
+  DateTime get startTime;
   @override
-  DateTime? get endTime; // Si es null, el ayuno sigue activo
+  @OptionalTimestampConverter()
+  DateTime? get endTime;
   @override
   bool get isFasting; // true = Ayuno, false = Ventana de comida
   @override

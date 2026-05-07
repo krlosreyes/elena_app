@@ -64,23 +64,23 @@ Map<String, dynamic> _$$UserModelImplToJson(_$UserModelImpl instance) =>
 _$CircadianProfileImpl _$$CircadianProfileImplFromJson(
         Map<String, dynamic> json) =>
     _$CircadianProfileImpl(
-      wakeUpTime: DateTime.parse(json['wakeUpTime'] as String),
-      sleepTime: DateTime.parse(json['sleepTime'] as String),
-      firstMealGoal: json['firstMealGoal'] == null
-          ? null
-          : DateTime.parse(json['firstMealGoal'] as String),
-      lastMealGoal: json['lastMealGoal'] == null
-          ? null
-          : DateTime.parse(json['lastMealGoal'] as String),
+      wakeUpTime: const TimestampConverter().fromJson(json['wakeUpTime']),
+      sleepTime: const TimestampConverter().fromJson(json['sleepTime']),
+      firstMealGoal:
+          const OptionalTimestampConverter().fromJson(json['firstMealGoal']),
+      lastMealGoal:
+          const OptionalTimestampConverter().fromJson(json['lastMealGoal']),
     );
 
 Map<String, dynamic> _$$CircadianProfileImplToJson(
         _$CircadianProfileImpl instance) =>
     <String, dynamic>{
-      'wakeUpTime': instance.wakeUpTime.toIso8601String(),
-      'sleepTime': instance.sleepTime.toIso8601String(),
-      'firstMealGoal': instance.firstMealGoal?.toIso8601String(),
-      'lastMealGoal': instance.lastMealGoal?.toIso8601String(),
+      'wakeUpTime': const TimestampConverter().toJson(instance.wakeUpTime),
+      'sleepTime': const TimestampConverter().toJson(instance.sleepTime),
+      'firstMealGoal':
+          const OptionalTimestampConverter().toJson(instance.firstMealGoal),
+      'lastMealGoal':
+          const OptionalTimestampConverter().toJson(instance.lastMealGoal),
     };
 
 _$FastingIntervalImpl _$$FastingIntervalImplFromJson(
@@ -88,10 +88,8 @@ _$FastingIntervalImpl _$$FastingIntervalImplFromJson(
     _$FastingIntervalImpl(
       id: json['id'] as String,
       userId: json['userId'] as String,
-      startTime: DateTime.parse(json['startTime'] as String),
-      endTime: json['endTime'] == null
-          ? null
-          : DateTime.parse(json['endTime'] as String),
+      startTime: const TimestampConverter().fromJson(json['startTime']),
+      endTime: const OptionalTimestampConverter().fromJson(json['endTime']),
       isFasting: json['isFasting'] as bool? ?? true,
       note: json['note'] as String?,
     );
@@ -101,8 +99,8 @@ Map<String, dynamic> _$$FastingIntervalImplToJson(
     <String, dynamic>{
       'id': instance.id,
       'userId': instance.userId,
-      'startTime': instance.startTime.toIso8601String(),
-      'endTime': instance.endTime?.toIso8601String(),
+      'startTime': const TimestampConverter().toJson(instance.startTime),
+      'endTime': const OptionalTimestampConverter().toJson(instance.endTime),
       'isFasting': instance.isFasting,
       'note': instance.note,
     };

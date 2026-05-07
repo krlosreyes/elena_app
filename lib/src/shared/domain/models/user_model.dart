@@ -1,5 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import 'package:elena_app/src/core/converters/timestamp_converter.dart';
+
 part 'user_model.freezed.dart';
 part 'user_model.g.dart';
 
@@ -42,23 +44,28 @@ class UserModel with _$UserModel {
 @freezed
 class CircadianProfile with _$CircadianProfile {
   const factory CircadianProfile({
-    required DateTime wakeUpTime,
-    required DateTime sleepTime,
-    DateTime? firstMealGoal,
-    DateTime? lastMealGoal,
+    @TimestampConverter() required DateTime wakeUpTime,
+    @TimestampConverter() required DateTime sleepTime,
+    @OptionalTimestampConverter() DateTime? firstMealGoal,
+    @OptionalTimestampConverter() DateTime? lastMealGoal,
   }) = _CircadianProfile;
 
   factory CircadianProfile.fromJson(Map<String, dynamic> json) => _$CircadianProfileFromJson(json);
 }
 
 // --- NUEVO MODELO PARA EL HISTORIAL (COORDENADAS TEMPORALES) ---
+//
+// SPEC-72.5: campos DateTime aplican TimestampConverter para tolerar
+// `Timestamp` de Firestore en `fromJson`. Antes el .g.dart asumía String
+// ISO 8601, lo que disparaba "TypeError: Timestamp is not a subtype of
+// String" cada vez que el provider leía el último intervalo.
 @freezed
 class FastingInterval with _$FastingInterval {
   const factory FastingInterval({
     required String id,
     required String userId,
-    required DateTime startTime, // La "coordenada" de inicio en el círculo
-    DateTime? endTime,           // Si es null, el ayuno sigue activo
+    @TimestampConverter() required DateTime startTime,
+    @OptionalTimestampConverter() DateTime? endTime,
     @Default(true) bool isFasting, // true = Ayuno, false = Ventana de comida
     String? note,
   }) = _FastingInterval;
