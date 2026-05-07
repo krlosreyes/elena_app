@@ -1,25 +1,38 @@
+// SPEC-63: NutritionNotifier consume el NutritionRepository — los logs
+// ahora persisten en Firestore en lugar de vivir solo en memoria.
+//
+// Antes: la lista de logs vivía en `state.todayLogs` y se perdía al cerrar
+// la app. Ahora: el repositorio es la fuente de verdad; el state local
+// sólo es un cache reactivo del stream `watchTodayLogs`.
+//
+// CONSTITUTION §3.2: este archivo NO importa cloud_firestore. Solo conoce
+// el contrato `NutritionRepository`.
+
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
+
+import 'package:elena_app/src/features/nutrition/data/nutrition_repository_impl.dart';
 import 'package:elena_app/src/features/nutrition/domain/nutrition_log.dart';
+import 'package:elena_app/src/features/nutrition/domain/nutrition_repository.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// NutritionState
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── State ────────────────────────────────────────────────────────────────────
 
 class NutritionState {
-  /// Cuántas comidas tiene como objetivo el usuario por día (de UserModel).
+  /// Cuántas comidas tiene como objetivo el usuario por día.
   final int targetMeals;
 
-  /// Registro en memoria de comidas del día actual.
+  /// Logs del día actual (cache reactivo del stream del repositorio).
   final List<NutritionLog> todayLogs;
 
   /// Score 0.0-1.0 que el ScoreEngine consume para el bloque Conducta.
-  /// Fórmula: 60% adherencia de cantidad + 40% adherencia de ventana circadiana.
+  /// 60% adherencia de cantidad + 40% adherencia de ventana circadiana.
   final double nutritionScore;
 
-  /// % de las comidas registradas que cayeron dentro de la ventana circadiana.
+  /// % de comidas registradas dentro de la ventana circadiana.
   final double windowAdherence;
 
   final bool isSaving;
@@ -32,15 +45,11 @@ class NutritionState {
     this.isSaving = false,
   });
 
-  // ── Computed ────────────────────────────────────────────────────────────────
-
   int get mealsLoggedToday => todayLogs.length;
 
-  /// Progreso de 0.0 a 1.0 respecto a la meta de comidas del día.
   double get progressPercentage =>
       (mealsLoggedToday / targetMeals.clamp(1, 10)).clamp(0.0, 1.0);
 
-  /// Etiqueta de la próxima comida sugerida según el índice actual.
   String get nextMealLabel {
     switch (mealsLoggedToday) {
       case 0:
@@ -71,42 +80,70 @@ class NutritionState {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// NutritionNotifier
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── Notifier ─────────────────────────────────────────────────────────────────
 
 class NutritionNotifier extends StateNotifier<NutritionState> {
-  final Ref _ref;
-  CircadianProfile? _circadianProfile;
-
   NutritionNotifier(this._ref) : super(const NutritionState()) {
     _init();
   }
 
+  final Ref _ref;
+  CircadianProfile? _circadianProfile;
+  StreamSubscription<List<NutritionLog>>? _logsSub;
+  String? _activeUserId;
+
   void _init() {
-    // Escucha cambios en el usuario para actualizar targetMeals y perfil circadiano.
+    // Escucha cambios de usuario para targetMeals, perfil circadiano y stream.
     _ref.listen<AsyncValue<UserModel?>>(
       currentUserStreamProvider,
       (previous, next) {
         next.whenData((user) {
-          if (user != null) {
-            _circadianProfile = user.profile;
-            // Recalcula con los nuevos parámetros del usuario.
-            final updated = _recalculate(state.todayLogs, user.mealsPerDay);
-            state = updated.copyWith(targetMeals: user.mealsPerDay);
+          if (user == null) {
+            _activeUserId = null;
+            _logsSub?.cancel();
+            _logsSub = null;
+            if (mounted) state = const NutritionState();
+            return;
           }
+          _circadianProfile = user.profile;
+          if (_activeUserId != user.id) {
+            _activeUserId = user.id;
+            _subscribeToLogs(user.id);
+          }
+          // Recalcula con los nuevos parámetros del usuario.
+          final updated = _recalculate(state.todayLogs, user.mealsPerDay);
+          state = updated.copyWith(targetMeals: user.mealsPerDay);
         });
       },
       fireImmediately: true,
     );
   }
 
+  void _subscribeToLogs(String userId) {
+    _logsSub?.cancel();
+    final repo = _ref.read(nutritionRepositoryProvider);
+    _logsSub = repo.watchTodayLogs(userId).listen(
+      (logs) {
+        if (!mounted) return;
+        state = _recalculate(logs, state.targetMeals);
+      },
+      onError: (Object _) {
+        // El repositorio puede emitir errors transitorios de red. Mantener
+        // el estado anterior; el próximo evento estable corregirá.
+      },
+    );
+  }
+
+  // ─── API pública ─────────────────────────────────────────────────────────
+
   /// Registra una comida.
   ///
-  /// [label]    — etiqueta semántica opcional; si no se provee se infiere por índice.
-  /// [mealTime] — timestamp opcional de la comida; si no se provee se usa `DateTime.now()`.
-  ///              Permite registrar una comida pasada (caso `AddPastMealSheet`).
+  /// [label]    — etiqueta semántica opcional; si no se provee se infiere.
+  /// [mealTime] — timestamp opcional; si no se provee se usa `DateTime.now()`.
   Future<void> logMeal({String? label, DateTime? mealTime}) async {
+    final userId = _activeUserId;
+    if (userId == null) return;
+
     final timestamp = mealTime ?? DateTime.now();
     final effectiveLabel = label ?? state.nextMealLabel;
     final withinWindow = _isWithinCircadianWindow(timestamp);
@@ -118,65 +155,66 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
       withinCircadianWindow: withinWindow,
     );
 
-    final newLogs = [...state.todayLogs, log];
-    final updated = _recalculate(newLogs, state.targetMeals);
-    state = updated;
+    if (mounted) state = state.copyWith(isSaving: true);
+    try {
+      final repo = _ref.read(nutritionRepositoryProvider);
+      await repo.saveMeal(userId, log);
+      // El stream emitirá la nueva lista; no hay que mutar todayLogs aquí.
+    } finally {
+      if (mounted) state = state.copyWith(isSaving: false);
+    }
   }
 
-  /// Elimina el último registro (acción de deshacer).
-  void removeLastMeal() {
-    if (state.todayLogs.isEmpty) return;
-    final newLogs = state.todayLogs.sublist(0, state.todayLogs.length - 1);
-    state = _recalculate(newLogs, state.targetMeals);
+  /// Elimina el último registro del día.
+  Future<void> removeLastMeal() async {
+    final userId = _activeUserId;
+    if (userId == null) return;
+    final repo = _ref.read(nutritionRepositoryProvider);
+    await repo.removeLastMeal(userId);
+    // El stream emitirá la lista actualizada.
   }
 
-  /// Resetea el estado diario (llamar en inicio de sesión o a medianoche).
+  /// Reset diario: solo limpia el cache local. Los logs persistidos quedan
+  /// para análisis longitudinal; el stream emitirá lista vacía mañana.
   void resetDaily() {
-    state = NutritionState(
-      targetMeals: state.targetMeals,
+    if (!mounted) return;
+    state = state.copyWith(
       todayLogs: const [],
       nutritionScore: 0.0,
       windowAdherence: 0.0,
     );
   }
 
-  // ── Lógica interna ──────────────────────────────────────────────────────────
+  @override
+  void dispose() {
+    _logsSub?.cancel();
+    super.dispose();
+  }
 
-  /// Calcula si [time] está dentro de la ventana circadiana configurada
-  /// [firstMealGoal, lastMealGoal]. Si no hay ventana configurada, retorna true.
+  // ─── Lógica interna ──────────────────────────────────────────────────────
+
   bool _isWithinCircadianWindow(DateTime time) {
     final profile = _circadianProfile;
     if (profile == null) return true;
-
     final first = profile.firstMealGoal;
     final last = profile.lastMealGoal;
     if (first == null || last == null) return true;
-
     final timeMinutes = time.hour * 60 + time.minute;
     final firstMinutes = first.hour * 60 + first.minute;
     final lastMinutes = last.hour * 60 + last.minute;
-
     return timeMinutes >= firstMinutes && timeMinutes <= lastMinutes;
   }
 
   /// Recalcula nutritionScore y windowAdherence dado un conjunto de logs.
-  ///
-  /// Fórmula científica:
-  ///   mealCountScore   = min(logsCount / targetMeals, 1.0)
-  ///   windowAdherence  = logs dentro de ventana / total logs  (1.0 si sin logs)
-  ///   nutritionScore   = (0.60 × mealCountScore) + (0.40 × windowAdherence)
   NutritionState _recalculate(List<NutritionLog> logs, int target) {
     final int count = logs.length;
     final double mealCountScore =
         (count / target.clamp(1, 10)).clamp(0.0, 1.0);
-
     final double windowAdherence = count == 0
         ? 0.0
         : logs.where((l) => l.withinCircadianWindow).length / count;
-
     final double score =
         ((0.60 * mealCountScore) + (0.40 * windowAdherence)).clamp(0.0, 1.0);
-
     return state.copyWith(
       todayLogs: logs,
       nutritionScore: score,
@@ -185,9 +223,7 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Provider
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── Provider ─────────────────────────────────────────────────────────────────
 
 final nutritionProvider =
     StateNotifierProvider<NutritionNotifier, NutritionState>((ref) {
