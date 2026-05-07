@@ -12,6 +12,7 @@ import 'package:elena_app/src/features/dashboard/application/hydration_notifier.
 import 'package:elena_app/src/features/dashboard/domain/fasting_status.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/circadian_clock.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/live_fasting_clock.dart';
+import 'package:elena_app/src/features/dashboard/presentation/widgets/pillar_ring.dart';
 import 'package:elena_app/src/features/exercise/application/exercise_notifier.dart';
 import 'package:elena_app/src/features/exercise/application/exercise_state.dart';
 import 'package:elena_app/src/features/exercise/presentation/exercise_input_sheet.dart';
@@ -301,7 +302,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _pillarRing(
+              PillarRing(
                 icon: Icons.timer_rounded,
                 color: AppColors.metabolicGreen,
                 progress: fastingState.progressPercentage,
@@ -310,7 +311,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 completed: fastingState.progressPercentage >= 1.0,
                 onTap: () => setState(() => _selectedPillar = SelectedPillar.ayuno),
               ),
-              _pillarRing(
+              PillarRing(
                 icon: Icons.nightlight_round,
                 color: const Color(0xFF818CF8),
                 progress: sleep.lastLog == null
@@ -323,7 +324,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     sleep.lastLog!.duration.inHours >= 7,
                 onTap: () => setState(() => _selectedPillar = SelectedPillar.sueno),
               ),
-              _pillarRing(
+              PillarRing(
                 icon: Icons.water_drop_rounded,
                 color: Colors.blueAccent,
                 progress: hydration.progressPercentage,
@@ -333,7 +334,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 onTap: () =>
                     setState(() => _selectedPillar = SelectedPillar.hidratacion),
               ),
-              _pillarRing(
+              PillarRing(
                 icon: Icons.fitness_center_rounded,
                 color: Colors.tealAccent,
                 progress: (exercise.todayMinutes / 60.0).clamp(0.0, 1.0),
@@ -343,7 +344,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 onTap: () =>
                     setState(() => _selectedPillar = SelectedPillar.ejercicio),
               ),
-              _pillarRing(
+              PillarRing(
                 icon: Icons.restaurant_rounded,
                 color: Colors.orangeAccent,
                 progress: nutrition.progressPercentage,
@@ -361,89 +362,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _pillarRing({
-    required IconData icon,
-    required Color color,
-    required double progress,
-    required String label,
-    required VoidCallback onTap,
-    bool isSelected = false,
-    bool completed = false,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            width: 56,
-            height: 56,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                if (isSelected)
-                  Container(
-                    width: 56,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: color.withValues(alpha: 0.45),
-                          blurRadius: 18,
-                          spreadRadius: 2,
-                        ),
-                      ],
-                    ),
-                  ),
-                SizedBox(
-                  width: 56,
-                  height: 56,
-                  child: CircularProgressIndicator(
-                    value: progress.clamp(0.0, 1.0),
-                    strokeWidth: 3,
-                    backgroundColor: color.withValues(alpha: 0.15),
-                    valueColor: AlwaysStoppedAnimation<Color>(color),
-                  ),
-                ),
-                Icon(icon, color: color, size: 22),
-                if (completed)
-                  Positioned(
-                    right: 2,
-                    bottom: 2,
-                    child: Container(
-                      width: 16,
-                      height: 16,
-                      decoration: const BoxDecoration(
-                        color: AppColors.metabolicGreen,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.check_rounded,
-                        color: Colors.white,
-                        size: 12,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 10,
-              color: isSelected
-                  ? color
-                  : Colors.white.withValues(alpha: 0.6),
-              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // SPEC-66 v2: _pillarRing extraído a widgets/pillar_ring.dart como
+  // PillarRing público para hacerlo testeable con widget tests.
 
   /// Tarjeta extendida de control de Ayuno con beneficios y 2 CTAs.
   /// Reemplaza la antigua "VENTANA NUTRICIONAL" + IMRScoreCard.
