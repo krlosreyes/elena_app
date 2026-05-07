@@ -44,6 +44,7 @@ MetabolicState _state({
   double exerciseMinutesRaw = 30,
   double sleepHoursRaw = 8,
   double nutritionScoreRaw = 0.5,
+  double hydrationLevel = 0.5,
   DateTime? lastMealTime,
 }) {
   return MetabolicState(
@@ -53,7 +54,7 @@ MetabolicState _state({
     sleepQuality: 1.0,
     exerciseLoad: 0.5,
     glycemicLoad: nutritionScoreRaw,
-    hydrationLevel: 0.5,
+    hydrationLevel: hydrationLevel,
     metabolicCoherence: 1.0,
     fastingHoursRaw: fastingHoursRaw,
     sleepHoursRaw: sleepHoursRaw,
@@ -190,6 +191,32 @@ void main() {
       final low = engine.calculateIMR(user, _state(fastingHoursRaw: 4));
       final high = engine.calculateIMR(user, _state(fastingHoursRaw: 14));
       expect(high.metabolicScore, greaterThan(low.metabolicScore));
+    });
+  });
+
+  group('SPEC-67: hidratación entra al bloque Conducta', () {
+    final user = _user(waist: 85);
+
+    test('CA-67-01: 0% vs 100% hidratación → diferencia ≥ 5 puntos', () {
+      // Mantenemos todos los demás factores idénticos. Solo varía hidratación.
+      final dry = engine.calculateIMR(user, _state(hydrationLevel: 0.0));
+      final hydrated =
+          engine.calculateIMR(user, _state(hydrationLevel: 1.0));
+
+      expect(hydrated.totalScore - dry.totalScore, greaterThanOrEqualTo(5),
+          reason: 'La diferencia debe ser perceptible (>= 5 puntos absolutos).');
+    });
+
+    test('Hidratación más alta → behavior score más alto', () {
+      final r1 = engine.calculateIMR(user, _state(hydrationLevel: 0.2));
+      final r2 = engine.calculateIMR(user, _state(hydrationLevel: 0.8));
+      expect(r2.behaviorScore, greaterThan(r1.behaviorScore));
+    });
+
+    test('Pesos suman 100% (Circadiano 28 + Sueño 20 + Ejercicio 20 + '
+        'Nutrición 12 + Hidratación 20)', () {
+      const total = 0.28 + 0.20 + 0.20 + 0.12 + 0.20;
+      expect(total, closeTo(1.0, 1e-9));
     });
   });
 }

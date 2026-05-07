@@ -101,13 +101,22 @@ class ScoreEngine {
     final double exerciseMin = state.exerciseMinutesRaw;
     final double sExercise = (exerciseMin / 60).clamp(0.0, 1.2);
     final double nutritionScore = state.nutritionScoreRaw;
+    // SPEC-67: hidratación entra al bloque Conducta. El campo state.hydrationLevel
+    // ya viene normalizado 0.0-1.0 desde MetabolicStateBuilder
+    // (currentAmountLiters / dailyGoalLiters).
+    final double sHydration = state.hydrationLevel.clamp(0.0, 1.0);
 
-    // SPEC-04: Pesos del bloque Conducta — Circadiano 35% + Sueño 25% +
-    // Ejercicio 25% + Nutrición 15%. SPEC-67 incorporará Hidratación.
-    final double behaviorBlock = (0.35 * circadianScore.clamp(0.0, 1.0)) +
-        (0.25 * sSleep) +
-        (0.25 * sExercise) +
-        (0.15 * nutritionScore.clamp(0.0, 1.0));
+    // SPEC-04 + SPEC-67: Pesos del bloque Conducta — Circadiano 28% +
+    // Sueño 20% + Ejercicio 20% + Nutrición 12% + Hidratación 20%.
+    // Suma = 100%. Hidratación recibe peso alto porque la deshidratación
+    // afecta sistémicamente todos los procesos metabólicos (la calibración
+    // bibliográfica completa se documentará en SPEC-70 R2 final con
+    // referencias ACSM/EFSA/NHANES).
+    final double behaviorBlock = (0.28 * circadianScore.clamp(0.0, 1.0)) +
+        (0.20 * sSleep) +
+        (0.20 * sExercise) +
+        (0.12 * nutritionScore.clamp(0.0, 1.0)) +
+        (0.20 * sHydration);
 
     final double raw = (0.50 * structureBlock) +
         (0.25 * metabolicBlock.clamp(0.0, 1.0)) +
