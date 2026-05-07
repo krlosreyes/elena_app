@@ -23,9 +23,28 @@ mixin _$ExerciseLog {
   String get id => throw _privateConstructorUsedError;
   String get userId => throw _privateConstructorUsedError;
   int get durationMinutes => throw _privateConstructorUsedError;
+
+  /// Etiqueta libre legacy (SPEC-03). Se mantiene para retrocompatibilidad
+  /// con logs antiguos. SPEC-68 introduce `type` como enum tipado.
   String get activityType => throw _privateConstructorUsedError;
+  @TimestampConverter()
   DateTime get timestamp => throw _privateConstructorUsedError;
-  double get intensityMultiplier => throw _privateConstructorUsedError;
+  double get intensityMultiplier =>
+      throw _privateConstructorUsedError; // ── SPEC-68: tipificación del ejercicio ─────────────────────────────
+  /// Tipo de ejercicio según categorías ACSM. `null` para logs legacy
+  /// que no tienen el dato; el ScoreEngine usa un multiplicador neutral.
+  ExerciseType? get type => throw _privateConstructorUsedError;
+
+  /// Intensidad subjetiva categórica. `null` para logs legacy.
+  ExerciseIntensity? get intensity => throw _privateConstructorUsedError;
+
+  /// Rate of Perceived Exertion (1-10, escala Borg modificada).
+  /// `null` si el usuario no lo registró. Solo valores en [1, 10].
+  int? get rpe => throw _privateConstructorUsedError;
+
+  /// Frecuencia cardíaca promedio durante la sesión, en bpm.
+  /// `null` si no se midió. Debe ser >= 30 si presente.
+  int? get heartRateAvg => throw _privateConstructorUsedError;
 
   /// Serializes this ExerciseLog to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -48,8 +67,12 @@ abstract class $ExerciseLogCopyWith<$Res> {
       String userId,
       int durationMinutes,
       String activityType,
-      DateTime timestamp,
-      double intensityMultiplier});
+      @TimestampConverter() DateTime timestamp,
+      double intensityMultiplier,
+      ExerciseType? type,
+      ExerciseIntensity? intensity,
+      int? rpe,
+      int? heartRateAvg});
 }
 
 /// @nodoc
@@ -73,6 +96,10 @@ class _$ExerciseLogCopyWithImpl<$Res, $Val extends ExerciseLog>
     Object? activityType = null,
     Object? timestamp = null,
     Object? intensityMultiplier = null,
+    Object? type = freezed,
+    Object? intensity = freezed,
+    Object? rpe = freezed,
+    Object? heartRateAvg = freezed,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -99,6 +126,22 @@ class _$ExerciseLogCopyWithImpl<$Res, $Val extends ExerciseLog>
           ? _value.intensityMultiplier
           : intensityMultiplier // ignore: cast_nullable_to_non_nullable
               as double,
+      type: freezed == type
+          ? _value.type
+          : type // ignore: cast_nullable_to_non_nullable
+              as ExerciseType?,
+      intensity: freezed == intensity
+          ? _value.intensity
+          : intensity // ignore: cast_nullable_to_non_nullable
+              as ExerciseIntensity?,
+      rpe: freezed == rpe
+          ? _value.rpe
+          : rpe // ignore: cast_nullable_to_non_nullable
+              as int?,
+      heartRateAvg: freezed == heartRateAvg
+          ? _value.heartRateAvg
+          : heartRateAvg // ignore: cast_nullable_to_non_nullable
+              as int?,
     ) as $Val);
   }
 }
@@ -116,8 +159,12 @@ abstract class _$$ExerciseLogImplCopyWith<$Res>
       String userId,
       int durationMinutes,
       String activityType,
-      DateTime timestamp,
-      double intensityMultiplier});
+      @TimestampConverter() DateTime timestamp,
+      double intensityMultiplier,
+      ExerciseType? type,
+      ExerciseIntensity? intensity,
+      int? rpe,
+      int? heartRateAvg});
 }
 
 /// @nodoc
@@ -139,6 +186,10 @@ class __$$ExerciseLogImplCopyWithImpl<$Res>
     Object? activityType = null,
     Object? timestamp = null,
     Object? intensityMultiplier = null,
+    Object? type = freezed,
+    Object? intensity = freezed,
+    Object? rpe = freezed,
+    Object? heartRateAvg = freezed,
   }) {
     return _then(_$ExerciseLogImpl(
       id: null == id
@@ -165,6 +216,22 @@ class __$$ExerciseLogImplCopyWithImpl<$Res>
           ? _value.intensityMultiplier
           : intensityMultiplier // ignore: cast_nullable_to_non_nullable
               as double,
+      type: freezed == type
+          ? _value.type
+          : type // ignore: cast_nullable_to_non_nullable
+              as ExerciseType?,
+      intensity: freezed == intensity
+          ? _value.intensity
+          : intensity // ignore: cast_nullable_to_non_nullable
+              as ExerciseIntensity?,
+      rpe: freezed == rpe
+          ? _value.rpe
+          : rpe // ignore: cast_nullable_to_non_nullable
+              as int?,
+      heartRateAvg: freezed == heartRateAvg
+          ? _value.heartRateAvg
+          : heartRateAvg // ignore: cast_nullable_to_non_nullable
+              as int?,
     ));
   }
 }
@@ -177,8 +244,12 @@ class _$ExerciseLogImpl implements _ExerciseLog {
       required this.userId,
       required this.durationMinutes,
       required this.activityType,
-      required this.timestamp,
-      this.intensityMultiplier = 1.0});
+      @TimestampConverter() required this.timestamp,
+      this.intensityMultiplier = 1.0,
+      this.type,
+      this.intensity,
+      this.rpe,
+      this.heartRateAvg});
 
   factory _$ExerciseLogImpl.fromJson(Map<String, dynamic> json) =>
       _$$ExerciseLogImplFromJson(json);
@@ -189,17 +260,40 @@ class _$ExerciseLogImpl implements _ExerciseLog {
   final String userId;
   @override
   final int durationMinutes;
+
+  /// Etiqueta libre legacy (SPEC-03). Se mantiene para retrocompatibilidad
+  /// con logs antiguos. SPEC-68 introduce `type` como enum tipado.
   @override
   final String activityType;
   @override
+  @TimestampConverter()
   final DateTime timestamp;
   @override
   @JsonKey()
   final double intensityMultiplier;
+// ── SPEC-68: tipificación del ejercicio ─────────────────────────────
+  /// Tipo de ejercicio según categorías ACSM. `null` para logs legacy
+  /// que no tienen el dato; el ScoreEngine usa un multiplicador neutral.
+  @override
+  final ExerciseType? type;
+
+  /// Intensidad subjetiva categórica. `null` para logs legacy.
+  @override
+  final ExerciseIntensity? intensity;
+
+  /// Rate of Perceived Exertion (1-10, escala Borg modificada).
+  /// `null` si el usuario no lo registró. Solo valores en [1, 10].
+  @override
+  final int? rpe;
+
+  /// Frecuencia cardíaca promedio durante la sesión, en bpm.
+  /// `null` si no se midió. Debe ser >= 30 si presente.
+  @override
+  final int? heartRateAvg;
 
   @override
   String toString() {
-    return 'ExerciseLog(id: $id, userId: $userId, durationMinutes: $durationMinutes, activityType: $activityType, timestamp: $timestamp, intensityMultiplier: $intensityMultiplier)';
+    return 'ExerciseLog(id: $id, userId: $userId, durationMinutes: $durationMinutes, activityType: $activityType, timestamp: $timestamp, intensityMultiplier: $intensityMultiplier, type: $type, intensity: $intensity, rpe: $rpe, heartRateAvg: $heartRateAvg)';
   }
 
   @override
@@ -216,13 +310,29 @@ class _$ExerciseLogImpl implements _ExerciseLog {
             (identical(other.timestamp, timestamp) ||
                 other.timestamp == timestamp) &&
             (identical(other.intensityMultiplier, intensityMultiplier) ||
-                other.intensityMultiplier == intensityMultiplier));
+                other.intensityMultiplier == intensityMultiplier) &&
+            (identical(other.type, type) || other.type == type) &&
+            (identical(other.intensity, intensity) ||
+                other.intensity == intensity) &&
+            (identical(other.rpe, rpe) || other.rpe == rpe) &&
+            (identical(other.heartRateAvg, heartRateAvg) ||
+                other.heartRateAvg == heartRateAvg));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, id, userId, durationMinutes,
-      activityType, timestamp, intensityMultiplier);
+  int get hashCode => Object.hash(
+      runtimeType,
+      id,
+      userId,
+      durationMinutes,
+      activityType,
+      timestamp,
+      intensityMultiplier,
+      type,
+      intensity,
+      rpe,
+      heartRateAvg);
 
   /// Create a copy of ExerciseLog
   /// with the given fields replaced by the non-null parameter values.
@@ -246,8 +356,12 @@ abstract class _ExerciseLog implements ExerciseLog {
       required final String userId,
       required final int durationMinutes,
       required final String activityType,
-      required final DateTime timestamp,
-      final double intensityMultiplier}) = _$ExerciseLogImpl;
+      @TimestampConverter() required final DateTime timestamp,
+      final double intensityMultiplier,
+      final ExerciseType? type,
+      final ExerciseIntensity? intensity,
+      final int? rpe,
+      final int? heartRateAvg}) = _$ExerciseLogImpl;
 
   factory _ExerciseLog.fromJson(Map<String, dynamic> json) =
       _$ExerciseLogImpl.fromJson;
@@ -258,12 +372,35 @@ abstract class _ExerciseLog implements ExerciseLog {
   String get userId;
   @override
   int get durationMinutes;
+
+  /// Etiqueta libre legacy (SPEC-03). Se mantiene para retrocompatibilidad
+  /// con logs antiguos. SPEC-68 introduce `type` como enum tipado.
   @override
   String get activityType;
   @override
+  @TimestampConverter()
   DateTime get timestamp;
   @override
-  double get intensityMultiplier;
+  double
+      get intensityMultiplier; // ── SPEC-68: tipificación del ejercicio ─────────────────────────────
+  /// Tipo de ejercicio según categorías ACSM. `null` para logs legacy
+  /// que no tienen el dato; el ScoreEngine usa un multiplicador neutral.
+  @override
+  ExerciseType? get type;
+
+  /// Intensidad subjetiva categórica. `null` para logs legacy.
+  @override
+  ExerciseIntensity? get intensity;
+
+  /// Rate of Perceived Exertion (1-10, escala Borg modificada).
+  /// `null` si el usuario no lo registró. Solo valores en [1, 10].
+  @override
+  int? get rpe;
+
+  /// Frecuencia cardíaca promedio durante la sesión, en bpm.
+  /// `null` si no se midió. Debe ser >= 30 si presente.
+  @override
+  int? get heartRateAvg;
 
   /// Create a copy of ExerciseLog
   /// with the given fields replaced by the non-null parameter values.
