@@ -7,6 +7,7 @@ import 'package:elena_app/src/shared/providers/user_provider.dart';
 import 'package:elena_app/src/features/dashboard/application/fasting_notifier.dart';
 import 'package:elena_app/src/features/dashboard/application/sleep_notifier.dart';
 import 'package:elena_app/src/features/dashboard/application/hydration_notifier.dart';
+import 'package:elena_app/src/features/dashboard/domain/sleep_quality_calculator.dart';
 import 'package:elena_app/src/features/exercise/application/exercise_notifier.dart';
 import 'package:elena_app/src/features/exercise/application/exercise_state.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
@@ -145,8 +146,32 @@ class StreakNotifier extends StateNotifier<StreakState> {
         sleep.lastLog?.duration.inHours.toDouble() ?? 0.0;
 
     // Obtener protocolo con fallback al estado actual si el provider está cargando (evita toggles)
-    final String currentProtocol = userModel?.fastingProtocol ?? 
-                                  (_userId != null ? '16:8' : 'Ninguno'); 
+    final String currentProtocol = userModel?.fastingProtocol ??
+                                  (_userId != null ? '16:8' : 'Ninguno');
+
+    // SPEC-65: magnitudes continuas. Calculadas una sola vez aquí — NO
+    // duplicamos la lógica de los `evaluateX` (esos siguen siendo el
+    // umbral binario). Las magnitudes son el "cuánto", no el "si o no".
+    final double fastingMagnitude =
+        _fastingTargetHours(currentProtocol) > 0
+            ? fastingHours / _fastingTargetHours(currentProtocol)
+            : 0.0;
+    final double? sleepQualityScore = sleep.lastLog == null
+        ? null
+        : SleepQualityCalculator.calculate(
+            sleepHours: sleepHours,
+            metabolicGapMinutes: sleep.lastLog!.metabolicGap.inMinutes,
+            sleepLatencyMinutes: sleep.lastLog!.sleepLatencyMinutes,
+            nightAwakenings: sleep.lastLog!.nightAwakenings,
+            subjectiveQuality: sleep.lastLog!.subjectiveQuality,
+          );
+    final double hydrationMagnitude = hydration.progressPercentage;
+    // Magnitud de ejercicio: 30 min = 1.0 (full ACSM moderate session).
+    // Sesiones largas pueden superar 1.0; el calc de dailyQualityScore
+    // aplica clamp en [0, 1] ahí.
+    final double exerciseMagnitude = exercise.todayMinutes / 30.0;
+    final double nutritionMagnitude =
+        nutrition.nutritionScore.clamp(0.0, 1.0);
 
     final newEntry = StreakEntry(
       date: _todayKey,
@@ -165,6 +190,11 @@ class StreakNotifier extends StateNotifier<StreakState> {
         mealsLogged: nutrition.mealsLoggedToday,
       ),
       imrScore: state.todayEntry?.imrScore ?? 0, // Preservar el IMR actual con null-safety
+      fastingMagnitude: fastingMagnitude,
+      sleepQualityScore: sleepQualityScore,
+      hydrationMagnitude: hydrationMagnitude,
+      exerciseMagnitude: exerciseMagnitude,
+      nutritionMagnitude: nutritionMagnitude,
     );
 
     // Solo actualizar si algo cambió (evita loops reactivos)
@@ -263,6 +293,22 @@ class StreakNotifier extends StateNotifier<StreakState> {
   void dispose() {
     _historySub?.cancel();
     super.dispose();
+  }
+
+  // ── Helpers privados (SPEC-65) ──────────────────────────────────────────────
+
+  /// Horas objetivo del protocolo. Espejo de la lógica de
+  /// `StreakEngine.evaluateFasting` pero retorna el valor crudo (no el
+  /// 80% del umbral), para que `fastingMagnitude` sea verdaderamente
+  /// proporcional al protocolo.
+  ///
+  /// - 'Ninguno' → 10h (umbral natural de ayuno nocturno).
+  /// - 'HH:MM' (e.g. '16:8') → primer número (16).
+  /// - Cualquier otra cosa → 16 como default seguro.
+  static double _fastingTargetHours(String protocol) {
+    if (protocol == 'Ninguno') return 10.0;
+    final parts = protocol.split(':');
+    return double.tryParse(parts.first) ?? 16.0;
   }
 }
 

@@ -1,9 +1,11 @@
-// Tests unitarios de StreakEngine.
+// Tests unitarios de StreakEngine + StreakEntry (SPEC-65).
 //
 // Cubre:
 // - Evaluadores por pilar (umbrales documentados).
-// - StreakEntry.pillarsCompleted (booleans, hasta SPEC-65).
+// - StreakEntry.pillarsCompleted (booleans).
+// - StreakEntry.dailyQualityScore + magnitudes (SPEC-65).
 // - computeLongestStreak con historial sintético.
+// - Round-trip JSON con magnitudes.
 //
 // Funciones puras: no requieren mocks ni reloj.
 
@@ -173,6 +175,204 @@ void main() {
         day('2026-05-05'),
       ];
       expect(StreakEngine.computeLongestStreak(h), 2);
+    });
+  });
+
+  group('SPEC-65: dailyQualityScore con magnitudes', () {
+    StreakEntry entry({
+      double? fastingMag,
+      double? sleepScore,
+      double? hydrationMag,
+      double? exerciseMag,
+      double? nutritionMag,
+      bool legacy = false,
+      int pillars = 0,
+    }) =>
+        StreakEntry(
+          date: '2026-05-01',
+          fastingCompleted: pillars >= 1,
+          sleepCompleted: pillars >= 2,
+          hydrationCompleted: pillars >= 3,
+          exerciseLogged: pillars >= 4,
+          nutritionLogged: pillars >= 5,
+          imrScore: 70,
+          fastingMagnitude: legacy ? null : fastingMag,
+          sleepQualityScore: legacy ? null : sleepScore,
+          hydrationMagnitude: legacy ? null : hydrationMag,
+          exerciseMagnitude: legacy ? null : exerciseMag,
+          nutritionMagnitude: legacy ? null : nutritionMag,
+        );
+
+    test('Todas las magnitudes en 1.0 → dailyQualityScore = 1.0', () {
+      final e = entry(
+        fastingMag: 1.0,
+        sleepScore: 1.0,
+        hydrationMag: 1.0,
+        exerciseMag: 1.0,
+        nutritionMag: 1.0,
+      );
+      expect(e.dailyQualityScore, 1.0);
+      expect(e.hasMagnitudes, isTrue);
+    });
+
+    test('Todas las magnitudes en 0.0 → dailyQualityScore = 0.0', () {
+      final e = entry(
+        fastingMag: 0.0,
+        sleepScore: 0.0,
+        hydrationMag: 0.0,
+        exerciseMag: 0.0,
+        nutritionMag: 0.0,
+      );
+      expect(e.dailyQualityScore, 0.0);
+    });
+
+    test('Magnitudes superiores a 1.0 se clampean (no inflan score)', () {
+      final e = entry(
+        fastingMag: 1.5, // Overachiever
+        sleepScore: 1.0,
+        hydrationMag: 2.0,
+        exerciseMag: 3.0,
+        nutritionMag: 1.0,
+      );
+      expect(e.dailyQualityScore, 1.0);
+    });
+
+    test('Renormalización: solo sueño en 1.0 → score = 1.0', () {
+      // Solo sueño presente — peso renormalizado a 1.0 sobre sí mismo.
+      final e = entry(sleepScore: 1.0);
+      expect(e.dailyQualityScore, 1.0);
+    });
+
+    test('Renormalización: sueño 1.0 + ayuno 0.5 → ≈0.78', () {
+      // wSleep=0.25, wFasting=0.20. total=0.45.
+      // weighted = 0.25*1.0 + 0.20*0.5 = 0.35.
+      // result = 0.35/0.45 = 0.7777...
+      final e = entry(sleepScore: 1.0, fastingMag: 0.5);
+      expect(e.dailyQualityScore, closeTo(0.35 / 0.45, 1e-9));
+    });
+
+    test('Entrada legacy (sin magnitudes) → fallback pillars/5', () {
+      final e = entry(legacy: true, pillars: 3);
+      expect(e.hasMagnitudes, isFalse);
+      expect(e.dailyQualityScore, 0.6);
+    });
+
+    test('Entrada legacy con 0 pilares → 0.0', () {
+      final e = entry(legacy: true, pillars: 0);
+      expect(e.dailyQualityScore, 0.0);
+    });
+
+    test('Entrada legacy con 5 pilares → 1.0', () {
+      final e = entry(legacy: true, pillars: 5);
+      expect(e.dailyQualityScore, 1.0);
+    });
+
+    test('Resultado siempre clamped en [0.0, 1.0]', () {
+      final e = entry(
+        fastingMag: -0.5,
+        sleepScore: 2.0,
+        hydrationMag: -1.0,
+        exerciseMag: 5.0,
+        nutritionMag: -10.0,
+      );
+      expect(e.dailyQualityScore, greaterThanOrEqualTo(0.0));
+      expect(e.dailyQualityScore, lessThanOrEqualTo(1.0));
+    });
+  });
+
+  group('SPEC-65: serialización JSON con magnitudes', () {
+    test('Round-trip preserva todas las magnitudes', () {
+      final original = StreakEntry(
+        date: '2026-05-01',
+        fastingCompleted: true,
+        sleepCompleted: true,
+        hydrationCompleted: true,
+        exerciseLogged: false,
+        nutritionLogged: true,
+        imrScore: 72,
+        fastingMagnitude: 0.85,
+        sleepQualityScore: 0.92,
+        hydrationMagnitude: 0.78,
+        exerciseMagnitude: 0.40,
+        nutritionMagnitude: 0.66,
+      );
+      final round = StreakEntry.fromJson(original.toJson());
+      expect(round, original);
+      expect(round.fastingMagnitude, 0.85);
+      expect(round.sleepQualityScore, 0.92);
+    });
+
+    test('toJson omite magnitudes nulas', () {
+      final e = StreakEntry(
+        date: '2026-05-01',
+        fastingCompleted: true,
+        sleepCompleted: false,
+        hydrationCompleted: true,
+        exerciseLogged: false,
+        nutritionLogged: false,
+        imrScore: 50,
+      );
+      final json = e.toJson();
+      expect(json.containsKey('fastingMagnitude'), isFalse);
+      expect(json.containsKey('sleepQualityScore'), isFalse);
+    });
+
+    test('fromJson tolera ausencia de magnitudes (entrada legacy)', () {
+      final json = <String, dynamic>{
+        'date': '2025-12-01',
+        'fastingCompleted': true,
+        'sleepCompleted': true,
+        'hydrationCompleted': true,
+        'exerciseLogged': false,
+        'nutritionLogged': false,
+        'imrScore': 65,
+      };
+      final e = StreakEntry.fromJson(json);
+      expect(e.fastingMagnitude, isNull);
+      expect(e.sleepQualityScore, isNull);
+      expect(e.hasMagnitudes, isFalse);
+      // Fallback: 3 pilares completados → 0.6
+      expect(e.dailyQualityScore, 0.6);
+    });
+
+    test('fromJson convierte int a double en magnitudes', () {
+      final json = <String, dynamic>{
+        'date': '2026-05-01',
+        'fastingCompleted': true,
+        'sleepCompleted': true,
+        'hydrationCompleted': true,
+        'exerciseLogged': true,
+        'nutritionLogged': true,
+        'imrScore': 80,
+        'fastingMagnitude': 1, // entero — Firestore puede serializar así
+      };
+      final e = StreakEntry.fromJson(json);
+      expect(e.fastingMagnitude, 1.0);
+      expect(e.fastingMagnitude, isA<double>());
+    });
+  });
+
+  group('SPEC-65: copyWith preserva y actualiza magnitudes', () {
+    final base = StreakEntry(
+      date: '2026-05-01',
+      fastingCompleted: true,
+      sleepCompleted: true,
+      hydrationCompleted: false,
+      exerciseLogged: false,
+      nutritionLogged: false,
+      imrScore: 60,
+      fastingMagnitude: 0.8,
+      sleepQualityScore: 0.9,
+    );
+
+    test('Sin args → copia idéntica', () {
+      expect(base.copyWith(), base);
+    });
+
+    test('Actualiza magnitud específica sin tocar otras', () {
+      final updated = base.copyWith(fastingMagnitude: 1.0);
+      expect(updated.fastingMagnitude, 1.0);
+      expect(updated.sleepQualityScore, 0.9);
     });
   });
 }
