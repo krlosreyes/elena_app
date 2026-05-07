@@ -76,23 +76,38 @@ Unidad de consistencia del sistema.
 
 ---
 
-## 3.3 NUTRITION_LOG
+## 3.3 NUTRITION_LOG (SPEC-63 + SPEC-64)
 
-### Campos:
+### Campos requeridos:
 
-- id
-- timestamp
-- calories
-- protein
-- carbs
-- fat
+- id: string (uuid v4)
+- timestamp: Timestamp (Firestore) — instante del registro
+- label: enum {Desayuno, Almuerzo, Cena, Snack}
+- withinCircadianWindow: bool — si la comida cayó dentro de [firstMealGoal, lastMealGoal]
+
+### Campos opcionales (macronutrientes — SPEC-64):
+
+- calories: number? (kcal) — null = "no se midió"; 0 = "midió y fue 0"
+- protein: number? (gramos)
+- carbs: number? (gramos)
+- fat: number? (gramos)
+- fiber: number? (gramos)
+- glycemicIndex: number? (0-100)
+- source: enum {userInput, catalog, estimated}
 
 ### Invariantes:
 
-- calories >= 0
-- protein >= 0
-- carbs >= 0
-- fat >= 0
+- id no vacío
+- label dentro del set permitido
+- timestamp ≤ now + 60s (tolerancia drift)
+- Si presentes: calories ≥ 0, protein ≥ 0, carbs ≥ 0, fat ≥ 0, fiber ≥ 0
+- Si presente: glycemicIndex en [0, 100]
+
+### Notas de versión:
+
+- Persistencia introducida en SPEC-63 (R1) en `users/{uid}/nutrition_history/{logId}`.
+- Macros añadidos en SPEC-64 (R2). Logs pre-SPEC-64 leen los macros como null.
+- SPEC-49 (R3) moverá la colección al aggregate `users/{uid}/daily_records/{date}/meals/{mealId}` sin cambiar el formato del documento.
 
 ---
 
