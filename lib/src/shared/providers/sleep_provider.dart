@@ -1,82 +1,70 @@
-/// SPEC-29: Global Sleep Provider
-/// Punto de entrada centralizado para acceso global al estado del sueño
-/// sin crear dependencias cíclicas entre notifiers
+/// SPEC-29 + SPEC-52.1 (cleanup): Global Sleep Provider.
+///
+/// Punto de entrada centralizado para el estado de sueño sin crear
+/// dependencias cíclicas entre notifiers.
+///
+/// SPEC-52.1: limpiados los selectores que apuntaban a getters inexistentes
+/// en SleepState (`lastSleepDurationHours`, `isSufficientSleep`,
+/// `isOptimalSleep`, `sleepAdherence`, `recoveryStatus`). Esos getters eran
+/// deuda baseline — habían sido removidos del modelo en algún refactor
+/// previo y este archivo no se actualizó. Ahora los selectores derivan de
+/// `lastLog.duration` directamente.
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/features/dashboard/application/sleep_notifier.dart';
 import 'package:elena_app/src/features/dashboard/domain/sleep_log.dart';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SPEC-29: Provider Global del Sueño
-// ─────────────────────────────────────────────────────────────────────────────
-
-/// Provider global que cualquier notifier puede leer sin dependencias cíclicas
-/// Ejemplo uso en StreakNotifier:
-///   final sleepDuration = _ref.read(globalSleepProvider).getSleepHours();
+/// Provider global del SleepNotifier. El resto de la app no lo construye
+/// directamente; siempre usa `globalSleepProvider`.
 final globalSleepProvider =
     StateNotifierProvider<SleepNotifier, SleepState>((ref) {
   return SleepNotifier(ref);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SPEC-29: Selectors (para acceso seguro a campos específicos)
+// Selectors derivados de lastLog
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Retorna solo la duración del último sueño (0.0 si no hay log)
-/// Uso: _ref.read(sleepDurationProvider)
+/// Duración del último sueño en horas (0.0 si no hay log).
 final sleepDurationProvider = Provider<double>((ref) {
-  return ref.watch(globalSleepProvider).lastSleepDurationHours;
+  final log = ref.watch(globalSleepProvider).lastLog;
+  if (log == null) return 0.0;
+  return log.duration.inMinutes / 60.0;
 });
 
-/// Retorna solo el log del último sueño
-/// Uso: _ref.read(lastSleepLogProvider)
+/// Último log de sueño persistido (puede ser null).
 final lastSleepLogProvider = Provider<SleepLog?>((ref) {
   return ref.watch(globalSleepProvider).lastLog;
 });
 
-/// Retorna true si el sueño fue suficiente (>= 6.5 horas)
-/// Uso: _ref.read(isSleepSufficientProvider)
+/// True si el sueño fue suficiente (≥ 6.5h, umbral AASM).
 final isSleepSufficientProvider = Provider<bool>((ref) {
-  return ref.watch(globalSleepProvider).isSufficientSleep;
+  return ref.watch(sleepDurationProvider) >= 6.5;
 });
 
-/// Retorna true si el sueño fue óptimo (7-9 horas)
-/// Uso: _ref.read(isSleepOptimalProvider)
+/// True si el sueño fue óptimo (7–9h, ventana funcional).
 final isSleepOptimalProvider = Provider<bool>((ref) {
-  return ref.watch(globalSleepProvider).isOptimalSleep;
+  final h = ref.watch(sleepDurationProvider);
+  return h >= 7.0 && h <= 9.0;
 });
 
-/// Retorna adherencia de sueño como proporción (0.0-1.0)
-/// Usado por StreakEngine y ScoreEngine
-/// Uso: _ref.read(sleepAdherenceProvider)
+/// Adherencia básica del sueño (0.0–1.0): 1.0 si optimal, 0.6 si sufficient,
+/// 0.0 si menor. SPEC-69 introducirá una métrica multidimensional.
 final sleepAdherenceProvider = Provider<double>((ref) {
-  return ref.watch(globalSleepProvider).sleepAdherence;
+  if (ref.watch(isSleepOptimalProvider)) return 1.0;
+  if (ref.watch(isSleepSufficientProvider)) return 0.6;
+  return 0.0;
 });
 
-/// Retorna el status de recuperación: INSUFFICIENT, ADEQUATE, OPTIMAL
-/// Uso: _ref.read(recoveryStatusProvider)
+/// Status de recuperación basado en horas dormidas.
+/// SPEC-69 lo enriquecerá con latencia, despertares y gap metabólico.
 final recoveryStatusProvider = Provider<String>((ref) {
-  return ref.watch(globalSleepProvider).recoveryStatus;
+  if (ref.watch(isSleepOptimalProvider)) return 'OPTIMAL';
+  if (ref.watch(isSleepSufficientProvider)) return 'ADEQUATE';
+  return 'INSUFFICIENT';
 });
 
-/// Stream de cambios en el estado del sueño (para UI en tiempo real)
-/// Uso: ref.watch(sleepStateStreamProvider)
-final sleepStateStreamProvider = StreamProvider<SleepState>((ref) async* {
-  final notifier = ref.watch(globalSleepProvider.notifier);
-  yield ref.watch(globalSleepProvider);
-  // Yield new values cuando el estado cambia
-  await for (final state in ref.watch(globalSleepProvider.notifier).stream) {
-    yield state;
-  }
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// SPEC-29: Métodos de Control Globales
-// ─────────────────────────────────────────────────────────────────────────────
-
-/// Provider para obtener métodos de control del SleepNotifier
-/// Uso: final notifier = _ref.read(sleepNotifierProvider);
-///      await notifier.saveManualSleep(bedtime: ..., wakeTime: ...)
+/// Notifier para invocar acciones de control (saveManualSleep, etc.).
 final sleepNotifierProvider = Provider((ref) {
   return ref.watch(globalSleepProvider.notifier);
 });

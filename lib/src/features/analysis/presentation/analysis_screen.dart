@@ -55,6 +55,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
     final hydrationState = ref.watch(hydrationProvider);
     final exerciseState = ref.watch(exerciseProvider);    // SPEC-03
     final nutritionState = ref.watch(nutritionProvider);  // SPEC-04
+    final streakState = ref.watch(streakProvider);         // SPEC-06
 
     // SPEC-52: IMR central desde el provider — no más cálculos locales.
     final IMRv2Result result = ref.watch(imrProvider);

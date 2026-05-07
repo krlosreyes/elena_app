@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/core/engine/metabolic_state_provider.dart';
+import 'package:elena_app/src/core/engine/score_engine.dart';
 import 'package:elena_app/src/features/auth/application/profile_controller.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';

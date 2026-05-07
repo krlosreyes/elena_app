@@ -16,6 +16,9 @@ import 'package:elena_app/src/features/progress/domain/biometric_checkin.dart';
 import 'package:elena_app/src/features/progress/presentation/biometric_checkin_sheet.dart';
 import 'package:elena_app/src/features/goals/domain/user_goal.dart';
 import 'package:elena_app/src/features/goals/application/goal_notifier.dart';
+import 'package:elena_app/src/features/dashboard/application/sleep_notifier.dart';
+import 'package:elena_app/src/features/dashboard/application/hydration_notifier.dart';
+import 'package:elena_app/src/features/exercise/application/exercise_notifier.dart';
 import 'package:elena_app/src/features/streak/application/streak_notifier.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/trend_chart.dart';
 
