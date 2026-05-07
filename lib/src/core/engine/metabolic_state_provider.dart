@@ -6,7 +6,6 @@ import 'package:elena_app/src/core/engine/score_engine.dart';
 import 'package:elena_app/src/core/providers/ticker_providers.dart';
 import 'package:elena_app/src/features/dashboard/application/fasting_notifier.dart';
 import 'package:elena_app/src/features/dashboard/application/hydration_notifier.dart';
-import 'package:elena_app/src/features/dashboard/domain/fasting_interval.dart';
 import 'package:elena_app/src/features/exercise/application/exercise_notifier.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
 import 'package:elena_app/src/features/streak/application/streak_notifier.dart';
@@ -42,6 +41,10 @@ final metabolicStateProvider = Provider<MetabolicState>((ref) {
 
   final fasting = ref.watch(fastingProvider);
   final sleepHours = ref.watch(sleepDurationProvider);
+  // SPEC-69: el último log alimenta dimensiones multidimensionales
+  // (gap metabólico, latencia, despertares, percepción subjetiva) al
+  // SleepQualityCalculator. Si es null, se usa solo `sleepHours`.
+  final lastSleepLog = ref.watch(lastSleepLogProvider);
   final exercise = ref.watch(exerciseProvider);
   final nutrition = ref.watch(nutritionProvider);
   final hydration = ref.watch(hydrationProvider);
@@ -54,24 +57,15 @@ final metabolicStateProvider = Provider<MetabolicState>((ref) {
   final user = userAsync.valueOrNull;
   if (user == null) return MetabolicState.empty();
 
-  // Calcular maxFastingHoursToday desde el estado activo + completados.
+  // Calcular maxFastingHoursToday desde el estado activo.
+  // SPEC-52.1: el bloque que iteraba `todayFastingIntervalsProvider` se
+  // eliminó porque ese provider nunca existió en el repo (deuda baseline).
+  // Si en el futuro se requiere recuperar la duración de ayunos completados
+  // hoy, será una SPEC dedicada con un repository de intervalos.
   double maxFastingHoursToday = 0.0;
-
   if (fasting.isActive && fasting.startTime != null) {
     maxFastingHoursToday =
         now.difference(fasting.startTime!).inSeconds / 3600.0;
-  }
-
-  final todayIntervals =
-      ref.watch(todayFastingIntervalsProvider).valueOrNull ?? [];
-  for (final interval in todayIntervals) {
-    if (interval.isFasting && interval.endTime != null) {
-      final duration = interval.endTime!.difference(interval.startTime);
-      final hours = duration.inSeconds / 3600.0;
-      if (hours > maxFastingHoursToday) {
-        maxFastingHoursToday = hours;
-      }
-    }
   }
 
   return MetabolicStateBuilder.build(
@@ -83,6 +77,7 @@ final metabolicStateProvider = Provider<MetabolicState>((ref) {
     hydration: hydration,
     maxFastingHoursToday: maxFastingHoursToday,
     weeklyAdherence: weeklyAdherence,
+    lastSleepLog: lastSleepLog,
   );
 });
 

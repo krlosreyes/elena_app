@@ -1,17 +1,58 @@
 import 'package:flutter/material.dart';
 
+/// Registro de un ciclo de sueño individual.
+///
+/// SPEC-69: amplía el modelo con campos opcionales para una métrica
+/// multidimensional de calidad. Logs anteriores (sin estos campos)
+/// siguen siendo válidos — el calculador degrada graciosamente.
 class SleepLog {
   final String id;
-  final DateTime fellAsleep; 
-  final DateTime wokeUp;     
-  final DateTime lastMealTime;    
+  final DateTime fellAsleep;
+  final DateTime wokeUp;
+  final DateTime lastMealTime;
+
+  // ── SPEC-69: dimensiones opcionales ─────────────────────────────────────
+
+  /// Latencia: minutos entre acostarse e iniciar el sueño.
+  /// Valor saludable: < 20 min. > 30 min sugiere ansiedad/insomnio.
+  /// `null` si no se midió.
+  final int? sleepLatencyMinutes;
+
+  /// Número de despertares conscientes durante la noche.
+  /// 0-1 es normal; ≥ 3 indica fragmentación. `null` si no se midió.
+  final int? nightAwakenings;
+
+  /// Calidad subjetiva 1-5 (1 = muy pobre, 5 = excelente).
+  /// `null` si el usuario no la registró.
+  final int? subjectiveQuality;
 
   SleepLog({
     required this.id,
     required this.fellAsleep,
     required this.wokeUp,
     required this.lastMealTime,
-  });
+    this.sleepLatencyMinutes,
+    this.nightAwakenings,
+    this.subjectiveQuality,
+  }) {
+    if (sleepLatencyMinutes != null && sleepLatencyMinutes! < 0) {
+      throw FormatException(
+        'sleepLatencyMinutes inválido: $sleepLatencyMinutes. Debe ser >= 0.',
+      );
+    }
+    if (nightAwakenings != null && nightAwakenings! < 0) {
+      throw FormatException(
+        'nightAwakenings inválido: $nightAwakenings. Debe ser >= 0.',
+      );
+    }
+    if (subjectiveQuality != null) {
+      if (subjectiveQuality! < 1 || subjectiveQuality! > 5) {
+        throw FormatException(
+          'subjectiveQuality inválido: $subjectiveQuality. Debe estar en [1, 5].',
+        );
+      }
+    }
+  }
 
   /// Duración real: Maneja correctamente el cruce de medianoche
   Duration get duration {

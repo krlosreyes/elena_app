@@ -6,6 +6,8 @@ import 'package:elena_app/src/core/rules/circadian_rules.dart';
 import 'package:elena_app/src/features/dashboard/application/fasting_notifier.dart';
 import 'package:elena_app/src/features/dashboard/application/hydration_notifier.dart';
 import 'package:elena_app/src/features/dashboard/domain/fasting_status.dart';
+import 'package:elena_app/src/features/dashboard/domain/sleep_log.dart';
+import 'package:elena_app/src/features/dashboard/domain/sleep_quality_calculator.dart';
 import 'package:elena_app/src/features/exercise/application/exercise_state.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
@@ -37,6 +39,9 @@ class MetabolicStateBuilder {
   /// - [hydration]: Estado actual del HydrationNotifier.
   /// - [maxFastingHoursToday]: Máximo de horas de ayuno hoy (activo o completado).
   /// - [weeklyAdherence]: Adherencia semanal pre-calculada por StreakEngine.
+  /// - [lastSleepLog]: SPEC-69. Último ciclo de sueño persistido. Si no es
+  ///   null, alimenta dimensiones extra (gap metabólico, latencia, despertares,
+  ///   percepción subjetiva) al SleepQualityCalculator.
   static MetabolicState build({
     required UserModel user,
     required FastingState fasting,
@@ -46,6 +51,7 @@ class MetabolicStateBuilder {
     required HydrationState hydration,
     required double maxFastingHoursToday,
     required double weeklyAdherence,
+    SleepLog? lastSleepLog,
   }) {
     final now = DateTime.now();
 
@@ -69,9 +75,17 @@ class MetabolicStateBuilder {
         _calculateCircadianAlignment(stableLastMeal, user.profile.lastMealGoal);
 
     // ── sleepQuality ─────────────────────────────────────────────────────
-    // Calculado desde horas de sueño con curva piecewise biológica.
-    // NO delegamos a sleepAdherence del provider.
-    final double sleepQuality = _normalizeSleep(sleepHours);
+    // SPEC-69: métrica multidimensional. Si tenemos `lastSleepLog`, alimentamos
+    // gap metabólico, latencia, despertares y percepción subjetiva al
+    // SleepQualityCalculator. Sin log, degrada graciosamente a la curva
+    // piecewise por horas (idéntica al cálculo previo de `_normalizeSleep`).
+    final double sleepQuality = SleepQualityCalculator.calculate(
+      sleepHours: sleepHours,
+      metabolicGapMinutes: lastSleepLog?.metabolicGap.inMinutes,
+      sleepLatencyMinutes: lastSleepLog?.sleepLatencyMinutes,
+      nightAwakenings: lastSleepLog?.nightAwakenings,
+      subjectiveQuality: lastSleepLog?.subjectiveQuality,
+    );
 
     // ── exerciseLoad ─────────────────────────────────────────────────────
     // Normalización: (minutos / 60).clamp(0, 1.0)
@@ -148,19 +162,10 @@ class MetabolicStateBuilder {
     return 0.1;
   }
 
-  /// Normaliza calidad de sueño desde horas.
-  /// Curva piecewise basada en evidencia:
-  /// - 0h → 0.0
-  /// - <7h → escala lineal hasta 0.85
-  /// - 7-9h → zona óptima (1.0)
-  /// - >9h → penalización leve por exceso
-  static double _normalizeSleep(double hours) {
-    if (hours <= 0) return 0.0;
-    if (hours < 7) return (hours / 7.0) * 0.85;
-    if (hours <= 9) return 1.0;
-    // > 9h: penalización gradual, mínimo 0.6
-    return (1.0 - ((hours - 9) / 5.0)).clamp(0.6, 1.0);
-  }
+  // SPEC-69: `_normalizeSleep` eliminado. La normalización de calidad de
+  // sueño vive ahora en `SleepQualityCalculator.calculate` (función pura,
+  // multidimensional, con degradación graciosa). El comportamiento para el
+  // caso "solo horas, sin log" coincide con la curva piecewise anterior.
 
   /// Calcula circadianAlignment: penalización gradual (SPEC-26).
   static double _calculateCircadianAlignment(
