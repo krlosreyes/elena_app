@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
-import 'package:elena_app/src/features/dashboard/domain/hydration_log.dart';
 import 'package:elena_app/src/features/exercise/domain/exercise_log.dart';
 import 'package:elena_app/src/features/streak/domain/streak_entry.dart';
 
@@ -54,45 +53,9 @@ class UserRepository {
   // Notifiers consumen `sleepRepositoryProvider` en lugar de los
   // métodos que vivían aquí.
 
-  // --- LÓGICA DE HIDRATACIÓN (PILAR: SOLVENTE METABÓLICO) ---
-
-  Future<void> saveHydrationLog(String userId, HydrationLog log) async {
-    try {
-      await _usersCollection
-          .doc(userId)
-          .collection('hydration_history')
-          .add({
-        'amount': log.amountInLiters,
-        'timestamp': Timestamp.fromDate(log.timestamp),
-        'type': log.type,
-        'serverAt': FieldValue.serverTimestamp(),
-      });
-      AppLogger.debug(
-        'Registro de hidratación sincronizado: ${log.amountInLiters}L',
-      );
-    } catch (e, stackTrace) {
-      AppLogger.error('Error en saveHydrationLog', e, stackTrace);
-      throw Exception("Error de persistencia en hidratación");
-    }
-  }
-
-  Stream<double> watchTodayHydration(String userId) {
-    final now = DateTime.now();
-    final startOfDay = DateTime(now.year, now.month, now.day);
-    
-    return _usersCollection
-        .doc(userId)
-        .collection('hydration_history')
-        .where('timestamp', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
-        .snapshots()
-        .map((snapshot) {
-      double total = 0.0;
-      for (var doc in snapshot.docs) {
-        total += (doc.data()['amount'] as num).toDouble();
-      }
-      return total;
-    });
-  }
+  // SPEC-50.1: lógica de hidratación extraída a HydrationRepository
+  // (lib/src/features/dashboard/data/hydration_repository_impl.dart).
+  // Notifiers consumen `hydrationRepositoryProvider`.
 
   // --- LÓGICA DE EJERCICIO (PILAR: ACTIVIDAD FÍSICA) ---
 

@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
 // IMPORTANTE: Esta es la ruta al archivo que creamos para centralizar el usuario
-import 'package:elena_app/src/shared/providers/user_provider.dart'; 
+import 'package:elena_app/src/shared/providers/user_provider.dart';
+import 'package:elena_app/src/features/dashboard/data/hydration_repository_impl.dart';
 import 'package:elena_app/src/features/dashboard/domain/hydration_log.dart';
-import 'package:elena_app/src/shared/domain/services/user_repository.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 
 class HydrationState {
@@ -78,14 +78,24 @@ class HydrationNotifier extends StateNotifier<HydrationState> {
 
   void _initHydrationSubscription(String userId) {
     _hydrationSubscription?.cancel();
+    // SPEC-50.1: HydrationRepository (no UserRepository).
+    // El stream ahora retorna List<HydrationLog> en lugar de la suma —
+    // lo agregamos aquí para tener acceso al historial real (antes el
+    // campo `history` solo se actualizaba optimísticamente en addWater
+    // pero nunca se reconciliaba con el storage).
     _hydrationSubscription = _ref
-        .read(userRepositoryProvider)
-        .watchTodayHydration(userId)
-        .listen((totalLiters) {
+        .read(hydrationRepositoryProvider)
+        .watchToday(userId)
+        .listen((logs) {
       if (mounted) {
+        final total = logs.fold<double>(
+          0.0,
+          (sum, log) => sum + log.amountInLiters,
+        );
         state = state.copyWith(
-          currentAmountLiters: totalLiters,
-          isGoalReached: totalLiters >= state.dailyGoalLiters,
+          currentAmountLiters: total,
+          history: logs,
+          isGoalReached: total >= state.dailyGoalLiters,
         );
       }
     });
@@ -100,7 +110,7 @@ class HydrationNotifier extends StateNotifier<HydrationState> {
   /// SPEC-58: Reset diario idempotente.
   ///
   /// Limpia el contador en caché (currentAmountLiters, history, isGoalReached).
-  /// El stream `watchTodayHydration` re-emitirá automáticamente el conteo
+  /// El stream `watchToday` del HydrationRepository re-emitirá automáticamente el conteo
   /// correcto del nuevo día — esto solo evita que el usuario vea los litros
   /// del día anterior durante la fracción de segundo previa al re-emit.
   ///
@@ -133,8 +143,9 @@ class HydrationNotifier extends StateNotifier<HydrationState> {
     );
 
     try {
-      final repo = _ref.read(userRepositoryProvider);
-      await repo.saveHydrationLog(user.id, newLog);
+      // SPEC-50.1: HydrationRepository.add (no UserRepository.saveHydrationLog).
+      final repo = _ref.read(hydrationRepositoryProvider);
+      await repo.add(user.id, newLog);
     } catch (e) {
       // Log de error técnico
     } finally {
