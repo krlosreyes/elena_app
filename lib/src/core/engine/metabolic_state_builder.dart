@@ -45,6 +45,11 @@ class MetabolicStateBuilder {
   /// - [lastSleepLog]: SPEC-69. Último ciclo de sueño persistido. Si no es
   ///   null, alimenta dimensiones extra (gap metabólico, latencia, despertares,
   ///   percepción subjetiva) al SleepQualityCalculator.
+  /// - [now]: SPEC-72.9. Reloj inyectado. El builder es una factory pura —
+  ///   nunca llama a `DateTime.now()` internamente. El provider que lo invoca
+  ///   pasa el pulso de `metabolicPulseProvider` (cada 10s); los tests pueden
+  ///   pasar valores deterministas. Default omitido a propósito: requerirlo
+  ///   forza al caller a pensar en la coordenada temporal de su build.
   static MetabolicState build({
     required UserModel user,
     required FastingState fasting,
@@ -54,10 +59,10 @@ class MetabolicStateBuilder {
     required HydrationState hydration,
     required double maxFastingHoursToday,
     required double weeklyAdherence,
+    required DateTime now,
     double weeklyQualityScore = 0.0,
     SleepLog? lastSleepLog,
   }) {
-    final now = DateTime.now();
 
     // ── fastingHours (normalizado via sigmoid) ───────────────────────────
     // Misma sigmoid que ScoreEngine: 1/(1+e^(-(h-14)/1.5))

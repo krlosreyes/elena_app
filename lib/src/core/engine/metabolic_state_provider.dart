@@ -83,6 +83,10 @@ final metabolicStateProvider = Provider<MetabolicState>((ref) {
     weeklyAdherence: weeklyAdherence,
     weeklyQualityScore: weeklyQualityScore,
     lastSleepLog: lastSleepLog,
+    // SPEC-72.9: el reloj se inyecta — el builder no llama DateTime.now()
+    // internamente. Aquí pasamos el pulso de 10s para que el state sea
+    // determinista entre builds consecutivos del mismo tick.
+    now: now,
   );
 });
 
