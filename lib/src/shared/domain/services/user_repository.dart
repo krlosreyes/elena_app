@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
-import 'package:elena_app/src/features/exercise/domain/exercise_log.dart';
 import 'package:elena_app/src/features/streak/domain/streak_entry.dart';
 
 final userRepositoryProvider = Provider<UserRepository>((ref) {
@@ -57,50 +56,9 @@ class UserRepository {
   // (lib/src/features/dashboard/data/hydration_repository_impl.dart).
   // Notifiers consumen `hydrationRepositoryProvider`.
 
-  // --- LÓGICA DE EJERCICIO (PILAR: ACTIVIDAD FÍSICA) ---
-
-  Future<void> saveExerciseLog(String userId, ExerciseLog log) async {
-    try {
-      await _usersCollection
-          .doc(userId)
-          .collection('exercise_history')
-          .doc(log.id)
-          .set({
-        'id': log.id,
-        'userId': log.userId,
-        'durationMinutes': log.durationMinutes,
-        'activityType': log.activityType,
-        'timestamp': Timestamp.fromDate(log.timestamp),
-        'intensityMultiplier': log.intensityMultiplier,
-        'createdAt': FieldValue.serverTimestamp(),
-      });
-      AppLogger.debug(
-        'Registro de ejercicio guardado: ${log.durationMinutes} min',
-      );
-    } catch (e, stackTrace) {
-      AppLogger.error('Error en saveExerciseLog', e, stackTrace);
-      throw Exception("Fallo al guardar registro de ejercicio");
-    }
-  }
-
-  Stream<int> watchTodayExercise(String userId) {
-    final now = DateTime.now();
-    final startOfDay = DateTime(now.year, now.month, now.day);
-    
-    return _usersCollection
-        .doc(userId)
-        .collection('exercise_history')
-        .where('timestamp', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
-        .snapshots()
-        .map((snapshot) {
-      int totalMinutes = 0;
-      for (var doc in snapshot.docs) {
-        final data = doc.data();
-        totalMinutes += (data['durationMinutes'] as num).toInt();
-      }
-      return totalMinutes;
-    });
-  }
+  // SPEC-50.2: lógica de ejercicio extraída a ExerciseRepository
+  // (lib/src/features/exercise/data/exercise_repository_impl.dart).
+  // Notifiers consumen `exerciseRepositoryProvider`.
 
   // --- LÓGICA DE RACHAS (SPEC-06) ---
 

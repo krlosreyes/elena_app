@@ -1,15 +1,17 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
+import 'package:elena_app/src/features/exercise/data/exercise_repository_impl.dart';
 import 'package:elena_app/src/features/exercise/domain/exercise_log.dart';
+import 'package:elena_app/src/features/exercise/domain/exercise_repository.dart';
 import 'package:elena_app/src/features/exercise/application/exercise_state.dart';
-import 'package:elena_app/src/shared/domain/services/user_repository.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 
 final exerciseProvider = StateNotifierProvider<ExerciseNotifier, ExerciseState>((ref) {
   final userAsync = ref.watch(currentUserStreamProvider);
-  final repo = ref.watch(userRepositoryProvider);
-  
+  // SPEC-50.2: ExerciseRepository (no UserRepository).
+  final repo = ref.watch(exerciseRepositoryProvider);
+
   return ExerciseNotifier(
     userId: userAsync.valueOrNull?.id,
     repository: repo,
@@ -18,7 +20,7 @@ final exerciseProvider = StateNotifierProvider<ExerciseNotifier, ExerciseState>(
 
 class ExerciseNotifier extends StateNotifier<ExerciseState> {
   final String? userId;
-  final UserRepository repository;
+  final ExerciseRepository repository;
   StreamSubscription? _subscription;
 
   ExerciseNotifier({
@@ -30,12 +32,18 @@ class ExerciseNotifier extends StateNotifier<ExerciseState> {
 
   void _initSubscription() {
     if (userId == null) return;
-    
+
     _subscription?.cancel();
-    _subscription = repository.watchTodayExercise(userId!).listen(
-      (minutes) {
+    // SPEC-50.2: stream ahora retorna List<ExerciseLog>; sumamos
+    // localmente para producir todayMinutes.
+    _subscription = repository.watchToday(userId!).listen(
+      (logs) {
         if (mounted) {
-          state = state.copyWith(todayMinutes: minutes, error: null);
+          final totalMinutes = logs.fold<int>(
+            0,
+            (sum, log) => sum + log.durationMinutes,
+          );
+          state = state.copyWith(todayMinutes: totalMinutes, error: null);
         }
       },
       onError: (err) {
@@ -82,7 +90,7 @@ class ExerciseNotifier extends StateNotifier<ExerciseState> {
         timestamp: timestamp,
       );
 
-      await repository.saveExerciseLog(userId!, log);
+      await repository.save(userId!, log);
       state = state.copyWith(isSaving: false, error: null);
     } catch (e) {
       state = state.copyWith(isSaving: false, error: "Fallo al guardar: $e");
@@ -93,7 +101,7 @@ class ExerciseNotifier extends StateNotifier<ExerciseState> {
   /// SPEC-58: Reset diario idempotente.
   ///
   /// Limpia minutos en caché y mensajes de error. El stream
-  /// `watchTodayExercise` re-emitirá el total correcto del nuevo día.
+  /// `watchToday` re-emitirá el total correcto del nuevo día.
   void resetDaily() {
     if (!mounted) return;
     state = const ExerciseState();
