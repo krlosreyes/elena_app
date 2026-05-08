@@ -34,10 +34,10 @@ class _FastingPromptSheetState extends ConsumerState<FastingPromptSheet> {
                 width: 64,
                 height: 64,
                 decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.1),
+                  color: Colors.red.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: Colors.red.withOpacity(0.25),
+                    color: Colors.red.withValues(alpha: 0.25),
                     width: 1.5,
                   ),
                 ),
@@ -69,7 +69,7 @@ class _FastingPromptSheetState extends ConsumerState<FastingPromptSheet> {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 13,
-                  color: Colors.white.withOpacity(0.6),
+                  color: Colors.white.withValues(alpha: 0.6),
                   height: 1.5,
                 ),
               ),
@@ -125,7 +125,7 @@ class _FastingPromptSheetState extends ConsumerState<FastingPromptSheet> {
                           'Puedes iniciar el ayuno cuando estés listo. Aparecerá un recordatorio en el panel de nutrición.',
                         ),
                         duration: const Duration(seconds: 4),
-                        backgroundColor: Colors.white.withOpacity(0.1),
+                        backgroundColor: Colors.white.withValues(alpha: 0.1),
                         behavior: SnackBarBehavior.floating,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -134,8 +134,8 @@ class _FastingPromptSheetState extends ConsumerState<FastingPromptSheet> {
                     );
                   },
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white.withOpacity(0.7),
-                    side: BorderSide(color: Colors.white.withOpacity(0.15)),
+                    foregroundColor: Colors.white.withValues(alpha: 0.7),
+                    side: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
@@ -171,7 +171,7 @@ class _FastingPromptSheetState extends ConsumerState<FastingPromptSheet> {
           SnackBar(
             content: const Text('✓ Ayuno iniciado. Que comience la quema de grasa.'),
             duration: const Duration(seconds: 3),
-            backgroundColor: Colors.green.withOpacity(0.2),
+            backgroundColor: Colors.green.withValues(alpha: 0.2),
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -185,7 +185,7 @@ class _FastingPromptSheetState extends ConsumerState<FastingPromptSheet> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text('Error al iniciar ayuno. Intenta de nuevo.'),
-            backgroundColor: Colors.red.withOpacity(0.2),
+            backgroundColor: Colors.red.withValues(alpha: 0.2),
           ),
         );
       }

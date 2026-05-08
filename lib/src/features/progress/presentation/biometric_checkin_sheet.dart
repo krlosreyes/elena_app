@@ -132,7 +132,7 @@ class _BiometricCheckInSheetState
                 child: Container(
                   width: 40, height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -147,7 +147,7 @@ class _BiometricCheckInSheetState
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1ABC9C).withOpacity(0.12),
+                        color: const Color(0xFF1ABC9C).withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Text('📏', style: TextStyle(fontSize: 20)),
@@ -169,7 +169,7 @@ class _BiometricCheckInSheetState
                           'Snapshot de hoy para tu road map',
                           style: TextStyle(
                             fontSize: 11,
-                            color: Colors.white.withOpacity(0.4),
+                            color: Colors.white.withValues(alpha: 0.4),
                           ),
                         ),
                       ],
@@ -303,7 +303,7 @@ class _FieldLabel extends StatelessWidget {
           style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w700,
-            color: Colors.white.withOpacity(0.6),
+            color: Colors.white.withValues(alpha: 0.6),
             letterSpacing: 0.5,
           ),
         ),
@@ -350,7 +350,7 @@ class _NumericField extends StatelessWidget {
 
 InputDecoration _inputDecoration(String hint) => InputDecoration(
   hintText: hint,
-  hintStyle: TextStyle(color: Colors.white.withOpacity(0.25), fontSize: 13),
+  hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.25), fontSize: 13),
   filled: true,
   fillColor: const Color(0xFF1E293B),
   border: OutlineInputBorder(
@@ -359,7 +359,7 @@ InputDecoration _inputDecoration(String hint) => InputDecoration(
   ),
   enabledBorder: OutlineInputBorder(
     borderRadius: BorderRadius.circular(14),
-    borderSide: BorderSide(color: Colors.white.withOpacity(0.08)),
+    borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
   ),
   focusedBorder: OutlineInputBorder(
     borderRadius: BorderRadius.circular(14),

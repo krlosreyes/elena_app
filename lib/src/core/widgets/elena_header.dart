@@ -26,7 +26,7 @@ class ElenaHeader extends ConsumerWidget {
         return Row(
           children: [
             CircleAvatar(
-              backgroundColor: AppColors.metabolicGreen.withOpacity(0.1),
+              backgroundColor: AppColors.metabolicGreen.withValues(alpha: 0.1),
               child: Text(initial, style: const TextStyle(color: AppColors.metabolicGreen, fontWeight: FontWeight.bold)),
             ),
             const SizedBox(width: 12),
@@ -60,7 +60,7 @@ class ElenaHeader extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.orange.withOpacity(0.1),
+        color: Colors.orange.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(

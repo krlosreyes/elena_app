@@ -129,7 +129,7 @@ class _WelcomeFlowScreenState extends ConsumerState<WelcomeFlowScreen> {
                           'Saltar',
                           style: TextStyle(
                             fontSize: 13,
-                            color: Colors.white.withOpacity(0.35),
+                            color: Colors.white.withValues(alpha: 0.35),
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -165,7 +165,7 @@ class _WelcomeFlowScreenState extends ConsumerState<WelcomeFlowScreen> {
                         decoration: BoxDecoration(
                           color: active
                               ? slide.accentColor
-                              : Colors.white.withOpacity(0.2),
+                              : Colors.white.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(3),
                         ),
                       );
@@ -253,10 +253,10 @@ class _WelcomeSlide extends StatelessWidget {
           Container(
             width: 110, height: 110,
             decoration: BoxDecoration(
-              color: data.accentColor.withOpacity(0.1),
+              color: data.accentColor.withValues(alpha: 0.1),
               shape: BoxShape.circle,
               border: Border.all(
-                color: data.accentColor.withOpacity(0.25),
+                color: data.accentColor.withValues(alpha: 0.25),
                 width: 2,
               ),
             ),
@@ -306,7 +306,7 @@ class _WelcomeSlide extends StatelessWidget {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.white.withOpacity(0.55),
+                color: Colors.white.withValues(alpha: 0.55),
                 height: 1.7,
               ),
             ),
@@ -359,7 +359,7 @@ class _ImrZoneBar extends StatelessWidget {
                 z.label,
                 style: TextStyle(
                   fontSize: 7,
-                  color: Colors.white.withOpacity(0.4),
+                  color: Colors.white.withValues(alpha: 0.4),
                 ),
               ),
             ],
@@ -371,7 +371,7 @@ class _ImrZoneBar extends StatelessWidget {
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 13,
-            color: Colors.white.withOpacity(0.5),
+            color: Colors.white.withValues(alpha: 0.5),
             height: 1.5,
           ),
         ),
@@ -443,9 +443,9 @@ class _PillarTile extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 5),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
       decoration: BoxDecoration(
-        color: data.color.withOpacity(0.08),
+        color: data.color.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: data.color.withOpacity(0.25)),
+        border: Border.all(color: data.color.withValues(alpha: 0.25)),
       ),
       child: Column(
         children: [
@@ -465,7 +465,7 @@ class _PillarTile extends StatelessWidget {
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 9,
-              color: Colors.white.withOpacity(0.4),
+              color: Colors.white.withValues(alpha: 0.4),
               height: 1.3,
             ),
           ),

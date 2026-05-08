@@ -66,7 +66,7 @@ class IMRDetailSheet extends StatelessWidget {
               child: Container(
                 width: 40, height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -144,12 +144,12 @@ class _ScoreHero extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            c.withOpacity(0.15),
-            c.withOpacity(0.05),
+            c.withValues(alpha: 0.15),
+            c.withValues(alpha: 0.05),
           ],
         ),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: c.withOpacity(0.3), width: 1.5),
+        border: Border.all(color: c.withValues(alpha: 0.3), width: 1.5),
       ),
       child: Column(
         children: [
@@ -159,7 +159,7 @@ class _ScoreHero extends StatelessWidget {
               fontSize: 10,
               fontWeight: FontWeight.w900,
               letterSpacing: 2,
-              color: Colors.white.withOpacity(0.4),
+              color: Colors.white.withValues(alpha: 0.4),
             ),
           ),
           const SizedBox(height: 8),
@@ -183,7 +183,7 @@ class _ScoreHero extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white.withOpacity(0.4),
+                    color: Colors.white.withValues(alpha: 0.4),
                   ),
                 ),
               ),
@@ -194,9 +194,9 @@ class _ScoreHero extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 7),
             decoration: BoxDecoration(
-              color: c.withOpacity(0.15),
+              color: c.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: c.withOpacity(0.5)),
+              border: Border.all(color: c.withValues(alpha: 0.5)),
             ),
             child: Text(
               '${explanation.zoneEmoji}  ${result.zone}',
@@ -231,7 +231,7 @@ class _GlobalProgressBar extends StatelessWidget {
           child: LinearProgressIndicator(
             value: score / 100,
             minHeight: 8,
-            backgroundColor: Colors.white.withOpacity(0.1),
+            backgroundColor: Colors.white.withValues(alpha: 0.1),
             valueColor: AlwaysStoppedAnimation<Color>(color),
           ),
         ),
@@ -253,7 +253,7 @@ class _GlobalProgressBar extends StatelessWidget {
 
   Widget _zoneMarker(String label, Color c) => Text(
     label,
-    style: TextStyle(fontSize: 8, color: c.withOpacity(0.6)),
+    style: TextStyle(fontSize: 8, color: c.withValues(alpha: 0.6)),
   );
 }
 
@@ -268,9 +268,9 @@ class _PlainSummary extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.04),
+        color: Colors.white.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -310,11 +310,11 @@ class _BlockCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isWeak
-            ? c.withOpacity(0.08)
+            ? c.withValues(alpha: 0.08)
             : const Color(0xFF1E293B),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isWeak ? c.withOpacity(0.5) : Colors.white.withOpacity(0.07),
+          color: isWeak ? c.withValues(alpha: 0.5) : Colors.white.withValues(alpha: 0.07),
           width: isWeak ? 1.5 : 1,
         ),
       ),
@@ -327,7 +327,7 @@ class _BlockCard extends StatelessWidget {
               Container(
                 width: 36, height: 36,
                 decoration: BoxDecoration(
-                  color: c.withOpacity(0.15),
+                  color: c.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(block.icon, color: c, size: 18),
@@ -357,7 +357,7 @@ class _BlockCard extends StatelessWidget {
                       'Peso en el IMR: ${block.weightPercent}%',
                       style: TextStyle(
                         fontSize: 10,
-                        color: Colors.white.withOpacity(0.4),
+                        color: Colors.white.withValues(alpha: 0.4),
                       ),
                     ),
                   ],
@@ -379,7 +379,7 @@ class _BlockCard extends StatelessWidget {
                     'pts aportados',
                     style: TextStyle(
                       fontSize: 8,
-                      color: Colors.white.withOpacity(0.35),
+                      color: Colors.white.withValues(alpha: 0.35),
                     ),
                   ),
                 ],
@@ -395,7 +395,7 @@ class _BlockCard extends StatelessWidget {
             block.description,
             style: TextStyle(
               fontSize: 11.5,
-              color: Colors.white.withOpacity(0.5),
+              color: Colors.white.withValues(alpha: 0.5),
               height: 1.5,
             ),
           ),
@@ -423,7 +423,7 @@ class _BlockProgressBar extends StatelessWidget {
         Container(
           height: 6,
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.08),
+            color: Colors.white.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(3),
           ),
         ),
@@ -437,7 +437,7 @@ class _BlockProgressBar extends StatelessWidget {
               borderRadius: BorderRadius.circular(3),
               boxShadow: [
                 BoxShadow(
-                  color: color.withOpacity(0.4),
+                  color: color.withValues(alpha: 0.4),
                   blurRadius: 6,
                 ),
               ],
@@ -458,9 +458,9 @@ class _WeakBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
+        color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: color.withOpacity(0.4)),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
       ),
       child: Text(
         'MAYOR OPORTUNIDAD',
@@ -493,9 +493,9 @@ class _ActionCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: accentGold.withOpacity(0.07),
+        color: accentGold.withValues(alpha: 0.07),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: accentGold.withOpacity(0.35), width: 1.5),
+        border: Border.all(color: accentGold.withValues(alpha: 0.35), width: 1.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -505,7 +505,7 @@ class _ActionCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: accentGold.withOpacity(0.15),
+                  color: accentGold.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Text('💡', style: TextStyle(fontSize: 18)),
@@ -528,7 +528,7 @@ class _ActionCard extends StatelessWidget {
                       'Para ${weakestBlock.functionalName}',
                       style: TextStyle(
                         fontSize: 11,
-                        color: Colors.white.withOpacity(0.5),
+                        color: Colors.white.withValues(alpha: 0.5),
                       ),
                     ),
                   ],
@@ -560,7 +560,7 @@ class _UpdateNote extends StatelessWidget {
     return Row(
       children: [
         Icon(Icons.refresh_rounded,
-            size: 13, color: Colors.white.withOpacity(0.25)),
+            size: 13, color: Colors.white.withValues(alpha: 0.25)),
         const SizedBox(width: 6),
         Expanded(
           child: Text(
@@ -568,7 +568,7 @@ class _UpdateNote extends StatelessWidget {
             'actividad en cualquiera de tus pilares.',
             style: TextStyle(
               fontSize: 10.5,
-              color: Colors.white.withOpacity(0.3),
+              color: Colors.white.withValues(alpha: 0.3),
               height: 1.5,
             ),
           ),
@@ -592,7 +592,7 @@ class _SectionLabel extends StatelessWidget {
         fontSize: 9,
         fontWeight: FontWeight.w900,
         letterSpacing: 1.5,
-        color: Colors.white.withOpacity(0.3),
+        color: Colors.white.withValues(alpha: 0.3),
       ),
     );
   }

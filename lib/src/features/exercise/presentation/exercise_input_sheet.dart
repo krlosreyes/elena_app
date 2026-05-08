@@ -48,7 +48,7 @@ class _ExerciseInputSheetState extends ConsumerState<ExerciseInputSheet> {
            Center(
             child: Container(
               width: 40, height: 4,
-              decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(2)),
+              decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(2)),
             ),
           ),
           const SizedBox(height: 20),
@@ -86,7 +86,7 @@ class _ExerciseInputSheetState extends ConsumerState<ExerciseInputSheet> {
                return ChoiceChip(
                   label: Text(a),
                   selected: isSelected,
-                  selectedColor: AppColors.metabolicGreen.withOpacity(0.2),
+                  selectedColor: AppColors.metabolicGreen.withValues(alpha: 0.2),
                   backgroundColor: const Color(0xFF1E293B),
                   side: BorderSide(color: isSelected ? AppColors.metabolicGreen : Colors.transparent),
                   onSelected: (val) => setState(() => _activityType = a),

@@ -71,7 +71,7 @@ class GoalsDashboardWidget extends ConsumerWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF1E293B),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withOpacity(0.07)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
       ),
       child: Column(
         children: [
@@ -91,7 +91,7 @@ class GoalsDashboardWidget extends ConsumerWidget {
                         fontSize: 9,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 1.5,
-                        color: Colors.white.withOpacity(0.35),
+                        color: Colors.white.withValues(alpha: 0.35),
                       ),
                     ),
                   ],
@@ -107,7 +107,7 @@ class GoalsDashboardWidget extends ConsumerWidget {
                     'Editar',
                     style: TextStyle(
                       fontSize: 11,
-                      color: const Color(0xFF1ABC9C).withOpacity(0.8),
+                      color: const Color(0xFF1ABC9C).withValues(alpha: 0.8),
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -141,7 +141,7 @@ class GoalsDashboardWidget extends ConsumerWidget {
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
-                                color: Colors.white.withOpacity(0.8),
+                                color: Colors.white.withValues(alpha: 0.8),
                               ),
                             ),
                           ),
@@ -161,7 +161,7 @@ class GoalsDashboardWidget extends ConsumerWidget {
                                   text: ' / ${_formatValue(goal.type, goal.targetValue)}',
                                   style: TextStyle(
                                     fontSize: 10,
-                                    color: Colors.white.withOpacity(0.3),
+                                    color: Colors.white.withValues(alpha: 0.3),
                                   ),
                                 ),
                               ],
@@ -176,7 +176,7 @@ class GoalsDashboardWidget extends ConsumerWidget {
                           Container(
                             height: 5,
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.08),
+                              color: Colors.white.withValues(alpha: 0.08),
                               borderRadius: BorderRadius.circular(3),
                             ),
                           ),
@@ -189,7 +189,7 @@ class GoalsDashboardWidget extends ConsumerWidget {
                                 borderRadius: BorderRadius.circular(3),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: c.withOpacity(0.4),
+                                    color: c.withValues(alpha: 0.4),
                                     blurRadius: 4,
                                   ),
                                 ],
@@ -206,7 +206,7 @@ class GoalsDashboardWidget extends ConsumerWidget {
                           '${(prog * 100).toStringAsFixed(0)}%',
                           style: TextStyle(
                             fontSize: 8,
-                            color: c.withOpacity(0.6),
+                            color: c.withValues(alpha: 0.6),
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -239,7 +239,7 @@ class _EmptyCTA extends StatelessWidget {
           color: const Color(0xFF1E293B),
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: const Color(0xFF1ABC9C).withOpacity(0.25),
+            color: const Color(0xFF1ABC9C).withValues(alpha: 0.25),
             width: 1.5,
           ),
         ),
@@ -248,7 +248,7 @@ class _EmptyCTA extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: const Color(0xFF1ABC9C).withOpacity(0.12),
+                color: const Color(0xFF1ABC9C).withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Text('🎯', style: TextStyle(fontSize: 20)),
@@ -271,7 +271,7 @@ class _EmptyCTA extends StatelessWidget {
                     'Elena personalizará tu plan con base en tus metas.',
                     style: TextStyle(
                       fontSize: 11,
-                      color: Colors.white.withOpacity(0.45),
+                      color: Colors.white.withValues(alpha: 0.45),
                       height: 1.4,
                     ),
                   ),
@@ -280,7 +280,7 @@ class _EmptyCTA extends StatelessWidget {
             ),
             Icon(
               Icons.chevron_right_rounded,
-              color: const Color(0xFF1ABC9C).withOpacity(0.6),
+              color: const Color(0xFF1ABC9C).withValues(alpha: 0.6),
               size: 20,
             ),
           ],

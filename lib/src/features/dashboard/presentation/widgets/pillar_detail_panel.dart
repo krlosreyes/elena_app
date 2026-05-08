@@ -73,7 +73,7 @@ Widget _progressBar(double progress, Color color) {
         borderRadius: BorderRadius.circular(4),
         child: LinearProgressIndicator(
           value: progress.clamp(0.0, 1.0),
-          backgroundColor: Colors.white.withOpacity(0.08),
+          backgroundColor: Colors.white.withValues(alpha: 0.08),
           valueColor: AlwaysStoppedAnimation<Color>(color),
           minHeight: 6,
         ),
@@ -83,7 +83,7 @@ Widget _progressBar(double progress, Color color) {
         '${(progress * 100).toInt()}% completado',
         style: TextStyle(
           fontSize: 10,
-          color: Colors.white.withOpacity(0.4),
+          color: Colors.white.withValues(alpha: 0.4),
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -129,8 +129,8 @@ Widget _correctionButton({
       icon: Icon(icon, size: 14),
       label: Text(label),
       style: OutlinedButton.styleFrom(
-        foregroundColor: Colors.white.withOpacity(0.5),
-        side: BorderSide(color: Colors.white.withOpacity(0.12)),
+        foregroundColor: Colors.white.withValues(alpha: 0.5),
+        side: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
         padding: const EdgeInsets.symmetric(vertical: 10),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
@@ -160,9 +160,9 @@ Widget _statusChip(String label, Color color) {
   return Container(
     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
     decoration: BoxDecoration(
-      color: color.withOpacity(0.12),
+      color: color.withValues(alpha: 0.12),
       borderRadius: BorderRadius.circular(10),
-      border: Border.all(color: color.withOpacity(0.35)),
+      border: Border.all(color: color.withValues(alpha: 0.35)),
     ),
     child: Text(
       label,
@@ -241,7 +241,7 @@ class _FastingPanelState extends ConsumerState<_FastingPanel> {
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
-                color: Colors.white.withOpacity(0.35),
+                color: Colors.white.withValues(alpha: 0.35),
               ),
             ),
           ),
@@ -257,14 +257,14 @@ class _FastingPanelState extends ConsumerState<_FastingPanel> {
       if (nextPhaseLabel.isNotEmpty) ...[
         Row(
           children: [
-            Icon(Icons.arrow_forward_rounded, size: 12, color: _color.withOpacity(0.7)),
+            Icon(Icons.arrow_forward_rounded, size: 12, color: _color.withValues(alpha: 0.7)),
             const SizedBox(width: 4),
             Text(
               nextPhaseLabel,
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
-                color: Colors.white.withOpacity(0.5),
+                color: Colors.white.withValues(alpha: 0.5),
               ),
             ),
           ],
@@ -279,7 +279,7 @@ class _FastingPanelState extends ConsumerState<_FastingPanel> {
           style: TextStyle(
             fontSize: 9,
             fontWeight: FontWeight.w900,
-            color: Colors.white.withOpacity(0.35),
+            color: Colors.white.withValues(alpha: 0.35),
             letterSpacing: 1,
           ),
         ),
@@ -293,7 +293,7 @@ class _FastingPanelState extends ConsumerState<_FastingPanel> {
               Expanded(
                 child: Text(
                   b,
-                  style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.65), height: 1.3),
+                  style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.65), height: 1.3),
                 ),
               ),
             ],
@@ -510,25 +510,25 @@ class _SleepPanelState extends ConsumerState<_SleepPanel> {
               children: [
                 _stat('Dormiste', '${hours}h ${mins}m', _color),
                 const SizedBox(width: 24),
-                _stat('Acostado', _fmt(log.fellAsleep), Colors.white.withOpacity(0.55)),
+                _stat('Acostado', _fmt(log.fellAsleep), Colors.white.withValues(alpha: 0.55)),
                 const SizedBox(width: 24),
-                _stat('Despertaste', _fmt(log.wokeUp), Colors.white.withOpacity(0.55)),
+                _stat('Despertaste', _fmt(log.wokeUp), Colors.white.withValues(alpha: 0.55)),
               ],
             )
           : Row(
               children: [
                 _stat('Hora de dormir', _fmt(widget.user.profile.sleepTime), _color),
                 const SizedBox(width: 24),
-                _stat('Despertar', _fmt(widget.user.profile.wakeUpTime), Colors.white.withOpacity(0.55)),
+                _stat('Despertar', _fmt(widget.user.profile.wakeUpTime), Colors.white.withValues(alpha: 0.55)),
               ],
             ),
       const SizedBox(height: 14),
 
       // ── Meta 7-9h ──────────────────────────────────────────────────────
       Row(children: [
-        Icon(Icons.flag_outlined, size: 12, color: _color.withOpacity(0.7)),
+        Icon(Icons.flag_outlined, size: 12, color: _color.withValues(alpha: 0.7)),
         const SizedBox(width: 4),
-        Text('Meta: 7–9 horas', style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.45))),
+        Text('Meta: 7–9 horas', style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.45))),
       ]),
       const SizedBox(height: 8),
       _progressBar(progress, _color),
@@ -539,7 +539,7 @@ class _SleepPanelState extends ConsumerState<_SleepPanel> {
         Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: _color.withOpacity(0.07),
+            color: _color.withValues(alpha: 0.07),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Text(
@@ -548,7 +548,7 @@ class _SleepPanelState extends ConsumerState<_SleepPanel> {
                 : hours >= 5
                     ? 'Sueño insuficiente — cortisol elevado, resistencia a insulina +38%'
                     : 'Privación de sueño — impacto directo en grelina y control de glucosa',
-            style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.6), height: 1.4),
+            style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.6), height: 1.4),
           ),
         ),
       ] else ...[
@@ -556,12 +556,12 @@ class _SleepPanelState extends ConsumerState<_SleepPanel> {
         Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: _color.withOpacity(0.07),
+            color: _color.withValues(alpha: 0.07),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Text(
             'Tu ciclo circadiano está configurado para ${_fmt(widget.user.profile.sleepTime)} — ${_fmt(widget.user.profile.wakeUpTime)}. Registra tu sueño para optimizar tus métricas metabólicas.',
-            style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.6), height: 1.4),
+            style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.6), height: 1.4),
           ),
         ),
       ],
@@ -594,7 +594,7 @@ class _SleepPanelState extends ConsumerState<_SleepPanel> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: TextStyle(fontSize: 9, color: Colors.white.withOpacity(0.35), fontWeight: FontWeight.w700)),
+        Text(label, style: TextStyle(fontSize: 9, color: Colors.white.withValues(alpha: 0.35), fontWeight: FontWeight.w700)),
         const SizedBox(height: 2),
         Text(value, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: color)),
       ],
@@ -640,7 +640,7 @@ class _HydrationPanel extends ConsumerWidget {
             padding: const EdgeInsets.only(bottom: 4),
             child: Text(
               '/ ${hs.goalFormatted} L',
-              style: TextStyle(fontSize: 14, color: Colors.white.withOpacity(0.35), fontWeight: FontWeight.w700),
+              style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.35), fontWeight: FontWeight.w700),
             ),
           ),
         ],
@@ -653,14 +653,14 @@ class _HydrationPanel extends ConsumerWidget {
       Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: _color.withOpacity(0.07),
+          color: _color.withValues(alpha: 0.07),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Text(
           hs.isGoalReached
               ? '✓ Meta alcanzada — transporte de nutrientes y termorregulación óptimos'
               : 'Cada 250ml mejora el flujo linfático y la eliminación de metabolitos',
-          style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.6), height: 1.4),
+          style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.6), height: 1.4),
         ),
       ),
       const SizedBox(height: 16),
@@ -706,10 +706,10 @@ class _HydrationPanel extends ConsumerWidget {
     return ElevatedButton(
       onPressed: onTap,
       style: ElevatedButton.styleFrom(
-        backgroundColor: color.withOpacity(0.15),
+        backgroundColor: color.withValues(alpha: 0.15),
         foregroundColor: color,
         elevation: 0,
-        side: BorderSide(color: color.withOpacity(0.4)),
+        side: BorderSide(color: color.withValues(alpha: 0.4)),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         padding: const EdgeInsets.symmetric(vertical: 14),
         textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900),
@@ -769,7 +769,7 @@ class _ExercisePanel extends ConsumerWidget {
             padding: const EdgeInsets.only(bottom: 4),
             child: Text(
               '/ $goal min meta',
-              style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.35), fontWeight: FontWeight.w700),
+              style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.35), fontWeight: FontWeight.w700),
             ),
           ),
         ],
@@ -782,7 +782,7 @@ class _ExercisePanel extends ConsumerWidget {
       Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: _color.withOpacity(0.07),
+          color: _color.withValues(alpha: 0.07),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Text(
@@ -791,7 +791,7 @@ class _ExercisePanel extends ConsumerWidget {
               : es.todayMinutes >= 20
                   ? 'Activación AMPK — sensibilidad a insulina mejorada post ejercicio'
                   : '30 min activan GLUT4 muscular — eliminación directa de glucosa sin insulina',
-          style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.6), height: 1.4),
+          style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.6), height: 1.4),
         ),
       ),
       const SizedBox(height: 16),
@@ -892,9 +892,9 @@ class _NutritionPanelState extends ConsumerState<_NutritionPanel> {
               _color,
             )
           else
-            _stat('Ventana', '$windowPct%', Colors.white.withOpacity(0.55)),
+            _stat('Ventana', '$windowPct%', Colors.white.withValues(alpha: 0.55)),
           const SizedBox(width: 24),
-          _stat('Score nutricional', '${(ns.nutritionScore * 100).toInt()}', Colors.white.withOpacity(0.55)),
+          _stat('Score nutricional', '${(ns.nutritionScore * 100).toInt()}', Colors.white.withValues(alpha: 0.55)),
         ],
       ),
       const SizedBox(height: 12),
@@ -903,7 +903,7 @@ class _NutritionPanelState extends ConsumerState<_NutritionPanel> {
       Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: _color.withOpacity(0.07),
+          color: _color.withValues(alpha: 0.07),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Text(
@@ -912,7 +912,7 @@ class _NutritionPanelState extends ConsumerState<_NutritionPanel> {
               : windowPct > 0
                   ? 'Mejora el timing de comidas para maximizar el IMR en el bloque Conducta'
                   : 'Registra tus comidas para calcular la adherencia circadiana',
-          style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.6), height: 1.4),
+          style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.6), height: 1.4),
         ),
       ),
       const SizedBox(height: 16),
@@ -923,9 +923,9 @@ class _NutritionPanelState extends ConsumerState<_NutritionPanel> {
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
-            color: Colors.redAccent.withOpacity(0.08),
+            color: Colors.redAccent.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.redAccent.withOpacity(0.25)),
+            border: Border.all(color: Colors.redAccent.withValues(alpha: 0.25)),
           ),
           child: Row(
             children: [
@@ -936,7 +936,7 @@ class _NutritionPanelState extends ConsumerState<_NutritionPanel> {
                   'Registro bloqueado — ayuno activo. Detén el ayuno para registrar comidas.',
                   style: TextStyle(
                     fontSize: 11,
-                    color: Colors.redAccent.withOpacity(0.85),
+                    color: Colors.redAccent.withValues(alpha: 0.85),
                     height: 1.4,
                     fontWeight: FontWeight.w600,
                   ),
@@ -986,7 +986,7 @@ class _NutritionPanelState extends ConsumerState<_NutritionPanel> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: TextStyle(fontSize: 9, color: Colors.white.withOpacity(0.35), fontWeight: FontWeight.w700)),
+        Text(label, style: TextStyle(fontSize: 9, color: Colors.white.withValues(alpha: 0.35), fontWeight: FontWeight.w700)),
         const SizedBox(height: 2),
         Text(value, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: color)),
       ],

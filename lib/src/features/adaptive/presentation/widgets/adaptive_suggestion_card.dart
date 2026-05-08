@@ -29,17 +29,17 @@ class AdaptiveSuggestionCard extends ConsumerWidget {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            primaryColor.withOpacity(0.15),
-            primaryColor.withOpacity(0.05),
+            primaryColor.withValues(alpha: 0.15),
+            primaryColor.withValues(alpha: 0.05),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: primaryColor.withOpacity(0.3), width: 1.5),
+        border: Border.all(color: primaryColor.withValues(alpha: 0.3), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: primaryColor.withOpacity(0.05),
+            color: primaryColor.withValues(alpha: 0.05),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -53,7 +53,7 @@ class AdaptiveSuggestionCard extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: primaryColor.withOpacity(0.2),
+                  color: primaryColor.withValues(alpha: 0.2),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
@@ -147,7 +147,7 @@ class AdaptiveSuggestionCard extends ConsumerWidget {
           children: [
             Text(
               suggestion.description,
-              style: TextStyle(color: Colors.white.withOpacity(0.7)),
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
             ),
             const SizedBox(height: 20),
             const Text(
@@ -159,7 +159,7 @@ class AdaptiveSuggestionCard extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancelar', style: TextStyle(color: Colors.white.withOpacity(0.5))),
+            child: Text('Cancelar', style: TextStyle(color: Colors.white.withValues(alpha: 0.5))),
           ),
           ElevatedButton(
             onPressed: () async {

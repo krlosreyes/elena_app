@@ -180,10 +180,10 @@ class _ImrHero extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [c.withOpacity(0.15), c.withOpacity(0.04)],
+          colors: [c.withValues(alpha: 0.15), c.withValues(alpha: 0.04)],
         ),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: c.withOpacity(0.3), width: 1.5),
+        border: Border.all(color: c.withValues(alpha: 0.3), width: 1.5),
       ),
       child: Row(
         children: [
@@ -197,7 +197,7 @@ class _ImrHero extends StatelessWidget {
                   fontSize: 9,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 1.5,
-                  color: Colors.white.withOpacity(0.35),
+                  color: Colors.white.withValues(alpha: 0.35),
                 ),
               ),
               const SizedBox(height: 4),
@@ -214,14 +214,14 @@ class _ImrHero extends StatelessWidget {
                 '/ 100',
                 style: TextStyle(
                   fontSize: 13,
-                  color: Colors.white.withOpacity(0.3),
+                  color: Colors.white.withValues(alpha: 0.3),
                 ),
               ),
             ],
           ),
 
           const SizedBox(width: 20),
-          Container(width: 1, height: 70, color: Colors.white.withOpacity(0.08)),
+          Container(width: 1, height: 70, color: Colors.white.withValues(alpha: 0.08)),
           const SizedBox(width: 20),
 
           // Stats
@@ -279,7 +279,7 @@ class _StatRow extends StatelessWidget {
           style: TextStyle(
             fontSize: 8,
             letterSpacing: 1,
-            color: Colors.white.withOpacity(0.3),
+            color: Colors.white.withValues(alpha: 0.3),
           ),
         ),
         Text(
@@ -369,7 +369,7 @@ class _LastCheckInCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF1E293B),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.07)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -437,7 +437,7 @@ class _MetricChip extends StatelessWidget {
           label,
           style: TextStyle(
             fontSize: 9,
-            color: Colors.white.withOpacity(0.35),
+            color: Colors.white.withValues(alpha: 0.35),
           ),
         ),
       ],
@@ -455,7 +455,7 @@ class _CheckInHistory extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF1E293B),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.07)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
       ),
       child: Column(
         children: history.asMap().entries.map((entry) {
@@ -472,7 +472,7 @@ class _CheckInHistory extends StatelessWidget {
                       c.date,
                       style: TextStyle(
                         fontSize: 10,
-                        color: Colors.white.withOpacity(0.4),
+                        color: Colors.white.withValues(alpha: 0.4),
                         fontFamily: 'monospace',
                       ),
                     ),
@@ -491,7 +491,7 @@ class _CheckInHistory extends StatelessWidget {
                         '${c.bodyFatPercentage!.toStringAsFixed(0)}% grasa',
                         style: TextStyle(
                           fontSize: 11,
-                          color: Colors.white.withOpacity(0.5),
+                          color: Colors.white.withValues(alpha: 0.5),
                         ),
                       ),
                     ],
@@ -512,7 +512,7 @@ class _CheckInHistory extends StatelessWidget {
               if (i < history.length - 1)
                 Divider(
                   height: 1,
-                  color: Colors.white.withOpacity(0.05),
+                  color: Colors.white.withValues(alpha: 0.05),
                   indent: 16,
                   endIndent: 16,
                 ),
@@ -538,7 +538,7 @@ class _EmptyBiometric extends StatelessWidget {
           color: const Color(0xFF1E293B),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: const Color(0xFF3498DB).withOpacity(0.25),
+            color: const Color(0xFF3498DB).withValues(alpha: 0.25),
             width: 1.5,
           ),
         ),
@@ -563,7 +563,7 @@ class _EmptyBiometric extends StatelessWidget {
                     'Registra tu primer check-in para ver tu evolución corporal.',
                     style: TextStyle(
                       fontSize: 11,
-                      color: Colors.white.withOpacity(0.45),
+                      color: Colors.white.withValues(alpha: 0.45),
                       height: 1.4,
                     ),
                   ),
@@ -572,7 +572,7 @@ class _EmptyBiometric extends StatelessWidget {
             ),
             Icon(
               Icons.add_circle_outline_rounded,
-              color: const Color(0xFF3498DB).withOpacity(0.7),
+              color: const Color(0xFF3498DB).withValues(alpha: 0.7),
               size: 22,
             ),
           ],
@@ -629,7 +629,7 @@ class _GoalProgressSection extends ConsumerWidget {
             decoration: BoxDecoration(
               color: const Color(0xFF1E293B),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.white.withOpacity(0.07)),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -664,7 +664,7 @@ class _GoalProgressSection extends ConsumerWidget {
                     Container(
                       height: 6,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.08),
+                        color: Colors.white.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(3),
                       ),
                     ),
@@ -676,7 +676,7 @@ class _GoalProgressSection extends ConsumerWidget {
                           color: c,
                           borderRadius: BorderRadius.circular(3),
                           boxShadow: [
-                            BoxShadow(color: c.withOpacity(0.4), blurRadius: 4),
+                            BoxShadow(color: c.withValues(alpha: 0.4), blurRadius: 4),
                           ],
                         ),
                       ),
@@ -690,12 +690,12 @@ class _GoalProgressSection extends ConsumerWidget {
                     Text(
                       'Inicio: ${goal.startValue.toStringAsFixed(1)} ${goal.unit}',
                       style: TextStyle(
-                        fontSize: 9, color: Colors.white.withOpacity(0.3)),
+                        fontSize: 9, color: Colors.white.withValues(alpha: 0.3)),
                     ),
                     Text(
                       'Meta: ${goal.targetValue.toStringAsFixed(1)} ${goal.unit}',
                       style: TextStyle(
-                        fontSize: 9, color: c.withOpacity(0.7),
+                        fontSize: 9, color: c.withValues(alpha: 0.7),
                         fontWeight: FontWeight.w700),
                     ),
                   ],
@@ -725,13 +725,13 @@ class _CheckInCTA extends StatelessWidget {
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              const Color(0xFF1ABC9C).withOpacity(0.12),
-              const Color(0xFF1ABC9C).withOpacity(0.04),
+              const Color(0xFF1ABC9C).withValues(alpha: 0.12),
+              const Color(0xFF1ABC9C).withValues(alpha: 0.04),
             ],
           ),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: const Color(0xFF1ABC9C).withOpacity(0.3),
+            color: const Color(0xFF1ABC9C).withValues(alpha: 0.3),
             width: 1.5,
           ),
         ),
@@ -740,7 +740,7 @@ class _CheckInCTA extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: const Color(0xFF1ABC9C).withOpacity(0.15),
+                color: const Color(0xFF1ABC9C).withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Text('📏', style: TextStyle(fontSize: 20)),
@@ -795,7 +795,7 @@ class _SectionLabel extends StatelessWidget {
         fontSize: 9,
         fontWeight: FontWeight.w900,
         letterSpacing: 1.5,
-        color: Colors.white.withOpacity(0.3),
+        color: Colors.white.withValues(alpha: 0.3),
       ),
     );
   }
@@ -820,7 +820,7 @@ class _UnlockCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF1E293B),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.07)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
       ),
       child: Column(
         children: [
@@ -833,7 +833,7 @@ class _UnlockCard extends StatelessWidget {
                   'Necesitas $required $message',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.white.withOpacity(0.6),
+                    color: Colors.white.withValues(alpha: 0.6),
                   ),
                 ),
               ),
@@ -842,7 +842,7 @@ class _UnlockCard extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w800,
-                  color: Colors.white.withOpacity(0.5),
+                  color: Colors.white.withValues(alpha: 0.5),
                 ),
               ),
             ],
@@ -853,7 +853,7 @@ class _UnlockCard extends StatelessWidget {
             child: LinearProgressIndicator(
               value:           prog,
               minHeight:       6,
-              backgroundColor: Colors.white.withOpacity(0.08),
+              backgroundColor: Colors.white.withValues(alpha: 0.08),
               valueColor: const AlwaysStoppedAnimation<Color>(
                 Color(0xFF1ABC9C),
               ),

@@ -95,7 +95,7 @@ class _PillarRing extends StatelessWidget {
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: data.color.withOpacity(0.35),
+                      color: data.color.withValues(alpha: 0.35),
                       blurRadius: 14,
                       spreadRadius: 2,
                     ),
@@ -112,8 +112,8 @@ class _PillarRing extends StatelessWidget {
               progress: p,
               color: data.color,
               bgColor: isSelected
-                  ? data.color.withOpacity(0.18)
-                  : Colors.white.withOpacity(0.07),
+                  ? data.color.withValues(alpha: 0.18)
+                  : Colors.white.withValues(alpha: 0.07),
               strokeWidth: isSelected ? 4.0 : 3.5,
             ),
           ),
@@ -151,7 +151,7 @@ class _PillarRing extends StatelessWidget {
             fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
             color: isSelected
                 ? data.color
-                : Colors.white.withOpacity(0.35),
+                : Colors.white.withValues(alpha: 0.35),
             letterSpacing: 0.2,
           ),
         ),

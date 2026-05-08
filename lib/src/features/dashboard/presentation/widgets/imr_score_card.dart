@@ -42,12 +42,12 @@ class IMRScoreCard extends StatelessWidget {
           color: const Color(0xFF1E293B),
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: zoneColor.withOpacity(0.35),
+            color: zoneColor.withValues(alpha: 0.35),
             width: 1.5,
           ),
           boxShadow: [
             BoxShadow(
-              color: zoneColor.withOpacity(0.06),
+              color: zoneColor.withValues(alpha: 0.06),
               blurRadius: 20,
               spreadRadius: 2,
             ),
@@ -74,7 +74,7 @@ class IMRScoreCard extends StatelessWidget {
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 2,
-                    color: Colors.white.withOpacity(0.35),
+                    color: Colors.white.withValues(alpha: 0.35),
                   ),
                 ),
               ],
@@ -86,7 +86,7 @@ class IMRScoreCard extends StatelessWidget {
             Container(
               width: 1,
               height: 60,
-              color: Colors.white.withOpacity(0.08),
+              color: Colors.white.withValues(alpha: 0.08),
             ),
 
             const SizedBox(width: 20),
@@ -101,10 +101,10 @@ class IMRScoreCard extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: zoneColor.withOpacity(0.12),
+                      color: zoneColor.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                          color: zoneColor.withOpacity(0.4)),
+                          color: zoneColor.withValues(alpha: 0.4)),
                     ),
                     child: Text(
                       '$emoji  ${result.zone}',
@@ -122,7 +122,7 @@ class IMRScoreCard extends StatelessWidget {
                     result.description,
                     style: TextStyle(
                       fontSize: 11,
-                      color: Colors.white.withOpacity(0.55),
+                      color: Colors.white.withValues(alpha: 0.55),
                       height: 1.4,
                     ),
                     maxLines: 2,
@@ -137,13 +137,13 @@ class IMRScoreCard extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
-                          color: zoneColor.withOpacity(0.8),
+                          color: zoneColor.withValues(alpha: 0.8),
                         ),
                       ),
                       const SizedBox(width: 2),
                       Icon(
                         Icons.chevron_right_rounded,
-                        color: zoneColor.withOpacity(0.6),
+                        color: zoneColor.withValues(alpha: 0.6),
                         size: 14,
                       ),
                     ],

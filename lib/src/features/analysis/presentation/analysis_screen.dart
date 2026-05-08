@@ -258,7 +258,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
               'Resumen del día de hoy',
               style: TextStyle(
                 fontSize: 12,
-                color: Colors.white.withOpacity(0.4),
+                color: Colors.white.withValues(alpha: 0.4),
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -275,7 +275,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.bold,
-              color: Colors.white.withOpacity(0.55),
+              color: Colors.white.withValues(alpha: 0.55),
             ),
           ),
         ),
@@ -291,7 +291,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFF1E293B),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: zoneColor.withOpacity(0.3), width: 1.5),
+        border: Border.all(color: zoneColor.withValues(alpha: 0.3), width: 1.5),
       ),
       child: Row(
         children: [
@@ -333,7 +333,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                   result.description,
                   style: TextStyle(
                     fontSize: 11,
-                    color: Colors.white.withOpacity(0.55),
+                    color: Colors.white.withValues(alpha: 0.55),
                     height: 1.4,
                   ),
                 ),
@@ -407,7 +407,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
           style: TextStyle(
             fontSize: 7,
             fontWeight: FontWeight.w900,
-            color: Colors.white.withOpacity(0.35),
+            color: Colors.white.withValues(alpha: 0.35),
             letterSpacing: 0.5,
           ),
         ),
@@ -431,7 +431,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
       child: Text(
         label,
         style: TextStyle(
-          color: Colors.white.withOpacity(0.3),
+          color: Colors.white.withValues(alpha: 0.3),
           fontSize: 10,
           letterSpacing: 1.5,
           fontWeight: FontWeight.bold,
@@ -444,7 +444,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
     final bool todayDone = streak.todayCompleted;
     final Color flameColor = todayDone
         ? const Color(0xFFFB923C)
-        : Colors.white.withOpacity(0.2);
+        : Colors.white.withValues(alpha: 0.2);
 
     final entry = streak.todayEntry;
 
@@ -456,8 +456,8 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
           color: todayDone
-              ? const Color(0xFFFB923C).withOpacity(0.35)
-              : Colors.white.withOpacity(0.06),
+              ? const Color(0xFFFB923C).withValues(alpha: 0.35)
+              : Colors.white.withValues(alpha: 0.06),
           width: 1.5,
         ),
       ),
@@ -485,7 +485,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                     'Récord: ${streak.longestStreak} días',
                     style: TextStyle(
                       fontSize: 10,
-                      color: Colors.white.withOpacity(0.35),
+                      color: Colors.white.withValues(alpha: 0.35),
                     ),
                   ),
                 ],
@@ -507,7 +507,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                     '7 días',
                     style: TextStyle(
                       fontSize: 9,
-                      color: Colors.white.withOpacity(0.35),
+                      color: Colors.white.withValues(alpha: 0.35),
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -560,7 +560,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                   size: 14,
                   color: todayDone
                       ? const Color(0xFF10B981)
-                      : Colors.white.withOpacity(0.3),
+                      : Colors.white.withValues(alpha: 0.3),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -573,7 +573,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                       fontWeight: FontWeight.w600,
                       color: todayDone
                           ? const Color(0xFF10B981)
-                          : Colors.white.withOpacity(0.45),
+                          : Colors.white.withValues(alpha: 0.45),
                     ),
                   ),
                 ),
@@ -594,12 +594,12 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: completed
-                ? const Color(0xFF10B981).withOpacity(0.15)
+                ? const Color(0xFF10B981).withValues(alpha: 0.15)
                 : const Color(0xFF0F172A),
             border: Border.all(
               color: completed
                   ? const Color(0xFF10B981)
-                  : Colors.white.withOpacity(0.1),
+                  : Colors.white.withValues(alpha: 0.1),
               width: 1.5,
             ),
           ),
@@ -607,7 +607,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
             child: Icon(
               icon, 
               size: 18, 
-              color: completed ? const Color(0xFF10B981) : Colors.white.withOpacity(0.2)
+              color: completed ? const Color(0xFF10B981) : Colors.white.withValues(alpha: 0.2)
             ),
           ),
         ),
@@ -619,7 +619,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
             fontWeight: FontWeight.w700,
             color: completed
                 ? const Color(0xFF10B981)
-                : Colors.white.withOpacity(0.25),
+                : Colors.white.withValues(alpha: 0.25),
           ),
         ),
       ],
@@ -630,7 +630,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
     return BottomNavigationBar(
       backgroundColor: const Color(0xFF0F172A),
       selectedItemColor: AppColors.metabolicGreen,
-      unselectedItemColor: Colors.grey.withOpacity(0.5),
+      unselectedItemColor: Colors.grey.withValues(alpha: 0.5),
       currentIndex: 1, // Analysis es índice 1
       type: BottomNavigationBarType.fixed,
       onTap: (index) {
@@ -666,14 +666,14 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
       decoration: BoxDecoration(
         color: AppColors.surfaceDark,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
       child: Column(
         children: [
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFF10B981).withOpacity(0.1),
+              color: const Color(0xFF10B981).withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: const Icon(
@@ -699,7 +699,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w700,
-              color: Colors.white.withOpacity(0.9),
+              color: Colors.white.withValues(alpha: 0.9),
               height: 1.3,
             ),
           ),
@@ -709,7 +709,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 13,
-              color: Colors.white.withOpacity(0.5),
+              color: Colors.white.withValues(alpha: 0.5),
               height: 1.5,
               fontWeight: FontWeight.w400,
             ),
@@ -726,7 +726,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                     'Progreso del Análisis',
                     style: TextStyle(
                       fontSize: 10,
-                      color: Colors.white.withOpacity(0.3),
+                      color: Colors.white.withValues(alpha: 0.3),
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -734,7 +734,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                     '$historyCount de 7 días',
                     style: TextStyle(
                       fontSize: 10,
-                      color: Colors.white.withOpacity(0.3),
+                      color: Colors.white.withValues(alpha: 0.3),
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -745,7 +745,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                 borderRadius: BorderRadius.circular(10),
                 child: LinearProgressIndicator(
                   value: (historyCount / 7).clamp(0.0, 1.0),
-                  backgroundColor: Colors.white.withOpacity(0.05),
+                  backgroundColor: Colors.white.withValues(alpha: 0.05),
                   valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF10B981)),
                   minHeight: 6,
                 ),

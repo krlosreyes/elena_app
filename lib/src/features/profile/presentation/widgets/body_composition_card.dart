@@ -162,7 +162,7 @@ class _CardContent extends StatelessWidget {
                         fontSize: 9,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 1.2,
-                        color: Colors.white.withOpacity(0.5),
+                        color: Colors.white.withValues(alpha: 0.5),
                       ),
                     ),
                   ],
@@ -173,7 +173,7 @@ class _CardContent extends StatelessWidget {
                       _EstimatedBadge(),
                     const SizedBox(width: 8),
                     Icon(Icons.chevron_right_rounded,
-                        color: Colors.white.withOpacity(0.3), size: 18),
+                        color: Colors.white.withValues(alpha: 0.3), size: 18),
                   ],
                 ),
               ],
@@ -250,7 +250,7 @@ class _WhtrBar extends StatelessWidget {
             fontSize: 8,
             fontWeight: FontWeight.w800,
             letterSpacing: 0.8,
-            color: Colors.white.withOpacity(0.35),
+            color: Colors.white.withValues(alpha: 0.35),
           ),
         ),
         const SizedBox(height: 6),
@@ -288,7 +288,7 @@ class _WhtrBar extends StatelessWidget {
                     border: Border.all(color: Colors.white, width: 2),
                     boxShadow: [
                       BoxShadow(
-                        color: BodyCompositionCalc.whtrColor(whtr).withOpacity(0.6),
+                        color: BodyCompositionCalc.whtrColor(whtr).withValues(alpha: 0.6),
                         blurRadius: 6,
                       ),
                     ],
@@ -313,7 +313,7 @@ class _WhtrBar extends StatelessWidget {
 
   TextStyle get _barLabel => TextStyle(
     fontSize: 7.5,
-    color: Colors.white.withOpacity(0.3),
+    color: Colors.white.withValues(alpha: 0.3),
     fontWeight: FontWeight.w600,
   );
 }
@@ -333,7 +333,7 @@ class _CardShell extends StatelessWidget {
         color: const Color(0xFF1E293B),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: Colors.tealAccent.withOpacity(0.15),
+          color: Colors.tealAccent.withValues(alpha: 0.15),
           width: 1,
         ),
       ),
@@ -379,7 +379,7 @@ class _MetricTile extends StatelessWidget {
             fontSize: 7.5,
             fontWeight: FontWeight.w800,
             letterSpacing: 0.5,
-            color: Colors.white.withOpacity(0.4),
+            color: Colors.white.withValues(alpha: 0.4),
           ),
         ),
         Text(
@@ -387,7 +387,7 @@ class _MetricTile extends StatelessWidget {
           style: TextStyle(
             fontSize: 8.5,
             fontWeight: FontWeight.w600,
-            color: color.withOpacity(0.8),
+            color: color.withValues(alpha: 0.8),
           ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -403,9 +403,9 @@ class _EstimatedBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
-        color: Colors.amber.withOpacity(0.15),
+        color: Colors.amber.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.amber.withOpacity(0.4)),
+        border: Border.all(color: Colors.amber.withValues(alpha: 0.4)),
       ),
       child: const Text(
         'ESTIMADO',

@@ -41,7 +41,7 @@ class _TrendChartState extends State<TrendChart> {
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white.withOpacity(0.3),
+                  color: Colors.white.withValues(alpha: 0.3),
                   letterSpacing: 1.5,
                 ),
               ),
@@ -109,7 +109,7 @@ class _LineChartPainter extends CustomPainter {
       ..shader = LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
-        colors: [color.withOpacity(0.3), color.withOpacity(0.0)],
+        colors: [color.withValues(alpha: 0.3), color.withValues(alpha: 0.0)],
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
 
     final path = Path();
@@ -159,7 +159,7 @@ class _LineChartPainter extends CustomPainter {
       canvas.drawLine(
         Offset(x, 0),
         Offset(x, size.height),
-        Paint()..color = Colors.white.withOpacity(0.1)..strokeWidth = 1,
+        Paint()..color = Colors.white.withValues(alpha: 0.1)..strokeWidth = 1,
       );
     }
   }

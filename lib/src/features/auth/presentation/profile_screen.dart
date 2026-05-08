@@ -86,7 +86,7 @@ class ProfileScreen extends ConsumerWidget {
     return BottomNavigationBar(
       backgroundColor: AppColors.backgroundDark,
       selectedItemColor: const Color(0xFF10B981),
-      unselectedItemColor: Colors.grey.withOpacity(0.5),
+      unselectedItemColor: Colors.grey.withValues(alpha: 0.5),
       currentIndex: 2,
       type: BottomNavigationBarType.fixed,
       onTap: (index) {
@@ -277,7 +277,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
       decoration: BoxDecoration(
         color: AppColors.surfaceDark,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: zoneColor.withOpacity(0.25), width: 1.5),
+        border: Border.all(color: zoneColor.withValues(alpha: 0.25), width: 1.5),
       ),
       child: Row(
         children: [
@@ -287,9 +287,9 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
             height: 56,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: const Color(0xFF10B981).withOpacity(0.15),
+              color: const Color(0xFF10B981).withValues(alpha: 0.15),
               border:
-                  Border.all(color: const Color(0xFF10B981).withOpacity(0.4)),
+                  Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.4)),
             ),
             child: const Icon(Icons.person_outline_rounded,
                 color: Color(0xFF10B981), size: 28),
@@ -310,7 +310,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
                   widget.user.pathologies.join(', '),
                   style: TextStyle(
                     fontSize: 11,
-                    color: Colors.white.withOpacity(0.4),
+                    color: Colors.white.withValues(alpha: 0.4),
                   ),
                 ),
               ],
@@ -385,7 +385,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
                       fontWeight: FontWeight.w800,
                       color: isSelected
                           ? Colors.white
-                          : Colors.white.withOpacity(0.4),
+                          : Colors.white.withValues(alpha: 0.4),
                     ),
                   ),
                 ),
@@ -585,7 +585,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
                 style: TextStyle(
                   color: isEnabled
                       ? Colors.redAccent
-                      : Colors.redAccent.withOpacity(0.3),
+                      : Colors.redAccent.withValues(alpha: 0.3),
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -604,7 +604,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
       style: TextStyle(
         fontSize: 10,
         fontWeight: FontWeight.w900,
-        color: Colors.white.withOpacity(0.3),
+        color: Colors.white.withValues(alpha: 0.3),
         letterSpacing: 1.5,
       ),
     );
@@ -615,7 +615,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
       text,
       style: TextStyle(
         fontSize: 11,
-        color: Colors.white.withOpacity(0.35),
+        color: Colors.white.withValues(alpha: 0.35),
       ),
     );
   }
@@ -659,7 +659,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
         decoration: BoxDecoration(
           color: AppColors.surfaceDark,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: color.withOpacity(0.2)),
+          border: Border.all(color: color.withValues(alpha: 0.2)),
         ),
         child: Row(
           children: [
@@ -679,7 +679,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
                     color: color)),
             const SizedBox(width: 8),
             Icon(Icons.edit_outlined,
-                size: 14, color: Colors.white.withOpacity(0.2)),
+                size: 14, color: Colors.white.withValues(alpha: 0.2)),
           ],
         ),
       ),

@@ -30,7 +30,7 @@ class FastingRingPainter extends CustomPainter {
 
     // 1. Anillo de fondo (Soporte visual técnico)
     canvas.drawCircle(center, radiusFasting, Paint()
-      ..color = indicatorColor.withOpacity(0.05)
+      ..color = indicatorColor.withValues(alpha: 0.05)
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidthFasting);
 
@@ -89,7 +89,7 @@ class FastingRingPainter extends CustomPainter {
       );
       
       canvas.drawCircle(dotPos, 2.0, Paint()
-        ..color = indicatorColor.withOpacity(0.3)
+        ..color = indicatorColor.withValues(alpha: 0.3)
         ..style = PaintingStyle.fill);
 
       final tp = TextPainter(
@@ -99,7 +99,7 @@ class FastingRingPainter extends CustomPainter {
             fontSize: iconSize, 
             fontFamily: milestones[milestoneHour]!.fontFamily,
             package: milestones[milestoneHour]!.fontPackage,
-            color: indicatorColor.withOpacity(0.3),
+            color: indicatorColor.withValues(alpha: 0.3),
           ),
         ),
         textDirection: TextDirection.ltr,
@@ -121,7 +121,7 @@ class FastingRingPainter extends CustomPainter {
     final pos = Offset(center.dx + orbitRadius * math.cos(angle), center.dy + orbitRadius * math.sin(angle));
 
     canvas.drawCircle(pos, pointRadius + 3, Paint()
-      ..color = const Color(0xFF60A5FA).withOpacity(0.2)
+      ..color = const Color(0xFF60A5FA).withValues(alpha: 0.2)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4));
 
     canvas.drawCircle(pos, pointRadius, Paint()

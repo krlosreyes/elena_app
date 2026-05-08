@@ -163,9 +163,9 @@ class _FatScoreHero extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF1E293B),
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: c.withOpacity(0.3), width: 1.5),
+        border: Border.all(color: c.withValues(alpha: 0.3), width: 1.5),
         boxShadow: [
-          BoxShadow(color: c.withOpacity(0.08), blurRadius: 24, spreadRadius: 4),
+          BoxShadow(color: c.withValues(alpha: 0.08), blurRadius: 24, spreadRadius: 4),
         ],
       ),
       child: Column(
@@ -186,16 +186,16 @@ class _FatScoreHero extends StatelessWidget {
               fontSize: 10,
               fontWeight: FontWeight.w800,
               letterSpacing: 2,
-              color: Colors.white.withOpacity(0.4),
+              color: Colors.white.withValues(alpha: 0.4),
             ),
           ),
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             decoration: BoxDecoration(
-              color: c.withOpacity(0.12),
+              color: c.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: c.withOpacity(0.4)),
+              border: Border.all(color: c.withValues(alpha: 0.4)),
             ),
             child: Text(
               'Zona $zone',
@@ -265,7 +265,7 @@ class _FatZoneBar extends StatelessWidget {
                     boxShadow: [
                       BoxShadow(
                         color: BodyCompositionCalc.fatZoneColor(fat, isMale)
-                            .withOpacity(0.7),
+                            .withValues(alpha: 0.7),
                         blurRadius: 8,
                       ),
                     ],
@@ -292,7 +292,7 @@ class _FatZoneBar extends StatelessWidget {
 
   Widget _barLabel(String t) => Text(
     t,
-    style: TextStyle(fontSize: 8, color: Colors.white.withOpacity(0.3)),
+    style: TextStyle(fontSize: 8, color: Colors.white.withValues(alpha: 0.3)),
   );
 }
 
@@ -350,7 +350,7 @@ class _LeanMassContent extends StatelessWidget {
                 fontSize: 8,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 0.8,
-                color: Colors.white.withOpacity(0.4),
+                color: Colors.white.withValues(alpha: 0.4),
               ),
             ),
             Text(
@@ -429,9 +429,9 @@ class _WhtrContent extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
-            color: c.withOpacity(0.1),
+            color: c.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: c.withOpacity(0.3)),
+            border: Border.all(color: c.withValues(alpha: 0.3)),
           ),
           child: Row(
             children: [
@@ -475,10 +475,10 @@ class _ImrImpactCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.metabolicGreen.withOpacity(0.1),
+        color: AppColors.metabolicGreen.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: AppColors.metabolicGreen.withOpacity(0.3),
+          color: AppColors.metabolicGreen.withValues(alpha: 0.3),
         ),
       ),
       child: Row(
@@ -486,7 +486,7 @@ class _ImrImpactCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: AppColors.metabolicGreen.withOpacity(0.2),
+              color: AppColors.metabolicGreen.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Icon(
@@ -506,7 +506,7 @@ class _ImrImpactCard extends StatelessWidget {
                     fontSize: 9,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 1,
-                    color: Colors.white.withOpacity(0.5),
+                    color: Colors.white.withValues(alpha: 0.5),
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -537,9 +537,9 @@ class _ScientificNote extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.04),
+        color: Colors.white.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -547,7 +547,7 @@ class _ScientificNote extends StatelessWidget {
           Row(
             children: [
               Icon(Icons.science_outlined,
-                  size: 14, color: Colors.white.withOpacity(0.4)),
+                  size: 14, color: Colors.white.withValues(alpha: 0.4)),
               const SizedBox(width: 6),
               Text(
                 'BASE CIENTÍFICA',
@@ -555,7 +555,7 @@ class _ScientificNote extends StatelessWidget {
                   fontSize: 8.5,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 1,
-                  color: Colors.white.withOpacity(0.4),
+                  color: Colors.white.withValues(alpha: 0.4),
                 ),
               ),
             ],
@@ -569,7 +569,7 @@ class _ScientificNote extends StatelessWidget {
             'Kouri et al. (1995) como referencia de masa muscular natural.',
             style: TextStyle(
               fontSize: 10,
-              color: Colors.white.withOpacity(0.35),
+              color: Colors.white.withValues(alpha: 0.35),
               height: 1.6,
             ),
           ),
@@ -603,7 +603,7 @@ class _SectionCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF1E293B),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: iconColor.withOpacity(0.15)),
+        border: Border.all(color: iconColor.withValues(alpha: 0.15)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -628,7 +628,7 @@ class _SectionCard extends StatelessWidget {
                       titleSub,
                       style: TextStyle(
                         fontSize: 10,
-                        color: Colors.white.withOpacity(0.45),
+                        color: Colors.white.withValues(alpha: 0.45),
                       ),
                     ),
                   ],
@@ -639,7 +639,7 @@ class _SectionCard extends StatelessWidget {
           const SizedBox(height: 16),
           Container(
             height: 1,
-            color: Colors.white.withOpacity(0.07),
+            color: Colors.white.withValues(alpha: 0.07),
           ),
           const SizedBox(height: 16),
           child,
@@ -668,11 +668,11 @@ class _StatBox extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: highlight
-            ? color.withOpacity(0.1)
-            : Colors.white.withOpacity(0.04),
+            ? color.withValues(alpha: 0.1)
+            : Colors.white.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: highlight ? color.withOpacity(0.3) : Colors.white.withOpacity(0.06),
+          color: highlight ? color.withValues(alpha: 0.3) : Colors.white.withValues(alpha: 0.06),
         ),
       ),
       child: Column(
@@ -692,7 +692,7 @@ class _StatBox extends StatelessWidget {
             style: TextStyle(
               fontSize: 9,
               fontWeight: FontWeight.w600,
-              color: Colors.white.withOpacity(0.4),
+              color: Colors.white.withValues(alpha: 0.4),
             ),
           ),
         ],
@@ -711,7 +711,7 @@ class _ExplanationText extends StatelessWidget {
       text,
       style: TextStyle(
         fontSize: 11.5,
-        color: Colors.white.withOpacity(0.5),
+        color: Colors.white.withValues(alpha: 0.5),
         height: 1.6,
       ),
     );
@@ -724,9 +724,9 @@ class _EstimatedBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.amber.withOpacity(0.08),
+        color: Colors.amber.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.amber.withOpacity(0.25)),
+        border: Border.all(color: Colors.amber.withValues(alpha: 0.25)),
       ),
       child: Row(
         children: [
@@ -739,7 +739,7 @@ class _EstimatedBanner extends StatelessWidget {
               'Para mayor precisión, actualiza tus medidas en Progreso.',
               style: TextStyle(
                 fontSize: 11,
-                color: Colors.amber.withOpacity(0.85),
+                color: Colors.amber.withValues(alpha: 0.85),
                 height: 1.4,
               ),
             ),
@@ -764,7 +764,7 @@ class _EstimatedNote extends StatelessWidget {
             'Actualiza tus medidas para un WHTR preciso.',
             style: TextStyle(
               fontSize: 10,
-              color: Colors.amber.withOpacity(0.7),
+              color: Colors.amber.withValues(alpha: 0.7),
               height: 1.4,
             ),
           ),

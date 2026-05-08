@@ -86,7 +86,7 @@ class _AddPastMealSheetState extends ConsumerState<AddPastMealSheet> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error al registrar: $e'),
-            backgroundColor: Colors.red.withOpacity(0.8),
+            backgroundColor: Colors.red.withValues(alpha: 0.8),
           ),
         );
       }
@@ -133,7 +133,7 @@ class _AddPastMealSheetState extends ConsumerState<AddPastMealSheet> {
                 'Registra comidas que ya ocurrieron hoy para construir tu historial',
                 style: TextStyle(
                   fontSize: 11,
-                  color: Colors.white.withOpacity(0.5),
+                  color: Colors.white.withValues(alpha: 0.5),
                 ),
               ),
               const SizedBox(height: 24),
@@ -147,7 +147,7 @@ class _AddPastMealSheetState extends ConsumerState<AddPastMealSheet> {
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
-                      color: Colors.white.withOpacity(0.6),
+                      color: Colors.white.withValues(alpha: 0.6),
                       letterSpacing: 0.5,
                     ),
                   ),
@@ -162,7 +162,7 @@ class _AddPastMealSheetState extends ConsumerState<AddPastMealSheet> {
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
-                            color: isSelected ? Colors.white : Colors.white.withOpacity(0.6),
+                            color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.6),
                           ),
                         ),
                         selected: isSelected,
@@ -172,11 +172,11 @@ class _AddPastMealSheetState extends ConsumerState<AddPastMealSheet> {
                           }
                         },
                         backgroundColor: Colors.transparent,
-                        selectedColor: const Color(0xFF2D9B60).withOpacity(0.3),
+                        selectedColor: const Color(0xFF2D9B60).withValues(alpha: 0.3),
                         side: BorderSide(
                           color: isSelected
                               ? const Color(0xFF2D9B60)
-                              : Colors.white.withOpacity(0.2),
+                              : Colors.white.withValues(alpha: 0.2),
                         ),
                       );
                     }).toList(),
@@ -203,9 +203,9 @@ class _AddPastMealSheetState extends ConsumerState<AddPastMealSheet> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.1),
+                    color: Colors.orange.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                    border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -233,7 +233,7 @@ class _AddPastMealSheetState extends ConsumerState<AddPastMealSheet> {
                               'Esta comida está fuera de tu ventana configurada (${user?.profile.firstMealGoal?.hour}:${user?.profile.firstMealGoal?.minute.toString().padLeft(2, '0')} - ${user?.profile.lastMealGoal?.hour}:${user?.profile.lastMealGoal?.minute.toString().padLeft(2, '0')})',
                               style: TextStyle(
                                 fontSize: 10,
-                                color: Colors.orange.withOpacity(0.8),
+                                color: Colors.orange.withValues(alpha: 0.8),
                               ),
                             ),
                           ],
@@ -249,9 +249,9 @@ class _AddPastMealSheetState extends ConsumerState<AddPastMealSheet> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.05),
+                  color: Colors.white.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.white.withOpacity(0.1)),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
                 ),
                 child: Row(
                   children: [
@@ -266,7 +266,7 @@ class _AddPastMealSheetState extends ConsumerState<AddPastMealSheet> {
                         'Vas a registrar: $_selectedMeal a las ${_selectedTime.format(context)}',
                         style: TextStyle(
                           fontSize: 11,
-                          color: Colors.white.withOpacity(0.8),
+                          color: Colors.white.withValues(alpha: 0.8),
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -314,7 +314,7 @@ class _AddPastMealSheetState extends ConsumerState<AddPastMealSheet> {
                 child: OutlinedButton(
                   onPressed: _isSaving ? null : () => Navigator.pop(context),
                   style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: Colors.white.withOpacity(0.15)),
+                    side: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -324,7 +324,7 @@ class _AddPastMealSheetState extends ConsumerState<AddPastMealSheet> {
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
-                      color: Colors.white.withOpacity(0.7),
+                      color: Colors.white.withValues(alpha: 0.7),
                     ),
                   ),
                 ),

@@ -1201,7 +1201,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           color: const Color(0xFF1E293B),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: const Color(0xFF1ABC9C).withOpacity(0.2),
+            color: const Color(0xFF1ABC9C).withValues(alpha: 0.2),
             width: 1.5,
           ),
         ),
@@ -1234,7 +1234,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             ),
             Icon(
               Icons.chevron_right_rounded,
-              color: const Color(0xFF1ABC9C).withOpacity(0.6),
+              color: const Color(0xFF1ABC9C).withValues(alpha: 0.6),
               size: 20,
             ),
           ],
@@ -1281,13 +1281,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   Widget _buildBaseOverlay({required BuildContext context, required IconData icon, required Color iconColor, required String title, required String subtitle, required String buttonLabel, required bool isSaving, required VoidCallback onConfirm}) {
     return Container(
       padding: const EdgeInsets.all(20), margin: const EdgeInsets.symmetric(horizontal: 40),
-      decoration: BoxDecoration(color: const Color(0xFF0F172A).withOpacity(0.98), borderRadius: BorderRadius.circular(30), border: Border.all(color: iconColor, width: 2), boxShadow: [BoxShadow(color: iconColor.withOpacity(0.2), blurRadius: 15)]),
+      decoration: BoxDecoration(color: const Color(0xFF0F172A).withValues(alpha: 0.98), borderRadius: BorderRadius.circular(30), border: Border.all(color: iconColor, width: 2), boxShadow: [BoxShadow(color: iconColor.withValues(alpha: 0.2), blurRadius: 15)]),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         Icon(icon, color: iconColor, size: 28),
         const SizedBox(height: 12),
         Text(title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13)),
         const SizedBox(height: 8),
-        Text(subtitle, textAlign: TextAlign.center, style: TextStyle(fontSize: 10, color: Colors.white.withOpacity(0.7))),
+        Text(subtitle, textAlign: TextAlign.center, style: TextStyle(fontSize: 10, color: Colors.white.withValues(alpha: 0.7))),
         const SizedBox(height: 16),
         SizedBox(width: double.infinity, height: 42, child: ElevatedButton(onPressed: isSaving ? null : onConfirm, style: ElevatedButton.styleFrom(backgroundColor: iconColor, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))), child: isSaving ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : Text(buttonLabel, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 12)))),
       ]),
@@ -1307,7 +1307,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildMetabolicAlertBanner(String message) {
-    return Container(width: double.infinity, padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10), decoration: BoxDecoration(color: Colors.redAccent.withOpacity(0.1), borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.redAccent.withOpacity(0.2))), child: Row(children: [const Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 16), const SizedBox(width: 10), Expanded(child: Text(message, style: const TextStyle(color: Colors.redAccent, fontSize: 9, fontWeight: FontWeight.bold)))]));
+    return Container(width: double.infinity, padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10), decoration: BoxDecoration(color: Colors.redAccent.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.redAccent.withValues(alpha: 0.2))), child: Row(children: [const Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 16), const SizedBox(width: 10), Expanded(child: Text(message, style: const TextStyle(color: Colors.redAccent, fontSize: 9, fontWeight: FontWeight.bold)))]));
   }
 
   // SPEC-72.2: _buildEngagementBanner eliminado. Reemplazado por
@@ -1319,6 +1319,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     int currentIndex = 0;
     if (location.startsWith('/analysis')) currentIndex = 1;
     if (location.startsWith('/profile')) currentIndex = 2;
-    return BottomNavigationBar(backgroundColor: const Color(0xFF0F172A), selectedItemColor: AppColors.metabolicGreen, unselectedItemColor: Colors.grey.withOpacity(0.5), currentIndex: currentIndex, type: BottomNavigationBarType.fixed, onTap: (index) { if (index == 0) context.go('/dashboard'); if (index == 1) context.go('/analysis'); if (index == 2) context.go('/profile'); }, items: const [BottomNavigationBarItem(icon: Icon(Icons.grid_view_rounded), label: "Dashboard"), BottomNavigationBarItem(icon: Icon(Icons.insights_rounded), label: "Análisis"), BottomNavigationBarItem(icon: Icon(Icons.person), label: "Perfil")]);
+    return BottomNavigationBar(backgroundColor: const Color(0xFF0F172A), selectedItemColor: AppColors.metabolicGreen, unselectedItemColor: Colors.grey.withValues(alpha: 0.5), currentIndex: currentIndex, type: BottomNavigationBarType.fixed, onTap: (index) { if (index == 0) context.go('/dashboard'); if (index == 1) context.go('/analysis'); if (index == 2) context.go('/profile'); }, items: const [BottomNavigationBarItem(icon: Icon(Icons.grid_view_rounded), label: "Dashboard"), BottomNavigationBarItem(icon: Icon(Icons.insights_rounded), label: "Análisis"), BottomNavigationBarItem(icon: Icon(Icons.person), label: "Perfil")]);
   }
 }

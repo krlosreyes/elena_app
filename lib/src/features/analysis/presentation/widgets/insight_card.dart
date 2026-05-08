@@ -18,7 +18,7 @@ class InsightCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surfaceDark,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.2), width: 1),
+        border: Border.all(color: color.withValues(alpha: 0.2), width: 1),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -26,7 +26,7 @@ class InsightCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: color, size: 20),
@@ -41,7 +41,7 @@ class InsightCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white.withOpacity(0.3),
+                    color: Colors.white.withValues(alpha: 0.3),
                     letterSpacing: 1,
                   ),
                 ),
@@ -62,7 +62,7 @@ class InsightCard extends StatelessWidget {
                       '${correlation.pilarA} ↔ ${correlation.pilarB}',
                       style: TextStyle(
                         fontSize: 11,
-                        color: color.withOpacity(0.8),
+                        color: color.withValues(alpha: 0.8),
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -71,7 +71,7 @@ class InsightCard extends StatelessWidget {
                       'Correlación: ${(correlation.score * 100).toStringAsFixed(0)}%',
                       style: TextStyle(
                         fontSize: 10,
-                        color: Colors.white.withOpacity(0.3),
+                        color: Colors.white.withValues(alpha: 0.3),
                       ),
                     ),
                   ],

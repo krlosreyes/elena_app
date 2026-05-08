@@ -135,13 +135,13 @@ class _GoalSetupScreenState extends ConsumerState<GoalSetupScreen> {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    const Color(0xFF1ABC9C).withOpacity(0.12),
-                    const Color(0xFF1ABC9C).withOpacity(0.04),
+                    const Color(0xFF1ABC9C).withValues(alpha: 0.12),
+                    const Color(0xFF1ABC9C).withValues(alpha: 0.04),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: const Color(0xFF1ABC9C).withOpacity(0.25),
+                  color: const Color(0xFF1ABC9C).withValues(alpha: 0.25),
                 ),
               ),
               child: Row(
@@ -168,7 +168,7 @@ class _GoalSetupScreenState extends ConsumerState<GoalSetupScreen> {
                           'trabajar y ajusta si lo prefieres.',
                           style: TextStyle(
                             fontSize: 11.5,
-                            color: Colors.white.withOpacity(0.55),
+                            color: Colors.white.withValues(alpha: 0.55),
                             height: 1.5,
                           ),
                         ),
@@ -342,13 +342,13 @@ class _SuggestionCardState extends State<_SuggestionCard> {
       duration: const Duration(milliseconds: 250),
       decoration: BoxDecoration(
         color: draft.isActive
-            ? meta.pillarColor.withOpacity(0.07)
+            ? meta.pillarColor.withValues(alpha: 0.07)
             : const Color(0xFF1E293B),
         borderRadius: BorderRadius.circular(22),
         border: Border.all(
           color: draft.isActive
-              ? meta.pillarColor.withOpacity(0.35)
-              : Colors.white.withOpacity(0.06),
+              ? meta.pillarColor.withValues(alpha: 0.35)
+              : Colors.white.withValues(alpha: 0.06),
           width: draft.isActive ? 1.5 : 1,
         ),
       ),
@@ -389,7 +389,7 @@ class _SuggestionCardState extends State<_SuggestionCard> {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
-                              color: c.withOpacity(0.12),
+                              color: c.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
@@ -412,7 +412,7 @@ class _SuggestionCardState extends State<_SuggestionCard> {
                             'Actual: ${_fmt(draft.type, draft.current)}',
                             style: TextStyle(
                               fontSize: 10,
-                              color: Colors.white.withOpacity(0.35),
+                              color: Colors.white.withValues(alpha: 0.35),
                             ),
                           ),
                           Padding(
@@ -420,7 +420,7 @@ class _SuggestionCardState extends State<_SuggestionCard> {
                             child: Icon(
                               Icons.arrow_forward_rounded,
                               size: 10,
-                              color: Colors.white.withOpacity(0.2),
+                              color: Colors.white.withValues(alpha: 0.2),
                             ),
                           ),
                           const Text(
@@ -504,9 +504,9 @@ class _SuggestionCardState extends State<_SuggestionCard> {
                   SliderTheme(
                     data: SliderThemeData(
                       activeTrackColor:   c,
-                      inactiveTrackColor: Colors.white.withOpacity(0.08),
+                      inactiveTrackColor: Colors.white.withValues(alpha: 0.08),
                       thumbColor:         c,
-                      overlayColor:       c.withOpacity(0.12),
+                      overlayColor:       c.withValues(alpha: 0.12),
                       trackHeight:        4,
                       thumbShape: const RoundSliderThumbShape(
                         enabledThumbRadius: 7,
@@ -533,7 +533,7 @@ class _SuggestionCardState extends State<_SuggestionCard> {
                           _fmt(draft.type, _sliderMin(meta)),
                           style: TextStyle(
                             fontSize: 8.5,
-                            color: Colors.white.withOpacity(0.25),
+                            color: Colors.white.withValues(alpha: 0.25),
                           ),
                         ),
                         // Botón de reset a sugerencia de Elena
@@ -558,7 +558,7 @@ class _SuggestionCardState extends State<_SuggestionCard> {
                           _fmt(draft.type, _sliderMax(meta)),
                           style: TextStyle(
                             fontSize: 8.5,
-                            color: Colors.white.withOpacity(0.25),
+                            color: Colors.white.withValues(alpha: 0.25),
                           ),
                         ),
                       ],
@@ -578,7 +578,7 @@ class _SuggestionCardState extends State<_SuggestionCard> {
                               ? Icons.expand_less_rounded
                               : Icons.info_outline_rounded,
                           size: 13,
-                          color: c.withOpacity(0.7),
+                          color: c.withValues(alpha: 0.7),
                         ),
                         const SizedBox(width: 4),
                         Text(
@@ -587,7 +587,7 @@ class _SuggestionCardState extends State<_SuggestionCard> {
                               : '¿Por qué este objetivo?',
                           style: TextStyle(
                             fontSize: 10,
-                            color: c.withOpacity(0.8),
+                            color: c.withValues(alpha: 0.8),
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -604,17 +604,17 @@ class _SuggestionCardState extends State<_SuggestionCard> {
                       margin: const EdgeInsets.only(top: 8),
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.03),
+                        color: Colors.white.withValues(alpha: 0.03),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: Colors.white.withOpacity(0.07),
+                          color: Colors.white.withValues(alpha: 0.07),
                         ),
                       ),
                       child: Text(
                         draft.rationale,
                         style: TextStyle(
                           fontSize: 11.5,
-                          color: Colors.white.withOpacity(0.6),
+                          color: Colors.white.withValues(alpha: 0.6),
                           height: 1.6,
                         ),
                       ),

@@ -76,7 +76,7 @@ class CircadianMiniCard extends StatelessWidget {
           style: TextStyle(
             fontSize: 7,
             fontWeight: FontWeight.w900,
-            color: Colors.white.withOpacity(0.35),
+            color: Colors.white.withValues(alpha: 0.35),
             letterSpacing: 0.5,
           ),
         ),

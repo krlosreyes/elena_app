@@ -151,13 +151,13 @@ class _BodyCompositionEditorSheetState
                   Text(
                     'Cambios detectados en tu composición corporal. '
                     'Tu IMR se ha recalculado.',
-                    style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.8)),
+                    style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.8)),
                   ),
                 ],
               ],
             ),
             duration: const Duration(seconds: 3),
-            backgroundColor: Colors.green.withOpacity(0.2),
+            backgroundColor: Colors.green.withValues(alpha: 0.2),
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
@@ -210,7 +210,7 @@ class _BodyCompositionEditorSheetState
                 'Actualiza tus medidas para un cálculo de IMR más preciso.',
                 style: TextStyle(
                   fontSize: 11,
-                  color: Colors.white.withOpacity(0.5),
+                  color: Colors.white.withValues(alpha: 0.5),
                 ),
               ),
               const SizedBox(height: 20),
@@ -266,9 +266,9 @@ class _BodyCompositionEditorSheetState
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.1),
+                    color: Colors.red.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.red.withOpacity(0.25)),
+                    border: Border.all(color: Colors.red.withValues(alpha: 0.25)),
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -281,7 +281,7 @@ class _BodyCompositionEditorSheetState
                           _errorMessage!,
                           style: TextStyle(
                             fontSize: 11,
-                            color: Colors.red.withOpacity(0.85),
+                            color: Colors.red.withValues(alpha: 0.85),
                             height: 1.4,
                           ),
                         ),
@@ -296,9 +296,9 @@ class _BodyCompositionEditorSheetState
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.blueAccent.withOpacity(0.08),
+                  color: Colors.blueAccent.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.blueAccent.withOpacity(0.25)),
+                  border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.25)),
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -313,7 +313,7 @@ class _BodyCompositionEditorSheetState
                         'medidas para mayor precisión.',
                         style: TextStyle(
                           fontSize: 10,
-                          color: Colors.blueAccent.withOpacity(0.7),
+                          color: Colors.blueAccent.withValues(alpha: 0.7),
                           height: 1.4,
                         ),
                       ),
@@ -361,7 +361,7 @@ class _BodyCompositionEditorSheetState
                 child: OutlinedButton(
                   onPressed: _isSaving ? null : () => Navigator.pop(context),
                   style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: Colors.white.withOpacity(0.15)),
+                    side: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
@@ -371,7 +371,7 @@ class _BodyCompositionEditorSheetState
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
-                      color: Colors.white.withOpacity(0.7),
+                      color: Colors.white.withValues(alpha: 0.7),
                     ),
                   ),
                 ),
@@ -398,7 +398,7 @@ class _BodyCompositionEditorSheetState
           style: TextStyle(
             fontSize: 10,
             fontWeight: FontWeight.w700,
-            color: Colors.white.withOpacity(0.6),
+            color: Colors.white.withValues(alpha: 0.6),
             letterSpacing: 0.5,
           ),
         ),
@@ -415,18 +415,18 @@ class _BodyCompositionEditorSheetState
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: TextStyle(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withValues(alpha: 0.2),
               fontSize: 12,
             ),
             filled: true,
-            fillColor: Colors.white.withOpacity(0.05),
+            fillColor: Colors.white.withValues(alpha: 0.05),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+              borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+              borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
@@ -452,7 +452,7 @@ class _BodyCompositionEditorSheetState
           style: TextStyle(
             fontSize: 10,
             fontWeight: FontWeight.w700,
-            color: Colors.white.withOpacity(0.6),
+            color: Colors.white.withValues(alpha: 0.6),
             letterSpacing: 0.5,
           ),
         ),
@@ -460,10 +460,10 @@ class _BodyCompositionEditorSheetState
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
-            color: const Color(0xFF2D9B60).withOpacity(0.1),
+            color: const Color(0xFF2D9B60).withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: const Color(0xFF2D9B60).withOpacity(0.3),
+              color: const Color(0xFF2D9B60).withValues(alpha: 0.3),
             ),
           ),
           child: Row(
@@ -479,7 +479,7 @@ class _BodyCompositionEditorSheetState
               ),
               Icon(
                 Icons.check_circle_rounded,
-                color: const Color(0xFF2D9B60).withOpacity(0.6),
+                color: const Color(0xFF2D9B60).withValues(alpha: 0.6),
                 size: 16,
               ),
             ],

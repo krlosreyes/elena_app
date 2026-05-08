@@ -47,7 +47,7 @@ class _PillarInteractiveSectionState extends ConsumerState<PillarInteractiveSect
             fontSize: 10,
             fontWeight: FontWeight.w900,
             letterSpacing: 1.5,
-            color: Colors.white.withOpacity(0.35),
+            color: Colors.white.withValues(alpha: 0.35),
           ),
         ),
         const SizedBox(height: 10),

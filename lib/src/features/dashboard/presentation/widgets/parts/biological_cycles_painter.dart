@@ -30,7 +30,7 @@ class BiologicalCyclesPainter extends CustomPainter {
       
       final Color displayColor = isActive 
           ? CircadianTheme.getColorForPhase(phase.label) 
-          : Colors.grey.withOpacity(0.15); // Un poco más tenue para Android
+          : Colors.grey.withValues(alpha: 0.15); // Un poco más tenue para Android
 
       _drawPhase(
         canvas, 
@@ -48,7 +48,7 @@ class BiologicalCyclesPainter extends CustomPainter {
 
   void _drawHourMarkers(Canvas canvas, Offset center, double radius, double fullWidth) {
     final paint = Paint()
-      ..color = indicatorColor.withOpacity(0.3)
+      ..color = indicatorColor.withValues(alpha: 0.3)
       ..strokeWidth = 1.2;
 
     // Distancias proporcionales
@@ -73,7 +73,7 @@ class BiologicalCyclesPainter extends CustomPainter {
           text: TextSpan(
             text: i.toString().padLeft(2, '0'),
             style: TextStyle(
-              color: indicatorColor.withOpacity(0.6),
+              color: indicatorColor.withValues(alpha: 0.6),
               fontSize: fullWidth * 0.028, // Fuente proporcional
               fontWeight: FontWeight.bold,
               fontFamily: 'monospace',
@@ -110,7 +110,7 @@ class BiologicalCyclesPainter extends CustomPainter {
       text: TextSpan(
         text: label.toUpperCase(), 
         style: TextStyle(
-          color: isActive ? Colors.white : Colors.grey.withOpacity(0.4), 
+          color: isActive ? Colors.white : Colors.grey.withValues(alpha: 0.4), 
           fontSize: fullWidth * 0.018, // Fuente proporcional
           fontWeight: isActive ? FontWeight.w900 : FontWeight.w400,
           letterSpacing: 0.5,

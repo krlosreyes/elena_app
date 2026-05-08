@@ -32,8 +32,8 @@ class PillarSummaryRow extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: progress >= 0.8
-              ? color.withOpacity(0.4)
-              : Colors.white.withOpacity(0.05),
+              ? color.withValues(alpha: 0.4)
+              : Colors.white.withValues(alpha: 0.05),
           width: 1,
         ),
       ),
@@ -44,7 +44,7 @@ class PillarSummaryRow extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.12),
+              color: color.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, color: color, size: 20),
@@ -71,10 +71,10 @@ class PillarSummaryRow extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 5, vertical: 1),
                         decoration: BoxDecoration(
-                          color: Colors.amber.withOpacity(0.15),
+                          color: Colors.amber.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(4),
                           border: Border.all(
-                              color: Colors.amber.withOpacity(0.3), width: 1),
+                              color: Colors.amber.withValues(alpha: 0.3), width: 1),
                         ),
                         child: const Text(
                           'ESTIMADO',
@@ -94,7 +94,7 @@ class PillarSummaryRow extends StatelessWidget {
                   borderRadius: BorderRadius.circular(3),
                   child: LinearProgressIndicator(
                     value: progress.clamp(0.0, 1.0),
-                    backgroundColor: Colors.white.withOpacity(0.08),
+                    backgroundColor: Colors.white.withValues(alpha: 0.08),
                     valueColor: AlwaysStoppedAnimation<Color>(color),
                     minHeight: 4,
                   ),
@@ -121,7 +121,7 @@ class PillarSummaryRow extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 9,
                   fontWeight: FontWeight.bold,
-                  color: color.withOpacity(0.7),
+                  color: color.withValues(alpha: 0.7),
                 ),
               ),
             ],

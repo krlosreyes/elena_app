@@ -32,7 +32,7 @@ class EatingWindowPainter extends CustomPainter {
 
     // 1. Fondo del anillo
     canvas.drawCircle(center, radiusWindow, Paint()
-      ..color = Colors.orange.withOpacity(0.06)
+      ..color = Colors.orange.withValues(alpha: 0.06)
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidthWindow);
 
@@ -88,12 +88,12 @@ class EatingWindowPainter extends CustomPainter {
       
       // Halo sutil
       canvas.drawCircle(dotPos, fullWidth * 0.015, Paint()
-        ..color = Colors.orange.withOpacity(0.15)
+        ..color = Colors.orange.withValues(alpha: 0.15)
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3));
 
       // Punto del hito
       canvas.drawCircle(dotPos, isEdge ? 4.0 : 2.5, Paint()
-        ..color = isEdge ? Colors.orange : Colors.orange.withOpacity(0.5));
+        ..color = isEdge ? Colors.orange : Colors.orange.withValues(alpha: 0.5));
 
       // Selección de iconos
       IconData iconData;
@@ -112,9 +112,9 @@ class EatingWindowPainter extends CustomPainter {
             fontSize: isEdge ? mainIconSize : secondaryIconSize,
             fontFamily: iconData.fontFamily,
             package: iconData.fontPackage,
-            color: isEdge ? Colors.orangeAccent.withOpacity(0.8) : Colors.orangeAccent.withOpacity(0.3),
+            color: isEdge ? Colors.orangeAccent.withValues(alpha: 0.8) : Colors.orangeAccent.withValues(alpha: 0.3),
             shadows: isEdge ? [
-              Shadow(color: Colors.black.withOpacity(0.3), blurRadius: 2, offset: const Offset(0.5, 0.5))
+              Shadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 2, offset: const Offset(0.5, 0.5))
             ] : null,
           ),
         ),
@@ -137,7 +137,7 @@ class EatingWindowPainter extends CustomPainter {
     final pos = Offset(center.dx + orbitRadius * math.cos(angle), center.dy + orbitRadius * math.sin(angle));
 
     canvas.drawCircle(pos, pointRadius + 2, Paint()
-      ..color = const Color(0xFF60A5FA).withOpacity(0.2)
+      ..color = const Color(0xFF60A5FA).withValues(alpha: 0.2)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3));
 
     canvas.drawCircle(pos, pointRadius, Paint()

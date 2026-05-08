@@ -32,7 +32,7 @@ class IMRBreakdownCard extends StatelessWidget {
               fontSize: 10,
               fontWeight: FontWeight.w900,
               letterSpacing: 1.5,
-              color: Colors.white.withOpacity(0.35),
+              color: Colors.white.withValues(alpha: 0.35),
             ),
           ),
           const SizedBox(height: 16),
@@ -112,10 +112,10 @@ class _BlockRow extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 5, vertical: 1),
                         decoration: BoxDecoration(
-                          color: Colors.amber.withOpacity(0.15),
+                          color: Colors.amber.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(4),
                           border: Border.all(
-                              color: Colors.amber.withOpacity(0.3), width: 1),
+                              color: Colors.amber.withValues(alpha: 0.3), width: 1),
                         ),
                         child: const Text(
                           'ESTIMADO',
@@ -134,7 +134,7 @@ class _BlockRow extends StatelessWidget {
                   subtitle,
                   style: TextStyle(
                     fontSize: 9,
-                    color: Colors.white.withOpacity(0.45),
+                    color: Colors.white.withValues(alpha: 0.45),
                   ),
                 ),
               ],
@@ -145,7 +145,7 @@ class _BlockRow extends StatelessWidget {
                   weight,
                   style: TextStyle(
                     fontSize: 9,
-                    color: Colors.white.withOpacity(0.35),
+                    color: Colors.white.withValues(alpha: 0.35),
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -167,7 +167,7 @@ class _BlockRow extends StatelessWidget {
           borderRadius: BorderRadius.circular(4),
           child: LinearProgressIndicator(
             value: value.clamp(0.0, 1.0),
-            backgroundColor: Colors.white.withOpacity(0.08),
+            backgroundColor: Colors.white.withValues(alpha: 0.08),
             valueColor: AlwaysStoppedAnimation<Color>(color),
             minHeight: 6,
           ),

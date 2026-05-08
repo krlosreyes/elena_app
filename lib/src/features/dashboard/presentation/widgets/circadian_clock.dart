@@ -72,7 +72,7 @@ class CircadianClock extends StatelessWidget {
                 Text(
                   "IMR SCORE", 
                   style: TextStyle(
-                    color: colorDeTexto.withOpacity(0.5), 
+                    color: colorDeTexto.withValues(alpha: 0.5), 
                     letterSpacing: 2.0,
                     fontSize: size * 0.035,
                     fontWeight: FontWeight.w600,
@@ -103,10 +103,10 @@ class CircadianClock extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
-        color: AppColors.metabolicGreen.withOpacity(0.12),
+        color: AppColors.metabolicGreen.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: AppColors.metabolicGreen.withOpacity(0.3),
+          color: AppColors.metabolicGreen.withValues(alpha: 0.3),
           width: 1,
         ),
       ),
