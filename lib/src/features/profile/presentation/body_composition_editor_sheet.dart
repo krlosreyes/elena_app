@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/features/profile/domain/body_composition_validator.dart';
 import 'package:elena_app/src/features/profile/domain/body_fat_calculator.dart';
-import 'package:elena_app/src/shared/domain/services/user_repository.dart';
+import 'package:elena_app/src/shared/data/user_profile_repository_impl.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 
@@ -132,7 +132,7 @@ class _BodyCompositionEditorSheetState
         isMeasurementEstimated: false, // Ahora son datos reales
       );
 
-      await ref.read(userRepositoryProvider).saveUser(updatedUser);
+      await ref.read(userProfileRepositoryProvider).saveProfile(updatedUser);
 
       if (mounted) {
         // Mostrar confirmación

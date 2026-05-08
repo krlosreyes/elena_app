@@ -4,7 +4,7 @@ import 'package:elena_app/src/features/streak/data/streak_repository_impl.dart';
 import 'package:elena_app/src/features/streak/domain/streak_entry.dart';
 import 'package:elena_app/src/features/streak/domain/streak_engine.dart';
 import 'package:elena_app/src/features/streak/domain/streak_repository.dart';
-import 'package:elena_app/src/shared/domain/services/user_repository.dart';
+import 'package:elena_app/src/shared/data/user_profile_repository_impl.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 import 'package:elena_app/src/features/dashboard/application/fasting_notifier.dart';
 import 'package:elena_app/src/features/dashboard/application/sleep_notifier.dart';
@@ -286,7 +286,8 @@ class StreakNotifier extends StateNotifier<StreakState> {
   Future<void> _persistAdherence(double adherence) async {
     if (_userId == null) return;
     try {
-      final repo = _ref.read(userRepositoryProvider);
+      // SPEC-50.5: UserProfileRepository (no UserRepository).
+      final repo = _ref.read(userProfileRepositoryProvider);
       await repo.updateWeeklyAdherence(_userId!, adherence);
     } catch (e) {
       AppLogger.error('[StreakNotifier] Error al persistir adherencia', e);

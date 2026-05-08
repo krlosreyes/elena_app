@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:elena_app/src/shared/data/user_profile_repository_impl.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
-import 'package:elena_app/src/shared/domain/services/user_repository.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
 
@@ -62,7 +62,7 @@ class ProfileController extends StateNotifier<ProfileEditState> {
       );
 
       final updatedUser = currentUser.copyWith(profile: updatedProfile);
-      await ref.read(userRepositoryProvider).saveUser(updatedUser);
+      await ref.read(userProfileRepositoryProvider).saveProfile(updatedUser);
 
       state = state.copyWith(isSaving: false, savedSuccessfully: true);
     } catch (e) {
@@ -83,7 +83,7 @@ class ProfileController extends StateNotifier<ProfileEditState> {
 
     try {
       final updatedUser = currentUser.copyWith(fastingProtocol: protocol);
-      await ref.read(userRepositoryProvider).saveUser(updatedUser);
+      await ref.read(userProfileRepositoryProvider).saveProfile(updatedUser);
 
       state = state.copyWith(isSaving: false, savedSuccessfully: true);
     } catch (e) {

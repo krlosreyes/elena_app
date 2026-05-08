@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/features/analysis/domain/analysis_models.dart';
 import 'package:elena_app/src/features/streak/domain/streak_entry.dart';
-import 'package:elena_app/src/shared/domain/services/user_repository.dart';
+import 'package:elena_app/src/shared/data/user_profile_repository_impl.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 import 'package:elena_app/src/features/streak/application/streak_notifier.dart';
 import 'dart:math' as math;
@@ -176,7 +176,8 @@ class AnalysisService {
   }
 
   Future<void> _cacheResults(String userId, AnalysisCache result) async {
-    final repo = _ref.read(userRepositoryProvider);
+    // SPEC-50.5: UserProfileRepository (no UserRepository).
+    final repo = _ref.read(userProfileRepositoryProvider);
     await repo.saveProtocolAdjustment(userId, {
       'type': 'analysis_cache',
       'lastUpdated': result.lastUpdated.toIso8601String(),

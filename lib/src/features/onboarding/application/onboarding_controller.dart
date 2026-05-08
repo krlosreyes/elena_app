@@ -1,17 +1,19 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:elena_app/src/shared/data/user_profile_repository_impl.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
-import 'package:elena_app/src/shared/domain/services/user_repository.dart';
+import 'package:elena_app/src/shared/domain/repositories/user_profile_repository.dart';
 
 class OnboardingController extends StateNotifier<AsyncValue<void>> {
-  final UserRepository _repository;
+  // SPEC-50.5: UserProfileRepository (no UserRepository).
+  final UserProfileRepository _repository;
   OnboardingController(this._repository) : super(const AsyncValue.data(null));
 
   Future<void> completeOnboarding(UserModel user) async {
     state = const AsyncValue.loading();
     try {
-      // Aquí el ScoreEngine (o un servicio específico) podría realizar 
+      // Aquí el ScoreEngine (o un servicio específico) podría realizar
       // un primer diagnóstico antes de guardar.
-      await _repository.saveUser(user);
+      await _repository.saveProfile(user);
       state = const AsyncValue.data(null);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
@@ -19,7 +21,7 @@ class OnboardingController extends StateNotifier<AsyncValue<void>> {
   }
 }
 
-final onboardingControllerProvider = 
+final onboardingControllerProvider =
     StateNotifierProvider<OnboardingController, AsyncValue<void>>((ref) {
-  return OnboardingController(ref.watch(userRepositoryProvider));
+  return OnboardingController(ref.watch(userProfileRepositoryProvider));
 });

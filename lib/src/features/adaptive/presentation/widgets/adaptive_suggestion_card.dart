@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/features/adaptive/application/adaptive_engine.dart';
 import 'package:elena_app/src/features/dashboard/application/ui_interaction_notifier.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
-import 'package:elena_app/src/shared/domain/services/user_repository.dart';
+import 'package:elena_app/src/shared/data/user_profile_repository_impl.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 
@@ -165,8 +165,9 @@ class AdaptiveSuggestionCard extends ConsumerWidget {
             onPressed: () async {
               final user = ref.read(currentUserStreamProvider).valueOrNull;
               if (user != null) {
-                final repo = ref.read(userRepositoryProvider);
-                
+                // SPEC-50.5: UserProfileRepository (no UserRepository).
+                final repo = ref.read(userProfileRepositoryProvider);
+
                 await repo.saveProtocolAdjustment(user.id, {
                   'type': suggestion.type.name,
                   'title': suggestion.title,
@@ -177,7 +178,7 @@ class AdaptiveSuggestionCard extends ConsumerWidget {
                 });
 
                 await repo.applyProtocolAdjustment(
-                  user.id,
+                  userId: user.id,
                   newFastingProtocol: suggestion.newProtocol,
                   newExerciseGoal: suggestion.newExerciseGoal,
                 );
