@@ -22,7 +22,8 @@ class CircadianClock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorDeTexto = Theme.of(context).colorScheme.onBackground;
+    // SPEC-72.10: `onBackground` deprecated en Material 3 → migrado a `onSurface`.
+    final colorDeTexto = Theme.of(context).colorScheme.onSurface;
     final now = DateTime.now();
 
     return LayoutBuilder(

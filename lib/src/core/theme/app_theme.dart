@@ -25,15 +25,17 @@ class AppTheme {
       scaffoldBackgroundColor: AppColors.background,
       primaryColor: AppColors.metabolicGreen,
       textTheme: AppTypography.textTheme,
+      // SPEC-72.10: `background` y `onBackground` se eliminaron — son
+      // deprecated en Material 3. El rol que cubrían lo asume:
+      //   - `scaffoldBackgroundColor` (línea de arriba) para el fondo de Scaffold.
+      //   - `surface` / `onSurface` para superficies elevadas (cards, sheets).
+      // Cualquier widget que en M3 leía `colorScheme.background` debe migrar
+      // a `colorScheme.surface` o `theme.scaffoldBackgroundColor`.
       colorScheme: const ColorScheme.light(
         primary: AppColors.metabolicGreen,
         secondary: AppColors.optimalCyan,
         surface: AppColors.surface,
         onSurface: AppColors.textPrimary,
-        // ignore: deprecated_member_use
-        background: AppColors.background,
-        // ignore: deprecated_member_use
-        onBackground: AppColors.textPrimary,
       ),
       cardTheme: CardThemeData(
         color: AppColors.surface,
@@ -58,15 +60,12 @@ class AppTheme {
         decorationColor: Colors.white,
       ),
       
+      // SPEC-72.10: ver comentario en lightTheme — mismo razonamiento.
       colorScheme: const ColorScheme.dark(
         primary: AppColors.metabolicGreen,
         secondary: AppColors.optimalCyan,
         surface: AppColors.surfaceDark,
-        onSurface: Colors.white,       
-        // ignore: deprecated_member_use
-        background: AppColors.backgroundDark,
-        // ignore: deprecated_member_use
-        onBackground: Colors.white,    
+        onSurface: Colors.white,
       ),
     );
   }
