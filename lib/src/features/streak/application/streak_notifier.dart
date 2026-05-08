@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:elena_app/src/features/streak/data/streak_repository_impl.dart';
 import 'package:elena_app/src/features/streak/domain/streak_entry.dart';
 import 'package:elena_app/src/features/streak/domain/streak_engine.dart';
+import 'package:elena_app/src/features/streak/domain/streak_repository.dart';
 import 'package:elena_app/src/shared/domain/services/user_repository.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 import 'package:elena_app/src/features/dashboard/application/fasting_notifier.dart';
@@ -124,8 +126,9 @@ class StreakNotifier extends StateNotifier<StreakState> {
     _historySub?.cancel();
     if (_userId == null) return;
 
-    final repo = _ref.read(userRepositoryProvider);
-    _historySub = repo.watchStreakHistory(_userId!).listen(
+    // SPEC-50.3: StreakRepository (no UserRepository).
+    final StreakRepository repo = _ref.read(streakRepositoryProvider);
+    _historySub = repo.watchHistory(_userId!).listen(
       (history) {
         _rebuildState(history);
       },
@@ -293,8 +296,9 @@ class StreakNotifier extends StateNotifier<StreakState> {
   Future<void> _persistToday(StreakEntry entry) async {
     if (_userId == null) return;
     try {
-      final repo = _ref.read(userRepositoryProvider);
-      await repo.saveStreakEntry(_userId!, entry);
+      // SPEC-50.3: StreakRepository (no UserRepository).
+      final StreakRepository repo = _ref.read(streakRepositoryProvider);
+      await repo.save(_userId!, entry);
       AppLogger.debug('[StreakNotifier] Racha guardada: ${entry.date} — ${entry.pillarsCompleted}/5 pilares');
     } catch (e) {
       AppLogger.error('[StreakNotifier] Error al persistir racha', e);

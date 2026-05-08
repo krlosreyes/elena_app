@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
-import 'package:elena_app/src/features/streak/domain/streak_entry.dart';
 
 final userRepositoryProvider = Provider<UserRepository>((ref) {
   return UserRepository();
@@ -60,44 +59,15 @@ class UserRepository {
   // (lib/src/features/exercise/data/exercise_repository_impl.dart).
   // Notifiers consumen `exerciseRepositoryProvider`.
 
-  // --- LÓGICA DE RACHAS (SPEC-06) ---
+  // SPEC-50.3: lógica del historial de racha extraída a StreakRepository
+  // (lib/src/features/streak/data/streak_repository_impl.dart).
+  // Notifiers consumen `streakRepositoryProvider`. Las operaciones de
+  // configuración del usuario (weeklyAdherence, protocol adjustments)
+  // que vivían bajo "racha" se quedan abajo — su dominio real es
+  // perfil de usuario, no streak. SPEC-50.5 las moverá al
+  // UserProfileRepository final.
 
-  /// Guarda o actualiza el registro de cumplimiento diario.
-  /// Usa el campo [date] ('yyyy-MM-dd') como clave de documento.
-  Future<void> saveStreakEntry(String userId, StreakEntry entry) async {
-    try {
-      await _usersCollection
-          .doc(userId)
-          .collection('streak_history')
-          .doc(entry.date)
-          .set(entry.toJson(), SetOptions(merge: true));
-      AppLogger.debug(
-        'StreakEntry guardado: ${entry.date} — ${entry.pillarsCompleted}/5',
-      );
-    } catch (e, stackTrace) {
-      AppLogger.error('Error en saveStreakEntry', e, stackTrace);
-      throw Exception('Fallo al guardar racha');
-    }
-  }
-
-  /// Stream de los últimos 30 días de historial de racha, ordenados por fecha desc.
-  Stream<List<StreakEntry>> watchStreakHistory(String userId) {
-    final cutoff = DateTime.now().subtract(const Duration(days: 30));
-    final cutoffKey =
-        '${cutoff.year.toString().padLeft(4, '0')}-'
-        '${cutoff.month.toString().padLeft(2, '0')}-'
-        '${cutoff.day.toString().padLeft(2, '0')}';
-
-    return _usersCollection
-        .doc(userId)
-        .collection('streak_history')
-        .where('date', isGreaterThanOrEqualTo: cutoffKey)
-        .orderBy('date', descending: true)
-        .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => StreakEntry.fromJson(doc.data()))
-            .toList());
-  }
+  // --- PERFIL DEL USUARIO: configuración y adherencia agregada ---
 
   /// Actualiza el ratio de adherencia semanal en el perfil del usuario.
   Future<void> updateWeeklyAdherence(String userId, double adherence) async {
