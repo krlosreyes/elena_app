@@ -13,9 +13,6 @@ class UserRepository {
   CollectionReference<Map<String, dynamic>> get _usersCollection =>
       _firestore.collection('users');
 
-  CollectionReference<Map<String, dynamic>> get _historyCollection =>
-      _firestore.collection('fasting_history');
-
   // --- MÉTODOS DE USUARIO ---
 
   Stream<UserModel?> watchUser(String userId) {
@@ -116,60 +113,10 @@ class UserRepository {
     }
   }
 
-  // --- LÓGICA DE HISTORIAL (EL MOTOR DE LAS COORDENADAS) ---
-
-  Stream<FastingInterval?> watchLastInterval(String userId) {
-    return _historyCollection
-        .where('userId', isEqualTo: userId)
-        .orderBy('startTime', descending: true)
-        .limit(1)
-        .snapshots()
-        .map((snapshot) {
-      if (snapshot.docs.isNotEmpty) {
-        return FastingInterval.fromJson(snapshot.docs.first.data());
-      }
-      return null;
-    });
-  }
-
-  /// Inicia un nuevo hito metabólico respetando fechas manuales para pruebas.
-  Future<void> startNewInterval(String userId, bool isFasting, {DateTime? startTime}) async {
-    final effectiveTime = startTime ?? DateTime.now();
-    final batch = _firestore.batch();
-
-    try {
-      // 1. Buscamos CUALQUIER intervalo abierto para cerrarlo con el effectiveTime
-      // Esto evita solapamientos si estás forzando fechas pasadas
-      final activeQuery = await _historyCollection
-          .where('userId', isEqualTo: userId)
-          .where('endTime', isNull: true)
-          .get();
-
-      for (var doc in activeQuery.docs) {
-        batch.update(doc.reference, {
-          'endTime': Timestamp.fromDate(effectiveTime),
-        });
-      }
-
-      // 2. Creamos el nuevo hito (Ayuno o Ventana)
-      final newDocRef = _historyCollection.doc();
-      final newInterval = FastingInterval(
-        id: newDocRef.id,
-        userId: userId,
-        startTime: effectiveTime,
-        isFasting: isFasting,
-      );
-
-      batch.set(newDocRef, newInterval.toJson());
-      
-      await batch.commit();
-      AppLogger.debug(
-        'Sincronización manual: ${isFasting ? 'AYUNO' : 'VENTANA'} '
-        'desde ${effectiveTime.toString()}',
-      );
-    } catch (e, stackTrace) {
-      AppLogger.error('Error en startNewInterval', e, stackTrace);
-      rethrow;
-    }
-  }
+  // SPEC-50.4: lógica de intervalos de ayuno extraída a
+  // FastingIntervalRepository (lib/src/features/dashboard/data/
+  // fasting_interval_repository_impl.dart). Notifiers consumen
+  // `fastingIntervalRepositoryProvider`. La operación atómica
+  // close-and-create vive en el data source para preservar
+  // consistencia transaccional.
 }

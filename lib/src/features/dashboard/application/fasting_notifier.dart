@@ -2,21 +2,23 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/core/providers/ticker_providers.dart';
 import 'package:elena_app/src/core/rules/circadian_rules.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
-import 'package:elena_app/src/shared/domain/services/user_repository.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
+import 'package:elena_app/src/features/dashboard/data/fasting_interval_repository_impl.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/core/services/notification_service.dart';
 import 'package:elena_app/src/core/services/notification_scheduler.dart';
 import '../domain/fasting_status.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 
+// SPEC-50.4: stream del último intervalo desde FastingIntervalRepository
+// (antes: userRepository.watchLastInterval).
 final lastFastingIntervalProvider = StreamProvider<FastingInterval?>((ref) {
-  final userRepo = ref.watch(userRepositoryProvider);
+  final repo = ref.watch(fastingIntervalRepositoryProvider);
   final authState = ref.watch(authStateProvider);
   final uid = authState.value?.id;
 
   if (uid == null) return Stream.value(null);
-  return userRepo.watchLastInterval(uid);
+  return repo.watchLatest(uid);
 });
 
 class FastingNotifier extends StateNotifier<FastingState> {
@@ -82,13 +84,18 @@ class FastingNotifier extends StateNotifier<FastingState> {
   Future<void> startFastingManual(DateTime startTime) async {
     final uid = _ref.read(authStateProvider).value?.id;
     if (uid == null) return;
-    
+
     state = state.copyWith(isSaving: true);
-    final userRepo = _ref.read(userRepositoryProvider);
-    
+    // SPEC-50.4: FastingIntervalRepository (no UserRepository).
+    final repo = _ref.read(fastingIntervalRepositoryProvider);
+
     try {
-      await userRepo.startNewInterval(uid, true, startTime: startTime);
-      _fastingEndConfirmedToday = false; 
+      await repo.transitionTo(
+        userId: uid,
+        isFasting: true,
+        startTime: startTime,
+      );
+      _fastingEndConfirmedToday = false;
       
       // Actualización optimista inmediata para reflejar el viaje en el tiempo
       final now = DateTime.now();
@@ -124,11 +131,16 @@ class FastingNotifier extends StateNotifier<FastingState> {
     if (uid == null || state.isSaving) return;
 
     state = state.copyWith(isSaving: true);
-    final userRepo = _ref.read(userRepositoryProvider);
+    // SPEC-50.4: FastingIntervalRepository (no UserRepository).
+    final repo = _ref.read(fastingIntervalRepositoryProvider);
 
     // 1. Persistencia en Firestore (Bloque Crítico)
     try {
-      await userRepo.startNewInterval(uid, false, startTime: manualTime);
+      await repo.transitionTo(
+        userId: uid,
+        isFasting: false,
+        startTime: manualTime,
+      );
       _fastingEndConfirmedToday = true;
       AppLogger.debug('Ayuno cerrado y guardado exitosamente.');
     } catch (e, stackTrace) {
@@ -175,12 +187,17 @@ class FastingNotifier extends StateNotifier<FastingState> {
     if (uid == null || state.isSaving) return;
 
     state = state.copyWith(isSaving: true);
-    final userRepo = _ref.read(userRepositoryProvider);
-    
+    // SPEC-50.4: FastingIntervalRepository (no UserRepository).
+    final repo = _ref.read(fastingIntervalRepositoryProvider);
+
     try {
       // Al cerrar ventana, iniciamos un "intervalo" que no es ayuno
-      await userRepo.startNewInterval(uid, false, startTime: manualTime);
-      
+      await repo.transitionTo(
+        userId: uid,
+        isFasting: false,
+        startTime: manualTime,
+      );
+
       state = state.copyWith(
         isSaving: false,
         isWaitingForFeedingEnd: false,
