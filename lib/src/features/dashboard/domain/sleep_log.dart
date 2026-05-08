@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:elena_app/src/core/errors/validation_error.dart';
+
 /// Registro de un ciclo de sueño individual.
 ///
 /// SPEC-69: amplía el modelo con campos opcionales para una métrica
@@ -35,20 +37,27 @@ class SleepLog {
     this.nightAwakenings,
     this.subjectiveQuality,
   }) {
+    // SPEC-62: errores tipados. Caller puede pattern-match sobre
+    // ValidationError sin parsear strings de mensaje.
     if (sleepLatencyMinutes != null && sleepLatencyMinutes! < 0) {
-      throw FormatException(
-        'sleepLatencyMinutes inválido: $sleepLatencyMinutes. Debe ser >= 0.',
+      throw NegativeValue(
+        field: 'sleepLatencyMinutes',
+        value: sleepLatencyMinutes!,
       );
     }
     if (nightAwakenings != null && nightAwakenings! < 0) {
-      throw FormatException(
-        'nightAwakenings inválido: $nightAwakenings. Debe ser >= 0.',
+      throw NegativeValue(
+        field: 'nightAwakenings',
+        value: nightAwakenings!,
       );
     }
     if (subjectiveQuality != null) {
       if (subjectiveQuality! < 1 || subjectiveQuality! > 5) {
-        throw FormatException(
-          'subjectiveQuality inválido: $subjectiveQuality. Debe estar en [1, 5].',
+        throw OutOfRange(
+          field: 'subjectiveQuality',
+          value: subjectiveQuality!,
+          min: 1,
+          max: 5,
         );
       }
     }

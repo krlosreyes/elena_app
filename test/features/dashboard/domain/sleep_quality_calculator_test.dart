@@ -8,6 +8,7 @@
 // - Bonus / penalización por subjectiveQuality.
 // - Invariantes de SleepLog (validaciones del constructor SPEC-69).
 
+import 'package:elena_app/src/core/errors/validation_error.dart';
 import 'package:elena_app/src/features/dashboard/domain/sleep_log.dart';
 import 'package:elena_app/src/features/dashboard/domain/sleep_quality_calculator.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -197,7 +198,7 @@ void main() {
     final wake = DateTime(2026, 5, 2, 7);
     final meal = DateTime(2026, 5, 1, 19);
 
-    test('sleepLatencyMinutes negativo lanza FormatException', () {
+    test('sleepLatencyMinutes negativo lanza NegativeValue (SPEC-62)', () {
       expect(
         () => SleepLog(
           id: 'x',
@@ -206,11 +207,13 @@ void main() {
           lastMealTime: meal,
           sleepLatencyMinutes: -5,
         ),
-        throwsA(isA<FormatException>()),
+        throwsA(isA<NegativeValue>()
+            .having((e) => e.fieldName, 'fieldName', 'sleepLatencyMinutes')
+            .having((e) => e.value, 'value', -5)),
       );
     });
 
-    test('nightAwakenings negativo lanza FormatException', () {
+    test('nightAwakenings negativo lanza NegativeValue (SPEC-62)', () {
       expect(
         () => SleepLog(
           id: 'x',
@@ -219,11 +222,12 @@ void main() {
           lastMealTime: meal,
           nightAwakenings: -1,
         ),
-        throwsA(isA<FormatException>()),
+        throwsA(isA<NegativeValue>()
+            .having((e) => e.fieldName, 'fieldName', 'nightAwakenings')),
       );
     });
 
-    test('subjectiveQuality fuera de [1,5] lanza FormatException', () {
+    test('subjectiveQuality fuera de [1,5] lanza OutOfRange (SPEC-62)', () {
       expect(
         () => SleepLog(
           id: 'x',
@@ -232,7 +236,10 @@ void main() {
           lastMealTime: meal,
           subjectiveQuality: 0,
         ),
-        throwsA(isA<FormatException>()),
+        throwsA(isA<OutOfRange>()
+            .having((e) => e.fieldName, 'fieldName', 'subjectiveQuality')
+            .having((e) => e.min, 'min', 1)
+            .having((e) => e.max, 'max', 5)),
       );
       expect(
         () => SleepLog(
@@ -242,7 +249,7 @@ void main() {
           lastMealTime: meal,
           subjectiveQuality: 6,
         ),
-        throwsA(isA<FormatException>()),
+        throwsA(isA<OutOfRange>()),
       );
     });
 

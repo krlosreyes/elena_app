@@ -12,7 +12,10 @@
 //
 // Las invariantes (>= 0 cuando presente) se validan en el constructor
 // para que cualquier instancia del modelo sea consistente desde su origen.
-// SPEC-62 (R3) reemplazará FormatException por ValidationException tipada.
+// SPEC-62: las violaciones lanzan ValidationError tipado (NegativeValue,
+// OutOfRange) en lugar de FormatException con mensaje string.
+
+import 'package:elena_app/src/core/errors/validation_error.dart';
 
 class NutritionLog {
   /// Identificador único.
@@ -71,9 +74,11 @@ class NutritionLog {
     _validateNonNegative('fiber', fiber);
     if (glycemicIndex != null) {
       if (glycemicIndex! < 0 || glycemicIndex! > 100) {
-        throw FormatException(
-          'NutritionLog.glycemicIndex inválido: $glycemicIndex. '
-          'Debe estar entre 0 y 100.',
+        throw OutOfRange(
+          field: 'NutritionLog.glycemicIndex',
+          value: glycemicIndex!,
+          min: 0,
+          max: 100,
         );
       }
     }
@@ -114,8 +119,9 @@ class NutritionLog {
 
   static void _validateNonNegative(String fieldName, double? value) {
     if (value != null && value < 0) {
-      throw FormatException(
-        'NutritionLog.$fieldName inválido: $value. Debe ser >= 0.',
+      throw NegativeValue(
+        field: 'NutritionLog.$fieldName',
+        value: value,
       );
     }
   }

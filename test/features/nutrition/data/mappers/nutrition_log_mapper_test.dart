@@ -1,6 +1,7 @@
-// Tests del NutritionLogMapper — SPEC-63 + SPEC-64.
+// Tests del NutritionLogMapper — SPEC-63 + SPEC-64 + SPEC-62 (errores tipados).
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:elena_app/src/core/errors/validation_error.dart';
 import 'package:elena_app/src/features/nutrition/data/mappers/nutrition_log_mapper.dart';
 import 'package:elena_app/src/features/nutrition/domain/nutrition_log.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -46,20 +47,33 @@ void main() {
       expect(map['source'], 'userInput');
     });
 
-    test('rechaza id vacío', () {
-      expect(() => mapper.toMap(_log(id: '')),
-          throwsA(isA<FormatException>()));
+    test('rechaza id vacío con EmptyField (SPEC-62)', () {
+      expect(
+        () => mapper.toMap(_log(id: '')),
+        throwsA(isA<EmptyField>()
+            .having((e) => e.fieldName, 'fieldName', 'NutritionLog.id')),
+      );
     });
 
-    test('rechaza label fuera del set', () {
-      expect(() => mapper.toMap(_log(label: 'Brunch')),
-          throwsA(isA<FormatException>()));
+    test('rechaza label fuera del set con InvalidValue (SPEC-62)', () {
+      expect(
+        () => mapper.toMap(_log(label: 'Brunch')),
+        throwsA(isA<InvalidValue>()
+            .having((e) => e.fieldName, 'fieldName', 'NutritionLog.label')
+            .having((e) => e.value, 'value', 'Brunch')),
+      );
     });
 
-    test('rechaza timestamp >60s en el futuro', () {
+    test('rechaza timestamp >60s en el futuro con FutureTimestamp (SPEC-62)',
+        () {
       final far = DateTime.now().add(const Duration(minutes: 5));
-      expect(() => mapper.toMap(_log(timestamp: far)),
-          throwsA(isA<FormatException>()));
+      expect(
+        () => mapper.toMap(_log(timestamp: far)),
+        throwsA(isA<FutureTimestamp>()
+            .having((e) => e.fieldName, 'fieldName', 'NutritionLog.timestamp')
+            .having((e) => e.toleranceFromNow.inSeconds,
+                'tolerance secs', 60)),
+      );
     });
   });
 
@@ -106,21 +120,30 @@ void main() {
   });
 
   group('NutritionLog constructor — invariantes (SPEC-64)', () {
-    test('rechaza calories negativas', () {
-      expect(() => _log(calories: -10),
-          throwsA(isA<FormatException>()));
+    test('rechaza calories negativas con NegativeValue (SPEC-62)', () {
+      expect(
+        () => _log(calories: -10),
+        throwsA(isA<NegativeValue>()
+            .having((e) => e.fieldName, 'fieldName', 'NutritionLog.calories')),
+      );
     });
 
-    test('rechaza protein negativa', () {
-      expect(() => _log(protein: -1),
-          throwsA(isA<FormatException>()));
+    test('rechaza protein negativa con NegativeValue (SPEC-62)', () {
+      expect(
+        () => _log(protein: -1),
+        throwsA(isA<NegativeValue>()
+            .having((e) => e.fieldName, 'fieldName', 'NutritionLog.protein')),
+      );
     });
 
-    test('rechaza glycemicIndex fuera de rango 0-100', () {
-      expect(() => _log(glycemicIndex: -5),
-          throwsA(isA<FormatException>()));
-      expect(() => _log(glycemicIndex: 120),
-          throwsA(isA<FormatException>()));
+    test('rechaza glycemicIndex fuera de rango con OutOfRange (SPEC-62)', () {
+      expect(
+        () => _log(glycemicIndex: -5),
+        throwsA(isA<OutOfRange>()
+            .having((e) => e.min, 'min', 0)
+            .having((e) => e.max, 'max', 100)),
+      );
+      expect(() => _log(glycemicIndex: 120), throwsA(isA<OutOfRange>()));
     });
 
     test('acepta glycemicIndex en frontera (0 y 100)', () {

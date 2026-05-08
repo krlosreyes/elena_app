@@ -7,6 +7,7 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'package:elena_app/src/core/errors/validation_error.dart';
 import 'package:elena_app/src/features/nutrition/domain/nutrition_log.dart';
 
 const Set<String> _kValidLabels = {
@@ -77,23 +78,28 @@ class NutritionLogMapper {
   }
 
   void _validate(NutritionLog log) {
+    // SPEC-62: errores tipados por caso. UI puede pattern-match sobre
+    // ValidationError sin parsear strings.
     if (log.id.isEmpty) {
-      throw const FormatException('NutritionLog.id no puede estar vacío.');
+      throw const EmptyField(field: 'NutritionLog.id');
     }
     if (log.label.trim().isEmpty) {
-      throw const FormatException('NutritionLog.label no puede estar vacío.');
+      throw const EmptyField(field: 'NutritionLog.label');
     }
     if (!_kValidLabels.contains(log.label)) {
-      throw FormatException(
-        'NutritionLog.label inválido: "${log.label}". '
-        'Esperado uno de: ${_kValidLabels.join(", ")}.',
+      throw InvalidValue(
+        field: 'NutritionLog.label',
+        value: log.label,
+        expectedOneOf: _kValidLabels.toList(),
       );
     }
-    final maxAllowed = DateTime.now().add(const Duration(seconds: 60));
+    const tolerance = Duration(seconds: 60);
+    final maxAllowed = DateTime.now().add(tolerance);
     if (log.timestamp.isAfter(maxAllowed)) {
-      throw FormatException(
-        'NutritionLog.timestamp ${log.timestamp.toIso8601String()} '
-        'está más de 60s en el futuro.',
+      throw FutureTimestamp(
+        field: 'NutritionLog.timestamp',
+        value: log.timestamp,
+        toleranceFromNow: tolerance,
       );
     }
     // Las invariantes >= 0 de macros y rango 0-100 de glycemicIndex se
