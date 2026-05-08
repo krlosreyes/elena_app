@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter/foundation.dart';
+import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_validator.dart';
 import 'package:elena_app/src/core/orchestrator/orchestrator_provider.dart';
 
@@ -163,16 +163,16 @@ class NutritionValidatorNotifier extends StateNotifier<NutritionValidationState?
         lastValidated: DateTime.now(),
       );
 
-      debugPrint(
-        '🥗 SPEC-36: Macros validados.\n'
+      AppLogger.debug(
+        'SPEC-36: Macros validados.\n'
         'Carbos: ${carbsG.toStringAsFixed(0)}g (${(carbPercent * 100).toStringAsFixed(0)}%) | '
         'Proteína: ${proteinG.toStringAsFixed(0)}g (${(proteinPercent * 100).toStringAsFixed(0)}%) | '
         'Grasas: ${fatG.toStringAsFixed(0)}g (${(fatPercent * 100).toStringAsFixed(0)}%)\n'
         'Glucemia: $glycemicResponse | Total: ${totalCalories.toStringAsFixed(0)} kcal\n'
         'Válido: $isValid | Advertencia: ${finalWarning ?? "Ninguna"}',
       );
-    } catch (e) {
-      debugPrint('❌ Error en NutritionValidatorNotifier: $e');
+    } catch (e, stackTrace) {
+      AppLogger.error('Error en NutritionValidatorNotifier', e, stackTrace);
     }
   }
 

@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter/foundation.dart';
+import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/features/dashboard/application/fasting_notifier.dart';
 import 'package:elena_app/src/features/dashboard/application/sleep_notifier.dart';
 import 'package:elena_app/src/core/orchestrator/orchestrator_provider.dart';
@@ -170,14 +170,14 @@ class FastingPredictionNotifier extends StateNotifier<FastingPredictionState?> {
         lastCalculated: DateTime.now(),
       );
 
-      debugPrint(
-        '⏱️ SPEC-35: Predicción actualizada.\n'
+      AppLogger.debug(
+        'SPEC-35: Predicción actualizada.\n'
         'Fase: $fastingPhase | Glucógeno: ${estimatedGlycogen.toStringAsFixed(0)}g\n'
         'Óptimo romper: ${optimalBreakTime?.toString() ?? "En otra fase circadiana"}\n'
         'Seguro ahora: $canBreakNow',
       );
-    } catch (e) {
-      debugPrint('❌ Error en FastingPredictionNotifier: $e');
+    } catch (e, stackTrace) {
+      AppLogger.error('Error en FastingPredictionNotifier', e, stackTrace);
     }
   }
 

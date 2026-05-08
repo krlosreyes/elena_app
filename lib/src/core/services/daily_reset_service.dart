@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter/foundation.dart';
 
 import 'package:elena_app/src/core/providers/shared_preferences_provider.dart';
+import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/features/dashboard/application/fasting_notifier.dart';
 import 'package:elena_app/src/features/dashboard/application/hydration_notifier.dart';
 import 'package:elena_app/src/features/dashboard/application/sleep_notifier.dart';
@@ -77,9 +77,7 @@ class DailyResetNotifier extends StateNotifier<void> {
         await triggerDailyReset();
       }
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('⚠️ SPEC-58 bootstrap fallo: $e');
-      }
+      AppLogger.warning('SPEC-58 bootstrap falló', e);
     }
     _scheduleMidnightTimer();
   }
@@ -92,9 +90,9 @@ class DailyResetNotifier extends StateNotifier<void> {
     final nextMidnight = DateTime(now.year, now.month, now.day + 1);
     final duration = nextMidnight.difference(now);
 
-    if (kDebugMode) {
-      debugPrint('🕛 SPEC-58: próximo reset programado en ${duration.inMinutes} min.');
-    }
+    AppLogger.debug(
+      'SPEC-58: próximo reset programado en ${duration.inMinutes} min.',
+    );
 
     _midnightTimer = Timer(duration, () async {
       await triggerDailyReset();
@@ -134,13 +132,11 @@ class DailyResetNotifier extends StateNotifier<void> {
       // nuevo día si la condición que los origina sigue activa.
       _ref.read(uiInteractionProvider.notifier).resetDismissals();
 
-      if (kDebugMode) {
-        debugPrint('✅ SPEC-58: reset diario completado en 5 pilares + descartes UI.');
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ SPEC-58: error en triggerDailyReset: $e');
-      }
+      AppLogger.debug(
+        'SPEC-58: reset diario completado en 5 pilares + descartes UI.',
+      );
+    } catch (e, stackTrace) {
+      AppLogger.error('SPEC-58: error en triggerDailyReset', e, stackTrace);
     }
   }
 

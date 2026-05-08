@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/features/onboarding/application/onboarding_controller.dart';
@@ -198,8 +199,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       await Future.delayed(const Duration(milliseconds: 800));
       if (!mounted) return;
       context.go('/dashboard');
-    } catch (e) {
-      debugPrint("❌ Error en Onboarding Submit: $e");
+    } catch (e, stackTrace) {
+      AppLogger.error('Error en Onboarding Submit', e, stackTrace);
     }
   }
 

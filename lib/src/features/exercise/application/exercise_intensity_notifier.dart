@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter/foundation.dart';
+import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/features/exercise/domain/exercise_log.dart';
 import 'package:elena_app/src/features/exercise/application/exercise_intensity_validator.dart';
 import 'package:elena_app/src/core/orchestrator/orchestrator_provider.dart';
@@ -114,8 +114,10 @@ class ExerciseIntensityNotifier extends StateNotifier<ExerciseIntensityState?> {
       generatedAt: DateTime.now(),
     );
 
-    debugPrint(
-        '💪 SPEC-37: Recomendación actualizada: $exerciseType ${recommendedIntensity}% - $reasoning');
+    AppLogger.debug(
+      'SPEC-37: Recomendación actualizada: '
+      '$exerciseType $recommendedIntensity% - $reasoning',
+    );
 
     state = state?.copyWith(currentRecommendation: recommendation);
   }
@@ -146,7 +148,7 @@ class ExerciseIntensityNotifier extends StateNotifier<ExerciseIntensityState?> {
     if (warning != null) {
       final warnings = <String>[...(state?.recentWarnings ?? []), warning];
       state = state?.copyWith(recentWarnings: warnings);
-      debugPrint('⚠️  SPEC-37: $warning');
+      AppLogger.warning('SPEC-37: $warning');
     }
 
     return (isSafe, warning);
@@ -193,8 +195,11 @@ class ExerciseIntensityNotifier extends StateNotifier<ExerciseIntensityState?> {
       totalMetabolicLoad: totalLoad,
     );
 
-    debugPrint(
-        '💪 SPEC-37: Ejercicio registrado: $exerciseType ${intensityPercent}% × ${baseLog.durationMinutes}min = ${metabolicLoad.toStringAsFixed(2)} carga metabólica');
+    AppLogger.debug(
+      'SPEC-37: Ejercicio registrado: '
+      '$exerciseType $intensityPercent% × ${baseLog.durationMinutes}min '
+      '= ${metabolicLoad.toStringAsFixed(2)} carga metabólica',
+    );
   }
 
   /// Registra feedback post-ejercicio
@@ -219,8 +224,9 @@ class ExerciseIntensityNotifier extends StateNotifier<ExerciseIntensityState?> {
 
     state = state!.copyWith(todayLogs: newLogs);
 
-    debugPrint(
-        '📊 SPEC-37-05: Feedback registrado. Percepción: $perceptionScore/10');
+    AppLogger.debug(
+      'SPEC-37-05: Feedback registrado. Percepción: $perceptionScore/10',
+    );
   }
 
   /// Obtiene recomendación actual

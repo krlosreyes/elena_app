@@ -1,5 +1,5 @@
 import 'package:elena_app/src/core/orchestrator/biological_phases.dart';
-import 'package:flutter/foundation.dart';
+import 'package:elena_app/src/core/services/app_logger.dart';
 
 /// SPEC-35: Servicio predictor de fin de ayuno óptimo (Tipado)
 /// Utiliza el motor orquestador central para coherencia metabólica
@@ -192,8 +192,8 @@ class FastingPredictorService {
     required double glucoseLevelPostMeal,
     required String userFeedback,
   }) {
-    debugPrint(
-      '📊 SPEC-35-05: Resultado de ruptura registrado.\n'
+    AppLogger.debug(
+      'SPEC-35-05: Resultado de ruptura registrado.\n'
       'Duración ayuno: ${fastingDuration}h\n'
       'Macros elegidos: $chosenMacroProfile\n'
       'Glucosa post-comida: ${glucoseLevelPostMeal.toStringAsFixed(1)} mg/dL\n'

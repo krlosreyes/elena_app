@@ -1,5 +1,5 @@
-import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
+import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/features/fasting/domain/models/fasting_prediction.dart';
 
 /// SPEC-35: Servicio de predicción de momento óptimo para romper ayuno
@@ -28,7 +28,9 @@ class FastingPredictorService {
     final glycogenDepletion = (fastedHours / 24.0) * 100.0;
     final estimatedGlycogen = (baseGlycogen - glycogenDepletion).clamp(50.0, 500.0);
 
-    debugPrint('📊 SPEC-35: Glucógeno estimado=$estimatedGlycogen g, fastedHours=$fastedHours');
+    AppLogger.debug(
+      'SPEC-35: Glucógeno estimado=$estimatedGlycogen g, fastedHours=$fastedHours',
+    );
 
     // RF-35-03: Determinar tiempo óptimo según circadiano
     // ALERTA (6-9): NO es óptimo comer muchos carbs
@@ -78,18 +80,24 @@ class FastingPredictorService {
       optimalBreakTime = now;
       isOptimalNow = true;
       minutesUntilOptimal = 0;
-      debugPrint('🚨 SPEC-35: Glucógeno crítico (<100g). Romper ahora con Opción A');
+      AppLogger.warning(
+        'SPEC-35: Glucógeno crítico (<100g). Romper ahora con Opción A',
+      );
     } else if (estimatedGlycogen < 200.0 && currentFastingPhase == 'CETOSIS') {
       // Cetosis + glucógeno bajo = óptimo para romper
       optimalBreakTime = now.add(const Duration(minutes: 30));
       minutesUntilOptimal = 30;
-      debugPrint('✅ SPEC-35: Óptimo para romper en 30 min (Cetosis + glucógeno bajo)');
+      AppLogger.debug(
+        'SPEC-35: Óptimo para romper en 30 min (Cetosis + glucógeno bajo)',
+      );
     } else if (currentFastingPhase == 'AUTOFAGIA' && estimatedGlycogen < 150.0) {
       // Autofagia profunda - romper con urgencia
       optimalBreakTime = now;
       isOptimalNow = true;
       minutesUntilOptimal = 0;
-      debugPrint('⚠️  SPEC-35: Autofagia profunda. Romper ahora con cuidado');
+      AppLogger.warning(
+        'SPEC-35: Autofagia profunda. Romper ahora con cuidado',
+      );
     } else {
       // Situación normal: esperar a circadiano óptimo
       minutesUntilOptimal =
@@ -133,8 +141,11 @@ class FastingPredictorService {
     if (sleepRecoveryScore > 0.6) confidence += 0.1; // Buen sueño = más confiable
     confidence = confidence.clamp(0.5, 0.95);
 
-    debugPrint(
-        '✅ SPEC-35: Predicción generada. Macro=$suggestedMacroProfile, Glucemia=$glucemicResponse, Confianza=${(confidence * 100).toStringAsFixed(1)}%');
+    AppLogger.debug(
+      'SPEC-35: Predicción generada. Macro=$suggestedMacroProfile, '
+      'Glucemia=$glucemicResponse, '
+      'Confianza=${(confidence * 100).toStringAsFixed(1)}%',
+    );
 
     return FastingPrediction(
       id: const Uuid().v4(),
@@ -230,8 +241,11 @@ class FastingPredictorService {
   }) {
     final minutesDifference = actualBreakTime.difference(prediction.optimalBreakTime).inMinutes.abs();
 
-    debugPrint(
-        '📝 SPEC-35: Ruptura registrada. Macro=$actualMacroChoice, Energía=$energyLevel/10, Diferencia=${minutesDifference}min vs óptimo');
+    AppLogger.debug(
+      'SPEC-35: Ruptura registrada. Macro=$actualMacroChoice, '
+      'Energía=$energyLevel/10, '
+      'Diferencia=${minutesDifference}min vs óptimo',
+    );
 
     return prediction.copyWith(
       hasBeenBroken: true,

@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart'; 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/features/dashboard/domain/sleep_log.dart';
 import 'package:elena_app/src/features/dashboard/domain/hydration_log.dart';
@@ -27,8 +27,8 @@ class UserRepository {
       if (snapshot.exists && snapshot.data() != null) {
         try {
           return UserModel.fromJson(snapshot.data()!);
-        } catch (e) {
-          debugPrint("❌ Error parseando UserModel: $e");
+        } catch (e, stackTrace) {
+          AppLogger.error('Error parseando UserModel', e, stackTrace);
           return null;
         }
       }
@@ -44,8 +44,8 @@ class UserRepository {
         user.toJson(),
         SetOptions(merge: true),
       );
-    } catch (e) {
-      debugPrint("❌ Error saveUser: $e");
+    } catch (e, stackTrace) {
+      AppLogger.error('Error saveUser', e, stackTrace);
       throw Exception("Fallo en sincronización metabólica");
     }
   }
@@ -67,9 +67,9 @@ class UserRepository {
         'recoveryStatus': log.recoveryStatus,
         'createdAt': FieldValue.serverTimestamp(),
       });
-      debugPrint("🌙 Registro de sueño guardado: ${log.id}");
-    } catch (e) {
-      debugPrint("❌ Error en saveSleepLog: $e");
+      AppLogger.debug('Registro de sueño guardado: ${log.id}');
+    } catch (e, stackTrace) {
+      AppLogger.error('Error en saveSleepLog', e, stackTrace);
       throw Exception("Fallo al guardar registro de sueño");
     }
   }
@@ -106,9 +106,11 @@ class UserRepository {
         'type': log.type,
         'serverAt': FieldValue.serverTimestamp(),
       });
-      debugPrint("💧 Registro de hidratación sincronizado: ${log.amountInLiters}L");
-    } catch (e) {
-      debugPrint("❌ Error en saveHydrationLog: $e");
+      AppLogger.debug(
+        'Registro de hidratación sincronizado: ${log.amountInLiters}L',
+      );
+    } catch (e, stackTrace) {
+      AppLogger.error('Error en saveHydrationLog', e, stackTrace);
       throw Exception("Error de persistencia en hidratación");
     }
   }
@@ -148,9 +150,11 @@ class UserRepository {
         'intensityMultiplier': log.intensityMultiplier,
         'createdAt': FieldValue.serverTimestamp(),
       });
-      debugPrint("💪 Registro de ejercicio guardado: ${log.durationMinutes} min");
-    } catch (e) {
-      debugPrint("❌ Error en saveExerciseLog: $e");
+      AppLogger.debug(
+        'Registro de ejercicio guardado: ${log.durationMinutes} min',
+      );
+    } catch (e, stackTrace) {
+      AppLogger.error('Error en saveExerciseLog', e, stackTrace);
       throw Exception("Fallo al guardar registro de ejercicio");
     }
   }
@@ -185,9 +189,11 @@ class UserRepository {
           .collection('streak_history')
           .doc(entry.date)
           .set(entry.toJson(), SetOptions(merge: true));
-      debugPrint('🔥 StreakEntry guardado: ${entry.date} — ${entry.pillarsCompleted}/5');
-    } catch (e) {
-      debugPrint('❌ Error en saveStreakEntry: $e');
+      AppLogger.debug(
+        'StreakEntry guardado: ${entry.date} — ${entry.pillarsCompleted}/5',
+      );
+    } catch (e, stackTrace) {
+      AppLogger.error('Error en saveStreakEntry', e, stackTrace);
       throw Exception('Fallo al guardar racha');
     }
   }
@@ -217,9 +223,9 @@ class UserRepository {
       await _usersCollection.doc(userId).update({
         'weeklyAdherence': adherence,
       });
-      debugPrint('📈 Adherencia semanal actualizada: $adherence');
-    } catch (e) {
-      debugPrint('❌ Error al actualizar adherencia: $e');
+      AppLogger.debug('Adherencia semanal actualizada: $adherence');
+    } catch (e, stackTrace) {
+      AppLogger.error('Error al actualizar adherencia', e, stackTrace);
     }
   }
 
@@ -233,9 +239,9 @@ class UserRepository {
         ...adjustment,
         'timestamp': FieldValue.serverTimestamp(),
       });
-      debugPrint('📝 Ajuste de protocolo registrado en historial.');
-    } catch (e) {
-      debugPrint('❌ Error al registrar ajuste: $e');
+      AppLogger.debug('Ajuste de protocolo registrado en historial.');
+    } catch (e, stackTrace) {
+      AppLogger.error('Error al registrar ajuste', e, stackTrace);
     }
   }
 
@@ -251,10 +257,10 @@ class UserRepository {
 
       if (updates.isNotEmpty) {
         await _usersCollection.doc(userId).update(updates);
-        debugPrint('✅ Protocolo actualizado en perfil: $updates');
+        AppLogger.debug('Protocolo actualizado en perfil: $updates');
       }
-    } catch (e) {
-      debugPrint('❌ Error al aplicar protocolo: $e');
+    } catch (e, stackTrace) {
+      AppLogger.error('Error al aplicar protocolo', e, stackTrace);
     }
   }
 
@@ -305,9 +311,12 @@ class UserRepository {
       batch.set(newDocRef, newInterval.toJson());
       
       await batch.commit();
-      debugPrint("🚀 Sincronización manual: ${isFasting ? 'AYUNO' : 'VENTANA'} desde ${effectiveTime.toString()}");
-    } catch (e) {
-      debugPrint("❌ Error en startNewInterval: $e");
+      AppLogger.debug(
+        'Sincronización manual: ${isFasting ? 'AYUNO' : 'VENTANA'} '
+        'desde ${effectiveTime.toString()}',
+      );
+    } catch (e, stackTrace) {
+      AppLogger.error('Error en startNewInterval', e, stackTrace);
       rethrow;
     }
   }

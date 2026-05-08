@@ -1,7 +1,7 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/core/providers/ticker_providers.dart';
 import 'package:elena_app/src/core/rules/circadian_rules.dart';
+import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/shared/domain/services/user_repository.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
@@ -59,8 +59,10 @@ class FastingNotifier extends StateNotifier<FastingState> {
             );
           }
         },
-        loading: () => debugPrint("⏳ Sincronizando coordenadas metabólicas..."),
-        error: (err, stack) => debugPrint("⚠️ Error en historial: $err"),
+        loading: () =>
+            AppLogger.debug('Sincronizando coordenadas metabólicas...'),
+        error: (err, stack) =>
+            AppLogger.warning('Error en historial', err),
       );
     }, fireImmediately: true);
 
@@ -103,7 +105,10 @@ class FastingNotifier extends StateNotifier<FastingState> {
       // SPEC-05: Programar hitos de ayuno (12h, 18h, 24h) desde el inicio real.
       await NotificationScheduler.scheduleFastingMilestones(startTime);
 
-      debugPrint("🚀 Ayuno iniciado manualmente a las $startTime (Duración inicial: ${duration.inHours}h)");
+      AppLogger.debug(
+        'Ayuno iniciado manualmente a las $startTime '
+        '(Duración inicial: ${duration.inHours}h)',
+      );
     } catch (e) {
       state = state.copyWith(isSaving: false);
     }
@@ -125,9 +130,9 @@ class FastingNotifier extends StateNotifier<FastingState> {
     try {
       await userRepo.startNewInterval(uid, false, startTime: manualTime);
       _fastingEndConfirmedToday = true;
-      debugPrint("✅ Ayuno cerrado y guardado exitosamente.");
-    } catch (e) {
-      debugPrint("❌ Error crítico en persistencia: $e");
+      AppLogger.debug('Ayuno cerrado y guardado exitosamente.');
+    } catch (e, stackTrace) {
+      AppLogger.error('Error crítico en persistencia', e, stackTrace);
       state = state.copyWith(isSaving: false);
       return; // Si la persistencia falla, no seguimos
     }
@@ -147,7 +152,7 @@ class FastingNotifier extends StateNotifier<FastingState> {
         repeatsDaily: false,
       );
     } catch (e) {
-      debugPrint("⚠️ Error no crítico en notificaciones: $e");
+      AppLogger.warning('Error no crítico en notificaciones', e);
     }
 
     // 3. Actualización de UI
@@ -181,7 +186,7 @@ class FastingNotifier extends StateNotifier<FastingState> {
         isWaitingForFeedingEnd: false,
         isActive: false,
       );
-      debugPrint("🍎 Ventana de alimentación cerrada a las $manualTime");
+      AppLogger.debug('Ventana de alimentación cerrada a las $manualTime');
     } catch (e) {
       state = state.copyWith(isSaving: false);
     }

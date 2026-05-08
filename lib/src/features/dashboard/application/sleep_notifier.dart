@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/features/dashboard/application/fasting_notifier.dart';
 import 'package:elena_app/src/shared/domain/services/user_repository.dart';
 import '../domain/sleep_log.dart';
@@ -164,9 +165,9 @@ class SleepNotifier extends StateNotifier<SleepState> {
           isSleepMode: false,
           isSaving: false,
         );
-        debugPrint("🚀 Ciclo cerrado correctamente.");
-      } catch (e) {
-        debugPrint("❌ Error al cerrar: $e");
+        AppLogger.debug('Ciclo de sueño cerrado correctamente.');
+      } catch (e, stackTrace) {
+        AppLogger.error('Error al cerrar ciclo de sueño', e, stackTrace);
         state = state.copyWith(isSaving: false);
       }
     }
@@ -212,9 +213,11 @@ class SleepNotifier extends StateNotifier<SleepState> {
         isWaitingForWakeUp: false,
       );
       
-      debugPrint("🌙 Registro manual de sueño guardado: ${realLog.duration.inHours}h");
-    } catch (e) {
-      debugPrint("❌ Error en saveManualSleep: $e");
+      AppLogger.debug(
+        'Registro manual de sueño guardado: ${realLog.duration.inHours}h',
+      );
+    } catch (e, stackTrace) {
+      AppLogger.error('Error en saveManualSleep', e, stackTrace);
       state = state.copyWith(isSaving: false);
       rethrow;
     }

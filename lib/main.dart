@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'firebase_options.dart';
 import 'src/app.dart';
 import 'src/core/providers/shared_preferences_provider.dart';
+import 'src/core/services/app_logger.dart';
 import 'src/core/services/notification_service.dart';
 
 void main() async {
@@ -26,9 +27,9 @@ void main() async {
       webProvider: ReCaptchaV3Provider('6LeX-OcpAAAAAI8iG-Y6G9S7v7L3H-O-1-9-O-9'), // Producción/Localhost
     );
   } catch (e) {
-    if (kDebugMode) {
-      debugPrint("ℹ️ AppCheck no se activó (común en localhost sin configuración ReCAPTCHA): $e");
-    }
+    AppLogger.info(
+      'AppCheck no se activó (común en localhost sin configuración ReCAPTCHA): $e',
+    );
   }
 
   // DT-04: SharedPreferences debe inicializarse antes de runApp.
