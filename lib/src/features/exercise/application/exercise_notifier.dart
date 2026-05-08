@@ -58,6 +58,13 @@ class ExerciseNotifier extends StateNotifier<ExerciseState> {
     required int minutes,
     required String activityType,
     required DateTime timestamp,
+    // SPEC-71.2: tipado opcional (SPEC-68). Si no se provee, los logs
+    // legacy siguen funcionando y el ScoreEngine usa multiplicadores
+    // neutros (= curva minutos/30 de antes).
+    ExerciseType? type,
+    ExerciseIntensity? intensity,
+    int? rpe,
+    int? heartRateAvg,
   }) async {
     if (userId == null) {
       state = state.copyWith(error: "No hay sesión activa");
@@ -88,6 +95,10 @@ class ExerciseNotifier extends StateNotifier<ExerciseState> {
         durationMinutes: minutes,
         activityType: activityType,
         timestamp: timestamp,
+        type: type,
+        intensity: intensity,
+        rpe: rpe,
+        heartRateAvg: heartRateAvg,
       );
 
       await repository.save(userId!, log);
