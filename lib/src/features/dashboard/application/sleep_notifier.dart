@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/features/dashboard/application/fasting_notifier.dart';
-import 'package:elena_app/src/shared/domain/services/user_repository.dart';
+import 'package:elena_app/src/features/dashboard/data/sleep_repository_impl.dart';
 import '../domain/sleep_log.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
@@ -65,9 +65,11 @@ class SleepNotifier extends StateNotifier<SleepState> {
 
   void _initSleepSubscription(String userId) {
     _sleepSubscription?.cancel();
+    // SPEC-50: consumimos sleepRepositoryProvider en lugar de
+    // userRepositoryProvider — Sleep ya no vive en el repo monolítico.
     _sleepSubscription = _ref
-        .read(userRepositoryProvider)
-        .watchLatestSleep(userId)
+        .read(sleepRepositoryProvider)
+        .watchLatest(userId)
         .listen((log) {
       if (mounted) {
         state = state.copyWith(lastLog: log);
@@ -132,8 +134,9 @@ class SleepNotifier extends StateNotifier<SleepState> {
     final now = DateTime.now();
     final userAsync = _ref.read(currentUserStreamProvider);
     final fastingState = _ref.read(fastingProvider);
-    final repo = _ref.read(userRepositoryProvider);
-    
+    // SPEC-50: SleepRepository en lugar de UserRepository.
+    final repo = _ref.read(sleepRepositoryProvider);
+
     if (state.isSaving) return;
 
     final user = userAsync.value;
@@ -156,7 +159,7 @@ class SleepNotifier extends StateNotifier<SleepState> {
       );
 
       try {
-        await repo.saveSleepLog(user.id, realLog);
+        await repo.save(user.id, realLog);
         _manualWakeUpConfirmedToday = true; 
 
         state = state.copyWith(
@@ -180,7 +183,8 @@ class SleepNotifier extends StateNotifier<SleepState> {
     final now = DateTime.now();
     final userAsync = _ref.read(currentUserStreamProvider);
     final fastingState = _ref.read(fastingProvider);
-    final repo = _ref.read(userRepositoryProvider);
+    // SPEC-50: SleepRepository en lugar de UserRepository.
+    final repo = _ref.read(sleepRepositoryProvider);
 
     final user = userAsync.value;
     if (user == null || user.id.isEmpty) return;
@@ -205,8 +209,8 @@ class SleepNotifier extends StateNotifier<SleepState> {
         lastMealTime: fastingState.startTime ?? bedtimeDt.subtract(const Duration(hours: 4)),
       );
 
-      await repo.saveSleepLog(user.id, realLog);
-      
+      await repo.save(user.id, realLog);
+
       state = state.copyWith(
         lastLog: realLog,
         isSaving: false,

@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
-import 'package:elena_app/src/features/dashboard/domain/sleep_log.dart';
 import 'package:elena_app/src/features/dashboard/domain/hydration_log.dart';
 import 'package:elena_app/src/features/exercise/domain/exercise_log.dart';
 import 'package:elena_app/src/features/streak/domain/streak_entry.dart';
@@ -50,48 +49,10 @@ class UserRepository {
     }
   }
 
-  // --- LÓGICA DE SUEÑO (PILAR: RECUPERACIÓN) ---
-
-  Future<void> saveSleepLog(String userId, SleepLog log) async {
-    try {
-      await _usersCollection
-          .doc(userId)
-          .collection('sleep_history')
-          .doc(log.id)
-          .set({
-        'fellAsleep': Timestamp.fromDate(log.fellAsleep),
-        'wokeUp': Timestamp.fromDate(log.wokeUp),
-        'lastMealTime': Timestamp.fromDate(log.lastMealTime),
-        'durationMinutes': log.duration.inMinutes,
-        'metabolicGapMinutes': log.metabolicGap.inMinutes,
-        'recoveryStatus': log.recoveryStatus,
-        'createdAt': FieldValue.serverTimestamp(),
-      });
-      AppLogger.debug('Registro de sueño guardado: ${log.id}');
-    } catch (e, stackTrace) {
-      AppLogger.error('Error en saveSleepLog', e, stackTrace);
-      throw Exception("Fallo al guardar registro de sueño");
-    }
-  }
-
-  Stream<SleepLog?> watchLatestSleep(String userId) {
-    return _usersCollection
-        .doc(userId)
-        .collection('sleep_history')
-        .orderBy('wokeUp', descending: true)
-        .limit(1)
-        .snapshots()
-        .map((snapshot) {
-      if (snapshot.docs.isEmpty) return null;
-      final data = snapshot.docs.first.data();
-      return SleepLog(
-        id: snapshot.docs.first.id,
-        fellAsleep: (data['fellAsleep'] as Timestamp).toDate(),
-        wokeUp: (data['wokeUp'] as Timestamp).toDate(),
-        lastMealTime: (data['lastMealTime'] as Timestamp).toDate(),
-      );
-    });
-  }
+  // SPEC-50: lógica de sueño extraída a SleepRepository
+  // (lib/src/features/dashboard/data/sleep_repository_impl.dart).
+  // Notifiers consumen `sleepRepositoryProvider` en lugar de los
+  // métodos que vivían aquí.
 
   // --- LÓGICA DE HIDRATACIÓN (PILAR: SOLVENTE METABÓLICO) ---
 
