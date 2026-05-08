@@ -55,10 +55,82 @@ class IMRBreakdownCard extends StatelessWidget {
           const SizedBox(height: 12),
           _BlockRow(
             label: 'CONDUCTA',
-            subtitle: 'Sueño + Ejercicio + Circadiano',
+            // SPEC-67/SPEC-04: subtitle actualizado a los 5 componentes reales
+            // del bloque Conducta (antes decía "Sueño + Ejercicio + Circadiano",
+            // omitiendo Nutrición e Hidratación que se añadieron post-MVP).
+            subtitle: 'Circadiano + Sueño + Ejercicio + Nutrición + Hidratación',
             value: result.behaviorScore,
             weight: '25%',
             color: const Color(0xFFF97316),
+          ),
+          // SPEC-70.1: advisory sobre el peso de Nutrición.
+          //
+          // El peso de Nutrición dentro del bloque Conducta es 12%
+          // (deliberadamente bajo). Sin este advisory, un usuario podría
+          // interpretar que "comer poco" o "comer ultraprocesados" no afecta
+          // su IMR — cuando la realidad es que NO MEDIMOS calidad nutricional
+          // todavía (cantidad y timing solamente). Cuando macros entren al
+          // cómputo en una próxima versión, el peso subirá.
+          const SizedBox(height: 16),
+          const _NutritionAdvisory(),
+        ],
+      ),
+    );
+  }
+}
+
+/// SPEC-70.1: aviso transparente sobre el alcance limitado del componente
+/// Nutrición en el cálculo del IMR. Cierra el bucle de honestidad con el
+/// usuario sobre los pesos del IMR (ver IMR_BIBLIOGRAPHY.md §4.4).
+class _NutritionAdvisory extends StatelessWidget {
+  const _NutritionAdvisory();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.amber.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: Colors.amber.withValues(alpha: 0.25),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.info_outline,
+            size: 14,
+            color: Colors.amber.withValues(alpha: 0.9),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: RichText(
+              text: TextSpan(
+                style: TextStyle(
+                  fontSize: 10.5,
+                  height: 1.4,
+                  color: Colors.white.withValues(alpha: 0.75),
+                ),
+                children: [
+                  const TextSpan(
+                    text: 'Nutrición pesa 12% del bloque Conducta. ',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  TextSpan(
+                    text:
+                        'El score actual considera cantidad y timing de tus comidas. '
+                        'La calidad nutricional (macros, índice glucémico) '
+                        'entrará al cómputo en una próxima versión.',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.55),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ),
