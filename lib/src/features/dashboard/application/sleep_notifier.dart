@@ -179,6 +179,12 @@ class SleepNotifier extends StateNotifier<SleepState> {
   Future<void> saveManualSleep({
     required TimeOfDay bedtime,
     required TimeOfDay wakeTime,
+    // SPEC-71.1: metadata multidimensional opcional. Si el usuario no la
+    // provee, los campos quedan null y el SleepQualityCalculator degrada
+    // graciosamente usando solo la duración (mismo comportamiento previo).
+    int? sleepLatencyMinutes,
+    int? nightAwakenings,
+    int? subjectiveQuality,
   }) async {
     final now = DateTime.now();
     final userAsync = _ref.read(currentUserStreamProvider);
@@ -196,7 +202,7 @@ class SleepNotifier extends StateNotifier<SleepState> {
       DateTime wakeTimeDt = DateTime(now.year, now.month, now.day, wakeTime.hour, wakeTime.minute);
       DateTime bedtimeDt = DateTime(now.year, now.month, now.day, bedtime.hour, bedtime.minute);
 
-      // 2. Si la hora de dormir es mayor a la de despertar (ej: 23:00 vs 07:00), 
+      // 2. Si la hora de dormir es mayor a la de despertar (ej: 23:00 vs 07:00),
       // asumimos que se acostó el día anterior.
       if (bedtimeDt.isAfter(wakeTimeDt)) {
         bedtimeDt = bedtimeDt.subtract(const Duration(days: 1));
@@ -207,6 +213,9 @@ class SleepNotifier extends StateNotifier<SleepState> {
         fellAsleep: bedtimeDt,
         wokeUp: wakeTimeDt,
         lastMealTime: fastingState.startTime ?? bedtimeDt.subtract(const Duration(hours: 4)),
+        sleepLatencyMinutes: sleepLatencyMinutes,
+        nightAwakenings: nightAwakenings,
+        subjectiveQuality: subjectiveQuality,
       );
 
       await repo.save(user.id, realLog);
