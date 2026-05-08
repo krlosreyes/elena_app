@@ -104,22 +104,32 @@ void main() {
     });
   });
 
-  group('SPEC-59: penalización por bloqueo intestinal', () {
+  group('SPEC-59 + SPEC-70.5: penalización por bloqueo intestinal (21:30)', () {
     final user = _user(waist: 90);
 
-    test('22:00 NO penaliza (caso roto del bug original)', () {
+    test('21:00 NO penaliza (justo antes del lock 21:30)', () {
+      final r = engine.calculateIMR(
+        user,
+        _state(lastMealTime: DateTime(2026, 5, 6, 21)),
+      );
+      expect(r.circadianAlignment, isNot(0.5),
+          reason: '21:00 está antes de las 21:30, NO debe penalizar');
+    });
+
+    test('21:30 SÍ penaliza (frontera incluida)', () {
+      final r = engine.calculateIMR(
+        user,
+        _state(lastMealTime: DateTime(2026, 5, 6, 21, 30)),
+      );
+      expect(r.circadianAlignment, 0.5);
+    });
+
+    test('22:00 SÍ penaliza (SPEC-70.5: ahora está dentro del lock)', () {
+      // Antes de SPEC-70.5 con lock 22:30, las 22:00 NO penalizaban.
+      // Ahora con lock 21:30, las 22:00 sí caen dentro.
       final r = engine.calculateIMR(
         user,
         _state(lastMealTime: DateTime(2026, 5, 6, 22)),
-      );
-      expect(r.circadianAlignment, isNot(0.5),
-          reason: '22:00 está antes de las 22:30, NO debe penalizar');
-    });
-
-    test('22:30 SÍ penaliza (frontera incluida)', () {
-      final r = engine.calculateIMR(
-        user,
-        _state(lastMealTime: DateTime(2026, 5, 6, 22, 30)),
       );
       expect(r.circadianAlignment, 0.5);
     });
@@ -132,10 +142,10 @@ void main() {
       expect(r.circadianAlignment, 0.5);
     });
 
-    test('22:29 NO penaliza', () {
+    test('21:29 NO penaliza', () {
       final r = engine.calculateIMR(
         user,
-        _state(lastMealTime: DateTime(2026, 5, 6, 22, 29)),
+        _state(lastMealTime: DateTime(2026, 5, 6, 21, 29)),
       );
       expect(r.circadianAlignment, isNot(0.5));
     });
@@ -211,14 +221,18 @@ void main() {
   group('SPEC-67: hidratación entra al bloque Conducta', () {
     final user = _user(waist: 85);
 
-    test('CA-67-01: 0% vs 100% hidratación → diferencia ≥ 5 puntos', () {
+    test('CA-67-01: 0% vs 100% hidratación → diferencia ≥ 2 puntos '
+        '(SPEC-70.5: peso reducido a 10%)', () {
       // Mantenemos todos los demás factores idénticos. Solo varía hidratación.
+      // Con SPEC-70.5 el peso de hidratación bajó de 20% a 10% en el
+      // bloque Conducta. La diferencia esperada cae a la mitad.
+      // Cota teórica: 0.10 (delta behavior) * 0.25 (macro) * 100 = 2.5 pts.
       final dry = engine.calculateIMR(user, _state(hydrationLevel: 0.0));
       final hydrated =
           engine.calculateIMR(user, _state(hydrationLevel: 1.0));
 
-      expect(hydrated.totalScore - dry.totalScore, greaterThanOrEqualTo(5),
-          reason: 'La diferencia debe ser perceptible (>= 5 puntos absolutos).');
+      expect(hydrated.totalScore - dry.totalScore, greaterThanOrEqualTo(2),
+          reason: 'La diferencia debe seguir siendo perceptible (>= 2 puntos).');
     });
 
     test('Hidratación más alta → behavior score más alto', () {
@@ -227,9 +241,12 @@ void main() {
       expect(r2.behaviorScore, greaterThan(r1.behaviorScore));
     });
 
-    test('Pesos suman 100% (Circadiano 28 + Sueño 20 + Ejercicio 20 + '
-        'Nutrición 12 + Hidratación 20)', () {
-      const total = 0.28 + 0.20 + 0.20 + 0.12 + 0.20;
+    test('SPEC-70.5: Pesos rebalanceados suman 100% '
+        '(Circadiano 38 + Sueño 20 + Ejercicio 20 + Nutrición 12 + '
+        'Hidratación 10)', () {
+      // Recalibración tras revisión clínica externa: hidratación
+      // 20%→10%, circadiano 28%→38%. El resto sin cambio.
+      const total = 0.38 + 0.20 + 0.20 + 0.12 + 0.10;
       expect(total, closeTo(1.0, 1e-9));
     });
   });

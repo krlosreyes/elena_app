@@ -205,9 +205,9 @@ class IMRExplanationService {
   ) {
     // Prioridad 1: alerta circadiana (cena tardía)
     if (result.circadianAlignment < 0.7) {
-      return 'Se detectó ingesta después de las 22:30. '
-             'Evitar comer en ese horario activa el bloqueo intestinal circadiano '
-             'y puede mejorar tu IMR de inmediato mañana.';
+      return 'Se detectó ingesta después de las 21:30. '
+             'Cenar antes de esa hora activa correctamente el bloqueo intestinal '
+             'circadiano y puede mejorar tu IMR de inmediato mañana.';
     }
     // Prioridad 2: sueño insuficiente
     if (sleepHours > 0 && (sleepHours < 7 || sleepHours > 9)) {

@@ -37,9 +37,11 @@ void main() {
           isFalse);
     });
 
-    test('evaluateSleep: requiere ≥ 6.5h (umbral AASM)', () {
-      expect(StreakEngine.evaluateSleep(sleepHours: 6.5), isTrue);
-      expect(StreakEngine.evaluateSleep(sleepHours: 6.4), isFalse);
+    test('evaluateSleep SPEC-70.5: requiere ≥ 7.0h (rango óptimo AASM)', () {
+      expect(StreakEngine.evaluateSleep(sleepHours: 7.0), isTrue);
+      expect(StreakEngine.evaluateSleep(sleepHours: 6.9), isFalse);
+      // El antiguo umbral 6.5h ya NO califica como sueño cumplido.
+      expect(StreakEngine.evaluateSleep(sleepHours: 6.5), isFalse);
     });
 
     test('evaluateHydration: requiere ≥ 75% de la meta', () {

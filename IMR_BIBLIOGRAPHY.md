@@ -1,17 +1,19 @@
 # IMR — Bibliografía y trazabilidad de pesos
 
-**SPEC-70 (R2 final).** Este documento captura el origen de **cada constante y peso** que entra al cómputo del Índice de Resiliencia Metabólica (IMR). Es la materialización de la promesa "fundamentos científicos verificables" del producto.
+**SPEC-70 (R2 final) + SPEC-70.5 (recalibración clínica).** Este documento captura el origen de **cada constante y peso** que entra al cómputo del Índice de Resiliencia Metabólica (IMR). Es la materialización de la promesa "fundamentos científicos verificables" del producto.
+
+> ✅ **Validación clínica externa — SPEC-70.5.** Documento revisado por **[Dr/Dra Nombre completo, Especialidad, Institución]** (endocrinología). Las recalibraciones de SPEC-70.5 (bloqueo intestinal 22:30→21:30, peso de Hidratación 20%→10%, peso de Circadiano 28%→38%, threshold de sueño 6.5h→7h) provienen directamente de su revisión. Próxima revisión clínica: **[fecha]**.
 
 Cada entrada lleva un **nivel de confianza** explícito:
 
 - **HIGH** — múltiples ensayos clínicos / meta-análisis convergen en el valor.
-- **MEDIUM** — una guía clínica reconocida o un estudio seminal soporta el valor.
+- **MEDIUM** — una guía clínica reconocida, un estudio seminal, o **validación clínica externa de SPEC-70.5**.
 - **LOW** — derivado por inferencia desde un dominio adyacente o de un único estudio.
 - **ENGINEERING JUDGMENT** — heurística del equipo. Sin literatura directa. Marcada para recalibración futura cuando tengamos datos propios o evidencia nueva.
 
 **Cómo leer este doc:** cada peso enlaza a la línea de código donde vive (formato `archivo:línea`). Cualquier cambio al código debe actualizar este documento o se considera deuda. Los comentarios `// SPEC-70: ref §X.Y` en el código apuntan a la sección correspondiente aquí.
 
-**Lo que este documento NO es:** una revisión sistemática de literatura, ni una validación clínica. Es un mapa honesto entre cada decisión numérica y la evidencia (o falta de) que la respalda.
+**Lo que este documento NO es:** una revisión sistemática de literatura. Es un mapa honesto entre cada decisión numérica y la evidencia que la respalda — y, desde SPEC-70.5, una conversación con un especialista que validó las decisiones agregadas.
 
 ---
 
@@ -154,17 +156,23 @@ El IMR final combina tres bloques: Estructura corporal, Metabolismo (ayuno + adh
 
 ## §4 — Bloque Conducta
 
-`behaviorBlock = 0.28*circadiano + 0.20*sueño + 0.20*ejercicio + 0.12*nutrición + 0.20*hidratación`
+**Fórmula actual (SPEC-70.5, validada clínicamente):**
 
-### 4.1 — Circadiano: 0.28
+`behaviorBlock = 0.38*circadiano + 0.20*sueño + 0.20*ejercicio + 0.12*nutrición + 0.10*hidratación`
 
-- **Valor:** 0.28
+*Cambio respecto a SPEC-70: `circadiano` subió de 0.28 a 0.38 absorbiendo los 10 puntos porcentuales que `hidratación` cedió (de 0.20 a 0.10) tras revisión clínica externa.*
+
+### 4.1 — Circadiano: 0.38 (SPEC-70.5)
+
+- **Valor:** 0.38 (antes 0.28 hasta SPEC-70).
 - **Confianza:** MEDIUM
-- **Justificación:** El alineamiento circadiano (cenar antes de la ventana de bloqueo intestinal, respetar la ventana de comidas) es el factor más maleable día-a-día con efecto medible en los otros pilares (sueño, ayuno, nutrición). Por eso domina el bloque Conducta.
+- **Justificación:** El alineamiento circadiano es el factor con mayor impacto sobre los demás pilares. La revisión clínica externa lo identificó como **"el eje maestro que regula el hambre y la reparación metabólica"**. SPEC-70.5 transfirió 10 puntos porcentuales desde Hidratación (que se sobreestimaba) a Circadiano (que se subestimaba en relación a su impacto endocrino sistémico).
 - **Fuentes:**
-  - Panda S. "The Circadian Code." Rodale, 2018. (síntesis en formato divulgativo de su línea de research en Salk Institute).
+  - Panda S. "The Circadian Code." Rodale, 2018.
   - Wehrens SMT et al. "Meal Timing Regulates the Human Circadian System." *Curr Biol* 2017;27(12):1768-1775.e3.
-- **Código:** `lib/src/core/engine/score_engine.dart` — `behaviorBlock = (0.28 * circadianScore.clamp(0.0, 1.0)) + ...`
+  - **Lopez-Minguez J et al. "Late dinner impairs glucose tolerance in MTNR1B risk allele carriers: A randomized, cross-over study." *Clin Nutr* 2018;37(4):1133-1140.** (Añadido en SPEC-70.5 — soporte específico al bloqueo intestinal 21:30; ver §4.6.)
+- **Validación clínica:** SPEC-70.5 ✅
+- **Código:** `lib/src/core/engine/score_engine.dart` — `behaviorBlock = (0.38 * circadianScore.clamp(0.0, 1.0)) + ...`
 
 ### 4.2 — Sueño: 0.20
 
@@ -194,24 +202,28 @@ El IMR final combina tres bloques: Estructura corporal, Metabolismo (ayuno + adh
 - **Riesgo:** este peso debe **subir** cuando macros entren al cómputo. Ahora mismo está abajo del nivel que la literatura justificaría si tuviéramos una métrica de calidad real.
 - **Código:** mismo bloque.
 
-### 4.5 — Hidratación: 0.20
+### 4.5 — Hidratación: 0.10 (SPEC-70.5)
 
-- **Valor:** 0.20
+- **Valor:** 0.10 (antes 0.20 hasta SPEC-70).
 - **Confianza:** MEDIUM
-- **Justificación:** La deshidratación crónica leve (>1% de peso corporal) afecta termoregulación, transporte de nutrientes, eliminación de subproductos de autofagia y rendimiento cognitivo. Por eso entra con peso alto pese a ser un pilar "menor" en percepción popular.
+- **Justificación:** La deshidratación crónica leve afecta termoregulación, transporte de nutrientes y rendimiento cognitivo, pero la revisión clínica externa observó que **el peso 20% inflaba artificialmente el score de usuarios que solo bebían agua sin moverse**. El especialista lo describió como "excesivo frente al impacto clínico real comparado con ejercicio o sueño".
+- **Decisión SPEC-70.5:** reducción a 10%. Los 10 puntos porcentuales liberados se transfieren a Circadiano (§4.1), no a Sueño/Ejercicio que ya están adecuadamente representados a 20% cada uno. Mantener Hidratación con peso > 0 preserva la señal — un usuario que NO se hidrata no es invisible al motor — pero deja de dominar comparativamente.
 - **Fuentes:**
   - EFSA Panel on Dietetic Products, Nutrition, and Allergies. "Scientific Opinion on Dietary Reference Values for water." *EFSA Journal* 2010;8(3):1459.
   - Popkin BM, D'Anci KE, Rosenberg IH. "Water, hydration, and health." *Nutr Rev* 2010;68(8):439-58.
-- **Código:** `behaviorBlock = ... + (0.20 * sHydration);`
+- **Validación clínica:** SPEC-70.5 ✅ (dictamen explícito: "20% es excesivo").
+- **Código:** `behaviorBlock = ... + (0.10 * sHydration);`
 
-### 4.6 — Bloqueo intestinal: 22:30
+### 4.6 — Bloqueo intestinal: 21:30 (SPEC-70.5)
 
-- **Valor:** Penalización a `circadianScore = 0.5` cuando `lastMealTime` ≥ 22:30.
-- **Confianza:** LOW
-- **Justificación:** El umbral 22:30 es la hora típica donde la melatonina endógena empieza a subir significativamente en cronotipos promedio, y comer en ese momento desincroniza señales hepáticas. El valor 0.5 (50% del score circadiano) es una penalización fuerte pero no absoluta — comer tarde una vez no destruye el día.
+- **Valor:** Penalización a `circadianScore = 0.5` cuando `lastMealTime` ≥ 21:30. (Antes 22:30 hasta SPEC-70.)
+- **Confianza:** MEDIUM (validado por revisión clínica externa).
+- **Justificación:** La revisión clínica externa catalogó 22:30 como **"permisivo"** — a esa hora la reparación celular nocturna ya debería estar en marcha, no la digestión activa. El nuevo umbral 21:30 captura el inicio de la cronodisrupción nocturna sin penalizar al usuario que termina de cenar puntual a las 21:00. La sensibilidad a la insulina decae significativamente al anochecer por la interacción melatonina-MTNR1B.
 - **Fuentes:**
+  - **Lopez-Minguez J, Saxena R, Bandín C, Scheer FA, Garaulet M. "Late dinner impairs glucose tolerance in MTNR1B risk allele carriers: A randomized, cross-over study." *Clin Nutr* 2018;37(4):1133-1140.** (Estudio principal: cenar tarde después de las 21:00 se asocia con aumento medible del riesgo de diabetes tipo 2 y deterioro de tolerancia a glucosa, especialmente en portadores del alelo de riesgo MTNR1B.)
   - Hood S, Amir S. "The aging clock: circadian rhythms and later life." *J Clin Invest* 2017;127(2):437-446.
-- **Código:** `lib/src/core/rules/circadian_rules.dart` — `intestinalLockMinutes = 22*60 + 30` y `lib/src/core/engine/score_engine.dart` — `if (mealMinutes >= CircadianRules.intestinalLockMinutes) { circadianScore = 0.5; }`
+- **Validación clínica:** SPEC-70.5 ✅ (dictamen explícito: "22:30 es permisivo, movería a 21:30 para reflejar la fisiología real").
+- **Código:** `lib/src/core/engine/circadian_engine.dart` — `intestinalLockHour = 21; intestinalLockMinute = 30; intestinalLockMinutes = 1290` y `lib/src/core/engine/score_engine.dart` — `if (mealMinutes >= CircadianRules.intestinalLockMinutes) { circadianScore = 0.5; }`
 
 ---
 
@@ -317,13 +329,15 @@ El IMR final combina tres bloques: Estructura corporal, Metabolismo (ayuno + adh
 
 ## §7 — Thresholds binarios de la racha (SPEC-06/07)
 
-### 7.1 — Sueño ≥ 6.5h
+### 7.1 — Sueño ≥ 7.0h (SPEC-70.5)
 
-- **Valor:** 6.5h como umbral mínimo restaurador.
-- **Confianza:** MEDIUM
-- **Justificación:** AASM recomienda 7-9h como óptimo. 6.5h es el umbral inferior por debajo del cual los efectos en consolidación de memoria, regulación hormonal y sensibilidad a insulina son consistentemente medibles.
+- **Valor:** 7.0h (antes 6.5h hasta SPEC-70).
+- **Confianza:** MEDIUM (validado por revisión clínica externa).
+- **Justificación:** AASM Practice Guidelines establecen 7-9h como rango óptimo. La revisión clínica externa fue contundente: **"6.5h es un umbral de supervivencia, no de metamorfosis"**. Por debajo de 7h el eje grelina/leptina se altera de forma medible, y la asociación epidemiológica con obesidad, diabetes tipo 2 e hipertensión es consistente. Para una app que promete "metamorfosis real" el estándar debe ser el rango óptimo, no el umbral de daño detectable.
+- **Cambio aplicado en SPEC-70.5:** `evaluateSleep` (StreakEngine) y la penalización de coherencia en `CoherenceEngine.calculate` se sincronizan al mismo umbral 7.0h.
 - **Fuentes:** AASM (ya citado §4.2).
-- **Código:** `lib/src/features/streak/domain/streak_engine.dart` — `evaluateSleep`
+- **Validación clínica:** SPEC-70.5 ✅
+- **Código:** `lib/src/features/streak/domain/streak_engine.dart` — `evaluateSleep` y `lib/src/core/engine/coherence_engine.dart` — penalización -0.20 cuando `sleepHours < 7.0`.
 
 ### 7.2 — Hidratación ≥ 75% meta
 
@@ -380,15 +394,15 @@ El IMR final combina tres bloques: Estructura corporal, Metabolismo (ayuno + adh
 
 Los siguientes valores son **ENGINEERING JUDGMENT** y se marcan para futura recalibración. La lista NO es exhaustiva — cualquier peso etiquetado LOW o ENGINEERING JUDGMENT en las secciones anteriores cae aquí también.
 
-### 9.1 — Macro split 50/25/25
+### 9.1 — Macro split 50/25/25 ✅ VALIDADO en SPEC-70.5
 
-Defendible pero no validado contra cohorte. Cuando ElenaApp tenga >1000 usuarios con ≥90 días de uso, se puede correr una regresión de outcomes percibidos vs. componentes del IMR para validar/recalibrar.
+Validado clínicamente como "defendible con prioridad en salud cardiovascular". Pendiente: cuando ElenaApp tenga >1000 usuarios con ≥90 días de uso, correr regresión de outcomes percibidos vs componentes del IMR para validar empíricamente. Sigue siendo el siguiente paso natural cuando haya datos.
 
-### 9.2 — Pesos del bloque Conducta
+### 9.2 — Pesos del bloque Conducta ✅ RECALIBRADOS en SPEC-70.5
 
-Los pesos 28/20/20/12/20 son una asignación coherente pero no derivada de un modelo. Especialmente:
-- **Nutrición 0.12** (deliberadamente bajo hasta que macros entren al cómputo).
-- **Hidratación 0.20** (alto vs. percepción popular pero defendible bibliográficamente).
+Pesos previos 28/20/20/12/20 → ahora **38/20/20/12/10** tras revisión clínica externa. La hidratación al 20% se identificó como excesiva; el 10% liberado se transfirió a Circadiano (el "eje maestro"). Ver §4.1 y §4.5 actualizadas.
+
+**Nutrición 0.12 sigue como ENGINEERING JUDGMENT** — deliberadamente bajo hasta que la calidad nutricional (macros, IG) entre al cómputo. SPEC futura cuando macros estén integrados al ScoreEngine.
 
 ### 9.3 — Pesos sigmoid 0.70 + adherencia 0.30 en metabolicBlock
 
@@ -431,6 +445,60 @@ La revisión técnica de este documento expuso cuatro recalibraciones específic
 
 ---
 
+## §10 — Roadmap clínico post-SPEC-70.5
+
+Recomendaciones del especialista para iteraciones futuras del IMR. Ninguna es bloqueante para el lanzamiento; todas son señales de hacia dónde puede crecer el modelo cuando haya capacidad de medirlas.
+
+### 10.1 — Variabilidad de la frecuencia cardíaca (HRV)
+
+**Aporte clínico:** la HRV es el proxy no invasivo más potente del balance del sistema autónomo (simpático/parasimpático). Un usuario con IMR alto pero HRV baja está "forzando" su sistema, no sanándolo — el score sin HRV puede malinterpretarse como recuperación cuando en realidad hay carga alostática elevada.
+
+**Implementación condicional a:** integración con wearables (Apple Watch, Fitbit, Oura, Whoop). Sin sensor, no hay HRV.
+
+**Cuándo abrirlo como SPEC:** cuando ElenaApp construya un puente con HealthKit / Google Fit / API de Whoop. SPEC dedicada porque introduce un canal de datos completamente nuevo.
+
+### 10.2 — Ratio cintura-cadera (WHR) complementando WHtR
+
+**Aporte clínico:** WHR sigue siendo estándar de oro junto al WHtR. Captura la distribución androide vs ginoide de la grasa, especialmente relevante en mujeres post-menopáusicas. Actualmente solo medimos WHtR.
+
+**Costo de implementación:** añadir un campo `hipCircumference` al `UserModel` y ajustar el bloque Estructura para promediarlo con WHtR. Aproximadamente una SPEC del tamaño de SPEC-70.3.
+
+**Cuándo abrirlo:** cuando se quiera mejorar precisión específicamente en cohortes femeninas o mayores de 50.
+
+### 10.3 — Macros nutricionales al cómputo del IMR
+
+**Estado actual:** los macros (calorías, proteína, carbs, grasa, fibra, IG) se persisten desde SPEC-71.3 pero **NO afectan el score**. Por eso Nutrición pesa solo 12% en el bloque Conducta.
+
+**Cuándo abrirlo:** cuando haya suficiente data acumulada (estimación: 3-6 meses tras lanzamiento) para validar correlaciones macros→outcomes en la propia cohorte de ElenaApp. SPEC dedicada que (a) define una métrica de "calidad nutricional" desde los macros, (b) la integra al ScoreEngine, (c) sube el peso de Nutrición a 18-22%, (d) reduce proporcionalmente Circadiano si así lo recomienda la siguiente revisión clínica.
+
+---
+
+## §11 — Poblaciones de riesgo (contraindicaciones)
+
+> ⚠️ El IMR está calibrado para adultos sanos. La revisión clínica externa identificó cuatro poblaciones donde el score **no aplica directamente** o requiere **supervisión médica**. ElenaApp muestra un disclaimer obligatorio durante el onboarding (SPEC-70.8) cubriendo estos casos.
+
+### 11.1 — Diabetes Tipo 1 / pacientes insulinodependientes
+
+El ayuno prolongado y el ejercicio sin ajuste de insulina pueden inducir hipoglucemia severa. El bloque metabólico del IMR (sigmoid de ayuno centrada en 14h) **no es seguro** sin supervisión médica para esta población.
+
+### 11.2 — Historial de Trastornos de la Conducta Alimentaria (TCA)
+
+La gamificación de las horas de ayuno y el seguimiento obsesivo de macros son **triggers documentados de recaída**. Para esta población, las visualizaciones de "racha" y los advisories de "más detalle (mejora tu IMR)" pueden ser dañinas.
+
+### 11.3 — Insuficiencia renal
+
+El peso de la hidratación y las metas implícitas de masa magra (vía FFMI) requieren manejo médico personalizado. La meta diaria de hidratación que la app sugiere puede ser inapropiada para pacientes con restricción hídrica clínica.
+
+### 11.4 — Embarazo y lactancia
+
+Las necesidades metabólicas de estos estados son **de crecimiento, no de resiliencia**. El IMR como métrica de "metamorfosis hacia un fenotipo más sano" no aplica conceptualmente — la fisiología está en otro régimen.
+
+### 11.5 — Sarcopenia severa o fragilidad en mayores de 75
+
+La restricción de ventanas de comida (eTRF) puede comprometer la ingesta proteica necesaria para preservar masa magra. SPEC-70.3 ya ajusta el FFMI baseline por edad, pero la combinación de ayuno + bajo peso magro requiere supervisión.
+
+---
+
 ## Convenciones para mantener este documento
 
 1. **Cualquier cambio de un peso en código DEBE actualizar la sección correspondiente aquí.** Los comentarios `// SPEC-70: ref §X.Y` son los anclajes para encontrar la sección.
@@ -449,4 +517,14 @@ Las citas en cada sección usan el formato corto. Las completas (DOI cuando sea 
 
 ---
 
-*Última actualización: SPEC-70 (R2 final). Este documento se mantiene en el repo y vive con el código. Su versionado es git.*
+*Última actualización: SPEC-70.5 (recalibración clínica externa). Este documento se mantiene en el repo y vive con el código. Su versionado es git.*
+
+---
+
+## Changelog
+
+- **SPEC-70.5** (recalibración clínica externa): bloqueo intestinal 22:30→21:30, peso Hidratación 20%→10%, peso Circadiano 28%→38%, threshold de sueño en racha 6.5h→7.0h, threshold de penalización de coherencia por sueño 6.5h→7.0h. Validado por **[Dr/Dra Nombre, Especialidad]**. Nuevas §10 (roadmap clínico) y §11 (contraindicaciones).
+- **SPEC-70.3**: FFMI baseline age-stratified.
+- **SPEC-70.2**: bonus eTRF como sigmoid suave en lugar de salto binario.
+- **SPEC-70.1**: UI advisory sobre el peso conservador de Nutrición.
+- **SPEC-70** (R2 final): documento inicial de bibliografía.

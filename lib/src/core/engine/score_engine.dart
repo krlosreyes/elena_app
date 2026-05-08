@@ -115,8 +115,9 @@ class ScoreEngine {
     final int mealMinutes = lastMealTime.hour * 60 + lastMealTime.minute;
 
     if (mealMinutes >= CircadianRules.intestinalLockMinutes) {
-      // SPEC-70: ref §4.6 — penalización al 0.5 por bloqueo intestinal
-      // 22:30 (Hood & Amir 2017, melatonina endógena).
+      // SPEC-70.5: penalización al 0.5 por bloqueo intestinal 21:30
+      // (Lopez-Minguez 2018, melatonina-MTNR1B). Antes era 22:30,
+      // movido tras revisión clínica externa.
       circadianScore = 0.5;
     } else if (goal != null && lastMealTime.isBefore(goal)) {
       // Bonus eTRF por comer antes de la meta establecida.
@@ -138,16 +139,24 @@ class ScoreEngine {
     // (currentAmountLiters / dailyGoalLiters).
     final double sHydration = state.hydrationLevel.clamp(0.0, 1.0);
 
-    // SPEC-70: ref §4 — pesos del bloque Conducta. Circadiano 28%
-    // (§4.1, Panda 2018, Wehrens 2017), Sueño 20% (§4.2, AASM, Walker),
-    // Ejercicio 20% (§4.3, ACSM 2021, Pedersen 2015), Nutrición 12%
-    // (§4.4, conservador hasta que macros de SPEC-64 entren al cómputo),
-    // Hidratación 20% (§4.5, EFSA 2010, Popkin 2010). Suma = 100%.
-    final double behaviorBlock = (0.28 * circadianScore.clamp(0.0, 1.0)) +
+    // SPEC-70.5: pesos del bloque Conducta recalibrados tras revisión
+    // clínica externa. La hidratación al 20% era excesiva frente al
+    // impacto clínico real (la deshidratación leve afecta menos que
+    // la desincronización circadiana). El 10% liberado se transfiere
+    // al Circadiano, que el especialista identificó como "el eje
+    // maestro que regula el hambre y la reparación metabólica".
+    //
+    // Antes (SPEC-70):  Circadiano 28% / Sueño 20% / Ejercicio 20% /
+    //                   Nutrición 12% / Hidratación 20%.
+    // Ahora (SPEC-70.5): Circadiano 38% / Sueño 20% / Ejercicio 20% /
+    //                    Nutrición 12% / Hidratación 10%.
+    //
+    // Suma = 100%. Ver IMR_BIBLIOGRAPHY.md §4 actualizada.
+    final double behaviorBlock = (0.38 * circadianScore.clamp(0.0, 1.0)) +
         (0.20 * sSleep) +
         (0.20 * sExercise) +
         (0.12 * nutritionScore.clamp(0.0, 1.0)) +
-        (0.20 * sHydration);
+        (0.10 * sHydration);
 
     // SPEC-70: ref §1 — macro 50/25/25 (Estructura/Metabolismo/Conducta).
     // ENGINEERING JUDGMENT del split exacto; estructura domina por

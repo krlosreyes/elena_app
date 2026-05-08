@@ -63,31 +63,32 @@ class NotificationScheduler {
         );
       }
 
-      // ── 4. Alerta bloqueo intestinal: 60 min antes (21:30) ───────────────
+      // ── 4. Alerta bloqueo intestinal: 60 min antes (20:30) ───────────────
+      // SPEC-70.5: lock movido a 21:30; alertas se ajustan en consecuencia.
       await _scheduleCircadian(
         id: NotificationIds.intestinalLock60,
-        hour: 21,
+        hour: 20,
         minute: 30,
         title: '🔒 1 hora para el bloqueo intestinal',
-        body: 'A las 22:30 tu sistema digestivo entra en fase de reparación.',
+        body: 'A las 21:30 tu sistema digestivo entra en fase de reparación.',
       );
 
-      // ── 5. Alerta bloqueo intestinal: 30 min antes (22:00) ───────────────
+      // ── 5. Alerta bloqueo intestinal: 30 min antes (21:00) ───────────────
       await _scheduleCircadian(
         id: NotificationIds.intestinalLock30,
-        hour: 22,
+        hour: 21,
         minute: 0,
         title: '⚠️ 30 min. Cierre inminente',
-        body: 'Última oportunidad. Comer después de las 22:30 bloquea la reparación celular.',
+        body: 'Última oportunidad. Comer después de las 21:30 bloquea la reparación celular.',
       );
 
-      // ── 6. Bloqueo intestinal activo (22:30) ─────────────────────────────
+      // ── 6. Bloqueo intestinal activo (21:30) ─────────────────────────────
       await _scheduleCircadian(
         id: NotificationIds.intestinalLockActive,
-        hour: 22,
+        hour: 21,
         minute: 30,
         title: '🧬 Bloqueo intestinal activo',
-        body: 'Fase SUEÑO iniciada. Tu cuerpo inicia la limpieza glinfática y la reparación celular.',
+        body: 'Tu cuerpo inicia la limpieza glinfática y la reparación celular.',
       );
 
       // ── 7. Recordatorio de sueño ─────────────────────────────────────────

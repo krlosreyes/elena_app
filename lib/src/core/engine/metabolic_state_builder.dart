@@ -192,7 +192,7 @@ class MetabolicStateBuilder {
       return 1.0;
     }
 
-    // Sin goal: penalización por ingesta nocturna (en o después de 22:30).
+    // Sin goal: penalización por ingesta nocturna (en o después de 21:30, SPEC-70.5).
     // SPEC-59: comparación normalizada en minutos totales desde la medianoche
     // para evitar expresiones `hour`/`minute` separadas con `&&/||`.
     final int mealMinutes =

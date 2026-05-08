@@ -62,12 +62,12 @@ void main() {
       expect(CircadianEngine.currentPhase(at(20)), CircadianPhase.creatividad);
     });
 
-    test('22:29 → creatividad (justo antes del lock)', () {
+    test('22:29 → creatividad (justo antes de la fase SUEÑO)', () {
       expect(
           CircadianEngine.currentPhase(at(22, 29)), CircadianPhase.creatividad);
     });
 
-    test('22:30 → sueno (frontera del lock incluida)', () {
+    test('22:30 → sueno (inicio de la fase SUEÑO; lock intestinal SPEC-70.5 ya activo desde 21:30)', () {
       expect(CircadianEngine.currentPhase(at(22, 30)), CircadianPhase.sueno);
     });
 
@@ -92,9 +92,9 @@ void main() {
   });
 
   group('CircadianEngine constantes', () {
-    test('intestinalLockMinutes = 1350 (22:30)', () {
-      expect(CircadianEngine.intestinalLockMinutes, 1350);
-      expect(CircadianEngine.intestinalLockHour, 22);
+    test('SPEC-70.5: intestinalLockMinutes = 1290 (21:30)', () {
+      expect(CircadianEngine.intestinalLockMinutes, 1290);
+      expect(CircadianEngine.intestinalLockHour, 21);
       expect(CircadianEngine.intestinalLockMinute, 30);
     });
 

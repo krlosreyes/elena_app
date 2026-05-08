@@ -34,9 +34,13 @@ class StreakEngine {
   }
 
   /// Evalúa si el sueño cumple el mínimo restaurador.
-  /// SPEC-70 §7.1 — MEDIUM (6.5h umbral inferior AASM).
+  /// SPEC-70.5 §7.1 — MEDIUM (validado por revisión clínica externa).
+  /// Umbral movido de 6.5h a 7.0h tras feedback: "6.5h es supervivencia,
+  /// no metamorfosis". AASM Practice Guidelines establece 7-9h como rango
+  /// óptimo; por debajo de 7h el eje grelina/leptina se altera y aumenta
+  /// el riesgo de obesidad, T2D e hipertensión.
   static bool evaluateSleep({required double sleepHours}) =>
-      sleepHours >= 6.5;
+      sleepHours >= 7.0;
 
   /// Evalúa si la hidratación alcanzó el 75% de la meta.
   /// SPEC-70 §7.2 — ENGINEERING JUDGMENT (mínimo funcional sin

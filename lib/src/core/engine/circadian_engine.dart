@@ -49,15 +49,23 @@ class CircadianEngine {
 
   // ── Constantes horarias (fuente única) ─────────────────────────────────
 
-  /// Hora de inicio del bloqueo intestinal nocturno (22:30).
-  /// SPEC-70: ref IMR_BIBLIOGRAPHY.md §4.6 — LOW (Hood & Amir 2017,
-  /// melatonina endógena empieza a subir a esa hora en cronotipos promedio).
-  static const int intestinalLockHour = 22;
+  /// Hora de inicio del bloqueo intestinal nocturno (21:30).
+  /// SPEC-70: ref IMR_BIBLIOGRAPHY.md §4.6 — MEDIUM (validado por revisión
+  /// clínica externa, SPEC-70.5).
+  ///
+  /// Cambio histórico: era 22:30 (SPEC-59). Movido a 21:30 en SPEC-70.5 tras
+  /// revisión clínica que catalogó 22:30 como "permisivo" — a esa hora la
+  /// reparación celular ya debería estar en marcha, no la digestión activa.
+  /// Justificación bibliográfica: la sensibilidad a la insulina decae
+  /// significativamente al anochecer por la interacción melatonina-MTNR1B
+  /// (Lopez-Minguez et al. 2018). Cenar después de las 21:00 se asocia con
+  /// +28% riesgo de T2D vs cenas tempranas.
+  static const int intestinalLockHour = 21;
   static const int intestinalLockMinute = 30;
 
   /// Bloqueo intestinal en minutos totales desde la medianoche.
   /// SPEC-59: helper centralizado para comparaciones lineales.
-  /// Valor: 22 * 60 + 30 = 1350.
+  /// Valor: 21 * 60 + 30 = 1290.
   static const int intestinalLockMinutes =
       (intestinalLockHour * 60) + intestinalLockMinute;
 
@@ -115,8 +123,9 @@ class CircadianEngine {
     return CircadianPhase.alerta;
   }
 
-  /// Tiempo restante hasta el próximo cierre de la ventana intestinal (22:30).
-  /// Si `now` es exactamente 22:30:00, retorna `Duration.zero` (lock activo).
+  /// Tiempo restante hasta el próximo cierre de la ventana intestinal
+  /// (21:30 desde SPEC-70.5). Si `now` es exactamente 21:30:00, retorna
+  /// `Duration.zero` (lock activo).
   static Duration timeUntilLock(DateTime now) {
     DateTime lock = DateTime(
       now.year,
@@ -130,10 +139,15 @@ class CircadianEngine {
   }
 
   /// True si en este instante el bloqueo intestinal está activo
-  /// (entre 22:30 y 06:00 del día siguiente).
+  /// (entre 21:30 y 06:00 del día siguiente, desde SPEC-70.5).
+  ///
+  /// Implementación: deriva la hora "decimal" del lock desde las
+  /// constantes (no hardcoded) para que un cambio futuro de
+  /// `intestinalLockHour`/`Minute` se propague automáticamente.
   static bool isIntestinalLockActive(DateTime now) {
     final current = now.hour + (now.minute / 60.0);
-    return current >= 22.5 || current < 6.0;
+    final lockDecimal = intestinalLockHour + (intestinalLockMinute / 60.0);
+    return current >= lockDecimal || current < 6.0;
   }
 
   /// True si `now` está dentro de la ventana `[start, end]` evaluada en

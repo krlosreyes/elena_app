@@ -24,7 +24,7 @@ class CircadianRules {
   /// Minuto del bloqueo intestinal (30).
   static const int intestinalLockMinute = CircadianEngine.intestinalLockMinute;
 
-  /// Bloqueo intestinal en minutos totales (1350).
+  /// Bloqueo intestinal en minutos totales (1290 = 21:30 desde SPEC-70.5).
   /// SPEC-59 RF-59-03 — helper para comparaciones lineales.
   static const int intestinalLockMinutes =
       CircadianEngine.intestinalLockMinutes;

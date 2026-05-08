@@ -30,7 +30,8 @@ class CoherenceEngine {
   ///
   /// Reglas (SPEC-71 R1, replicadas del antiguo _calculateCoherence):
   /// - Score base 1.0.
-  /// - −0.20 si sueño < 6.5h (privación de descanso).
+  /// - −0.20 si sueño < 7h (privación de descanso). SPEC-70.5: subió de
+  ///   6.5h a 7h tras revisión clínica externa, alineado con AASM.
   /// - −0.15 si hidratación < 50% del goal (deshidratación significativa).
   /// - −0.15 si alineación circadiana < 0.7 (ingesta fuera de ventana).
   /// - −0.10 si ejercicio intenso (>0.8) con sueño pobre (<6h).
@@ -45,8 +46,8 @@ class CoherenceEngine {
   }) {
     var score = 1.0;
 
-    // Sueño insuficiente
-    if (sleepHours < 6.5) score -= 0.20;
+    // Sueño insuficiente — SPEC-70.5: umbral subió a 7h.
+    if (sleepHours < 7.0) score -= 0.20;
 
     // Deshidratación significativa
     if (hydrationLevel < 0.5) score -= 0.15;

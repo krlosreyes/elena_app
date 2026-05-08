@@ -26,7 +26,8 @@ void main() {
   });
 
   group('CoherenceEngine.calculate — penalizaciones por dimensión', () {
-    test('Sueño < 6.5h penaliza -0.20', () {
+    test('SPEC-70.5: Sueño < 7h penaliza -0.20 (umbral subido de 6.5 a 7)',
+        () {
       final c = CoherenceEngine.calculate(
         sleepHours: 5,
         hydrationLevel: 1.0,
