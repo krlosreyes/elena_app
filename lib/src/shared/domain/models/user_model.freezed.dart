@@ -41,7 +41,21 @@ mixin _$UserModel {
   List<String> get pathologies => throw _privateConstructorUsedError;
   double get activityLevel => throw _privateConstructorUsedError;
   double get weeklyAdherence => throw _privateConstructorUsedError;
-  int get exerciseGoalMinutes => throw _privateConstructorUsedError;
+  int get exerciseGoalMinutes =>
+      throw _privateConstructorUsedError; // --- SPEC-70.8: aceptación del disclaimer clínico ---
+//
+// El usuario debe aceptar explícitamente las contraindicaciones del IMR
+// documentadas en IMR_BIBLIOGRAPHY.md §11 (T1D, TCA, insuficiencia
+// renal, embarazo/lactancia, sarcopenia >75) durante el onboarding.
+// Sin esta aceptación, el flujo no avanza a /dashboard.
+//
+// El timestamp permite auditar cuándo se mostró y aceptó el disclaimer
+// — útil si en el futuro se actualizan los criterios y queremos
+// re-prompt a usuarios que aceptaron una versión vieja.
+  bool get healthDisclaimerAccepted => throw _privateConstructorUsedError;
+  @OptionalTimestampConverter()
+  DateTime? get healthDisclaimerAcceptedAt =>
+      throw _privateConstructorUsedError;
   CircadianProfile get profile => throw _privateConstructorUsedError;
 
   /// Serializes this UserModel to a JSON map.
@@ -80,6 +94,8 @@ abstract class $UserModelCopyWith<$Res> {
       double activityLevel,
       double weeklyAdherence,
       int exerciseGoalMinutes,
+      bool healthDisclaimerAccepted,
+      @OptionalTimestampConverter() DateTime? healthDisclaimerAcceptedAt,
       CircadianProfile profile});
 
   $CircadianProfileCopyWith<$Res> get profile;
@@ -120,6 +136,8 @@ class _$UserModelCopyWithImpl<$Res, $Val extends UserModel>
     Object? activityLevel = null,
     Object? weeklyAdherence = null,
     Object? exerciseGoalMinutes = null,
+    Object? healthDisclaimerAccepted = null,
+    Object? healthDisclaimerAcceptedAt = freezed,
     Object? profile = null,
   }) {
     return _then(_value.copyWith(
@@ -203,6 +221,14 @@ class _$UserModelCopyWithImpl<$Res, $Val extends UserModel>
           ? _value.exerciseGoalMinutes
           : exerciseGoalMinutes // ignore: cast_nullable_to_non_nullable
               as int,
+      healthDisclaimerAccepted: null == healthDisclaimerAccepted
+          ? _value.healthDisclaimerAccepted
+          : healthDisclaimerAccepted // ignore: cast_nullable_to_non_nullable
+              as bool,
+      healthDisclaimerAcceptedAt: freezed == healthDisclaimerAcceptedAt
+          ? _value.healthDisclaimerAcceptedAt
+          : healthDisclaimerAcceptedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
       profile: null == profile
           ? _value.profile
           : profile // ignore: cast_nullable_to_non_nullable
@@ -250,6 +276,8 @@ abstract class _$$UserModelImplCopyWith<$Res>
       double activityLevel,
       double weeklyAdherence,
       int exerciseGoalMinutes,
+      bool healthDisclaimerAccepted,
+      @OptionalTimestampConverter() DateTime? healthDisclaimerAcceptedAt,
       CircadianProfile profile});
 
   @override
@@ -289,6 +317,8 @@ class __$$UserModelImplCopyWithImpl<$Res>
     Object? activityLevel = null,
     Object? weeklyAdherence = null,
     Object? exerciseGoalMinutes = null,
+    Object? healthDisclaimerAccepted = null,
+    Object? healthDisclaimerAcceptedAt = freezed,
     Object? profile = null,
   }) {
     return _then(_$UserModelImpl(
@@ -372,6 +402,14 @@ class __$$UserModelImplCopyWithImpl<$Res>
           ? _value.exerciseGoalMinutes
           : exerciseGoalMinutes // ignore: cast_nullable_to_non_nullable
               as int,
+      healthDisclaimerAccepted: null == healthDisclaimerAccepted
+          ? _value.healthDisclaimerAccepted
+          : healthDisclaimerAccepted // ignore: cast_nullable_to_non_nullable
+              as bool,
+      healthDisclaimerAcceptedAt: freezed == healthDisclaimerAcceptedAt
+          ? _value.healthDisclaimerAcceptedAt
+          : healthDisclaimerAcceptedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
       profile: null == profile
           ? _value.profile
           : profile // ignore: cast_nullable_to_non_nullable
@@ -404,6 +442,8 @@ class _$UserModelImpl implements _UserModel {
       this.activityLevel = 1.2,
       this.weeklyAdherence = 0.85,
       this.exerciseGoalMinutes = 20,
+      this.healthDisclaimerAccepted = false,
+      @OptionalTimestampConverter() this.healthDisclaimerAcceptedAt,
       required this.profile})
       : _pathologies = pathologies;
 
@@ -473,12 +513,28 @@ class _$UserModelImpl implements _UserModel {
   @override
   @JsonKey()
   final int exerciseGoalMinutes;
+// --- SPEC-70.8: aceptación del disclaimer clínico ---
+//
+// El usuario debe aceptar explícitamente las contraindicaciones del IMR
+// documentadas en IMR_BIBLIOGRAPHY.md §11 (T1D, TCA, insuficiencia
+// renal, embarazo/lactancia, sarcopenia >75) durante el onboarding.
+// Sin esta aceptación, el flujo no avanza a /dashboard.
+//
+// El timestamp permite auditar cuándo se mostró y aceptó el disclaimer
+// — útil si en el futuro se actualizan los criterios y queremos
+// re-prompt a usuarios que aceptaron una versión vieja.
+  @override
+  @JsonKey()
+  final bool healthDisclaimerAccepted;
+  @override
+  @OptionalTimestampConverter()
+  final DateTime? healthDisclaimerAcceptedAt;
   @override
   final CircadianProfile profile;
 
   @override
   String toString() {
-    return 'UserModel(id: $id, name: $name, age: $age, gender: $gender, weight: $weight, height: $height, waistCircumference: $waistCircumference, neckCircumference: $neckCircumference, bodyFatPercentage: $bodyFatPercentage, pantSize: $pantSize, shirtSize: $shirtSize, isMeasurementEstimated: $isMeasurementEstimated, imrStdDev: $imrStdDev, confidenceLevel: $confidenceLevel, mealsPerDay: $mealsPerDay, fastingProtocol: $fastingProtocol, pathologies: $pathologies, activityLevel: $activityLevel, weeklyAdherence: $weeklyAdherence, exerciseGoalMinutes: $exerciseGoalMinutes, profile: $profile)';
+    return 'UserModel(id: $id, name: $name, age: $age, gender: $gender, weight: $weight, height: $height, waistCircumference: $waistCircumference, neckCircumference: $neckCircumference, bodyFatPercentage: $bodyFatPercentage, pantSize: $pantSize, shirtSize: $shirtSize, isMeasurementEstimated: $isMeasurementEstimated, imrStdDev: $imrStdDev, confidenceLevel: $confidenceLevel, mealsPerDay: $mealsPerDay, fastingProtocol: $fastingProtocol, pathologies: $pathologies, activityLevel: $activityLevel, weeklyAdherence: $weeklyAdherence, exerciseGoalMinutes: $exerciseGoalMinutes, healthDisclaimerAccepted: $healthDisclaimerAccepted, healthDisclaimerAcceptedAt: $healthDisclaimerAcceptedAt, profile: $profile)';
   }
 
   @override
@@ -520,6 +576,13 @@ class _$UserModelImpl implements _UserModel {
                 other.weeklyAdherence == weeklyAdherence) &&
             (identical(other.exerciseGoalMinutes, exerciseGoalMinutes) ||
                 other.exerciseGoalMinutes == exerciseGoalMinutes) &&
+            (identical(
+                    other.healthDisclaimerAccepted, healthDisclaimerAccepted) ||
+                other.healthDisclaimerAccepted == healthDisclaimerAccepted) &&
+            (identical(other.healthDisclaimerAcceptedAt,
+                    healthDisclaimerAcceptedAt) ||
+                other.healthDisclaimerAcceptedAt ==
+                    healthDisclaimerAcceptedAt) &&
             (identical(other.profile, profile) || other.profile == profile));
   }
 
@@ -547,6 +610,8 @@ class _$UserModelImpl implements _UserModel {
         activityLevel,
         weeklyAdherence,
         exerciseGoalMinutes,
+        healthDisclaimerAccepted,
+        healthDisclaimerAcceptedAt,
         profile
       ]);
 
@@ -588,6 +653,8 @@ abstract class _UserModel implements UserModel {
       final double activityLevel,
       final double weeklyAdherence,
       final int exerciseGoalMinutes,
+      final bool healthDisclaimerAccepted,
+      @OptionalTimestampConverter() final DateTime? healthDisclaimerAcceptedAt,
       required final CircadianProfile profile}) = _$UserModelImpl;
 
   factory _UserModel.fromJson(Map<String, dynamic> json) =
@@ -632,7 +699,21 @@ abstract class _UserModel implements UserModel {
   @override
   double get weeklyAdherence;
   @override
-  int get exerciseGoalMinutes;
+  int get exerciseGoalMinutes; // --- SPEC-70.8: aceptación del disclaimer clínico ---
+//
+// El usuario debe aceptar explícitamente las contraindicaciones del IMR
+// documentadas en IMR_BIBLIOGRAPHY.md §11 (T1D, TCA, insuficiencia
+// renal, embarazo/lactancia, sarcopenia >75) durante el onboarding.
+// Sin esta aceptación, el flujo no avanza a /dashboard.
+//
+// El timestamp permite auditar cuándo se mostró y aceptó el disclaimer
+// — útil si en el futuro se actualizan los criterios y queremos
+// re-prompt a usuarios que aceptaron una versión vieja.
+  @override
+  bool get healthDisclaimerAccepted;
+  @override
+  @OptionalTimestampConverter()
+  DateTime? get healthDisclaimerAcceptedAt;
   @override
   CircadianProfile get profile;
 

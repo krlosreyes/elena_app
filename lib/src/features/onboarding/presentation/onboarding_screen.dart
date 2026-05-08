@@ -18,6 +18,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentStep = 0;
 
+  // SPEC-70.8: aceptación del disclaimer clínico (paso 0). El flujo no
+  // avanza al paso 1 hasta que el usuario marque el checkbox.
+  bool _disclaimerAccepted = false;
+
   // --- PASO 1: HARDWARE ---
   DateTime _birthDate = DateTime(1980, 1, 1);
   double _weight = 85.0;
@@ -78,7 +82,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(10),
                 child: LinearProgressIndicator(
-                  value: (_currentStep + 1) / 3,
+                  // SPEC-70.8: ahora son 4 pasos (disclaimer + 3 originales).
+                  value: (_currentStep + 1) / 4,
                   backgroundColor: isDark ? Colors.white10 : Colors.black12,
                   color: const Color(0xFF10B981),
                   minHeight: 6,
@@ -90,6 +95,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 controller: _pageController,
                 physics: const NeverScrollableScrollPhysics(),
                 children: [
+                  _buildStepDisclaimer(isDark),
                   _buildStepBiometry(isDark),
                   _buildStepCircadian(isDark),
                   _buildStepHabits(isDark),
@@ -100,6 +106,164 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  // --- PASO 0: DISCLAIMER CLÍNICO (SPEC-70.8) ---
+  //
+  // Pantalla obligatoria antes de cualquier captura de datos. Lista las
+  // 5 poblaciones de §11 del IMR_BIBLIOGRAPHY.md donde el IMR no aplica
+  // o requiere supervisión médica. El usuario debe marcar el checkbox
+  // explícitamente para avanzar.
+  Widget _buildStepDisclaimer(bool isDark) {
+    final accentColor = isDark ? Colors.amber : Colors.amber[800]!;
+    final textPrimary = isDark ? Colors.white : Colors.black87;
+    final textSecondary = (isDark ? Colors.white : Colors.black87).withValues(alpha: 0.65);
+
+    return ListView(
+      padding: const EdgeInsets.all(24),
+      children: [
+        // Header
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: accentColor.withValues(alpha: 0.10),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: accentColor.withValues(alpha: 0.30)),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.medical_information_outlined,
+                  color: accentColor, size: 24),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'ANTES DE COMENZAR',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w900,
+                        color: accentColor,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'El IMR está diseñado para adultos sanos. Hay condiciones donde NO debes seguir sus recomendaciones sin supervisión médica.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: textSecondary,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+
+        // Lista de contraindicaciones (§11 del IMR_BIBLIOGRAPHY.md)
+        _DisclaimerItem(
+          icon: Icons.bloodtype_outlined,
+          title: 'Diabetes Tipo 1 / insulinodependiente',
+          body: 'El ayuno prolongado y el ejercicio sin ajuste de insulina pueden inducir hipoglucemia severa.',
+          isDark: isDark,
+        ),
+        _DisclaimerItem(
+          icon: Icons.psychology_alt_outlined,
+          title: 'Historial de TCA (anorexia, bulimia, atracón)',
+          body: 'La gamificación de horas de ayuno y el seguimiento de macros pueden ser triggers de recaída.',
+          isDark: isDark,
+        ),
+        _DisclaimerItem(
+          icon: Icons.water_drop_outlined,
+          title: 'Insuficiencia renal',
+          body: 'Las metas de hidratación y proteína sugeridas pueden no ser apropiadas con restricción hídrica clínica.',
+          isDark: isDark,
+        ),
+        _DisclaimerItem(
+          icon: Icons.pregnant_woman_outlined,
+          title: 'Embarazo o lactancia',
+          body: 'Tu fisiología está en un régimen de crecimiento, no de resiliencia. El IMR no aplica conceptualmente.',
+          isDark: isDark,
+        ),
+        _DisclaimerItem(
+          icon: Icons.elderly_outlined,
+          title: 'Sarcopenia severa o fragilidad (>75 años)',
+          body: 'La restricción de ventanas de comida puede comprometer la ingesta proteica necesaria para preservar masa magra.',
+          isDark: isDark,
+        ),
+
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            'Si reconoces alguna de estas condiciones en ti, consulta con tu médico antes de aplicar las recomendaciones del IMR. La app puede acompañarte, pero no reemplaza criterio profesional.',
+            style: TextStyle(
+              fontSize: 11.5,
+              color: textSecondary,
+              height: 1.5,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ),
+        const SizedBox(height: 24),
+
+        // Checkbox de aceptación
+        InkWell(
+          onTap: () =>
+              setState(() => _disclaimerAccepted = !_disclaimerAccepted),
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: _disclaimerAccepted
+                        ? const Color(0xFF10B981)
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: _disclaimerAccepted
+                          ? const Color(0xFF10B981)
+                          : textSecondary,
+                      width: 1.5,
+                    ),
+                  ),
+                  child: _disclaimerAccepted
+                      ? const Icon(Icons.check, size: 18, color: Colors.white)
+                      : null,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'He leído estas condiciones y entiendo que el IMR no es un diagnóstico médico. Si alguna aplica a mí, consultaré con mi médico antes de seguir las recomendaciones de la app.',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: textPrimary,
+                      height: 1.4,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -173,19 +337,22 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
     // CORRECCIÓN: Ahora pasamos los nuevos campos al modelo Freezed
     final user = UserModel(
-      id: authUser.id, 
-      name: authUser.name, 
-      age: age, 
-      gender: _gender, 
-      weight: _weight, 
+      id: authUser.id,
+      name: authUser.name,
+      age: age,
+      gender: _gender,
+      weight: _weight,
       height: _height,
-      waistCircumference: _waist, 
-      neckCircumference: _neck, 
-      pantSize: _pantSize, 
+      waistCircumference: _waist,
+      neckCircumference: _neck,
+      pantSize: _pantSize,
       shirtSize: _shirtSize,
-      mealsPerDay: _mealsPerDay,      // <-- AGREGADO
-      fastingProtocol: _fastingProtocol, // <-- AGREGADO
-      pathologies: _pathologies,      // <-- AGREGADO
+      mealsPerDay: _mealsPerDay,
+      fastingProtocol: _fastingProtocol,
+      pathologies: _pathologies,
+      // SPEC-70.8: persistir aceptación del disclaimer clínico.
+      healthDisclaimerAccepted: _disclaimerAccepted,
+      healthDisclaimerAcceptedAt: _disclaimerAccepted ? DateTime.now() : null,
       profile: CircadianProfile(
         wakeUpTime: _timeToDateTime(_wakeUpTime),
         sleepTime: _timeToDateTime(_sleepTime),
@@ -228,24 +395,87 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   Widget _circleButton(IconData icon, VoidCallback? onTap, bool isDark) => InkWell(onTap: onTap, child: Container(padding: const EdgeInsets.all(6), decoration: BoxDecoration(shape: BoxShape.circle, color: isDark ? Colors.white10 : const Color(0xFFF1F5F9)), child: Icon(icon, size: 18, color: onTap == null ? Colors.grey : (isDark ? Colors.white : const Color(0xFF0F172A)))));
 
-  Widget _buildBottomNavigation(AsyncValue state, bool isDark) => Container(
-    padding: const EdgeInsets.all(24), decoration: BoxDecoration(color: isDark ? const Color(0xFF0F172A) : Colors.white, border: Border(top: BorderSide(color: isDark ? Colors.white10 : const Color(0xFFF1F5F9)))),
-    child: Row(children: [
-      if (_currentStep > 0) Expanded(child: TextButton(onPressed: () { setState(() { _currentStep--; _pageController.animateToPage(_currentStep, duration: const Duration(milliseconds: 400), curve: Curves.easeInOutExpo); }); }, child: Text("ATRÁS", style: TextStyle(color: isDark ? Colors.white38 : Colors.grey, fontWeight: FontWeight.bold)))),
-      const SizedBox(width: 12),
-      Expanded(flex: 2, child: ElevatedButton(
-        style: ElevatedButton.styleFrom(backgroundColor: isDark ? const Color(0xFF10B981) : const Color(0xFF0F172A), foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 20), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), elevation: 0),
-        onPressed: state.isLoading ? null : _handleNext,
-        child: Text(_currentStep == 2 ? "FINALIZAR" : "SIGUIENTE", style: const TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1)),
-      )),
-    ]),
-  );
+  Widget _buildBottomNavigation(AsyncValue state, bool isDark) {
+    // SPEC-70.8: el botón SIGUIENTE se deshabilita en el paso 0 (disclaimer)
+    // hasta que el usuario marque la aceptación.
+    final canProceed = _currentStep != 0 || _disclaimerAccepted;
+    final isLastStep = _currentStep == 3;
+    final disabledColor = isDark ? Colors.white24 : Colors.grey;
+    final activeColor =
+        isDark ? const Color(0xFF10B981) : const Color(0xFF0F172A);
+
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF0F172A) : Colors.white,
+        border: Border(
+          top: BorderSide(
+              color: isDark ? Colors.white10 : const Color(0xFFF1F5F9)),
+        ),
+      ),
+      child: Row(
+        children: [
+          if (_currentStep > 0)
+            Expanded(
+              child: TextButton(
+                onPressed: () {
+                  setState(() {
+                    _currentStep--;
+                    _pageController.animateToPage(
+                      _currentStep,
+                      duration: const Duration(milliseconds: 400),
+                      curve: Curves.easeInOutExpo,
+                    );
+                  });
+                },
+                child: Text(
+                  "ATRÁS",
+                  style: TextStyle(
+                    color: isDark ? Colors.white38 : Colors.grey,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          const SizedBox(width: 12),
+          Expanded(
+            flex: 2,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: canProceed ? activeColor : disabledColor,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 20),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16)),
+                elevation: 0,
+              ),
+              onPressed: !canProceed || state.isLoading ? null : _handleNext,
+              child: Text(
+                isLastStep
+                    ? "FINALIZAR"
+                    : (_currentStep == 0 && !canProceed
+                        ? "ACEPTA PARA CONTINUAR"
+                        : "SIGUIENTE"),
+                style: const TextStyle(
+                    fontWeight: FontWeight.w900, letterSpacing: 1),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   void _handleNext() {
-    if (_currentStep < 2) {
+    // SPEC-70.8: ahora son 4 pasos (0..3). El último (3) hace submit.
+    if (_currentStep < 3) {
       setState(() => _currentStep++);
-      _pageController.animateToPage(_currentStep, duration: const Duration(milliseconds: 400), curve: Curves.easeInOutExpo);
-    } else { _finalSubmit(); }
+      _pageController.animateToPage(_currentStep,
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeInOutExpo);
+    } else {
+      _finalSubmit();
+    }
   }
 
   void _showSimpleOptions(String title, List<String> options, Function(String) onSelect, bool isDark) {
@@ -258,4 +488,75 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   Widget _header(String title, String sub, bool isDark) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: isDark ? Colors.white : const Color(0xFF0F172A), letterSpacing: -1)), Text(sub, style: TextStyle(color: isDark ? Colors.white38 : const Color(0xFF64748B), fontSize: 15, fontWeight: FontWeight.w500)), const SizedBox(height: 24)]);
   Widget _sectionTitle(String title, bool isDark) => Padding(padding: const EdgeInsets.symmetric(vertical: 12), child: Text(title, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: const Color(0xFF10B981), letterSpacing: 1.5)));
+}
+
+/// SPEC-70.8: tarjeta individual de cada contraindicación. Reusable para
+/// los 5 items listados en el paso 0 del onboarding (T1D, TCA, IRC,
+/// embarazo/lactancia, sarcopenia >75).
+class _DisclaimerItem extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String body;
+  final bool isDark;
+
+  const _DisclaimerItem({
+    required this.icon,
+    required this.title,
+    required this.body,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final textPrimary = isDark ? Colors.white : Colors.black87;
+    final textSecondary =
+        (isDark ? Colors.white : Colors.black87).withValues(alpha: 0.65);
+    final iconColor = isDark
+        ? const Color(0xFF10B981)
+        : const Color(0xFF0F172A);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: iconColor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            alignment: Alignment.center,
+            child: Icon(icon, color: iconColor, size: 18),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    color: textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  body,
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    height: 1.45,
+                    color: textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

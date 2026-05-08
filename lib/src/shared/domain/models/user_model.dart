@@ -31,10 +31,23 @@ class UserModel with _$UserModel {
     @Default(3) int mealsPerDay,
     @Default('Ninguno') String fastingProtocol,
     @Default(['Ninguna']) List<String> pathologies,
-    @Default(1.2) double activityLevel, 
+    @Default(1.2) double activityLevel,
     @Default(0.85) double weeklyAdherence,
     @Default(20) int exerciseGoalMinutes,
-    
+
+    // --- SPEC-70.8: aceptación del disclaimer clínico ---
+    //
+    // El usuario debe aceptar explícitamente las contraindicaciones del IMR
+    // documentadas en IMR_BIBLIOGRAPHY.md §11 (T1D, TCA, insuficiencia
+    // renal, embarazo/lactancia, sarcopenia >75) durante el onboarding.
+    // Sin esta aceptación, el flujo no avanza a /dashboard.
+    //
+    // El timestamp permite auditar cuándo se mostró y aceptó el disclaimer
+    // — útil si en el futuro se actualizan los criterios y queremos
+    // re-prompt a usuarios que aceptaron una versión vieja.
+    @Default(false) bool healthDisclaimerAccepted,
+    @OptionalTimestampConverter() DateTime? healthDisclaimerAcceptedAt,
+
     required CircadianProfile profile,
   }) = _UserModel;
 

@@ -32,6 +32,10 @@ _$UserModelImpl _$$UserModelImplFromJson(Map<String, dynamic> json) =>
       activityLevel: (json['activityLevel'] as num?)?.toDouble() ?? 1.2,
       weeklyAdherence: (json['weeklyAdherence'] as num?)?.toDouble() ?? 0.85,
       exerciseGoalMinutes: (json['exerciseGoalMinutes'] as num?)?.toInt() ?? 20,
+      healthDisclaimerAccepted:
+          json['healthDisclaimerAccepted'] as bool? ?? false,
+      healthDisclaimerAcceptedAt: const OptionalTimestampConverter()
+          .fromJson(json['healthDisclaimerAcceptedAt']),
       profile:
           CircadianProfile.fromJson(json['profile'] as Map<String, dynamic>),
     );
@@ -58,6 +62,9 @@ Map<String, dynamic> _$$UserModelImplToJson(_$UserModelImpl instance) =>
       'activityLevel': instance.activityLevel,
       'weeklyAdherence': instance.weeklyAdherence,
       'exerciseGoalMinutes': instance.exerciseGoalMinutes,
+      'healthDisclaimerAccepted': instance.healthDisclaimerAccepted,
+      'healthDisclaimerAcceptedAt': const OptionalTimestampConverter()
+          .toJson(instance.healthDisclaimerAcceptedAt),
       'profile': instance.profile.toJson(),
     };
 

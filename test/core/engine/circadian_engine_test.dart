@@ -117,30 +117,35 @@ void main() {
     });
   });
 
-  group('CircadianEngine.timeUntilLock', () {
-    test('a las 12:30 faltan 10 horas exactas', () {
+  group('CircadianEngine.timeUntilLock (SPEC-70.5: lock at 21:30)', () {
+    test('a las 12:30 faltan 9 horas exactas (12:30 → 21:30)', () {
       final d = CircadianEngine.timeUntilLock(at(12, 30));
-      expect(d.inHours, 10);
+      expect(d.inHours, 9);
       expect(d.inMinutes.remainder(60), 0);
     });
 
-    test('a las 22:30 exactas: 0 (lock activo en este instante)', () {
-      expect(CircadianEngine.timeUntilLock(at(22, 30)), Duration.zero);
+    test('a las 21:30 exactas: 0 (lock activo en este instante)', () {
+      expect(CircadianEngine.timeUntilLock(at(21, 30)), Duration.zero);
     });
 
-    test('a las 22:31 → cuenta hasta 22:30 de mañana (23h 59m)', () {
-      final d = CircadianEngine.timeUntilLock(at(22, 31));
+    test('a las 21:31 → cuenta hasta 21:30 de mañana (23h 59m)', () {
+      final d = CircadianEngine.timeUntilLock(at(21, 31));
       expect(d.inHours, 23);
       expect(d.inMinutes.remainder(60), 59);
     });
   });
 
-  group('CircadianEngine.isIntestinalLockActive', () {
-    test('22:30 activa lock (frontera incluida)', () {
-      expect(CircadianEngine.isIntestinalLockActive(at(22, 30)), isTrue);
+  group('CircadianEngine.isIntestinalLockActive (SPEC-70.5: 21:30)', () {
+    test('21:30 activa lock (frontera incluida)', () {
+      expect(CircadianEngine.isIntestinalLockActive(at(21, 30)), isTrue);
     });
-    test('22:29 NO activa', () {
-      expect(CircadianEngine.isIntestinalLockActive(at(22, 29)), isFalse);
+    test('22:29 SÍ activa (SPEC-70.5: lock se movió a 21:30)', () {
+      // Antes con lock 22:30, las 22:29 estaban justo antes del umbral.
+      // Ahora con lock 21:30, las 22:29 caen dentro del bloqueo.
+      expect(CircadianEngine.isIntestinalLockActive(at(22, 29)), isTrue);
+    });
+    test('21:29 NO activa (justo antes del umbral nuevo)', () {
+      expect(CircadianEngine.isIntestinalLockActive(at(21, 29)), isFalse);
     });
     test('06:00 desactiva lock', () {
       expect(CircadianEngine.isIntestinalLockActive(at(6)), isFalse);
