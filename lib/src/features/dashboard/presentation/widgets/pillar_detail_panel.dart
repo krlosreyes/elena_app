@@ -12,6 +12,7 @@ import 'package:elena_app/src/features/dashboard/application/fasting_notifier.da
 import 'package:elena_app/src/features/dashboard/application/sleep_notifier.dart';
 import 'package:elena_app/src/shared/providers/sleep_provider.dart';
 import 'package:elena_app/src/features/dashboard/application/hydration_notifier.dart';
+import 'package:elena_app/src/features/dashboard/application/ui_interaction_notifier.dart';
 import 'package:elena_app/src/features/exercise/application/exercise_notifier.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
 import 'package:elena_app/src/features/dashboard/domain/fasting_status.dart';
@@ -615,6 +616,11 @@ class _HydrationPanel extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final hs = ref.watch(hydrationProvider);
     final notifier = ref.read(hydrationProvider.notifier);
+    // SPEC-70.4: el coach educativo se muestra cuando el progreso es bajo
+    // (< 25% de la meta del día) y el usuario no lo ha descartado todavía.
+    // Se resetea cada día via DailyResetService → resetDismissals().
+    final showHydrationCoach = hs.progressPercentage < 0.25 &&
+        !ref.watch(uiInteractionProvider).isHydrationCoachDismissed;
 
     return _panelShell(children: [
       Row(
@@ -647,6 +653,16 @@ class _HydrationPanel extends ConsumerWidget {
       ),
       const SizedBox(height: 12),
       _progressBar(hs.progressPercentage, _color),
+
+      // ── SPEC-70.4: coach educativo ──────────────────────────────────────
+      if (showHydrationCoach) ...[
+        const SizedBox(height: 12),
+        _HydrationCoachCard(
+          color: _color,
+          onDismiss: () =>
+              ref.read(uiInteractionProvider.notifier).dismissHydrationCoach(),
+        ),
+      ],
 
       // ── Insight ─────────────────────────────────────────────────────────
       const SizedBox(height: 12),
@@ -1001,5 +1017,94 @@ class _NutritionPanelState extends ConsumerState<_NutritionPanel> {
       return '${hours}h ${minutes}m';
     }
     return '${minutes}m';
+  }
+}
+
+/// SPEC-70.4: coach educativo que aclara la semántica "logging = conducta"
+/// del motor del IMR sobre el pilar de hidratación.
+///
+/// Origen: la convención del motor es que "no loguear agua" se trata como
+/// "no hidrataste" (penalización máxima del componente). Esta semántica es
+/// intencional — sin tracking no podemos personalizar — pero crea fricción
+/// cuando el usuario sí toma agua y olvida registrarla. Este coach cierra
+/// el bucle de comunicación: explica que el logging ES la conducta que la
+/// app enseña, no un trámite secundario.
+///
+/// Visibilidad: aparece en `_HydrationPanel` cuando `progressPercentage < 0.25`
+/// y el usuario no lo ha descartado. Reaparece cada día via
+/// `DailyResetService → resetDismissals()` (SPEC-58 + SPEC-72.2).
+class _HydrationCoachCard extends StatelessWidget {
+  final Color color;
+  final VoidCallback onDismiss;
+
+  const _HydrationCoachCard({
+    required this.color,
+    required this.onDismiss,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: color.withValues(alpha: 0.30),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.lightbulb_outline_rounded,
+            size: 16,
+            color: color.withValues(alpha: 0.95),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: RichText(
+              text: TextSpan(
+                style: TextStyle(
+                  fontSize: 11,
+                  height: 1.4,
+                  color: Colors.white.withValues(alpha: 0.82),
+                ),
+                children: [
+                  TextSpan(
+                    text: 'Tomar agua sin loguear no afecta tu score. ',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white.withValues(alpha: 0.92),
+                    ),
+                  ),
+                  TextSpan(
+                    text:
+                        'Trackea cada vaso para que el motor pueda personalizar '
+                        'tu meta y detectar patrones a lo largo del día.',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.55),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          GestureDetector(
+            onTap: onDismiss,
+            behavior: HitTestBehavior.opaque,
+            child: Padding(
+              padding: const EdgeInsets.all(4),
+              child: Icon(
+                Icons.close_rounded,
+                size: 14,
+                color: Colors.white.withValues(alpha: 0.45),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

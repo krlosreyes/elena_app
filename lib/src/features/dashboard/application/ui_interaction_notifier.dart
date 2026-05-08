@@ -12,19 +12,23 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 class UiInteractionState {
   final bool isEngagementBannerDismissed;
   final bool isAdaptiveSuggestionDismissed;
+  final bool isHydrationCoachDismissed;
 
   const UiInteractionState({
     this.isEngagementBannerDismissed = false,
     this.isAdaptiveSuggestionDismissed = false,
+    this.isHydrationCoachDismissed = false,
   });
 
   UiInteractionState copyWith({
     bool? isEngagementBannerDismissed,
     bool? isAdaptiveSuggestionDismissed,
+    bool? isHydrationCoachDismissed,
   }) {
     return UiInteractionState(
       isEngagementBannerDismissed: isEngagementBannerDismissed ?? this.isEngagementBannerDismissed,
       isAdaptiveSuggestionDismissed: isAdaptiveSuggestionDismissed ?? this.isAdaptiveSuggestionDismissed,
+      isHydrationCoachDismissed: isHydrationCoachDismissed ?? this.isHydrationCoachDismissed,
     );
   }
 }
@@ -38,6 +42,12 @@ class UiInteractionNotifier extends StateNotifier<UiInteractionState> {
 
   void dismissAdaptiveSuggestion() {
     state = state.copyWith(isAdaptiveSuggestionDismissed: true);
+  }
+
+  /// SPEC-70.4: usuario descarta el coach educativo sobre logging de
+  /// hidratación. Reaparece al día siguiente vía `resetDismissals()`.
+  void dismissHydrationCoach() {
+    state = state.copyWith(isHydrationCoachDismissed: true);
   }
 
   /// Resetea los descartes. Invocado por `DailyResetNotifier` al cruzar
