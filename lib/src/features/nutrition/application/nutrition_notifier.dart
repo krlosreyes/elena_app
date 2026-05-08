@@ -140,7 +140,23 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
   ///
   /// [label]    — etiqueta semántica opcional; si no se provee se infiere.
   /// [mealTime] — timestamp opcional; si no se provee se usa `DateTime.now()`.
-  Future<void> logMeal({String? label, DateTime? mealTime}) async {
+  ///
+  /// SPEC-71.3: macros opcionales (SPEC-64). Si el usuario no los provee,
+  /// quedan null y el log se persiste sin información nutricional — el
+  /// ScoreEngine sigue contando la comida en el ratio meal/target sin
+  /// penalizar la ausencia de macros (peso 0.12 conservador, ver
+  /// IMR_BIBLIOGRAPHY.md §4.4).
+  Future<void> logMeal({
+    String? label,
+    DateTime? mealTime,
+    double? calories,
+    double? protein,
+    double? carbs,
+    double? fat,
+    double? fiber,
+    int? glycemicIndex,
+    NutritionLogSource source = NutritionLogSource.userInput,
+  }) async {
     final userId = _activeUserId;
     if (userId == null) return;
 
@@ -153,6 +169,13 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
       timestamp: timestamp,
       label: effectiveLabel,
       withinCircadianWindow: withinWindow,
+      calories: calories,
+      protein: protein,
+      carbs: carbs,
+      fat: fat,
+      fiber: fiber,
+      glycemicIndex: glycemicIndex,
+      source: source,
     );
 
     if (mounted) state = state.copyWith(isSaving: true);
