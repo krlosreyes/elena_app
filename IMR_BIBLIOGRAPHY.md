@@ -122,14 +122,33 @@ El IMR final combina tres bloques: Estructura corporal, Metabolismo (ayuno + adh
 - **Riesgo:** SPEC-53 cambió `weeklyAdherence` (binario) por `weeklyQualityScore` (continuo, ponderado por magnitudes). El peso 0.30 se preservó pero la **señal subyacente cambió** — se debe monitorear si 0.30 sigue siendo el balance adecuado o si conviene subir hacia 0.40.
 - **Código:** `lib/src/core/engine/score_engine.dart` — `metabolicBlock = ((0.70 * s4) + (0.30 * weeklySignal.clamp(0.0, 1.0))) * etrfBonus;`
 
-### 3.3 — Bonus eTRF 1.15 cuando lastMeal.hour < 18
+### 3.3 — Bonus eTRF: sigmoid centrada en 17:00
 
-- **Valor:** Multiplicador 1.15 si la última comida fue antes de las 18:00.
+**Actualizado en SPEC-70.2.** Antes era un salto binario en `lastMeal.hour < 18 ? 1.15 : 1.0` que generaba frustración del usuario avanzado (17:59 vs 18:01 = diferencia del 15% en el bonus). Ahora es una curva continua que respeta el efecto dosis-respuesta documentado en la literatura.
+
+- **Fórmula actual:**
+  ```
+  mealHourFloat = lastMealTime.hour + lastMealTime.minute / 60
+  etrfSigmoid   = 1 / (1 + exp(-(mealHourFloat - 17) / 1.0))
+  etrfBonus     = 1.0 + 0.15 * (1 - etrfSigmoid)
+  ```
+- **Valores de referencia:**
+  | Hora cena | Bonus |
+  |---|---|
+  | 15:00 | 1.13 |
+  | 16:00 | 1.11 |
+  | 17:00 | 1.075 (centro) |
+  | 18:00 | 1.04 |
+  | 19:00 | 1.018 |
+  | 20:00 | 1.007 |
+  | 21:00 | 1.003 |
+- **Asíntota superior:** 1.15 (techo) — coincide con el valor del binario anterior, así que ningún usuario gana más de lo que ganaría antes.
+- **Asíntota inferior:** 1.0 — comer muy tarde no penaliza más de lo que ya pesa el `circadianScore` con el bloqueo intestinal (§4.6).
 - **Confianza:** MEDIUM
-- **Justificación:** Sutton et al. (2018) mostraron que early Time-Restricted Feeding (eTRF) — comer en una ventana matutina/vespertina temprana — mejora sensibilidad a insulina, presión arterial y respuesta a estrés oxidativo independientemente de pérdida de peso. El 1.15 (15% de bonus) es proporcional a las mejoras reportadas en marcadores secundarios sin caer en sobrevaloración.
+- **Justificación:** Sutton et al. (2018) midieron mejoras en sensibilidad a insulina, presión arterial y estrés oxidativo crecientes con ventanas más tempranas (no efecto umbral único). La sigmoid replica esa relación dosis-respuesta sin introducir una asíntota mayor que la evidencia justifica (15% bonus máximo).
 - **Fuentes:**
   - Sutton EF et al. "Early time-restricted feeding improves insulin sensitivity, blood pressure, and oxidative stress even without weight loss in men with prediabetes." *Cell Metab* 2018;27(6):1212-1221.e3.
-- **Código:** `lib/src/core/engine/score_engine.dart` — `final double etrfBonus = (lastMealTime.hour < 18) ? 1.15 : 1.0;`
+- **Código:** `lib/src/core/engine/score_engine.dart` — bloque `etrfSigmoid` + `etrfBonus`.
 
 ---
 
@@ -383,9 +402,9 @@ Las gradaciones {1.0, 0.7, 0.4, 0.1} en gap, latencia, despertares son aproximac
 
 El rango asimétrico es defendible pero los valores exactos no.
 
-### 9.6 — Bonus eTRF binario 1.15
+### 9.6 — Bonus eTRF binario 1.15 ✅ CERRADO en SPEC-70.2
 
-`(lastMealTime.hour < 18) ? 1.15 : 1.0` es un step function. La literatura sugiere efecto dosis-respuesta más continuo (cuanto antes mejor). Una sigmoid centrada en 17:00 sería más fiel.
+(Era step function `(hour < 18) ? 1.15 : 1.0`.) Reemplazado por sigmoid centrada en 17:00 con ancho 1.0. Ver §3.3 actualizada.
 
 ### 9.7 — Hidratación goal por defecto
 
@@ -398,8 +417,8 @@ La revisión técnica de este documento expuso cuatro recalibraciones específic
 **SPEC-70.1 — UI advisory sobre el peso conservador de Nutrición.**
 *Origen:* el peso 0.12 (§4.4) protege contra inflar el score con métricas pobres pero genera un sesgo opuesto — un usuario con ayuno+ejercicio impecables pero comiendo ultraprocesados puede tener IMR alto sin saberlo. *Solución:* badge informativo en el dashboard del IMR cuando `nutritionScoreRaw > 0` clarificando *"Score nutricional: cantidad y timing. Calidad nutricional (macros) entrará al cómputo en próxima versión."* *Tipo:* UX, no motor. *Prioridad:* media (cierra bucle de transparencia con el usuario).
 
-**SPEC-70.2 — Sigmoid del bonus eTRF en lugar de salto binario.**
-*Origen:* el `(lastMealTime.hour < 18) ? 1.15 : 1.0` (§3.3) crea un escalón frustrante para el usuario avanzado — comer a las 17:59 vs 18:01 produce salto del 15%. *Solución:* sustituir por `etrfBonus = 1.0 + 0.15 * (1 - sigmoid((mealHour - 17) / 1.0))` que da progresión orgánica: 16:00→1.13, 17:00→1.075, 18:00→1.02, 19:00→1.005. *Justificación bibliográfica:* Sutton et al. 2018 reportan mejoras dosis-dependientes con ventanas más tempranas, no efecto umbral único. *Tipo:* motor, ~30 líneas + 4 tests. *Prioridad:* baja (cosmético del cómputo, sin cambio de comportamiento agregado).
+**SPEC-70.2 — Sigmoid del bonus eTRF. ✅ CERRADA.**
+*Origen:* el `(lastMealTime.hour < 18) ? 1.15 : 1.0` (§3.3) creaba un escalón del 15% en 18:00, frustrante para el usuario avanzado. *Solución implementada:* `etrfBonus = 1.0 + 0.15 * (1 - sigmoid((mealHour - 17) / 1.0))` — curva continua centrada en 17:00 con ancho 1.0h. Asíntota superior 1.15 (preserva techo del binario), aproxima a 1.0 cuanto más tarde sea la cena. Ver §3.3 actualizada con tabla de valores de referencia.
 
 **SPEC-70.3 — FFMI ajustado por edad. ✅ CERRADA.**
 *Origen:* el `score_engine.dart` (§2.4) leía `user.gender` para `baseFFMI` y `rangeFFMI` pero ignoraba `user.age` completamente, aunque `UserModel.age` existe. *Solución implementada:* `baseFFMI` ahora es función de `(gender, age)` vía helper privado `_baseFFMIForAge`. Cae ~1 punto por década después de los 50, replicando la pérdida natural de masa magra documentada. `rangeFFMI` se mantiene constante por simplicidad (estratificarlo añade complejidad sin mover materialmente el score; SPEC-70.3.1 puede refinar si datos propios lo justifican). Ver §2.4 actualizada.

@@ -91,8 +91,18 @@ class ScoreEngine {
     // SPEC-70: ref §3.1 — sigmoid centrada en 14h, ancho 1.5
     // (Mattson 2017, Anton 2018).
     final double s4 = 1 / (1 + math.exp(-(fastingHours - 14) / 1.5));
-    // SPEC-70: ref §3.3 — bonus eTRF 1.15 (Sutton 2018).
-    final double etrfBonus = (lastMealTime.hour < 18) ? 1.15 : 1.0;
+    // SPEC-70.2: bonus eTRF como sigmoid suave (era salto binario en
+    // hora=18). Sutton 2018 reporta efectos dosis-respuesta con ventanas
+    // más tempranas, no umbral único. La curva se centra en 17:00 con
+    // ancho 1.0h: bonus aproximado 1.13 a las 16:00, 1.075 a las 17:00,
+    // 1.04 a las 18:00, 1.018 a las 19:00, ≈1.0 a partir de 21:00.
+    // Asíntota superior 1.15 (preserva el techo del binario anterior).
+    // SPEC-70: ref IMR_BIBLIOGRAPHY.md §3.3.
+    final double mealHourFloat =
+        lastMealTime.hour + lastMealTime.minute / 60.0;
+    final double etrfSigmoid =
+        1.0 / (1.0 + math.exp(-(mealHourFloat - 17.0) / 1.0));
+    final double etrfBonus = 1.0 + 0.15 * (1.0 - etrfSigmoid);
     // SPEC-70: ref §3.2 — pesos 0.70 sigmoid + 0.30 calidad semanal.
     final double metabolicBlock =
         ((0.70 * s4) + (0.30 * weeklySignal.clamp(0.0, 1.0))) * etrfBonus;

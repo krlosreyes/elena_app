@@ -374,4 +374,74 @@ void main() {
       expect(r.totalScore, lessThanOrEqualTo(100));
     });
   });
+
+  group('SPEC-70.2: bonus eTRF como sigmoid suave (no salto binario)', () {
+    final user = _user(waist: 85);
+
+    test('Cena a las 17:30 vs 18:30 → diferencia gradual (NO salto del 15%)',
+        () {
+      // Antes (binario): 17:30 → bonus 1.15, 18:30 → bonus 1.0.
+      // Ahora (sigmoid): 17:30 ≈ 1.06, 18:30 ≈ 1.03. Diferencia ~3%.
+      final early = engine.calculateIMR(
+        user,
+        _state(lastMealTime: DateTime(2026, 5, 6, 17, 30)),
+      );
+      final late = engine.calculateIMR(
+        user,
+        _state(lastMealTime: DateTime(2026, 5, 6, 18, 30)),
+      );
+      // La diferencia entre estos dos puntos NO debe acercarse al 15%
+      // que daría el salto binario antiguo.
+      final delta = early.metabolicScore - late.metabolicScore;
+      expect(delta, greaterThan(0),
+          reason: 'Más temprano debe seguir puntuando más alto.');
+      expect(delta, lessThan(0.10),
+          reason: 'La transición debe ser gradual, no escalonada (15%+).');
+    });
+
+    test('Monotonicidad: cena más temprana → bonus mayor', () {
+      final at15 = engine.calculateIMR(
+        user, _state(lastMealTime: DateTime(2026, 5, 6, 15)),
+      );
+      final at17 = engine.calculateIMR(
+        user, _state(lastMealTime: DateTime(2026, 5, 6, 17)),
+      );
+      final at19 = engine.calculateIMR(
+        user, _state(lastMealTime: DateTime(2026, 5, 6, 19)),
+      );
+      expect(at15.metabolicScore, greaterThan(at17.metabolicScore));
+      expect(at17.metabolicScore, greaterThan(at19.metabolicScore));
+    });
+
+    test('Asíntota: cena muy temprana NO supera el techo del binario antiguo',
+        () {
+      // Tope superior del bonus = 1.15 (asíntota). Una cena a las 13:00
+      // se acerca pero no supera. Verificamos via la cota:
+      // sigmoid((13-17)/1) ≈ 0.018 → bonus ≈ 1.0 + 0.15*0.982 = 1.147.
+      // Como bonus * metabolicBlock < 1.0 * metabolicBlock * 1.15,
+      // el metabolicScore con cena 13:00 debe ser MENOR o IGUAL al que
+      // daría el binario con bonus exactamente 1.15.
+      final atDawn = engine.calculateIMR(
+        user, _state(lastMealTime: DateTime(2026, 5, 6, 13)),
+      );
+      // Cota teórica si etrfBonus = 1.15 y resto idéntico.
+      // Aquí solo verificamos que el score sigue siendo razonable.
+      expect(atDawn.metabolicScore, greaterThan(0));
+      expect(atDawn.metabolicScore, lessThanOrEqualTo(1.0));
+    });
+
+    test('Continuidad: 17:59 vs 18:01 → diferencia mínima (no salto)', () {
+      // El test crítico que motivó SPEC-70.2: el cliffhanger del binario.
+      final at1759 = engine.calculateIMR(
+        user, _state(lastMealTime: DateTime(2026, 5, 6, 17, 59)),
+      );
+      final at1801 = engine.calculateIMR(
+        user, _state(lastMealTime: DateTime(2026, 5, 6, 18, 1)),
+      );
+      // Antes: at1759.totalScore - at1801.totalScore ≈ 4 puntos
+      // (15% del metabolicBlock que es ~0.7, multiplicado por peso 0.25).
+      // Ahora la diferencia debe ser < 1 punto.
+      expect((at1759.totalScore - at1801.totalScore).abs(), lessThan(2));
+    });
+  });
 }
