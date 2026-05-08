@@ -15,8 +15,6 @@ lib
     │   │   ├── metabolic_state_builder.dart
     │   │   ├── metabolic_state_provider.dart
     │   │   └── score_engine.dart
-    │   ├── events
-    │   │   └── event_bus.dart
     │   ├── exceptions
     │   │   ├── app_exceptions.dart
     │   │   ├── empty_preferences_error.dart
