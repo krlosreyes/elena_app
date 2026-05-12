@@ -35,5 +35,20 @@ service cloud.firestore {
       allow read: if true;
       allow write: if false;
     }
+
+    // 6. SPEC-73 BUGFIX: fasting_history es colección top-level (schema
+    //    legacy preservado por SPEC-50.4). Cada doc tiene `userId` como
+    //    campo. Permitimos lectura y escritura solo cuando el `userId`
+    //    del doc (o del payload entrante) coincide con el uid auth.
+    //    Sin esta regla los notifiers fallan con permission-denied al
+    //    llegar al dashboard.
+    match /fasting_history/{docId} {
+      allow read: if request.auth != null
+        && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null
+        && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if request.auth != null
+        && resource.data.userId == request.auth.uid;
+    }
   }
 }
