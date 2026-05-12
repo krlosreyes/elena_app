@@ -391,9 +391,49 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     );
   }
 
+  // Fix overflow 1.9px: el segundo Text se desbordaba cuando `value`
+  // era largo (p.ej. lista de patologías). Flexible + ellipsis previene
+  // el RenderFlex overflow sin cambiar el layout.
   Widget _simpleSelector(String label, String value, VoidCallback onTap, bool isDark) => Padding(
     padding: const EdgeInsets.only(bottom: 16),
-    child: InkWell(onTap: onTap, borderRadius: BorderRadius.circular(16), child: Container(padding: const EdgeInsets.all(18), decoration: BoxDecoration(color: isDark ? const Color(0xFF1E293B) : Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: isDark ? Colors.white10 : const Color(0xFFE2E8F0))), child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text(label, style: TextStyle(fontWeight: FontWeight.w600, color: isDark ? Colors.white70 : const Color(0xFF475569), fontSize: 14)), Text(value, style: const TextStyle(fontWeight: FontWeight.w800, color: Color(0xFF10B981), fontSize: 15))]))),
+    child: InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E293B) : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: isDark ? Colors.white10 : const Color(0xFFE2E8F0)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: isDark ? Colors.white70 : const Color(0xFF475569),
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Flexible(
+              child: Text(
+                value,
+                textAlign: TextAlign.end,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF10B981),
+                  fontSize: 15,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
   );
 
   Widget _circleButton(IconData icon, VoidCallback? onTap, bool isDark) => InkWell(onTap: onTap, child: Container(padding: const EdgeInsets.all(6), decoration: BoxDecoration(shape: BoxShape.circle, color: isDark ? Colors.white10 : const Color(0xFFF1F5F9)), child: Icon(icon, size: 18, color: onTap == null ? Colors.grey : (isDark ? Colors.white : const Color(0xFF0F172A)))));
