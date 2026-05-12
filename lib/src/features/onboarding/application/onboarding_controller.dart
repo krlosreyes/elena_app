@@ -11,8 +11,11 @@ class OnboardingController extends StateNotifier<AsyncValue<void>> {
   Future<void> completeOnboarding(UserModel user) async {
     state = const AsyncValue.loading();
     try {
-      // Aquí el ScoreEngine (o un servicio específico) podría realizar
-      // un primer diagnóstico antes de guardar.
+      // SPEC-73 §RF-73-07: la preservación de campos MR pre-existentes
+      // (subscription_active, purchases, programs, etc.) está
+      // garantizada por `FirestoreUserProfileV1Source.saveProfile`, que
+      // ya usa `set(..., SetOptions(merge: true))`. Los campos que el
+      // UserModel no conoce se mantienen intactos en Firestore.
       await _repository.saveProfile(user);
       state = const AsyncValue.data(null);
     } catch (e, st) {

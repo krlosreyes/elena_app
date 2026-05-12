@@ -7,18 +7,30 @@ part 'user_model.g.dart';
 
 @freezed
 class UserModel with _$UserModel {
+  // SPEC-73 NOTA: UserModel mantiene su shape estricto.
+  //
+  // Para usuarios provenientes del ecosistema metamorfosisreal.com cuyo
+  // documento en Firestore tiene shape distinto, el AuthRepository NO
+  // intenta deserializar a UserModel. En su lugar, devuelve un
+  // `AppAccount` con `rawProfile: Map<String, dynamic>` y
+  // `profileStatus: PARTIAL_PROFILE`. La deserialización a UserModel
+  // ocurre sólo cuando el OnboardingController completa los campos
+  // mínimos requeridos.
+  //
+  // El invariante de "perfil completo" vive en:
+  //   lib/src/shared/domain/validators/user_profile_validator.dart
   const factory UserModel({
     @Default('') String id,
     @Default('Usuario') String name,
     required int age,
-    required String gender, 
-    required double weight, 
-    required double height, 
-    
+    required String gender,
+    required double weight,
+    required double height,
+
     // --- Biometría ---
-    double? waistCircumference, 
-    double? neckCircumference,  
-    @Default(20.0) double bodyFatPercentage, 
+    double? waistCircumference,
+    double? neckCircumference,
+    @Default(20.0) double bodyFatPercentage,
     
     // --- Inferencia ---
     @Default(30) int pantSize,      

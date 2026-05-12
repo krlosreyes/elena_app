@@ -54,6 +54,8 @@ dev_dependencies:
   riverpod_generator: ^2.4.1
   freezed: ^2.4.7 # Versión estable compatible con annotation 2.4.1
   json_serializable: ^6.8.0
+  firebase_auth_mocks: ^0.15.1
+  fake_cloud_firestore: ^4.1.0+1
 
 flutter:
   uses-material-design: true

@@ -330,15 +330,18 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   );
 
   void _finalSubmit() async {
-    final authUser = ref.read(authStateProvider).value;
-    if (authUser == null) return;
+    // SPEC-73: authState ahora es AppAccount?. uid en .uid, nombre en
+    // .displayName. Si el usuario viene de Metamorfosis Real, rawProfile
+    // tiene los campos extra que NO se deben pisar — los mezclamos al
+    // construir el UserModel final.
+    final account = ref.read(authStateProvider).value;
+    if (account == null) return;
 
     final age = DateTime.now().year - _birthDate.year;
 
-    // CORRECCIÓN: Ahora pasamos los nuevos campos al modelo Freezed
     final user = UserModel(
-      id: authUser.id,
-      name: authUser.name,
+      id: account.uid,
+      name: account.displayName ?? 'Usuario',
       age: age,
       gender: _gender,
       weight: _weight,

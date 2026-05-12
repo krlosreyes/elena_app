@@ -12,10 +12,11 @@ import 'package:elena_app/src/shared/providers/user_provider.dart';
 
 // SPEC-50.4: stream del último intervalo desde FastingIntervalRepository
 // (antes: userRepository.watchLastInterval).
+// SPEC-73: authState ahora es AppAccount?, uid en `.uid`.
 final lastFastingIntervalProvider = StreamProvider<FastingInterval?>((ref) {
   final repo = ref.watch(fastingIntervalRepositoryProvider);
   final authState = ref.watch(authStateProvider);
-  final uid = authState.value?.id;
+  final uid = authState.value?.uid;
 
   if (uid == null) return Stream.value(null);
   return repo.watchLatest(uid);
@@ -82,7 +83,7 @@ class FastingNotifier extends StateNotifier<FastingState> {
 
   /// INICIO MANUAL (Viaje en el tiempo para pruebas)
   Future<void> startFastingManual(DateTime startTime) async {
-    final uid = _ref.read(authStateProvider).value?.id;
+    final uid = _ref.read(authStateProvider).value?.uid;
     if (uid == null) return;
 
     state = state.copyWith(isSaving: true);
@@ -127,7 +128,7 @@ class FastingNotifier extends StateNotifier<FastingState> {
 
   /// CIERRE MANUAL (Viaje en el tiempo para pruebas)
   Future<void> confirmManualFastingEnd(DateTime manualTime) async {
-    final uid = _ref.read(authStateProvider).value?.id;
+    final uid = _ref.read(authStateProvider).value?.uid;
     if (uid == null || state.isSaving) return;
 
     state = state.copyWith(isSaving: true);
@@ -183,7 +184,7 @@ class FastingNotifier extends StateNotifier<FastingState> {
 
   /// CONFIRMACIÓN MANUAL ALIMENTACIÓN
   Future<void> confirmFeedingEnd(DateTime manualTime) async {
-    final uid = _ref.read(authStateProvider).value?.id;
+    final uid = _ref.read(authStateProvider).value?.uid;
     if (uid == null || state.isSaving) return;
 
     state = state.copyWith(isSaving: true);
