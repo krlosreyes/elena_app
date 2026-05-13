@@ -17,19 +17,29 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // DT-06: Firebase App Check (Modo Debug para pruebas locales)
-  try {
-    // En Web, si la clave no es válida para el dominio (localhost), fallará.
-    // Usamos un bloque más robusto para evitar que el error ruidoso interrumpa el flujo.
-    await FirebaseAppCheck.instance.activate(
-      androidProvider: kReleaseMode ? AndroidProvider.playIntegrity : AndroidProvider.debug,
-      appleProvider: kReleaseMode ? AppleProvider.appAttest : AppleProvider.debug,
-      webProvider: ReCaptchaV3Provider('6LeX-OcpAAAAAI8iG-Y6G9S7v7L3H-O-1-9-O-9'), // Producción/Localhost
-    );
-  } catch (e) {
-    AppLogger.info(
-      'AppCheck no se activó (común en localhost sin configuración ReCAPTCHA): $e',
-    );
+  // SPEC-73.1 (housekeeping): AppCheck se omite en web debug porque la
+  // clave reCAPTCHA v3 placeholder produce errores ruidosos en consola
+  // que el try/catch de Dart no puede atrapar (Firebase web SDK los
+  // emite desde JS antes de propagar a Dart). La configuración real de
+  // reCAPTCHA v3 se hará en SPEC-81 (hardening de producción).
+  //
+  // En mobile (Android/iOS) y en web release seguimos activando
+  // AppCheck con su provider correspondiente.
+  final shouldActivateAppCheck = !(kIsWeb && !kReleaseMode);
+  if (shouldActivateAppCheck) {
+    try {
+      await FirebaseAppCheck.instance.activate(
+        androidProvider: kReleaseMode ? AndroidProvider.playIntegrity : AndroidProvider.debug,
+        appleProvider: kReleaseMode ? AppleProvider.appAttest : AppleProvider.debug,
+        webProvider: ReCaptchaV3Provider('6LeX-OcpAAAAAI8iG-Y6G9S7v7L3H-O-1-9-O-9'),
+      );
+    } catch (e) {
+      AppLogger.info(
+        'AppCheck no se activó (configurar reCAPTCHA v3 real en SPEC-81): $e',
+      );
+    }
+  } else {
+    AppLogger.info('AppCheck omitido: web debug (ver SPEC-73.1).');
   }
 
   // DT-04: SharedPreferences debe inicializarse antes de runApp.
