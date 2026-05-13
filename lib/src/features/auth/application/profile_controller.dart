@@ -74,6 +74,40 @@ class ProfileController extends StateNotifier<ProfileEditState> {
     }
   }
 
+  /// SPEC-88: actualiza uno o más campos biométricos (peso, cintura,
+  /// cuello, %grasa) y los persiste. Sigue el patrón de
+  /// `updateCircadianProfile` — orquestación pura, sin lógica de
+  /// dominio. La validación de rangos vive en
+  /// `UserProfileMapper._validate` y se ejecuta al persistir.
+  Future<void> updateBiometry({
+    required UserModel currentUser,
+    double? weight,
+    double? waistCircumference,
+    double? neckCircumference,
+    double? bodyFatPercentage,
+  }) async {
+    state = state.copyWith(
+      isSaving: true,
+      errorMessage: null,
+      savedSuccessfully: false,
+    );
+    try {
+      final updated = currentUser.copyWith(
+        weight: weight ?? currentUser.weight,
+        waistCircumference: waistCircumference ?? currentUser.waistCircumference,
+        neckCircumference: neckCircumference ?? currentUser.neckCircumference,
+        bodyFatPercentage: bodyFatPercentage ?? currentUser.bodyFatPercentage,
+      );
+      await ref.read(userProfileRepositoryProvider).saveProfile(updated);
+      state = state.copyWith(isSaving: false, savedSuccessfully: true);
+    } catch (e) {
+      state = state.copyWith(
+        isSaving: false,
+        errorMessage: 'Error al guardar los datos biométricos.',
+      );
+    }
+  }
+
   /// Actualiza el protocolo de ayuno del usuario y lo persiste en Firestore.
   Future<void> updateFastingProtocol({
     required UserModel currentUser,

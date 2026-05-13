@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/core/engine/imr_persistence_provider.dart';
-import 'package:elena_app/src/core/engine/metabolic_state_provider.dart';
 import 'package:elena_app/src/features/auth/application/profile_controller.dart';
+import 'package:elena_app/src/features/auth/presentation/widgets/edit_biometry_value_sheet.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
+import 'package:elena_app/src/features/profile/presentation/widgets/body_composition_card.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 
@@ -184,6 +184,80 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
         );
   }
 
+  // SPEC-88: helpers de edición biométrica. Cada uno abre el sheet,
+  // recibe el nuevo valor y delega a `ProfileController.updateBiometry`.
+  Future<void> _editWeight() async {
+    final value = await EditBiometryValueSheet.show(
+      context,
+      title: 'Editar peso',
+      fieldLabel: 'Peso corporal actual',
+      unit: 'kg',
+      initialValue: widget.user.weight,
+      minValue: 30,
+      maxValue: 250,
+    );
+    if (value != null) {
+      await ref.read(profileControllerProvider.notifier).updateBiometry(
+            currentUser: widget.user,
+            weight: value,
+          );
+    }
+  }
+
+  Future<void> _editWaist() async {
+    final value = await EditBiometryValueSheet.show(
+      context,
+      title: 'Editar cintura',
+      fieldLabel: 'Circunferencia de cintura (medida a la altura del ombligo)',
+      unit: 'cm',
+      initialValue: widget.user.waistCircumference ?? 80,
+      minValue: 50,
+      maxValue: 200,
+    );
+    if (value != null) {
+      await ref.read(profileControllerProvider.notifier).updateBiometry(
+            currentUser: widget.user,
+            waistCircumference: value,
+          );
+    }
+  }
+
+  Future<void> _editNeck() async {
+    final value = await EditBiometryValueSheet.show(
+      context,
+      title: 'Editar cuello',
+      fieldLabel: 'Circunferencia del cuello',
+      unit: 'cm',
+      initialValue: widget.user.neckCircumference ?? 38,
+      minValue: 25,
+      maxValue: 70,
+    );
+    if (value != null) {
+      await ref.read(profileControllerProvider.notifier).updateBiometry(
+            currentUser: widget.user,
+            neckCircumference: value,
+          );
+    }
+  }
+
+  Future<void> _editBodyFat() async {
+    final value = await EditBiometryValueSheet.show(
+      context,
+      title: 'Editar % grasa',
+      fieldLabel: 'Porcentaje de grasa corporal estimado',
+      unit: '%',
+      initialValue: widget.user.bodyFatPercentage,
+      minValue: 3,
+      maxValue: 60,
+    );
+    if (value != null) {
+      await ref.read(profileControllerProvider.notifier).updateBiometry(
+            currentUser: widget.user,
+            bodyFatPercentage: value,
+          );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     // SPEC-52: IMR central desde el provider — sin cálculos locales.
@@ -196,9 +270,13 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
       children: [
         // ── Tarjeta de identidad + IMR ──────────────────────────────
         _buildIdentityCard(displayedImr),
-        const SizedBox(height: 24),
+        const SizedBox(height: 20),
 
-        // ── Datos biométricos (solo lectura) ────────────────────────
+        // ── SPEC-88: Composición corporal ────────────────────────────
+        const BodyCompositionCard(),
+        const SizedBox(height: 28),
+
+        // ── Datos biométricos ───────────────────────────────────────
         _buildSectionLabel('HARDWARE BIOLÓGICO'),
         const SizedBox(height: 12),
         _readOnlyTile('Nombre', widget.user.name),
@@ -206,13 +284,31 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
         _readOnlyTile('Género',
             widget.user.gender == 'M' ? 'Masculino' : 'Femenino'),
         _readOnlyTile('Estatura', '${widget.user.height.toInt()} cm'),
-        _readOnlyTile('Peso', '${widget.user.weight.toInt()} kg'),
-        _readOnlyTile('Cintura',
-            '${widget.user.waistCircumference?.toInt() ?? 0} cm'),
-        _readOnlyTile('Cuello',
-            '${widget.user.neckCircumference?.toInt() ?? 0} cm'),
-        _readOnlyTile('% Grasa Est.',
-            '${widget.user.bodyFatPercentage.toStringAsFixed(1)}%'),
+        // SPEC-88: tiles editables (peso, cintura, cuello, %grasa).
+        _editableBiometryTile(
+          icon: Icons.hourglass_bottom_rounded,
+          label: 'Peso',
+          value: '${widget.user.weight.toInt()} kg',
+          onTap: () => _editWeight(),
+        ),
+        _editableBiometryTile(
+          icon: Icons.straighten_rounded,
+          label: 'Cintura',
+          value: '${widget.user.waistCircumference?.toInt() ?? 0} cm',
+          onTap: () => _editWaist(),
+        ),
+        _editableBiometryTile(
+          icon: Icons.check_circle_outline_rounded,
+          label: 'Cuello',
+          value: '${widget.user.neckCircumference?.toInt() ?? 0} cm',
+          onTap: () => _editNeck(),
+        ),
+        _editableBiometryTile(
+          icon: Icons.show_chart_rounded,
+          label: '% Grasa Est.',
+          value: '${widget.user.bodyFatPercentage.toStringAsFixed(1)}%',
+          onTap: () => _editBodyFat(),
+        ),
         const SizedBox(height: 24),
 
         // ── Ritmo Circadiano (editable) ─────────────────────────────
@@ -356,45 +452,166 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
     );
   }
 
+  // SPEC-88: grid 2×4 con 8 protocolos. Mantiene la misma lógica de
+  // selección (`_selectFastingProtocol`) — solo cambia la presentación.
   Widget _buildProtocolSelector() {
-    final protocols = ['Ninguno', '16:8', '18:6', '20:4'];
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceDark,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: protocols.map((p) {
-          final isSelected = _fastingProtocol == p;
-          return Expanded(
-            child: GestureDetector(
+    final protocols = const [
+      'Ninguno',
+      '12:12',
+      '14:10',
+      '16:8',
+      '18:6',
+      '20:4',
+      '22:2',
+      'OMAD',
+    ];
+    final recommended = _recommendedProtocol();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildRecommendedProtocolCard(recommended),
+        const SizedBox(height: 16),
+        GridView.count(
+          crossAxisCount: 4,
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          children: protocols.map((p) {
+            final isSelected = _fastingProtocol == p;
+            return GestureDetector(
               onTap: () => _selectFastingProtocol(p),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? const Color(0xFF10B981)
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(12),
+                      ? AppColors.metabolicGreen
+                      : AppColors.surfaceDark,
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: AppColors.metabolicGreen
+                                .withValues(alpha: 0.4),
+                            blurRadius: 14,
+                            spreadRadius: 0,
+                          ),
+                        ]
+                      : null,
                 ),
-                child: Center(
-                  child: Text(
-                    p,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                      color: isSelected
-                          ? Colors.white
-                          : Colors.white.withValues(alpha: 0.4),
-                    ),
+                alignment: Alignment.center,
+                child: Text(
+                  p,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    color: isSelected
+                        ? Colors.white
+                        : Colors.white.withValues(alpha: 0.65),
                   ),
                 ),
               ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  /// SPEC-88: protocolo recomendado. Por ahora se hereda del
+  /// `fastingProtocol` actual del usuario (placeholder simple). Si en
+  /// el futuro hay un servicio de recomendación, se inyecta sin
+  /// cambiar la UI.
+  String _recommendedProtocol() {
+    final current = widget.user.fastingProtocol;
+    if (current.isNotEmpty && current != 'Ninguno') return current;
+    return '18:6';
+  }
+
+  Widget _buildRecommendedProtocolCard(String recommended) {
+    const Map<String, String> descriptions = {
+      'Ninguno':
+          'Sin ventana de ayuno. Recomendado para iniciar y construir hábitos básicos.',
+      '12:12':
+          'Ventana suave. Apropiado para iniciar el ayuno intermitente.',
+      '14:10':
+          'Ventana corta. Buen punto medio para principiantes con tolerancia adecuada.',
+      '16:8':
+          'Protocolo clásico. Promueve autofagia ligera y mejora sensibilidad a insulina.',
+      '18:6':
+          'Ayuno moderado-intenso. Aumenta autofagia sin extremos.',
+      '20:4':
+          'Ventana muy corta. Indicado para usuarios con experiencia previa.',
+      '22:2':
+          'Ayuno avanzado. Solo bajo supervisión y con tolerancia confirmada.',
+      'OMAD':
+          'Una comida al día. Protocolo extremo — supervisión recomendada.',
+    };
+    final desc = descriptions[recommended] ?? '';
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceDark,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.metabolicGreen.withValues(alpha: 0.5),
+          width: 1.2,
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: AppColors.metabolicGreen.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(10),
             ),
-          );
-        }).toList(),
+            child: const Icon(
+              Icons.auto_awesome_rounded,
+              color: AppColors.metabolicGreen,
+              size: 18,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'RECOMENDADO PARA TI',
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.2,
+                    color: Colors.white.withValues(alpha: 0.5),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  recommended,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.metabolicGreen,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  desc,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF94A3B8),
+                    height: 1.35,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -656,6 +873,61 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
               style: const TextStyle(
                   fontSize: 13, fontWeight: FontWeight.w700)),
         ],
+      ),
+    );
+  }
+
+  // SPEC-88: tile biométrico editable con ícono a la izquierda + valor
+  // en verde + lápiz visual. Tap abre el sheet de edición.
+  Widget _editableBiometryTile({
+    required IconData icon,
+    required String label,
+    required String value,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceDark,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: AppColors.metabolicGreen.withValues(alpha: 0.18),
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: AppColors.metabolicGreen, size: 18),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(
+                  color: Color(0xFF94A3B8),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            Text(
+              value,
+              style: const TextStyle(
+                color: AppColors.metabolicGreen,
+                fontSize: 14,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Icon(
+              Icons.edit_outlined,
+              size: 14,
+              color: Colors.white.withValues(alpha: 0.3),
+            ),
+          ],
+        ),
       ),
     );
   }
