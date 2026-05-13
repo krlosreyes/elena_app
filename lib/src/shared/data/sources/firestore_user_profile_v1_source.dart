@@ -16,11 +16,24 @@ class FirestoreUserProfileV1Source implements UserProfileDataSource {
   CollectionReference<Map<String, dynamic>> get _users =>
       _firestore.collection('users');
 
+  // SPEC-87: inyectamos `id` del doc Firestore al map antes de
+  // devolverlo. El sitio web Metamorfosis Real escribe el shape
+  // canónico SIN un campo `id` plano (el id es el del doc, no se
+  // duplica). Sin este patch, `UserModel.id` queda en '' y los
+  // notifiers que construyen paths con `user.id` (streak, sleep,
+  // hydration, exercise, nutrition) generan paths inválidos
+  // (`users//streak_history`) que Firestore rechaza con
+  // `permission-denied`.
+  //
+  // El id del doc Firestore es la fuente autoritativa — si el doc
+  // trajera un id distinto, lo sobrescribimos.
   @override
   Stream<Map<String, dynamic>?> streamProfile(String userId) {
     return _users.doc(userId).snapshots().map((snap) {
       if (!snap.exists) return null;
-      return snap.data();
+      final data = snap.data();
+      if (data == null) return null;
+      return <String, dynamic>{...data, 'id': userId};
     });
   }
 
