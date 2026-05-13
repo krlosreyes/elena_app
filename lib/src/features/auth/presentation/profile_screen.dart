@@ -563,20 +563,34 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
               onPressed: isEnabled
                   ? () async {
                       Navigator.pop(ctx);
+                      // SPEC-83 fix: capturar el messenger ANTES del
+                      // await para no depender del context tras el
+                      // delete (la pantalla deja de existir cuando
+                      // currentUserStreamProvider emite null).
+                      final messenger = ScaffoldMessenger.of(context);
+                      final goRouter = GoRouter.of(context);
                       try {
                         await ref
                             .read(profileControllerProvider.notifier)
                             .deleteAccount();
-                        if (context.mounted) context.go('/login');
-                      } catch (e) {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(e.toString()),
-                              backgroundColor: Colors.redAccent,
+                        messenger.showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Cuenta eliminada. Hasta pronto.',
                             ),
-                          );
-                        }
+                            backgroundColor: Color(0xFF10B981),
+                            duration: Duration(seconds: 3),
+                          ),
+                        );
+                        goRouter.go('/login');
+                      } catch (e) {
+                        messenger.showSnackBar(
+                          SnackBar(
+                            content: Text(e.toString()),
+                            backgroundColor: Colors.redAccent,
+                            duration: const Duration(seconds: 5),
+                          ),
+                        );
                       }
                     }
                   : null,

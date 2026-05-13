@@ -107,10 +107,17 @@ class ProfileController extends StateNotifier<ProfileEditState> {
 
   /// Elimina la cuenta del usuario de Firebase Auth y Firestore.
   /// Requiere que el llamador haya confirmado la acción con "ELIMINAR".
+  ///
+  /// SPEC-83 fix: setear `isSaving: false` también en el camino exitoso
+  /// (antes solo se limpiaba en el catch, dejando el spinner colgado).
+  /// Invalidar `authStateProvider` para que el stream re-emita el
+  /// estado de no-autenticado y el router redirija a /login.
   Future<void> deleteAccount() async {
     state = state.copyWith(isSaving: true, errorMessage: null);
     try {
       await ref.read(authRepositoryProvider).deleteAccount();
+      ref.invalidate(authStateProvider);
+      state = state.copyWith(isSaving: false);
     } catch (e) {
       state = state.copyWith(
         isSaving: false,

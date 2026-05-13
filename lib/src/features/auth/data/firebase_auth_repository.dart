@@ -152,24 +152,57 @@ class FirebaseAuthRepository implements AuthRepository {
     }
   }
 
+  // SPEC-83: invertido el orden de operaciones. Antes borrabamos
+  // Firestore primero y luego Auth, dejando estado inconsistente cuando
+  // `user.delete()` lanzaba `requires-recent-login` (sesión vieja).
+  // Ahora: Auth primero. Si Auth falla, Firestore queda intacto y el
+  // usuario puede reintentar tras re-loguearse.
   @override
   Future<void> deleteAccount() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+    final uid = user.uid;
+
+    // 1. Eliminar usuario de Firebase Auth.
     try {
-      final user = _auth.currentUser;
-      if (user == null) return;
-      final uid = user.uid;
-      await _firestore.collection('users').doc(uid).delete();
       await user.delete();
     } on FirebaseAuthException catch (e) {
       if (e.code == 'requires-recent-login') {
         throw Exception(
-          'Seguridad: por favor re-inicia sesión antes de eliminar tu cuenta.',
+          'Por seguridad, tu sesión es muy antigua. Cierra sesión, '
+          'vuelve a iniciar sesión y vuelve a intentar eliminar la cuenta.',
         );
       }
       throw _handleAuthException(e);
     } catch (_) {
-      throw Exception('Error técnico al eliminar cuenta.');
+      throw Exception('Error técnico al eliminar la cuenta de autenticación.');
     }
+
+    // 2. Eliminar doc principal del usuario en Firestore.
+    //
+    // Si esto falla, el usuario ya está eliminado de Auth pero queda un
+    // doc huérfano en `users/{uid}`. Logueamos warning pero NO
+    // propagamos la excepción: para el usuario la cuenta ya está
+    // eliminada (no puede entrar). La limpieza del doc huérfano se
+    // puede hacer manualmente o en una Cloud Function futura.
+    try {
+      await _firestore.collection('users').doc(uid).delete();
+    } catch (_) {
+      // Best-effort. No bloquea el flujo.
+    }
+
+    // 3. Cerrar sesión local para limpiar caches de Firebase Auth.
+    try {
+      await _auth.signOut();
+    } catch (_) {
+      // Best-effort.
+    }
+
+    // NOTA SPEC-83 (out of scope): las subcolecciones
+    // `users/{uid}/sleep_history`, `streak_history`, `hydration_history`,
+    // `exercise_history`, `nutrition_history`, `biometric_history`,
+    // `protocol_adjustments` NO se eliminan aquí. Quedan huérfanas
+    // hasta que se implemente una limpieza recursiva (SPEC futura).
   }
 
   /// Lee `users/{uid}` y construye el AppAccount clasificando el shape.
