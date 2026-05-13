@@ -51,12 +51,32 @@ class OnboardingController extends StateNotifier<AsyncValue<void>> {
       // que el sitio web tenga score visible inmediatamente. Si la
       // escritura falla, logueamos warning y seguimos — no bloquear
       // el cierre del onboarding por un side-effect de denormalización.
+      //
+      // SPEC-85 fix: si el sitio web ya escribió `imr.current` (caso
+      // de usuario que se registró primero en metamorfosisreal.com),
+      // NO pisamos su valor con un baseline parcial. El cálculo
+      // completo del sitio es preferible al baseline solo-estructura
+      // de la app. Cuando la app tenga data behavioral real, el
+      // `imrPersistenceProvider` actualizará con un valor mejor.
       try {
-        final baseline = ScoreEngine.calculateBaseline(user);
-        await _repository.updateCurrentImr(
-          user.id,
-          imrToCanonicalMap(baseline),
-        );
+        final accountAtOnboarding = _ref.read(authStateProvider).value;
+        final hasPreviousImr =
+            accountAtOnboarding?.rawProfile?['imr'] is Map &&
+                (accountAtOnboarding!.rawProfile!['imr']
+                        as Map)['current'] is Map;
+
+        if (hasPreviousImr) {
+          AppLogger.info(
+            '[onboarding] imr.current ya existe (probablemente del sitio); '
+            'no persistimos baseline.',
+          );
+        } else {
+          final baseline = ScoreEngine.calculateBaseline(user);
+          await _repository.updateCurrentImr(
+            user.id,
+            imrToCanonicalMap(baseline),
+          );
+        }
       } catch (e) {
         AppLogger.warning(
           '[onboarding] No se persistió IMR baseline: $e',

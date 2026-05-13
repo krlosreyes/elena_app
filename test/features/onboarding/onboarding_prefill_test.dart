@@ -132,6 +132,70 @@ void main() {
     });
   });
 
+  group('SPEC-84 — OnboardingPrefill desde shape canónico', () {
+    test('lee weight desde bio.weightKg', () {
+      final p = OnboardingPrefill.from({
+        'bio': {'weightKg': 82},
+      });
+      expect(p.weight, 82);
+    });
+
+    test('lee height desde bio.heightCm', () {
+      final p = OnboardingPrefill.from({
+        'bio': {'heightCm': 178},
+      });
+      expect(p.height, 178);
+    });
+
+    test('lee waist y neck desde bio.waistCm/neckCm', () {
+      final p = OnboardingPrefill.from({
+        'bio': {'waistCm': 88, 'neckCm': 40},
+      });
+      expect(p.waistCircumference, 88);
+      expect(p.neckCircumference, 40);
+    });
+
+    test('lee name desde displayName', () {
+      final p = OnboardingPrefill.from({'displayName': 'Carlos'});
+      expect(p.name, 'Carlos');
+    });
+
+    test('lee gender desde genderCanonical "male"', () {
+      final p = OnboardingPrefill.from({'genderCanonical': 'male'});
+      expect(p.gender, 'M');
+    });
+
+    test('legacy plano gana sobre canónico cuando coexisten', () {
+      final p = OnboardingPrefill.from({
+        'weight': 75,
+        'bio': {'weightKg': 999}, // ignorado
+      });
+      expect(p.weight, 75);
+    });
+
+    test('shape canónico completo aporta múltiples campos', () {
+      final p = OnboardingPrefill.from({
+        'displayName': 'Carlos',
+        'genderCanonical': 'male',
+        'birthYear': 1985,
+        'bio': {
+          'heightCm': 180,
+          'weightKg': 82,
+          'waistCm': 88,
+          'neckCm': 40,
+        },
+      });
+      expect(p.name, 'Carlos');
+      expect(p.gender, 'M');
+      expect(p.birthYear, 1985);
+      expect(p.height, 180);
+      expect(p.weight, 82);
+      expect(p.waistCircumference, 88);
+      expect(p.neckCircumference, 40);
+      expect(p.filledCount, 7);
+    });
+  });
+
   group('OnboardingPrefill — Equatable / igualdad por valor', () {
     test('dos prefills con mismos campos son iguales', () {
       const a = OnboardingPrefill(weight: 80, height: 175, gender: 'M');

@@ -91,6 +91,22 @@ class UserProfileRepositoryImpl implements UserProfileRepository {
       updates: {'imr.current': imrCurrent},
     );
   }
+
+  // SPEC-86: derivamos el subcampo desde el stream del doc completo.
+  @override
+  Stream<Map<String, dynamic>?> watchCurrentImr(String userId) {
+    return _source.streamProfile(userId).map((raw) {
+      if (raw == null) return null;
+      final imr = raw['imr'];
+      if (imr is Map) {
+        final current = imr['current'];
+        if (current is Map) {
+          return Map<String, dynamic>.from(current);
+        }
+      }
+      return null;
+    });
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────

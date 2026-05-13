@@ -50,4 +50,10 @@ abstract class UserProfileRepository {
     String userId,
     Map<String, dynamic> imrCurrent,
   );
+
+  /// SPEC-86: stream del subcampo `imr.current` del doc del usuario.
+  /// Emite null si el doc no existe o el subcampo no está presente.
+  /// Útil para que el Dashboard muestre el valor persistido (puede
+  /// venir del sitio web) cuando el cálculo local solo tiene baseline.
+  Stream<Map<String, dynamic>?> watchCurrentImr(String userId);
 }

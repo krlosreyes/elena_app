@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
+import 'package:elena_app/src/core/engine/imr_persistence_provider.dart';
 import 'package:elena_app/src/core/engine/metabolic_state_provider.dart';
-import 'package:elena_app/src/core/engine/score_engine.dart';
 import 'package:elena_app/src/features/auth/application/profile_controller.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
@@ -187,13 +187,15 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
   @override
   Widget build(BuildContext context) {
     // SPEC-52: IMR central desde el provider — sin cálculos locales.
-    final imrResult = ref.watch(imrProvider);
+    // SPEC-86: el badge de identidad muestra `displayedImr` que prefiere
+    // el persistido cuando el cálculo local solo tiene baseline.
+    final displayedImr = ref.watch(displayedImrProvider);
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
       children: [
         // ── Tarjeta de identidad + IMR ──────────────────────────────
-        _buildIdentityCard(imrResult),
+        _buildIdentityCard(displayedImr),
         const SizedBox(height: 24),
 
         // ── Datos biométricos (solo lectura) ────────────────────────
@@ -270,7 +272,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
 
   // ── Widgets ──────────────────────────────────────────────────────────────
 
-  Widget _buildIdentityCard(IMRv2Result imrResult) {
+  Widget _buildIdentityCard(DisplayedImr imrResult) {
     final zoneColor = _zoneColor(imrResult.zone);
     return Container(
       padding: const EdgeInsets.all(20),
@@ -328,7 +330,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
                 ),
                 child: Center(
                   child: Text(
-                    '${imrResult.totalScore}',
+                    '${imrResult.score}',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w900,

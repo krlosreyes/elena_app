@@ -33,6 +33,16 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   String? _greetingName;
   bool _isReturningMrUser = false;
 
+  // SPEC-84: pasos activos del onboarding. Por defecto los 4 (0..3),
+  // pero algunos se saltan cuando el shape canónico del sitio ya
+  // entregó esos datos. _currentStep es un índice DENTRO de
+  // _activeSteps (no en la numeración original).
+  //   0 = Disclaimer médico
+  //   1 = Biometría
+  //   2 = Ritmos circadianos
+  //   3 = Hábitos
+  List<int> _activeSteps = const [0, 1, 2, 3];
+
   // --- PASO 1: HARDWARE ---
   DateTime _birthDate = DateTime(1980, 1, 1);
   double _weight = 85.0;
@@ -118,6 +128,48 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       return; // nada que mostrar/aplicar
     }
 
+    // SPEC-84: prellenar también lastMealGoal desde habits.lastMealHour
+    // o habits.dinnerHour si el shape canónico los trae.
+    DateTime? lastMealFromCanonical;
+    final habits = account.rawProfile?['habits'];
+    if (habits is Map) {
+      final h = habits.cast<String, dynamic>();
+      final hourFloat = (h['lastMealHour'] ?? h['dinnerHour']);
+      if (hourFloat is num) {
+        final hf = hourFloat.toDouble();
+        final hour = hf.floor();
+        final minutes = ((hf - hour) * 60).round();
+        if (hour >= 0 && hour < 24) {
+          lastMealFromCanonical =
+              DateTime(2026, 1, 1, hour, minutes);
+        }
+      }
+    }
+
+    // SPEC-84: calcular qué pasos saltar.
+    //   Skip Disclaimer (0) si el sitio ya capturó la aceptación
+    //     (`healthDisclaimerAccepted == true`).
+    //   Skip Biometría (1) si el shape canónico aportó los 4 críticos:
+    //     weight, height, bodyFat MEDIDO, waist. `bodyFat` medido =
+    //     `bio.bodyFatPct` presente en rawProfile (no default 20.0).
+    //   Ritmos (2) y Hábitos (3) siempre se muestran porque el sitio
+    //     no captura los 4 horarios ni pathologies ni mealsPerDay.
+    final raw = account.rawProfile;
+    final disclaimerFromSite = raw?['healthDisclaimerAccepted'] == true;
+    final bodyFatMeasured = raw?['bio'] is Map &&
+        (raw!['bio'] as Map)['bodyFatPct'] != null;
+    final biometryComplete = prefill.weight != null &&
+        prefill.height != null &&
+        prefill.waistCircumference != null &&
+        bodyFatMeasured;
+
+    final activeSteps = <int>[
+      if (!disclaimerFromSite) 0,
+      if (!biometryComplete) 1,
+      2,
+      3,
+    ];
+
     setState(() {
       _prefill = prefill;
       _greetingName = (prefill.name?.isNotEmpty ?? false)
@@ -136,6 +188,45 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       if (prefill.birthYear != null) {
         _birthDate = DateTime(prefill.birthYear!, _birthDate.month, _birthDate.day);
       }
+
+      // SPEC-84: prellenar fastingProtocol desde habits.fastingHours.
+      final habitsMap = raw?['habits'];
+      if (habitsMap is Map) {
+        final h = habitsMap.cast<String, dynamic>();
+        final fh = h['fastingHours'];
+        if (fh is num) {
+          switch (fh.toInt()) {
+            case 0:
+              _fastingProtocol = 'Ninguno';
+              break;
+            case 16:
+              _fastingProtocol = '16:8';
+              break;
+            case 18:
+              _fastingProtocol = '18:6';
+              break;
+            case 20:
+              _fastingProtocol = '20:4';
+              break;
+          }
+        }
+      }
+
+      // SPEC-84: prellenar TimeOfDay de última comida si vino del sitio.
+      if (lastMealFromCanonical != null) {
+        _lastMealGoal = TimeOfDay(
+          hour: lastMealFromCanonical.hour,
+          minute: lastMealFromCanonical.minute,
+        );
+      }
+
+      // SPEC-84: si el sitio capturó el disclaimer, lo damos por
+      // aceptado para que el flujo no exija doble aceptación.
+      if (disclaimerFromSite) {
+        _disclaimerAccepted = true;
+      }
+
+      _activeSteps = activeSteps;
     });
   }
 
@@ -143,6 +234,21 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(onboardingControllerProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // SPEC-84: PageView solo con los pasos activos.
+    final pages = _activeSteps.map((index) {
+      switch (index) {
+        case 0:
+          return _buildStepDisclaimer(isDark);
+        case 1:
+          return _buildStepBiometry(isDark);
+        case 2:
+          return _buildStepCircadian(isDark);
+        case 3:
+        default:
+          return _buildStepHabits(isDark);
+      }
+    }).toList();
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.backgroundDark : const Color(0xFFF8FAFC),
@@ -153,9 +259,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(10),
+                // SPEC-84: progreso relativo a los pasos activos (≤ 4).
                 child: LinearProgressIndicator(
-                  // SPEC-70.8: ahora son 4 pasos (disclaimer + 3 originales).
-                  value: (_currentStep + 1) / 4,
+                  value: pages.isEmpty
+                      ? 1.0
+                      : (_currentStep + 1) / pages.length,
                   backgroundColor: isDark ? Colors.white10 : Colors.black12,
                   color: const Color(0xFF10B981),
                   minHeight: 6,
@@ -166,12 +274,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               child: PageView(
                 controller: _pageController,
                 physics: const NeverScrollableScrollPhysics(),
-                children: [
-                  _buildStepDisclaimer(isDark),
-                  _buildStepBiometry(isDark),
-                  _buildStepCircadian(isDark),
-                  _buildStepHabits(isDark),
-                ],
+                children: pages,
               ),
             ),
             _buildBottomNavigation(state, isDark),
@@ -521,10 +624,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   Widget _circleButton(IconData icon, VoidCallback? onTap, bool isDark) => InkWell(onTap: onTap, child: Container(padding: const EdgeInsets.all(6), decoration: BoxDecoration(shape: BoxShape.circle, color: isDark ? Colors.white10 : const Color(0xFFF1F5F9)), child: Icon(icon, size: 18, color: onTap == null ? Colors.grey : (isDark ? Colors.white : const Color(0xFF0F172A)))));
 
   Widget _buildBottomNavigation(AsyncValue state, bool isDark) {
-    // SPEC-70.8: el botón SIGUIENTE se deshabilita en el paso 0 (disclaimer)
-    // hasta que el usuario marque la aceptación.
-    final canProceed = _currentStep != 0 || _disclaimerAccepted;
-    final isLastStep = _currentStep == 3;
+    // SPEC-70.8 / SPEC-84: el botón SIGUIENTE se deshabilita SOLO
+    // cuando el paso activo es el Disclaimer (índice original 0) y
+    // todavía no se aceptó. Si el sitio MR ya entregó la aceptación,
+    // el disclaimer no aparece en _activeSteps y este chequeo no
+    // bloquea.
+    final currentOriginalIndex = _activeSteps.isNotEmpty
+        ? _activeSteps[_currentStep]
+        : 0;
+    final canProceed =
+        currentOriginalIndex != 0 || _disclaimerAccepted;
+    final isLastStep = _currentStep == _activeSteps.length - 1;
     final disabledColor = isDark ? Colors.white24 : Colors.grey;
     final activeColor =
         isDark ? const Color(0xFF10B981) : const Color(0xFF0F172A);
@@ -578,7 +688,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               child: Text(
                 isLastStep
                     ? "FINALIZAR"
-                    : (_currentStep == 0 && !canProceed
+                    : (currentOriginalIndex == 0 && !canProceed
                         ? "ACEPTA PARA CONTINUAR"
                         : "SIGUIENTE"),
                 style: const TextStyle(
@@ -592,8 +702,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   void _handleNext() {
-    // SPEC-70.8: ahora son 4 pasos (0..3). El último (3) hace submit.
-    if (_currentStep < 3) {
+    // SPEC-84: navegación basada en _activeSteps (puede tener entre 1
+    // y 4 entradas). El último paso activo dispara el submit.
+    if (_currentStep < _activeSteps.length - 1) {
       setState(() => _currentStep++);
       _pageController.animateToPage(_currentStep,
           duration: const Duration(milliseconds: 400),

@@ -44,58 +44,96 @@ class OnboardingPrefill extends Equatable {
   /// Factory pura. Lee `rawProfile` y aplica validaciones de dominio.
   /// Si rawProfile es null o vacío, retorna `OnboardingPrefill.empty`.
   ///
-  /// Claves consultadas por campo (primer match no-nulo gana):
-  ///   name              ← name | displayName | fullName
-  ///   birthYear         ← birthYear | yearOfBirth | (derivado de birthDate ISO)
-  ///   gender            ← gender | sex (normalizado a 'M' | 'F' | 'Otro')
-  ///   weight            ← weight | weightKg
-  ///   height            ← height | heightCm
-  ///   waistCircumference← waistCircumference | waist | waistCm
-  ///   neckCircumference ← neckCircumference | neck | neckCm
-  ///   pantSize          ← pantSize | trouserSize
-  ///   shirtSize         ← shirtSize | tshirtSize (uppercase, validado)
+  /// SPEC-84: además de las claves planas legacy, consulta el shape
+  /// canónico del sitio web Metamorfosis Real (`bio.*, habits.*,
+  /// displayName, genderCanonical, birthDate, birthYear`).
+  ///
+  /// Estrategia: aplanamos primero el doc combinando shape canónico
+  /// derivado + shape plano. El plano gana en duplicidades. Después
+  /// leemos cada campo del prefill desde el mapa combinado.
   factory OnboardingPrefill.from(Map<String, dynamic>? rawProfile) {
     if (rawProfile == null || rawProfile.isEmpty) return empty;
 
+    // Combinar shape canónico → legacy (SPEC-84) y luego el legacy
+    // original encima. Así el plano siempre gana cuando coexiste.
+    final flat = <String, dynamic>{
+      ..._flattenCanonical(rawProfile),
+      ...rawProfile,
+    };
+
     return OnboardingPrefill(
       name: _firstNonEmptyString(
-        rawProfile,
+        flat,
         const ['name', 'displayName', 'fullName'],
       ),
-      birthYear: _readBirthYear(rawProfile),
-      gender: _readGender(rawProfile),
+      birthYear: _readBirthYear(flat),
+      gender: _readGender(flat),
       weight: _readBoundedDouble(
-        rawProfile,
+        flat,
         keys: const ['weight', 'weightKg'],
         min: 20.0,
         max: 500.0,
       ),
       height: _readBoundedDouble(
-        rawProfile,
+        flat,
         keys: const ['height', 'heightCm'],
         min: 30.0,
         max: 250.0,
       ),
       waistCircumference: _readBoundedDouble(
-        rawProfile,
+        flat,
         keys: const ['waistCircumference', 'waist', 'waistCm'],
         min: 30.0,
         max: 250.0,
       ),
       neckCircumference: _readBoundedDouble(
-        rawProfile,
+        flat,
         keys: const ['neckCircumference', 'neck', 'neckCm'],
         min: 20.0,
         max: 80.0,
       ),
       pantSize: _readBoundedInt(
-        rawProfile,
+        flat,
         keys: const ['pantSize', 'trouserSize'],
         min: 20,
         max: 60,
       ),
-      shirtSize: _readShirtSize(rawProfile),
+      shirtSize: _readShirtSize(flat),
     );
+  }
+
+  /// SPEC-84: extrae los campos canónicos (`bio.*`, `habits.*`,
+  /// `displayName`, `genderCanonical`) y los aplana al nivel raíz para
+  /// que las helpers existentes los lean. No usamos
+  /// `CanonicalToLegacyAdapter` aquí porque ese genera valores con
+  /// coerciones más fuertes (DateTime, enums) que el prefill no
+  /// necesita — el prefill solo recolecta primitivos.
+  static Map<String, dynamic> _flattenCanonical(Map<String, dynamic> raw) {
+    final out = <String, dynamic>{};
+
+    final displayName = raw['displayName'];
+    if (displayName is String && displayName.trim().isNotEmpty) {
+      out['name'] = displayName;
+    }
+
+    final genderCanonical = raw['genderCanonical'];
+    if (genderCanonical is String) {
+      out['gender'] = genderCanonical;
+    }
+
+    final bio = raw['bio'];
+    if (bio is Map) {
+      final b = bio.cast<String, dynamic>();
+      if (b['weightKg'] != null) out['weight'] = b['weightKg'];
+      if (b['heightCm'] != null) out['height'] = b['heightCm'];
+      if (b['waistCm'] != null) out['waistCircumference'] = b['waistCm'];
+      if (b['neckCm'] != null) out['neckCircumference'] = b['neckCm'];
+    }
+
+    // birthDate / birthYear ya los lee `_readBirthYear` desde la raíz
+    // sin necesidad de re-mapeo.
+
+    return out;
   }
 
   /// Cuántos campos del prefill quedaron no-nulos. Usado por la UI

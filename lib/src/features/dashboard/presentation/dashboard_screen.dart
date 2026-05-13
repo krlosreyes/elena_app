@@ -52,6 +52,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     // SPEC-52: el IMR viene del provider central — una sola fuente de verdad.
     final result = ref.watch(imrProvider);
 
+    // SPEC-86: para el "score grande" del Reloj Circadiano, preferimos
+    // el persistido cuando el cálculo local solo tiene baseline (caso
+    // de usuario MR sin data behavioral en la app). Las tarjetas de
+    // detalle siguen leyendo `result` directamente.
+    final displayedImr = ref.watch(displayedImrProvider);
+
     // SPEC-82: mantener vivo el sink debounced que persiste imr.current
     // al doc raíz `users/{uid}.imr.current` (consumido por el sitio web
     // Metamorfosis Real). El provider es side-effect-only — el watch
@@ -98,8 +104,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             child: CircadianClock(
                               user: user,
                               fastingState: fastingState,
-                              score: result.totalScore.toDouble(),
-                              zone: result.zone,
+                              // SPEC-86: usar displayed (puede preferir
+                              // el persistido del sitio sobre baseline).
+                              score: displayedImr.score.toDouble(),
+                              zone: displayedImr.zone,
                             ),
                           ),
                         ),

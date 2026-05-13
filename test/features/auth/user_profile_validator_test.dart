@@ -85,6 +85,63 @@ void main() {
     });
   });
 
+  group('SPEC-84 — isCompleteFromRaw reconoce shape canónico', () {
+    test('shape canónico completo → completo', () {
+      final raw = {
+        'displayName': 'Carlos',
+        'genderCanonical': 'male',
+        'birthYear': 1985,
+        'bio': {
+          'heightCm': 180,
+          'weightKg': 80,
+          'bodyFatPct': 18,
+        },
+        'profile': {
+          'wakeUpTime': DateTime.now().toIso8601String(),
+          'sleepTime': DateTime.now().toIso8601String(),
+        },
+      };
+      expect(UserProfileValidator.isCompleteFromRaw(raw), isTrue);
+    });
+
+    test('shape canónico sin profile (faltan horarios) → incompleto', () {
+      final raw = {
+        'displayName': 'Carlos',
+        'genderCanonical': 'male',
+        'birthYear': 1985,
+        'bio': {
+          'heightCm': 180,
+          'weightKg': 80,
+          'bodyFatPct': 18,
+        },
+      };
+      expect(UserProfileValidator.isCompleteFromRaw(raw), isFalse);
+    });
+
+    test('shape canónico sin bio (solo identidad) → incompleto', () {
+      final raw = {
+        'displayName': 'Carlos',
+        'birthYear': 1985,
+        'profile': {'wakeUpTime': DateTime.now().toIso8601String()},
+      };
+      expect(UserProfileValidator.isCompleteFromRaw(raw), isFalse);
+    });
+
+    test('shape mezclado (legacy + bio.*) → completo si legacy gana', () {
+      final raw = {
+        'age': 35,
+        'gender': 'M',
+        'weight': 80,
+        'height': 175,
+        'bio': {
+          'heightCm': 999, // ignorado: legacy gana
+        },
+        'profile': {'wakeUpTime': DateTime.now().toIso8601String()},
+      };
+      expect(UserProfileValidator.isCompleteFromRaw(raw), isTrue);
+    });
+  });
+
   group('UserProfileValidator.isComplete (UserModel)', () {
     UserModel buildUser({
       int age = 0,

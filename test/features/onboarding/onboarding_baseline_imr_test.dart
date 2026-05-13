@@ -83,6 +83,42 @@ void main() {
       expect(repo.savedUser!.id, 'test-uid');
     });
   });
+
+  group('SPEC-85 — proteger imr.current pre-existente', () {
+    late _CapturingRepo repo;
+    late ProviderContainer container;
+
+    setUp(() async {
+      repo = _CapturingRepo();
+      container = ProviderContainer(
+        overrides: [
+          userProfileRepositoryProvider.overrideWithValue(repo),
+          // Cuenta MR con imr.current pre-existente del sitio.
+          authStateProvider.overrideWith(
+            (ref) => Stream<AppAccount?>.value(_fakeAccountWithSiteImr),
+          ),
+        ],
+      );
+      await container.read(authStateProvider.future);
+    });
+
+    tearDown(() {
+      container.dispose();
+    });
+
+    test('NO persiste baseline cuando imr.current ya existe en rawProfile',
+        () async {
+      final controller =
+          container.read(onboardingControllerProvider.notifier);
+      await controller.completeOnboarding(_testUser());
+
+      // saveProfile sí se llamó (legacy preservado).
+      expect(repo.savedUser, isNotNull);
+      // updateCurrentImr NO se llamó: respetamos el 52 del sitio.
+      expect(repo.capturedImr, isNull);
+      expect(repo.capturedUid, isNull);
+    });
+  });
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -93,6 +129,22 @@ const AppAccount _fakeAccount = AppAccount(
   uid: 'test-uid',
   email: 'test@example.com',
   profileStatus: AppProfileStatus.completeProfile,
+);
+
+// SPEC-85: usuario que ya tiene imr.current escrito por el sitio web.
+const AppAccount _fakeAccountWithSiteImr = AppAccount(
+  uid: 'test-uid',
+  email: 'test@example.com',
+  profileStatus: AppProfileStatus.completeProfile,
+  rawProfile: {
+    'displayName': 'Carlos',
+    'imr': {
+      'current': {
+        'imrScore': 52,
+        'label': 'INESTABLE',
+      },
+    },
+  },
 );
 
 UserModel _testUser({
@@ -156,4 +208,8 @@ class _CapturingRepo implements UserProfileRepository {
 
   @override
   Stream<UserModel?> watchProfile(String userId) => Stream.value(null);
+
+  @override
+  Stream<Map<String, dynamic>?> watchCurrentImr(String userId) =>
+      Stream.value(null);
 }
