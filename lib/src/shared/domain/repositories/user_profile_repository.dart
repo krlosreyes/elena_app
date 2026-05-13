@@ -41,4 +41,13 @@ abstract class UserProfileRepository {
     String? newFastingProtocol,
     int? newExerciseGoal,
   });
+
+  /// SPEC-82: actualiza únicamente `imr.current` en el doc raíz del
+  /// usuario. El sitio web Metamorfosis Real lee ese campo para mostrar
+  /// el score actualizado del usuario. Usa dotted-path para tocar solo
+  /// el subcampo `imr.current` sin afectar otros campos del doc.
+  Future<void> updateCurrentImr(
+    String userId,
+    Map<String, dynamic> imrCurrent,
+  );
 }

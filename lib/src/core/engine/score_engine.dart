@@ -8,6 +8,12 @@
 // Ahora: calculateIMR recibe (UserModel, MetabolicState). Una sola fuente de
 // verdad. Los defaults dispersos se eliminan: si no hay datos, MetabolicState
 // es .empty() y el imrProvider devuelve un score cero sin invocar al engine.
+//
+// SPEC-82: IMRv2Result expone tambien campos derivados (imc, tmb,
+// metabolicAge, ica, ffmi, whtr) que el shape canonico del sitio web
+// Metamorfosis Real necesita leer en `imr.current`. Se introduce
+// ScoreEngine.calculateBaseline para usuarios que terminaron onboarding
+// pero aun no tienen data behavioral.
 
 import 'dart:math' as math;
 
@@ -25,7 +31,18 @@ class IMRv2Result {
   final String zone;
   final String description;
 
-  IMRv2Result({
+  // SPEC-82: campos derivados que el sitio web Metamorfosis Real espera
+  // leer en `imr.current`. Se calculan dentro de
+  // `ScoreEngine.calculateIMR` / `calculateBaseline` con los inputs ya
+  // disponibles (no requieren data adicional).
+  final double imc;
+  final double tmb;
+  final int metabolicAge;
+  final double ica;
+  final double ffmi;
+  final double whtr;
+
+  const IMRv2Result({
     required this.totalScore,
     required this.structureScore,
     required this.metabolicScore,
@@ -33,11 +50,18 @@ class IMRv2Result {
     required this.circadianAlignment,
     required this.zone,
     required this.description,
+    required this.imc,
+    required this.tmb,
+    required this.metabolicAge,
+    required this.ica,
+    required this.ffmi,
+    required this.whtr,
   });
 
   /// Resultado vacío para cuando no hay datos suficientes (estado inicial,
   /// usuario aún cargando, etc.). SPEC-60: sin DateTime.now().
-  factory IMRv2Result.empty() => IMRv2Result(
+  /// SPEC-82: incluye los campos derivados en 0.
+  factory IMRv2Result.empty() => const IMRv2Result(
         totalScore: 0,
         structureScore: 0,
         metabolicScore: 0,
@@ -45,6 +69,12 @@ class IMRv2Result {
         circadianAlignment: 0,
         zone: 'N/A',
         description: 'Cargando...',
+        imc: 0,
+        tmb: 0,
+        metabolicAge: 0,
+        ica: 0,
+        ffmi: 0,
+        whtr: 0,
       );
 }
 
@@ -166,6 +196,21 @@ class ScoreEngine {
         (0.25 * behaviorBlock);
     final int score = (raw * 100).round().clamp(0, 100);
 
+    // SPEC-82: campos derivados para el shape canónico del sitio web.
+    final double imc = user.weight / math.pow(hMeter, 2);
+    final double ica = (user.waistCircumference ?? 0) > 0
+        ? user.waistCircumference! / user.height
+        : 0;
+    // Mifflin-St Jeor (kcal/día) — estándar clínico vigente.
+    //   hombres: 10w + 6.25h - 5a + 5
+    //   mujeres: 10w + 6.25h - 5a - 161
+    final double tmb = (10 * user.weight) +
+        (6.25 * user.height) -
+        (5 * user.age) +
+        (isMale ? 5 : -161);
+    final int metabolicAge =
+        _metabolicAgeFromStructure(user.age, structureBlock);
+
     return IMRv2Result(
       totalScore: score,
       structureScore: structureBlock,
@@ -174,7 +219,87 @@ class ScoreEngine {
       circadianAlignment: circadianScore.clamp(0.0, 1.0),
       zone: _getZone(score),
       description: _getDescription(score, circadianScore),
+      imc: imc,
+      tmb: tmb,
+      metabolicAge: metabolicAge,
+      ica: ica,
+      ffmi: ffmi,
+      whtr: ica,
     );
+  }
+
+  /// SPEC-82: IMR baseline cuando el usuario aún no tiene data
+  /// behavioral (acabó de finalizar el onboarding, no logueó comidas).
+  ///
+  /// Usa SÓLO el bloque Estructura (50% del peso total). Los bloques
+  /// Metabolismo y Conducta quedan en 0. El score baseline es
+  /// necesariamente bajo: estructura óptima = 50/100 máximo.
+  ///
+  /// Esto permite al sitio web Metamorfosis Real mostrar un score
+  /// inicial inmediatamente tras el onboarding desde la app, en lugar
+  /// de "Sin diagnóstico". En cuanto el usuario tenga un log de
+  /// comida, `calculateIMR` recomputa con el modelo completo.
+  static IMRv2Result calculateBaseline(UserModel user) {
+    final bool isMale =
+        user.gender.toUpperCase() == 'M' || user.gender.toUpperCase() == 'MALE';
+
+    // Recomputamos solo Estructura inline. Si en el futuro se extrae a
+    // un método privado compartido con `calculateIMR`, hacerlo en una
+    // SPEC separada para no expandir el scope de SPEC-82.
+    double s1 = 0.5;
+    if (user.waistCircumference != null && user.waistCircumference! > 0) {
+      final double whtr = user.waistCircumference! / user.height;
+      s1 = ((0.60 - whtr) / 0.15).clamp(0.0, 1.0);
+    }
+    final double hMeter = user.height / 100;
+    final double leanMass = user.weight * (1 - (user.bodyFatPercentage / 100));
+    final double ffmi = leanMass / math.pow(hMeter, 2);
+    final double baseFFMI = _baseFFMIForAge(isMale, user.age);
+    final double rangeFFMI = isMale ? 6.0 : 5.0;
+    final double s2 = ((ffmi - baseFFMI) / rangeFFMI).clamp(0.0, 1.0);
+    final double structureBlock = (0.65 * s1) + (0.35 * s2);
+
+    // Score baseline = solo el peso de Estructura (50%).
+    final double raw = 0.50 * structureBlock;
+    final int score = (raw * 100).round().clamp(0, 100);
+
+    final double imc = user.weight / math.pow(hMeter, 2);
+    final double ica = (user.waistCircumference ?? 0) > 0
+        ? user.waistCircumference! / user.height
+        : 0;
+    final double tmb = (10 * user.weight) +
+        (6.25 * user.height) -
+        (5 * user.age) +
+        (isMale ? 5 : -161);
+    final int metabolicAge = _metabolicAgeFromStructure(user.age, structureBlock);
+
+    return IMRv2Result(
+      totalScore: score,
+      structureScore: structureBlock,
+      metabolicScore: 0,
+      behaviorScore: 0,
+      circadianAlignment: 0,
+      zone: _getZone(score),
+      description: 'Baseline calculado sin data comportamental.',
+      imc: imc,
+      tmb: tmb,
+      metabolicAge: metabolicAge,
+      ica: ica,
+      ffmi: ffmi,
+      whtr: ica,
+    );
+  }
+
+  /// SPEC-82: edad metabólica derivada del bloque Estructura.
+  ///
+  /// Fórmula provisional. Si structureBlock = 1.0 (óptimo), edad
+  /// metabólica = edad cronológica. Si structureBlock = 0.0,
+  /// metabolicAge = age + 20 (clamp inferior: age - 10, superior:
+  /// age + 25). Documentar en `IMR_BIBLIOGRAPHY.md` y refinar con
+  /// data propia (SPEC futura).
+  static int _metabolicAgeFromStructure(int age, double structureBlock) {
+    final int delta = (20 * (1 - structureBlock)).round();
+    return (age + delta).clamp(age - 10, age + 25);
   }
 
   /// SPEC-70.3: baseline FFMI ajustado por edad y género.
@@ -208,7 +333,9 @@ class ScoreEngine {
     return peak - 1.5;
   }
 
-  String _getZone(int s) {
+  // SPEC-82: hechos estáticos para que `calculateBaseline` (también
+  // estático) los pueda invocar sin instanciar el engine.
+  static String _getZone(int s) {
     if (s < 40) return 'DETERIORADO';
     if (s < 60) return 'INESTABLE';
     if (s < 75) return 'FUNCIONAL';
@@ -216,7 +343,7 @@ class ScoreEngine {
     return 'OPTIMIZADO';
   }
 
-  String _getDescription(int s, double circadian) {
+  static String _getDescription(int s, double circadian) {
     if (circadian < 0.7) {
       return 'Alerta: Ingesta nocturna detectada. Esto bloquea la reparación celular.';
     }

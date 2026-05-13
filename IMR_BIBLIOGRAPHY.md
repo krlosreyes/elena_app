@@ -521,8 +521,64 @@ Las citas en cada sección usan el formato corto. Las completas (DOI cuando sea 
 
 ---
 
+## §12 — Métricas canónicas para integración con Metamorfosis Real (SPEC-82)
+
+A partir de SPEC-82, el doc `users/{uid}` persiste un bloque `imr.current` con métricas clínicas estándar que el sitio web Metamorfosis Real consume. Estas métricas se calculan dentro del mismo `ScoreEngine` (sin nuevos inputs) y se exponen como campos derivados de `IMRv2Result`.
+
+### 12.1 — IMC (Índice de Masa Corporal)
+
+- **Fórmula:** `IMC = peso(kg) / altura(m)^2`
+- **Confianza:** HIGH
+- **Uso:** medida descriptiva clásica de relación peso/talla. Compatible con los rangos OMS (bajo peso <18.5, normal 18.5–24.9, sobrepeso 25–29.9, obesidad ≥30). Se expone en `imr.current.imc` para que el sitio pueda renderizarlo junto al score.
+- **Limitación:** el IMC no diferencia masa magra de grasa. Por eso el IMR usa FFMI + WHtR para Estructura — el IMC se persiste como contexto descriptivo, no como input del score.
+- **Código:** `lib/src/core/engine/score_engine.dart` — `imc = user.weight / pow(hMeter, 2)` en `calculateIMR` y `calculateBaseline`.
+
+### 12.2 — TMB (Tasa Metabólica Basal) — Mifflin-St Jeor
+
+- **Fórmula:**
+  - Hombres: `TMB = 10·peso + 6.25·altura − 5·edad + 5`
+  - Mujeres: `TMB = 10·peso + 6.25·altura − 5·edad − 161`
+- **Unidades:** kcal/día. `peso` en kg, `altura` en cm, `edad` en años.
+- **Confianza:** HIGH
+- **Fuente:** Mifflin MD, St Jeor ST, Hill LA, Scott BJ, Daugherty SA, Koh YO. "A new predictive equation for resting energy expenditure in healthy individuals." *Am J Clin Nutr* 1990;51(2):241-7.
+- **Justificación:** Estándar clínico vigente desde la Academia Americana de Nutrición y Dietética. Más precisa que Harris-Benedict (la ecuación clásica de 1919) en cohortes contemporáneas.
+- **Código:** `score_engine.dart` — `tmb = (10*weight) + (6.25*height) - (5*age) + (isMale ? 5 : -161)`.
+
+### 12.3 — ICA / WHtR (Índice Cintura-Altura / Waist-to-Height Ratio)
+
+- **Fórmula:** `ICA = cintura(cm) / altura(cm)`
+- **Confianza:** HIGH (mismo cálculo que el `s1` del bloque Estructura, ver §2.3).
+- **Notas:** `ICA` y `WHtR` son sinónimos — el sitio Astro espera ambos nombres en `imr.current`. Se persisten como dos campos con el mismo valor para que el frontend no haga renombrado.
+- **Código:** `score_engine.dart` — `ica = waistCircumference / height; whtr = ica`.
+
+### 12.4 — FFMI (Fat-Free Mass Index)
+
+- **Fórmula:** `FFMI = masa magra(kg) / altura(m)^2` donde `masa magra = peso × (1 − bodyFat/100)`.
+- **Confianza:** HIGH (mismo cálculo que el `s2` del bloque Estructura — ver §2.4).
+- **Diferencia con `s2`:** `s2` es el FFMI normalizado al baseline age-stratified (0–1). `imr.current.ffmi` es el FFMI crudo (típicamente 14–25), que el sitio web renderiza como número absoluto.
+- **Código:** `score_engine.dart` — `ffmi = leanMass / pow(hMeter, 2)`.
+
+### 12.5 — Metabolic Age (provisional)
+
+- **Fórmula provisional:** `metabolicAge = clamp(age + round(20 × (1 − structureBlock)), age − 10, age + 25)`
+- **Confianza:** ENGINEERING JUDGMENT
+- **Justificación:** No existe un estándar clínico universal para "edad metabólica". Las balanzas comerciales (Tanita, InBody) usan fórmulas propietarias que combinan FFMI, %grasa, agua corporal y BMR vs. norma poblacional. Nuestra fórmula simplificada deriva la edad metabólica como una función del bloque Estructura: un usuario con Estructura óptima (1.0) tiene edad metabólica = cronológica; uno con Estructura colapsada (0.0) tiene +20 años, con clamp a ±un rango razonable.
+- **Limitación reconocida:** es una métrica de signaling, no diagnóstica. Refinable a futuro con data propia (SPEC futura, sin compromiso de fecha).
+- **Código:** `score_engine.dart` — `_metabolicAgeFromStructure(age, structureBlock)`.
+
+### 12.6 — IMR Baseline (sin data behavioral)
+
+- **Cuándo aplica:** al finalizar el onboarding. El usuario aún no tiene logs de comida, sueño, ejercicio o hidratación. El `calculateIMR` requiere `state.lastMealTime` no-null para evaluar el bloque Metabolismo y Conducta, así que retorna `IMRv2Result.empty()`. Para no dejar al sitio web Metamorfosis Real con "Sin diagnóstico", `calculateBaseline(user)` produce un score usando SOLO el bloque Estructura.
+- **Fórmula baseline:** `raw = 0.50 × structureBlock`. `metabolicScore = 0`, `behaviorScore = 0`, `circadianAlignment = 0`.
+- **Cota:** `totalScore ≤ 50` por construcción (estructura óptima × peso 0.50).
+- **Confianza:** ENGINEERING JUDGMENT en el corte (50 puntos como máximo de baseline). Es una decisión pragmática: dar al usuario un score visible no cero pero claramente parcial.
+- **Código:** `score_engine.dart` — `ScoreEngine.calculateBaseline(UserModel)`. Llamado desde `OnboardingController.completeOnboarding`.
+
+---
+
 ## Changelog
 
+- **SPEC-82** (canonical mirror): añade §12 con las fórmulas de las métricas canónicas (IMC, TMB Mifflin-St Jeor, ICA/WHtR, FFMI crudo, metabolicAge provisional) que el sitio web Metamorfosis Real consume vía `imr.current` en el doc `users/{uid}`. El bloque Estructura, Metabolismo y Conducta del IMR no cambian.
 - **SPEC-70.5** (recalibración clínica externa): bloqueo intestinal 22:30→21:30, peso Hidratación 20%→10%, peso Circadiano 28%→38%, threshold de sueño en racha 6.5h→7.0h, threshold de penalización de coherencia por sueño 6.5h→7.0h. Validado por **[Dr/Dra Nombre, Especialidad]**. Nuevas §10 (roadmap clínico) y §11 (contraindicaciones).
 - **SPEC-70.3**: FFMI baseline age-stratified.
 - **SPEC-70.2**: bonus eTRF como sigmoid suave en lugar de salto binario.

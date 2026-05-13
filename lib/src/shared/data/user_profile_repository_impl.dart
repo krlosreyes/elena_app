@@ -76,6 +76,21 @@ class UserProfileRepositoryImpl implements UserProfileRepository {
     if (updates.isEmpty) return;
     await _source.updateProfileFields(userId: userId, updates: updates);
   }
+
+  // SPEC-82: dotted-path para tocar solo `imr.current` y opcionalmente
+  // `imr.history`. Firestore acepta keys con `.` en `update()` como
+  // path nested. No usar `set` porque pisaría `imr.history` y otros
+  // subcampos del bloque imr.
+  @override
+  Future<void> updateCurrentImr(
+    String userId,
+    Map<String, dynamic> imrCurrent,
+  ) async {
+    await _source.updateProfileFields(
+      userId: userId,
+      updates: {'imr.current': imrCurrent},
+    );
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────

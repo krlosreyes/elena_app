@@ -7,10 +7,20 @@
 // solo emite cuando cambia el estado de autenticación. Invalidando
 // el provider forzamos una re-suscripción que vuelve a leer
 // users/{uid} y reconstruye AppAccount con el nuevo shape.
+//
+// SPEC-82 (13-may-2026): tras saveProfile y antes del invalidate,
+// calculamos un IMR baseline (solo bloque Estructura) y lo
+// persistimos a `users/{uid}.imr.current`. Eso permite al sitio web
+// Metamorfosis Real mostrar un score inicial inmediatamente, en
+// lugar de "Sin diagnóstico". Si la escritura falla, no rompemos el
+// flujo de onboarding — solo logueamos warning.
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:elena_app/src/core/engine/score_engine.dart';
+import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
+import 'package:elena_app/src/shared/data/mappers/user_profile_mapper.dart';
 import 'package:elena_app/src/shared/data/user_profile_repository_impl.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/shared/domain/repositories/user_profile_repository.dart';
@@ -26,12 +36,33 @@ class OnboardingController extends StateNotifier<AsyncValue<void>> {
   Future<void> completeOnboarding(UserModel user) async {
     state = const AsyncValue.loading();
     try {
-      // SPEC-73 §RF-73-07: preservación de campos MR pre-existentes
-      // (subscription_active, purchases, programs, etc.) está garantizada
-      // por FirestoreUserProfileV1Source.saveProfile, que usa
-      // SetOptions(merge: true). Los campos que UserModel no conoce
-      // se mantienen intactos en Firestore.
+      // SPEC-73 §RF-73-07: la preservación de campos MR pre-existentes
+      // (subscription_active, purchases, programs, etc.) está
+      // garantizada por `FirestoreUserProfileV1Source.saveProfile`, que
+      // ya usa `set(..., SetOptions(merge: true))`. Los campos que el
+      // UserModel no conoce se mantienen intactos en Firestore.
+      //
+      // SPEC-82: además del shape legacy, el mapper escribe el shape
+      // canónico (`displayName, genderCanonical, bio, habits, meta`)
+      // en el mismo write.
       await _repository.saveProfile(user);
+
+      // SPEC-82: persistir IMR baseline (solo bloque Estructura) para
+      // que el sitio web tenga score visible inmediatamente. Si la
+      // escritura falla, logueamos warning y seguimos — no bloquear
+      // el cierre del onboarding por un side-effect de denormalización.
+      try {
+        final baseline = ScoreEngine.calculateBaseline(user);
+        await _repository.updateCurrentImr(
+          user.id,
+          imrToCanonicalMap(baseline),
+        );
+      } catch (e) {
+        AppLogger.warning(
+          '[onboarding] No se persistió IMR baseline: $e',
+          e,
+        );
+      }
 
       // SPEC-73 BUGFIX: forzar re-clasificación del AppAccount.
       // Sin esto, profileStatus queda en PARTIAL y el router

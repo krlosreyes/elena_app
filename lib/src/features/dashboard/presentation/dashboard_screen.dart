@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart'; 
 import 'package:elena_app/src/core/theme/app_theme.dart';
+import 'package:elena_app/src/core/engine/imr_persistence_provider.dart';
 import 'package:elena_app/src/core/engine/metabolic_state_provider.dart';
 import 'package:elena_app/src/core/engine/score_engine.dart';
 import 'package:elena_app/src/core/widgets/elena_header.dart';
@@ -50,6 +51,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     // SPEC-52: el IMR viene del provider central — una sola fuente de verdad.
     final result = ref.watch(imrProvider);
+
+    // SPEC-82: mantener vivo el sink debounced que persiste imr.current
+    // al doc raíz `users/{uid}.imr.current` (consumido por el sitio web
+    // Metamorfosis Real). El provider es side-effect-only — el watch
+    // sólo lo monta; no se usa su retorno.
+    ref.watch(imrPersistenceProvider);
 
     return userAsync.when(
       loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
