@@ -6,6 +6,11 @@ import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/features/onboarding/application/onboarding_controller.dart';
+// SPEC-74: prefill + chip + saludo contextual + telemetría.
+import 'package:elena_app/src/features/onboarding/domain/onboarding_prefill.dart';
+import 'package:elena_app/src/features/onboarding/presentation/widgets/prefill_chip.dart';
+import 'package:elena_app/src/features/auth/application/auth_telemetry.dart';
+import 'package:elena_app/src/features/auth/domain/app_account.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
@@ -22,13 +27,19 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   // avanza al paso 1 hasta que el usuario marque el checkbox.
   bool _disclaimerAccepted = false;
 
+  // SPEC-74: prefill desde AppAccount.rawProfile (cuenta MR existente).
+  // Inicializado en initState, una sola vez por sesión de onboarding.
+  OnboardingPrefill _prefill = OnboardingPrefill.empty;
+  String? _greetingName;
+  bool _isReturningMrUser = false;
+
   // --- PASO 1: HARDWARE ---
   DateTime _birthDate = DateTime(1980, 1, 1);
   double _weight = 85.0;
   double _height = 180.0;
   String _gender = 'M';
-  double _waist = 94.0; 
-  double _neck = 40.0;  
+  double _waist = 94.0;
+  double _neck = 40.0;
   int _pantSize = 34;
   String _shirtSize = "L";
 
@@ -65,6 +76,67 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   DateTime _timeToDateTime(TimeOfDay time) {
     final now = DateTime.now();
     return DateTime(now.year, now.month, now.day, time.hour, time.minute);
+  }
+
+  // SPEC-74 §RF-74-01/04/05/08/09: leer AppAccount.rawProfile UNA vez,
+  // construir el prefill, aplicar los valores a los defaults del state
+  // antes del primer render, y disparar telemetría de inicio.
+  @override
+  void initState() {
+    super.initState();
+    // Diferimos el read del provider al primer post-frame para evitar
+    // leer providers en initState (Riverpod recomienda usar ref.read sin
+    // listen aquí).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _applyPrefillAndTelemetry();
+    });
+  }
+
+  void _applyPrefillAndTelemetry() {
+    final account = ref.read(authStateProvider).value;
+    final telemetry = ref.read(authTelemetryProvider);
+
+    // Telemetría obligatoria: el usuario entró a /onboarding.
+    telemetry.onboardingStarted();
+    if (account != null) {
+      telemetry.appProfileStatusObserved(account.profileStatus);
+    }
+
+    if (account == null) return;
+
+    _isReturningMrUser =
+        account.profileStatus == AppProfileStatus.partialProfile;
+    if (_isReturningMrUser) {
+      // Primera vez que un usuario MR entra a la app.
+      telemetry.mrUserFirstLogin();
+    }
+
+    final prefill = OnboardingPrefill.from(account.rawProfile);
+    if (prefill.isEmpty &&
+        (account.displayName == null || account.displayName!.isEmpty)) {
+      return; // nada que mostrar/aplicar
+    }
+
+    setState(() {
+      _prefill = prefill;
+      _greetingName = (prefill.name?.isNotEmpty ?? false)
+          ? prefill.name
+          : account.displayName;
+
+      if (prefill.weight != null) _weight = prefill.weight!;
+      if (prefill.height != null) _height = prefill.height!;
+      if (prefill.gender != null) _gender = prefill.gender!;
+      if (prefill.waistCircumference != null) {
+        _waist = prefill.waistCircumference!;
+      }
+      if (prefill.neckCircumference != null) _neck = prefill.neckCircumference!;
+      if (prefill.pantSize != null) _pantSize = prefill.pantSize!;
+      if (prefill.shirtSize != null) _shirtSize = prefill.shirtSize!;
+      if (prefill.birthYear != null) {
+        _birthDate = DateTime(prefill.birthYear!, _birthDate.month, _birthDate.day);
+      }
+    });
   }
 
   @override
@@ -268,9 +340,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   // --- PASO 1: BIOMETRÍA ---
+  // SPEC-74 §RF-74-02/03/06: saludo contextual + chip de prefill al
+  // inicio del paso de captura biométrica. Si el usuario viene del
+  // ecosistema MR (PARTIAL_PROFILE), el copy se personaliza y se
+  // muestra cuántos campos están pre-llenados.
   Widget _buildStepBiometry(bool isDark) => ListView(
     padding: const EdgeInsets.all(24),
     children: [
+      _greetingHeader(isDark),
+      if (_prefill.filledCount > 0) PrefillChip(filledCount: _prefill.filledCount),
       _header("Hardware Base", "Identidad y Antropometría", isDark),
       _simpleSelector("Nacimiento", DateFormat('dd/MM/yyyy').format(_birthDate), () async {
         final date = await showDatePicker(context: context, initialDate: _birthDate, firstDate: DateTime(1940), lastDate: DateTime.now());
@@ -366,6 +444,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
     try {
       await ref.read(onboardingControllerProvider.notifier).completeOnboarding(user);
+      // SPEC-74 §RF-74-08: telemetría de cierre. Después del save —
+      // antes de la navegación — para que el evento se asocie al
+      // funnel del usuario que SÍ completó.
+      ref.read(authTelemetryProvider).onboardingCompleted();
       await Future.delayed(const Duration(milliseconds: 800));
       if (!mounted) return;
       context.go('/dashboard');
@@ -530,6 +612,52 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   Widget _header(String title, String sub, bool isDark) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: isDark ? Colors.white : const Color(0xFF0F172A), letterSpacing: -1)), Text(sub, style: TextStyle(color: isDark ? Colors.white38 : const Color(0xFF64748B), fontSize: 15, fontWeight: FontWeight.w500)), const SizedBox(height: 24)]);
+
+  // SPEC-74 §RF-74-02/03: header con saludo contextual.
+  //   - Usuario MR con displayName: "Hola {nombre}, completemos tu perfil metabólico"
+  //   - Usuario nuevo / sin displayName: "Bienvenid@ a ElenaApp"
+  // Sub-copy también diferenciado para reforzar el contexto.
+  Widget _greetingHeader(bool isDark) {
+    final hasGreetingName = _greetingName != null && _greetingName!.isNotEmpty;
+    final showMrCopy = _isReturningMrUser && hasGreetingName;
+
+    final title = showMrCopy
+        ? 'Hola $_greetingName, completemos tu perfil metabólico'
+        : 'Bienvenid@ a ElenaApp';
+    final sub = showMrCopy
+        ? 'Tu cuenta de Metamorfosis Real ya está vinculada. Solo necesitamos algunos datos biométricos para personalizar tu IMR.'
+        : 'En menos de 2 minutos calibramos el sistema con tus datos para empezar a medir tu IMR.';
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w900,
+              color: isDark ? Colors.white : const Color(0xFF0F172A),
+              letterSpacing: -0.5,
+              height: 1.2,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            sub,
+            style: TextStyle(
+              color: isDark ? Colors.white60 : const Color(0xFF475569),
+              fontSize: 13.5,
+              fontWeight: FontWeight.w500,
+              height: 1.45,
+            ),
+          ),
+          const SizedBox(height: 20),
+        ],
+      ),
+    );
+  }
   Widget _sectionTitle(String title, bool isDark) => Padding(padding: const EdgeInsets.symmetric(vertical: 12), child: Text(title, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: const Color(0xFF10B981), letterSpacing: 1.5)));
 }
 

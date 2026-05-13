@@ -1,4 +1,4 @@
-// SPEC-73 §RF-73-12: telemetría mínima del funnel de auth.
+// SPEC-73 §RF-73-12 / SPEC-74 §RF-74-08: telemetría mínima del funnel de auth.
 //
 // Esta capa es un STUB intencional. El back-end concreto (Firebase
 // Analytics, Mixpanel, Amplitude) se elige y enchufa en SPEC-80 del
@@ -11,6 +11,8 @@
 // Reglas:
 // - Ningún evento incluye email, uid, o cualquier PII.
 // - El estado de perfil se reporta como enum, nunca como dump de doc.
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/features/auth/domain/app_account.dart';
@@ -73,3 +75,11 @@ class LoggerAuthTelemetry implements AuthTelemetry {
   @override
   void passwordSetFromLink() => _emit('auth_password_set_from_link');
 }
+
+// SPEC-74: provider Riverpod para inyectar AuthTelemetry desde los
+// consumidores (OnboardingScreen, AuthController). El default es
+// LoggerAuthTelemetry; SPEC-80 lo overrideará con una implementación
+// que envíe eventos a Sentry/Firebase Analytics.
+final authTelemetryProvider = Provider<AuthTelemetry>((ref) {
+  return const LoggerAuthTelemetry();
+});
