@@ -35,12 +35,16 @@ final goRouterProvider = Provider<GoRouter>((ref) {
 
       // SPEC-77: las pantallas legales son públicas. Un usuario debe
       // poder leerlas desde el footer del Login antes de aceptar.
+      // SPEC-78: las rutas /open son entry points de deep links;
+      // tienen su propio redirect que decide a dónde llevar al
+      // usuario según el auth state.
       final isPublic = loc == '/login' ||
           loc == '/register' ||
           loc == '/forgot-password' ||
           loc == '/set-password' ||
           loc == '/legal/privacy' ||
-          loc == '/legal/terms';
+          loc == '/legal/terms' ||
+          loc.startsWith('/open');
 
       // 1. No autenticado.
       if (account == null) {
@@ -135,6 +139,35 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/legal/terms',
         name: 'terms-of-service',
         builder: (context, state) => const TermsOfServiceScreen(),
+      ),
+      // SPEC-78: deep links / universal links desde el sitio
+      // Metamorfosis Real. Estas rutas resuelven con un redirect
+      // interno hacia el destino real según el auth state.
+      GoRoute(
+        path: '/open',
+        name: 'open-app',
+        redirect: (context, state) {
+          final account = ref.read(authStateProvider).value;
+          return account == null ? '/login' : '/dashboard';
+        },
+      ),
+      GoRoute(
+        path: '/open/imr',
+        name: 'open-imr',
+        redirect: (context, state) {
+          final account = ref.read(authStateProvider).value;
+          if (account == null) return '/login';
+          return account.needsOnboarding ? '/onboarding' : '/dashboard';
+        },
+      ),
+      GoRoute(
+        path: '/open/welcome',
+        name: 'open-welcome',
+        redirect: (context, state) {
+          final account = ref.read(authStateProvider).value;
+          if (account == null) return '/login';
+          return account.needsOnboarding ? '/onboarding' : '/dashboard';
+        },
       ),
       GoRoute(
         path: '/goals/setup',

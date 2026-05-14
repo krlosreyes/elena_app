@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- SPEC-78: Universal Links para handover desde el sitio
+	     Metamorfosis Real. Requiere que el dominio sirva
+	     `.well-known/apple-app-site-association` con el AppID
+	     correspondiente. Ver docs/DEEP_LINKS_SETUP.md.
+
+	     IMPORTANTE: Xcode debe tener habilitado el capability
+	     "Associated Domains" en Signing & Capabilities. El AppID
+	     en developer.apple.com también lo necesita activado. -->
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:metamorfosisreal.com</string>
+	</array>
+</dict>
+</plist>

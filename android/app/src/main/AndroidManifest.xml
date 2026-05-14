@@ -50,6 +50,21 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+
+            <!-- SPEC-78: Android App Links para handover desde el sitio
+                 Metamorfosis Real. autoVerify=true requiere que el
+                 dominio sirva `.well-known/assetlinks.json` con el SHA-256
+                 del certificado de firma. Si la verificación falla,
+                 Android cae al chooser (sigue funcional pero con más
+                 fricción). Ver docs/DEEP_LINKS_SETUP.md. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="https"/>
+                <data android:host="metamorfosisreal.com"/>
+                <data android:pathPrefix="/app"/>
+            </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
