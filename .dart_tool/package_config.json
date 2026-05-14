@@ -302,6 +302,18 @@
       "languageVersion": "3.4"
     },
     {
+      "name": "firebase_crashlytics",
+      "rootUri": "file:///Users/carlosreyes/.pub-cache/hosted/pub.dev/firebase_crashlytics-5.1.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.2"
+    },
+    {
+      "name": "firebase_crashlytics_platform_interface",
+      "rootUri": "file:///Users/carlosreyes/.pub-cache/hosted/pub.dev/firebase_crashlytics_platform_interface-3.8.19",
+      "packageUri": "lib/",
+      "languageVersion": "3.2"
+    },
+    {
       "name": "fixnum",
       "rootUri": "file:///Users/carlosreyes/.pub-cache/hosted/pub.dev/fixnum-1.1.1",
       "packageUri": "lib/",
