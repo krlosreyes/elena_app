@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
 import 'firebase_options.dart';
@@ -12,6 +13,12 @@ import 'src/core/services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // SPEC-76 fix: inicializar locale 'es' para que DateFormat con
+  // patrones localizados (ej. 'd MMM yyyy', 'es') funcione en todas
+  // las pantallas. Sin esto, el primer uso lanza LocaleDataException
+  // y rompe el render del widget.
+  await initializeDateFormatting('es', null);
 
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
