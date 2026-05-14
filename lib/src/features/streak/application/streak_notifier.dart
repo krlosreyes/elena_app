@@ -102,7 +102,19 @@ class StreakNotifier extends StateNotifier<StreakState> {
     // Observar userId para conectar el stream de historial
     _ref.listen(currentUserStreamProvider, (_, AsyncValue<UserModel?> next) {
       next.whenData((user) {
-        if (user == null) return;
+        // SPEC-87 fix: al cerrar sesión, `user` se vuelve null. Antes,
+        // el listener retornaba sin hacer cleanup: el stream Firestore
+        // seguía suscrito con el uid anterior y los listeners de
+        // pilares disparaban `_persistToday` con un uid sin `auth`
+        // válido → `permission-denied`. Ahora cancelamos la
+        // subscription y limpiamos `_userId` para que cualquier
+        // operación posterior salga por los guards.
+        if (user == null) {
+          _historySub?.cancel();
+          _historySub = null;
+          _userId = null;
+          return;
+        }
         if (_userId != user.id) {
           _userId = user.id;
           _subscribeToHistory();
@@ -133,7 +145,16 @@ class StreakNotifier extends StateNotifier<StreakState> {
         _rebuildState(history);
       },
       onError: (e) {
-        AppLogger.error('[StreakNotifier] Error en historial', e);
+        // SPEC-87 fix: durante el logout, las queries in-flight
+        // pueden fallar con permission-denied porque `request.auth`
+        // se invalida antes de que el provider se desuscriba. Si ya
+        // limpiamos `_userId`, el error es esperado — lo degradamos
+        // a debug para no inundar logs con ruido del logout.
+        if (_userId == null) {
+          AppLogger.debug('[StreakNotifier] Stream cerrado tras logout: $e');
+        } else {
+          AppLogger.error('[StreakNotifier] Error en historial', e);
+        }
       },
     );
   }
@@ -284,25 +305,41 @@ class StreakNotifier extends StateNotifier<StreakState> {
   // ── Persistencia ────────────────────────────────────────────────────────────
 
   Future<void> _persistAdherence(double adherence) async {
-    if (_userId == null) return;
+    // SPEC-87 defensa: tanto null como "" producen un path inválido en
+    // Firestore (`users//...`) que retorna permission-denied. Saltamos
+    // la escritura hasta tener un uid real.
+    final uid = _userId;
+    if (uid == null || uid.isEmpty) return;
     try {
       // SPEC-50.5: UserProfileRepository (no UserRepository).
       final repo = _ref.read(userProfileRepositoryProvider);
-      await repo.updateWeeklyAdherence(_userId!, adherence);
+      await repo.updateWeeklyAdherence(uid, adherence);
     } catch (e) {
-      AppLogger.error('[StreakNotifier] Error al persistir adherencia', e);
+      if (_userId == null) {
+        AppLogger.debug('[StreakNotifier] Adherence abortado por logout: $e');
+      } else {
+        AppLogger.error('[StreakNotifier] Error al persistir adherencia', e);
+      }
     }
   }
 
   Future<void> _persistToday(StreakEntry entry) async {
-    if (_userId == null) return;
+    final uid = _userId;
+    if (uid == null || uid.isEmpty) return;
     try {
       // SPEC-50.3: StreakRepository (no UserRepository).
       final StreakRepository repo = _ref.read(streakRepositoryProvider);
-      await repo.save(_userId!, entry);
+      await repo.save(uid, entry);
       AppLogger.debug('[StreakNotifier] Racha guardada: ${entry.date} — ${entry.pillarsCompleted}/5 pilares');
     } catch (e) {
-      AppLogger.error('[StreakNotifier] Error al persistir racha', e);
+      // SPEC-87 fix: si entre el guard y el await el usuario hizo
+      // logout, la escritura falla con permission-denied. Es ruido
+      // esperado del logout, no un bug.
+      if (_userId == null) {
+        AppLogger.debug('[StreakNotifier] Persist abortado por logout: $e');
+      } else {
+        AppLogger.error('[StreakNotifier] Error al persistir racha', e);
+      }
     }
   }
 

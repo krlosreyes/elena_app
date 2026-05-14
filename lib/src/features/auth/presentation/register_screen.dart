@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/auth/application/auth_controller.dart';
+import 'package:elena_app/src/features/auth/presentation/widgets/legal_footer.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -105,11 +106,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       backgroundColor: AppColors.metabolicGreen,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     ),
-                    child: isLoading 
+                    child: isLoading
                       ? const CircularProgressIndicator(color: Colors.white)
                       : const Text("REGISTRARME", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                   ),
                 ),
+
+                // SPEC-77: footer legal antes de continuar.
+                const LegalFooter(actionVerb: 'registrarte'),
               ],
             ),
           ),

@@ -11,6 +11,8 @@ import 'package:elena_app/src/features/auth/presentation/register_screen.dart';
 import 'package:elena_app/src/features/auth/presentation/forgot_password_screen.dart';
 import 'package:elena_app/src/features/auth/presentation/set_password_screen.dart';
 import 'package:elena_app/src/features/auth/presentation/disclaimer_screen.dart';
+import 'package:elena_app/src/features/auth/presentation/privacy_policy_screen.dart';
+import 'package:elena_app/src/features/auth/presentation/terms_of_service_screen.dart';
 import 'package:elena_app/src/features/onboarding/presentation/onboarding_screen.dart';
 import 'package:elena_app/src/features/dashboard/presentation/dashboard_screen.dart';
 import 'package:elena_app/src/features/auth/presentation/profile_screen.dart';
@@ -31,10 +33,14 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       final account = authState.value;
       final loc = state.matchedLocation;
 
+      // SPEC-77: las pantallas legales son públicas. Un usuario debe
+      // poder leerlas desde el footer del Login antes de aceptar.
       final isPublic = loc == '/login' ||
           loc == '/register' ||
           loc == '/forgot-password' ||
-          loc == '/set-password';
+          loc == '/set-password' ||
+          loc == '/legal/privacy' ||
+          loc == '/legal/terms';
 
       // 1. No autenticado.
       if (account == null) {
@@ -118,6 +124,17 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/profile/disclaimer',
         name: 'disclaimer',
         builder: (context, state) => const DisclaimerScreen(),
+      ),
+      // SPEC-77: pantallas legales (privacy + terms).
+      GoRoute(
+        path: '/legal/privacy',
+        name: 'privacy-policy',
+        builder: (context, state) => const PrivacyPolicyScreen(),
+      ),
+      GoRoute(
+        path: '/legal/terms',
+        name: 'terms-of-service',
+        builder: (context, state) => const TermsOfServiceScreen(),
       ),
       GoRoute(
         path: '/goals/setup',

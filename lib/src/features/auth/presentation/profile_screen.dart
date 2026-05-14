@@ -361,6 +361,23 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
         const SizedBox(height: 12),
         // SPEC-76: acceso permanente al disclaimer médico.
         _buildDisclaimerTile(context),
+        const SizedBox(height: 8),
+        // SPEC-77: links a documentos legales.
+        _buildLegalTile(
+          context: context,
+          icon: Icons.privacy_tip_outlined,
+          title: 'Política de privacidad',
+          subtitle: 'Cómo manejamos tus datos',
+          route: '/legal/privacy',
+        ),
+        const SizedBox(height: 8),
+        _buildLegalTile(
+          context: context,
+          icon: Icons.description_outlined,
+          title: 'Términos de uso',
+          subtitle: 'Condiciones del servicio',
+          route: '/legal/terms',
+        ),
         const SizedBox(height: 12),
         _buildLogoutButton(context),
         const SizedBox(height: 12),
@@ -615,6 +632,62 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  // SPEC-77: tile genérico para links legales.
+  Widget _buildLegalTile({
+    required BuildContext context,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required String route,
+  }) {
+    return GestureDetector(
+      onTap: () => context.push(route),
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceDark,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.borderDefault),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: AppColors.textSecondary, size: 20),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: Color(0xFF94A3B8),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: Colors.white.withValues(alpha: 0.3),
+              size: 20,
+            ),
+          ],
+        ),
       ),
     );
   }

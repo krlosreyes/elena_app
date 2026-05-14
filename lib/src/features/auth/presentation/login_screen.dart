@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/auth/application/auth_controller.dart';
+import 'package:elena_app/src/features/auth/presentation/widgets/legal_footer.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -149,6 +150,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                     ],
                   ),
+
+                  // SPEC-77: footer legal.
+                  const LegalFooter(actionVerb: 'iniciar sesión'),
                 ],
               ),
             ),
