@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
 import 'firebase_options.dart';
 import 'src/app.dart';
+import 'src/core/config/recaptcha_config.dart';
 import 'src/core/providers/shared_preferences_provider.dart';
 import 'src/core/services/app_logger.dart';
 import 'src/core/services/crashlytics_service.dart';
@@ -52,22 +53,35 @@ Future<void> _bootstrap() async {
   // SPEC-73.1 (housekeeping): AppCheck se omite en web debug porque la
   // clave reCAPTCHA v3 placeholder produce errores ruidosos en consola
   // que el try/catch de Dart no puede atrapar (Firebase web SDK los
-  // emite desde JS antes de propagar a Dart). La configuración real de
-  // reCAPTCHA v3 se hará en SPEC-81 (hardening de producción).
+  // emite desde JS antes de propagar a Dart).
+  //
+  // SPEC-81: la site key real se obtiene de
+  // `lib/src/core/config/recaptcha_config.dart`. Si sigue siendo el
+  // placeholder, emitimos warning visible al arranque para que no
+  // pase a producción sin la clave real.
   //
   // En mobile (Android/iOS) y en web release seguimos activando
   // AppCheck con su provider correspondiente.
+  if (kIsWeb && recaptchaIsPlaceholder) {
+    AppLogger.warning(
+      'AppCheck web está usando reCAPTCHA PLACEHOLDER. '
+      'Registrar dominio en Google reCAPTCHA Admin Console y actualizar '
+      'kRecaptchaSiteKey en lib/src/core/config/recaptcha_config.dart '
+      'antes de un release público (ver docs/PRODUCTION_HARDENING.md §1).',
+    );
+  }
+
   final shouldActivateAppCheck = !(kIsWeb && !kReleaseMode);
   if (shouldActivateAppCheck) {
     try {
       await FirebaseAppCheck.instance.activate(
         androidProvider: kReleaseMode ? AndroidProvider.playIntegrity : AndroidProvider.debug,
         appleProvider: kReleaseMode ? AppleProvider.appAttest : AppleProvider.debug,
-        webProvider: ReCaptchaV3Provider('6LeX-OcpAAAAAI8iG-Y6G9S7v7L3H-O-1-9-O-9'),
+        webProvider: ReCaptchaV3Provider(kRecaptchaSiteKey),
       );
     } catch (e) {
       AppLogger.info(
-        'AppCheck no se activó (configurar reCAPTCHA v3 real en SPEC-81): $e',
+        'AppCheck no se activó (ver docs/PRODUCTION_HARDENING.md §1): $e',
       );
     }
   } else {
