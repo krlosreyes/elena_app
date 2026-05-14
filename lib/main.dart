@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -9,9 +11,27 @@ import 'firebase_options.dart';
 import 'src/app.dart';
 import 'src/core/providers/shared_preferences_provider.dart';
 import 'src/core/services/app_logger.dart';
+import 'src/core/services/crashlytics_service.dart';
 import 'src/core/services/notification_service.dart';
 
-void main() async {
+// SPEC-80: envolvemos main en runZonedGuarded para capturar
+// excepciones async no manejadas y enviarlas a Crashlytics tras
+// pasar por el PII scrubber.
+void main() {
+  runZonedGuarded<Future<void>>(
+    () async {
+      await _bootstrap();
+    },
+    (error, stack) => CrashlyticsService.recordError(
+      error,
+      stack,
+      reason: 'unhandled_async_error',
+      fatal: true,
+    ),
+  );
+}
+
+Future<void> _bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // SPEC-76 fix: inicializar locale 'es' para que DateFormat con
@@ -23,6 +43,11 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  // SPEC-80: enganchar handlers de error globales lo antes posible
+  // tras inicializar Firebase. Crashlytics solo reporta en release
+  // mode mobile (web queda no soportado; debug solo loguea).
+  await CrashlyticsService.init();
 
   // SPEC-73.1 (housekeeping): AppCheck se omite en web debug porque la
   // clave reCAPTCHA v3 placeholder produce errores ruidosos en consola
