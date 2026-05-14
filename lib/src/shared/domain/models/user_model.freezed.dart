@@ -55,7 +55,12 @@ mixin _$UserModel {
   bool get healthDisclaimerAccepted => throw _privateConstructorUsedError;
   @OptionalTimestampConverter()
   DateTime? get healthDisclaimerAcceptedAt =>
-      throw _privateConstructorUsedError;
+      throw _privateConstructorUsedError; // SPEC-76: versión del disclaimer aceptado. Si cambia
+// `kHealthDisclaimerVersion`, los usuarios con versión menor
+// vuelven a ver el paso 0 del onboarding. Default 0 = nunca
+// aceptado (compatible con usuarios pre-SPEC-76 que se
+// re-promptean automáticamente al abrir la app).
+  int get healthDisclaimerVersion => throw _privateConstructorUsedError;
   CircadianProfile get profile => throw _privateConstructorUsedError;
 
   /// Serializes this UserModel to a JSON map.
@@ -96,6 +101,7 @@ abstract class $UserModelCopyWith<$Res> {
       int exerciseGoalMinutes,
       bool healthDisclaimerAccepted,
       @OptionalTimestampConverter() DateTime? healthDisclaimerAcceptedAt,
+      int healthDisclaimerVersion,
       CircadianProfile profile});
 
   $CircadianProfileCopyWith<$Res> get profile;
@@ -138,6 +144,7 @@ class _$UserModelCopyWithImpl<$Res, $Val extends UserModel>
     Object? exerciseGoalMinutes = null,
     Object? healthDisclaimerAccepted = null,
     Object? healthDisclaimerAcceptedAt = freezed,
+    Object? healthDisclaimerVersion = null,
     Object? profile = null,
   }) {
     return _then(_value.copyWith(
@@ -229,6 +236,10 @@ class _$UserModelCopyWithImpl<$Res, $Val extends UserModel>
           ? _value.healthDisclaimerAcceptedAt
           : healthDisclaimerAcceptedAt // ignore: cast_nullable_to_non_nullable
               as DateTime?,
+      healthDisclaimerVersion: null == healthDisclaimerVersion
+          ? _value.healthDisclaimerVersion
+          : healthDisclaimerVersion // ignore: cast_nullable_to_non_nullable
+              as int,
       profile: null == profile
           ? _value.profile
           : profile // ignore: cast_nullable_to_non_nullable
@@ -278,6 +289,7 @@ abstract class _$$UserModelImplCopyWith<$Res>
       int exerciseGoalMinutes,
       bool healthDisclaimerAccepted,
       @OptionalTimestampConverter() DateTime? healthDisclaimerAcceptedAt,
+      int healthDisclaimerVersion,
       CircadianProfile profile});
 
   @override
@@ -319,6 +331,7 @@ class __$$UserModelImplCopyWithImpl<$Res>
     Object? exerciseGoalMinutes = null,
     Object? healthDisclaimerAccepted = null,
     Object? healthDisclaimerAcceptedAt = freezed,
+    Object? healthDisclaimerVersion = null,
     Object? profile = null,
   }) {
     return _then(_$UserModelImpl(
@@ -410,6 +423,10 @@ class __$$UserModelImplCopyWithImpl<$Res>
           ? _value.healthDisclaimerAcceptedAt
           : healthDisclaimerAcceptedAt // ignore: cast_nullable_to_non_nullable
               as DateTime?,
+      healthDisclaimerVersion: null == healthDisclaimerVersion
+          ? _value.healthDisclaimerVersion
+          : healthDisclaimerVersion // ignore: cast_nullable_to_non_nullable
+              as int,
       profile: null == profile
           ? _value.profile
           : profile // ignore: cast_nullable_to_non_nullable
@@ -444,6 +461,7 @@ class _$UserModelImpl implements _UserModel {
       this.exerciseGoalMinutes = 20,
       this.healthDisclaimerAccepted = false,
       @OptionalTimestampConverter() this.healthDisclaimerAcceptedAt,
+      this.healthDisclaimerVersion = 0,
       required this.profile})
       : _pathologies = pathologies;
 
@@ -529,12 +547,20 @@ class _$UserModelImpl implements _UserModel {
   @override
   @OptionalTimestampConverter()
   final DateTime? healthDisclaimerAcceptedAt;
+// SPEC-76: versión del disclaimer aceptado. Si cambia
+// `kHealthDisclaimerVersion`, los usuarios con versión menor
+// vuelven a ver el paso 0 del onboarding. Default 0 = nunca
+// aceptado (compatible con usuarios pre-SPEC-76 que se
+// re-promptean automáticamente al abrir la app).
+  @override
+  @JsonKey()
+  final int healthDisclaimerVersion;
   @override
   final CircadianProfile profile;
 
   @override
   String toString() {
-    return 'UserModel(id: $id, name: $name, age: $age, gender: $gender, weight: $weight, height: $height, waistCircumference: $waistCircumference, neckCircumference: $neckCircumference, bodyFatPercentage: $bodyFatPercentage, pantSize: $pantSize, shirtSize: $shirtSize, isMeasurementEstimated: $isMeasurementEstimated, imrStdDev: $imrStdDev, confidenceLevel: $confidenceLevel, mealsPerDay: $mealsPerDay, fastingProtocol: $fastingProtocol, pathologies: $pathologies, activityLevel: $activityLevel, weeklyAdherence: $weeklyAdherence, exerciseGoalMinutes: $exerciseGoalMinutes, healthDisclaimerAccepted: $healthDisclaimerAccepted, healthDisclaimerAcceptedAt: $healthDisclaimerAcceptedAt, profile: $profile)';
+    return 'UserModel(id: $id, name: $name, age: $age, gender: $gender, weight: $weight, height: $height, waistCircumference: $waistCircumference, neckCircumference: $neckCircumference, bodyFatPercentage: $bodyFatPercentage, pantSize: $pantSize, shirtSize: $shirtSize, isMeasurementEstimated: $isMeasurementEstimated, imrStdDev: $imrStdDev, confidenceLevel: $confidenceLevel, mealsPerDay: $mealsPerDay, fastingProtocol: $fastingProtocol, pathologies: $pathologies, activityLevel: $activityLevel, weeklyAdherence: $weeklyAdherence, exerciseGoalMinutes: $exerciseGoalMinutes, healthDisclaimerAccepted: $healthDisclaimerAccepted, healthDisclaimerAcceptedAt: $healthDisclaimerAcceptedAt, healthDisclaimerVersion: $healthDisclaimerVersion, profile: $profile)';
   }
 
   @override
@@ -583,6 +609,9 @@ class _$UserModelImpl implements _UserModel {
                     healthDisclaimerAcceptedAt) ||
                 other.healthDisclaimerAcceptedAt ==
                     healthDisclaimerAcceptedAt) &&
+            (identical(
+                    other.healthDisclaimerVersion, healthDisclaimerVersion) ||
+                other.healthDisclaimerVersion == healthDisclaimerVersion) &&
             (identical(other.profile, profile) || other.profile == profile));
   }
 
@@ -612,6 +641,7 @@ class _$UserModelImpl implements _UserModel {
         exerciseGoalMinutes,
         healthDisclaimerAccepted,
         healthDisclaimerAcceptedAt,
+        healthDisclaimerVersion,
         profile
       ]);
 
@@ -655,6 +685,7 @@ abstract class _UserModel implements UserModel {
       final int exerciseGoalMinutes,
       final bool healthDisclaimerAccepted,
       @OptionalTimestampConverter() final DateTime? healthDisclaimerAcceptedAt,
+      final int healthDisclaimerVersion,
       required final CircadianProfile profile}) = _$UserModelImpl;
 
   factory _UserModel.fromJson(Map<String, dynamic> json) =
@@ -713,7 +744,14 @@ abstract class _UserModel implements UserModel {
   bool get healthDisclaimerAccepted;
   @override
   @OptionalTimestampConverter()
-  DateTime? get healthDisclaimerAcceptedAt;
+  DateTime?
+      get healthDisclaimerAcceptedAt; // SPEC-76: versión del disclaimer aceptado. Si cambia
+// `kHealthDisclaimerVersion`, los usuarios con versión menor
+// vuelven a ver el paso 0 del onboarding. Default 0 = nunca
+// aceptado (compatible con usuarios pre-SPEC-76 que se
+// re-promptean automáticamente al abrir la app).
+  @override
+  int get healthDisclaimerVersion;
   @override
   CircadianProfile get profile;
 

@@ -60,6 +60,13 @@ class UserModel with _$UserModel {
     @Default(false) bool healthDisclaimerAccepted,
     @OptionalTimestampConverter() DateTime? healthDisclaimerAcceptedAt,
 
+    // SPEC-76: versión del disclaimer aceptado. Si cambia
+    // `kHealthDisclaimerVersion`, los usuarios con versión menor
+    // vuelven a ver el paso 0 del onboarding. Default 0 = nunca
+    // aceptado (compatible con usuarios pre-SPEC-76 que se
+    // re-promptean automáticamente al abrir la app).
+    @Default(0) int healthDisclaimerVersion,
+
     required CircadianProfile profile,
   }) = _UserModel;
 

@@ -36,6 +36,8 @@ _$UserModelImpl _$$UserModelImplFromJson(Map<String, dynamic> json) =>
           json['healthDisclaimerAccepted'] as bool? ?? false,
       healthDisclaimerAcceptedAt: const OptionalTimestampConverter()
           .fromJson(json['healthDisclaimerAcceptedAt']),
+      healthDisclaimerVersion:
+          (json['healthDisclaimerVersion'] as num?)?.toInt() ?? 0,
       profile:
           CircadianProfile.fromJson(json['profile'] as Map<String, dynamic>),
     );
@@ -65,6 +67,7 @@ Map<String, dynamic> _$$UserModelImplToJson(_$UserModelImpl instance) =>
       'healthDisclaimerAccepted': instance.healthDisclaimerAccepted,
       'healthDisclaimerAcceptedAt': const OptionalTimestampConverter()
           .toJson(instance.healthDisclaimerAcceptedAt),
+      'healthDisclaimerVersion': instance.healthDisclaimerVersion,
       'profile': instance.profile.toJson(),
     };
 

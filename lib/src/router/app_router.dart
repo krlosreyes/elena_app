@@ -10,6 +10,7 @@ import 'package:elena_app/src/features/auth/presentation/login_screen.dart';
 import 'package:elena_app/src/features/auth/presentation/register_screen.dart';
 import 'package:elena_app/src/features/auth/presentation/forgot_password_screen.dart';
 import 'package:elena_app/src/features/auth/presentation/set_password_screen.dart';
+import 'package:elena_app/src/features/auth/presentation/disclaimer_screen.dart';
 import 'package:elena_app/src/features/onboarding/presentation/onboarding_screen.dart';
 import 'package:elena_app/src/features/dashboard/presentation/dashboard_screen.dart';
 import 'package:elena_app/src/features/auth/presentation/profile_screen.dart';
@@ -111,6 +112,12 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/profile/body-composition',
         name: 'body-composition',
         builder: (context, state) => const BodyCompositionScreen(),
+      ),
+      // SPEC-76: pantalla read-only del disclaimer médico.
+      GoRoute(
+        path: '/profile/disclaimer',
+        name: 'disclaimer',
+        builder: (context, state) => const DisclaimerScreen(),
       ),
       GoRoute(
         path: '/goals/setup',

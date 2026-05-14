@@ -14,6 +14,8 @@ import 'package:elena_app/src/features/auth/domain/app_account.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
 // SPEC-90: calcular % grasa con fórmula US Navy en lugar del default 20.
 import 'package:elena_app/src/features/profile/domain/body_fat_calculator.dart';
+// SPEC-76: disclaimer canonicalizado + versión.
+import 'package:elena_app/src/features/auth/domain/health_disclaimer.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -157,7 +159,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     //   Ritmos (2) y Hábitos (3) siempre se muestran porque el sitio
     //     no captura los 4 horarios ni pathologies ni mealsPerDay.
     final raw = account.rawProfile;
-    final disclaimerFromSite = raw?['healthDisclaimerAccepted'] == true;
+    // SPEC-76: el disclaimer del sitio solo cuenta como "ya aceptado"
+    // si fue capturado con la versión actual. Si el sitio reporta
+    // `healthDisclaimerAccepted` pero la versión es menor (o ausente),
+    // forzamos re-aceptación en la app.
+    final disclaimerAcceptedRaw = raw?['healthDisclaimerAccepted'] == true;
+    final disclaimerVersionRaw =
+        (raw?['healthDisclaimerVersion'] as num?)?.toInt() ?? 0;
+    final disclaimerNeedsReprompt = needsDisclaimerReprompt(
+      accepted: disclaimerAcceptedRaw,
+      acceptedVersion: disclaimerVersionRaw,
+    );
     final bodyFatMeasured = raw?['bio'] is Map &&
         (raw!['bio'] as Map)['bodyFatPct'] != null;
     final biometryComplete = prefill.weight != null &&
@@ -166,7 +178,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         bodyFatMeasured;
 
     final activeSteps = <int>[
-      if (!disclaimerFromSite) 0,
+      if (disclaimerNeedsReprompt) 0,
       if (!biometryComplete) 1,
       2,
       3,
@@ -222,9 +234,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         );
       }
 
-      // SPEC-84: si el sitio capturó el disclaimer, lo damos por
-      // aceptado para que el flujo no exija doble aceptación.
-      if (disclaimerFromSite) {
+      // SPEC-84 / SPEC-76: si el sitio capturó el disclaimer en la
+      // versión actual, lo damos por aceptado. Si la versión es
+      // distinta (o no existe), el flujo fuerza re-aceptación.
+      if (!disclaimerNeedsReprompt) {
         _disclaimerAccepted = true;
       }
 
@@ -344,36 +357,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         ),
         const SizedBox(height: 24),
 
-        // Lista de contraindicaciones (§11 del IMR_BIBLIOGRAPHY.md)
-        _DisclaimerItem(
-          icon: Icons.bloodtype_outlined,
-          title: 'Diabetes Tipo 1 / insulinodependiente',
-          body: 'El ayuno prolongado y el ejercicio sin ajuste de insulina pueden inducir hipoglucemia severa.',
-          isDark: isDark,
-        ),
-        _DisclaimerItem(
-          icon: Icons.psychology_alt_outlined,
-          title: 'Historial de TCA (anorexia, bulimia, atracón)',
-          body: 'La gamificación de horas de ayuno y el seguimiento de macros pueden ser triggers de recaída.',
-          isDark: isDark,
-        ),
-        _DisclaimerItem(
-          icon: Icons.water_drop_outlined,
-          title: 'Insuficiencia renal',
-          body: 'Las metas de hidratación y proteína sugeridas pueden no ser apropiadas con restricción hídrica clínica.',
-          isDark: isDark,
-        ),
-        _DisclaimerItem(
-          icon: Icons.pregnant_woman_outlined,
-          title: 'Embarazo o lactancia',
-          body: 'Tu fisiología está en un régimen de crecimiento, no de resiliencia. El IMR no aplica conceptualmente.',
-          isDark: isDark,
-        ),
-        _DisclaimerItem(
-          icon: Icons.elderly_outlined,
-          title: 'Sarcopenia severa o fragilidad (>75 años)',
-          body: 'La restricción de ventanas de comida puede comprometer la ingesta proteica necesaria para preservar masa magra.',
-          isDark: isDark,
+        // SPEC-76: consume la lista canonicalizada de
+        // `health_disclaimer.dart`. Cambios al texto pasan por allá.
+        ...kHealthDisclaimerConditions.map(
+          (c) => _DisclaimerItem(
+            icon: c.icon,
+            title: c.title,
+            body: c.body,
+            isDark: isDark,
+          ),
         ),
 
         const SizedBox(height: 8),
@@ -384,7 +376,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
-            'Si reconoces alguna de estas condiciones en ti, consulta con tu médico antes de aplicar las recomendaciones del IMR. La app puede acompañarte, pero no reemplaza criterio profesional.',
+            kHealthDisclaimerClosingNote,
             style: TextStyle(
               fontSize: 11.5,
               color: textSecondary,
@@ -427,7 +419,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'He leído estas condiciones y entiendo que el IMR no es un diagnóstico médico. Si alguna aplica a mí, consultaré con mi médico antes de seguir las recomendaciones de la app.',
+                    kHealthDisclaimerAcceptanceText,
                     style: TextStyle(
                       fontSize: 13,
                       color: textPrimary,
@@ -564,9 +556,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       mealsPerDay: _mealsPerDay,
       fastingProtocol: _fastingProtocol,
       pathologies: _pathologies,
-      // SPEC-70.8: persistir aceptación del disclaimer clínico.
+      // SPEC-70.8 / SPEC-76: persistir aceptación del disclaimer
+      // clínico con su versión. La versión permite re-prompt si en
+      // el futuro se modifica el texto o las condiciones.
       healthDisclaimerAccepted: _disclaimerAccepted,
       healthDisclaimerAcceptedAt: _disclaimerAccepted ? DateTime.now() : null,
+      healthDisclaimerVersion:
+          _disclaimerAccepted ? kHealthDisclaimerVersion : 0,
       profile: CircadianProfile(
         wakeUpTime: _timeToDateTime(_wakeUpTime),
         sleepTime: _timeToDateTime(_sleepTime),

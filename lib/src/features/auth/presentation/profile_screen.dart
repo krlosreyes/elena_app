@@ -359,6 +359,9 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
         // ── Acciones de cuenta ──────────────────────────────────────
         _buildSectionLabel('CUENTA'),
         const SizedBox(height: 12),
+        // SPEC-76: acceso permanente al disclaimer médico.
+        _buildDisclaimerTile(context),
+        const SizedBox(height: 12),
         _buildLogoutButton(context),
         const SizedBox(height: 12),
         _buildDeleteAccountButton(context),
@@ -612,6 +615,60 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  // SPEC-76: tile que abre la pantalla read-only del disclaimer.
+  Widget _buildDisclaimerTile(BuildContext context) {
+    return GestureDetector(
+      onTap: () => context.push('/profile/disclaimer'),
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceDark,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.borderDefault),
+        ),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.medical_information_outlined,
+              color: AppColors.statusWarn,
+              size: 20,
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Condiciones médicas',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    'Poblaciones de riesgo del IMR',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Color(0xFF94A3B8),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: Colors.white.withValues(alpha: 0.3),
+              size: 20,
+            ),
+          ],
+        ),
       ),
     );
   }
