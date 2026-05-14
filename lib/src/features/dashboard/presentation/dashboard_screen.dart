@@ -106,8 +106,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               fastingState: fastingState,
                               // SPEC-86: usar displayed (puede preferir
                               // el persistido del sitio sobre baseline).
+                              // SPEC-91: el badge de zona quedó fuera del
+                              // círculo; ya no se pasa `zone`.
                               score: displayedImr.score.toDouble(),
-                              zone: displayedImr.zone,
                             ),
                           ),
                         ),

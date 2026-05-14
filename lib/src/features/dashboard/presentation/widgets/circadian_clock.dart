@@ -10,14 +10,16 @@ class CircadianClock extends StatelessWidget {
   final UserModel user;
   final FastingState fastingState;
   final double score;
-  final String zone;
+
+  // SPEC-91: el badge `zone` (INESTABLE/ESTABLE/etc.) ya no se pinta
+  // dentro del reloj. Si en el futuro se reincorpora a otra pantalla,
+  // se vuelve a agregar como parámetro.
 
   const CircadianClock({
     super.key,
     required this.user,
     required this.fastingState,
     required this.score,
-    required this.zone,
   });
 
   @override
@@ -80,53 +82,24 @@ class CircadianClock extends StatelessWidget {
                   )
                 ),
                 Text(
-                  "${score.toInt()}", 
+                  "${score.toInt()}",
                   style: TextStyle(
-                    fontSize: size * 0.25, 
-                    height: 1.0, 
+                    fontSize: size * 0.25,
+                    height: 1.0,
                     color: colorDeTexto,
                     fontWeight: FontWeight.w900,
                     fontFamily: 'monospace',
                   )
                 ),
-                const SizedBox(height: 6),
-                
-                _buildZoneBadge(size),
+                // SPEC-91: badge de zona (INESTABLE/ESTABLE/etc.) removido
+                // del círculo del IMR; se veía visualmente ruidoso encima
+                // de las capas del reloj. El estado sigue disponible en la
+                // pantalla Análisis y vía `zone` para futuros usos.
               ],
             ),
           ],
         );
       },
-    );
-  }
-
-  Widget _buildZoneBadge(double size) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      decoration: BoxDecoration(
-        color: AppColors.metabolicGreen.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: AppColors.metabolicGreen.withValues(alpha: 0.3),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.bolt, color: AppColors.metabolicGreen, size: size * 0.04),
-          const SizedBox(width: 4),
-          Text(
-            zone.toUpperCase(), 
-            style: TextStyle(
-              color: AppColors.metabolicGreen, 
-              fontWeight: FontWeight.w900,
-              fontSize: size * 0.035,
-              letterSpacing: 1.0,
-            )
-          ),
-        ],
-      ),
     );
   }
 
