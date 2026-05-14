@@ -22,10 +22,10 @@ import 'package:elena_app/src/features/adaptive/presentation/widgets/adaptive_su
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
 import 'package:elena_app/src/features/nutrition/presentation/add_past_meal_sheet.dart';
 import 'package:elena_app/src/features/dashboard/presentation/sleep_input_sheet.dart';
-// SPEC-12: Composición Corporal Visible
-import 'package:elena_app/src/features/profile/presentation/widgets/body_composition_card.dart';
-// SPEC-14: Objetivos del Usuario
-import 'package:elena_app/src/features/goals/presentation/widgets/goals_dashboard_widget.dart';
+// SPEC-88 fix: BodyCompositionCard y GoalsDashboardWidget se retiraron
+// del Dashboard. La primera vive ahora en Profile; la segunda queda
+// accesible vía `/goals/setup`. Los imports se mantuvieron eliminados
+// para evitar dependencias huérfanas.
 /// SPEC-72.4: pilar seleccionado en la fila "PILARES HOY".
 /// Determina qué tarjeta de soporte se renderiza debajo.
 enum SelectedPillar { ayuno, sueno, hidratacion, ejercicio, comidas }
@@ -161,17 +161,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   ),
                   const SizedBox(height: 20),
 
-                  // SPEC-12: Composición corporal (conservada)
-                  const BodyCompositionCard(),
-                  const SizedBox(height: 20),
-
-                  // SPEC-14: Objetivos del Usuario (conservado)
-                  const GoalsDashboardWidget(),
-                  const SizedBox(height: 16),
-
-                  // SPEC-15: Road Map (conservado)
-                  _buildProgressCTA(context),
-                  const SizedBox(height: 30),
+                  // SPEC-88 fix: BodyCompositionCard, GoalsDashboardWidget
+                  // y _buildProgressCTA se removieron del Dashboard a
+                  // pedido del líder de proyecto. La composición
+                  // corporal vive ahora en Profile (SPEC-88). Objetivos
+                  // y Road Map quedan accesibles desde sus pantallas
+                  // dedicadas (/goals/setup y /progress) — el atajo en
+                  // Dashboard se considera ruido visual.
+                  const SizedBox(height: 10),
                 ],
               ),
             ),
@@ -1201,62 +1198,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  // ───────────────────────────────────────────────────────────────────────
-  //  Componentes conservados del rediseño anterior
-  // ───────────────────────────────────────────────────────────────────────
-
-  // SPEC-15: Botón de acceso al Road Map de Avance Personal
-  Widget _buildProgressCTA(BuildContext context) {
-    return GestureDetector(
-      onTap: () => context.push('/progress'),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-        decoration: BoxDecoration(
-          color: const Color(0xFF1E293B),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: const Color(0xFF1ABC9C).withValues(alpha: 0.2),
-            width: 1.5,
-          ),
-        ),
-        child: Row(
-          children: [
-            const Text('📈', style: TextStyle(fontSize: 18)),
-            const SizedBox(width: 12),
-            const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Ver mi Road Map',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                    ),
-                  ),
-                  SizedBox(height: 1),
-                  Text(
-                    'Evolución IMR · Composición · Objetivos',
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: Color(0xFF1ABC9C),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(
-              Icons.chevron_right_rounded,
-              color: const Color(0xFF1ABC9C).withValues(alpha: 0.6),
-              size: 20,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  // _buildProgressCTA eliminado en SPEC-88 fix. El acceso al Road Map
+  // queda disponible vía la ruta `/progress` (futuro entry point en
+  // navegación principal o desde Profile).
 
   // _buildSectionLabel, _buildMetricsGrid, _buildSleepCard, _buildHydrationCard,
   // _buildExerciseCard y _buildNutritionCard eliminados en el rediseño:

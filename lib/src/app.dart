@@ -27,10 +27,14 @@ class ElenaApp extends ConsumerWidget {
       minTextAdapt: true,
       splitScreenMode: true,
       builder: (context, child) {
+        // SPEC-89: forzamos dark theme en ambos slots + themeMode.dark
+        // para evitar flash de light durante transiciones del sistema.
         return MaterialApp.router(
           debugShowCheckedModeBanner: false,
           title: 'ElenaApp',
-          theme: AppTheme.darkTheme, // Aplicamos tu tema profesional
+          theme: AppTheme.dark,
+          darkTheme: AppTheme.dark,
+          themeMode: ThemeMode.dark,
           routerConfig: router,
         );
       },
