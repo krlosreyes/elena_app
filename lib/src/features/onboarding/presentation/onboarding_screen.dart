@@ -12,6 +12,8 @@ import 'package:elena_app/src/features/onboarding/presentation/widgets/prefill_c
 import 'package:elena_app/src/features/auth/application/auth_telemetry.dart';
 import 'package:elena_app/src/features/auth/domain/app_account.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
+// SPEC-90: calcular % grasa con fórmula US Navy en lugar del default 20.
+import 'package:elena_app/src/features/profile/domain/body_fat_calculator.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -520,6 +522,31 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
     final age = DateTime.now().year - _birthDate.year;
 
+    // SPEC-90: calcular % grasa con la fórmula US Navy desde los
+    // inputs que el onboarding ya capturó (cintura, cuello, altura,
+    // género). Antes este campo se dejaba caer al @Default(20.0) del
+    // UserModel, lo cual contaminaba sistemáticamente el bloque
+    // Estructura del IMR para todo usuario nuevo.
+    final bool isMale = _gender.toUpperCase() == 'M';
+    final double calculatedBodyFat =
+        BodyFatCalculator.calculateBodyFatPercentage(
+      waistCm: _waist,
+      neckCm: _neck,
+      heightCm: _height,
+      isMale: isMale,
+    );
+    final bool coherent = calculatedBodyFat > 0 &&
+        BodyFatCalculator.isCoherent(
+          weight: _weight,
+          height: _height,
+          calculatedBodyFatPct: calculatedBodyFat,
+        );
+    // Fallback seguro si el cálculo da resultado incoherente (ej.
+    // cintura ≤ cuello). Mejor a usar el viejo default 20.
+    final double bodyFatToPersist =
+        coherent ? calculatedBodyFat : (isMale ? 15.0 : 25.0);
+    final String confidence = coherent ? 'ALTA' : 'MEDIA';
+
     final user = UserModel(
       id: account.uid,
       name: account.displayName ?? 'Usuario',
@@ -529,6 +556,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       height: _height,
       waistCircumference: _waist,
       neckCircumference: _neck,
+      bodyFatPercentage: bodyFatToPersist,
+      isMeasurementEstimated: !coherent,
+      confidenceLevel: confidence,
       pantSize: _pantSize,
       shirtSize: _shirtSize,
       mealsPerDay: _mealsPerDay,

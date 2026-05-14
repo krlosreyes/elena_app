@@ -100,6 +100,8 @@ El IMR final combina tres bloques: Estructura corporal, Metabolismo (ayuno + adh
 
 > **SPEC-70.3.1 candidato:** estratificar también el `range` por edad (la varianza FFMI poblacional comprime ~10% en mayores de 70). Esperar datos propios antes de implementar — el efecto es marginal frente a la corrección del baseline.
 
+> **SPEC-90 nota:** el `bodyFatPercentage` que alimenta este cálculo dejó de usar el default genérico `20.0` del `UserModel` Freezed. Ahora se calcula en el onboarding con la fórmula US Navy desde cintura, cuello, altura y género (`BodyFatCalculator.calculateBodyFatPercentage`). Antes de SPEC-90 todo usuario que se registraba desde la app arrancaba con %grasa = 20 literal, sesgando sistemáticamente su `leanMass` y por ende su FFMI y bloque Estructura. Usuarios MR-only siguen recibiendo `bodyFatPercentage` desde `bio.bodyFatPct` del sitio (SPEC-84). Fallback seguro 15% hombres / 25% mujeres cuando los inputs antropométricos son incoherentes.
+
 ---
 
 ## §3 — Bloque Metabolismo
