@@ -15,11 +15,16 @@ class BiologicalCyclesPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-    
+
     // --- MEDIDAS PROPORCIONALES ---
     final double radiusPhases = size.width * 0.38; // Coincide con Fasting/Eating Painters
     final double strokeWidthPhases = size.width * 0.05;
     final rectPhases = Rect.fromCircle(center: center, radius: radiusPhases);
+
+    // SPEC-103.2: comunicación día/noche con símbolos sol/luna
+    // sutiles en cima (00:00) y fondo (12:00) del reloj.
+    // Reemplaza al SweepGradient anterior que enturbiaba el centro.
+    _drawCelestialSymbols(canvas, center, size.width);
 
     // 1. Marcas horarias
     _drawHourMarkers(canvas, center, radiusPhases, size.width);
@@ -27,23 +32,89 @@ class BiologicalCyclesPainter extends CustomPainter {
     // 2. Fases Biológicas Dinámicas
     for (var phase in CircadianRules.allPhases) {
       final bool isActive = CircadianRules.isPhaseActive(phase, currentTime);
-      
-      final Color displayColor = isActive 
-          ? CircadianTheme.getColorForPhase(phase.label) 
-          : Colors.grey.withValues(alpha: 0.15); // Un poco más tenue para Android
+
+      // SPEC-103.1: bajar saturación de la fase activa para que el
+      // anillo exterior NO compita con el arco interno (verde ayuno /
+      // naranja ventana). El usuario sigue identificando la fase
+      // activa por el color + el texto "ACTIVO" en blanco, pero ya
+      // no domina visualmente la card.
+      final Color displayColor = isActive
+          ? CircadianTheme.getColorForPhase(phase.label)
+              .withValues(alpha: 0.45)
+          : Colors.grey.withValues(alpha: 0.15);
 
       _drawPhase(
-        canvas, 
-        rectPhases, 
-        phase.startHour, 
-        phase.endHour, 
-        displayColor, 
-        phase.label, 
+        canvas,
+        rectPhases,
+        phase.startHour,
+        phase.endHour,
+        displayColor,
+        phase.label,
         strokeWidthPhases,
         isActive,
         size.width,
       );
     }
+  }
+
+  /// SPEC-103.4: símbolos día/noche AFUERA del reloj, al lado de los
+  /// labels horarios.
+  ///   Sol a la derecha del 06 (amanecer, ángulo 0 / este).
+  ///   Luna a la izquierda del 18 (anochecer, ángulo π / oeste).
+  ///
+  /// El sol nace por el este (06:00) y se oculta por el oeste (18:00).
+  /// Esa coherencia semántica es la clave del patrón.
+  ///
+  /// Radio 0.55 — al exterior del label numérico, que vive en ~0.51 y
+  /// se extiende hasta ~0.525 por su ancho. El painter desborda
+  /// ligeramente el SizedBox del CircadianClock pero el Stack padre
+  /// no recorta (confirmado: el label "06" en sí ya desborda y se ve
+  /// completo).
+  void _drawCelestialSymbols(Canvas canvas, Offset center, double fullWidth) {
+    final double iconRadius = fullWidth * 0.55;
+    final double iconSize = fullWidth * 0.045;
+    final Color tintColor = Colors.white.withValues(alpha: 0.40);
+
+    // Sol en 06:00 → este → ángulo 0.
+    const double sunAngle = 0;
+    final sunPos = Offset(
+      center.dx + iconRadius * math.cos(sunAngle),
+      center.dy + iconRadius * math.sin(sunAngle),
+    );
+    _paintIcon(canvas, Icons.light_mode_outlined, sunPos, iconSize, tintColor);
+
+    // Luna en 18:00 → oeste → ángulo π.
+    const double moonAngle = math.pi;
+    final moonPos = Offset(
+      center.dx + iconRadius * math.cos(moonAngle),
+      center.dy + iconRadius * math.sin(moonAngle),
+    );
+    _paintIcon(canvas, Icons.dark_mode_outlined, moonPos, iconSize, tintColor);
+  }
+
+  void _paintIcon(
+    Canvas canvas,
+    IconData icon,
+    Offset position,
+    double size,
+    Color color,
+  ) {
+    final tp = TextPainter(
+      text: TextSpan(
+        text: String.fromCharCode(icon.codePoint),
+        style: TextStyle(
+          fontSize: size,
+          fontFamily: icon.fontFamily,
+          package: icon.fontPackage,
+          color: color,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    tp.paint(
+      canvas,
+      Offset(position.dx - tp.width / 2, position.dy - tp.height / 2),
+    );
   }
 
   void _drawHourMarkers(Canvas canvas, Offset center, double radius, double fullWidth) {
