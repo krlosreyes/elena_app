@@ -139,12 +139,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     const SizedBox(height: 12),
                   ],
 
-                  // 3 indicadores horizontales: FASE / BLOQUEO INTESTINAL / ALINEACIÓN
-                  _buildPhaseIndicators(
-                    fastingState: fastingState,
-                    alignmentPct: (result.circadianAlignment * 100).round(),
-                  ),
-                  const SizedBox(height: 20),
+                  // SPEC-104: card de FASE / BLOQUEO INTESTINAL / ALINEACIÓN
+                  // eliminada. Razones:
+                  //   - FASE ya se comunica en el anillo del reloj.
+                  //   - BLOQUEO INTESTINAL pasivo no es accionable —
+                  //     futura SPEC convertirlo en alerta condicional <3h.
+                  //   - ALINEACIÓN al 100% sin desglose contradecía un
+                  //     IMR bajo (confuso para el usuario).
+                  // El reloj central ya cumple el rol comunicativo
+                  // primario del dashboard.
 
                   // PILARES HOY (5 anillos circulares interactivos)
                   _buildPillarsRow(
@@ -208,88 +211,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   //  Nuevos componentes del rediseño
   // ───────────────────────────────────────────────────────────────────────
 
-  /// Tarjeta horizontal con 3 indicadores: FASE / BLOQUEO / ALINEACIÓN.
-  /// Datos derivados de `fastingState` (que ya incluye circadianPhase
-  /// y timeUntilLock vía CircadianRules) y `result.circadianAlignment`.
-  Widget _buildPhaseIndicators({
-    required FastingState fastingState,
-    required int alignmentPct,
-  }) {
-    String twoDigits(int n) => n.toString().padLeft(2, '0');
-    final lock = fastingState.timeUntilLock;
-    final lockText = lock <= Duration.zero
-        ? 'Activo'
-        : '${lock.inHours}h ${twoDigits(lock.inMinutes.remainder(60))}m';
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _phaseIndicatorTile(
-            icon: Icons.wb_sunny_rounded,
-            iconColor: const Color(0xFFFBBF24),
-            label: 'FASE ACTUAL',
-            value: fastingState.circadianPhase.toUpperCase(),
-            valueColor: const Color(0xFFFBBF24),
-          ),
-          _phaseIndicatorTile(
-            icon: Icons.lock_clock_rounded,
-            iconColor: AppColors.metabolicGreen,
-            label: 'BLOQUEO INTESTINAL',
-            value: lockText,
-            valueColor: AppColors.metabolicGreen,
-          ),
-          _phaseIndicatorTile(
-            icon: Icons.tune_rounded,
-            iconColor: const Color(0xFF8B5CF6),
-            label: 'ALINEACIÓN',
-            value: '$alignmentPct%',
-            valueColor: const Color(0xFF8B5CF6),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _phaseIndicatorTile({
-    required IconData icon,
-    required Color iconColor,
-    required String label,
-    required String value,
-    required Color valueColor,
-  }) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, color: iconColor, size: 22),
-        const SizedBox(height: 6),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 8,
-            color: Colors.white.withValues(alpha: 0.5),
-            fontWeight: FontWeight.w900,
-            letterSpacing: 0.6,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 14,
-            color: valueColor,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-      ],
-    );
-  }
+  // SPEC-104: `_buildPhaseIndicators` y `_phaseIndicatorTile` eliminados
+  // junto con la card que renderizaban. Ver razones en el callsite.
 
   /// Fila horizontal de 5 anillos circulares — uno por pilar.
   /// Cada anillo es interactivo y abre su sheet de input correspondiente.
