@@ -9,6 +9,12 @@
 # packages, and plugins designed to encourage good coding practices.
 include: package:flutter_lints/flutter.yaml
 
+# SPEC-93: bloque `analyzer:` único. Antes existían dos bloques
+# `analyzer:` separados (este + uno al final del archivo con un
+# `exclude` apuntando a `lib/src/legacy/**` que no existe en el repo),
+# lo cual generaba el error `Duplicate mapping key` en `flutter
+# analyze`. Si en el futuro se necesita excluir alguna ruta, se agrega
+# aquí como `exclude:` sub-clave.
 analyzer:
   errors:
     invalid_annotation_target: ignore
@@ -31,7 +37,3 @@ linter:
 
 # Additional information about this file can be found at
 # https://dart.dev/guides/language/analysis-options
-
-analyzer:
-  exclude:
-    - lib/src/legacy/**
