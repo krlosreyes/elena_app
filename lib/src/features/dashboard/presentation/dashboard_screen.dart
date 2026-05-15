@@ -12,9 +12,11 @@ import 'package:elena_app/src/features/dashboard/application/fasting_notifier.da
 import 'package:elena_app/src/features/dashboard/application/sleep_notifier.dart';
 import 'package:elena_app/src/features/dashboard/application/hydration_notifier.dart';
 import 'package:elena_app/src/features/dashboard/domain/fasting_status.dart';
+import 'package:elena_app/src/features/auth/application/profile_controller.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/circadian_clock.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/live_fasting_clock.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/pillar_ring.dart';
+import 'package:elena_app/src/features/dashboard/presentation/widgets/protocol_selector_sheet.dart';
 import 'package:elena_app/src/features/exercise/application/exercise_notifier.dart';
 import 'package:elena_app/src/features/exercise/application/exercise_state.dart';
 import 'package:elena_app/src/features/exercise/presentation/exercise_input_sheet.dart';
@@ -464,15 +466,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 color: accent,
               ),
               const SizedBox(width: 10),
+              // SPEC-98: chip clickable que abre el ProtocolSelectorSheet.
+              // Si el ayuno está activo, el chip se deshabilita
+              // visualmente y el tap muestra un snackbar explicativo.
               Padding(
                 padding: const EdgeInsets.only(bottom: 4),
-                child: Text(
-                  state.fastingProtocol,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.6),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                  ),
+                child: _buildProtocolChip(
+                  context: context,
+                  ref: ref,
+                  protocol: state.fastingProtocol,
+                  isActive: isActive,
                 ),
               ),
             ],
@@ -1262,6 +1265,89 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         SizedBox(width: double.infinity, height: 42, child: ElevatedButton(onPressed: isSaving ? null : onConfirm, style: ElevatedButton.styleFrom(backgroundColor: iconColor, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))), child: isSaving ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : Text(buttonLabel, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 12)))),
       ]),
     );
+  }
+
+  /// SPEC-98: chip clickable que muestra el protocolo activo y abre
+  /// el selector. Si el ayuno está en curso, el chip queda
+  /// deshabilitado (cambiar protocolo a mitad de ayuno corrompería
+  /// el cómputo de progreso y de fase).
+  Widget _buildProtocolChip({
+    required BuildContext context,
+    required WidgetRef ref,
+    required String protocol,
+    required bool isActive,
+  }) {
+    final double alpha = isActive ? 0.35 : 0.85;
+    return InkWell(
+      onTap: () => _onProtocolChipTap(context, ref, protocol, isActive),
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.04),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.10),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              protocol,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: alpha),
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Icon(
+              isActive
+                  ? Icons.lock_outline_rounded
+                  : Icons.expand_more_rounded,
+              size: 14,
+              color: Colors.white.withValues(alpha: alpha),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _onProtocolChipTap(
+    BuildContext context,
+    WidgetRef ref,
+    String currentProtocol,
+    bool isActive,
+  ) async {
+    if (isActive) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'No puedes cambiar protocolo durante un ayuno activo. '
+            'Finaliza primero.',
+          ),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
+    final selected = await ProtocolSelectorSheet.show(
+      context,
+      currentProtocol: currentProtocol,
+    );
+    if (selected == null || selected == currentProtocol) return;
+
+    final user = ref.read(currentUserStreamProvider).valueOrNull;
+    if (user == null) return;
+
+    await ref.read(profileControllerProvider.notifier).updateFastingProtocol(
+          currentUser: user,
+          protocol: selected,
+        );
   }
 
   /// SPEC-97: picker dedicado para corregir la hora de inicio del
