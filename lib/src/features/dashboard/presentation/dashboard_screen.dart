@@ -17,6 +17,7 @@ import 'package:elena_app/src/features/dashboard/application/fasting_history_pro
 import 'package:elena_app/src/features/dashboard/domain/relative_day_label.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/circadian_clock.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/early_fasting_end_dialog.dart';
+import 'package:elena_app/src/features/dashboard/presentation/widgets/meals_locked_dialog.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/live_fasting_clock.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/pillar_ring.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/protocol_selector_sheet.dart';
@@ -290,16 +291,23 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 onTap: () =>
                     setState(() => _selectedPillar = SelectedPillar.ejercicio),
               ),
-              PillarRing(
-                icon: Icons.restaurant_rounded,
-                color: Colors.orangeAccent,
-                progress: nutrition.progressPercentage,
-                label: 'Comidas',
-                isSelected: _selectedPillar == SelectedPillar.comidas,
-                completed:
-                    nutrition.mealsLoggedToday >= nutrition.targetMeals,
-                onTap: () =>
-                    setState(() => _selectedPillar = SelectedPillar.comidas),
+              // SPEC-105: si hay ayuno activo, el PillarRing de Comidas
+              // se ve tenue (opacity 0.5) para señal visual consistente
+              // con el bloqueo. Sigue tappable — el usuario puede entrar
+              // a la card y ver el banner explicativo.
+              Opacity(
+                opacity: fastingState.isActive ? 0.5 : 1.0,
+                child: PillarRing(
+                  icon: Icons.restaurant_rounded,
+                  color: Colors.orangeAccent,
+                  progress: nutrition.progressPercentage,
+                  label: 'Comidas',
+                  isSelected: _selectedPillar == SelectedPillar.comidas,
+                  completed:
+                      nutrition.mealsLoggedToday >= nutrition.targetMeals,
+                  onTap: () => setState(
+                      () => _selectedPillar = SelectedPillar.comidas),
+                ),
               ),
             ],
           ),
@@ -551,7 +559,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         _buildHidratacionCard(context, ref, hydration),
       SelectedPillar.ejercicio =>
         _buildEjercicioCard(context, ref, exercise, user),
-      SelectedPillar.comidas => _buildComidasCard(context, ref, nutrition),
+      SelectedPillar.comidas => _buildComidasCard(
+          context, ref, nutrition,
+          isFastingActive: fastingState.isActive,
+        ),
     };
   }
 
@@ -803,68 +814,149 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   // ─── COMIDAS: "Nutrición Científica" ──────────────────────────────────
+  //
+  // SPEC-105: cuando hay ayuno activo, la card se renderea en estado
+  // bloqueado: banner visible arriba, contenido con opacity 0.5,
+  // botones disabled, y tap en cualquier parte abre diálogo educativo.
   Widget _buildComidasCard(
-      BuildContext context, WidgetRef ref, NutritionState state) {
+    BuildContext context,
+    WidgetRef ref,
+    NutritionState state, {
+    required bool isFastingActive,
+  }) {
     const accent = Color(0xFFFB923C);
     final progress = state.progressPercentage;
     final pct = (progress * 100).round();
     final scoreNum = (state.nutritionScore.clamp(0.0, 1.0) * 100).round();
 
-    return _pillarCardShell(
+    final card = _pillarCardShell(
       title: 'Nutrición Científica',
       badge: '${state.mealsLoggedToday}/${state.targetMeals} comidas',
       accent: accent,
       children: [
-        _progressBar(progress, accent),
-        const SizedBox(height: 6),
-        _completionLabel(pct),
-        const SizedBox(height: 14),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            _miniStat('Próxima', state.nextMealLabel, accent, big: true),
-            _miniStat('En', _estimateNextMealIn(state), accent, big: true),
-            _miniStat('Score nutricional', '$scoreNum', Colors.white,
-                big: true),
-          ],
-        ),
-        const SizedBox(height: 16),
-        _benefitChip(
-          accent: accent,
-          text: state.windowAdherence >= 0.5
-              ? '✓ Comidas dentro de ventana circadiana — alineación con ritmo metabólico óptima'
-              : 'Mantén tus comidas dentro de la ventana circadiana para alinear tu ritmo metabólico.',
-        ),
-        const SizedBox(height: 18),
-        _primaryButton(
-          label: 'Registrar ${state.nextMealLabel}',
-          icon: Icons.restaurant_rounded,
-          color: accent,
-          onPressed: state.isSaving
-              ? null
-              : () =>
-                  ref.read(nutritionProvider.notifier).logMeal(),
-        ),
-        const SizedBox(height: 10),
-        _secondaryButton(
-          label: 'Registrar comida pasada',
-          icon: Icons.history_rounded,
-          onPressed: () => showModalBottomSheet<void>(
-            context: context,
-            isScrollControlled: true,
-            backgroundColor: Colors.transparent,
-            builder: (_) => const AddPastMealSheet(),
+        if (isFastingActive) ...[
+          _buildMealsLockedBanner(),
+          const SizedBox(height: 14),
+        ],
+        Opacity(
+          opacity: isFastingActive ? 0.45 : 1.0,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _progressBar(progress, accent),
+              const SizedBox(height: 6),
+              _completionLabel(pct),
+              const SizedBox(height: 14),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _miniStat('Próxima', state.nextMealLabel, accent, big: true),
+                  _miniStat('En', _estimateNextMealIn(state), accent,
+                      big: true),
+                  _miniStat('Score nutricional', '$scoreNum', Colors.white,
+                      big: true),
+                ],
+              ),
+              const SizedBox(height: 16),
+              _benefitChip(
+                accent: accent,
+                text: state.windowAdherence >= 0.5
+                    ? '✓ Comidas dentro de ventana circadiana — alineación con ritmo metabólico óptima'
+                    : 'Mantén tus comidas dentro de la ventana circadiana para alinear tu ritmo metabólico.',
+              ),
+              const SizedBox(height: 18),
+              _primaryButton(
+                label: 'Registrar ${state.nextMealLabel}',
+                icon: Icons.restaurant_rounded,
+                color: accent,
+                onPressed: isFastingActive || state.isSaving
+                    ? null
+                    : () => ref.read(nutritionProvider.notifier).logMeal(),
+              ),
+              const SizedBox(height: 10),
+              _secondaryButton(
+                label: 'Registrar comida pasada',
+                icon: Icons.history_rounded,
+                onPressed: isFastingActive
+                    ? null
+                    : () => showModalBottomSheet<void>(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (_) => const AddPastMealSheet(),
+                        ),
+              ),
+              const SizedBox(height: 10),
+              _secondaryButton(
+                label: 'Deshacer última comida registrada',
+                icon: Icons.undo_rounded,
+                onPressed: isFastingActive || state.todayLogs.isEmpty
+                    ? null
+                    : () => ref
+                        .read(nutritionProvider.notifier)
+                        .removeLastMeal(),
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 10),
-        _secondaryButton(
-          label: 'Deshacer última comida registrada',
-          icon: Icons.undo_rounded,
-          onPressed: state.todayLogs.isEmpty
-              ? null
-              : () => ref.read(nutritionProvider.notifier).removeLastMeal(),
-        ),
       ],
+    );
+
+    // Cuando hay ayuno activo, envolver con GestureDetector que
+    // captura el tap (los botones internos están `onPressed: null` y
+    // no consumen el evento) y dispara el diálogo educativo. Si el
+    // usuario confirma "Ir a Ayuno", cambiamos el pilar seleccionado.
+    if (!isFastingActive) return card;
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () async {
+        final goToFasting =
+            await MealsLockedDuringFastingDialog.show(context);
+        if (goToFasting == true && mounted) {
+          setState(() => _selectedPillar = SelectedPillar.ayuno);
+        }
+      },
+      child: card,
+    );
+  }
+
+  /// SPEC-105: banner siempre opaco encima de la card de Comidas
+  /// cuando hay ayuno activo. Comunica el motivo del bloqueo sin
+  /// requerir tap.
+  Widget _buildMealsLockedBanner() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.metabolicGreen.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: AppColors.metabolicGreen.withValues(alpha: 0.30),
+        ),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.lock_clock_rounded,
+            color: AppColors.metabolicGreen,
+            size: 18,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Pausado durante ayuno activo — termina tu ayuno '
+              'para registrar comidas.',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.85),
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
