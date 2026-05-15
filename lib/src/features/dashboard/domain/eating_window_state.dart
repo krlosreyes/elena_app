@@ -7,6 +7,7 @@
 // Este value object encapsula la ventana de alimentación como concepto
 // propio: cuándo empezó, cuándo cierra, cuánto va, dónde estamos.
 
+import 'package:elena_app/src/features/dashboard/domain/optimal_schedule.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 
 /// Estado relativo a la ventana de alimentación del día.
@@ -150,14 +151,39 @@ class EatingWindowState {
     return 14;
   }
 
-  /// Fallback cuando no hay un `lastInterval` confiable. Usa el
-  /// `firstMealGoal` del perfil circadiano del día de hoy; si tampoco
-  /// existe, las 08:00 hora local.
+  /// Fallback cuando no hay un `lastInterval` confiable.
+  ///
+  /// SPEC-96: la fuente canónica es el `OptimalScheduleCalculator`
+  /// derivado del `fastingProtocol`. El `firstMealGoal` del perfil
+  /// solo se respeta si está dentro de la tolerancia ±60 min del
+  /// óptimo (el usuario tiene preferencia social pero coherente).
+  ///
+  /// Si el `firstMealGoal` está fuera de tolerancia, gana el óptimo
+  /// — la app empuja activamente hacia el comportamiento correcto.
+  /// Si no hay `firstMealGoal` configurado, también gana el óptimo.
   static DateTime _fallbackWindowStart(UserModel user, DateTime now) {
+    final optimal = OptimalScheduleCalculator.forProtocol(user.fastingProtocol);
     final DateTime? goal = user.profile.firstMealGoal;
-    if (goal != null) {
+
+    if (goal == null) {
+      // Sin preferencia explícita → óptimo canónico.
+      return DateTime(now.year, now.month, now.day,
+          optimal.windowStart.hour, optimal.windowStart.minute);
+    }
+
+    // Verificar si la preferencia del usuario está dentro de tolerancia.
+    final int goalMinutes = goal.hour * 60 + goal.minute;
+    final int optimalMinutes =
+        optimal.windowStart.hour * 60 + optimal.windowStart.minute;
+    final int delta = (goalMinutes - optimalMinutes).abs();
+
+    if (delta <= OptimalScheduleCalculator.kToleranceMinutes) {
+      // Dentro de tolerancia → respetar preferencia del usuario.
       return DateTime(now.year, now.month, now.day, goal.hour, goal.minute);
     }
-    return DateTime(now.year, now.month, now.day, 8, 0);
+
+    // Fuera de tolerancia → óptimo canónico.
+    return DateTime(now.year, now.month, now.day,
+        optimal.windowStart.hour, optimal.windowStart.minute);
   }
 }

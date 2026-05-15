@@ -13,6 +13,7 @@ import 'package:elena_app/src/features/auth/application/auth_telemetry.dart';
 import 'package:elena_app/src/features/auth/domain/app_account.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
 // SPEC-90: calcular % grasa con fórmula US Navy en lugar del default 20.
+import 'package:elena_app/src/features/dashboard/domain/optimal_schedule.dart';
 import 'package:elena_app/src/features/profile/domain/body_fat_calculator.dart';
 // SPEC-76: disclaimer canonicalizado + versión.
 import 'package:elena_app/src/features/auth/domain/health_disclaimer.dart';
@@ -58,14 +59,23 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   String _shirtSize = "L";
 
   // --- PASO 2: RITMOS ---
+  // SPEC-96: los defaults se calculan desde OptimalScheduleCalculator
+  // según el protocolo elegido. Cuando el usuario cambia protocolo,
+  // los horarios se recalculan automáticamente — salvo que el usuario
+  // ya haya tocado manualmente alguno (flag `_userTouchedMealTimes`).
   TimeOfDay _wakeUpTime = const TimeOfDay(hour: 6, minute: 0);
   TimeOfDay _sleepTime = const TimeOfDay(hour: 22, minute: 0);
-  TimeOfDay _firstMealGoal = const TimeOfDay(hour: 8, minute: 0);
-  TimeOfDay _lastMealGoal = const TimeOfDay(hour: 18, minute: 0);
-  
+  TimeOfDay _firstMealGoal = const TimeOfDay(hour: 12, minute: 30);
+  TimeOfDay _lastMealGoal = const TimeOfDay(hour: 20, minute: 30);
+
+  /// SPEC-96: bandera para no pisar la elección manual del usuario.
+  /// Si tocó alguno de los pickers, el cambio de protocolo NO regenera
+  /// los horarios.
+  bool _userTouchedMealTimes = false;
+
   // --- PASO 3: PROTOCOLO ---
   int _mealsPerDay = 3;
-  String _fastingProtocol = "Ninguno";
+  String _fastingProtocol = "16:8";
   List<String> _pathologies = ["Ninguna"];
 
   final List<String> _pathologyOptions = [
@@ -484,11 +494,23 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       _sectionTitle("VENTANA DE ALIMENTACIÓN", isDark),
       _simpleSelector("Primera Comida", _firstMealGoal.format(context), () async {
         final time = await showTimePicker(context: context, initialTime: _firstMealGoal);
-        if (time != null) setState(() => _firstMealGoal = time);
+        if (time != null) {
+          setState(() {
+            _firstMealGoal = time;
+            // SPEC-96: el usuario tomó control manual; deja de
+            // autocalcular al cambiar protocolo.
+            _userTouchedMealTimes = true;
+          });
+        }
       }, isDark),
       _simpleSelector("Última Comida", _lastMealGoal.format(context), () async {
         final time = await showTimePicker(context: context, initialTime: _lastMealGoal);
-        if (time != null) setState(() => _lastMealGoal = time);
+        if (time != null) {
+          setState(() {
+            _lastMealGoal = time;
+            _userTouchedMealTimes = true;
+          });
+        }
       }, isDark),
     ],
   );
@@ -499,7 +521,23 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     children: [
       _header("Protocolo", "Hábitos metabólicos", isDark),
       _stepperSelector(label: "Comidas al día", value: _mealsPerDay.toDouble(), unit: "", min: 1, max: 6, onChanged: (v) => setState(() => _mealsPerDay = v.toInt()), isDark: isDark),
-      _simpleSelector("Ayuno", _fastingProtocol, () => _showSimpleOptions("Ayuno", ["Ninguno", "16:8", "18:6", "20:4"], (v) => setState(() => _fastingProtocol = v), isDark), isDark),
+      _simpleSelector("Ayuno", _fastingProtocol,
+          () => _showSimpleOptions(
+              "Ayuno",
+              ["Ninguno", "16:8", "18:6", "20:4"],
+              (v) => setState(() {
+                    _fastingProtocol = v;
+                    // SPEC-96: si el usuario NO tocó horarios manualmente,
+                    // los recalculamos al cambiar protocolo para
+                    // mantener coherencia circadiana.
+                    if (!_userTouchedMealTimes) {
+                      final optimal = OptimalScheduleCalculator.forProtocol(v);
+                      _firstMealGoal = optimal.windowStart;
+                      _lastMealGoal = optimal.windowEnd;
+                    }
+                  }),
+              isDark),
+          isDark),
       _simpleSelector("Patologías", _pathologies.join(", "), () => _showMultiSelectPathologies(isDark), isDark),
     ],
   );

@@ -78,17 +78,17 @@ void main() {
       expect(state.windowDurationHours, 8);
     });
 
-    test('protocolo "Ninguno" → ventana de 14h (default sensible)', () {
+    test('protocolo "Ninguno" → ventana de 14h, óptimo 06:30–20:30', () {
+      // SPEC-96: óptimo de "Ninguno" es 06:30–20:30 (NO 08:00–22:00).
+      // El cierre a 22:00 violaba el bloqueo intestinal documentado.
       final state = EatingWindowState.compute(
         lastInterval: null,
-        user: _user(
-          protocol: 'Ninguno',
-          firstMealGoal: DateTime(2026, 5, 14, 8, 0),
-        ),
+        user: _user(protocol: 'Ninguno'),
         now: DateTime(2026, 5, 14, 12, 0),
       );
       expect(state.windowDurationHours, 14);
-      expect(state.windowEnd, DateTime(2026, 5, 14, 22, 0));
+      expect(state.windowStart, DateTime(2026, 5, 14, 6, 30));
+      expect(state.windowEnd, DateTime(2026, 5, 14, 20, 30));
     });
   });
 
@@ -140,29 +140,50 @@ void main() {
   });
 
   group('EatingWindowState — fallbacks', () {
-    test('sin lastInterval, con firstMealGoal → windowStart = goal de hoy',
-        () {
+    test(
+        'SPEC-96: sin lastInterval, con firstMealGoal dentro de tolerancia ±60min '
+        '→ respeta preferencia', () {
+      // Protocolo 16:8 óptimo abre a las 12:30. firstMealGoal 13:00
+      // está dentro de tolerancia (30 min de delta).
       final state = EatingWindowState.compute(
         lastInterval: null,
         user: _user(
           protocol: '16:8',
-          firstMealGoal: DateTime(2026, 5, 14, 9, 30),
+          firstMealGoal: DateTime(2026, 5, 14, 13, 0),
         ),
-        now: DateTime(2026, 5, 14, 12, 0),
+        now: DateTime(2026, 5, 14, 14, 0),
       );
-      expect(state.windowStart, DateTime(2026, 5, 14, 9, 30));
-      expect(state.windowEnd, DateTime(2026, 5, 14, 17, 30));
-      expect(state.status, EatingWindowStatus.withinWindow);
+      expect(state.windowStart, DateTime(2026, 5, 14, 13, 0));
+      expect(state.windowEnd, DateTime(2026, 5, 14, 21, 0));
     });
 
-    test('sin lastInterval, sin firstMealGoal → fallback 08:00', () {
+    test(
+        'SPEC-96: sin lastInterval, con firstMealGoal FUERA de tolerancia '
+        '→ óptimo gana', () {
+      // Protocolo 16:8 óptimo abre a las 12:30. firstMealGoal 09:00
+      // está fuera de tolerancia (3.5h de delta). La app debe empujar
+      // al óptimo, NO respetar la configuración incoherente.
       final state = EatingWindowState.compute(
         lastInterval: null,
-        user: _user(protocol: '16:8'),
-        now: DateTime(2026, 5, 14, 12, 0),
+        user: _user(
+          protocol: '16:8',
+          firstMealGoal: DateTime(2026, 5, 14, 9, 0),
+        ),
+        now: DateTime(2026, 5, 14, 14, 0),
       );
-      expect(state.windowStart, DateTime(2026, 5, 14, 8, 0));
-      expect(state.windowEnd, DateTime(2026, 5, 14, 16, 0));
+      expect(state.windowStart, DateTime(2026, 5, 14, 12, 30));
+      expect(state.windowEnd, DateTime(2026, 5, 14, 20, 30));
+    });
+
+    test('SPEC-96: sin lastInterval, sin firstMealGoal → óptimo canónico', () {
+      // Protocolo 18:6 → óptimo 14:30–20:30.
+      final state = EatingWindowState.compute(
+        lastInterval: null,
+        user: _user(protocol: '18:6'),
+        now: DateTime(2026, 5, 14, 16, 0),
+      );
+      expect(state.windowStart, DateTime(2026, 5, 14, 14, 30));
+      expect(state.windowEnd, DateTime(2026, 5, 14, 20, 30));
     });
 
     test('lastInterval con isFasting=true → status unknown', () {
@@ -179,8 +200,11 @@ void main() {
       expect(state.progressPercent, 0.0);
     });
 
-    test('lastInterval muy viejo (>24h) → cae a fallback', () {
-      // lastInterval de hace 3 días. No es confiable.
+    test(
+        'SPEC-96: lastInterval muy viejo (>24h) → cae a óptimo, no a goal '
+        'incoherente', () {
+      // lastInterval de hace 3 días: stale. firstMealGoal=09:00 está
+      // fuera de tolerancia para 16:8 (óptimo 12:30). Debe ganar el óptimo.
       final state = EatingWindowState.compute(
         lastInterval: _interval(
           startTime: DateTime(2026, 5, 11, 13, 0),
@@ -190,9 +214,9 @@ void main() {
           protocol: '16:8',
           firstMealGoal: DateTime(2026, 5, 14, 9, 0),
         ),
-        now: DateTime(2026, 5, 14, 12, 0),
+        now: DateTime(2026, 5, 14, 14, 0),
       );
-      expect(state.windowStart, DateTime(2026, 5, 14, 9, 0));
+      expect(state.windowStart, DateTime(2026, 5, 14, 12, 30));
     });
   });
 }

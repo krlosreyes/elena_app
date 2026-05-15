@@ -6,6 +6,7 @@ import 'package:elena_app/src/core/engine/imr_persistence_provider.dart';
 import 'package:elena_app/src/features/auth/application/profile_controller.dart';
 import 'package:elena_app/src/features/auth/presentation/widgets/edit_biometry_value_sheet.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
+import 'package:elena_app/src/features/dashboard/domain/optimal_schedule.dart';
 import 'package:elena_app/src/features/profile/domain/biometry_recalc.dart';
 import 'package:elena_app/src/features/profile/presentation/widgets/body_composition_card.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
@@ -146,7 +147,8 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
   }
 
   Future<void> _pickTime(
-      TimeOfDay current, ValueChanged<TimeOfDay> onPicked) async {
+      TimeOfDay current, ValueChanged<TimeOfDay> onPicked,
+      {bool isMealTimePicker = false}) async {
     final picked = await showTimePicker(
       context: context,
       initialTime: current,
@@ -161,10 +163,76 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
         child: child!,
       ),
     );
-    if (picked != null) {
-      setState(() => onPicked(picked));
-      _saveCircadianChanges();
+    if (picked == null) return;
+
+    // SPEC-96: si el picker corresponde a `lastMealGoal` y el usuario
+    // intentó cerrar la ventana ≥ 21:00, bloquear el guardado y
+    // mostrar el principio del bloqueo intestinal.
+    if (isMealTimePicker &&
+        OptimalScheduleCalculator.violatesIntestinalBlock(picked)) {
+      await _showIntestinalBlockDialog(picked);
+      return;
     }
+
+    setState(() => onPicked(picked));
+    _saveCircadianChanges();
+
+    // SPEC-96: warning no bloqueante si la configuración está fuera
+    // de tolerancia (>60 min del óptimo). Se evalúa con los valores
+    // CURRENTES post-update.
+    if (isMealTimePicker) {
+      final reason = OptimalScheduleCalculator.lintReason(
+        windowStart: _firstMealGoal,
+        windowEnd: _lastMealGoal,
+        protocol: widget.user.fastingProtocol,
+      );
+      if (reason != null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(reason),
+            backgroundColor: Colors.orange.shade800,
+            duration: const Duration(seconds: 6),
+          ),
+        );
+      }
+    }
+  }
+
+  /// SPEC-96: diálogo educativo cuando el usuario intenta cerrar la
+  /// ventana después de las 21:00 — viola el bloqueo intestinal.
+  Future<void> _showIntestinalBlockDialog(TimeOfDay attempted) async {
+    return showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E293B),
+        title: const Text(
+          'Hora fuera del rango biológico',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900),
+        ),
+        content: const Text(
+          'El bloqueo intestinal natural empieza a las 22:00 — comer '
+          'después de las 21:00 fuerza al cuerpo a digerir cuando '
+          'debería estar reparando tejidos, destruye la calidad del '
+          'sueño y baja tu IMR de mañana.\n\n'
+          'Si necesitas cerrar más tarde por horario social, considera '
+          'cambiar tu protocolo de ayuno a uno más corto.',
+          style: TextStyle(color: Color(0xFFB6C3D1), fontSize: 14, height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text(
+              'ENTENDIDO',
+              style: TextStyle(
+                color: Color(0xFF00C49A),
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _saveCircadianChanges() {
@@ -449,16 +517,18 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
           value: _firstMealGoal.format(context),
           icon: Icons.restaurant_outlined,
           color: const Color(0xFF10B981),
-          onTap: () =>
-              _pickTime(_firstMealGoal, (t) => _firstMealGoal = t),
+          onTap: () => _pickTime(
+              _firstMealGoal, (t) => _firstMealGoal = t,
+              isMealTimePicker: true),
         ),
         _editableTile(
           label: 'Última Comida',
           value: _lastMealGoal.format(context),
           icon: Icons.no_meals_outlined,
           color: const Color(0xFFFB923C),
-          onTap: () =>
-              _pickTime(_lastMealGoal, (t) => _lastMealGoal = t),
+          onTap: () => _pickTime(
+              _lastMealGoal, (t) => _lastMealGoal = t,
+              isMealTimePicker: true),
         ),
         const SizedBox(height: 24),
 
