@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/core/providers/ticker_providers.dart';
 import 'package:elena_app/src/core/rules/circadian_rules.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
+import 'package:elena_app/src/core/services/firestore_errors.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
 import 'package:elena_app/src/features/dashboard/data/fasting_interval_repository_impl.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
@@ -64,8 +65,18 @@ class FastingNotifier extends StateNotifier<FastingState> {
         },
         loading: () =>
             AppLogger.debug('Sincronizando coordenadas metabólicas...'),
-        error: (err, stack) =>
-            AppLogger.warning('Error en historial', err),
+        error: (err, stack) {
+          // SPEC-107: durante logout los listeners reciben un
+          // permission-denied final antes de cancelarse. No es un
+          // error real — solo ruido. Degradamos a debug.
+          if (FirestoreErrors.isPermissionDenied(err)) {
+            AppLogger.debug(
+              '[FastingNotifier] Stream cerrado tras logout: $err',
+            );
+          } else {
+            AppLogger.warning('Error en historial', err);
+          }
+        },
       );
     }, fireImmediately: true);
 
@@ -151,9 +162,13 @@ class FastingNotifier extends StateNotifier<FastingState> {
 
     try {
       final repo = _ref.read(fastingIntervalRepositoryProvider);
+      // SPEC-100: filtrar por isFasting=true para no pisar
+      // ventanas fantasma con endTime null que puedan existir por
+      // data legacy.
       await repo.correctOpenIntervalStartTime(
         userId: uid,
         newStartTime: newStart,
+        isFastingFilter: true,
       );
 
       final newDuration = now.difference(newStart);
@@ -222,12 +237,19 @@ class FastingNotifier extends StateNotifier<FastingState> {
     }
 
     // 3. Actualización de UI
+    // SPEC-113.bugfix: marcamos `completedToday: true` SOLO si el
+    // ayuno alcanzó el targetHours antes del cierre. De lo contrario
+    // (cierre prematuro) NO mostramos 100%.
+    final closedDuration = DateTime.now().difference(manualTime);
+    final reachedTarget =
+        closedDuration.inSeconds >= state.targetHours * 3600;
     state = state.copyWith(
       isSaving: false,
       isWaitingForFastingEnd: false,
       isActive: false,
       startTime: manualTime,
-      duration: DateTime.now().difference(manualTime),
+      duration: closedDuration,
+      completedToday: reachedTarget ? true : state.completedToday,
     );
   }
 
@@ -325,6 +347,8 @@ class FastingNotifier extends StateNotifier<FastingState> {
   void resetDaily() {
     if (!mounted) return;
     _fastingEndConfirmedToday = false;
+    // SPEC-113.bugfix: el día nuevo arranca sin "completedToday".
+    state = state.copyWith(completedToday: false);
   }
 
   // SPEC-61: ya no hay Timer interno. Riverpod libera la suscripción a

@@ -282,16 +282,29 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 onTap: () =>
                     setState(() => _selectedPillar = SelectedPillar.hidratacion),
               ),
-              PillarRing(
-                icon: Icons.fitness_center_rounded,
-                color: Colors.tealAccent,
-                progress: (exercise.todayMinutes / 60.0).clamp(0.0, 1.0),
-                label: 'Ejercicio',
-                isSelected: _selectedPillar == SelectedPillar.ejercicio,
-                completed: exercise.todayMinutes >= 30,
-                onTap: () =>
-                    setState(() => _selectedPillar = SelectedPillar.ejercicio),
-              ),
+              Builder(builder: (_) {
+                // SPEC-113.bugfix: usar `user.exerciseGoalMinutes`
+                // (default 20) como meta diaria. Antes el progress se
+                // dividía por 60 y el "completed" se gatillaba en 30
+                // — ambos hardcoded y desalineados con el objetivo
+                // real sugerido al usuario.
+                final user = ref.watch(currentUserStreamProvider).value;
+                final goal =
+                    (user?.exerciseGoalMinutes ?? 20).clamp(1, 240);
+                final progress = (exercise.todayMinutes / goal.toDouble())
+                    .clamp(0.0, 1.0);
+                return PillarRing(
+                  icon: Icons.fitness_center_rounded,
+                  color: Colors.tealAccent,
+                  progress: progress,
+                  label: 'Ejercicio',
+                  isSelected:
+                      _selectedPillar == SelectedPillar.ejercicio,
+                  completed: exercise.todayMinutes >= goal,
+                  onTap: () => setState(
+                      () => _selectedPillar = SelectedPillar.ejercicio),
+                );
+              }),
               // SPEC-105: si hay ayuno activo, el PillarRing de Comidas
               // se ve tenue (opacity 0.5) para señal visual consistente
               // con el bloqueo. Sigue tappable — el usuario puede entrar

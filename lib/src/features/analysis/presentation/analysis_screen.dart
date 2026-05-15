@@ -19,9 +19,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:elena_app/src/core/theme/app_theme.dart';
+import 'package:elena_app/src/features/analysis/application/daily_summary_provider.dart';
 import 'package:elena_app/src/features/analysis/application/insights_service.dart';
 import 'package:elena_app/src/features/analysis/application/period_comparison_provider.dart';
+import 'package:elena_app/src/features/analysis/data/daily_summary_doc.dart';
 import 'package:elena_app/src/features/analysis/domain/analysis_period.dart';
+import 'package:elena_app/src/features/analysis/domain/daily_summary.dart';
 import 'package:elena_app/src/features/analysis/presentation/monthly_calendar_screen.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/imr_trend_chart.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/insight_card.dart';
@@ -42,6 +45,11 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
   @override
   Widget build(BuildContext context) {
     final dataAsync = ref.watch(periodDataProvider(_period));
+    // SPEC-113.bugfix: el doc persistido de HOY tiene debounce de 30s.
+    // Watcheamos el state LIVE y lo mezclamos para que la columna/
+    // snapshot del día actual refleje cambios inmediatos (registrar
+    // una comida, cerrar el ayuno, etc).
+    final liveToday = ref.watch(dailySummaryProvider);
 
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
@@ -87,40 +95,43 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
             dataAsync.when(
               loading: () => _loadingStack(),
               error: (e, st) => _errorBox(),
-              data: (d) => Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  PeriodHeroCard(
-                    data: d.comparison,
-                    periodLabel: _period.label,
-                  ),
-                  const SizedBox(height: 14),
-                  ImrTrendChart(
-                    docs: d.currentDocs,
-                    daysInPeriod: _period.days,
-                  ),
-                  const SizedBox(height: 14),
-                  PillarsHeatmap(
-                    docs: d.currentDocs,
-                    daysInPeriod: _period.days,
-                  ),
-                  const SizedBox(height: 18),
-                  Padding(
-                    padding: const EdgeInsets.only(left: 4, bottom: 10),
-                    child: Text(
-                      'INSIGHTS',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.55),
-                        fontSize: 10,
-                        letterSpacing: 1.4,
-                        fontWeight: FontWeight.w900,
+              data: (d) {
+                final mergedDocs = _mergeWithLive(d.currentDocs, liveToday);
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    PeriodHeroCard(
+                      data: d.comparison,
+                      periodLabel: _period.label,
+                    ),
+                    const SizedBox(height: 14),
+                    ImrTrendChart(
+                      docs: mergedDocs,
+                      daysInPeriod: _period.days,
+                    ),
+                    const SizedBox(height: 14),
+                    PillarsHeatmap(
+                      docs: mergedDocs,
+                      daysInPeriod: _period.days,
+                    ),
+                    const SizedBox(height: 18),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 4, bottom: 10),
+                      child: Text(
+                        'INSIGHTS',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.55),
+                          fontSize: 10,
+                          letterSpacing: 1.4,
+                          fontWeight: FontWeight.w900,
+                        ),
                       ),
                     ),
-                  ),
-                  ...InsightsService.generate(d.currentDocs)
-                      .map((i) => InsightCard(insight: i)),
-                ],
-              ),
+                    ...InsightsService.generate(mergedDocs)
+                        .map((i) => InsightCard(insight: i)),
+                  ],
+                );
+              },
             ),
           ],
         ),
@@ -192,6 +203,43 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
         ),
       ],
     );
+  }
+
+  /// SPEC-113.bugfix: reemplaza el doc persistido de HOY (que tiene
+  /// debounce de 30s) por uno construido desde el state LIVE. Si no
+  /// existía doc para hoy, lo agrega. Mantiene los docs anteriores
+  /// intactos.
+  List<DailySummaryDoc> _mergeWithLive(
+    List<DailySummaryDoc> persisted,
+    DailySummary live,
+  ) {
+    final now = DateTime.now();
+    final todayKey =
+        '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    final liveDoc = DailySummaryDoc(
+      date: todayKey,
+      imrScore: live.imrScore,
+      fastingProgress: live.fastingProgress,
+      sleepProgress: live.sleepProgress,
+      hydrationProgress: live.hydrationProgress,
+      exerciseProgress: live.exerciseProgress,
+      mealsProgress: live.mealsProgress,
+      updatedAt: now,
+    );
+    final result = <DailySummaryDoc>[];
+    bool replaced = false;
+    for (final d in persisted) {
+      if (d.date == todayKey) {
+        result.add(liveDoc);
+        replaced = true;
+      } else {
+        result.add(d);
+      }
+    }
+    if (!replaced) result.add(liveDoc);
+    // El consumidor espera lista ordenada por fecha ascendente.
+    result.sort((a, b) => a.date.compareTo(b.date));
+    return result;
   }
 
   Widget _errorBox() {

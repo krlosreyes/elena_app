@@ -27,6 +27,12 @@ class FastingState {
   final bool isWaitingForFeedingEnd;
   final bool isSaving;
 
+  /// SPEC-113.bugfix: true si el usuario cerró HOY un ayuno que alcanzó
+  /// su targetHours. Permite que `progressPercentage` se mantenga en
+  /// 1.0 después de cerrar la ventana (antes caía a 0.0 porque
+  /// `isActive` pasaba a false). Se limpia en `resetDaily`.
+  final bool completedToday;
+
   FastingState({
     this.startTime,
     this.duration = Duration.zero,
@@ -35,10 +41,11 @@ class FastingState {
     this.timeUntilLock = Duration.zero,
     this.isActive = false,
     this.fastingProtocol = "16:8",
-    this.nearSleepWarning = false, 
+    this.nearSleepWarning = false,
     this.isWaitingForFastingEnd = false,
     this.isWaitingForFeedingEnd = false,
     this.isSaving = false,
+    this.completedToday = false,
   });
 
   factory FastingState.initial() => FastingState();
@@ -53,6 +60,10 @@ class FastingState {
   }
 
   double get progressPercentage {
+    // SPEC-113.bugfix: si el usuario ya cerró un ayuno completo hoy,
+    // el satélite debe quedar en 100% aunque ya no haya intervalo
+    // activo en curso.
+    if (completedToday) return 1.0;
     if (!isActive || targetHours == 0) return 0.0;
     final double percent = duration.inSeconds / (targetHours * 3600);
     return percent.clamp(0.0, 1.0);
@@ -110,9 +121,9 @@ class FastingState {
   }
 
   FastingState copyWith({
-    DateTime? startTime, 
-    Duration? duration, 
-    FastingPhase? phase, 
+    DateTime? startTime,
+    Duration? duration,
+    FastingPhase? phase,
     String? circadianPhase,
     Duration? timeUntilLock,
     bool? isActive,
@@ -121,6 +132,7 @@ class FastingState {
     bool? isWaitingForFastingEnd,
     bool? isWaitingForFeedingEnd,
     bool? isSaving,
+    bool? completedToday,
   }) {
     return FastingState(
       startTime: startTime ?? this.startTime,
@@ -134,6 +146,7 @@ class FastingState {
       isWaitingForFastingEnd: isWaitingForFastingEnd ?? this.isWaitingForFastingEnd,
       isWaitingForFeedingEnd: isWaitingForFeedingEnd ?? this.isWaitingForFeedingEnd,
       isSaving: isSaving ?? this.isSaving,
+      completedToday: completedToday ?? this.completedToday,
     );
   }
 }
