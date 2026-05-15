@@ -10,8 +10,12 @@
 // `startTime` (que sí cambia poco) y recalcula `now.difference(startTime)`
 // cada segundo en su propio State, sin tocar el notifier global.
 //
-// Si el ayuno no está activo, el widget renderiza un placeholder estático
-// y NO consume el ticker de 1s — sin overhead.
+// SPEC-113.feat: dos modos.
+//   - Ayuno activo → cronómetro ascendente HH:MM:SS desde startTime.
+//   - Ayuno inactivo + `nextFastingTime` → cuenta regresiva descendente
+//     hasta el próximo ayuno (e.g., próximo cierre de ventana de
+//     alimentación, calculado desde `profile.lastMealGoal`).
+//   - Ayuno inactivo sin `nextFastingTime` → placeholder estático.
 
 import 'dart:async';
 
@@ -23,6 +27,7 @@ class LiveFastingClock extends StatefulWidget {
     required this.startTime,
     required this.isActive,
     required this.color,
+    this.nextFastingTime,
     this.placeholder = '— — : — — : — —',
     this.fontSize = 28,
   });
@@ -31,13 +36,18 @@ class LiveFastingClock extends StatefulWidget {
   final DateTime? startTime;
 
   /// True si hay un ayuno en curso. Cuando es false, el widget muestra el
-  /// `placeholder` y no inicia el ticker (ahorra ciclos).
+  /// countdown a `nextFastingTime` o el `placeholder`.
   final bool isActive;
+
+  /// SPEC-113.feat: cuándo se inicia el próximo ayuno. Solo se usa cuando
+  /// `isActive` es false. Si está seteado y aún no llegó, el display
+  /// muestra cuenta regresiva HH:MM:SS hasta ese instante.
+  final DateTime? nextFastingTime;
 
   /// Color del display.
   final Color color;
 
-  /// Texto a mostrar cuando `isActive` es false.
+  /// Texto a mostrar cuando `isActive` es false y no hay countdown válido.
   final String placeholder;
 
   /// Tamaño de fuente del display.
@@ -49,13 +59,19 @@ class LiveFastingClock extends StatefulWidget {
 
 class _LiveFastingClockState extends State<LiveFastingClock> {
   Timer? _ticker;
-  Duration _elapsed = Duration.zero;
+  Duration _elapsed = Duration.zero; // duración del ayuno activo
+  Duration _remaining = Duration.zero; // tiempo hasta el próximo ayuno
+
+  bool get _isCountdownMode =>
+      !widget.isActive && widget.nextFastingTime != null;
+
+  bool get _needsTicker => widget.isActive || _isCountdownMode;
 
   @override
   void initState() {
     super.initState();
     _syncFromProps();
-    if (widget.isActive) _startTicker();
+    if (_needsTicker) _startTicker();
   }
 
   @override
@@ -63,9 +79,10 @@ class _LiveFastingClockState extends State<LiveFastingClock> {
     super.didUpdateWidget(oldWidget);
     final activeChanged = oldWidget.isActive != widget.isActive;
     final startChanged = oldWidget.startTime != widget.startTime;
-    if (activeChanged || startChanged) {
+    final nextChanged = oldWidget.nextFastingTime != widget.nextFastingTime;
+    if (activeChanged || startChanged || nextChanged) {
       _syncFromProps();
-      if (widget.isActive) {
+      if (_needsTicker) {
         _startTicker();
       } else {
         _stopTicker();
@@ -74,21 +91,34 @@ class _LiveFastingClockState extends State<LiveFastingClock> {
   }
 
   void _syncFromProps() {
+    final now = DateTime.now();
     if (widget.isActive && widget.startTime != null) {
-      _elapsed = DateTime.now().difference(widget.startTime!);
+      _elapsed = now.difference(widget.startTime!);
       if (_elapsed.isNegative) _elapsed = Duration.zero;
+      _remaining = Duration.zero;
+    } else if (_isCountdownMode) {
+      _remaining = widget.nextFastingTime!.difference(now);
+      if (_remaining.isNegative) _remaining = Duration.zero;
+      _elapsed = Duration.zero;
     } else {
       _elapsed = Duration.zero;
+      _remaining = Duration.zero;
     }
   }
 
   void _startTicker() {
     _ticker?.cancel();
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (!mounted || !widget.isActive || widget.startTime == null) return;
+      if (!mounted) return;
+      final now = DateTime.now();
       setState(() {
-        _elapsed = DateTime.now().difference(widget.startTime!);
-        if (_elapsed.isNegative) _elapsed = Duration.zero;
+        if (widget.isActive && widget.startTime != null) {
+          _elapsed = now.difference(widget.startTime!);
+          if (_elapsed.isNegative) _elapsed = Duration.zero;
+        } else if (_isCountdownMode) {
+          _remaining = widget.nextFastingTime!.difference(now);
+          if (_remaining.isNegative) _remaining = Duration.zero;
+        }
       });
     });
   }
@@ -106,19 +136,38 @@ class _LiveFastingClockState extends State<LiveFastingClock> {
 
   String _twoDigits(int n) => n.toString().padLeft(2, '0');
 
+  String _fmt(Duration d) =>
+      '${_twoDigits(d.inHours)}:'
+      '${_twoDigits(d.inMinutes.remainder(60))}:'
+      '${_twoDigits(d.inSeconds.remainder(60))}';
+
   String get _displayText {
-    if (!widget.isActive || widget.startTime == null) return widget.placeholder;
-    return '${_twoDigits(_elapsed.inHours)}:'
-        '${_twoDigits(_elapsed.inMinutes.remainder(60))}:'
-        '${_twoDigits(_elapsed.inSeconds.remainder(60))}';
+    if (widget.isActive && widget.startTime != null) {
+      return _fmt(_elapsed);
+    }
+    if (_isCountdownMode) {
+      if (_remaining == Duration.zero) {
+        // Llegamos a la hora del próximo ayuno y aún no hay intervalo
+        // activo (típicamente faltan segundos de propagación). Mostramos
+        // un display "listo".
+        return '00:00:00';
+      }
+      return _fmt(_remaining);
+    }
+    return widget.placeholder;
   }
 
   @override
   Widget build(BuildContext context) {
+    // En modo countdown bajamos un poco el contraste para diferenciar
+    // visualmente que es "tiempo restante" y no "tiempo acumulado".
+    final color = _isCountdownMode
+        ? widget.color.withValues(alpha: 0.85)
+        : widget.color;
     return Text(
       _displayText,
       style: TextStyle(
-        color: widget.color,
+        color: color,
         fontFamily: 'monospace',
         fontSize: widget.fontSize,
         fontWeight: FontWeight.w800,

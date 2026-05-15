@@ -14,6 +14,7 @@ import 'package:elena_app/src/features/exercise/application/exercise_notifier.da
 import 'package:elena_app/src/features/exercise/application/exercise_state.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
+import 'package:elena_app/src/core/services/firestore_errors.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/features/dashboard/domain/fasting_status.dart';
 
@@ -145,12 +146,15 @@ class StreakNotifier extends StateNotifier<StreakState> {
         _rebuildState(history);
       },
       onError: (e) {
-        // SPEC-87 fix: durante el logout, las queries in-flight
-        // pueden fallar con permission-denied porque `request.auth`
-        // se invalida antes de que el provider se desuscriba. Si ya
-        // limpiamos `_userId`, el error es esperado — lo degradamos
-        // a debug para no inundar logs con ruido del logout.
-        if (_userId == null) {
+        // SPEC-87 fix / SPEC-107: durante el logout, las queries
+        // in-flight pueden fallar con permission-denied porque
+        // `request.auth` se invalida antes de que el provider se
+        // desuscriba. Detectamos el caso por dos vías:
+        //   1) `_userId == null` (ya recibimos la señal de logout).
+        //   2) El error es directamente permission-denied (el
+        //      snapshot stale llega antes que la señal de logout).
+        // En ambos casos degradamos a debug para no inundar logs.
+        if (_userId == null || FirestoreErrors.isPermissionDenied(e)) {
           AppLogger.debug('[StreakNotifier] Stream cerrado tras logout: $e');
         } else {
           AppLogger.error('[StreakNotifier] Error en historial', e);

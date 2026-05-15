@@ -31,7 +31,12 @@ class FastingState {
   /// su targetHours. Permite que `progressPercentage` se mantenga en
   /// 1.0 después de cerrar la ventana (antes caía a 0.0 porque
   /// `isActive` pasaba a false). Se limpia en `resetDaily`.
-  final bool completedToday;
+  ///
+  /// Nullable para sobrevivir hot-reload: en runs donde el state
+  /// previo no tenía este campo, el getter lo leía como `null` y
+  /// crasheaba con `Null is not a subtype of bool`. Tratamos `null`
+  /// como `false` en el getter.
+  final bool? completedToday;
 
   FastingState({
     this.startTime,
@@ -45,7 +50,7 @@ class FastingState {
     this.isWaitingForFastingEnd = false,
     this.isWaitingForFeedingEnd = false,
     this.isSaving = false,
-    this.completedToday = false,
+    this.completedToday,
   });
 
   factory FastingState.initial() => FastingState();
@@ -62,8 +67,9 @@ class FastingState {
   double get progressPercentage {
     // SPEC-113.bugfix: si el usuario ya cerró un ayuno completo hoy,
     // el satélite debe quedar en 100% aunque ya no haya intervalo
-    // activo en curso.
-    if (completedToday) return 1.0;
+    // activo en curso. `== true` es null-safe contra hot-reload de
+    // un state viejo que no tenía el campo.
+    if (completedToday == true) return 1.0;
     if (!isActive || targetHours == 0) return 0.0;
     final double percent = duration.inSeconds / (targetHours * 3600);
     return percent.clamp(0.0, 1.0);

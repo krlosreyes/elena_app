@@ -31,4 +31,8 @@ abstract class SleepRepository {
   /// clave. Idempotente: re-llamar con el mismo `log` produce el mismo
   /// estado en Firestore (no duplica).
   Future<void> save(String userId, SleepLog log);
+
+  /// SPEC-106: elimina un ciclo de sueño persistido por su `logId`.
+  /// Idempotente: borrar un id inexistente NO debe lanzar.
+  Future<void> delete(String userId, String logId);
 }

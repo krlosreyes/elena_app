@@ -20,14 +20,27 @@ abstract class FastingIntervalDataSource {
     required Map<String, dynamic> Function(String newDocId) buildNewData,
   });
 
+  /// SPEC-101: stream del último FastingInterval **cerrado y de
+  /// tipo ayuno** del usuario (`isFasting==true`, `endTime!=null`).
+  /// Útil para evaluar si el usuario ya completó su ayuno del día.
+  /// Emite null cuando no hay ningún ayuno cerrado en historial.
+  Stream<Map<String, dynamic>?> streamLastCompletedFasting(String userId);
+
   /// SPEC-97: muta el `startTime` del único intervalo abierto del
   /// usuario (`endTime == null`). NO cierra ni crea — solo edita el
   /// existente para reflejar "empecé a esta hora real".
   ///
-  /// Si no hay intervalo abierto, lanza [StateError]. El caller debe
-  /// validar antes (ej. con `state.isActive` en el notifier).
+  /// SPEC-100: el parámetro opcional `isFastingFilter` permite limitar
+  /// la mutación a docs con un `isFasting` específico. Útil cuando
+  /// hay data legacy con docs fantasma abiertos de otro tipo
+  /// (ej. ventana de comida con endTime null) que NO deben mutarse al
+  /// corregir un ayuno.
+  ///
+  /// Si no hay intervalo abierto que cumpla el filtro, lanza
+  /// [StateError]. El caller debe validar antes.
   Future<void> updateOpenIntervalStartTime({
     required String userId,
     required DateTime newStartTime,
+    bool? isFastingFilter,
   });
 }

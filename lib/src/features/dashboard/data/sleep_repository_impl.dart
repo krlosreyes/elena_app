@@ -47,6 +47,11 @@ class SleepRepositoryImpl implements SleepRepository {
     final data = _mapper.toMap(log);
     await _source.persist(userId: userId, docId: log.id, data: data);
   }
+
+  @override
+  Future<void> delete(String userId, String logId) async {
+    await _source.deleteDoc(userId: userId, docId: logId);
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────

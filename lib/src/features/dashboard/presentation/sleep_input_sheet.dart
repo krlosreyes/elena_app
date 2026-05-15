@@ -15,9 +15,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/dashboard/application/sleep_notifier.dart';
+import 'package:elena_app/src/features/dashboard/domain/sleep_log.dart';
 
 class SleepInputSheet extends ConsumerStatefulWidget {
-  const SleepInputSheet({super.key});
+  /// SPEC-106: si se pasa `initial`, el sheet precarga todos los
+  /// campos desde ese log existente — el usuario está editando, no
+  /// creando. Si es null, defaults razonables.
+  final SleepLog? initial;
+
+  const SleepInputSheet({super.key, this.initial});
 
   @override
   ConsumerState<SleepInputSheet> createState() => _SleepInputSheetState();
@@ -26,15 +32,37 @@ class SleepInputSheet extends ConsumerStatefulWidget {
 class _SleepInputSheetState extends ConsumerState<SleepInputSheet> {
   static const _accentColor = Color(0xFF818CF8);
 
-  TimeOfDay _bedtime = const TimeOfDay(hour: 22, minute: 30);
-  TimeOfDay _wakeTime = const TimeOfDay(hour: 7, minute: 0);
+  late TimeOfDay _bedtime;
+  late TimeOfDay _wakeTime;
 
   // SPEC-71.1: estado de la sección de detalle.
-  bool _showDetail = false;
+  // SPEC-106: si hay `initial` con algún campo opcional, abrimos
+  // automáticamente el detalle para que el usuario vea sus valores.
+  late bool _showDetail;
   // null = "no medido". Distinto de 0 (que sí mide).
   double? _latencyMinutes;
   int? _awakenings;
   int? _subjectiveQuality;
+
+  @override
+  void initState() {
+    super.initState();
+    final initial = widget.initial;
+    if (initial != null) {
+      _bedtime = TimeOfDay.fromDateTime(initial.fellAsleep);
+      _wakeTime = TimeOfDay.fromDateTime(initial.wokeUp);
+      _latencyMinutes = initial.sleepLatencyMinutes?.toDouble();
+      _awakenings = initial.nightAwakenings;
+      _subjectiveQuality = initial.subjectiveQuality;
+      _showDetail = _latencyMinutes != null ||
+          _awakenings != null ||
+          _subjectiveQuality != null;
+    } else {
+      _bedtime = const TimeOfDay(hour: 22, minute: 30);
+      _wakeTime = const TimeOfDay(hour: 7, minute: 0);
+      _showDetail = false;
+    }
+  }
 
   Future<void> _pickBedtime() async {
     final picked = await showTimePicker(

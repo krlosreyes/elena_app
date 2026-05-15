@@ -155,3 +155,73 @@ Para que el equipo sepa qué falta cuando lea esta bibliografía:
 - Citar este doc en la SPEC: `Marco normativo: docs/CIRCADIAN_BIBLIOGRAPHY.md §X.Y`.
 - Si un principio entra en conflicto con un requerimiento de producto, ganar a la biología (no al revés).
 - Si un nuevo blueprint llega (ej. revisión clínica), agregarlo a `docs/references/` y actualizar este índice.
+
+---
+
+## §10 — Sueño: bibliografía Metamorfosis Vital
+
+Tres artículos publicados por Metamorfosis Vital alimentan el pilar Sueño. Cualquier SPEC del pilar debe consultar esta sección.
+
+### §10.1 Por qué dormir 8 horas no es lo mismo que dormir 8 horas
+**URL:** https://metamorfosisvital.com.co/posts/por-que-dormir-8-horas-no-es-lo-mismo-que-dormir-8-horas
+
+- **Arquitectura del sueño**: 4 fases (N1 ~5%, N2 ~50%, N3 ~15-20%, REM ~20-25%) que se ciclan cada ~90 min, repitiendo 4-5 ciclos por noche. La primera mitad de la noche carga N3 (sueño profundo); la segunda mitad carga REM.
+- **N3 = reparación física**: pico de hormona de crecimiento, sistema glinfático limpia beta-amiloide, reparación muscular, consolidación de memoria declarativa. Una sola noche con N3 reducido sube beta-amiloide cerebral 25-30% (Xie 2013; Shokri-Kojori 2018).
+- **REM = reparación emocional**: regulación de la amígdala, memoria emocional, creatividad. Una noche sin REM aumenta reactividad de la amígdala 60% (Walker 2017).
+- **Regla de los 90 minutos**: calcular hora de acostarse hacia atrás desde la alarma en múltiplos de 90 min + 15 min de latencia.
+- **Hábitos**: habitación 17-19°C; cero alcohol 4h antes; cena ligera 3h antes; ejercicio de fuerza durante el día (no <3h antes de dormir); cero café después de las 2 pm; magnesio glicinato 200-400 mg; pantallas off 60 min antes; transición de +15 min/semana.
+
+### §10.2 Tu cuerpo tiene un horario de oficina — el reloj secreto de tus células
+**URL:** https://metamorfosisvital.com.co/posts/tu-cuerpo-tiene-un-horario-de-oficina-el-reloj-secreto-de-tus-celulas
+
+- **Ritmo circadiano de 24h** organiza energía, cognición y metabolismo. No hay "búhos nocturnos" biológicos — trabajar contra el reloj cuesta 20-30% de productividad y dispara hambre, ansiedad y resistencia a insulina.
+- **Mapa horario clave**: 6-9am cortisol; 10am-12pm pico cognitivo; 3:30pm bajón circadiano; 5-7pm pico físico; 9pm inicio melatonina; 11pm-3am ventana de reparación profunda.
+- **Luz**: sol matutino 10,000-50,000 lux vs luz interior 100-500 lux (100× diferencia). Ninguna lámpara la reemplaza. Necesita 10-15 min de luz directa antes de las 9 am.
+- **Consistencia**: misma hora de dormir/despertar 7 días/semana, incluso fines de semana. "Recuperar" en fin de semana rompe el ritmo más que repararlo.
+
+### §10.3 ¿Por qué te sientes como un zombi aunque dormiste 8 horas?
+**URL:** https://metamorfosisvital.com.co/posts/por-que-te-sientes-como-un-zombi-aunque-dormiste-8-horas
+
+- **Sistema glinfático** (descubierto 2012) solo funciona dormido: bombea LCR para arrastrar beta-amiloide. Elimina 60% más desechos durante sueño vs vigilia (Xie 2013). Sueño fragmentado = ciclo incompleto = niebla mental.
+- **Impacto hormonal de sueño <6h vs 7-9h reparador**: testosterona masculina -15% en una sola noche (Leproult 2011); leptina -18%, grelina +28% → +23% más hambre, sobre todo carbos refinados (Spiegel 2004); memoria/aprendizaje -40% al día siguiente.
+- **Calidad > cantidad**: las 8 horas no garantizan reparación; lo que repara es profundidad de N3 y sincronización circadiana.
+- **Hábitos clave**: cuarto a 18°C (la temperatura del cuarto importa más que el colchón — el cuerpo necesita bajar 1°C de temp central para entrar en sueño profundo); cero pantallas 60 min antes; mejor madrugar que trasnochar.
+
+### §10.4 Reglas duras del pilar Sueño (derivadas de los artículos)
+
+| Regla | Origen |
+|---|---|
+| Ventana de reparación profunda: 23:00 - 03:00 | §10.2 |
+| Cierre de pantallas: 60 min antes de dormir | §10.1, §10.3 |
+| Habitación entre 17-19°C | §10.1, §10.3 |
+| Café cortado a las 14:00 | §10.1 |
+| Luz solar matutina ≥10 min antes de las 09:00 | §10.2 |
+| Cena ligera ≥3h antes de dormir (no más tarde de 20:30 — ver §3) | §10.1 |
+| Ejercicio de fuerza durante el día, NO <3h antes de dormir | §10.1, §10.2 |
+| Consistencia 7 días/semana (sin "recuperar" fines de semana) | §10.2 |
+
+### §10.5 Métricas que el modelo SleepLog captura hoy vs roadmap
+
+**Capturadas hoy (SPEC-69 + SPEC-106):**
+
+| Métrica | Justificación bibliográfica |
+|---|---|
+| Hora de acostarse (`fellAsleep`) | §10.1 — regla 90 min |
+| Hora de despertar (`wokeUp`) | §10.1 |
+| Latencia de inicio (`sleepLatencyMinutes`) | §10.1 — >30 min sugiere ansiedad |
+| Despertares nocturnos (`nightAwakenings`) | §10.3 — fragmentación rompe glinfático |
+| Calidad subjetiva 1-5 (`subjectiveQuality`) | §10.3 — "calidad > cantidad" |
+| Hora de última comida (`lastMealTime`) | §10.1 — cena 3h antes |
+
+**Roadmap (SPECs futuras):**
+
+| Métrica | SPEC sugerida |
+|---|---|
+| Exposición a pantallas pre-sueño (min) | SPEC futura — pilar Higiene |
+| Exposición a luz solar matutina (min antes de 09:00) | SPEC futura — pilar Higiene |
+| Temperatura del cuarto (°C) | SPEC futura — ambiente |
+| Hora del último café | SPEC futura — pilar Nutrición |
+| Alcohol antes de dormir | SPEC futura |
+| Consistencia día a día (social jet lag) | SPEC futura — métrica derivada |
+| Energía matutina sin café (1-5) | SPEC futura — test deuda de sueño |
+| Deuda acumulada (rolling 7-14 días) | SPEC futura — métrica derivada |

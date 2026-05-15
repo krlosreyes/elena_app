@@ -351,7 +351,34 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     // SPEC-61: el display HH:MM:SS lo renderiza LiveFastingClock con su
     // propio Timer local, sin disparar rebuilds del fastingProvider.
 
-    final stateLabel = isActive ? 'En curso' : 'En espera';
+    // SPEC-113.feat: cuando NO hay ayuno activo, calculamos el próximo
+    // momento de cierre de ventana de alimentación basado en el
+    // `lastMealGoal` del usuario. Si esa hora ya pasó hoy → mañana.
+    // `lastMealGoal` es nullable: si el perfil aún no lo definió, el
+    // countdown no aplica y el clock cae al placeholder.
+    final user = ref.watch(currentUserStreamProvider).value;
+    DateTime? nextFastingTime;
+    if (!isActive && user != null) {
+      final lastMeal = user.profile.lastMealGoal;
+      if (lastMeal != null) {
+        final now = DateTime.now();
+        var candidate = DateTime(
+          now.year,
+          now.month,
+          now.day,
+          lastMeal.hour,
+          lastMeal.minute,
+        );
+        if (!candidate.isAfter(now)) {
+          candidate = candidate.add(const Duration(days: 1));
+        }
+        nextFastingTime = candidate;
+      }
+    }
+
+    final stateLabel = isActive
+        ? 'En curso'
+        : (nextFastingTime != null ? 'Próximo ayuno' : 'En espera');
 
     final benefits = isActive
         ? const [
@@ -411,6 +438,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               LiveFastingClock(
                 startTime: state.startTime,
                 isActive: isActive,
+                nextFastingTime: nextFastingTime,
                 color: accent,
               ),
               const SizedBox(width: 10),
@@ -452,7 +480,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ],
           const SizedBox(height: 6),
           Text(
-            '$pct% completado',
+            // SPEC-113.feat: el texto debajo se adapta al estado.
+            isActive
+                ? '$pct% completado'
+                : (nextFastingTime != null
+                    ? 'Inicia ${nextFastingTime.hour.toString().padLeft(2, '0')}:${nextFastingTime.minute.toString().padLeft(2, '0')}'
+                    : 'Listo para iniciar tu ayuno'),
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.5),
               fontSize: 11,

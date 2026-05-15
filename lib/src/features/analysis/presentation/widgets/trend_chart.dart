@@ -154,7 +154,7 @@ class _LineChartPainter extends CustomPainter {
 
       canvas.drawCircle(Offset(x, y), 6, selectPaint);
       canvas.drawCircle(Offset(x, y), 4, Paint()..color = color);
-      
+
       // Vertical line
       canvas.drawLine(
         Offset(x, 0),

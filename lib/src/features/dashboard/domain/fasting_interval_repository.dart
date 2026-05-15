@@ -20,6 +20,11 @@ abstract class FastingIntervalRepository {
   /// Emite `null` cuando el usuario no tiene historial.
   Stream<FastingInterval?> watchLatest(String userId);
 
+  /// SPEC-101: stream del último ayuno **cerrado** (con `endTime`
+  /// poblado, `isFasting=true`). Útil para verificar si el usuario
+  /// completó su ayuno del día. Emite null si nunca cerró uno.
+  Stream<FastingInterval?> watchLastCompletedFasting(String userId);
+
   /// Atómicamente cierra cualquier intervalo abierto del usuario y
   /// abre uno nuevo con `isFasting`. Si `startTime` es null usa el
   /// instante actual; útil para "viaje en el tiempo" en pruebas o
@@ -34,10 +39,16 @@ abstract class FastingIntervalRepository {
   /// sin cerrarlo ni crear uno nuevo. Para cuando el usuario arrancó
   /// el ayuno tarde y necesita editar la hora real de inicio.
   ///
-  /// Lanza [StateError] si no hay intervalo abierto. El caller debe
-  /// verificar (`state.isActive` o equivalente) antes de invocar.
+  /// SPEC-100: `isFastingFilter` opcional limita la mutación a docs
+  /// de un tipo específico. Útil para evitar pisar ventanas fantasma
+  /// con `endTime: null` cuando se corrige un ayuno.
+  ///
+  /// Lanza [StateError] si no hay intervalo abierto que cumpla el
+  /// filtro. El caller debe verificar (`state.isActive` o equivalente)
+  /// antes de invocar.
   Future<void> correctOpenIntervalStartTime({
     required String userId,
     required DateTime newStartTime,
+    bool? isFastingFilter,
   });
 }

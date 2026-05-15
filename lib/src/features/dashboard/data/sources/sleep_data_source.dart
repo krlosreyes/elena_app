@@ -24,4 +24,11 @@ abstract class SleepDataSource {
     required String docId,
     required Map<String, dynamic> data,
   });
+
+  /// SPEC-106: elimina un documento de sueño específico. Operación
+  /// idempotente — eliminar un docId inexistente NO debe lanzar.
+  Future<void> deleteDoc({
+    required String userId,
+    required String docId,
+  });
 }

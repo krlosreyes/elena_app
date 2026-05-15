@@ -69,7 +69,12 @@ class CircadianClock extends StatelessWidget {
                     ? FastingRingPainter(
                         startTime: fastingState.startTime ?? now,
                         duration: fastingState.duration,
-                        phaseColor: _getPhaseColor(fastingState.phase),
+                        // SPEC-103: color fijo verde durante ayuno —
+                        // ya no usamos `phaseColor` que confundía la
+                        // fase `transition` (naranja) con la ventana
+                        // de alimentación. La fase se comunica por
+                        // hitos y texto, no por color del arco.
+                        phaseColor: AppColors.metabolicGreen,
                         indicatorColor: colorDeTexto,
                       )
                     : (eatingWindow != null
@@ -119,13 +124,9 @@ class CircadianClock extends StatelessWidget {
     );
   }
 
-  Color _getPhaseColor(FastingPhase phase) {
-    switch (phase) {
-      case FastingPhase.postAbsorption: return Colors.lightBlueAccent;
-      case FastingPhase.transition: return Colors.orangeAccent;
-      case FastingPhase.fatBurning: return AppColors.metabolicGreen;
-      case FastingPhase.autophagy: return const Color(0xFF6366F1);
-      default: return AppColors.metabolicGreen;
-    }
-  }
+  // SPEC-103: `_getPhaseColor` eliminado. La fase del ayuno se
+  // comunica por hitos visuales (water_drop, fire, recycle) en el
+  // anillo y por la etiqueta "Estado actual: <fase>" en el card de
+  // Ayuno (SPEC-101). El color del arco es siempre verde durante
+  // ayuno para diferenciarlo de la ventana de comida (naranja).
 }

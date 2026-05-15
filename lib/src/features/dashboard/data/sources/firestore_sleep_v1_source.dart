@@ -45,4 +45,14 @@ class FirestoreSleepV1Source implements SleepDataSource {
   }) async {
     await _collection(userId).doc(docId).set(data);
   }
+
+  @override
+  Future<void> deleteDoc({
+    required String userId,
+    required String docId,
+  }) async {
+    // SPEC-106: idempotente — si el doc no existe, Firestore acepta
+    // el delete sin error.
+    await _collection(userId).doc(docId).delete();
+  }
 }

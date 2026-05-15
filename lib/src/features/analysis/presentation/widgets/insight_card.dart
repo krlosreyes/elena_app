@@ -1,80 +1,61 @@
+// SPEC-113: card individual de un insight. Render compacto con
+// icono coloreado + título + descripción.
+
 import 'package:flutter/material.dart';
-import 'package:elena_app/src/features/analysis/domain/analysis_models.dart';
-import 'package:elena_app/src/core/theme/app_theme.dart';
+
+import 'package:elena_app/src/features/analysis/domain/insight.dart';
 
 class InsightCard extends StatelessWidget {
-  final CorrelationResult correlation;
+  final Insight insight;
 
-  const InsightCard({super.key, required this.correlation});
+  const InsightCard({super.key, required this.insight});
 
   @override
   Widget build(BuildContext context) {
-    final color = _getStatusColor(correlation.type);
-    final icon = _getStatusIcon(correlation.type);
-
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: AppColors.surfaceDark,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withValues(alpha: 0.2), width: 1),
+        color: const Color(0xFF1E293B),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: insight.accent.withValues(alpha: 0.25),
+        ),
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            width: 38,
+            height: 38,
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
+              color: insight.accent.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, color: color, size: 20),
+            child: Icon(insight.icon, color: insight.accent, size: 20),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Detección de Patrón',
+                  insight.title,
                   style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white.withValues(alpha: 0.3),
-                    letterSpacing: 1,
+                    color: insight.accent,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.4,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
-                  correlation.insight,
+                  insight.description,
                   style: const TextStyle(
+                    color: Colors.white,
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                    height: 1.4,
+                    height: 1.35,
                   ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Text(
-                      '${correlation.pilarA} ↔ ${correlation.pilarB}',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: color.withValues(alpha: 0.8),
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const Spacer(),
-                    Text(
-                      'Correlación: ${(correlation.score * 100).toStringAsFixed(0)}%',
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: Colors.white.withValues(alpha: 0.3),
-                      ),
-                    ),
-                  ],
                 ),
               ],
             ),
@@ -82,27 +63,5 @@ class InsightCard extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  Color _getStatusColor(CorrelationType type) {
-    switch (type) {
-      case CorrelationType.positive:
-        return const Color(0xFF10B981);
-      case CorrelationType.negative:
-        return const Color(0xFFF87171);
-      case CorrelationType.neutral:
-        return const Color(0xFFFBBF24);
-    }
-  }
-
-  IconData _getStatusIcon(CorrelationType type) {
-    switch (type) {
-      case CorrelationType.positive:
-        return Icons.trending_up_rounded;
-      case CorrelationType.negative:
-        return Icons.trending_down_rounded;
-      case CorrelationType.neutral:
-        return Icons.trending_flat_rounded;
-    }
   }
 }

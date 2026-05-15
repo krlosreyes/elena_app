@@ -34,13 +34,27 @@ class FastingIntervalRepositoryImpl implements FastingIntervalRepository {
   }
 
   @override
+  Stream<FastingInterval?> watchLastCompletedFasting(String userId) {
+    return _source.streamLastCompletedFasting(userId).map((map) {
+      if (map == null) return null;
+      try {
+        return _mapper.fromMap(map);
+      } catch (_) {
+        return null;
+      }
+    });
+  }
+
+  @override
   Future<void> correctOpenIntervalStartTime({
     required String userId,
     required DateTime newStartTime,
+    bool? isFastingFilter,
   }) async {
     await _source.updateOpenIntervalStartTime(
       userId: userId,
       newStartTime: newStartTime,
+      isFastingFilter: isFastingFilter,
     );
   }
 

@@ -5,6 +5,7 @@ import 'package:elena_app/src/router/app_router.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/core/providers/notification_provider.dart';
 import 'package:elena_app/src/core/services/daily_reset_service.dart';
+import 'package:elena_app/src/features/analysis/application/daily_summary_persistence_service.dart';
 
 class ElenaApp extends ConsumerWidget {
   const ElenaApp({super.key});
@@ -21,6 +22,11 @@ class ElenaApp extends ConsumerWidget {
     // bootstrap (chequea SharedPreferences por reset pendiente desde la
     // última sesión) y arma un Timer hasta la próxima medianoche.
     ref.watch(dailyResetProvider);
+
+    // SPEC-111: mantener vivo el servicio de persistencia diaria. Su
+    // listener interno escucha `dailySummaryProvider` y persiste con
+    // debounce + detección de cambio de día.
+    ref.watch(dailySummaryPersistenceServiceProvider);
 
     return ScreenUtilInit(
       designSize: const Size(390, 844), // Medida base de iPhone

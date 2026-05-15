@@ -23,6 +23,18 @@ final lastFastingIntervalProvider = StreamProvider<FastingInterval?>((ref) {
   return repo.watchLatest(uid);
 });
 
+/// SPEC-113.bugfix: stream del último ayuno CERRADO (endTime != null).
+/// Permite al FastingNotifier detectar si el usuario completó un ayuno
+/// HOY y mantener `completedToday=true` aunque ya esté en ventana de
+/// alimentación (o haya reiniciado la app después de cerrar el ayuno).
+final lastCompletedFastingProvider =
+    StreamProvider<FastingInterval?>((ref) {
+  final repo = ref.watch(fastingIntervalRepositoryProvider);
+  final uid = ref.watch(authStateProvider).value?.uid;
+  if (uid == null) return Stream.value(null);
+  return repo.watchLastCompletedFasting(uid);
+});
+
 class FastingNotifier extends StateNotifier<FastingState> {
   final Ref _ref;
   bool _fastingEndConfirmedToday = false;
@@ -90,6 +102,27 @@ class FastingNotifier extends StateNotifier<FastingState> {
     _ref.listen(metabolicPulseProvider, (previous, next) {
       if (next.value != null) _tick();
     });
+
+    // SPEC-113.bugfix: al cargar el último ayuno completado desde BD,
+    // determinar si fue HOY y si alcanzó target → restaurar
+    // `completedToday=true`. Sin esto, reiniciar la app después de
+    // cerrar un ayuno hace que el satélite vuelva a 0%.
+    _ref.listen(lastCompletedFastingProvider, (previous, next) {
+      final interval = next.value;
+      if (interval == null || interval.endTime == null) return;
+      final endTime = interval.endTime!;
+      final now = DateTime.now();
+      final isToday = endTime.year == now.year &&
+          endTime.month == now.month &&
+          endTime.day == now.day;
+      if (!isToday) return;
+      final durationSec =
+          endTime.difference(interval.startTime).inSeconds;
+      final reachedTarget = durationSec >= state.targetHours * 3600;
+      if (reachedTarget && state.completedToday != true) {
+        state = state.copyWith(completedToday: true);
+      }
+    }, fireImmediately: true);
   }
 
   /// INICIO MANUAL (Viaje en el tiempo para pruebas)
@@ -237,18 +270,21 @@ class FastingNotifier extends StateNotifier<FastingState> {
     }
 
     // 3. Actualización de UI
-    // SPEC-113.bugfix: marcamos `completedToday: true` SOLO si el
-    // ayuno alcanzó el targetHours antes del cierre. De lo contrario
-    // (cierre prematuro) NO mostramos 100%.
-    final closedDuration = DateTime.now().difference(manualTime);
+    // SPEC-113.bugfix: la duración del AYUNO es (manualTime - state.startTime),
+    // NO (now - manualTime). El segundo cálculo era el tiempo transcurrido
+    // de la ventana de alimentación recién iniciada, no del ayuno cerrado.
+    final fastingStartTime = state.startTime;
+    final fastingDuration = fastingStartTime != null
+        ? manualTime.difference(fastingStartTime)
+        : Duration.zero;
     final reachedTarget =
-        closedDuration.inSeconds >= state.targetHours * 3600;
+        fastingDuration.inSeconds >= state.targetHours * 3600;
     state = state.copyWith(
       isSaving: false,
       isWaitingForFastingEnd: false,
       isActive: false,
       startTime: manualTime,
-      duration: closedDuration,
+      duration: DateTime.now().difference(manualTime),
       completedToday: reachedTarget ? true : state.completedToday,
     );
   }
