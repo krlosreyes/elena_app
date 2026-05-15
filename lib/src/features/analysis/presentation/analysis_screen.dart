@@ -150,7 +150,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.grid_view_rounded),
-            label: 'Dashboard',
+            label: 'Hoy',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.insights_rounded),

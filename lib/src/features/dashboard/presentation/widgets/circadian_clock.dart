@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
+import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import '../../domain/eating_window_state.dart';
 import '../../domain/fasting_status.dart';
+import 'fasting_hero_display.dart';
 import 'parts/biological_cycles_painter.dart';
 import 'parts/fasting_ring_painter.dart';
 import 'parts/eating_window_painter.dart';
@@ -10,7 +11,6 @@ import 'parts/eating_window_painter.dart';
 class CircadianClock extends StatelessWidget {
   final UserModel user;
   final FastingState fastingState;
-  final double score;
 
   /// SPEC-95: estado de la ventana de comida. Se calcula en
   /// `eatingWindowProvider` y se pasa explícito al widget. Puede ser
@@ -20,12 +20,16 @@ class CircadianClock extends StatelessWidget {
   // SPEC-91: el badge `zone` (INESTABLE/ESTABLE/etc.) ya no se pinta
   // dentro del reloj. Si en el futuro se reincorpora a otra pantalla,
   // se vuelve a agregar como parámetro.
+  //
+  // SPEC-115: el parámetro `score` (IMR central) fue eliminado. El
+  // centro ahora muestra el estado del ayuno + próximo hito vía
+  // FastingHeroDisplay. El IMR sigue siendo la métrica central de
+  // Análisis, no de "Hoy".
 
   const CircadianClock({
     super.key,
     required this.user,
     required this.fastingState,
-    required this.score,
     this.eatingWindow,
   });
 
@@ -34,6 +38,8 @@ class CircadianClock extends StatelessWidget {
     // SPEC-72.10: `onBackground` deprecated en Material 3 → migrado a `onSurface`.
     final colorDeTexto = Theme.of(context).colorScheme.onSurface;
     final now = DateTime.now();
+    // `colorDeTexto` se conserva para los painters que sí lo consumen;
+    // el centro vive ahora dentro de FastingHeroDisplay.
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -89,34 +95,13 @@ class CircadianClock extends StatelessWidget {
               ),
             ),
 
-            // CAPA 3: IMR SCORE Central
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  "IMR SCORE", 
-                  style: TextStyle(
-                    color: colorDeTexto.withValues(alpha: 0.5), 
-                    letterSpacing: 2.0,
-                    fontSize: size * 0.035,
-                    fontWeight: FontWeight.w600,
-                  )
-                ),
-                Text(
-                  "${score.toInt()}",
-                  style: TextStyle(
-                    fontSize: size * 0.25,
-                    height: 1.0,
-                    color: colorDeTexto,
-                    fontWeight: FontWeight.w900,
-                    fontFamily: 'monospace',
-                  )
-                ),
-                // SPEC-91: badge de zona (INESTABLE/ESTABLE/etc.) removido
-                // del círculo del IMR; se veía visualmente ruidoso encima
-                // de las capas del reloj. El estado sigue disponible en la
-                // pantalla Análisis y vía `zone` para futuros usos.
-              ],
+            // CAPA 3: SPEC-115 — Hero del ayuno (cronómetro, countdown
+            // o completado) + próximo hito metabólico. Reemplaza al
+            // antiguo "IMR SCORE / 75". El IMR sigue en Análisis.
+            FastingHeroDisplay(
+              fastingState: fastingState,
+              eatingWindow: eatingWindow,
+              size: size,
             ),
           ],
         );

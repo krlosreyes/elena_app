@@ -57,14 +57,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final exerciseState = ref.watch(exerciseProvider);
     final nutritionState = ref.watch(nutritionProvider);
 
-    // SPEC-52: el IMR viene del provider central — una sola fuente de verdad.
-    final result = ref.watch(imrProvider);
-
-    // SPEC-86: para el "score grande" del Reloj Circadiano, preferimos
-    // el persistido cuando el cálculo local solo tiene baseline (caso
-    // de usuario MR sin data behavioral en la app). Las tarjetas de
-    // detalle siguen leyendo `result` directamente.
-    final displayedImr = ref.watch(displayedImrProvider);
+    // SPEC-52 + SPEC-115: el IMR sigue siendo la métrica central de
+    // Análisis. En "Hoy" mantenemos el watch como side-effect (el
+    // motor central recomputa al cambiar pilares) pero ya no se
+    // renderiza al centro del reloj — el centro lo ocupa
+    // FastingHeroDisplay.
+    ref.watch(imrProvider);
 
     // SPEC-82: mantener vivo el sink debounced que persiste imr.current
     // al doc raíz `users/{uid}.imr.current` (consumido por el sitio web
@@ -112,14 +110,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             child: CircadianClock(
                               user: user,
                               fastingState: fastingState,
-                              // SPEC-86: usar displayed (puede preferir
-                              // el persistido del sitio sobre baseline).
-                              // SPEC-91: el badge de zona quedó fuera del
-                              // círculo; ya no se pasa `zone`.
-                              score: displayedImr.score.toDouble(),
-                              // SPEC-95: ventana de alimentación como
-                              // concepto propio (windowStart/windowEnd
-                              // derivados del protocolo del usuario).
+                              // SPEC-115: ya no pasamos `score` (IMR).
+                              // El centro lo ocupa FastingHeroDisplay con
+                              // estado del ayuno + próximo hito. El IMR
+                              // sigue en Análisis.
                               eatingWindow: ref.watch(eatingWindowProvider),
                             ),
                           ),
@@ -1830,6 +1824,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     int currentIndex = 0;
     if (location.startsWith('/analysis')) currentIndex = 1;
     if (location.startsWith('/profile')) currentIndex = 2;
-    return BottomNavigationBar(backgroundColor: const Color(0xFF0F172A), selectedItemColor: AppColors.metabolicGreen, unselectedItemColor: Colors.grey.withValues(alpha: 0.5), currentIndex: currentIndex, type: BottomNavigationBarType.fixed, onTap: (index) { if (index == 0) context.go('/dashboard'); if (index == 1) context.go('/analysis'); if (index == 2) context.go('/profile'); }, items: const [BottomNavigationBarItem(icon: Icon(Icons.grid_view_rounded), label: "Dashboard"), BottomNavigationBarItem(icon: Icon(Icons.insights_rounded), label: "Análisis"), BottomNavigationBarItem(icon: Icon(Icons.person), label: "Perfil")]);
+    return BottomNavigationBar(backgroundColor: const Color(0xFF0F172A), selectedItemColor: AppColors.metabolicGreen, unselectedItemColor: Colors.grey.withValues(alpha: 0.5), currentIndex: currentIndex, type: BottomNavigationBarType.fixed, onTap: (index) { if (index == 0) context.go('/dashboard'); if (index == 1) context.go('/analysis'); if (index == 2) context.go('/profile'); }, items: const [BottomNavigationBarItem(icon: Icon(Icons.grid_view_rounded), label: "Hoy"), BottomNavigationBarItem(icon: Icon(Icons.insights_rounded), label: "Análisis"), BottomNavigationBarItem(icon: Icon(Icons.person), label: "Perfil")]);
   }
 }

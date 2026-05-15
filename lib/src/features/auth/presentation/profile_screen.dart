@@ -98,7 +98,7 @@ class ProfileScreen extends ConsumerWidget {
       },
       items: const [
         BottomNavigationBarItem(
-            icon: Icon(Icons.grid_view_rounded), label: 'Dashboard'),
+            icon: Icon(Icons.grid_view_rounded), label: 'Hoy'),
         BottomNavigationBarItem(
             icon: Icon(Icons.insights_rounded), label: 'Análisis'),
         BottomNavigationBarItem(
