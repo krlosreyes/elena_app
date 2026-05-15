@@ -18,6 +18,7 @@ import 'package:elena_app/src/features/dashboard/domain/relative_day_label.dart'
 import 'package:elena_app/src/features/dashboard/presentation/widgets/circadian_clock.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/early_fasting_end_dialog.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/meals_locked_dialog.dart';
+import 'package:elena_app/src/features/dashboard/presentation/widgets/sleep_existing_log_dialog.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/live_fasting_clock.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/pillar_ring.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/protocol_selector_sheet.dart';
@@ -626,28 +627,166 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               : 'Buscas sueño reparador: 7-9h activan la GH pulsátil que repara músculo y reduce inflamación.',
         ),
         const SizedBox(height: 18),
+        // SPEC-106 / SPEC-108: el sheet precarga el último log si
+        // existe. Si ya hay registro de HOY, primero pasa por un
+        // diálogo donde el usuario elige editar o eliminar y
+        // recrear. Si no hay log, abre sheet limpio directo.
         _primaryButton(
-          label: 'Actualizar Registro',
+          label: hasLog ? 'Actualizar Registro' : 'Registrar Sueño',
           icon: Icons.nightlight_round,
           color: accent,
-          onPressed: () => showModalBottomSheet<void>(
-            context: context,
-            isScrollControlled: true,
-            backgroundColor: Colors.transparent,
-            builder: (_) => const SleepInputSheet(),
-          ),
+          onPressed: () => _onTapUpdateSleep(context, ref, state),
         ),
         const SizedBox(height: 10),
-        _secondaryButton(
-          label: 'Eliminar registro y volver a registrar',
-          icon: Icons.delete_outline_rounded,
-          onPressed: () => _showPendingFeatureSnack(
-            context,
-            'Eliminar registro de sueño',
+        // SPEC-106: eliminar registro existente. Solo aparece si hay
+        // un log para borrar; abre diálogo de confirmación.
+        if (hasLog)
+          _secondaryButton(
+            label: 'Eliminar registro y volver a registrar',
+            icon: Icons.delete_outline_rounded,
+            onPressed: state.isSaving
+                ? null
+                : () => _confirmDeleteSleepLog(context, ref),
           ),
-        ),
       ],
     );
+  }
+
+  /// SPEC-108: handler unificado del botón "Actualizar Registro".
+  ///
+  /// Si NO hay log o el log NO es de hoy → abre sheet limpio para
+  /// crear nuevo. Si hay log de hoy → muestra `SleepExistingLogDialog`
+  /// para que el usuario decida entre editar, eliminar y recrear, o
+  /// cancelar.
+  Future<void> _onTapUpdateSleep(
+      BuildContext context, WidgetRef ref, SleepState state) async {
+    final log = state.lastLog;
+    final now = DateTime.now();
+
+    final bool hasTodayLog = log != null &&
+        log.wokeUp.year == now.year &&
+        log.wokeUp.month == now.month &&
+        log.wokeUp.day == now.day;
+
+    if (!hasTodayLog) {
+      // Sin log de hoy → abrir sheet limpio (sin diálogo).
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => SleepInputSheet(initial: log),
+      );
+      return;
+    }
+
+    // Ya hay log de hoy → diálogo con bedtime/waketime/duración/calidad
+    // y tres opciones.
+    final choice =
+        await SleepExistingLogDialog.show(context, log: log);
+
+    if (!context.mounted) return;
+
+    switch (choice) {
+      case SleepExistingLogChoice.edit:
+        await showModalBottomSheet<void>(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (_) => SleepInputSheet(initial: log),
+        );
+        break;
+      case SleepExistingLogChoice.replace:
+        // Reutilizamos el flujo de eliminación con confirmación que
+        // ya abre el sheet limpio después.
+        await _confirmDeleteSleepLog(context, ref);
+        break;
+      case SleepExistingLogChoice.cancel:
+        // no-op
+        break;
+    }
+  }
+
+  /// SPEC-106: confirmación previa a eliminar el registro de sueño.
+  /// Tras confirmar, llama a `sleepProvider.deleteLastLog()` y abre
+  /// el sheet en modo limpio (`initial: null`) para que el usuario
+  /// pueda registrar de nuevo.
+  Future<void> _confirmDeleteSleepLog(
+      BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E293B),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+        ),
+        title: const Text(
+          '¿Eliminar registro de sueño?',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w900,
+            fontSize: 17,
+          ),
+        ),
+        content: const Text(
+          'Esta acción borra el registro actual de Firestore. '
+          'Después podrás capturar uno nuevo desde cero.',
+          style: TextStyle(
+            color: Color(0xFFB6C3D1),
+            fontSize: 13,
+            height: 1.4,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text(
+              'Cancelar',
+              style: TextStyle(
+                color: Color(0xFF94A3B8),
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: const Text(
+              'Sí, eliminar',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      await ref.read(sleepProvider.notifier).deleteLastLog();
+      if (!context.mounted) return;
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => const SleepInputSheet(),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('No se pudo eliminar: $e'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
   }
 
   // ─── HIDRATACIÓN: "Soporte Metabólico" ────────────────────────────────
