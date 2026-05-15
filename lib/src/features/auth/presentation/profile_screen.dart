@@ -126,7 +126,9 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
   late TimeOfDay _sleepTime;
   late TimeOfDay _firstMealGoal;
   late TimeOfDay _lastMealGoal;
-  late String _fastingProtocol;
+  // SPEC-98: `_fastingProtocol` removido. El cambio de protocolo vive
+  // en el Dashboard ahora; el Perfil solo lo muestra read-only desde
+  // `widget.user.fastingProtocol`.
 
   @override
   void initState() {
@@ -137,7 +139,6 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
         widget.user.profile.firstMealGoal ?? widget.user.profile.wakeUpTime);
     _lastMealGoal = TimeOfDay.fromDateTime(
         widget.user.profile.lastMealGoal ?? widget.user.profile.sleepTime);
-    _fastingProtocol = widget.user.fastingProtocol;
   }
 
   // Convierte TimeOfDay → DateTime usando la fecha de hoy como base
@@ -245,13 +246,9 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
         );
   }
 
-  void _selectFastingProtocol(String protocol) {
-    setState(() => _fastingProtocol = protocol);
-    ref.read(profileControllerProvider.notifier).updateFastingProtocol(
-          currentUser: widget.user,
-          protocol: protocol,
-        );
-  }
+  // SPEC-98: `_selectFastingProtocol` se eliminó porque el cambio de
+  // protocolo se realiza desde el Dashboard. Aquí en el Perfil el
+  // protocolo es read-only.
 
   // SPEC-88/SPEC-92: helpers de edición biométrica.
   //
@@ -532,10 +529,17 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
         ),
         const SizedBox(height: 24),
 
-        // ── Protocolo de Ayuno (editable) ───────────────────────────
+        // ── Protocolo de Ayuno (read-only) ──────────────────────────
+        // SPEC-98: el selector de protocolo se movió al Dashboard
+        // (chip clickable en la card "Ayuno Consciente"). Aquí queda
+        // solo como referencia, no editable. Para cambiarlo el usuario
+        // va al Dashboard.
         _buildSectionLabel('PROTOCOLO DE AYUNO'),
         const SizedBox(height: 12),
-        _buildProtocolSelector(),
+        _readOnlyTile('Protocolo activo', widget.user.fastingProtocol),
+        const SizedBox(height: 6),
+        _buildSectionSubtitle(
+            'Cambia tu protocolo desde el Dashboard (card Ayuno Consciente).'),
         const SizedBox(height: 32),
 
         // ── Acciones de cuenta ──────────────────────────────────────
@@ -638,169 +642,10 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
     );
   }
 
-  // SPEC-88: grid 2×4 con 8 protocolos. Mantiene la misma lógica de
-  // selección (`_selectFastingProtocol`) — solo cambia la presentación.
-  Widget _buildProtocolSelector() {
-    final protocols = const [
-      'Ninguno',
-      '12:12',
-      '14:10',
-      '16:8',
-      '18:6',
-      '20:4',
-      '22:2',
-      'OMAD',
-    ];
-    final recommended = _recommendedProtocol();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _buildRecommendedProtocolCard(recommended),
-        const SizedBox(height: 16),
-        GridView.count(
-          crossAxisCount: 4,
-          mainAxisSpacing: 12,
-          crossAxisSpacing: 12,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          children: protocols.map((p) {
-            final isSelected = _fastingProtocol == p;
-            return GestureDetector(
-              onTap: () => _selectFastingProtocol(p),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? AppColors.metabolicGreen
-                      : AppColors.surfaceDark,
-                  borderRadius: BorderRadius.circular(14),
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: AppColors.metabolicGreen
-                                .withValues(alpha: 0.4),
-                            blurRadius: 14,
-                            spreadRadius: 0,
-                          ),
-                        ]
-                      : null,
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  p,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                    color: isSelected
-                        ? Colors.white
-                        : Colors.white.withValues(alpha: 0.65),
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
-        ),
-      ],
-    );
-  }
-
-  /// SPEC-88: protocolo recomendado. Por ahora se hereda del
-  /// `fastingProtocol` actual del usuario (placeholder simple). Si en
-  /// el futuro hay un servicio de recomendación, se inyecta sin
-  /// cambiar la UI.
-  String _recommendedProtocol() {
-    final current = widget.user.fastingProtocol;
-    if (current.isNotEmpty && current != 'Ninguno') return current;
-    return '18:6';
-  }
-
-  Widget _buildRecommendedProtocolCard(String recommended) {
-    const Map<String, String> descriptions = {
-      'Ninguno':
-          'Sin ventana de ayuno. Recomendado para iniciar y construir hábitos básicos.',
-      '12:12':
-          'Ventana suave. Apropiado para iniciar el ayuno intermitente.',
-      '14:10':
-          'Ventana corta. Buen punto medio para principiantes con tolerancia adecuada.',
-      '16:8':
-          'Protocolo clásico. Promueve autofagia ligera y mejora sensibilidad a insulina.',
-      '18:6':
-          'Ayuno moderado-intenso. Aumenta autofagia sin extremos.',
-      '20:4':
-          'Ventana muy corta. Indicado para usuarios con experiencia previa.',
-      '22:2':
-          'Ayuno avanzado. Solo bajo supervisión y con tolerancia confirmada.',
-      'OMAD':
-          'Una comida al día. Protocolo extremo — supervisión recomendada.',
-    };
-    final desc = descriptions[recommended] ?? '';
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceDark,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.metabolicGreen.withValues(alpha: 0.5),
-          width: 1.2,
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: AppColors.metabolicGreen.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(
-              Icons.auto_awesome_rounded,
-              color: AppColors.metabolicGreen,
-              size: 18,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'RECOMENDADO PARA TI',
-                  style: TextStyle(
-                    fontSize: 9,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.2,
-                    color: Colors.white.withValues(alpha: 0.5),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  recommended,
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                    color: AppColors.metabolicGreen,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  desc,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF94A3B8),
-                    height: 1.35,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // SPEC-98: el grid 2×4 y la card "Recomendado para ti" se removieron
+  // del Perfil. El protocolo se cambia desde el Dashboard (chip clickable
+  // en la card "Ayuno Consciente"). Los métodos `_buildProtocolSelector`,
+  // `_buildRecommendedProtocolCard` y `_recommendedProtocol` se eliminaron.
 
   // SPEC-76 + SPEC-77: grupo único para los 3 documentos legales.
   // En lugar de 3 tarjetas separadas (visualmente ruidoso), una sola
