@@ -58,10 +58,14 @@ class UserProfileMapper {
         max: 250,
       );
     }
-    if (user.bodyFatPercentage < 0 || user.bodyFatPercentage > 70) {
+    // SPEC-92: bodyFatPercentage es nullable. Solo validamos el rango
+    // si hay un valor — null significa "sin medidas suficientes" y el
+    // ScoreEngine cae a fallback poblacional con confidence BAJA.
+    final bf = user.bodyFatPercentage;
+    if (bf != null && (bf < 0 || bf > 70)) {
       throw OutOfRange(
         field: 'UserModel.bodyFatPercentage',
-        value: user.bodyFatPercentage,
+        value: bf,
         min: 0,
         max: 70,
       );
@@ -96,8 +100,12 @@ Map<String, dynamic> userToCanonicalMirror(UserModel user) {
       'waistCm': user.waistCircumference,
       'neckCm': user.neckCircumference,
       'hipCm': null,
+      // SPEC-92: si bodyFat es null, el sitio MR debe ver null también
+      // — no inventar 20% poblacional como hacíamos antes.
       'bodyFatPct': user.bodyFatPercentage,
-      'leanMassPct': 100.0 - user.bodyFatPercentage,
+      'leanMassPct': user.bodyFatPercentage == null
+          ? null
+          : 100.0 - user.bodyFatPercentage!,
       'updatedAt': nowIso,
     },
     'habits': <String, dynamic>{

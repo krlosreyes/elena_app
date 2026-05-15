@@ -6,6 +6,7 @@ import 'package:elena_app/src/core/engine/imr_persistence_provider.dart';
 import 'package:elena_app/src/features/auth/application/profile_controller.dart';
 import 'package:elena_app/src/features/auth/presentation/widgets/edit_biometry_value_sheet.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
+import 'package:elena_app/src/features/profile/domain/biometry_recalc.dart';
 import 'package:elena_app/src/features/profile/presentation/widgets/body_composition_card.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
@@ -184,8 +185,74 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
         );
   }
 
-  // SPEC-88: helpers de edición biométrica. Cada uno abre el sheet,
-  // recibe el nuevo valor y delega a `ProfileController.updateBiometry`.
+  // SPEC-88/SPEC-92: helpers de edición biométrica.
+  //
+  // SPEC-92: cada edit de peso/cintura/cuello DEBE recalcular bodyFat
+  // con `BiometryRecalc.recompute` antes de persistir. Si la nueva
+  // combinación no es coherente, conservamos el bodyFat anterior y
+  // mostramos un snackbar informativo (no bloqueante).
+  //
+  // El % grasa ya NO se edita manualmente — el tile en el panel es
+  // read-only. El usuario lo modifica indirectamente cambiando las
+  // medidas que lo derivan.
+
+  void _showIncoherenceNotice() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Las medidas no son coherentes. El % grasa no se actualizó '
+          '— revisa cintura, cuello y altura.',
+        ),
+        backgroundColor: Colors.orange,
+        duration: Duration(seconds: 4),
+      ),
+    );
+  }
+
+  /// SPEC-92: recalcula bodyFat usando las medidas vigentes + el campo
+  /// que se acaba de editar, y persiste ambos campos (editado + bodyFat
+  /// recalculado) si la combinación es coherente.
+  Future<void> _applyBiometryEdit({
+    double? newWeight,
+    double? newWaist,
+    double? newNeck,
+  }) async {
+    final user = widget.user;
+    final effectiveWeight = newWeight ?? user.weight;
+    final effectiveWaist = newWaist ?? user.waistCircumference;
+    final effectiveNeck = newNeck ?? user.neckCircumference;
+
+    final recalc = BiometryRecalc.recompute(
+      weightKg: effectiveWeight,
+      heightCm: user.height,
+      waistCm: effectiveWaist,
+      neckCm: effectiveNeck,
+      gender: user.gender,
+    );
+
+    // Caso coherente: persistir campo editado + bodyFat nuevo.
+    if (recalc.isCoherent && recalc.bodyFatPercentage != null) {
+      await ref.read(profileControllerProvider.notifier).updateBiometry(
+            currentUser: user,
+            weight: newWeight,
+            waistCircumference: newWaist,
+            neckCircumference: newNeck,
+            bodyFatPercentage: recalc.bodyFatPercentage,
+          );
+      return;
+    }
+
+    // Caso incoherente o sin datos suficientes: solo persistir el
+    // campo editado, dejar bodyFat anterior intacto, avisar al usuario.
+    await ref.read(profileControllerProvider.notifier).updateBiometry(
+          currentUser: user,
+          weight: newWeight,
+          waistCircumference: newWaist,
+          neckCircumference: newNeck,
+        );
+    if (mounted) _showIncoherenceNotice();
+  }
+
   Future<void> _editWeight() async {
     final value = await EditBiometryValueSheet.show(
       context,
@@ -197,10 +264,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
       maxValue: 250,
     );
     if (value != null) {
-      await ref.read(profileControllerProvider.notifier).updateBiometry(
-            currentUser: widget.user,
-            weight: value,
-          );
+      await _applyBiometryEdit(newWeight: value);
     }
   }
 
@@ -215,10 +279,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
       maxValue: 200,
     );
     if (value != null) {
-      await ref.read(profileControllerProvider.notifier).updateBiometry(
-            currentUser: widget.user,
-            waistCircumference: value,
-          );
+      await _applyBiometryEdit(newWaist: value);
     }
   }
 
@@ -233,29 +294,78 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
       maxValue: 70,
     );
     if (value != null) {
-      await ref.read(profileControllerProvider.notifier).updateBiometry(
-            currentUser: widget.user,
-            neckCircumference: value,
-          );
+      await _applyBiometryEdit(newNeck: value);
     }
   }
 
-  Future<void> _editBodyFat() async {
-    final value = await EditBiometryValueSheet.show(
-      context,
-      title: 'Editar % grasa',
-      fieldLabel: 'Porcentaje de grasa corporal estimado',
-      unit: '%',
-      initialValue: widget.user.bodyFatPercentage,
-      minValue: 3,
-      maxValue: 60,
+  /// SPEC-92: muestra explicación de por qué el % grasa no es editable
+  /// manualmente. Reemplaza al antiguo `_editBodyFat`.
+  void _showBodyFatExplanation() {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppColors.surfaceDark,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              '¿Por qué no puedo editar este valor?',
+              style: TextStyle(
+                fontWeight: FontWeight.w900,
+                fontSize: 18,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'El % de grasa corporal se calcula automáticamente a partir '
+              'de tu cintura, cuello y altura usando la fórmula US Navy '
+              '(validada clínicamente).\n\n'
+              'Para actualizarlo, edita cualquiera de esas medidas. Así '
+              'evitamos divergencias entre lo que el sistema mide y lo '
+              'que el usuario afirma — y el IMR refleja tu estructura '
+              'corporal real.',
+              style: TextStyle(
+                color: Color(0xFFB6C3D1),
+                fontSize: 14,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: const Text(
+                  'ENTENDIDO',
+                  style: TextStyle(
+                    color: Color(0xFF00C49A),
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
-    if (value != null) {
-      await ref.read(profileControllerProvider.notifier).updateBiometry(
-            currentUser: widget.user,
-            bodyFatPercentage: value,
-          );
-    }
   }
 
   @override
@@ -303,11 +413,13 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
           value: '${widget.user.neckCircumference?.toInt() ?? 0} cm',
           onTap: () => _editNeck(),
         ),
-        _editableBiometryTile(
-          icon: Icons.show_chart_rounded,
-          label: '% Grasa Est.',
-          value: '${widget.user.bodyFatPercentage.toStringAsFixed(1)}%',
-          onTap: () => _editBodyFat(),
+        // SPEC-92: % grasa es READ-ONLY. Se calcula desde cintura/
+        // cuello/altura con la fórmula US Navy en `BiometryRecalc`.
+        // El tap muestra una explicación (no abre editor).
+        _bodyFatReadOnlyTile(
+          value: widget.user.bodyFatPercentage,
+          confidenceLevel: widget.user.confidenceLevel,
+          onInfoTap: _showBodyFatExplanation,
         ),
         const SizedBox(height: 24),
 
@@ -1034,6 +1146,94 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  /// SPEC-92: tile read-only para `% grasa`. Muestra el valor calculado,
+  /// el confidence chip (ALTA/MEDIA/BAJA), y un info-icon que abre la
+  /// explicación de la fórmula. NO permite edición directa.
+  Widget _bodyFatReadOnlyTile({
+    required double? value,
+    required String confidenceLevel,
+    required VoidCallback onInfoTap,
+  }) {
+    final String display =
+        value != null ? '${value.toStringAsFixed(1)}%' : 'Sin medir';
+
+    // Color del chip según confidence.
+    Color confidenceColor;
+    switch (confidenceLevel) {
+      case 'ALTA':
+        confidenceColor = AppColors.metabolicGreen;
+        break;
+      case 'MEDIA':
+        confidenceColor = const Color(0xFFEAB308);
+        break;
+      default:
+        confidenceColor = const Color(0xFF94A3B8);
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceDark,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.show_chart_rounded,
+            color: Colors.white.withValues(alpha: 0.5),
+            size: 18,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '% Grasa Est.',
+                  style: TextStyle(
+                    color: Color(0xFF94A3B8),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Calculado · confianza $confidenceLevel',
+                  style: TextStyle(
+                    color: confidenceColor,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            display,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: onInfoTap,
+            behavior: HitTestBehavior.opaque,
+            child: Icon(
+              Icons.info_outline_rounded,
+              size: 16,
+              color: Colors.white.withValues(alpha: 0.45),
+            ),
+          ),
+        ],
       ),
     );
   }

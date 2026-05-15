@@ -19,7 +19,10 @@ void main() {
     String gender = 'M',
     double weight = 75,
     double height = 175,
-    double bodyFatPercentage = 20,
+    // SPEC-92: bodyFatPercentage es nullable. Tests que necesiten un
+    // valor concreto siguen pasándolo; los que prueban "sin medir"
+    // pasan null explícito.
+    double? bodyFatPercentage = 20,
   }) {
     return UserModel(
       id: id,
@@ -119,6 +122,15 @@ void main() {
         () => mapper.toMap(_user(bodyFatPercentage: 70)),
         returnsNormally,
       );
+    });
+
+    test('SPEC-92: bodyFatPercentage null no lanza, persiste como null', () {
+      expect(
+        () => mapper.toMap(_user(bodyFatPercentage: null)),
+        returnsNormally,
+      );
+      final map = mapper.toMap(_user(bodyFatPercentage: null));
+      expect(map['bodyFatPercentage'], isNull);
     });
   });
 }

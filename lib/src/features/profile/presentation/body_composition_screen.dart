@@ -63,7 +63,9 @@ class _BodyCompositionContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool isMale  = user.gender.toUpperCase() == 'M';
-    final double fat   = user.bodyFatPercentage.clamp(1.0, 60.0);
+    // SPEC-92: bodyFat nullable → fallback poblacional.
+    final double rawFat = user.bodyFatPercentage ?? (isMale ? 15.0 : 25.0);
+    final double fat   = rawFat.clamp(1.0, 60.0);
     final double lean  = BodyCompositionCalc.leanMass(user.weight, fat);
     final double wCm   = user.waistCircumference ?? (user.weight * 0.48);
     final double w     = BodyCompositionCalc.whtr(wCm, user.height);

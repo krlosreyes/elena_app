@@ -132,7 +132,12 @@ class _CardContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool isMale = user.gender.toUpperCase() == 'M';
-    final double fat    = user.bodyFatPercentage.clamp(1.0, 60.0);
+    // SPEC-92: bodyFat nullable → fallback poblacional para evitar
+    // null crash en este widget de detalle. Si en el futuro queremos
+    // mostrar un placeholder "Sin medir" en vez de pintar el cálculo
+    // con fallback, hacerlo en SPEC separada.
+    final double rawFat = user.bodyFatPercentage ?? (isMale ? 15.0 : 25.0);
+    final double fat    = rawFat.clamp(1.0, 60.0);
     final double lean   = BodyCompositionCalc.leanMass(user.weight, fat);
     final double wValue = user.waistCircumference ?? (user.weight * 0.48); // fallback si no hay cintura
     final double w      = BodyCompositionCalc.whtr(wValue, user.height);

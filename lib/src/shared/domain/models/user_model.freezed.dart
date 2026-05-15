@@ -27,8 +27,16 @@ mixin _$UserModel {
   double get weight => throw _privateConstructorUsedError;
   double get height => throw _privateConstructorUsedError; // --- Biometría ---
   double? get waistCircumference => throw _privateConstructorUsedError;
-  double? get neckCircumference => throw _privateConstructorUsedError;
-  double get bodyFatPercentage =>
+  double? get neckCircumference =>
+      throw _privateConstructorUsedError; // SPEC-92: `bodyFatPercentage` ahora es nullable. Antes tenía
+// `@Default(20.0)` que era una trampa silenciosa — cualquier ruta
+// de creación que omitiera el campo contaminaba el bloque
+// Estructura del IMR con un 20% poblacional. Hoy el caller debe
+// calcularlo explícitamente (`BodyFatCalculator` desde el
+// onboarding o `BiometryRecalc` desde la edición de Profile). Si
+// no hay datos para calcular, queda null y el ScoreEngine usa
+// fallback marcando `confidenceLevel: 'BAJA'`.
+  double? get bodyFatPercentage =>
       throw _privateConstructorUsedError; // --- Inferencia ---
   int get pantSize => throw _privateConstructorUsedError;
   String get shirtSize => throw _privateConstructorUsedError;
@@ -87,7 +95,7 @@ abstract class $UserModelCopyWith<$Res> {
       double height,
       double? waistCircumference,
       double? neckCircumference,
-      double bodyFatPercentage,
+      double? bodyFatPercentage,
       int pantSize,
       String shirtSize,
       bool isMeasurementEstimated,
@@ -130,7 +138,7 @@ class _$UserModelCopyWithImpl<$Res, $Val extends UserModel>
     Object? height = null,
     Object? waistCircumference = freezed,
     Object? neckCircumference = freezed,
-    Object? bodyFatPercentage = null,
+    Object? bodyFatPercentage = freezed,
     Object? pantSize = null,
     Object? shirtSize = null,
     Object? isMeasurementEstimated = null,
@@ -180,10 +188,10 @@ class _$UserModelCopyWithImpl<$Res, $Val extends UserModel>
           ? _value.neckCircumference
           : neckCircumference // ignore: cast_nullable_to_non_nullable
               as double?,
-      bodyFatPercentage: null == bodyFatPercentage
+      bodyFatPercentage: freezed == bodyFatPercentage
           ? _value.bodyFatPercentage
           : bodyFatPercentage // ignore: cast_nullable_to_non_nullable
-              as double,
+              as double?,
       pantSize: null == pantSize
           ? _value.pantSize
           : pantSize // ignore: cast_nullable_to_non_nullable
@@ -275,7 +283,7 @@ abstract class _$$UserModelImplCopyWith<$Res>
       double height,
       double? waistCircumference,
       double? neckCircumference,
-      double bodyFatPercentage,
+      double? bodyFatPercentage,
       int pantSize,
       String shirtSize,
       bool isMeasurementEstimated,
@@ -317,7 +325,7 @@ class __$$UserModelImplCopyWithImpl<$Res>
     Object? height = null,
     Object? waistCircumference = freezed,
     Object? neckCircumference = freezed,
-    Object? bodyFatPercentage = null,
+    Object? bodyFatPercentage = freezed,
     Object? pantSize = null,
     Object? shirtSize = null,
     Object? isMeasurementEstimated = null,
@@ -367,10 +375,10 @@ class __$$UserModelImplCopyWithImpl<$Res>
           ? _value.neckCircumference
           : neckCircumference // ignore: cast_nullable_to_non_nullable
               as double?,
-      bodyFatPercentage: null == bodyFatPercentage
+      bodyFatPercentage: freezed == bodyFatPercentage
           ? _value.bodyFatPercentage
           : bodyFatPercentage // ignore: cast_nullable_to_non_nullable
-              as double,
+              as double?,
       pantSize: null == pantSize
           ? _value.pantSize
           : pantSize // ignore: cast_nullable_to_non_nullable
@@ -447,7 +455,7 @@ class _$UserModelImpl implements _UserModel {
       required this.height,
       this.waistCircumference,
       this.neckCircumference,
-      this.bodyFatPercentage = 20.0,
+      this.bodyFatPercentage,
       this.pantSize = 30,
       this.shirtSize = 'M',
       this.isMeasurementEstimated = true,
@@ -487,9 +495,16 @@ class _$UserModelImpl implements _UserModel {
   final double? waistCircumference;
   @override
   final double? neckCircumference;
+// SPEC-92: `bodyFatPercentage` ahora es nullable. Antes tenía
+// `@Default(20.0)` que era una trampa silenciosa — cualquier ruta
+// de creación que omitiera el campo contaminaba el bloque
+// Estructura del IMR con un 20% poblacional. Hoy el caller debe
+// calcularlo explícitamente (`BodyFatCalculator` desde el
+// onboarding o `BiometryRecalc` desde la edición de Profile). Si
+// no hay datos para calcular, queda null y el ScoreEngine usa
+// fallback marcando `confidenceLevel: 'BAJA'`.
   @override
-  @JsonKey()
-  final double bodyFatPercentage;
+  final double? bodyFatPercentage;
 // --- Inferencia ---
   @override
   @JsonKey()
@@ -671,7 +686,7 @@ abstract class _UserModel implements UserModel {
       required final double height,
       final double? waistCircumference,
       final double? neckCircumference,
-      final double bodyFatPercentage,
+      final double? bodyFatPercentage,
       final int pantSize,
       final String shirtSize,
       final bool isMeasurementEstimated,
@@ -706,9 +721,17 @@ abstract class _UserModel implements UserModel {
   @override
   double? get waistCircumference;
   @override
-  double? get neckCircumference;
+  double?
+      get neckCircumference; // SPEC-92: `bodyFatPercentage` ahora es nullable. Antes tenía
+// `@Default(20.0)` que era una trampa silenciosa — cualquier ruta
+// de creación que omitiera el campo contaminaba el bloque
+// Estructura del IMR con un 20% poblacional. Hoy el caller debe
+// calcularlo explícitamente (`BodyFatCalculator` desde el
+// onboarding o `BiometryRecalc` desde la edición de Profile). Si
+// no hay datos para calcular, queda null y el ScoreEngine usa
+// fallback marcando `confidenceLevel: 'BAJA'`.
   @override
-  double get bodyFatPercentage; // --- Inferencia ---
+  double? get bodyFatPercentage; // --- Inferencia ---
   @override
   int get pantSize;
   @override

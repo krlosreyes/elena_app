@@ -17,7 +17,9 @@ UserModel _user({
   int age = 30,
   double weight = 75,
   double height = 175,
-  double bodyFatPct = 20,
+  // SPEC-92: bodyFatPercentage es nullable. Default 20 para conservar
+  // la aritmética histórica de tests pre-SPEC-92.
+  double? bodyFatPct = 20,
   double? waist,
   DateTime? lastMealGoal,
 }) {
@@ -101,6 +103,24 @@ void main() {
       expect(r.totalScore, 0);
       expect(r.zone, 'N/A');
       expect(r.description, 'Cargando...');
+    });
+
+    test('SPEC-92: bodyFatPercentage null → calcula con fallback, no rompe',
+        () {
+      // Sin bodyFat el engine debe usar fallback poblacional (15%
+      // hombre / 25% mujer) y devolver un IMR válido en vez de tirar.
+      final user = _user(waist: 90, bodyFatPct: null);
+      final r = engine.calculateIMR(user, _state());
+      expect(r.totalScore, isNonZero);
+      expect(r.ffmi, greaterThan(0));
+      expect(r.zone, isNot('N/A'));
+    });
+
+    test('SPEC-92: calculateBaseline con bodyFat null no rompe', () {
+      final user = _user(waist: 90, bodyFatPct: null);
+      final r = ScoreEngine.calculateBaseline(user);
+      expect(r.totalScore, isNonZero);
+      expect(r.ffmi, greaterThan(0));
     });
   });
 

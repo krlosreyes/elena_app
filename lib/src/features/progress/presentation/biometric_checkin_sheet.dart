@@ -49,7 +49,12 @@ class _BiometricCheckInSheetState
     final user = ref.read(currentUserStreamProvider).valueOrNull;
     if (user != null) {
       _weightCtrl.text = user.weight.toStringAsFixed(1);
-      _bfCtrl.text     = user.bodyFatPercentage.toStringAsFixed(0);
+      // SPEC-92: bodyFat nullable. Si no hay valor, dejar el campo
+      // vacío para que el usuario tipee (o lo deje sin tocar si el
+      // check-in es de peso/cintura solamente).
+      _bfCtrl.text = user.bodyFatPercentage != null
+          ? user.bodyFatPercentage!.toStringAsFixed(0)
+          : '';
       if (user.waistCircumference != null) {
         _waistCtrl.text = user.waistCircumference!.toStringAsFixed(0);
       }

@@ -79,6 +79,20 @@ class IMRv2Result {
 }
 
 class ScoreEngine {
+  /// SPEC-92: fallback poblacional cuando `bodyFatPercentage` es null.
+  /// Antes el UserModel tenía `@Default(20.0)` que disfrazaba la
+  /// ausencia de datos como "20% confirmado". Ahora el campo puede ser
+  /// null; este helper devuelve un valor que permite calcular un IMR
+  /// pero el caller debería propagar `confidenceLevel: 'BAJA'` cuando
+  /// se activa este fallback (no se pierde la señal — UserModel sigue
+  /// teniendo `confidenceLevel` que el onboarding pinta correctamente).
+  static double _effectiveBodyFatPct(UserModel user, bool isMale) {
+    final stored = user.bodyFatPercentage;
+    if (stored != null && stored > 0) return stored;
+    // Fallback poblacional aproximado (NHANES, adultos sedentarios).
+    return isMale ? 15.0 : 25.0;
+  }
+
   /// SPEC-52: nueva firma. Recibe el MetabolicState completo en lugar de
   /// 6 parámetros sueltos. Si `state.lastMealTime` es null, retorna
   /// `IMRv2Result.empty()` (la lógica circadiana requiere ese DateTime).
@@ -97,7 +111,9 @@ class ScoreEngine {
       s1 = ((0.60 - whtr) / 0.15).clamp(0.0, 1.0);
     }
     final double hMeter = user.height / 100;
-    final double leanMass = user.weight * (1 - (user.bodyFatPercentage / 100));
+    // SPEC-92: bodyFat nullable → fallback poblacional explícito.
+    final double bodyFatPct = _effectiveBodyFatPct(user, isMale);
+    final double leanMass = user.weight * (1 - (bodyFatPct / 100));
     final double ffmi = leanMass / math.pow(hMeter, 2);
     // SPEC-70.3: baseline FFMI age-stratified. La masa magra disminuye
     // ~1 punto por década después de los 50 (Kyle UG et al. 2003). Sin
@@ -252,7 +268,9 @@ class ScoreEngine {
       s1 = ((0.60 - whtr) / 0.15).clamp(0.0, 1.0);
     }
     final double hMeter = user.height / 100;
-    final double leanMass = user.weight * (1 - (user.bodyFatPercentage / 100));
+    // SPEC-92: bodyFat nullable → fallback poblacional explícito.
+    final double bodyFatPct = _effectiveBodyFatPct(user, isMale);
+    final double leanMass = user.weight * (1 - (bodyFatPct / 100));
     final double ffmi = leanMass / math.pow(hMeter, 2);
     final double baseFFMI = _baseFFMIForAge(isMale, user.age);
     final double rangeFFMI = isMale ? 6.0 : 5.0;

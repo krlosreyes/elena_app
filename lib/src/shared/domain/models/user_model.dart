@@ -30,7 +30,16 @@ class UserModel with _$UserModel {
     // --- Biometría ---
     double? waistCircumference,
     double? neckCircumference,
-    @Default(20.0) double bodyFatPercentage,
+
+    // SPEC-92: `bodyFatPercentage` ahora es nullable. Antes tenía
+    // `@Default(20.0)` que era una trampa silenciosa — cualquier ruta
+    // de creación que omitiera el campo contaminaba el bloque
+    // Estructura del IMR con un 20% poblacional. Hoy el caller debe
+    // calcularlo explícitamente (`BodyFatCalculator` desde el
+    // onboarding o `BiometryRecalc` desde la edición de Profile). Si
+    // no hay datos para calcular, queda null y el ScoreEngine usa
+    // fallback marcando `confidenceLevel: 'BAJA'`.
+    double? bodyFatPercentage,
     
     // --- Inferencia ---
     @Default(30) int pantSize,      

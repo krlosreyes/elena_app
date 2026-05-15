@@ -16,8 +16,7 @@ _$UserModelImpl _$$UserModelImplFromJson(Map<String, dynamic> json) =>
       height: (json['height'] as num).toDouble(),
       waistCircumference: (json['waistCircumference'] as num?)?.toDouble(),
       neckCircumference: (json['neckCircumference'] as num?)?.toDouble(),
-      bodyFatPercentage:
-          (json['bodyFatPercentage'] as num?)?.toDouble() ?? 20.0,
+      bodyFatPercentage: (json['bodyFatPercentage'] as num?)?.toDouble(),
       pantSize: (json['pantSize'] as num?)?.toInt() ?? 30,
       shirtSize: json['shirtSize'] as String? ?? 'M',
       isMeasurementEstimated: json['isMeasurementEstimated'] as bool? ?? true,

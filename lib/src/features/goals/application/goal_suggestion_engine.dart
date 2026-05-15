@@ -80,7 +80,10 @@ class GoalSuggestionEngine {
   //   peso_objetivo = masa_magra / (1 − %grasa_objetivo / 100)
 
   static GoalSuggestion _weightSuggestion(UserModel user, bool isMale) {
-    final double bf       = user.bodyFatPercentage.clamp(5.0, 50.0);
+    // SPEC-92: bodyFat nullable → si no hay dato, usar fallback
+    // poblacional (15 hombre / 25 mujer) para no romper la sugerencia.
+    final double rawBf = user.bodyFatPercentage ?? (isMale ? 15.0 : 25.0);
+    final double bf       = rawBf.clamp(5.0, 50.0);
     final double leanMass = user.weight * (1 - bf / 100);
 
     // Target bf = próxima zona mejor (igual lógica que bodyFat)
@@ -128,7 +131,9 @@ class GoalSuggestionEngine {
   // Sugerimos el techo de la zona inmediatamente mejor.
 
   static GoalSuggestion _bodyFatSuggestion(UserModel user, bool isMale) {
-    final double bf = user.bodyFatPercentage.clamp(5.0, 50.0);
+    // SPEC-92: bodyFat nullable → fallback poblacional para sugerencia.
+    final double rawBf = user.bodyFatPercentage ?? (isMale ? 15.0 : 25.0);
+    final double bf = rawBf.clamp(5.0, 50.0);
     final double target = _nextFatZoneTarget(bf, isMale);
 
     final String currentZone = _fatZoneLabel(bf, isMale);
