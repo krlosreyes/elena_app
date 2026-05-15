@@ -13,7 +13,10 @@ import 'package:elena_app/src/features/dashboard/application/sleep_notifier.dart
 import 'package:elena_app/src/features/dashboard/application/hydration_notifier.dart';
 import 'package:elena_app/src/features/dashboard/domain/fasting_status.dart';
 import 'package:elena_app/src/features/auth/application/profile_controller.dart';
+import 'package:elena_app/src/features/dashboard/application/fasting_history_provider.dart';
+import 'package:elena_app/src/features/dashboard/domain/relative_day_label.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/circadian_clock.dart';
+import 'package:elena_app/src/features/dashboard/presentation/widgets/early_fasting_end_dialog.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/live_fasting_clock.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/pillar_ring.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/protocol_selector_sheet.dart';
@@ -491,6 +494,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               valueColor: AlwaysStoppedAnimation<Color>(accent),
             ),
           ),
+          // SPEC-102: etiquetas sutiles en los extremos de la barra
+          // con la hora de inicio y la hora estimada de fin del
+          // ayuno. Patrón Apple Health / Oura — informa de un vistazo
+          // el rango temporal sin invadir la jerarquía visual.
+          if (isActive && state.startTime != null) ...[
+            const SizedBox(height: 4),
+            _buildFastingTimeline(
+              start: state.startTime!,
+              targetHours: state.targetHours,
+            ),
+          ],
           const SizedBox(height: 6),
           Text(
             '$pct% completado',
@@ -535,52 +549,20 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             ),
           ),
           const SizedBox(height: 18),
-          // Botón principal: iniciar / finalizar
-          SizedBox(
-            width: double.infinity,
-            height: 48,
-            child: ElevatedButton.icon(
-              onPressed: state.isSaving
-                  ? null
-                  : () {
-                      if (isActive) {
-                        _showManualTimePicker(context, ref, isFeeding: false);
-                      } else {
-                        ref.read(fastingProvider.notifier).startFasting();
-                      }
-                    },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: isActive ? Colors.redAccent : accent,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                elevation: 0,
-              ),
-              icon: state.isSaving
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2,
-                      ),
-                    )
-                  : Icon(
-                      isActive
-                          ? Icons.stop_circle_outlined
-                          : Icons.play_circle_outline,
-                      color: Colors.white,
-                      size: 22,
-                    ),
-              label: Text(
-                isActive ? 'Finalizar Ayuno' : 'Iniciar Ayuno',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 14,
-                ),
-              ),
-            ),
+          // Botón principal: iniciar / finalizar.
+          //
+          // SPEC-101:
+          // - Si el usuario ya completó ayuno hoy y NO hay uno activo,
+          //   el botón "Iniciar Ayuno" queda deshabilitado.
+          // - Si está activo y progress < 100%, "Finalizar Ayuno" abre
+          //   un diálogo de confirmación con beneficios obtenidos.
+          // - Si está activo y progress >= 100%, flow actual (picker).
+          _buildFastingPrimaryButton(
+            context: context,
+            ref: ref,
+            state: state,
+            isActive: isActive,
+            accent: accent,
           ),
           // SPEC-97: el botón "Corregir hora de inicio" SOLO aparece
           // cuando hay ayuno activo. Antes aparecía siempre y al
@@ -1265,6 +1247,198 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         SizedBox(width: double.infinity, height: 42, child: ElevatedButton(onPressed: isSaving ? null : onConfirm, style: ElevatedButton.styleFrom(backgroundColor: iconColor, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))), child: isSaving ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : Text(buttonLabel, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 12)))),
       ]),
     );
+  }
+
+  /// SPEC-102 / SPEC-102.1: fila sutil con hora de inicio (izquierda)
+  /// y hora estimada de fin (derecha) del ayuno activo.
+  ///
+  /// Cada endpoint puede llevar un sufijo `·ayer` / `·mañana` /
+  /// `·hace N días` / `·en N días` calculado SIEMPRE respecto a "hoy"
+  /// (DateTime.now()), no al otro endpoint. Esto evita el bug de
+  /// mostrar "·mañana" en un ayuno que comenzó ayer y termina hoy.
+  Widget _buildFastingTimeline({
+    required DateTime start,
+    required int targetHours,
+  }) {
+    final DateTime now = DateTime.now();
+    final DateTime estimatedEnd = start.add(Duration(hours: targetHours));
+
+    final mutedStyle = TextStyle(
+      color: Colors.white.withValues(alpha: 0.45),
+      fontSize: 10,
+      fontWeight: FontWeight.w600,
+      letterSpacing: 0.4,
+    );
+    final dimmerStyle = mutedStyle.copyWith(
+      color: Colors.white.withValues(alpha: 0.30),
+    );
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        _timelineEndpoint(
+          dateTime: start,
+          now: now,
+          baseStyle: mutedStyle,
+          qualifierStyle: dimmerStyle,
+        ),
+        _timelineEndpoint(
+          dateTime: estimatedEnd,
+          now: now,
+          baseStyle: mutedStyle,
+          qualifierStyle: dimmerStyle,
+        ),
+      ],
+    );
+  }
+
+  Widget _timelineEndpoint({
+    required DateTime dateTime,
+    required DateTime now,
+    required TextStyle baseStyle,
+    required TextStyle qualifierStyle,
+  }) {
+    final qualifier = RelativeDayLabel.qualifier(dateTime, now);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(_formatHHmm(dateTime), style: baseStyle),
+        if (qualifier.isNotEmpty) ...[
+          const SizedBox(width: 4),
+          Text('·$qualifier', style: qualifierStyle),
+        ],
+      ],
+    );
+  }
+
+  static String _formatHHmm(DateTime t) {
+    final h = t.hour.toString().padLeft(2, '0');
+    final m = t.minute.toString().padLeft(2, '0');
+    return '$h:$m';
+  }
+
+  /// SPEC-101: botón principal del card de Ayuno.
+  ///
+  /// - Estado "activo": label rojo "Finalizar Ayuno". Si progress<100%
+  ///   muestra diálogo de confirmación con beneficios. Si >=100%, va
+  ///   directo al picker (flow actual).
+  /// - Estado "inactivo": label verde "Iniciar Ayuno". Si el usuario
+  ///   ya completó un ayuno hoy, queda deshabilitado y al tocar
+  ///   muestra snackbar.
+  Widget _buildFastingPrimaryButton({
+    required BuildContext context,
+    required WidgetRef ref,
+    required FastingState state,
+    required bool isActive,
+    required Color accent,
+  }) {
+    final bool completedToday =
+        !isActive && ref.watch(hasCompletedFastingTodayProvider);
+    final bool disabled = state.isSaving || (completedToday && !isActive);
+
+    final Color bgColor;
+    if (disabled && !isActive) {
+      bgColor = Colors.white.withValues(alpha: 0.08);
+    } else if (isActive) {
+      bgColor = Colors.redAccent;
+    } else {
+      bgColor = accent;
+    }
+
+    return SizedBox(
+      width: double.infinity,
+      height: 48,
+      child: ElevatedButton.icon(
+        onPressed: disabled
+            ? () {
+                // En estado deshabilitado por completedToday queremos
+                // explicar por qué no se puede tocar.
+                if (completedToday && !isActive) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'Ya completaste tu ayuno de hoy. '
+                        'Vuelve mañana para iniciar el siguiente.',
+                      ),
+                      backgroundColor: Colors.orange,
+                      duration: Duration(seconds: 4),
+                    ),
+                  );
+                }
+              }
+            : () => _handleFastingPrimaryTap(context, ref, state, isActive),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: bgColor,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          elevation: 0,
+        ),
+        icon: state.isSaving
+            ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2,
+                ),
+              )
+            : Icon(
+                isActive
+                    ? Icons.stop_circle_outlined
+                    : (completedToday
+                        ? Icons.check_circle_outline
+                        : Icons.play_circle_outline),
+                color: Colors.white.withValues(
+                    alpha: (disabled && !isActive) ? 0.5 : 1.0),
+                size: 22,
+              ),
+        label: Text(
+          isActive
+              ? 'Finalizar Ayuno'
+              : (completedToday
+                  ? 'Ayuno de hoy completado'
+                  : 'Iniciar Ayuno'),
+          style: TextStyle(
+            color: Colors.white.withValues(
+                alpha: (disabled && !isActive) ? 0.5 : 1.0),
+            fontWeight: FontWeight.w800,
+            fontSize: 14,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _handleFastingPrimaryTap(
+    BuildContext context,
+    WidgetRef ref,
+    FastingState state,
+    bool isActive,
+  ) async {
+    if (isActive) {
+      // Si llegó al 100%, flow actual (picker de hora de fin).
+      if (state.progressPercentage >= 1.0) {
+        await _showManualTimePicker(context, ref, isFeeding: false);
+        return;
+      }
+      // SPEC-101: confirmación temprana con beneficios obtenidos.
+      final confirm = await EarlyFastingEndDialog.show(
+        context,
+        elapsed: state.duration,
+        targetHours: state.targetHours,
+        phase: state.phase,
+      );
+      if (confirm == true) {
+        await ref
+            .read(fastingProvider.notifier)
+            .confirmManualFastingEnd(DateTime.now());
+      }
+      return;
+    }
+
+    // No activo: iniciar.
+    await ref.read(fastingProvider.notifier).startFasting();
   }
 
   /// SPEC-98: chip clickable que muestra el protocolo activo y abre
