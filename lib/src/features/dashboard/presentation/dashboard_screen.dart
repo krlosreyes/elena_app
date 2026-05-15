@@ -7,6 +7,7 @@ import 'package:elena_app/src/core/engine/metabolic_state_provider.dart';
 import 'package:elena_app/src/core/engine/score_engine.dart';
 import 'package:elena_app/src/core/widgets/elena_header.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
+import 'package:elena_app/src/features/dashboard/application/eating_window_provider.dart';
 import 'package:elena_app/src/features/dashboard/application/fasting_notifier.dart';
 import 'package:elena_app/src/features/dashboard/application/sleep_notifier.dart';
 import 'package:elena_app/src/features/dashboard/application/hydration_notifier.dart';
@@ -109,6 +110,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               // SPEC-91: el badge de zona quedó fuera del
                               // círculo; ya no se pasa `zone`.
                               score: displayedImr.score.toDouble(),
+                              // SPEC-95: ventana de alimentación como
+                              // concepto propio (windowStart/windowEnd
+                              // derivados del protocolo del usuario).
+                              eatingWindow: ref.watch(eatingWindowProvider),
                             ),
                           ),
                         ),

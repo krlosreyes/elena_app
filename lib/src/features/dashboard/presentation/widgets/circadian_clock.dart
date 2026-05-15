@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
+import '../../domain/eating_window_state.dart';
 import '../../domain/fasting_status.dart';
 import 'parts/biological_cycles_painter.dart';
 import 'parts/fasting_ring_painter.dart';
@@ -11,6 +12,11 @@ class CircadianClock extends StatelessWidget {
   final FastingState fastingState;
   final double score;
 
+  /// SPEC-95: estado de la ventana de comida. Se calcula en
+  /// `eatingWindowProvider` y se pasa explícito al widget. Puede ser
+  /// `null` mientras los providers están cargando.
+  final EatingWindowState? eatingWindow;
+
   // SPEC-91: el badge `zone` (INESTABLE/ESTABLE/etc.) ya no se pinta
   // dentro del reloj. Si en el futuro se reincorpora a otra pantalla,
   // se vuelve a agregar como parámetro.
@@ -20,6 +26,7 @@ class CircadianClock extends StatelessWidget {
     required this.user,
     required this.fastingState,
     required this.score,
+    this.eatingWindow,
   });
 
   @override
@@ -47,24 +54,33 @@ class CircadianClock extends StatelessWidget {
             ),
 
             // CAPA 2: Radar Metabólico Activo (COORDENADAS REALES)
+            //
+            // SPEC-95: cuando NO hay ayuno activo, el painter consume
+            // `eatingWindow` (computado en `eatingWindowProvider`) con
+            // sus DateTimes explícitos. Antes consumía el FastingState
+            // y mezclaba conceptos — la ventana no se pintaba.
+            //
+            // Si `eatingWindow == null` (providers cargando) se omite
+            // la capa para no dibujar datos inventados.
             SizedBox(
               height: size, width: size,
               child: CustomPaint(
-                painter: fastingState.isActive 
-                  ? FastingRingPainter(
-                      // IMPORTANTE: Pasamos el startTime para que el Painter 
-                      // sepa el ángulo de inicio real en el círculo de 24h
-                      startTime: fastingState.startTime ?? now,
-                      duration: fastingState.duration,
-                      phaseColor: _getPhaseColor(fastingState.phase),
-                      indicatorColor: colorDeTexto,
-                    )
-                  : EatingWindowPainter(
-                      // Lo mismo para la ventana de comida
-                      startTime: fastingState.startTime ?? now,
-                      duration: fastingState.duration,
-                      indicatorColor: colorDeTexto,
-                    ),
+                painter: fastingState.isActive
+                    ? FastingRingPainter(
+                        startTime: fastingState.startTime ?? now,
+                        duration: fastingState.duration,
+                        phaseColor: _getPhaseColor(fastingState.phase),
+                        indicatorColor: colorDeTexto,
+                      )
+                    : (eatingWindow != null
+                        ? EatingWindowPainter(
+                            windowStart: eatingWindow!.windowStart,
+                            windowEnd: eatingWindow!.windowEnd,
+                            now: now,
+                            indicatorColor: colorDeTexto,
+                            mealsCount: user.mealsPerDay,
+                          )
+                        : null),
               ),
             ),
 
