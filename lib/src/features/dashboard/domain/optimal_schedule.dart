@@ -65,11 +65,18 @@ class OptimalScheduleCalculator {
   static const int kToleranceMinutes = 60;
 
   /// Mapa de protocolo → horas de ventana de comida.
+  ///
+  /// SPEC-98: se agregaron 12:12, 14:10, 22:2 y OMAD para alinearlo
+  /// con el selector visual del producto (8 protocolos totales).
   static const Map<String, int> _windowHoursByProtocol = {
-    'Ninguno': 14, // 06:30–20:30 (la app educativa; sin TRF estricto).
-    '16:8': 8,    // 12:30–20:30.
-    '18:6': 6,    // 14:30–20:30.
-    '20:4': 4,    // 16:30–20:30.
+    'Ninguno': 14, // 06:30–20:30 (sin TRF estricto, solo evita snacks nocturnos).
+    '12:12': 12,   // 08:30–20:30 (entrada suave al ayuno intermitente).
+    '14:10': 10,   // 10:30–20:30 (punto medio principiantes).
+    '16:8': 8,     // 12:30–20:30 (clásico).
+    '18:6': 6,     // 14:30–20:30 (moderado-intenso).
+    '20:4': 4,     // 16:30–20:30 (avanzado).
+    '22:2': 2,     // 18:30–20:30 (avanzado, supervisión recomendada).
+    'OMAD': 1,     // 19:30–20:30 (una comida al día; ventana técnica).
   };
 
   /// Devuelve el schedule óptimo para el protocolo dado. Protocolos

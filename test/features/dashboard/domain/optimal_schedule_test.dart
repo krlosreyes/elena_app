@@ -41,13 +41,24 @@ void main() {
     });
 
     test('Protocolo desconocido cae al default 16:8', () {
-      final s = OptimalScheduleCalculator.forProtocol('OMAD');
+      // SPEC-98: OMAD ya está reconocido. Usamos un código inválido
+      // genuino para validar el fallback al default.
+      final s = OptimalScheduleCalculator.forProtocol('XYZ');
       expect(s.windowStart, const TimeOfDay(hour: 12, minute: 30));
       expect(s.fastingProtocol, '16:8');
     });
 
     test('Invariante: windowHours + fastingHours == 24', () {
-      for (final p in const ['Ninguno', '16:8', '18:6', '20:4']) {
+      for (final p in const [
+        'Ninguno',
+        '12:12',
+        '14:10',
+        '16:8',
+        '18:6',
+        '20:4',
+        '22:2',
+        'OMAD',
+      ]) {
         final s = OptimalScheduleCalculator.forProtocol(p);
         expect(s.windowHours + s.fastingHours, 24, reason: 'protocolo $p');
       }
@@ -55,11 +66,49 @@ void main() {
 
     test('Invariante: fastingStart == windowEnd, fastingEnd == windowStart',
         () {
-      for (final p in const ['Ninguno', '16:8', '18:6', '20:4']) {
+      for (final p in const [
+        'Ninguno',
+        '12:12',
+        '14:10',
+        '16:8',
+        '18:6',
+        '20:4',
+        '22:2',
+        'OMAD',
+      ]) {
         final s = OptimalScheduleCalculator.forProtocol(p);
         expect(s.fastingStart, s.windowEnd);
         expect(s.fastingEnd, s.windowStart);
       }
+    });
+
+    test('SPEC-98: 12:12 → ventana 08:30–20:30', () {
+      final s = OptimalScheduleCalculator.forProtocol('12:12');
+      expect(s.windowStart, const TimeOfDay(hour: 8, minute: 30));
+      expect(s.windowEnd, const TimeOfDay(hour: 20, minute: 30));
+      expect(s.windowHours, 12);
+    });
+
+    test('SPEC-98: 14:10 → ventana 10:30–20:30', () {
+      final s = OptimalScheduleCalculator.forProtocol('14:10');
+      expect(s.windowStart, const TimeOfDay(hour: 10, minute: 30));
+      expect(s.windowEnd, const TimeOfDay(hour: 20, minute: 30));
+      expect(s.windowHours, 10);
+    });
+
+    test('SPEC-98: 22:2 → ventana 18:30–20:30', () {
+      final s = OptimalScheduleCalculator.forProtocol('22:2');
+      expect(s.windowStart, const TimeOfDay(hour: 18, minute: 30));
+      expect(s.windowEnd, const TimeOfDay(hour: 20, minute: 30));
+      expect(s.windowHours, 2);
+    });
+
+    test('SPEC-98: OMAD → ventana 19:30–20:30 (1h)', () {
+      final s = OptimalScheduleCalculator.forProtocol('OMAD');
+      expect(s.windowStart, const TimeOfDay(hour: 19, minute: 30));
+      expect(s.windowEnd, const TimeOfDay(hour: 20, minute: 30));
+      expect(s.windowHours, 1);
+      expect(s.fastingHours, 23);
     });
   });
 
