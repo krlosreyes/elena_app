@@ -32,6 +32,35 @@ class FirestoreFastingIntervalV1Source implements FastingIntervalDataSource {
   }
 
   @override
+  Future<void> updateOpenIntervalStartTime({
+    required String userId,
+    required DateTime newStartTime,
+  }) async {
+    // SPEC-97: buscamos el único intervalo abierto del usuario y le
+    // mutamos el startTime. La invariante "máximo un abierto" la
+    // mantiene `closeAllOpenAndCreate` — si por algún corrupto hubiera
+    // más de uno, actualizamos todos (idempotente).
+    final openQuery = await _collection
+        .where('userId', isEqualTo: userId)
+        .where('endTime', isNull: true)
+        .get();
+
+    if (openQuery.docs.isEmpty) {
+      throw StateError(
+        'No hay intervalo abierto que corregir (userId=$userId).',
+      );
+    }
+
+    final batch = _firestore.batch();
+    for (final doc in openQuery.docs) {
+      batch.update(doc.reference, {
+        'startTime': Timestamp.fromDate(newStartTime),
+      });
+    }
+    await batch.commit();
+  }
+
+  @override
   Future<String> closeAllOpenAndCreate({
     required String userId,
     required DateTime closeAt,

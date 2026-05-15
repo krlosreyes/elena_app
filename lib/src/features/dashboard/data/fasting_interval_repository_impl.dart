@@ -34,6 +34,17 @@ class FastingIntervalRepositoryImpl implements FastingIntervalRepository {
   }
 
   @override
+  Future<void> correctOpenIntervalStartTime({
+    required String userId,
+    required DateTime newStartTime,
+  }) async {
+    await _source.updateOpenIntervalStartTime(
+      userId: userId,
+      newStartTime: newStartTime,
+    );
+  }
+
+  @override
   Future<void> transitionTo({
     required String userId,
     required bool isFasting,

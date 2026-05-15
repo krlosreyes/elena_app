@@ -579,36 +579,41 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 10),
-          // Botón secundario: corregir hora
-          SizedBox(
-            width: double.infinity,
-            height: 44,
-            child: OutlinedButton.icon(
-              onPressed: state.isSaving
-                  ? null
-                  : () => _showManualTimePicker(context, ref, isFeeding: false),
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
+          // SPEC-97: el botón "Corregir hora de inicio" SOLO aparece
+          // cuando hay ayuno activo. Antes aparecía siempre y al
+          // tocarlo en estado "En espera" iniciaba ventana de comida
+          // por error (confirmManualFastingEnd con isFeeding=false).
+          if (isActive) ...[
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              height: 44,
+              child: OutlinedButton.icon(
+                onPressed: state.isSaving
+                    ? null
+                    : () => _showCorrectStartTimePicker(context, ref, state),
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                 ),
-              ),
-              icon: Icon(
-                Icons.access_time_rounded,
-                color: Colors.white.withValues(alpha: 0.7),
-                size: 18,
-              ),
-              label: Text(
-                'Corregir hora de inicio',
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.8),
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
+                icon: Icon(
+                  Icons.access_time_rounded,
+                  color: Colors.white.withValues(alpha: 0.7),
+                  size: 18,
+                ),
+                label: Text(
+                  'Corregir hora de inicio del ayuno',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.8),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
                 ),
               ),
             ),
-          ),
+          ],
         ],
       ),
     );
@@ -1257,6 +1262,87 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         SizedBox(width: double.infinity, height: 42, child: ElevatedButton(onPressed: isSaving ? null : onConfirm, style: ElevatedButton.styleFrom(backgroundColor: iconColor, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))), child: isSaving ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : Text(buttonLabel, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 12)))),
       ]),
     );
+  }
+
+  /// SPEC-97: picker dedicado para corregir la hora de inicio del
+  /// ayuno activo. Distinto de `_showManualTimePicker`, que finaliza
+  /// el ayuno (crea ventana de comida) y NO debe usarse para corregir.
+  Future<void> _showCorrectStartTimePicker(
+    BuildContext context,
+    WidgetRef ref,
+    FastingState state,
+  ) async {
+    final DateTime now = DateTime.now();
+    final DateTime currentStart = state.startTime ?? now;
+    final DateTime earliest = now.subtract(const Duration(hours: 24));
+
+    final DateTime? pickedDate = await showDatePicker(
+      context: context,
+      initialDate: currentStart.isBefore(earliest) ? earliest : currentStart,
+      firstDate: earliest,
+      lastDate: now,
+      builder: (context, child) => Theme(
+        data: ThemeData.dark().copyWith(
+          colorScheme: const ColorScheme.dark(
+            primary: AppColors.metabolicGreen,
+          ),
+          dialogBackgroundColor: const Color(0xFF1E293B),
+        ),
+        child: child!,
+      ),
+    );
+    if (pickedDate == null) return;
+
+    final TimeOfDay? pickedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(currentStart),
+      builder: (context, child) => Theme(
+        data: ThemeData.dark().copyWith(
+          colorScheme: const ColorScheme.dark(
+            primary: AppColors.metabolicGreen,
+          ),
+          dialogBackgroundColor: const Color(0xFF1E293B),
+        ),
+        child: child!,
+      ),
+    );
+    if (pickedTime == null) return;
+
+    final DateTime finalDateTime = DateTime(
+      pickedDate.year,
+      pickedDate.month,
+      pickedDate.day,
+      pickedTime.hour,
+      pickedTime.minute,
+    );
+
+    // Validación defensiva (también vive en el notifier).
+    if (finalDateTime.isAfter(now)) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('La hora de inicio no puede ser futura.'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+    if (now.difference(finalDateTime).inHours > 24) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'La corrección no puede ser más de 24h atrás.',
+          ),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+
+    await ref
+        .read(fastingProvider.notifier)
+        .correctFastingStartTime(finalDateTime);
   }
 
   Future<void> _showManualTimePicker(BuildContext context, WidgetRef ref, {required bool isFeeding}) async {

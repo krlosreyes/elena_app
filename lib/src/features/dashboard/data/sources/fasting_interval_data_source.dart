@@ -19,4 +19,15 @@ abstract class FastingIntervalDataSource {
     required DateTime closeAt,
     required Map<String, dynamic> Function(String newDocId) buildNewData,
   });
+
+  /// SPEC-97: muta el `startTime` del único intervalo abierto del
+  /// usuario (`endTime == null`). NO cierra ni crea — solo edita el
+  /// existente para reflejar "empecé a esta hora real".
+  ///
+  /// Si no hay intervalo abierto, lanza [StateError]. El caller debe
+  /// validar antes (ej. con `state.isActive` en el notifier).
+  Future<void> updateOpenIntervalStartTime({
+    required String userId,
+    required DateTime newStartTime,
+  });
 }

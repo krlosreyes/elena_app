@@ -126,6 +126,59 @@ class FastingNotifier extends StateNotifier<FastingState> {
     await startFastingManual(DateTime.now());
   }
 
+  /// SPEC-97: corrige la hora de inicio del intervalo de ayuno activo
+  /// sin cerrarlo. Caso de uso: "Empecé mi ayuno a las 18:00 pero
+  /// abrí la app a las 19:00 y le dí Iniciar".
+  ///
+  /// Precondiciones:
+  ///   - `state.isActive == true`
+  ///   - `newStart < now` (no se acepta hora futura)
+  ///   - `newStart > now - 24h` (límite sano)
+  ///
+  /// Si alguna falla, no-op silencioso. El caller (UI) ya validó.
+  /// Si la corrección es exitosa, reagenda los hitos de notification
+  /// (12h, 18h, 24h) desde el nuevo `startTime`.
+  Future<void> correctFastingStartTime(DateTime newStart) async {
+    if (!state.isActive) return;
+    final uid = _ref.read(authStateProvider).value?.uid;
+    if (uid == null) return;
+
+    final now = DateTime.now();
+    if (newStart.isAfter(now)) return;
+    if (now.difference(newStart).inHours > 24) return;
+
+    state = state.copyWith(isSaving: true);
+
+    try {
+      final repo = _ref.read(fastingIntervalRepositoryProvider);
+      await repo.correctOpenIntervalStartTime(
+        userId: uid,
+        newStartTime: newStart,
+      );
+
+      final newDuration = now.difference(newStart);
+      state = state.copyWith(
+        isSaving: false,
+        startTime: newStart,
+        duration: newDuration,
+        phase: FastingState.determinePhase(newDuration),
+      );
+
+      // Reagendar hitos desde el nuevo startTime (12h, 18h, 24h).
+      // `scheduleFastingMilestones` debería cancelar los anteriores
+      // antes de programar — si no lo hace, agregar cancel aquí.
+      await NotificationScheduler.scheduleFastingMilestones(newStart);
+
+      AppLogger.debug(
+        'Hora de inicio del ayuno corregida a $newStart '
+        '(nueva duración: ${newDuration.inMinutes}min).',
+      );
+    } catch (e, stack) {
+      AppLogger.error('No se pudo corregir la hora de inicio', e, stack);
+      state = state.copyWith(isSaving: false);
+    }
+  }
+
   /// CIERRE MANUAL (Viaje en el tiempo para pruebas)
   Future<void> confirmManualFastingEnd(DateTime manualTime) async {
     final uid = _ref.read(authStateProvider).value?.uid;

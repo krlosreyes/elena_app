@@ -29,4 +29,15 @@ abstract class FastingIntervalRepository {
     required bool isFasting,
     DateTime? startTime,
   });
+
+  /// SPEC-97: corrige el `startTime` del intervalo abierto del usuario
+  /// sin cerrarlo ni crear uno nuevo. Para cuando el usuario arrancó
+  /// el ayuno tarde y necesita editar la hora real de inicio.
+  ///
+  /// Lanza [StateError] si no hay intervalo abierto. El caller debe
+  /// verificar (`state.isActive` o equivalente) antes de invocar.
+  Future<void> correctOpenIntervalStartTime({
+    required String userId,
+    required DateTime newStartTime,
+  });
 }
