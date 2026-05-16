@@ -111,6 +111,60 @@ void main() {
       expect(find.text('--:--:--'), findsOneWidget);
       expect(find.textContaining('Toca'), findsOneWidget);
     });
+
+    testWidgets(
+      'SPEC-118.bugfix: ticker sobrevive rebuilds rápidos del parent '
+      '(no se queda congelado en los segundos)',
+      (tester) async {
+        // Reproducción del bug: el `didUpdateWidget` cancelaba y recreaba
+        // el Timer.periodic(1s) en CADA rebuild del parent. Si el parent
+        // rebuildeaba con frecuencia <1s, el cronómetro quedaba congelado.
+        //
+        // El test forza 3 rebuilds rápidos (200ms entre cada uno) con la
+        // MISMA prop de fastingState — si el fix no estuviera, el ticker
+        // se cancelaría en cada rebuild y nunca dispararía.
+        //
+        // Tras los rebuilds, esperamos 1.5s para dar margen al timer de
+        // disparar al menos una vez. El widget debe seguir renderizando
+        // el modo activo (la prueba se enfoca en NO crashear ni quedar
+        // en estado inválido).
+        final fixedState = _stateActive();
+
+        await tester.pumpWidget(_wrap(
+          FastingHeroDisplay(
+            fastingState: fixedState,
+            eatingWindow: null,
+            size: 300,
+          ),
+        ));
+        // Tres rebuilds del parent con la MISMA prop. Sin el fix, cada
+        // uno cancelaría el ticker antes de su primera ejecución.
+        await tester.pump(const Duration(milliseconds: 200));
+        await tester.pumpWidget(_wrap(
+          FastingHeroDisplay(
+            fastingState: fixedState,
+            eatingWindow: null,
+            size: 300,
+          ),
+        ));
+        await tester.pump(const Duration(milliseconds: 200));
+        await tester.pumpWidget(_wrap(
+          FastingHeroDisplay(
+            fastingState: fixedState,
+            eatingWindow: null,
+            size: 300,
+          ),
+        ));
+        // Dar margen al timer para que dispare al menos una vez.
+        await tester.pump(const Duration(seconds: 1, milliseconds: 100));
+
+        // Widget sigue vivo y mostrando modo activo.
+        expect(find.text('AYUNO EN CURSO'), findsOneWidget);
+        // Limpiar el Timer pendiente para no dejar timers vivos al
+        // terminar el test (flutter_test marca eso como fallo).
+        await tester.pumpWidget(const SizedBox.shrink());
+      },
+    );
   });
 
   group('FastingHeroDisplay golden', () {

@@ -68,10 +68,26 @@ class _FastingHeroDisplayState extends State<FastingHeroDisplay> {
   @override
   void didUpdateWidget(covariant FastingHeroDisplay oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (_needsTicker) {
-      _startTicker();
-    } else {
-      _stopTicker();
+    // SPEC-118.bugfix: solo re-iniciar el ticker si cambian props
+    // relevantes. Antes el ticker se cancelaba y recreaba en CADA
+    // rebuild del parent — si los rebuilds llegan más rápido que el
+    // periodo (1s), el Timer.periodic nunca dispara su primera
+    // ejecución y el cronómetro queda congelado visualmente.
+    // Mismo patrón que LiveFastingClock (fix análogo de SPEC-61).
+    final activeChanged =
+        oldWidget.fastingState.isActive != widget.fastingState.isActive;
+    final startChanged =
+        oldWidget.fastingState.startTime != widget.fastingState.startTime;
+    final completedChanged = oldWidget.fastingState.completedToday !=
+        widget.fastingState.completedToday;
+    final windowChanged =
+        oldWidget.eatingWindow?.windowEnd != widget.eatingWindow?.windowEnd;
+    if (activeChanged || startChanged || completedChanged || windowChanged) {
+      if (_needsTicker) {
+        _startTicker();
+      } else {
+        _stopTicker();
+      }
     }
   }
 
