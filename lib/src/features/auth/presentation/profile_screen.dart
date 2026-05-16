@@ -5,7 +5,6 @@ import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/core/engine/imr_persistence_provider.dart';
 import 'package:elena_app/src/features/auth/application/profile_controller.dart';
 import 'package:elena_app/src/features/auth/presentation/widgets/edit_biometry_value_sheet.dart';
-import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
 import 'package:elena_app/src/features/dashboard/domain/optimal_schedule.dart';
 import 'package:elena_app/src/features/profile/domain/biometry_recalc.dart';
 import 'package:elena_app/src/features/profile/presentation/widgets/body_composition_card.dart';
@@ -159,8 +158,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
           colorScheme: const ColorScheme.dark(
             primary: Color(0xFF10B981),
             surface: Color(0xFF1E293B),
-          ),
-          dialogBackgroundColor: const Color(0xFF1E293B),
+          ), dialogTheme: DialogThemeData(backgroundColor: const Color(0xFF1E293B)),
         ),
         child: child!,
       ),
@@ -1403,6 +1401,7 @@ class _DisclosureSection extends StatefulWidget {
     required this.title,
     required this.child,
     this.preview,
+    // ignore: unused_element_parameter
     this.initiallyExpanded = false,
   });
 

@@ -193,9 +193,9 @@ class GoalSuggestionEngine {
     final bool outOfRange = roundedDays < 4;
 
     String statusLabel;
-    if (roundedDays <= 1)
+    if (roundedDays <= 1) {
       statusLabel = 'Sin protocolo activo';
-    else if (roundedDays < 4)
+    } else if (roundedDays < 4)
       statusLabel = 'Adherencia baja';
     else if (roundedDays < 6)
       statusLabel = 'Adherencia moderada';
@@ -229,9 +229,9 @@ class GoalSuggestionEngine {
     final bool outOfRange = current < 30;
 
     String statusLabel;
-    if (current < 15)
+    if (current < 15) {
       statusLabel = 'Sin actividad registrada';
-    else if (current < 30)
+    } else if (current < 30)
       statusLabel = 'Por debajo de recomendación OMS';
     else if (current < 45)
       statusLabel = 'En rango recomendado';
@@ -272,9 +272,9 @@ class GoalSuggestionEngine {
     }
 
     String statusLabel;
-    if (current < 6)
+    if (current < 6) {
       statusLabel = 'Privación crónica de sueño';
-    else if (current < 7)
+    } else if (current < 7)
       statusLabel = 'Por debajo del rango óptimo';
     else if (current <= 9)
       statusLabel = 'En rango óptimo';
@@ -314,7 +314,6 @@ class GoalSuggestionEngine {
         (user.weight * 0.035 * 4).round() / 4.0; // redondeo 0.25 L
     const double averageIntake =
         1.5; // consumo típico sedentario (línea de base)
-    final bool outOfRange = target > 2.0; // Casi siempre habrá oportunidad
 
     return GoalSuggestion(
       type: GoalType.hydrationLitersPerDay,

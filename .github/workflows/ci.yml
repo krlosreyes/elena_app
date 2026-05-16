@@ -60,7 +60,12 @@ jobs:
               ! -name '*.freezed.dart')
 
       - name: Static analysis
-        run: flutter analyze
+        # --no-fatal-infos: los issues info-level (deprecations, lints
+        # cosméticos como curly_braces) reportan pero no bloquean el
+        # CI. Las warnings sí bloquean (unused imports, unused vars).
+        # Las deprecations de Firebase y Material 3 se abordan en un
+        # SPEC dedicado de upgrade futuro.
+        run: flutter analyze --no-fatal-infos
 
       - name: Tests
         run: flutter test --reporter expanded

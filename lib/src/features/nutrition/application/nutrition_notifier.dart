@@ -15,7 +15,6 @@ import 'package:uuid/uuid.dart';
 
 import 'package:elena_app/src/features/nutrition/data/nutrition_repository_impl.dart';
 import 'package:elena_app/src/features/nutrition/domain/nutrition_log.dart';
-import 'package:elena_app/src/features/nutrition/domain/nutrition_repository.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 

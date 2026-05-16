@@ -1,5 +1,6 @@
 /// SPEC-25: Validador de Composición Corporal
 /// Asegura que los datos sean realistas y coherentes
+library;
 
 class BodyCompositionValidator {
   /// Valida todos los datos de composición corporal

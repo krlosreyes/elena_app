@@ -7,7 +7,6 @@
 
 import 'package:flutter/material.dart';
 
-import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/dashboard/domain/sleep_log.dart';
 
 enum SleepExistingLogChoice { edit, replace, cancel }

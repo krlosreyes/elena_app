@@ -15,7 +15,6 @@ class NutritionValidator {
     if (totalCalories == 0) return 'MEDIA';
 
     final carbPercentage = (carbsG * 4) / totalCalories;
-    final netCarbs = (carbsG - fiberG).clamp(0, double.infinity);
 
     // BAJA: <40% carbs O (40-60% carbs + fiber >=10g)
     if (carbPercentage < 0.4) {

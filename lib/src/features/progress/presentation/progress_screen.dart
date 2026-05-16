@@ -30,8 +30,11 @@ class ProgressScreen extends ConsumerWidget {
     final progress = ref.watch(progressProvider);
     final goals = ref.watch(goalsProvider);
     final userAsync = ref.watch(currentUserStreamProvider);
-    final streakState = ref.watch(streakProvider);
-
+    // SPEC-116: streakProvider y user no se consumen aquí pero el
+    // watch del primero se mantiene como side-effect para que el
+    // provider se mantenga vivo mientras la pantalla está montada.
+    ref.watch(streakProvider);
+    // ignore: unused_local_variable
     final user = userAsync.valueOrNull;
 
     // SPEC-52: IMR central desde el provider — sin cálculos locales.
@@ -601,7 +604,7 @@ class _GoalProgressSection extends ConsumerWidget {
     final exerciseState = ref.watch(exerciseProvider);
     final hydrationState = ref.watch(hydrationProvider);
 
-    double _current(GoalType type) {
+    double current0(GoalType type) {
       switch (type) {
         case GoalType.weightTarget:
           return user?.weight ?? 0;
@@ -622,7 +625,7 @@ class _GoalProgressSection extends ConsumerWidget {
 
     return Column(
       children: goals.map((goal) {
-        final double current = _current(goal.type);
+        final double current = current0(goal.type);
         final double prog = goal.progress(current);
         final Color c = goal.pillarColor;
 
@@ -820,7 +823,7 @@ class _UnlockCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final double prog = (current / this.required).clamp(0.0, 1.0);
+    final double prog = (current / required).clamp(0.0, 1.0);
 
     return Container(
       padding: const EdgeInsets.all(20),

@@ -172,11 +172,13 @@ class StreakEntry {
     // SPEC-65: omitir magnitudes nulas para no escribir basura a Firestore.
     if (fastingMagnitude != null) m['fastingMagnitude'] = fastingMagnitude;
     if (sleepQualityScore != null) m['sleepQualityScore'] = sleepQualityScore;
-    if (hydrationMagnitude != null)
+    if (hydrationMagnitude != null) {
       m['hydrationMagnitude'] = hydrationMagnitude;
+    }
     if (exerciseMagnitude != null) m['exerciseMagnitude'] = exerciseMagnitude;
-    if (nutritionMagnitude != null)
+    if (nutritionMagnitude != null) {
       m['nutritionMagnitude'] = nutritionMagnitude;
+    }
     return m;
   }
 

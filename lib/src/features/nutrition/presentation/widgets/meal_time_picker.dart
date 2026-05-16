@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 /// Widget reusable para seleccionar hora de comida
 /// Permite hora actual o personalizada
@@ -37,8 +36,7 @@ class _MealTimePickerState extends State<MealTimePicker> {
           colorScheme: const ColorScheme.dark(
             primary: Color(0xFF2D9B60),
             surface: Color(0xFF1E293B),
-          ),
-          dialogBackgroundColor: const Color(0xFF1E293B),
+          ), dialogTheme: DialogThemeData(backgroundColor: const Color(0xFF1E293B)),
         ),
         child: child!,
       ),

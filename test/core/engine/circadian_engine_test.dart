@@ -182,7 +182,7 @@ void main() {
   });
 
   group('CA-51-03: equivalencia con OrchestratorEngine', () {
-    UserModel _user() => UserModel(
+    UserModel user() => UserModel(
           id: 'test',
           age: 30,
           gender: 'M',
@@ -194,7 +194,7 @@ void main() {
           ),
         );
 
-    MetabolicState _stateAt(DateTime ts) => MetabolicState(
+    MetabolicState stateAt(DateTime ts) => MetabolicState(
           fastingHours: 0.5,
           glycogenLevel: 0.7,
           circadianAlignment: 1.0,
@@ -216,14 +216,14 @@ void main() {
       final ts = at(hour, minute);
       final fromEngine = CircadianEngine.currentPhase(ts);
       final fromOrchestrator = OrchestratorEngine.calculate(
-        state: _stateAt(ts),
-        user: _user(),
+        state: stateAt(ts),
+        user: user(),
         streak: const StreakState(),
       ).circadianPhase;
       expect(
         fromOrchestrator,
         fromEngine,
-        reason: 'A las ${hour}:${minute.toString().padLeft(2, "0")} '
+        reason: 'A las $hour:${minute.toString().padLeft(2, "0")} '
             'OrchestratorEngine devolvió $fromOrchestrator pero '
             'CircadianEngine.currentPhase devolvió $fromEngine',
       );

@@ -943,7 +943,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         onSelect(opt);
                         Navigator.pop(ctx);
                       }))
-                  .toList()
+                  
             ])));
   }
 
@@ -982,8 +982,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                           val!
                                               ? _pathologies.add(p)
                                               : _pathologies.remove(p);
-                                          if (_pathologies.isEmpty)
+                                          if (_pathologies.isEmpty) {
                                             _pathologies = ["Ninguna"];
+                                          }
                                         }
                                       });
                                       setState(() {});

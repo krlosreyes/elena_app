@@ -365,8 +365,9 @@ class ScoreEngine {
     if (circadian < 0.7) {
       return 'Alerta: Ingesta nocturna detectada. Esto bloquea la reparación celular.';
     }
-    if (s < 60)
+    if (s < 60) {
       return 'Prioridad: Reducción de grasa visceral y ajuste de ritmos.';
+    }
     return 'Estado metabólico funcional con margen de mejora.';
   }
 }

@@ -1,6 +1,7 @@
 /// SPEC-25: Calculador de Porcentaje de Grasa Corporal
 /// Implementa fórmulas científicas validadas (US Navy)
 /// El usuario NUNCA ingresa % grasa — siempre se calcula
+library;
 
 import 'dart:math' as math;
 
@@ -36,8 +37,9 @@ class BodyFatCalculator {
     final difference = waistCm - neckCm;
 
     // Evitar log de números <= 0
-    if (difference <= 0 || heightCm <= 0)
+    if (difference <= 0 || heightCm <= 0) {
       return 15.0; // Default masculino promedio
+    }
 
     final log10Difference = math.log(difference) / math.log(10);
     final log10Height = math.log(heightCm) / math.log(10);

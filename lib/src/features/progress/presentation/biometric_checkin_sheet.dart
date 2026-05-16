@@ -199,11 +199,13 @@ class _BiometricCheckInSheetState extends ConsumerState<BiometricCheckInSheet> {
                         controller: _weightCtrl,
                         hint: 'Ej: 78.5',
                         validator: (v) {
-                          if (v == null || v.isEmpty)
+                          if (v == null || v.isEmpty) {
                             return 'El peso es obligatorio';
+                          }
                           final n = double.tryParse(v.replaceAll(',', '.'));
-                          if (n == null || n < 20 || n > 300)
+                          if (n == null || n < 20 || n > 300) {
                             return 'Valor fuera de rango';
+                          }
                           return null;
                         },
                       ),
@@ -218,8 +220,9 @@ class _BiometricCheckInSheetState extends ConsumerState<BiometricCheckInSheet> {
                         validator: (v) {
                           if (v == null || v.isEmpty) return null;
                           final n = double.tryParse(v.replaceAll(',', '.'));
-                          if (n == null || n < 3 || n > 60)
+                          if (n == null || n < 3 || n > 60) {
                             return 'Valor fuera de rango';
+                          }
                           return null;
                         },
                       ),
@@ -234,8 +237,9 @@ class _BiometricCheckInSheetState extends ConsumerState<BiometricCheckInSheet> {
                         validator: (v) {
                           if (v == null || v.isEmpty) return null;
                           final n = double.tryParse(v.replaceAll(',', '.'));
-                          if (n == null || n < 40 || n > 200)
+                          if (n == null || n < 40 || n > 200) {
                             return 'Valor fuera de rango';
+                          }
                           return null;
                         },
                       ),

@@ -9,7 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   const mapper = ExerciseLogMapper();
 
-  ExerciseLog _log({
+  ExerciseLog log0({
     String id = 'ex-001',
     String userId = 'user-1',
     int durationMinutes = 30,
@@ -37,7 +37,7 @@ void main() {
 
   group('toMap (delegación a Freezed.toJson)', () {
     test('Persiste campos requeridos', () {
-      final map = mapper.toMap(_log());
+      final map = mapper.toMap(log0());
       expect(map['id'], 'ex-001');
       expect(map['userId'], 'user-1');
       expect(map['durationMinutes'], 30);
@@ -45,18 +45,18 @@ void main() {
     });
 
     test('Persiste timestamp via TimestampConverter', () {
-      final map = mapper.toMap(_log());
+      final map = mapper.toMap(log0());
       // El @TimestampConverter() del modelo lo convierte a Timestamp.
       expect(map['timestamp'], isA<Timestamp>());
     });
 
     test('Incluye createdAt como FieldValue', () {
-      final map = mapper.toMap(_log());
+      final map = mapper.toMap(log0());
       expect(map['createdAt'], isA<FieldValue>());
     });
 
     test('Persiste campos SPEC-68 cuando están presentes', () {
-      final map = mapper.toMap(_log(
+      final map = mapper.toMap(log0(
         type: ExerciseType.hiit,
         intensity: ExerciseIntensity.high,
         rpe: 8,
@@ -72,7 +72,7 @@ void main() {
 
   group('fromMap (delegación a Freezed.fromJson)', () {
     test('Round-trip preserva todos los campos SPEC-68', () {
-      final original = _log(
+      final original = log0(
         type: ExerciseType.strength,
         intensity: ExerciseIntensity.moderate,
         rpe: 6,
@@ -113,7 +113,7 @@ void main() {
   group('toMap — validaciones SPEC-62', () {
     test('rechaza id vacío con EmptyField', () {
       expect(
-        () => mapper.toMap(_log(id: '')),
+        () => mapper.toMap(log0(id: '')),
         throwsA(isA<EmptyField>()
             .having((e) => e.fieldName, 'fieldName', 'ExerciseLog.id')),
       );
@@ -121,7 +121,7 @@ void main() {
 
     test('rechaza userId vacío con EmptyField', () {
       expect(
-        () => mapper.toMap(_log(userId: '')),
+        () => mapper.toMap(log0(userId: '')),
         throwsA(isA<EmptyField>()
             .having((e) => e.fieldName, 'fieldName', 'ExerciseLog.userId')),
       );
@@ -129,24 +129,24 @@ void main() {
 
     test('rechaza durationMinutes <= 0 con OutOfRange', () {
       expect(
-        () => mapper.toMap(_log(durationMinutes: 0)),
+        () => mapper.toMap(log0(durationMinutes: 0)),
         throwsA(isA<OutOfRange>().having(
             (e) => e.fieldName, 'fieldName', 'ExerciseLog.durationMinutes')),
       );
       expect(
-        () => mapper.toMap(_log(durationMinutes: -5)),
+        () => mapper.toMap(log0(durationMinutes: -5)),
         throwsA(isA<OutOfRange>()),
       );
     });
 
     test('rechaza rpe fuera de [1, 10] con OutOfRange', () {
-      expect(() => mapper.toMap(_log(rpe: 0)), throwsA(isA<OutOfRange>()));
-      expect(() => mapper.toMap(_log(rpe: 11)), throwsA(isA<OutOfRange>()));
+      expect(() => mapper.toMap(log0(rpe: 0)), throwsA(isA<OutOfRange>()));
+      expect(() => mapper.toMap(log0(rpe: 11)), throwsA(isA<OutOfRange>()));
     });
 
     test('rechaza heartRateAvg < 30 con OutOfRange', () {
       expect(
-        () => mapper.toMap(_log(heartRateAvg: 25)),
+        () => mapper.toMap(log0(heartRateAvg: 25)),
         throwsA(isA<OutOfRange>().having(
             (e) => e.fieldName, 'fieldName', 'ExerciseLog.heartRateAvg')),
       );
@@ -155,16 +155,16 @@ void main() {
     test('rechaza timestamp >60s en el futuro con FutureTimestamp', () {
       final far = DateTime.now().add(const Duration(minutes: 5));
       expect(
-        () => mapper.toMap(_log(timestamp: far)),
+        () => mapper.toMap(log0(timestamp: far)),
         throwsA(isA<FutureTimestamp>()),
       );
     });
 
     test('Acepta valores válidos en frontera', () {
-      expect(() => mapper.toMap(_log(rpe: 1)), returnsNormally);
-      expect(() => mapper.toMap(_log(rpe: 10)), returnsNormally);
+      expect(() => mapper.toMap(log0(rpe: 1)), returnsNormally);
+      expect(() => mapper.toMap(log0(rpe: 10)), returnsNormally);
       expect(
-        () => mapper.toMap(_log(heartRateAvg: 30)),
+        () => mapper.toMap(log0(heartRateAvg: 30)),
         returnsNormally,
       );
     });

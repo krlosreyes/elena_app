@@ -10,7 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   const mapper = FastingIntervalMapper();
 
-  FastingInterval _interval({
+  FastingInterval interval({
     String id = 'fast-001',
     String userId = 'user-1',
     DateTime? startTime,
@@ -28,24 +28,24 @@ void main() {
 
   group('toMap (delegación a FastingInterval.toJson)', () {
     test('Persiste campos requeridos', () {
-      final map = mapper.toMap(_interval());
+      final map = mapper.toMap(interval());
       expect(map['id'], 'fast-001');
       expect(map['userId'], 'user-1');
       expect(map['isFasting'], isTrue);
     });
 
     test('Persiste startTime via @TimestampConverter()', () {
-      final map = mapper.toMap(_interval());
+      final map = mapper.toMap(interval());
       expect(map['startTime'], isA<Timestamp>());
     });
 
     test('endTime null se persiste como null (intervalo abierto)', () {
-      final map = mapper.toMap(_interval(endTime: null));
+      final map = mapper.toMap(interval(endTime: null));
       expect(map['endTime'], isNull);
     });
 
     test('endTime presente via @OptionalTimestampConverter()', () {
-      final map = mapper.toMap(_interval(
+      final map = mapper.toMap(interval(
         endTime: DateTime(2026, 5, 2, 11, 0),
       ));
       expect(map['endTime'], isA<Timestamp>());
@@ -54,7 +54,7 @@ void main() {
 
   group('fromMap', () {
     test('Round-trip preserva todos los campos (intervalo cerrado)', () {
-      final original = _interval(
+      final original = interval(
         endTime: DateTime(2026, 5, 2, 11, 0),
         isFasting: false,
       );
@@ -68,7 +68,7 @@ void main() {
     });
 
     test('Round-trip de intervalo abierto (endTime null)', () {
-      final original = _interval();
+      final original = interval();
       final map = mapper.toMap(original);
       final round = mapper.fromMap(map);
       expect(round.endTime, isNull);
@@ -78,7 +78,7 @@ void main() {
   group('toMap — validaciones SPEC-62', () {
     test('rechaza id vacío con EmptyField', () {
       expect(
-        () => mapper.toMap(_interval(id: '')),
+        () => mapper.toMap(interval(id: '')),
         throwsA(isA<EmptyField>()
             .having((e) => e.fieldName, 'fieldName', 'FastingInterval.id')),
       );
@@ -86,7 +86,7 @@ void main() {
 
     test('rechaza userId vacío con EmptyField', () {
       expect(
-        () => mapper.toMap(_interval(userId: '')),
+        () => mapper.toMap(interval(userId: '')),
         throwsA(isA<EmptyField>()
             .having((e) => e.fieldName, 'fieldName', 'FastingInterval.userId')),
       );
@@ -96,7 +96,7 @@ void main() {
       final start = DateTime(2026, 5, 1, 19, 0);
       final endBefore = DateTime(2026, 5, 1, 18, 0);
       expect(
-        () => mapper.toMap(_interval(
+        () => mapper.toMap(interval(
           startTime: start,
           endTime: endBefore,
         )),
@@ -108,7 +108,7 @@ void main() {
     test('Acepta endTime == startTime (caso degenerado pero válido)', () {
       final ts = DateTime(2026, 5, 1, 19, 0);
       expect(
-        () => mapper.toMap(_interval(startTime: ts, endTime: ts)),
+        () => mapper.toMap(interval(startTime: ts, endTime: ts)),
         returnsNormally,
       );
     });
@@ -116,7 +116,7 @@ void main() {
     test('rechaza startTime >60s en el futuro con FutureTimestamp', () {
       final far = DateTime.now().add(const Duration(minutes: 5));
       expect(
-        () => mapper.toMap(_interval(startTime: far)),
+        () => mapper.toMap(interval(startTime: far)),
         throwsA(isA<FutureTimestamp>()),
       );
     });

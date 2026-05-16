@@ -9,6 +9,7 @@
 /// deuda baseline — habían sido removidos del modelo en algún refactor
 /// previo y este archivo no se actualizó. Ahora los selectores derivan de
 /// `lastLog.duration` directamente.
+library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/features/dashboard/application/sleep_notifier.dart';

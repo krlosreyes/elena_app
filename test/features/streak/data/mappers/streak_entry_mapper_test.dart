@@ -8,7 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   const mapper = StreakEntryMapper();
 
-  StreakEntry _entry({
+  StreakEntry entry0({
     String date = '2026-05-01',
     bool fastingCompleted = true,
     bool sleepCompleted = true,
@@ -40,14 +40,14 @@ void main() {
 
   group('toMap (delegación a StreakEntry.toJson)', () {
     test('Persiste campos requeridos', () {
-      final map = mapper.toMap(_entry());
+      final map = mapper.toMap(entry0());
       expect(map['date'], '2026-05-01');
       expect(map['fastingCompleted'], isTrue);
       expect(map['imrScore'], 65);
     });
 
     test('Persiste magnitudes SPEC-65 cuando están presentes', () {
-      final map = mapper.toMap(_entry(
+      final map = mapper.toMap(entry0(
         fastingMagnitude: 0.85,
         sleepQualityScore: 0.92,
         hydrationMagnitude: 0.78,
@@ -59,14 +59,14 @@ void main() {
     });
 
     test('Omite magnitudes nulas (SPEC-65 omit-if-null)', () {
-      final map = mapper.toMap(_entry());
+      final map = mapper.toMap(entry0());
       expect(map.containsKey('fastingMagnitude'), isFalse);
     });
   });
 
   group('fromMap', () {
     test('Round-trip preserva todos los campos', () {
-      final original = _entry(
+      final original = entry0(
         fastingMagnitude: 0.85,
         sleepQualityScore: 0.92,
       );
@@ -94,7 +94,7 @@ void main() {
   group('toMap — validaciones SPEC-62', () {
     test('rechaza date vacío con EmptyField', () {
       expect(
-        () => mapper.toMap(_entry(date: '')),
+        () => mapper.toMap(entry0(date: '')),
         throwsA(isA<EmptyField>()
             .having((e) => e.fieldName, 'fieldName', 'StreakEntry.date')),
       );
@@ -102,35 +102,35 @@ void main() {
 
     test('rechaza date con formato incorrecto con InvalidValue', () {
       expect(
-        () => mapper.toMap(_entry(date: '2026/05/01')),
+        () => mapper.toMap(entry0(date: '2026/05/01')),
         throwsA(
             isA<InvalidValue>().having((e) => e.value, 'value', '2026/05/01')),
       );
       expect(
-        () => mapper.toMap(_entry(date: 'mayo-1-2026')),
+        () => mapper.toMap(entry0(date: 'mayo-1-2026')),
         throwsA(isA<InvalidValue>()),
       );
       expect(
-        () => mapper.toMap(_entry(date: '2026-5-1')), // sin padding
+        () => mapper.toMap(entry0(date: '2026-5-1')), // sin padding
         throwsA(isA<InvalidValue>()),
       );
     });
 
     test('rechaza imrScore fuera de [0, 100] con OutOfRange', () {
       expect(
-        () => mapper.toMap(_entry(imrScore: -5)),
+        () => mapper.toMap(entry0(imrScore: -5)),
         throwsA(isA<OutOfRange>()
             .having((e) => e.fieldName, 'fieldName', 'StreakEntry.imrScore')),
       );
       expect(
-        () => mapper.toMap(_entry(imrScore: 105)),
+        () => mapper.toMap(entry0(imrScore: 105)),
         throwsA(isA<OutOfRange>()),
       );
     });
 
     test('Acepta imrScore en frontera (0 y 100)', () {
-      expect(() => mapper.toMap(_entry(imrScore: 0)), returnsNormally);
-      expect(() => mapper.toMap(_entry(imrScore: 100)), returnsNormally);
+      expect(() => mapper.toMap(entry0(imrScore: 0)), returnsNormally);
+      expect(() => mapper.toMap(entry0(imrScore: 100)), returnsNormally);
     });
   });
 }

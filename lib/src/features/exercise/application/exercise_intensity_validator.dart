@@ -169,7 +169,6 @@ class ExerciseIntensityValidator {
           recommendedIntensity = 40;
           break;
         case CircadianPhase.sueno:
-        default:
           recommendedType = 'LISS';
           recommendedIntensity = 20;
           break;
@@ -214,8 +213,6 @@ class ExerciseIntensityValidator {
         return 'Descenso de temperatura central. LISS moderado para preparar el sueño.';
       case CircadianPhase.sueno:
         return 'Fase de reparación biológica. Mínima intensidad recomendada.';
-      default:
-        return 'Basado en tu ritmo circadiano y fase de ayuno.';
     }
   }
 

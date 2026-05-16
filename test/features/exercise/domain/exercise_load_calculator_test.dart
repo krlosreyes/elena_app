@@ -99,7 +99,7 @@ void main() {
   });
 
   group('ExerciseLoadCalculator.sumDailyLoad', () {
-    ExerciseLog _log({
+    ExerciseLog log({
       required int min,
       ExerciseType? type,
       ExerciseIntensity? intensity,
@@ -116,12 +116,12 @@ void main() {
 
     test('Suma de varias sesiones', () {
       final logs = [
-        _log(
+        log(
           min: 20,
           type: ExerciseType.liss,
           intensity: ExerciseIntensity.moderate,
         ), // 0.333...
-        _log(
+        log(
           min: 20,
           type: ExerciseType.strength,
           intensity: ExerciseIntensity.moderate,
@@ -138,7 +138,7 @@ void main() {
     test('Suma se clampa a 2.0 en casos extremos', () {
       final logs = List.generate(
         4,
-        (_) => _log(
+        (_) => log(
           min: 60,
           type: ExerciseType.hiit,
           intensity: ExerciseIntensity.high,

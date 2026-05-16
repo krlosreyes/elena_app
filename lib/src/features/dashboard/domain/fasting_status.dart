@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 
 /// Fases biológicas extendidas según el mapa cronológico del ayuno real
 enum FastingPhase {
@@ -110,8 +109,9 @@ class FastingState {
 
   String get nextMilestoneLabel {
     if (isActive) {
-      if (duration.inHours < 12)
+      if (duration.inHours < 12) {
         return "SIGUIENTE ETAPA: DESCENSO DE INSULINA (12H)";
+      }
       if (duration.inHours < 18) return "SIGUIENTE ETAPA: QUEMA DE GRASA (18H)";
       if (duration.inHours < 24) return "SIGUIENTE ETAPA: AUTOFAGIA (24H)";
       return "FASE DE REGENERACIÓN PROFUNDA";

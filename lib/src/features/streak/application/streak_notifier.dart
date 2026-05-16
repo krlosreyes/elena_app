@@ -11,12 +11,10 @@ import 'package:elena_app/src/features/dashboard/application/sleep_notifier.dart
 import 'package:elena_app/src/features/dashboard/application/hydration_notifier.dart';
 import 'package:elena_app/src/features/dashboard/domain/sleep_quality_calculator.dart';
 import 'package:elena_app/src/features/exercise/application/exercise_notifier.dart';
-import 'package:elena_app/src/features/exercise/application/exercise_state.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/core/services/firestore_errors.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
-import 'package:elena_app/src/features/dashboard/domain/fasting_status.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // StreakState

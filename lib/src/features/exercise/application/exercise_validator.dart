@@ -1,5 +1,4 @@
 import 'package:elena_app/src/core/orchestrator/biological_phases.dart';
-import 'package:flutter/foundation.dart';
 
 /// SPEC-01: Validador de transiciones de ejercicio (Tipado).
 /// RF-34-02: Valida que el ejercicio sea seguro según estado metabólico.

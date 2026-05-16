@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/core/engine/imr_persistence_provider.dart';
 import 'package:elena_app/src/core/engine/metabolic_state_provider.dart';
-import 'package:elena_app/src/core/engine/score_engine.dart';
 import 'package:elena_app/src/core/widgets/elena_header.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 import 'package:elena_app/src/features/dashboard/application/eating_window_provider.dart';
@@ -123,9 +122,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       error: (err, stack) =>
           Scaffold(body: Center(child: Text('Fallo de Hardware: $err'))),
       data: (user) {
-        if (user == null)
+        if (user == null) {
           return const Scaffold(
               body: Center(child: CircularProgressIndicator()));
+        }
 
         WidgetsBinding.instance.addPostFrameCallback((_) {
           ref.read(sleepProvider.notifier).updateSleepConsciousness();
@@ -1841,8 +1841,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         data: ThemeData.dark().copyWith(
           colorScheme: const ColorScheme.dark(
             primary: AppColors.metabolicGreen,
-          ),
-          dialogBackgroundColor: const Color(0xFF1E293B),
+          ), dialogTheme: DialogThemeData(backgroundColor: const Color(0xFF1E293B)),
         ),
         child: child!,
       ),
@@ -1856,8 +1855,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         data: ThemeData.dark().copyWith(
           colorScheme: const ColorScheme.dark(
             primary: AppColors.metabolicGreen,
-          ),
-          dialogBackgroundColor: const Color(0xFF1E293B),
+          ), dialogTheme: DialogThemeData(backgroundColor: const Color(0xFF1E293B)),
         ),
         child: child!,
       ),
@@ -1914,8 +1912,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         lastDate: now.add(const Duration(days: 1)),
         builder: (context, child) => Theme(
             data: ThemeData.dark().copyWith(
-                colorScheme: ColorScheme.dark(primary: primaryColor),
-                dialogBackgroundColor: const Color(0xFF1E293B)),
+                colorScheme: ColorScheme.dark(primary: primaryColor), dialogTheme: DialogThemeData(backgroundColor: const Color(0xFF1E293B))),
             child: child!));
     if (pickedDate == null) return;
     final TimeOfDay? pickedTime = await showTimePicker(
@@ -1923,8 +1920,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         initialTime: TimeOfDay.fromDateTime(now),
         builder: (context, child) => Theme(
             data: ThemeData.dark().copyWith(
-                colorScheme: ColorScheme.dark(primary: primaryColor),
-                dialogBackgroundColor: const Color(0xFF1E293B)),
+                colorScheme: ColorScheme.dark(primary: primaryColor), dialogTheme: DialogThemeData(backgroundColor: const Color(0xFF1E293B))),
             child: child!));
     if (pickedTime == null) return;
     final DateTime finalDateTime = DateTime(pickedDate.year, pickedDate.month,

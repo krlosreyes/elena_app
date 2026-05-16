@@ -150,7 +150,6 @@ class StreakEngine {
   /// el ScoreEngine consume la versión continua.
   static double computeWeeklyAdherence(List<StreakEntry> history) {
     final now = DateTime.now();
-    final todayKey = _dateKey(now);
 
     // Ventana de los últimos 7 días terminando hoy
     final cutoff = DateTime(now.year, now.month, now.day)

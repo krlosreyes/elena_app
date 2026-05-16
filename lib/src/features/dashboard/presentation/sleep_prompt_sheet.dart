@@ -1,10 +1,10 @@
 /// SPEC-22: BottomSheet de confirmación de inicio de sueño
 /// Se muestra cuando el usuario se acerca a la hora de sueño programada.
 /// Ofrece: [Sí, dormir ahora] / [No, aún no]
+library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:elena_app/src/features/dashboard/application/sleep_notifier.dart';
 import 'package:elena_app/src/features/dashboard/presentation/sleep_input_sheet.dart';
 
 class SleepPromptSheet extends ConsumerStatefulWidget {

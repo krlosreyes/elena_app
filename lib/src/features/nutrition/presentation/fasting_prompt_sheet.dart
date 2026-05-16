@@ -1,6 +1,7 @@
 /// SPEC-21: BottomSheet de confirmación de inicio de ayuno
 /// Se muestra cuando el usuario registra la última comida del día.
 /// Ofrece: [Sí, iniciar ayuno] / [No, aún no]
+library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

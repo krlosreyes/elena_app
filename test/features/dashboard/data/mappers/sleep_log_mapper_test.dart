@@ -17,7 +17,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   const mapper = SleepLogMapper();
 
-  SleepLog _log({
+  SleepLog log0({
     String id = 'sleep-001',
     DateTime? fellAsleep,
     DateTime? wokeUp,
@@ -39,7 +39,7 @@ void main() {
 
   group('toMap — campos requeridos', () {
     test('Persiste fellAsleep, wokeUp, lastMealTime como Timestamp', () {
-      final map = mapper.toMap(_log());
+      final map = mapper.toMap(log0());
       expect(map['fellAsleep'], isA<Timestamp>());
       expect(map['wokeUp'], isA<Timestamp>());
       expect(map['lastMealTime'], isA<Timestamp>());
@@ -47,7 +47,7 @@ void main() {
 
     test('Persiste campos derivados: durationMinutes, metabolicGap, status',
         () {
-      final map = mapper.toMap(_log());
+      final map = mapper.toMap(log0());
       // 7.5h = 450 min
       expect(map['durationMinutes'], 450);
       // 4.5h gap entre 19:00 y 23:30
@@ -56,29 +56,29 @@ void main() {
     });
 
     test('Incluye createdAt como FieldValue (server timestamp)', () {
-      final map = mapper.toMap(_log());
+      final map = mapper.toMap(log0());
       expect(map['createdAt'], isA<FieldValue>());
     });
   });
 
   group('toMap — campos opcionales SPEC-69', () {
     test('Persiste sleepLatencyMinutes cuando está presente', () {
-      final map = mapper.toMap(_log(sleepLatencyMinutes: 12));
+      final map = mapper.toMap(log0(sleepLatencyMinutes: 12));
       expect(map['sleepLatencyMinutes'], 12);
     });
 
     test('Persiste nightAwakenings cuando está presente', () {
-      final map = mapper.toMap(_log(nightAwakenings: 2));
+      final map = mapper.toMap(log0(nightAwakenings: 2));
       expect(map['nightAwakenings'], 2);
     });
 
     test('Persiste subjectiveQuality cuando está presente', () {
-      final map = mapper.toMap(_log(subjectiveQuality: 4));
+      final map = mapper.toMap(log0(subjectiveQuality: 4));
       expect(map['subjectiveQuality'], 4);
     });
 
     test('OMITE campos opcionales cuando son null (no nulls explícitos)', () {
-      final map = mapper.toMap(_log());
+      final map = mapper.toMap(log0());
       expect(map.containsKey('sleepLatencyMinutes'), isFalse);
       expect(map.containsKey('nightAwakenings'), isFalse);
       expect(map.containsKey('subjectiveQuality'), isFalse);
@@ -86,7 +86,7 @@ void main() {
 
     test('Persistir 0 explícito en awakenings es distinto de "no medido"', () {
       // 0 despertares es información válida y distinta de null.
-      final map = mapper.toMap(_log(nightAwakenings: 0));
+      final map = mapper.toMap(log0(nightAwakenings: 0));
       expect(map['nightAwakenings'], 0);
       expect(map.containsKey('nightAwakenings'), isTrue);
     });
@@ -94,7 +94,7 @@ void main() {
 
   group('fromMap — round-trip', () {
     test('Reconstruye log con todos los campos SPEC-69', () {
-      final original = _log(
+      final original = log0(
         sleepLatencyMinutes: 15,
         nightAwakenings: 1,
         subjectiveQuality: 4,
@@ -159,7 +159,7 @@ void main() {
     test('rechaza id vacío con EmptyField', () {
       // El SleepLog se construye sin validar id (no hay invariante en el
       // constructor para id vacío). El mapper valida al persistir.
-      final log = _log(id: '');
+      final log = log0(id: '');
       expect(
         () => mapper.toMap(log),
         throwsA(isA<EmptyField>()
@@ -170,7 +170,7 @@ void main() {
     test('rechaza duration zero con InvalidValue', () {
       // Mismo timestamp para fellAsleep y wokeUp — duración = 0.
       final ts = DateTime(2026, 5, 1, 23);
-      final log = _log(fellAsleep: ts, wokeUp: ts);
+      final log = log0(fellAsleep: ts, wokeUp: ts);
       expect(
         () => mapper.toMap(log),
         throwsA(isA<InvalidValue>()

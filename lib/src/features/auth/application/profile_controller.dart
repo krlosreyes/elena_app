@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/shared/data/user_profile_repository_impl.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
-import 'package:elena_app/src/shared/providers/user_provider.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
 
 /// Estado del ProfileController

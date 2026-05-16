@@ -10,7 +10,6 @@
 // y el color del arc indica la zona (rojo, naranja, ámbar, verde).
 
 import 'dart:math' as math;
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 

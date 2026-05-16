@@ -3,7 +3,6 @@ import 'dart:math' as math;
 import 'package:elena_app/src/core/engine/coherence_engine.dart';
 import 'package:elena_app/src/core/engine/metabolic_state.dart';
 import 'package:elena_app/src/core/rules/circadian_rules.dart';
-import 'package:elena_app/src/features/dashboard/application/fasting_notifier.dart';
 import 'package:elena_app/src/features/dashboard/application/hydration_notifier.dart';
 import 'package:elena_app/src/features/dashboard/domain/fasting_status.dart';
 import 'package:elena_app/src/features/dashboard/domain/sleep_log.dart';

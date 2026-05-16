@@ -16,7 +16,6 @@
 // aunque la fuente del sistema sea ligeramente más ancha.
 
 import 'dart:async';
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 

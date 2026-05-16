@@ -8,12 +8,12 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   const mapper = UserProfileMapper();
 
-  CircadianProfile _profile() => CircadianProfile(
+  CircadianProfile profile() => CircadianProfile(
         wakeUpTime: DateTime(2026, 5, 1, 6),
         sleepTime: DateTime(2026, 5, 1, 22),
       );
 
-  UserModel _user({
+  UserModel user({
     String id = 'user-1',
     int age = 30,
     String gender = 'M',
@@ -31,13 +31,13 @@ void main() {
       weight: weight,
       height: height,
       bodyFatPercentage: bodyFatPercentage,
-      profile: _profile(),
+      profile: profile(),
     );
   }
 
   group('toMap (delegación a Freezed.toJson)', () {
     test('Persiste campos requeridos del UserModel', () {
-      final map = mapper.toMap(_user());
+      final map = mapper.toMap(user());
       expect(map['id'], 'user-1');
       expect(map['age'], 30);
       expect(map['gender'], 'M');
@@ -46,14 +46,14 @@ void main() {
     });
 
     test('Persiste el CircadianProfile como sub-objeto', () {
-      final map = mapper.toMap(_user());
+      final map = mapper.toMap(user());
       expect(map['profile'], isA<Map<String, dynamic>>());
     });
   });
 
   group('fromMap', () {
     test('Round-trip preserva campos primarios', () {
-      final original = _user();
+      final original = user();
       final map = mapper.toMap(original);
       final round = mapper.fromMap(map);
       expect(round.id, original.id);
@@ -65,7 +65,7 @@ void main() {
   group('toMap — validaciones SPEC-62', () {
     test('rechaza id vacío con EmptyField', () {
       expect(
-        () => mapper.toMap(_user(id: '')),
+        () => mapper.toMap(user(id: '')),
         throwsA(isA<EmptyField>()
             .having((e) => e.fieldName, 'fieldName', 'UserModel.id')),
       );
@@ -73,63 +73,63 @@ void main() {
 
     test('rechaza age fuera de [0, 130] con OutOfRange', () {
       expect(
-        () => mapper.toMap(_user(age: -1)),
+        () => mapper.toMap(user(age: -1)),
         throwsA(isA<OutOfRange>()),
       );
       expect(
-        () => mapper.toMap(_user(age: 200)),
+        () => mapper.toMap(user(age: 200)),
         throwsA(isA<OutOfRange>()),
       );
     });
 
     test('rechaza weight <= 0 con OutOfRange', () {
       expect(
-        () => mapper.toMap(_user(weight: 0)),
+        () => mapper.toMap(user(weight: 0)),
         throwsA(isA<OutOfRange>()),
       );
       expect(
-        () => mapper.toMap(_user(weight: -10)),
+        () => mapper.toMap(user(weight: -10)),
         throwsA(isA<OutOfRange>()),
       );
     });
 
     test('rechaza height <= 0 con OutOfRange', () {
       expect(
-        () => mapper.toMap(_user(height: 0)),
+        () => mapper.toMap(user(height: 0)),
         throwsA(isA<OutOfRange>()),
       );
     });
 
     test('rechaza bodyFatPercentage fuera de [0, 70] con OutOfRange', () {
       expect(
-        () => mapper.toMap(_user(bodyFatPercentage: -5)),
+        () => mapper.toMap(user(bodyFatPercentage: -5)),
         throwsA(isA<OutOfRange>()),
       );
       expect(
-        () => mapper.toMap(_user(bodyFatPercentage: 80)),
+        () => mapper.toMap(user(bodyFatPercentage: 80)),
         throwsA(isA<OutOfRange>()),
       );
     });
 
     test('Acepta valores en frontera', () {
-      expect(() => mapper.toMap(_user(age: 0)), returnsNormally);
-      expect(() => mapper.toMap(_user(age: 130)), returnsNormally);
+      expect(() => mapper.toMap(user(age: 0)), returnsNormally);
+      expect(() => mapper.toMap(user(age: 130)), returnsNormally);
       expect(
-        () => mapper.toMap(_user(bodyFatPercentage: 0)),
+        () => mapper.toMap(user(bodyFatPercentage: 0)),
         returnsNormally,
       );
       expect(
-        () => mapper.toMap(_user(bodyFatPercentage: 70)),
+        () => mapper.toMap(user(bodyFatPercentage: 70)),
         returnsNormally,
       );
     });
 
     test('SPEC-92: bodyFatPercentage null no lanza, persiste como null', () {
       expect(
-        () => mapper.toMap(_user(bodyFatPercentage: null)),
+        () => mapper.toMap(user(bodyFatPercentage: null)),
         returnsNormally,
       );
-      final map = mapper.toMap(_user(bodyFatPercentage: null));
+      final map = mapper.toMap(user(bodyFatPercentage: null));
       expect(map['bodyFatPercentage'], isNull);
     });
   });
