@@ -38,12 +38,17 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       // SPEC-78: las rutas /open son entry points de deep links;
       // tienen su propio redirect que decide a dónde llevar al
       // usuario según el auth state.
+      //
+      // SPEC-117 fix: las rutas legales son universalmente accesibles
+      // (autenticado o no). Antes se trataban como "público" y el
+      // redirect del caso 2 las mandaba al Dashboard cuando el
+      // usuario autenticado las visitaba desde Perfil → Legal.
+      final isLegalDoc = loc == '/legal/privacy' || loc == '/legal/terms';
       final isPublic = loc == '/login' ||
           loc == '/register' ||
           loc == '/forgot-password' ||
           loc == '/set-password' ||
-          loc == '/legal/privacy' ||
-          loc == '/legal/terms' ||
+          isLegalDoc ||
           loc.startsWith('/open');
 
       // 1. No autenticado.
@@ -51,8 +56,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         return isPublic ? null : '/login';
       }
 
-      // 2. Autenticado en ruta pública → llevar a destino correcto.
-      if (isPublic) {
+      // 2. Autenticado en ruta pública (auth) → llevar a destino.
+      //    Las legales se excluyen porque debe poder leerlas también
+      //    el usuario autenticado desde el Perfil.
+      if (isPublic && !isLegalDoc) {
         return account.isComplete ? '/dashboard' : '/onboarding';
       }
 

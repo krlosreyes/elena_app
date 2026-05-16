@@ -32,6 +32,21 @@ class PeriodComparisonService {
       avgPrevious = (sumPrev / previousDocs.length).round();
     }
 
+    // SPEC-118: IMR del día de HOY. Busca el doc cuyo `date` es el
+    // día calendario actual. Si no existe, queda null y el hero lo
+    // representa con un placeholder. El merge LIVE en analysis_screen
+    // garantiza que normalmente este doc exista con valores en vivo.
+    final now = DateTime.now();
+    final todayKey =
+        '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    int? imrToday;
+    for (final d in currentDocs) {
+      if (d.date == todayKey) {
+        imrToday = d.imrScore;
+        break;
+      }
+    }
+
     // Mejor y peor día. En empate, gana el más reciente.
     DailySummaryDoc best = currentDocs.first;
     DailySummaryDoc worst = currentDocs.first;
@@ -51,6 +66,7 @@ class PeriodComparisonService {
     return PeriodComparison(
       imrAverage: avgCurrent,
       imrAveragePrevious: avgPrevious,
+      imrToday: imrToday,
       bestDayImr: best.imrScore,
       bestDayDate: _parseDate(best.date),
       worstDayImr: worst.imrScore,

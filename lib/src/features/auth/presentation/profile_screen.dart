@@ -46,13 +46,16 @@ class ProfileScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
       appBar: AppBar(
+        // SPEC-116: título en sentence-case, peso w700, sin tracking
+        // agresivo. La identidad clínica vive ahora en la card del
+        // usuario (subtítulo bajo el nombre).
         title: const Text(
-          'EXPEDIENTE METABÓLICO',
+          'Perfil',
           style: TextStyle(
-              fontWeight: FontWeight.w900, fontSize: 14, letterSpacing: 1.2),
+              fontWeight: FontWeight.w700, fontSize: 18, letterSpacing: 0),
         ),
-        centerTitle: true,
-        backgroundColor: AppColors.surfaceDark,
+        centerTitle: false,
+        backgroundColor: AppColors.backgroundDark,
         elevation: 0,
         automaticallyImplyLeading: false,
         actions: [
@@ -440,149 +443,306 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
     // el persistido cuando el cálculo local solo tiene baseline.
     final displayedImr = ref.watch(displayedImrProvider);
 
+    // SPEC-116: rediseño del Perfil — premium, simple, jerárquico.
+    // Reemplaza el "muro de tarjetas" por grupos con divisores internos
+    // (patrón iOS Settings / Oura / Apple Health). Misma información,
+    // misma paleta, menos ruido.
     return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
       children: [
-        // ── Tarjeta de identidad + IMR ──────────────────────────────
+        // ── Identidad + IMR ─────────────────────────────────────────
         _buildIdentityCard(displayedImr),
-        const SizedBox(height: 20),
+        const SizedBox(height: 24),
 
-        // ── SPEC-88: Composición corporal ────────────────────────────
+        // ── Composición corporal (SPEC-88) ──────────────────────────
         const BodyCompositionCard(),
         const SizedBox(height: 28),
 
-        // ── Datos biométricos ───────────────────────────────────────
-        _buildSectionLabel('HARDWARE BIOLÓGICO'),
-        const SizedBox(height: 12),
-        _readOnlyTile('Nombre', widget.user.name),
-        _readOnlyTile('Edad', '${widget.user.age} años'),
-        _readOnlyTile('Género',
-            widget.user.gender == 'M' ? 'Masculino' : 'Femenino'),
-        _readOnlyTile('Estatura', '${widget.user.height.toInt()} cm'),
-        // SPEC-88: tiles editables (peso, cintura, cuello, %grasa).
-        _editableBiometryTile(
-          icon: Icons.hourglass_bottom_rounded,
-          label: 'Peso',
-          value: '${widget.user.weight.toInt()} kg',
-          onTap: () => _editWeight(),
+        // ── Datos biométricos (colapsable) ──────────────────────────
+        // SPEC-117: disclosure group con preview de 1 línea. El
+        // usuario rara vez edita estos datos — quedan accesibles pero
+        // no consumen scroll cuando no se necesitan.
+        _DisclosureSection(
+          title: 'Datos biométricos',
+          preview: _biometricPreview(),
+          child: _DataGroupCard(
+            rows: [
+              _DataRow.readonly('Nombre', widget.user.name),
+              _DataRow.readonly('Edad', '${widget.user.age} años'),
+              _DataRow.readonly(
+                  'Género',
+                  widget.user.gender == 'M' ? 'Masculino' : 'Femenino'),
+              _DataRow.readonly(
+                  'Estatura', '${widget.user.height.toInt()} cm'),
+              _DataRow.editable(
+                label: 'Peso',
+                value: '${widget.user.weight.toInt()} kg',
+                onTap: _editWeight,
+              ),
+              _DataRow.editable(
+                label: 'Cintura',
+                value:
+                    '${widget.user.waistCircumference?.toInt() ?? 0} cm',
+                onTap: _editWaist,
+              ),
+              _DataRow.editable(
+                label: 'Cuello',
+                value:
+                    '${widget.user.neckCircumference?.toInt() ?? 0} cm',
+                onTap: _editNeck,
+              ),
+              _DataRow.info(
+                label: '% Grasa est.',
+                value: _formatBodyFat(widget.user.bodyFatPercentage),
+                tag: 'confianza ${widget.user.confidenceLevel}',
+                tagColor: _confidenceColor(widget.user.confidenceLevel),
+                onInfoTap: _showBodyFatExplanation,
+              ),
+            ],
+          ),
         ),
-        _editableBiometryTile(
-          icon: Icons.straighten_rounded,
-          label: 'Cintura',
-          value: '${widget.user.waistCircumference?.toInt() ?? 0} cm',
-          onTap: () => _editWaist(),
-        ),
-        _editableBiometryTile(
-          icon: Icons.check_circle_outline_rounded,
-          label: 'Cuello',
-          value: '${widget.user.neckCircumference?.toInt() ?? 0} cm',
-          onTap: () => _editNeck(),
-        ),
-        // SPEC-92: % grasa es READ-ONLY. Se calcula desde cintura/
-        // cuello/altura con la fórmula US Navy en `BiometryRecalc`.
-        // El tap muestra una explicación (no abre editor).
-        _bodyFatReadOnlyTile(
-          value: widget.user.bodyFatPercentage,
-          confidenceLevel: widget.user.confidenceLevel,
-          onInfoTap: _showBodyFatExplanation,
-        ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 16),
 
-        // ── Ritmo Circadiano (editable) ─────────────────────────────
-        _buildSectionLabel('RITMOS CIRCADIANOS'),
-        const SizedBox(height: 4),
-        _buildSectionSubtitle('Toca cualquier horario para editarlo'),
-        const SizedBox(height: 12),
-        _editableTile(
-          label: 'Despertar',
-          value: _wakeUpTime.format(context),
-          icon: Icons.wb_sunny_outlined,
-          color: const Color(0xFFEAB308),
-          onTap: () =>
-              _pickTime(_wakeUpTime, (t) => _wakeUpTime = t),
+        // ── Ritmos circadianos (colapsable) ─────────────────────────
+        // SPEC-117: configurados una vez al onboarding, casi nunca se
+        // revisan. Default colapsado con preview de los anclas
+        // (despertar → dormir).
+        _DisclosureSection(
+          title: 'Ritmos circadianos',
+          preview: _circadianPreview(context),
+          child: _DataGroupCard(
+            rows: [
+              _DataRow.icon(
+                icon: Icons.wb_sunny_outlined,
+                iconColor: const Color(0xFFEAB308),
+                label: 'Despertar',
+                value: _wakeUpTime.format(context),
+                valueColor: const Color(0xFFEAB308),
+                onTap: () =>
+                    _pickTime(_wakeUpTime, (t) => _wakeUpTime = t),
+              ),
+              _DataRow.icon(
+                icon: Icons.nightlight_round,
+                iconColor: const Color(0xFF818CF8),
+                label: 'Dormir',
+                value: _sleepTime.format(context),
+                valueColor: const Color(0xFF818CF8),
+                onTap: () =>
+                    _pickTime(_sleepTime, (t) => _sleepTime = t),
+              ),
+              _DataRow.icon(
+                icon: Icons.restaurant_outlined,
+                iconColor: const Color(0xFF10B981),
+                label: 'Primera comida',
+                value: _firstMealGoal.format(context),
+                valueColor: const Color(0xFF10B981),
+                onTap: () => _pickTime(
+                    _firstMealGoal, (t) => _firstMealGoal = t,
+                    isMealTimePicker: true),
+              ),
+              _DataRow.icon(
+                icon: Icons.no_meals_outlined,
+                iconColor: const Color(0xFFFB923C),
+                label: 'Última comida',
+                value: _lastMealGoal.format(context),
+                valueColor: const Color(0xFFFB923C),
+                onTap: () => _pickTime(
+                    _lastMealGoal, (t) => _lastMealGoal = t,
+                    isMealTimePicker: true),
+              ),
+            ],
+          ),
         ),
-        _editableTile(
-          label: 'Dormir',
-          value: _sleepTime.format(context),
-          icon: Icons.nightlight_round,
-          color: const Color(0xFF818CF8),
-          onTap: () =>
-              _pickTime(_sleepTime, (t) => _sleepTime = t),
-        ),
-        _editableTile(
-          label: 'Primera Comida',
-          value: _firstMealGoal.format(context),
-          icon: Icons.restaurant_outlined,
-          color: const Color(0xFF10B981),
-          onTap: () => _pickTime(
-              _firstMealGoal, (t) => _firstMealGoal = t,
-              isMealTimePicker: true),
-        ),
-        _editableTile(
-          label: 'Última Comida',
-          value: _lastMealGoal.format(context),
-          icon: Icons.no_meals_outlined,
-          color: const Color(0xFFFB923C),
-          onTap: () => _pickTime(
-              _lastMealGoal, (t) => _lastMealGoal = t,
-              isMealTimePicker: true),
-        ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 16),
 
-        // ── Protocolo de Ayuno (read-only) ──────────────────────────
+        // ── Protocolo de ayuno (read-only) ──────────────────────────
         // SPEC-98: el selector de protocolo se movió al Dashboard
-        // (chip clickable en la card "Ayuno Consciente"). Aquí queda
-        // solo como referencia, no editable. Para cambiarlo el usuario
-        // va al Dashboard.
-        _buildSectionLabel('PROTOCOLO DE AYUNO'),
-        const SizedBox(height: 12),
-        _readOnlyTile('Protocolo activo', widget.user.fastingProtocol),
-        const SizedBox(height: 6),
-        _buildSectionSubtitle(
-            'Cambia tu protocolo desde el Dashboard (card Ayuno Consciente).'),
-        const SizedBox(height: 32),
+        // (chip clickable en la card "Ayuno Consciente").
+        _buildSectionTitle('Protocolo de ayuno'),
+        const SizedBox(height: 10),
+        _buildProtocolCard(context),
+        const SizedBox(height: 24),
 
-        // ── Acciones de cuenta ──────────────────────────────────────
-        _buildSectionLabel('CUENTA'),
-        const SizedBox(height: 12),
-        // SPEC-76 + SPEC-77: documentos legales agrupados en una
-        // sola tarjeta con dividers internos.
+        // ── Legal ───────────────────────────────────────────────────
+        // SPEC-117: renombrado de "Cuenta" → "Legal" (los items son
+        // documentos informativos, no acciones de cuenta). Bajada
+        // sustancial de peso visual: lista plana sin card-border, sin
+        // iconos coloreados, tipografía secundaria.
+        _buildSectionTitle('Legal'),
+        const SizedBox(height: 6),
         _buildLegalGroup(context),
-        const SizedBox(height: 12),
-        _buildLogoutButton(context),
-        const SizedBox(height: 12),
-        _buildDeleteAccountButton(context),
+        const SizedBox(height: 28),
+
+        // ── Acciones destructivas (text buttons sutiles) ────────────
+        _buildLogoutTextButton(context),
+        const SizedBox(height: 4),
+        _buildDeleteAccountTextButton(context),
       ],
     );
+  }
+
+  /// Card del protocolo de ayuno: protocolo activo + detalle inline
+  /// (h ayuno · h ventana) + link sutil a la pantalla "Hoy" donde se
+  /// edita el protocolo.
+  Widget _buildProtocolCard(BuildContext context) {
+    final protocol = widget.user.fastingProtocol;
+    final parts = protocol.split(':');
+    final fastingHours =
+        parts.isNotEmpty ? (int.tryParse(parts.first) ?? 16) : 16;
+    final feedingHours = parts.length > 1
+        ? (int.tryParse(parts[1]) ?? 8)
+        : 8;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surfaceDark,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.borderDefault),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding:
+                const EdgeInsets.fromLTRB(18, 14, 18, 6),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Activo',
+                  style: TextStyle(
+                    color: Color(0xFF94A3B8),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                Text(
+                  protocol,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding:
+                const EdgeInsets.fromLTRB(18, 0, 18, 12),
+            child: Text(
+              '${fastingHours}h ayuno · ${feedingHours}h ventana',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.38),
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          Container(
+            height: 1,
+            margin: const EdgeInsets.symmetric(horizontal: 18),
+            color: AppColors.borderSubtle,
+          ),
+          InkWell(
+            // SPEC-116: query param `pillar=ayuno` para que el
+            // Dashboard abra directamente con la card de Ayuno
+            // seleccionada (el chip de protocolo vive ahí).
+            onTap: () => context.go('/dashboard?pillar=ayuno'),
+            borderRadius: const BorderRadius.only(
+              bottomLeft: Radius.circular(14),
+              bottomRight: Radius.circular(14),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 18, vertical: 12),
+              child: Row(
+                children: [
+                  const Text(
+                    'Cambiar protocolo',
+                    style: TextStyle(
+                      color: AppColors.metabolicGreen,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const Spacer(),
+                  Icon(
+                    Icons.arrow_forward_rounded,
+                    color: AppColors.metabolicGreen
+                        .withValues(alpha: 0.8),
+                    size: 16,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatBodyFat(double? value) {
+    if (value == null) return 'Sin medir';
+    return '${value.toStringAsFixed(1)}%';
+  }
+
+  /// Preview de 1 línea para el disclosure de "Datos biométricos".
+  /// Muestra los dos datos más usados (peso + body fat) cuando está
+  /// colapsado, para que el usuario sepa el valor sin expandir.
+  String _biometricPreview() {
+    final weight = '${widget.user.weight.toInt()} kg';
+    final bodyFat = widget.user.bodyFatPercentage;
+    if (bodyFat == null) return weight;
+    return '$weight · ${bodyFat.toStringAsFixed(1)}% grasa';
+  }
+
+  /// Preview de 1 línea para el disclosure de "Ritmos circadianos".
+  /// Muestra los anclas del día (despertar → dormir).
+  String _circadianPreview(BuildContext context) {
+    return '${_wakeUpTime.format(context)} → ${_sleepTime.format(context)}';
+  }
+
+  Color _confidenceColor(String level) {
+    switch (level) {
+      case 'ALTA':
+        return AppColors.metabolicGreen;
+      case 'MEDIA':
+        return const Color(0xFFEAB308);
+      default:
+        return const Color(0xFF94A3B8);
+    }
   }
 
   // ── Widgets ──────────────────────────────────────────────────────────────
 
   Widget _buildIdentityCard(DisplayedImr imrResult) {
     final zoneColor = _zoneColor(imrResult.zone);
+    // SPEC-116: sin border coloreado. El badge IMR ya comunica el
+    // estado clínico. Subtítulo de la card incluye "Expediente
+    // metabólico" como branding clínico recuperado del AppBar.
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: AppColors.surfaceDark,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: zoneColor.withValues(alpha: 0.25), width: 1.5),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.borderDefault),
       ),
       child: Row(
         children: [
           // Avatar
           Container(
-            width: 56,
-            height: 56,
+            width: 52,
+            height: 52,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: const Color(0xFF10B981).withValues(alpha: 0.15),
-              border:
-                  Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.4)),
+              color: AppColors.metabolicGreen.withValues(alpha: 0.12),
             ),
-            child: const Icon(Icons.person_outline_rounded,
-                color: Color(0xFF10B981), size: 28),
+            child: const Icon(Icons.person_rounded,
+                color: AppColors.metabolicGreen, size: 26),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 14),
           // Nombre + patologías
           Expanded(
             child: Column(
@@ -591,48 +751,56 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
                 Text(
                   widget.user.name,
                   style: const TextStyle(
-                      fontWeight: FontWeight.w800, fontSize: 16),
+                    fontWeight: FontWeight.w700,
+                    fontSize: 17,
+                    color: Colors.white,
+                  ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 3),
                 Text(
-                  widget.user.pathologies.join(', '),
+                  widget.user.pathologies.isEmpty
+                      ? 'Expediente metabólico'
+                      : widget.user.pathologies.join(' · '),
                   style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.white.withValues(alpha: 0.4),
+                    fontSize: 12,
+                    color: Colors.white.withValues(alpha: 0.45),
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
             ),
           ),
+          const SizedBox(width: 10),
           // IMR badge
           Column(
             children: [
               Container(
-                width: 52,
-                height: 52,
+                width: 48,
+                height: 48,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: zoneColor, width: 2.5),
+                  border: Border.all(color: zoneColor, width: 2),
                 ),
                 child: Center(
                   child: Text(
                     '${imrResult.score}',
                     style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
+                      fontSize: 19,
+                      fontWeight: FontWeight.w800,
                       color: zoneColor,
+                      height: 1.0,
                     ),
                   ),
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 5),
               Text(
                 imrResult.zone,
                 style: TextStyle(
-                  fontSize: 8,
-                  fontWeight: FontWeight.w900,
+                  fontSize: 8.5,
+                  fontWeight: FontWeight.w800,
                   color: zoneColor,
-                  letterSpacing: 0.5,
+                  letterSpacing: 0.6,
                 ),
               ),
             ],
@@ -647,84 +815,70 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
   // en la card "Ayuno Consciente"). Los métodos `_buildProtocolSelector`,
   // `_buildRecommendedProtocolCard` y `_recommendedProtocol` se eliminaron.
 
-  // SPEC-76 + SPEC-77: grupo único para los 3 documentos legales.
-  // En lugar de 3 tarjetas separadas (visualmente ruidoso), una sola
-  // con dividers internos.
+  // SPEC-117: grupo legal redesigned como footer plano "presente pero
+  // no protagonista". Sin border, sin background coloreado, sin
+  // iconos. Solo filas de texto con chevron sutil + divisores
+  // delgadísimos. Tipografía secundaria (alpha 0.7) y sub más tenue
+  // (alpha 0.4) para que el bloque "respire" abajo en la pantalla.
   Widget _buildLegalGroup(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surfaceDark,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.borderDefault),
-      ),
-      child: Column(
-        children: [
-          _legalRow(
-            context: context,
-            icon: Icons.medical_information_outlined,
-            iconColor: AppColors.statusWarn,
-            title: 'Condiciones médicas',
-            subtitle: 'Poblaciones de riesgo del IMR',
-            route: '/profile/disclaimer',
-          ),
-          _legalDivider(),
-          _legalRow(
-            context: context,
-            icon: Icons.privacy_tip_outlined,
-            iconColor: AppColors.textSecondary,
-            title: 'Política de privacidad',
-            subtitle: 'Cómo manejamos tus datos',
-            route: '/legal/privacy',
-          ),
-          _legalDivider(),
-          _legalRow(
-            context: context,
-            icon: Icons.description_outlined,
-            iconColor: AppColors.textSecondary,
-            title: 'Términos de uso',
-            subtitle: 'Condiciones del servicio',
-            route: '/legal/terms',
-          ),
-        ],
-      ),
+    return Column(
+      children: [
+        _legalRow(
+          context: context,
+          title: 'Condiciones médicas',
+          subtitle: 'Poblaciones de riesgo del IMR',
+          route: '/profile/disclaimer',
+        ),
+        _legalDivider(),
+        _legalRow(
+          context: context,
+          title: 'Política de privacidad',
+          subtitle: 'Cómo manejamos tus datos',
+          route: '/legal/privacy',
+        ),
+        _legalDivider(),
+        _legalRow(
+          context: context,
+          title: 'Términos de uso',
+          subtitle: 'Condiciones del servicio',
+          route: '/legal/terms',
+        ),
+      ],
     );
   }
 
   Widget _legalRow({
     required BuildContext context,
-    required IconData icon,
-    required Color iconColor,
     required String title,
     required String subtitle,
     required String route,
   }) {
     return InkWell(
       onTap: () => context.push(route),
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(8),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
         child: Row(
           children: [
-            Icon(icon, color: iconColor, size: 20),
-            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white.withValues(alpha: 0.70),
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
-                      color: Color(0xFF94A3B8),
+                      fontWeight: FontWeight.w400,
+                      color: Colors.white.withValues(alpha: 0.34),
                     ),
                   ),
                 ],
@@ -732,8 +886,8 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
             ),
             Icon(
               Icons.chevron_right_rounded,
-              color: Colors.white.withValues(alpha: 0.3),
-              size: 20,
+              color: Colors.white.withValues(alpha: 0.24),
+              size: 18,
             ),
           ],
         ),
@@ -744,52 +898,45 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
   Widget _legalDivider() {
     return Container(
       height: 1,
-      margin: const EdgeInsets.symmetric(horizontal: 18),
-      color: AppColors.borderSubtle,
+      margin: const EdgeInsets.symmetric(horizontal: 4),
+      color: Colors.white.withValues(alpha: 0.04),
     );
   }
 
-  Widget _buildLogoutButton(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: 52,
-      child: ElevatedButton.icon(
-        onPressed: () => _confirmLogout(context),
-        icon: const Icon(Icons.logout_rounded, size: 18, color: Colors.white),
-        label: const Text(
-          'CERRAR SESIÓN',
-          style: TextStyle(
-              fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
-        ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF10B981),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          elevation: 0,
+  // SPEC-116: logout y delete account pasan a text buttons sutiles
+  // (estilo Apple Settings). El logout era verde sólido — pelea por
+  // atención con CTAs primarios. Ahora ambos botones son textuales,
+  // ancho completo pero sin fill, con el delete en rojo opaco como
+  // señal de acción crítica.
+  Widget _buildLogoutTextButton(BuildContext context) {
+    return TextButton(
+      onPressed: () => _confirmLogout(context),
+      style: TextButton.styleFrom(
+        minimumSize: const Size.fromHeight(48),
+        foregroundColor: Colors.white.withValues(alpha: 0.85),
+      ),
+      child: const Text(
+        'Cerrar sesión',
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );
   }
 
-  Widget _buildDeleteAccountButton(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: 52,
-      child: OutlinedButton.icon(
-        onPressed: () => _confirmDeleteAccount(context),
-        icon: const Icon(Icons.delete_forever_rounded,
-            size: 18, color: Colors.redAccent),
-        label: const Text(
-          'ELIMINAR CUENTA',
-          style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 13,
-              color: Colors.redAccent),
-        ),
-        style: OutlinedButton.styleFrom(
-          side: const BorderSide(color: Colors.redAccent, width: 1),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+  Widget _buildDeleteAccountTextButton(BuildContext context) {
+    return TextButton(
+      onPressed: () => _confirmDeleteAccount(context),
+      style: TextButton.styleFrom(
+        minimumSize: const Size.fromHeight(48),
+        foregroundColor: Colors.redAccent.withValues(alpha: 0.85),
+      ),
+      child: const Text(
+        'Eliminar cuenta',
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );
@@ -964,232 +1111,19 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
 
   // ── Helpers ──────────────────────────────────────────────────────────────
 
-  Widget _buildSectionLabel(String label) {
-    return Text(
-      label,
-      style: TextStyle(
-        fontSize: 10,
-        fontWeight: FontWeight.w900,
-        color: Colors.white.withValues(alpha: 0.3),
-        letterSpacing: 1.5,
-      ),
-    );
-  }
-
-  Widget _buildSectionSubtitle(String text) {
-    return Text(
-      text,
-      style: TextStyle(
-        fontSize: 11,
-        color: Colors.white.withValues(alpha: 0.35),
-      ),
-    );
-  }
-
-  Widget _readOnlyTile(String label, String value) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceDark,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label,
-              style: const TextStyle(
-                  color: Color(0xFF64748B),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500)),
-          Text(value,
-              style: const TextStyle(
-                  fontSize: 13, fontWeight: FontWeight.w700)),
-        ],
-      ),
-    );
-  }
-
-  // SPEC-88: tile biométrico editable con ícono a la izquierda + valor
-  // en verde + lápiz visual. Tap abre el sheet de edición.
-  Widget _editableBiometryTile({
-    required IconData icon,
-    required String label,
-    required String value,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceDark,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: AppColors.metabolicGreen.withValues(alpha: 0.18),
-          ),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: AppColors.metabolicGreen, size: 18),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                label,
-                style: const TextStyle(
-                  color: Color(0xFF94A3B8),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-            Text(
-              value,
-              style: const TextStyle(
-                color: AppColors.metabolicGreen,
-                fontSize: 14,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Icon(
-              Icons.edit_outlined,
-              size: 14,
-              color: Colors.white.withValues(alpha: 0.3),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// SPEC-92: tile read-only para `% grasa`. Muestra el valor calculado,
-  /// el confidence chip (ALTA/MEDIA/BAJA), y un info-icon que abre la
-  /// explicación de la fórmula. NO permite edición directa.
-  Widget _bodyFatReadOnlyTile({
-    required double? value,
-    required String confidenceLevel,
-    required VoidCallback onInfoTap,
-  }) {
-    final String display =
-        value != null ? '${value.toStringAsFixed(1)}%' : 'Sin medir';
-
-    // Color del chip según confidence.
-    Color confidenceColor;
-    switch (confidenceLevel) {
-      case 'ALTA':
-        confidenceColor = AppColors.metabolicGreen;
-        break;
-      case 'MEDIA':
-        confidenceColor = const Color(0xFFEAB308);
-        break;
-      default:
-        confidenceColor = const Color(0xFF94A3B8);
-    }
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceDark,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.show_chart_rounded,
-            color: Colors.white.withValues(alpha: 0.5),
-            size: 18,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  '% Grasa Est.',
-                  style: TextStyle(
-                    color: Color(0xFF94A3B8),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'Calculado · confianza $confidenceLevel',
-                  style: TextStyle(
-                    color: confidenceColor,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Text(
-            display,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(width: 8),
-          GestureDetector(
-            onTap: onInfoTap,
-            behavior: HitTestBehavior.opaque,
-            child: Icon(
-              Icons.info_outline_rounded,
-              size: 16,
-              color: Colors.white.withValues(alpha: 0.45),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _editableTile({
-    required String label,
-    required String value,
-    required IconData icon,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceDark,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: color.withValues(alpha: 0.2)),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: color, size: 18),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(label,
-                  style: const TextStyle(
-                      color: Color(0xFF94A3B8),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500)),
-            ),
-            Text(value,
-                style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: color)),
-            const SizedBox(width: 8),
-            Icon(Icons.edit_outlined,
-                size: 14, color: Colors.white.withValues(alpha: 0.2)),
-          ],
+  /// SPEC-116: header de sección en sentence-case, peso w600, sin
+  /// tracking exagerado. Reemplaza al `_buildSectionLabel` UPPERCASE
+  /// w900 que sentía clínico/corporativo.
+  Widget _buildSectionTitle(String label) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: Colors.white.withValues(alpha: 0.55),
+          letterSpacing: 0.2,
         ),
       ),
     );
@@ -1208,5 +1142,402 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
       default:
         return const Color(0xFFFF4444);
     }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SPEC-116: Data group card + data rows
+//
+// Patrón iOS Settings / Oura: una sola card con filas separadas por
+// divisores internos. Reemplaza el "muro de tarjetas" donde cada dato
+// tenía su propia card con bordes y padding individuales.
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _DataGroupCard extends StatelessWidget {
+  final List<_DataRow> rows;
+  const _DataGroupCard({required this.rows});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surfaceDark,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.borderDefault),
+      ),
+      child: Column(
+        children: [
+          for (int i = 0; i < rows.length; i++) ...[
+            rows[i],
+            if (i < rows.length - 1)
+              Container(
+                height: 1,
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                color: AppColors.borderSubtle,
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+enum _DataRowKind { readonly, editable, info, icon }
+
+/// Fila individual dentro de un `_DataGroupCard`. Soporta 4 variantes:
+///   - readonly: label izquierda + valor derecha, sin tap.
+///   - editable: label + valor coloreado verde + chevron, tap abre editor.
+///   - info: label + tag de confianza + valor + info icon, tap abre dialog.
+///   - icon: icono coloreado + label + valor coloreado + chevron, tap abre picker.
+class _DataRow extends StatelessWidget {
+  final _DataRowKind kind;
+  final String label;
+  final String value;
+  final IconData? icon;
+  final Color? iconColor;
+  final Color? valueColor;
+  final String? tag;
+  final Color? tagColor;
+  final VoidCallback? onTap;
+  final VoidCallback? onInfoTap;
+
+  const _DataRow._({
+    required this.kind,
+    required this.label,
+    required this.value,
+    this.icon,
+    this.iconColor,
+    this.valueColor,
+    this.tag,
+    this.tagColor,
+    this.onTap,
+    this.onInfoTap,
+  });
+
+  factory _DataRow.readonly(String label, String value) => _DataRow._(
+        kind: _DataRowKind.readonly,
+        label: label,
+        value: value,
+      );
+
+  factory _DataRow.editable({
+    required String label,
+    required String value,
+    required VoidCallback onTap,
+  }) =>
+      _DataRow._(
+        kind: _DataRowKind.editable,
+        label: label,
+        value: value,
+        valueColor: AppColors.metabolicGreen,
+        onTap: onTap,
+      );
+
+  factory _DataRow.info({
+    required String label,
+    required String value,
+    required String tag,
+    required Color tagColor,
+    required VoidCallback onInfoTap,
+  }) =>
+      _DataRow._(
+        kind: _DataRowKind.info,
+        label: label,
+        value: value,
+        tag: tag,
+        tagColor: tagColor,
+        onInfoTap: onInfoTap,
+      );
+
+  factory _DataRow.icon({
+    required IconData icon,
+    required Color iconColor,
+    required String label,
+    required String value,
+    required Color valueColor,
+    required VoidCallback onTap,
+  }) =>
+      _DataRow._(
+        kind: _DataRowKind.icon,
+        label: label,
+        value: value,
+        icon: icon,
+        iconColor: iconColor,
+        valueColor: valueColor,
+        onTap: onTap,
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    final isInteractive =
+        kind == _DataRowKind.editable || kind == _DataRowKind.icon;
+
+    final content = Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+      child: Row(
+        children: _buildChildren(),
+      ),
+    );
+
+    if (isInteractive) {
+      return Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          // Sin radius porque va dentro de una card que ya lo tiene.
+          child: content,
+        ),
+      );
+    }
+    return content;
+  }
+
+  List<Widget> _buildChildren() {
+    switch (kind) {
+      case _DataRowKind.readonly:
+        return [
+          Expanded(child: _labelText(label)),
+          _valueText(value, color: Colors.white, weight: FontWeight.w600),
+        ];
+
+      case _DataRowKind.editable:
+        return [
+          Expanded(child: _labelText(label)),
+          _valueText(
+            value,
+            color: valueColor ?? AppColors.metabolicGreen,
+            weight: FontWeight.w700,
+          ),
+          const SizedBox(width: 6),
+          Icon(
+            Icons.chevron_right_rounded,
+            color: Colors.white.withValues(alpha: 0.30),
+            size: 20,
+          ),
+        ];
+
+      case _DataRowKind.info:
+        return [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _labelText(label),
+                if (tag != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    tag!,
+                    style: TextStyle(
+                      color: tagColor ?? Colors.white,
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          _valueText(value, color: Colors.white, weight: FontWeight.w700),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: onInfoTap,
+            behavior: HitTestBehavior.opaque,
+            child: Icon(
+              Icons.info_outline_rounded,
+              size: 16,
+              color: Colors.white.withValues(alpha: 0.45),
+            ),
+          ),
+        ];
+
+      case _DataRowKind.icon:
+        return [
+          Icon(icon, color: iconColor, size: 18),
+          const SizedBox(width: 12),
+          Expanded(child: _labelText(label)),
+          _valueText(
+            value,
+            color: valueColor ?? Colors.white,
+            weight: FontWeight.w700,
+          ),
+          const SizedBox(width: 6),
+          Icon(
+            Icons.chevron_right_rounded,
+            color: Colors.white.withValues(alpha: 0.30),
+            size: 20,
+          ),
+        ];
+    }
+  }
+
+  Widget _labelText(String text) {
+    return Text(
+      text,
+      style: TextStyle(
+        color: Colors.white.withValues(alpha: 0.65),
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
+      ),
+    );
+  }
+
+  Widget _valueText(String text,
+      {required Color color, required FontWeight weight}) {
+    return Text(
+      text,
+      style: TextStyle(
+        color: color,
+        fontSize: 14,
+        fontWeight: weight,
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SPEC-117: Disclosure section
+//
+// Sección colapsable con header tipo iOS Settings + preview opcional de 1
+// línea + chevron animado. El contenido se anima con AnimatedCrossFade
+// (altura + fade) en ~220ms con easeInOutCubic.
+//
+// Por defecto inicia colapsado. El estado vive en memoria local — no
+// se persiste entre aperturas de la pantalla (decisión: el usuario
+// vuelve a un estado limpio cada vez que entra al Perfil).
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _DisclosureSection extends StatefulWidget {
+  /// Título principal de la sección (sentence case, w600).
+  final String title;
+
+  /// Resumen de 1 línea visible cuando la sección está colapsada.
+  /// Ejemplo: "82 kg · 33.9% grasa". Null oculta el preview.
+  final String? preview;
+
+  /// Contenido que se revela al expandir. Suele ser un `_DataGroupCard`.
+  final Widget child;
+
+  /// Estado inicial. Por defecto colapsado.
+  final bool initiallyExpanded;
+
+  const _DisclosureSection({
+    required this.title,
+    required this.child,
+    this.preview,
+    this.initiallyExpanded = false,
+  });
+
+  @override
+  State<_DisclosureSection> createState() => _DisclosureSectionState();
+}
+
+class _DisclosureSectionState extends State<_DisclosureSection>
+    with SingleTickerProviderStateMixin {
+  late bool _expanded;
+  late final AnimationController _chevronCtrl;
+  late final Animation<double> _chevronRotation;
+
+  static const Duration _animDuration = Duration(milliseconds: 220);
+
+  @override
+  void initState() {
+    super.initState();
+    _expanded = widget.initiallyExpanded;
+    _chevronCtrl = AnimationController(
+      vsync: this,
+      duration: _animDuration,
+      value: _expanded ? 1.0 : 0.0,
+    );
+    _chevronRotation = Tween<double>(begin: 0.0, end: 0.25).animate(
+      CurvedAnimation(parent: _chevronCtrl, curve: Curves.easeInOutCubic),
+    );
+  }
+
+  @override
+  void dispose() {
+    _chevronCtrl.dispose();
+    super.dispose();
+  }
+
+  void _toggle() {
+    setState(() {
+      _expanded = !_expanded;
+      if (_expanded) {
+        _chevronCtrl.forward();
+      } else {
+        _chevronCtrl.reverse();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: _toggle,
+            borderRadius: BorderRadius.circular(10),
+            child: Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+              child: Row(
+                children: [
+                  Text(
+                    widget.title,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white.withValues(alpha: 0.62),
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  if (widget.preview != null)
+                    Expanded(
+                      child: Text(
+                        widget.preview!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white.withValues(alpha: 0.36),
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                    )
+                  else
+                    const Spacer(),
+                  RotationTransition(
+                    turns: _chevronRotation,
+                    child: Icon(
+                      Icons.chevron_right_rounded,
+                      color: Colors.white.withValues(alpha: 0.45),
+                      size: 20,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        AnimatedCrossFade(
+          duration: _animDuration,
+          sizeCurve: Curves.easeInOutCubic,
+          firstChild: const SizedBox(width: double.infinity, height: 0),
+          secondChild: Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: widget.child,
+          ),
+          crossFadeState: _expanded
+              ? CrossFadeState.showSecond
+              : CrossFadeState.showFirst,
+        ),
+      ],
+    );
   }
 }

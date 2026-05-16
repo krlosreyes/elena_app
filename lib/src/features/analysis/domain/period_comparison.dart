@@ -9,6 +9,11 @@ class PeriodComparison {
   /// período comparable (usuario nuevo).
   final int? imrAveragePrevious;
 
+  /// SPEC-118: IMR del día de HOY. `null` si HOY aún no tiene doc
+  /// (caso poco común gracias al merge con state LIVE en analysis_screen).
+  /// Permite al hero card mostrar "HOY vs PROMEDIO" simultáneamente.
+  final int? imrToday;
+
   /// IMR del mejor día del período actual. `null` si no hay docs.
   final int? bestDayImr;
   final DateTime? bestDayDate;
@@ -26,6 +31,7 @@ class PeriodComparison {
   const PeriodComparison({
     required this.imrAverage,
     required this.imrAveragePrevious,
+    required this.imrToday,
     required this.bestDayImr,
     required this.bestDayDate,
     required this.worstDayImr,
@@ -38,6 +44,7 @@ class PeriodComparison {
   const PeriodComparison.empty(this.daysInPeriod)
       : imrAverage = 0,
         imrAveragePrevious = null,
+        imrToday = null,
         bestDayImr = null,
         bestDayDate = null,
         worstDayImr = null,
@@ -49,4 +56,10 @@ class PeriodComparison {
   int? get delta => imrAveragePrevious != null
       ? imrAverage - imrAveragePrevious!
       : null;
+
+  /// Diferencia entre HOY y el promedio del período. Permite
+  /// comunicar "tu día va mejor/peor que tu promedio". `null` si no
+  /// hay IMR de HOY o el promedio es 0.
+  int? get todayVsAverage =>
+      imrToday != null && imrAverage > 0 ? imrToday! - imrAverage : null;
 }

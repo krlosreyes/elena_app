@@ -45,56 +45,31 @@ final dailySummaryProvider = Provider<DailySummary>((ref) {
   // directamente. Si CUALQUIERA reporta "completado", forzamos 1.0.
   final completedFromBd = ref.watch(hasCompletedFastingTodayProvider);
 
-  // SPEC-113.feat: regla canónica de atribución temporal para ayuno.
+  // SPEC-118.bugfix: regla simplificada de atribución del ayuno al día.
   //
-  // Un ayuno multi-día (cruza medianoche) se atribuye al día calendario
-  // donde se proyecta cerrar (`startTime + targetHours`). Mientras esté
-  // activo y el cierre proyectado caiga MAÑANA o después, su progreso
-  // NO cuenta para HOY. Esto evita contaminar el daily_summary de hoy
-  // con un ayuno que en realidad pertenece al día siguiente, y a la
-  // inversa, evita que mañana el satélite Ayuno arranque a 0% por un
-  // ayuno que ya estás cerrando.
+  // La regla anterior ("atribuir al día calendario del cierre proyectado")
+  // tenía un efecto perverso: cuando un usuario en protocolo 18:6
+  // cerraba su ventana a las 17:00 con target 18h, el cierre proyectado
+  // era MAÑANA 11:00 → el satélite Ayuno mostraba 0% durante TODO el
+  // resto del día HOY, aunque el usuario estuviera ayunando activamente.
   //
-  // Reglas en orden de precedencia:
-  //   1. Si BD o memoria reportan "completado HOY" → 1.0.
-  //   2. Si hay ayuno activo, atribuir por el día calendario del cierre
-  //      proyectado:
-  //        - Cierre proyectado = HOY → contribuye con `progressPercentage`.
-  //        - Cierre proyectado = MAÑANA → 0 (aún no es de hoy).
-  //        - Cierre proyectado = AYER (pero sigue activo: el usuario
-  //          sobrepasó el target) → 1.0.
-  //   3. Sin ayuno activo y sin completedToday → 0.
+  // Nueva regla, en orden de precedencia:
+  //   1. Si BD o memoria reportan "completado HOY" → 1.0 (preserva el
+  //      día del cierre con 100% incluso después del cierre).
+  //   2. Si hay ayuno activo → `progressPercentage` real (el usuario
+  //      ve sus horas de ayuno reflejadas EN VIVO, sin importar dónde
+  //      cierre el ayuno).
+  //   3. Sin ayuno activo ni completedToday → 0.
   //
-  // El Dashboard sigue usando `fasting.progressPercentage` directo (sin
-  // esta regla) para que el usuario vea el progreso real-time. Esta
-  // regla solo aplica a la atribución diaria (análisis + persistencia).
+  // Si el ayuno cruza medianoche, el doc del día anterior queda con
+  // el % parcial al momento del cambio de día (que es información
+  // correcta: ayer ayunaste X horas sin cerrar). El doc de HOY recibe
+  // 100% cuando el ayuno se cierra (vía caso 1).
   double fastingProgressFinal;
   if (completedFromBd || fasting.completedToday == true) {
     fastingProgressFinal = 1.0;
-  } else if (fasting.isActive &&
-      fasting.startTime != null &&
-      fasting.targetHours > 0) {
-    final now = DateTime.now();
-    final projectedEnd =
-        fasting.startTime!.add(Duration(hours: fasting.targetHours));
-    final closesToday = projectedEnd.year == now.year &&
-        projectedEnd.month == now.month &&
-        projectedEnd.day == now.day;
-    final closesInFuture = projectedEnd.isAfter(
-      DateTime(now.year, now.month, now.day, 23, 59, 59),
-    );
-
-    if (closesToday) {
-      // El ayuno proyectado cierra HOY → contribuye con su progreso real.
-      fastingProgressFinal = fasting.progressPercentage;
-    } else if (closesInFuture) {
-      // El cierre proyectado cae MAÑANA o después → aún no cuenta para HOY.
-      fastingProgressFinal = 0.0;
-    } else {
-      // El cierre proyectado ya pasó pero el ayuno sigue activo
-      // (sobrepasó el target). Atribuir a HOY como 100%.
-      fastingProgressFinal = 1.0;
-    }
+  } else if (fasting.isActive) {
+    fastingProgressFinal = fasting.progressPercentage;
   } else {
     fastingProgressFinal = 0.0;
   }

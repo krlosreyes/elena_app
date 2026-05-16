@@ -48,8 +48,54 @@ class DashboardScreen extends ConsumerStatefulWidget {
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   SelectedPillar _selectedPillar = SelectedPillar.ayuno;
 
+  /// SPEC-116: si la URL trae `?pillar=xxx` la primera vez que se
+  /// renderiza la pantalla, forzamos esa selección. Útil cuando el
+  /// usuario llega desde otra pantalla (ej. Perfil → "Cambiar
+  /// protocolo" abre con la card de Ayuno).
+  ///
+  /// El flag se resetea cuando la ruta cambia (query param distinto)
+  /// para permitir que sucesivas navegaciones con pilar específico
+  /// vuelvan a aplicar la selección.
+  String? _appliedPillarQuery;
+
+  SelectedPillar? _parsePillarKey(String key) {
+    switch (key) {
+      case 'ayuno':
+        return SelectedPillar.ayuno;
+      case 'sueno':
+      case 'sueño':
+        return SelectedPillar.sueno;
+      case 'hidratacion':
+      case 'hidratación':
+        return SelectedPillar.hidratacion;
+      case 'ejercicio':
+        return SelectedPillar.ejercicio;
+      case 'comidas':
+        return SelectedPillar.comidas;
+    }
+    return null;
+  }
+
+  void _maybeApplyPillarFromQuery(BuildContext ctx) {
+    final route = GoRouterState.of(ctx);
+    final pillar = route.uri.queryParameters['pillar'];
+    // Solo aplicamos cuando hay nuevo query distinto al ya aplicado.
+    if (pillar == null || pillar == _appliedPillarQuery) return;
+    final selected = _parsePillarKey(pillar);
+    if (selected == null) return;
+    // Aplicar en el frame siguiente para evitar setState durante build.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      setState(() {
+        _selectedPillar = selected;
+        _appliedPillarQuery = pillar;
+      });
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    _maybeApplyPillarFromQuery(context);
     final userAsync = ref.watch(currentUserStreamProvider);
     final fastingState = ref.watch(fastingProvider);
     final sleepState = ref.watch(sleepProvider);
