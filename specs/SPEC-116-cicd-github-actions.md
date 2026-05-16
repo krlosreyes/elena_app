@@ -72,7 +72,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.27.4'
+          flutter-version: '3.32.0'
           channel: stable
           cache: true
       - run: flutter --version
@@ -82,6 +82,8 @@ jobs:
       - run: flutter analyze
       - run: flutter test
 ```
+
+> **Nota sobre la versión:** la versión Flutter inicial pinned a `3.27.4` causó fallo en el primer run porque trae Dart 3.6.2, incompatible con `flutter_lints ^6.0.0` (requiere Dart ≥ 3.8). Actualizado a `3.32.0` que trae Dart 3.8+. Esto **no** requiere cambios en `pubspec.yaml` — la constraint `sdk: ">=3.5.0 <4.0.0"` ya incluye 3.8.
 
 ### `build-android.yml`
 
@@ -105,7 +107,7 @@ jobs:
           java-version: '17'
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.27.4'
+          flutter-version: '3.32.0'
           channel: stable
           cache: true
       - run: flutter pub get
