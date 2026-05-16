@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/core/engine/imr_persistence_provider.dart';
 import 'package:elena_app/src/features/auth/application/profile_controller.dart';
+import 'package:elena_app/src/features/auth/presentation/widgets/data_group_card.dart';
 import 'package:elena_app/src/features/auth/presentation/widgets/edit_biometry_value_sheet.dart';
 import 'package:elena_app/src/features/dashboard/domain/optimal_schedule.dart';
 import 'package:elena_app/src/features/profile/domain/biometry_recalc.dart';
@@ -463,29 +464,29 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
         _DisclosureSection(
           title: 'Datos biométricos',
           preview: _biometricPreview(),
-          child: _DataGroupCard(
+          child: ProfileDataGroupCard(
             rows: [
-              _DataRow.readonly('Nombre', widget.user.name),
-              _DataRow.readonly('Edad', '${widget.user.age} años'),
-              _DataRow.readonly('Género',
+              ProfileDataRow.readonly('Nombre', widget.user.name),
+              ProfileDataRow.readonly('Edad', '${widget.user.age} años'),
+              ProfileDataRow.readonly('Género',
                   widget.user.gender == 'M' ? 'Masculino' : 'Femenino'),
-              _DataRow.readonly('Estatura', '${widget.user.height.toInt()} cm'),
-              _DataRow.editable(
+              ProfileDataRow.readonly('Estatura', '${widget.user.height.toInt()} cm'),
+              ProfileDataRow.editable(
                 label: 'Peso',
                 value: '${widget.user.weight.toInt()} kg',
                 onTap: _editWeight,
               ),
-              _DataRow.editable(
+              ProfileDataRow.editable(
                 label: 'Cintura',
                 value: '${widget.user.waistCircumference?.toInt() ?? 0} cm',
                 onTap: _editWaist,
               ),
-              _DataRow.editable(
+              ProfileDataRow.editable(
                 label: 'Cuello',
                 value: '${widget.user.neckCircumference?.toInt() ?? 0} cm',
                 onTap: _editNeck,
               ),
-              _DataRow.info(
+              ProfileDataRow.info(
                 label: '% Grasa est.',
                 value: _formatBodyFat(widget.user.bodyFatPercentage),
                 tag: 'confianza ${widget.user.confidenceLevel}',
@@ -504,9 +505,9 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
         _DisclosureSection(
           title: 'Ritmos circadianos',
           preview: _circadianPreview(context),
-          child: _DataGroupCard(
+          child: ProfileDataGroupCard(
             rows: [
-              _DataRow.icon(
+              ProfileDataRow.icon(
                 icon: Icons.wb_sunny_outlined,
                 iconColor: const Color(0xFFEAB308),
                 label: 'Despertar',
@@ -514,7 +515,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
                 valueColor: const Color(0xFFEAB308),
                 onTap: () => _pickTime(_wakeUpTime, (t) => _wakeUpTime = t),
               ),
-              _DataRow.icon(
+              ProfileDataRow.icon(
                 icon: Icons.nightlight_round,
                 iconColor: const Color(0xFF818CF8),
                 label: 'Dormir',
@@ -522,7 +523,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
                 valueColor: const Color(0xFF818CF8),
                 onTap: () => _pickTime(_sleepTime, (t) => _sleepTime = t),
               ),
-              _DataRow.icon(
+              ProfileDataRow.icon(
                 icon: Icons.restaurant_outlined,
                 iconColor: const Color(0xFF10B981),
                 label: 'Primera comida',
@@ -532,7 +533,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
                     _firstMealGoal, (t) => _firstMealGoal = t,
                     isMealTimePicker: true),
               ),
-              _DataRow.icon(
+              ProfileDataRow.icon(
                 icon: Icons.no_meals_outlined,
                 iconColor: const Color(0xFFFB923C),
                 label: 'Última comida',
@@ -1123,255 +1124,11 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SPEC-116: Data group card + data rows
-//
-// Patrón iOS Settings / Oura: una sola card con filas separadas por
-// divisores internos. Reemplaza el "muro de tarjetas" donde cada dato
-// tenía su propia card con bordes y padding individuales.
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _DataGroupCard extends StatelessWidget {
-  final List<_DataRow> rows;
-  const _DataGroupCard({required this.rows});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surfaceDark,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.borderDefault),
-      ),
-      child: Column(
-        children: [
-          for (int i = 0; i < rows.length; i++) ...[
-            rows[i],
-            if (i < rows.length - 1)
-              Container(
-                height: 1,
-                margin: const EdgeInsets.symmetric(horizontal: 16),
-                color: AppColors.borderSubtle,
-              ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-enum _DataRowKind { readonly, editable, info, icon }
-
-/// Fila individual dentro de un `_DataGroupCard`. Soporta 4 variantes:
-///   - readonly: label izquierda + valor derecha, sin tap.
-///   - editable: label + valor coloreado verde + chevron, tap abre editor.
-///   - info: label + tag de confianza + valor + info icon, tap abre dialog.
-///   - icon: icono coloreado + label + valor coloreado + chevron, tap abre picker.
-class _DataRow extends StatelessWidget {
-  final _DataRowKind kind;
-  final String label;
-  final String value;
-  final IconData? icon;
-  final Color? iconColor;
-  final Color? valueColor;
-  final String? tag;
-  final Color? tagColor;
-  final VoidCallback? onTap;
-  final VoidCallback? onInfoTap;
-
-  const _DataRow._({
-    required this.kind,
-    required this.label,
-    required this.value,
-    this.icon,
-    this.iconColor,
-    this.valueColor,
-    this.tag,
-    this.tagColor,
-    this.onTap,
-    this.onInfoTap,
-  });
-
-  factory _DataRow.readonly(String label, String value) => _DataRow._(
-        kind: _DataRowKind.readonly,
-        label: label,
-        value: value,
-      );
-
-  factory _DataRow.editable({
-    required String label,
-    required String value,
-    required VoidCallback onTap,
-  }) =>
-      _DataRow._(
-        kind: _DataRowKind.editable,
-        label: label,
-        value: value,
-        valueColor: AppColors.metabolicGreen,
-        onTap: onTap,
-      );
-
-  factory _DataRow.info({
-    required String label,
-    required String value,
-    required String tag,
-    required Color tagColor,
-    required VoidCallback onInfoTap,
-  }) =>
-      _DataRow._(
-        kind: _DataRowKind.info,
-        label: label,
-        value: value,
-        tag: tag,
-        tagColor: tagColor,
-        onInfoTap: onInfoTap,
-      );
-
-  factory _DataRow.icon({
-    required IconData icon,
-    required Color iconColor,
-    required String label,
-    required String value,
-    required Color valueColor,
-    required VoidCallback onTap,
-  }) =>
-      _DataRow._(
-        kind: _DataRowKind.icon,
-        label: label,
-        value: value,
-        icon: icon,
-        iconColor: iconColor,
-        valueColor: valueColor,
-        onTap: onTap,
-      );
-
-  @override
-  Widget build(BuildContext context) {
-    final isInteractive =
-        kind == _DataRowKind.editable || kind == _DataRowKind.icon;
-
-    final content = Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
-      child: Row(
-        children: _buildChildren(),
-      ),
-    );
-
-    if (isInteractive) {
-      return Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          // Sin radius porque va dentro de una card que ya lo tiene.
-          child: content,
-        ),
-      );
-    }
-    return content;
-  }
-
-  List<Widget> _buildChildren() {
-    switch (kind) {
-      case _DataRowKind.readonly:
-        return [
-          Expanded(child: _labelText(label)),
-          _valueText(value, color: Colors.white, weight: FontWeight.w600),
-        ];
-
-      case _DataRowKind.editable:
-        return [
-          Expanded(child: _labelText(label)),
-          _valueText(
-            value,
-            color: valueColor ?? AppColors.metabolicGreen,
-            weight: FontWeight.w700,
-          ),
-          const SizedBox(width: 6),
-          Icon(
-            Icons.chevron_right_rounded,
-            color: Colors.white.withValues(alpha: 0.30),
-            size: 20,
-          ),
-        ];
-
-      case _DataRowKind.info:
-        return [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _labelText(label),
-                if (tag != null) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    tag!,
-                    style: TextStyle(
-                      color: tagColor ?? Colors.white,
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.3,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          _valueText(value, color: Colors.white, weight: FontWeight.w700),
-          const SizedBox(width: 8),
-          GestureDetector(
-            onTap: onInfoTap,
-            behavior: HitTestBehavior.opaque,
-            child: Icon(
-              Icons.info_outline_rounded,
-              size: 16,
-              color: Colors.white.withValues(alpha: 0.45),
-            ),
-          ),
-        ];
-
-      case _DataRowKind.icon:
-        return [
-          Icon(icon, color: iconColor, size: 18),
-          const SizedBox(width: 12),
-          Expanded(child: _labelText(label)),
-          _valueText(
-            value,
-            color: valueColor ?? Colors.white,
-            weight: FontWeight.w700,
-          ),
-          const SizedBox(width: 6),
-          Icon(
-            Icons.chevron_right_rounded,
-            color: Colors.white.withValues(alpha: 0.30),
-            size: 20,
-          ),
-        ];
-    }
-  }
-
-  Widget _labelText(String text) {
-    return Text(
-      text,
-      style: TextStyle(
-        color: Colors.white.withValues(alpha: 0.65),
-        fontSize: 14,
-        fontWeight: FontWeight.w500,
-      ),
-    );
-  }
-
-  Widget _valueText(String text,
-      {required Color color, required FontWeight weight}) {
-    return Text(
-      text,
-      style: TextStyle(
-        color: color,
-        fontSize: 14,
-        fontWeight: weight,
-      ),
-    );
-  }
-}
+// SPEC-117: las clases DataGroupCard, DataRow y DataRowKind se
+// extrajeron a `widgets/data_group_card.dart` para que sean públicas
+// y testeables. Las implementaciones inline anteriores se eliminaron
+// (este archivo ya no las contiene — se importan vía el archivo
+// público).
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SPEC-117: Disclosure section
