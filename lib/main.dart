@@ -106,3 +106,9 @@ Future<void> _bootstrap() async {
     ),
   );
 }
+
+// SPEC-116 verify: rompe CI a proposito para test branch protection.
+// Borrar despues del test.
+void _ciTestBroken() {
+  undefinedVariableForCiTest;
+}
