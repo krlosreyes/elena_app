@@ -1,0 +1,58 @@
+# SPEC-116: build de APKs release en cada merge a main / mvp-core-clean.
+#
+# Produce 3 APKs (split por ABI) como artefacto descargable.
+# Retención 30 días — útil para soft-launch y testing externo
+# antes de tener TestFlight/Play Console formal (SPEC-125).
+#
+# El proyecto Flutter vive en la raíz del repo (pubspec.yaml ahí).
+
+name: Build Android
+
+on:
+  push:
+    branches: [main, mvp-core-clean]
+  workflow_dispatch:  # permite trigger manual desde la UI de Actions
+
+concurrency:
+  group: build-android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-apk:
+    name: build apk release
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.27.4'
+          channel: stable
+          cache: true
+
+      - name: Pub get
+        run: flutter pub get
+
+      - name: Code generation (build_runner)
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Build APKs release (split per ABI)
+        run: flutter build apk --release --split-per-abi
+
+      - name: Upload APKs as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apks-${{ github.sha }}
+          path: build/app/outputs/flutter-apk/*.apk
+          retention-days: 30
+          if-no-files-found: error

@@ -1,0 +1,63 @@
+# SPEC-116: pipeline de calidad continua.
+#
+# Corre en cada pull request y push a main / mvp-core-clean. Bloquea
+# el merge si:
+#   - hay archivos sin formatear,
+#   - flutter analyze reporta errores,
+#   - algún test falla.
+#
+# El repo git tiene el proyecto Flutter en la raíz (pubspec.yaml en
+# el root del repo). Por eso no se usa `working-directory`.
+
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, mvp-core-clean]
+
+# Cancela runs previos del mismo PR cuando llega un push nuevo.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: lint · analyze · test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.27.4'
+          channel: stable
+          cache: true
+
+      - name: Flutter version
+        run: flutter --version
+
+      - name: Pub get
+        run: flutter pub get
+
+      - name: Code generation (build_runner)
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Format check
+        # Excluye código generado (*.g.dart, *.freezed.dart) que el
+        # formatter mantiene automáticamente.
+        run: |
+          dart format --set-exit-if-changed \
+            $(find lib test -name '*.dart' \
+              ! -name '*.g.dart' \
+              ! -name '*.freezed.dart')
+
+      - name: Static analysis
+        run: flutter analyze
+
+      - name: Tests
+        run: flutter test --reporter expanded

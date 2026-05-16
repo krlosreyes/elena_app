@@ -1,16 +1,58 @@
 # elena_app
 
-A new Flutter project.
+[![CI](https://github.com/krlosreyes/elena_app/actions/workflows/ci.yml/badge.svg)](https://github.com/krlosreyes/elena_app/actions/workflows/ci.yml)
+[![Build Android](https://github.com/krlosreyes/elena_app/actions/workflows/build-android.yml/badge.svg)](https://github.com/krlosreyes/elena_app/actions/workflows/build-android.yml)
 
-## Getting Started
+**Sistema de Alineación Biológica — MVP.**
 
-This project is a starting point for a Flutter application.
+App de salud metabólica de Metamorfosis Real construida sobre 5 pilares (ayuno, sueño, hidratación, ejercicio, nutrición) unificados por una métrica única: el **IMR (Índice Metabólico Real)**.
 
-A few resources to get you started if this is your first Flutter project:
+## Stack
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+- Flutter `>=3.5.0 <4.0.0`
+- Riverpod 2.6 (state management)
+- go_router 17 (navegación)
+- Firebase 6 (auth, firestore, app check, crashlytics)
+- freezed + json_serializable (modelos inmutables)
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Estructura
+
+```
+elena_app/                          (repo root - este folder ES el repo git)
+├── .github/workflows/              # CI/CD (SPEC-116)
+├── lib/                            # Código de la app
+├── test/                           # Tests
+├── specs/                          # Especificaciones SDD
+├── docs/                           # Documentación operativa
+└── pubspec.yaml
+```
+
+## Documentación clave
+
+- [`CONSTITUTION.md`](CONSTITUTION.md) — principios arquitectónicos.
+- [`docs/ROADMAP_PRODUCCION_10_10.md`](docs/ROADMAP_PRODUCCION_10_10.md) — plan a producción.
+- [`IMR_BIBLIOGRAPHY.md`](IMR_BIBLIOGRAPHY.md) — bases científicas del IMR.
+- [`specs/`](specs/) — historial completo de SPECs (76+).
+
+## Comandos de desarrollo
+
+```bash
+# Setup
+flutter pub get
+dart run build_runner build --delete-conflicting-outputs
+
+# Calidad
+flutter analyze
+flutter test
+
+# Run en device conectado
+flutter run
+
+# Build release
+flutter build apk --release --split-per-abi
+```
+
+## Modelo de trabajo
+
+Spec-Driven Development (SDD). Cada cambio significativo se documenta en `specs/SPEC-XXX-titulo.md` antes de implementarse. La rama `mvp-core-clean` recibe commits con prefijo `SPEC-XXX:`.
+
