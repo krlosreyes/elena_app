@@ -34,11 +34,12 @@ jobs:
           java-version: '17'
 
       - name: Setup Flutter
-        # SPEC-116 fix: 3.27.4 trae Dart 3.6.2 y flutter_lints ^6.0.0
-        # requiere Dart ≥ 3.8. Subimos a 3.32.0 (trae Dart 3.8+).
+        # SPEC-116 fix: pin a 3.41.9 (recomendación explícita de `pub
+        # get`). google_fonts ^8.0.2 requiere Dart ≥ 3.9; esta versión
+        # de Flutter lo provee.
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.32.0'
+          flutter-version: '3.41.9'
           channel: stable
           cache: true
 

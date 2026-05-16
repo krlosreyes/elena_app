@@ -72,7 +72,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.32.0'
+          flutter-version: '3.41.9'
           channel: stable
           cache: true
       - run: flutter --version
@@ -83,7 +83,17 @@ jobs:
       - run: flutter test
 ```
 
-> **Nota sobre la versión:** la versión Flutter inicial pinned a `3.27.4` causó fallo en el primer run porque trae Dart 3.6.2, incompatible con `flutter_lints ^6.0.0` (requiere Dart ≥ 3.8). Actualizado a `3.32.0` que trae Dart 3.8+. Esto **no** requiere cambios en `pubspec.yaml` — la constraint `sdk: ">=3.5.0 <4.0.0"` ya incluye 3.8.
+> **Nota sobre la versión:** la versión Flutter pinned ha tenido dos
+> bumps durante la verificación inicial:
+>
+> 1. `3.27.4` (Dart 3.6) → falló: `flutter_lints ^6.0.0` requiere Dart ≥ 3.8.
+> 2. `3.32.0` (Dart 3.8) → falló: `google_fonts ^8.0.2` requiere Dart ≥ 3.9.
+> 3. `3.41.9` (Dart 3.9+) → versión actual, recomendación explícita de `pub get`.
+>
+> El `pubspec.yaml` declara `sdk: ">=3.5.0 <4.0.0"` — la constraint mínima del
+> SDK es laxa pero las dependencias transitivas elevan el requisito real.
+> Lección operativa: el pin de Flutter en CI debe seguir el "highest Dart"
+> requerido por cualquier dep, no el mínimo declarado.
 
 ### `build-android.yml`
 
@@ -107,7 +117,7 @@ jobs:
           java-version: '17'
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.32.0'
+          flutter-version: '3.41.9'
           channel: stable
           cache: true
       - run: flutter pub get
