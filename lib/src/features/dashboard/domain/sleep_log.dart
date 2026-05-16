@@ -1,4 +1,3 @@
-
 import 'package:elena_app/src/core/errors/validation_error.dart';
 
 /// Registro de un ciclo de sueño individual.

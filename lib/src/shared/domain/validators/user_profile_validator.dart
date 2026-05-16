@@ -30,9 +30,7 @@ class UserProfileValidator {
   ///   - height > 0
   ///   - profile != null (CircadianProfile presente)
   static bool isComplete(UserModel user) {
-    return user.age > 0 &&
-        user.weight > 0 &&
-        user.height > 0;
+    return user.age > 0 && user.weight > 0 && user.height > 0;
   }
 
   /// SPEC-84: verdadero si un mapa crudo de Firestore satisface los

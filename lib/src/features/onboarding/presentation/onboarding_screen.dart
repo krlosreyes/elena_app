@@ -930,20 +930,18 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       fontSize: 18,
                       color: isDark ? Colors.white : const Color(0xFF0F172A))),
               const SizedBox(height: 12),
-              ...options
-                  .map((opt) => ListTile(
-                      title: Center(
-                          child: Text(opt,
-                              style: TextStyle(
-                                  color: isDark
-                                      ? Colors.white
-                                      : const Color(0xFF0F172A),
-                                  fontWeight: FontWeight.w600))),
-                      onTap: () {
-                        onSelect(opt);
-                        Navigator.pop(ctx);
-                      }))
-                  
+              ...options.map((opt) => ListTile(
+                  title: Center(
+                      child: Text(opt,
+                          style: TextStyle(
+                              color: isDark
+                                  ? Colors.white
+                                  : const Color(0xFF0F172A),
+                              fontWeight: FontWeight.w600))),
+                  onTap: () {
+                    onSelect(opt);
+                    Navigator.pop(ctx);
+                  }))
             ])));
   }
 

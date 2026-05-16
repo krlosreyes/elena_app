@@ -1,4 +1,3 @@
-
 class HydrationLog {
   final double amountInLiters;
   final DateTime timestamp;

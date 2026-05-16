@@ -84,7 +84,8 @@ class _SleepInputSheetState extends ConsumerState<SleepInputSheet> {
 
   Widget _pickerTheme(Widget child) => Theme(
         data: ThemeData.dark().copyWith(
-          colorScheme: const ColorScheme.dark(primary: _accentColor), dialogTheme: DialogThemeData(backgroundColor: AppColors.surfaceDark),
+          colorScheme: const ColorScheme.dark(primary: _accentColor),
+          dialogTheme: DialogThemeData(backgroundColor: AppColors.surfaceDark),
         ),
         child: child,
       );

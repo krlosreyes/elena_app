@@ -158,7 +158,9 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
           colorScheme: const ColorScheme.dark(
             primary: Color(0xFF10B981),
             surface: Color(0xFF1E293B),
-          ), dialogTheme: DialogThemeData(backgroundColor: const Color(0xFF1E293B)),
+          ),
+          dialogTheme:
+              DialogThemeData(backgroundColor: const Color(0xFF1E293B)),
         ),
         child: child!,
       ),

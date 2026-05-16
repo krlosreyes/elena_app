@@ -1841,7 +1841,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         data: ThemeData.dark().copyWith(
           colorScheme: const ColorScheme.dark(
             primary: AppColors.metabolicGreen,
-          ), dialogTheme: DialogThemeData(backgroundColor: const Color(0xFF1E293B)),
+          ),
+          dialogTheme:
+              DialogThemeData(backgroundColor: const Color(0xFF1E293B)),
         ),
         child: child!,
       ),
@@ -1855,7 +1857,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         data: ThemeData.dark().copyWith(
           colorScheme: const ColorScheme.dark(
             primary: AppColors.metabolicGreen,
-          ), dialogTheme: DialogThemeData(backgroundColor: const Color(0xFF1E293B)),
+          ),
+          dialogTheme:
+              DialogThemeData(backgroundColor: const Color(0xFF1E293B)),
         ),
         child: child!,
       ),
@@ -1912,7 +1916,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         lastDate: now.add(const Duration(days: 1)),
         builder: (context, child) => Theme(
             data: ThemeData.dark().copyWith(
-                colorScheme: ColorScheme.dark(primary: primaryColor), dialogTheme: DialogThemeData(backgroundColor: const Color(0xFF1E293B))),
+                colorScheme: ColorScheme.dark(primary: primaryColor),
+                dialogTheme:
+                    DialogThemeData(backgroundColor: const Color(0xFF1E293B))),
             child: child!));
     if (pickedDate == null) return;
     final TimeOfDay? pickedTime = await showTimePicker(
@@ -1920,7 +1926,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         initialTime: TimeOfDay.fromDateTime(now),
         builder: (context, child) => Theme(
             data: ThemeData.dark().copyWith(
-                colorScheme: ColorScheme.dark(primary: primaryColor), dialogTheme: DialogThemeData(backgroundColor: const Color(0xFF1E293B))),
+                colorScheme: ColorScheme.dark(primary: primaryColor),
+                dialogTheme:
+                    DialogThemeData(backgroundColor: const Color(0xFF1E293B))),
             child: child!));
     if (pickedTime == null) return;
     final DateTime finalDateTime = DateTime(pickedDate.year, pickedDate.month,

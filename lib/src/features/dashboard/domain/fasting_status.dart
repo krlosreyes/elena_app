@@ -1,4 +1,3 @@
-
 /// Fases biológicas extendidas según el mapa cronológico del ayuno real
 enum FastingPhase {
   none, // Estado inicial/Alimentación
