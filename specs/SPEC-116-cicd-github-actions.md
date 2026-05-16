@@ -1,11 +1,12 @@
 # SPEC-116 — CI/CD con GitHub Actions
 
-**Estado:** En implementación
-**Fecha:** 2026-05-15
+**Estado:** Cerrado · 2026-05-16
+**Fecha de redacción:** 2026-05-15
+**Fecha de cierre:** 2026-05-16
 **Líder:** Carlos
 **Implementación:** Claude
 **Fase del roadmap:** 1 (Pre-MVP shippable)
-**Estimación:** 2 días
+**Estimación:** 2 días (real: 1 día con varias iteraciones de fix)
 **Bloquea:** calidad continua de Fases 2 y 3
 
 ---
@@ -238,8 +239,36 @@ Tras mergear este SPEC, ejecutar manualmente:
 5. Documentar tiempos reales en el SPEC bajo "Verificación".
 6. Marcar SPEC como Cerrado.
 
-## Verificación (a completar después del primer run)
+## Verificación (completada 2026-05-16)
 
-- Tiempo CI: _por medir_
-- Tiempo build-android: _por medir_
-- Artifacts producidos: _por medir_
+- **Tiempo CI:** ~4–5 min (target < 8 min ✓)
+- **Tiempo build-android:** ~12–18 min
+- **Artifacts producidos:** 3 APKs (arm64-v8a, armeabi-v7a, x86_64) en cada push a `mvp-core-clean`. Retención 30 días.
+
+### Iteraciones del fix inicial
+
+El primer push reveló una cadena de incompatibilidades de versión y deuda de formato que se resolvió en 5 iteraciones:
+
+1. **Flutter 3.27.4 → falla.** `flutter_lints ^6.0.0` requiere Dart ≥ 3.8; esta versión trae Dart 3.6.2.
+2. **Flutter 3.32.0 → falla.** `google_fonts ^8.0.2` requiere Dart ≥ 3.9; esta versión trae Dart 3.8.
+3. **Flutter 3.41.9 → pasa `pub get`.** Recomendación explícita de `pub`. Trae Dart 3.9+. **Versión final adoptada.**
+4. **`dart format --set-exit-if-changed` → falla.** 136 archivos sin formato canónico (deuda histórica del proyecto). Fix: `dart format lib test` aplicado globalmente y commiteado como `chore(format)`.
+5. **`flutter analyze` → falla.** 84 issues iniciales (deprecations, unused imports, curly braces, etc.). Fix combinado: `dart fix --apply` (60+ auto-fixed) + 7 fixes manuales (unused locals, unreachable defaults, default values, `ignore` annotations) + cambio del comando a `flutter analyze --no-fatal-infos` para que las deprecations de Firebase / Material 3 no bloqueen (trackeadas en SPEC futuro de upgrade).
+6. **`dart format` post-`dart fix` → falla.** 9 archivos re-tocados por `dart fix` necesitaron reformat. Fix: `dart format lib test` segunda pasada.
+7. **Verde total.** CI y Build Android operativos.
+
+### Lecciones operativas
+
+- El pin de Flutter en CI debe seguir el "highest Dart" requerido por cualquier dependencia, no el mínimo declarado en `pubspec.yaml`.
+- Después de `dart fix --apply` **siempre** correr `dart format lib test` antes del commit.
+- `--no-fatal-infos` en `flutter analyze` es una concesión razonable cuando el proyecto tiene deprecations en dependencias externas pendientes de migración formal.
+- `dart format --set-exit-if-changed` excluyendo `*.g.dart` y `*.freezed.dart` es el patrón correcto (los archivos generados se reformatean automáticamente por sus generadores).
+
+### Tareas pendientes post-cierre
+
+Se documentan aquí para creación de SPECs futuros:
+
+- **SPEC de upgrade Firebase 6 → 7+:** atiende deprecations `androidProvider/appleProvider/webProvider` → `providerAndroid/providerApple/providerWeb`.
+- **SPEC de migración Material 3:** atiende deprecations `dialogBackgroundColor` → `DialogThemeData.backgroundColor`.
+- **SPEC de migración Riverpod 2 → 3:** atiende deprecation de `.stream` en `monthly_summaries_provider.dart`.
+- **Configuración manual en GitHub (pendiente):** `Settings → Branches → Branch protection rule sobre mvp-core-clean` con `quality` como status check requerido.
