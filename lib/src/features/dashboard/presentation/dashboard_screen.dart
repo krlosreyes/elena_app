@@ -18,7 +18,6 @@ import 'package:elena_app/src/features/dashboard/presentation/widgets/circadian_
 import 'package:elena_app/src/features/dashboard/presentation/widgets/early_fasting_end_dialog.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/meals_locked_dialog.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/sleep_existing_log_dialog.dart';
-import 'package:elena_app/src/features/dashboard/presentation/widgets/live_fasting_clock.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/pillar_ring.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/protocol_selector_sheet.dart';
 import 'package:elena_app/src/features/exercise/application/exercise_notifier.dart';
@@ -394,9 +393,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         isActive ? AppColors.metabolicGreen : AppColors.metabolicGreen;
     final pct = (state.progressPercentage.clamp(0.0, 1.0) * 100).round();
 
-    // SPEC-61: el display HH:MM:SS lo renderiza LiveFastingClock con su
-    // propio Timer local, sin disparar rebuilds del fastingProvider.
-
     // SPEC-113.feat: cuando NO hay ayuno activo, calculamos el próximo
     // momento de cierre de ventana de alimentación basado en el
     // `lastMealGoal` del usuario. Si esa hora ya pasó hoy → mañana.
@@ -477,33 +473,73 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             ],
           ),
           const SizedBox(height: 14),
-          // Display de tiempo + protocolo. El reloj corre con su propio
-          // Timer local de 1s (SPEC-61) y no muta fastingProvider.
+          // SPEC-119: fila de metadatos del protocolo. El cronómetro
+          // vivo HH:MM:SS ya está en el hero (FastingHeroDisplay del
+          // CircadianClock), no duplicamos aquí. La tarjeta se
+          // identifica como "panel de control y contexto": qué
+          // protocolo está activo y qué hito viene a continuación.
           Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              LiveFastingClock(
-                startTime: state.startTime,
-                isActive: isActive,
-                nextFastingTime: nextFastingTime,
-                color: accent,
-              ),
-              const SizedBox(width: 10),
-              // SPEC-98: chip clickable que abre el ProtocolSelectorSheet.
-              // Si el ayuno está activo, el chip se deshabilita
-              // visualmente y el tap muestra un snackbar explicativo.
-              Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: _buildProtocolChip(
-                  context: context,
-                  ref: ref,
-                  protocol: state.fastingProtocol,
-                  isActive: isActive,
+              // Columna izquierda: PROTOCOLO (chip clickable).
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'PROTOCOLO',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.45),
+                        fontSize: 10,
+                        letterSpacing: 1.2,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: _buildProtocolChip(
+                        context: context,
+                        ref: ref,
+                        protocol: state.fastingProtocol,
+                        isActive: isActive,
+                      ),
+                    ),
+                  ],
                 ),
               ),
+              const SizedBox(width: 16),
+              // Columna derecha: HITO SIGUIENTE (solo visible si activo).
+              if (isActive)
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'HITO SIGUIENTE',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.45),
+                          fontSize: 10,
+                          letterSpacing: 1.2,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        _formatNextMilestone(state),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          height: 1.2,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 14),
           // Barra de progreso fina
           ClipRRect(
             borderRadius: BorderRadius.circular(4),
@@ -528,8 +564,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           const SizedBox(height: 6),
           Text(
             // SPEC-113.feat: el texto debajo se adapta al estado.
+            // SPEC-119: cuando hay ayuno activo, agregamos el residual
+            // temporal "faltan Xh Ym" — alto valor accionable: el usuario
+            // sabe cuánto le queda sin tener que hacer la resta mental.
             isActive
-                ? '$pct% completado'
+                ? '$pct% completado${_formatTargetRemaining(state)}'
                 : (nextFastingTime != null
                     ? 'Inicia ${nextFastingTime.hour.toString().padLeft(2, '0')}:${nextFastingTime.minute.toString().padLeft(2, '0')}'
                     : 'Listo para iniciar tu ayuno'),
@@ -1556,6 +1595,48 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   /// `·hace N días` / `·en N días` calculado SIEMPRE respecto a "hoy"
   /// (DateTime.now()), no al otro endpoint. Esto evita el bug de
   /// mostrar "·mañana" en un ayuno que comenzó ayer y termina hoy.
+  /// SPEC-119: texto compacto del próximo hito metabólico para la
+  /// columna "HITO SIGUIENTE" de la tarjeta de ayuno. Formato:
+  /// `Quema de grasa en 7h 48m` o `Fase final` si ya pasamos el último.
+  String _formatNextMilestone(FastingState state) {
+    final remaining = state.timeRemainingForNextMilestone;
+    if (remaining == Duration.zero) {
+      // Estamos en autofagia o fase final — no hay próximo hito.
+      return state.metabolicMilestone;
+    }
+    final hours = remaining.inHours;
+    final minutes = remaining.inMinutes.remainder(60);
+    final timeText = hours == 0 ? '${minutes}m' : '${hours}h ${minutes}m';
+    // Texto del hito en minúsculas estilo "Quema de grasa".
+    String milestone;
+    if (state.duration.inHours < 12) {
+      milestone = 'Descenso de insulina';
+    } else if (state.duration.inHours < 18) {
+      milestone = 'Quema de grasa';
+    } else if (state.duration.inHours < 24) {
+      milestone = 'Autofagia';
+    } else {
+      milestone = 'Regeneración';
+    }
+    return '$milestone en $timeText';
+  }
+
+  /// SPEC-119: residual hasta cerrar el target (`targetHours`).
+  /// Devuelve `' · faltan Xh Ym'` o `' · objetivo cumplido'`.
+  /// El prefijo con ` · ` permite concatenar tras `$pct% completado`.
+  String _formatTargetRemaining(FastingState state) {
+    if (state.startTime == null) return '';
+    final targetSeconds = state.targetHours * 3600;
+    final elapsedSeconds = state.duration.inSeconds;
+    final remainingSeconds = targetSeconds - elapsedSeconds;
+    if (remainingSeconds <= 0) return ' · objetivo cumplido';
+    final remaining = Duration(seconds: remainingSeconds);
+    final h = remaining.inHours;
+    final m = remaining.inMinutes.remainder(60);
+    final t = h == 0 ? '${m}m' : '${h}h ${m}m';
+    return ' · faltan $t';
+  }
+
   Widget _buildFastingTimeline({
     required DateTime start,
     required int targetHours,
