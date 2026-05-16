@@ -66,8 +66,8 @@ class MonthKey {
 
 /// Stream de los docs persistidos del mes. Wrapper de
 /// `historicSummariesProvider` que construye el rango correcto.
-final monthlySummariesProvider = StreamProvider.family<
-    List<DailySummaryDoc>, MonthKey>((ref, month) {
+final monthlySummariesProvider =
+    StreamProvider.family<List<DailySummaryDoc>, MonthKey>((ref, month) {
   final range = HistoricSummariesRange(
     fromIncl: month.fromDateKey(),
     toIncl: month.toDateKey(),

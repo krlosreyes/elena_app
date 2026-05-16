@@ -231,8 +231,7 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
   /// Recalcula nutritionScore y windowAdherence dado un conjunto de logs.
   NutritionState _recalculate(List<NutritionLog> logs, int target) {
     final int count = logs.length;
-    final double mealCountScore =
-        (count / target.clamp(1, 10)).clamp(0.0, 1.0);
+    final double mealCountScore = (count / target.clamp(1, 10)).clamp(0.0, 1.0);
     final double windowAdherence = count == 0
         ? 0.0
         : logs.where((l) => l.withinCircadianWindow).length / count;

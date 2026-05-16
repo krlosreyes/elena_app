@@ -27,8 +27,7 @@ final lastFastingIntervalProvider = StreamProvider<FastingInterval?>((ref) {
 /// Permite al FastingNotifier detectar si el usuario completó un ayuno
 /// HOY y mantener `completedToday=true` aunque ya esté en ventana de
 /// alimentación (o haya reiniciado la app después de cerrar el ayuno).
-final lastCompletedFastingProvider =
-    StreamProvider<FastingInterval?>((ref) {
+final lastCompletedFastingProvider = StreamProvider<FastingInterval?>((ref) {
   final repo = ref.watch(fastingIntervalRepositoryProvider);
   final uid = ref.watch(authStateProvider).value?.uid;
   if (uid == null) return Stream.value(null);
@@ -116,8 +115,7 @@ class FastingNotifier extends StateNotifier<FastingState> {
           endTime.month == now.month &&
           endTime.day == now.day;
       if (!isToday) return;
-      final durationSec =
-          endTime.difference(interval.startTime).inSeconds;
+      final durationSec = endTime.difference(interval.startTime).inSeconds;
       final reachedTarget = durationSec >= state.targetHours * 3600;
       if (reachedTarget && state.completedToday != true) {
         state = state.copyWith(completedToday: true);
@@ -141,11 +139,11 @@ class FastingNotifier extends StateNotifier<FastingState> {
         startTime: startTime,
       );
       _fastingEndConfirmedToday = false;
-      
+
       // Actualización optimista inmediata para reflejar el viaje en el tiempo
       final now = DateTime.now();
       final duration = now.difference(startTime);
-      
+
       state = state.copyWith(
         isSaving: false,
         startTime: startTime,
@@ -277,8 +275,7 @@ class FastingNotifier extends StateNotifier<FastingState> {
     final fastingDuration = fastingStartTime != null
         ? manualTime.difference(fastingStartTime)
         : Duration.zero;
-    final reachedTarget =
-        fastingDuration.inSeconds >= state.targetHours * 3600;
+    final reachedTarget = fastingDuration.inSeconds >= state.targetHours * 3600;
     state = state.copyWith(
       isSaving: false,
       isWaitingForFastingEnd: false,
@@ -329,7 +326,7 @@ class FastingNotifier extends StateNotifier<FastingState> {
     // 1. Alerta Pre-Sueño
     bool shouldShowPreSleepWarning = false;
     if (user != null && !state.isActive) {
-      final sleepToday = DateTime(now.year, now.month, now.day, 
+      final sleepToday = DateTime(now.year, now.month, now.day,
           user.profile.sleepTime.hour, user.profile.sleepTime.minute);
       final diffToSleep = sleepToday.difference(now);
       if (diffToSleep.inHours >= 0 && diffToSleep.inHours < 3) {
@@ -357,15 +354,15 @@ class FastingNotifier extends StateNotifier<FastingState> {
     }
 
     final duration = now.difference(state.startTime!);
-    
+
     state = state.copyWith(
       duration: duration,
       circadianPhase: CircadianRules.getPhaseName(now),
       timeUntilLock: CircadianRules.timeUntilLock(now),
       nearSleepWarning: shouldShowPreSleepWarning,
       isWaitingForFastingEnd: waitingForEnd,
-      phase: state.isActive 
-          ? FastingState.determinePhase(duration) 
+      phase: state.isActive
+          ? FastingState.determinePhase(duration)
           : FastingPhase.none,
     );
   }
@@ -391,6 +388,7 @@ class FastingNotifier extends StateNotifier<FastingState> {
   // metabolicPulseProvider automáticamente cuando el notifier se dispone.
 }
 
-final fastingProvider = StateNotifierProvider<FastingNotifier, FastingState>((ref) {
+final fastingProvider =
+    StateNotifierProvider<FastingNotifier, FastingState>((ref) {
   return FastingNotifier(ref);
 });

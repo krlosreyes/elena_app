@@ -168,8 +168,7 @@ Future<DisplayedImr> _waitForDisplayed(
   );
 
   try {
-    return await completer.future
-        .timeout(const Duration(seconds: 3));
+    return await completer.future.timeout(const Duration(seconds: 3));
   } finally {
     sub.close();
   }

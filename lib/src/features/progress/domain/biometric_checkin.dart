@@ -43,26 +43,26 @@ class BiometricCheckIn {
   // ─── Serialización ────────────────────────────────────────────────────────
 
   Map<String, dynamic> toJson() => {
-    'date':                date,
-    'userId':              userId,
-    'weight':              weight,
-    'bodyFatPercentage':   bodyFatPercentage,
-    'waistCircumference':  waistCircumference,
-    'imrScore':            imrScore,
-    'notes':               notes,
-    'createdAt':           createdAt.toIso8601String(),
-  };
+        'date': date,
+        'userId': userId,
+        'weight': weight,
+        'bodyFatPercentage': bodyFatPercentage,
+        'waistCircumference': waistCircumference,
+        'imrScore': imrScore,
+        'notes': notes,
+        'createdAt': createdAt.toIso8601String(),
+      };
 
   factory BiometricCheckIn.fromJson(Map<String, dynamic> json) {
     return BiometricCheckIn(
-      date:               json['date'] as String,
-      userId:             json['userId'] as String? ?? '',
-      weight:             (json['weight'] as num).toDouble(),
-      bodyFatPercentage:  (json['bodyFatPercentage'] as num?)?.toDouble(),
+      date: json['date'] as String,
+      userId: json['userId'] as String? ?? '',
+      weight: (json['weight'] as num).toDouble(),
+      bodyFatPercentage: (json['bodyFatPercentage'] as num?)?.toDouble(),
       waistCircumference: (json['waistCircumference'] as num?)?.toDouble(),
-      imrScore:           json['imrScore'] as int?,
-      notes:              json['notes'] as String?,
-      createdAt:          DateTime.parse(json['createdAt'] as String),
+      imrScore: json['imrScore'] as int?,
+      notes: json['notes'] as String?,
+      createdAt: DateTime.parse(json['createdAt'] as String),
     );
   }
 

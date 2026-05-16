@@ -152,5 +152,5 @@ class DailyResetNotifier extends StateNotifier<void> {
 /// que el bootstrap y el timer se inicien al arrancar la app.
 final dailyResetProvider =
     StateNotifierProvider<DailyResetNotifier, void>((ref) {
-      return DailyResetNotifier(ref);
-    });
+  return DailyResetNotifier(ref);
+});

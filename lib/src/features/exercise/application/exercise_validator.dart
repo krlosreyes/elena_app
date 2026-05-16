@@ -24,7 +24,10 @@ class ExerciseValidator {
 
     // Fase de sueño circadiano -> no ejercitar
     if (circadianPhase == CircadianPhase.sueno) {
-      return (false, 'No es seguro ejercitar durante la fase de sueño circadiano.');
+      return (
+        false,
+        'No es seguro ejercitar durante la fase de sueño circadiano.'
+      );
     }
 
     // RF-34-02: Validar que HIIT no ocurre en Autofagia profunda

@@ -99,7 +99,7 @@ class _EditBiometryValueSheetState extends State<EditBiometryValueSheet> {
     if (parsed < widget.minValue || parsed > widget.maxValue) {
       setState(() => _errorText =
           'Debe estar entre ${widget.minValue.toStringAsFixed(0)} y '
-          '${widget.maxValue.toStringAsFixed(0)} ${widget.unit}');
+              '${widget.maxValue.toStringAsFixed(0)} ${widget.unit}');
       return;
     }
     widget.onSave(parsed);

@@ -62,9 +62,7 @@ void main() {
       );
     });
 
-    test(
-        'cambio de mes: hoy 1 may, target 30 abr → "ayer"',
-        () {
+    test('cambio de mes: hoy 1 may, target 30 abr → "ayer"', () {
       final firstOfMay = DateTime(2026, 5, 1, 10, 0);
       expect(
         RelativeDayLabel.qualifier(DateTime(2026, 4, 30, 23, 59), firstOfMay),
@@ -82,8 +80,7 @@ void main() {
 
     test(
         'caso bug reportado: empezó ayer 20:30, ahora son las 09:00 → start '
-        '"ayer", end (14:30 hoy) → vacío',
-        () {
+        '"ayer", end (14:30 hoy) → vacío', () {
       final nowToday = DateTime(2026, 5, 14, 9, 0);
       final startYesterday = DateTime(2026, 5, 13, 20, 30);
       final endToday = DateTime(2026, 5, 14, 14, 30);

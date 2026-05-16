@@ -63,7 +63,6 @@ class MetabolicStateBuilder {
     double weeklyQualityScore = 0.0,
     SleepLog? lastSleepLog,
   }) {
-
     // ── fastingHours (normalizado via sigmoid) ───────────────────────────
     // Misma sigmoid que ScoreEngine: 1/(1+e^(-(h-14)/1.5))
     final double fastingNormalized =
@@ -72,8 +71,7 @@ class MetabolicStateBuilder {
     // ── glycogenLevel (inverso de progreso de ayuno) ─────────────────────
     // Derivado directamente de las horas de ayuno.
     // No depende del Orchestrator — usa la misma lógica de fases.
-    final double glycogenLevel =
-        _glycogenFromHours(maxFastingHoursToday);
+    final double glycogenLevel = _glycogenFromHours(maxFastingHoursToday);
 
     // ── circadianAlignment ───────────────────────────────────────────────
     // Compara lastMealTime con lastMealGoal del perfil circadiano.
@@ -98,8 +96,7 @@ class MetabolicStateBuilder {
 
     // ── exerciseLoad ─────────────────────────────────────────────────────
     // Normalización: (minutos / 60).clamp(0, 1.0)
-    final double exerciseLoad =
-        (exercise.todayMinutes / 60.0).clamp(0.0, 1.0);
+    final double exerciseLoad = (exercise.todayMinutes / 60.0).clamp(0.0, 1.0);
 
     // ── glycemicLoad ─────────────────────────────────────────────────────
     // Calculado desde datos base de nutrición.
@@ -195,8 +192,7 @@ class MetabolicStateBuilder {
     // Sin goal: penalización por ingesta nocturna (en o después de 21:30, SPEC-70.5).
     // SPEC-59: comparación normalizada en minutos totales desde la medianoche
     // para evitar expresiones `hour`/`minute` separadas con `&&/||`.
-    final int mealMinutes =
-        lastMealTime.hour * 60 + lastMealTime.minute;
+    final int mealMinutes = lastMealTime.hour * 60 + lastMealTime.minute;
     if (mealMinutes >= CircadianRules.intestinalLockMinutes) {
       return 0.5;
     }

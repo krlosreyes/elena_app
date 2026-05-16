@@ -26,14 +26,12 @@ class ElenaHeader extends ConsumerWidget {
     return userAsync.when(
       data: (user) {
         if (user == null) return const SizedBox.shrink();
-        final initial =
-            user.name.isNotEmpty ? user.name[0].toUpperCase() : "U";
+        final initial = user.name.isNotEmpty ? user.name[0].toUpperCase() : "U";
 
         return Row(
           children: [
             CircleAvatar(
-              backgroundColor:
-                  AppColors.metabolicGreen.withValues(alpha: 0.1),
+              backgroundColor: AppColors.metabolicGreen.withValues(alpha: 0.1),
               child: Text(
                 initial,
                 style: const TextStyle(

@@ -84,8 +84,7 @@ void main() {
       expect(map.containsKey('subjectiveQuality'), isFalse);
     });
 
-    test('Persistir 0 explícito en awakenings es distinto de "no medido"',
-        () {
+    test('Persistir 0 explícito en awakenings es distinto de "no medido"', () {
       // 0 despertares es información válida y distinta de null.
       final map = mapper.toMap(_log(nightAwakenings: 0));
       expect(map['nightAwakenings'], 0);
@@ -112,8 +111,7 @@ void main() {
       expect(round.subjectiveQuality, 4);
     });
 
-    test('Lee log legacy (pre-SPEC-69) sin campos opcionales sin crashear',
-        () {
+    test('Lee log legacy (pre-SPEC-69) sin campos opcionales sin crashear', () {
       // Simulamos un payload viejo: solo los 3 timestamps + derivados.
       final legacyMap = <String, dynamic>{
         'fellAsleep': Timestamp.fromDate(DateTime(2025, 12, 1, 23)),

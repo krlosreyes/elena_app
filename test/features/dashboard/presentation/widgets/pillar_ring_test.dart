@@ -91,8 +91,7 @@ void main() {
           ),
         ),
       );
-      final textWidget =
-          tester.widget<Text>(find.text('Sueño'));
+      final textWidget = tester.widget<Text>(find.text('Sueño'));
       expect(textWidget.style?.color, accent);
       expect(textWidget.style?.fontWeight, FontWeight.w800);
     });
@@ -111,8 +110,7 @@ void main() {
           ),
         ),
       );
-      final textWidget =
-          tester.widget<Text>(find.text('Sueño'));
+      final textWidget = tester.widget<Text>(find.text('Sueño'));
       // Color blanco con opacidad 0.6 (alpha ~ 153/255 ≈ 0.6).
       expect(textWidget.style?.color, isNot(const Color(0xFF818CF8)));
       expect(textWidget.style?.fontWeight, FontWeight.w600);

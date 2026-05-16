@@ -50,8 +50,8 @@ class DailySummaryPersistenceService {
 
     // Si cambió el día calendario respecto al último persistido en
     // esta sesión → escribir inmediatamente para cerrar el día previo.
-    final isNewDay = _lastPersistedDocId != null &&
-        _lastPersistedDocId != currentDocId;
+    final isNewDay =
+        _lastPersistedDocId != null && _lastPersistedDocId != currentDocId;
     if (isNewDay) {
       _debounceTimer?.cancel();
       _persistNow(uid, summary, now);
@@ -65,8 +65,7 @@ class DailySummaryPersistenceService {
     // doc persistido sigue mostrando el valor viejo (<1.0) por hasta
     // 30s — y el satélite cae a 0% al cambiar de pantalla.
     final reference = previous ?? _lastSummary;
-    final completionTransition =
-        _crossedCompletion(reference, summary);
+    final completionTransition = _crossedCompletion(reference, summary);
     if (completionTransition) {
       _debounceTimer?.cancel();
       _persistNow(uid, summary, now);
@@ -84,8 +83,7 @@ class DailySummaryPersistenceService {
   /// estaba. Si `prev` es null, comparamos contra "0" — la primera
   /// emisión que ya viene completa también vale como transición.
   bool _crossedCompletion(DailySummary? prev, DailySummary next) {
-    bool crossed(double? p, double n) =>
-        n >= 1.0 && (p == null || p < 1.0);
+    bool crossed(double? p, double n) => n >= 1.0 && (p == null || p < 1.0);
     return crossed(prev?.fastingProgress, next.fastingProgress) ||
         crossed(prev?.sleepProgress, next.sleepProgress) ||
         crossed(prev?.hydrationProgress, next.hydrationProgress) ||

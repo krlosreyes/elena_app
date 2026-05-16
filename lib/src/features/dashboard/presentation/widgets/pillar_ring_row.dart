@@ -35,11 +35,16 @@ class PillarRingRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final pillars = [
-      _PillarData('⏱️', fastingProgress,  PillarConstants.colors[PillarConstants.pilarAyuno]!,   'Ayuno'),
-      _PillarData('🌙', sleepProgress,     PillarConstants.colors[PillarConstants.pilarSoporte]!, 'Sueño'),
-      _PillarData('💧', hydrationProgress, const Color(0xFF38BDF8),                               'Hidratación'),
-      _PillarData('💪', exerciseProgress,  PillarConstants.colors[PillarConstants.pilarEjercicio]!, 'Ejercicio'),
-      _PillarData('🥦', nutritionProgress, PillarConstants.colors[PillarConstants.pilarNutricion]!, 'Comidas'),
+      _PillarData('⏱️', fastingProgress,
+          PillarConstants.colors[PillarConstants.pilarAyuno]!, 'Ayuno'),
+      _PillarData('🌙', sleepProgress,
+          PillarConstants.colors[PillarConstants.pilarSoporte]!, 'Sueño'),
+      _PillarData(
+          '💧', hydrationProgress, const Color(0xFF38BDF8), 'Hidratación'),
+      _PillarData('💪', exerciseProgress,
+          PillarConstants.colors[PillarConstants.pilarEjercicio]!, 'Ejercicio'),
+      _PillarData('🥦', nutritionProgress,
+          PillarConstants.colors[PillarConstants.pilarNutricion]!, 'Comidas'),
     ];
 
     return Container(
@@ -68,7 +73,7 @@ class PillarRingRow extends StatelessWidget {
 class _PillarData {
   final String emoji;
   final double progress;
-  final Color  color;
+  final Color color;
   final String label;
   const _PillarData(this.emoji, this.progress, this.color, this.label);
 }
@@ -80,8 +85,8 @@ class _PillarRing extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final double p    = data.progress.clamp(0.0, 1.0);
-    final bool   done = p >= 1.0;
+    final double p = data.progress.clamp(0.0, 1.0);
+    final bool done = p >= 1.0;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -103,44 +108,45 @@ class _PillarRing extends StatelessWidget {
                 )
               : null,
           child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // ── Anillo ───────────────────────────────────────────────────────
-          CustomPaint(
-            size: Size(isSelected ? 56 : 52, isSelected ? 56 : 52),
-            painter: _RingPainter(
-              progress: p,
-              color: data.color,
-              bgColor: isSelected
-                  ? data.color.withValues(alpha: 0.18)
-                  : Colors.white.withValues(alpha: 0.07),
-              strokeWidth: isSelected ? 4.0 : 3.5,
-            ),
-          ),
-
-          // ── Emoji ────────────────────────────────────────────────────────
-          Text(
-            data.emoji,
-            style: TextStyle(fontSize: isSelected ? 21 : 19),
-          ),
-
-          // ── Check completado ─────────────────────────────────────────────
-          if (done)
-            Positioned(
-              right: 1,
-              bottom: 1,
-              child: Container(
-                width: 14,
-                height: 14,
-                decoration: BoxDecoration(
+            alignment: Alignment.center,
+            children: [
+              // ── Anillo ───────────────────────────────────────────────────────
+              CustomPaint(
+                size: Size(isSelected ? 56 : 52, isSelected ? 56 : 52),
+                painter: _RingPainter(
+                  progress: p,
                   color: data.color,
-                  shape: BoxShape.circle,
+                  bgColor: isSelected
+                      ? data.color.withValues(alpha: 0.18)
+                      : Colors.white.withValues(alpha: 0.07),
+                  strokeWidth: isSelected ? 4.0 : 3.5,
                 ),
-                child: const Icon(Icons.check, size: 9, color: Colors.white),
               ),
-            ),
-        ],
-      ),
+
+              // ── Emoji ────────────────────────────────────────────────────────
+              Text(
+                data.emoji,
+                style: TextStyle(fontSize: isSelected ? 21 : 19),
+              ),
+
+              // ── Check completado ─────────────────────────────────────────────
+              if (done)
+                Positioned(
+                  right: 1,
+                  bottom: 1,
+                  child: Container(
+                    width: 14,
+                    height: 14,
+                    decoration: BoxDecoration(
+                      color: data.color,
+                      shape: BoxShape.circle,
+                    ),
+                    child:
+                        const Icon(Icons.check, size: 9, color: Colors.white),
+                  ),
+                ),
+            ],
+          ),
         ), // AnimatedContainer
         const SizedBox(height: 5),
         // ── Label ──────────────────────────────────────────────────────────
@@ -149,9 +155,8 @@ class _PillarRing extends StatelessWidget {
           style: TextStyle(
             fontSize: 9,
             fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-            color: isSelected
-                ? data.color
-                : Colors.white.withValues(alpha: 0.35),
+            color:
+                isSelected ? data.color : Colors.white.withValues(alpha: 0.35),
             letterSpacing: 0.2,
           ),
         ),
@@ -169,18 +174,21 @@ class _RingPainter extends CustomPainter {
   });
 
   final double progress;
-  final Color  color;
-  final Color  bgColor;
+  final Color color;
+  final Color bgColor;
   final double strokeWidth;
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = (size.width - strokeWidth) / 2;
-    final rect   = Rect.fromCircle(center: center, radius: radius);
+    final rect = Rect.fromCircle(center: center, radius: radius);
 
     canvas.drawArc(
-      rect, -math.pi / 2, 2 * math.pi, false,
+      rect,
+      -math.pi / 2,
+      2 * math.pi,
+      false,
       Paint()
         ..color = bgColor
         ..style = PaintingStyle.stroke
@@ -190,7 +198,10 @@ class _RingPainter extends CustomPainter {
 
     if (progress > 0) {
       canvas.drawArc(
-        rect, -math.pi / 2, 2 * math.pi * progress, false,
+        rect,
+        -math.pi / 2,
+        2 * math.pi * progress,
+        false,
         Paint()
           ..color = color
           ..style = PaintingStyle.stroke
@@ -202,5 +213,7 @@ class _RingPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_RingPainter old) =>
-      old.progress != progress || old.color != color || old.strokeWidth != strokeWidth;
+      old.progress != progress ||
+      old.color != color ||
+      old.strokeWidth != strokeWidth;
 }

@@ -60,8 +60,8 @@ MetabolicState _state({
   double hydrationLevel = 0.5,
   DateTime? lastMealTime,
 }) {
-  final effectiveSleepQuality = sleepQuality ??
-      ((sleepHoursRaw >= 7 && sleepHoursRaw <= 9) ? 1.0 : 0.6);
+  final effectiveSleepQuality =
+      sleepQuality ?? ((sleepHoursRaw >= 7 && sleepHoursRaw <= 9) ? 1.0 : 0.6);
   return MetabolicState(
     fastingHours: 0.5,
     glycogenLevel: 0.5,
@@ -241,18 +241,19 @@ void main() {
   group('SPEC-67: hidratación entra al bloque Conducta', () {
     final user = _user(waist: 85);
 
-    test('CA-67-01: 0% vs 100% hidratación → diferencia ≥ 2 puntos '
+    test(
+        'CA-67-01: 0% vs 100% hidratación → diferencia ≥ 2 puntos '
         '(SPEC-70.5: peso reducido a 10%)', () {
       // Mantenemos todos los demás factores idénticos. Solo varía hidratación.
       // Con SPEC-70.5 el peso de hidratación bajó de 20% a 10% en el
       // bloque Conducta. La diferencia esperada cae a la mitad.
       // Cota teórica: 0.10 (delta behavior) * 0.25 (macro) * 100 = 2.5 pts.
       final dry = engine.calculateIMR(user, _state(hydrationLevel: 0.0));
-      final hydrated =
-          engine.calculateIMR(user, _state(hydrationLevel: 1.0));
+      final hydrated = engine.calculateIMR(user, _state(hydrationLevel: 1.0));
 
       expect(hydrated.totalScore - dry.totalScore, greaterThanOrEqualTo(2),
-          reason: 'La diferencia debe seguir siendo perceptible (>= 2 puntos).');
+          reason:
+              'La diferencia debe seguir siendo perceptible (>= 2 puntos).');
     });
 
     test('Hidratación más alta → behavior score más alto', () {
@@ -261,7 +262,8 @@ void main() {
       expect(r2.behaviorScore, greaterThan(r1.behaviorScore));
     });
 
-    test('SPEC-70.5: Pesos rebalanceados suman 100% '
+    test(
+        'SPEC-70.5: Pesos rebalanceados suman 100% '
         '(Circadiano 38 + Sueño 20 + Ejercicio 20 + Nutrición 12 + '
         'Hidratación 10)', () {
       // Recalibración tras revisión clínica externa: hidratación
@@ -304,8 +306,7 @@ void main() {
       expect(high.metabolicScore, greaterThan(low.metabolicScore));
     });
 
-    test('weeklyAdherence binario YA NO afecta el metabolicScore directo',
-        () {
+    test('weeklyAdherence binario YA NO afecta el metabolicScore directo', () {
       // Si dos states comparten weeklyQualityScore pero difieren en
       // weeklyAdherence, el metabolicScore debe ser idéntico — el engine
       // ya no consume el binario.
@@ -320,7 +321,8 @@ void main() {
       expect(a.metabolicScore, b.metabolicScore);
     });
 
-    test('Backward compat: tests pre-SPEC-53 sin weeklyQualityScore '
+    test(
+        'Backward compat: tests pre-SPEC-53 sin weeklyQualityScore '
         'siguen dando un score determinista', () {
       // El helper defaultea weeklyQualityScore al valor de weeklyAdherence,
       // así que la aritmética antigua se preserva.
@@ -349,8 +351,7 @@ void main() {
       );
     }
 
-    test('Mismo FFMI=17, joven (25) vs mayor (70) → mayor puntúa más alto',
-        () {
+    test('Mismo FFMI=17, joven (25) vs mayor (70) → mayor puntúa más alto', () {
       final young = userWithFFMI(17.0, 25);
       final old = userWithFFMI(17.0, 70);
       final state = _state();
@@ -438,13 +439,16 @@ void main() {
 
     test('Monotonicidad: cena más temprana → bonus mayor', () {
       final at15 = engine.calculateIMR(
-        user, _state(lastMealTime: DateTime(2026, 5, 6, 15)),
+        user,
+        _state(lastMealTime: DateTime(2026, 5, 6, 15)),
       );
       final at17 = engine.calculateIMR(
-        user, _state(lastMealTime: DateTime(2026, 5, 6, 17)),
+        user,
+        _state(lastMealTime: DateTime(2026, 5, 6, 17)),
       );
       final at19 = engine.calculateIMR(
-        user, _state(lastMealTime: DateTime(2026, 5, 6, 19)),
+        user,
+        _state(lastMealTime: DateTime(2026, 5, 6, 19)),
       );
       expect(at15.metabolicScore, greaterThan(at17.metabolicScore));
       expect(at17.metabolicScore, greaterThan(at19.metabolicScore));
@@ -459,7 +463,8 @@ void main() {
       // el metabolicScore con cena 13:00 debe ser MENOR o IGUAL al que
       // daría el binario con bonus exactamente 1.15.
       final atDawn = engine.calculateIMR(
-        user, _state(lastMealTime: DateTime(2026, 5, 6, 13)),
+        user,
+        _state(lastMealTime: DateTime(2026, 5, 6, 13)),
       );
       // Cota teórica si etrfBonus = 1.15 y resto idéntico.
       // Aquí solo verificamos que el score sigue siendo razonable.
@@ -470,10 +475,12 @@ void main() {
     test('Continuidad: 17:59 vs 18:01 → diferencia mínima (no salto)', () {
       // El test crítico que motivó SPEC-70.2: el cliffhanger del binario.
       final at1759 = engine.calculateIMR(
-        user, _state(lastMealTime: DateTime(2026, 5, 6, 17, 59)),
+        user,
+        _state(lastMealTime: DateTime(2026, 5, 6, 17, 59)),
       );
       final at1801 = engine.calculateIMR(
-        user, _state(lastMealTime: DateTime(2026, 5, 6, 18, 1)),
+        user,
+        _state(lastMealTime: DateTime(2026, 5, 6, 18, 1)),
       );
       // Antes: at1759.totalScore - at1801.totalScore ≈ 4 puntos
       // (15% del metabolicBlock que es ~0.7, multiplicado por peso 0.25).

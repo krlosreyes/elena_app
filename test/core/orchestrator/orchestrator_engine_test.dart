@@ -63,10 +63,10 @@ void main() {
       final state = _state(timestamp: DateTime(2026, 5, 6, 12));
       final user = _user();
       const streak = StreakState();
-      final r1 =
-          OrchestratorEngine.calculate(state: state, user: user, streak: streak);
-      final r2 =
-          OrchestratorEngine.calculate(state: state, user: user, streak: streak);
+      final r1 = OrchestratorEngine.calculate(
+          state: state, user: user, streak: streak);
+      final r2 = OrchestratorEngine.calculate(
+          state: state, user: user, streak: streak);
       expect(r1.fastingPhase, r2.fastingPhase);
       expect(r1.circadianPhase, r2.circadianPhase);
       expect(r1.metabolicCoherence, r2.metabolicCoherence);
@@ -76,7 +76,8 @@ void main() {
 
   group('SPEC-60: guard de salida temprana con state nullable', () {
     test('timestamp null retorna OrchestratorState.initial()', () {
-      final emptyState = MetabolicState.empty(); // tanto timestamp como lastMealTime nulls
+      final emptyState =
+          MetabolicState.empty(); // tanto timestamp como lastMealTime nulls
       final out = OrchestratorEngine.calculate(
         state: emptyState,
         user: _user(),
@@ -95,34 +96,32 @@ void main() {
     const streak = StreakState();
 
     test('< 4h -> alerta', () {
-      final s = _state(
-          timestamp: DateTime(2026, 5, 6, 12), fastingHoursRaw: 2);
-      final out = OrchestratorEngine.calculate(
-          state: s, user: user, streak: streak);
+      final s = _state(timestamp: DateTime(2026, 5, 6, 12), fastingHoursRaw: 2);
+      final out =
+          OrchestratorEngine.calculate(state: s, user: user, streak: streak);
       expect(out.fastingPhase, FastingPhase.alerta);
     });
 
     test('4..8h -> gluconeogenesis', () {
-      final s = _state(
-          timestamp: DateTime(2026, 5, 6, 12), fastingHoursRaw: 6);
-      final out = OrchestratorEngine.calculate(
-          state: s, user: user, streak: streak);
+      final s = _state(timestamp: DateTime(2026, 5, 6, 12), fastingHoursRaw: 6);
+      final out =
+          OrchestratorEngine.calculate(state: s, user: user, streak: streak);
       expect(out.fastingPhase, FastingPhase.gluconeogenesis);
     });
 
     test('8..12h -> cetosis', () {
-      final s = _state(
-          timestamp: DateTime(2026, 5, 6, 12), fastingHoursRaw: 10);
-      final out = OrchestratorEngine.calculate(
-          state: s, user: user, streak: streak);
+      final s =
+          _state(timestamp: DateTime(2026, 5, 6, 12), fastingHoursRaw: 10);
+      final out =
+          OrchestratorEngine.calculate(state: s, user: user, streak: streak);
       expect(out.fastingPhase, FastingPhase.cetosis);
     });
 
     test('>= 12h -> autofagia', () {
-      final s = _state(
-          timestamp: DateTime(2026, 5, 6, 12), fastingHoursRaw: 16);
-      final out = OrchestratorEngine.calculate(
-          state: s, user: user, streak: streak);
+      final s =
+          _state(timestamp: DateTime(2026, 5, 6, 12), fastingHoursRaw: 16);
+      final out =
+          OrchestratorEngine.calculate(state: s, user: user, streak: streak);
       expect(out.fastingPhase, FastingPhase.autofagia);
     });
   });
@@ -199,7 +198,9 @@ void main() {
     final user = _user();
     const streak = StreakState();
 
-    test('orchestrator.metabolicCoherence == state.metabolicCoherence (sin ajuste)', () {
+    test(
+        'orchestrator.metabolicCoherence == state.metabolicCoherence (sin ajuste)',
+        () {
       // Construyo un state con un valor de coherencia conocido (0.6) y
       // varias dimensiones malas que el orchestrator detectará como
       // violations. Verifica que el orchestrator NO descuenta ese 0.6.

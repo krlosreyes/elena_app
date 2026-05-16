@@ -33,8 +33,8 @@ class HistoricSummariesRange {
 
 /// Stream de los docs del rango. Emite `[]` si el usuario no está
 /// autenticado o aún no hay docs en el rango.
-final historicSummariesProvider = StreamProvider.family.autoDispose<
-    List<DailySummaryDoc>, HistoricSummariesRange>((ref, range) {
+final historicSummariesProvider = StreamProvider.family
+    .autoDispose<List<DailySummaryDoc>, HistoricSummariesRange>((ref, range) {
   final uid = ref.watch(authStateProvider).value?.uid;
   if (uid == null) return Stream.value(const []);
   final repo = ref.watch(dailySummaryRepositoryProvider);

@@ -60,8 +60,8 @@ class ImrTrendChart extends StatelessWidget {
               const Spacer(),
               if (stats.hasData)
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 3),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.06),
                     borderRadius: BorderRadius.circular(10),
@@ -128,8 +128,18 @@ class ImrTrendChart extends StatelessWidget {
 
   static String _humanDate(DateTime d) {
     const months = [
-      'ene', 'feb', 'mar', 'abr', 'may', 'jun',
-      'jul', 'ago', 'sep', 'oct', 'nov', 'dic',
+      'ene',
+      'feb',
+      'mar',
+      'abr',
+      'may',
+      'jun',
+      'jul',
+      'ago',
+      'sep',
+      'oct',
+      'nov',
+      'dic',
     ];
     return '${d.day} ${months[d.month - 1]}';
   }
@@ -316,8 +326,7 @@ class _ImrTrendPainter extends CustomPainter {
       if (daysFromStart < 0 || daysFromStart >= daysInPeriod) continue;
       final denom = (daysInPeriod - 1).clamp(1, 1000);
       final x = padLeft + plotW * (daysFromStart / denom);
-      final y =
-          padTop + plotH - plotH * (d.imrScore.clamp(0, 100) / 100);
+      final y = padTop + plotH - plotH * (d.imrScore.clamp(0, 100) / 100);
       final isToday = date.year == today.year &&
           date.month == today.month &&
           date.day == today.day;
@@ -358,8 +367,7 @@ class _ImrTrendPainter extends CustomPainter {
 
   void _drawZoneBands(Canvas canvas, Rect plot) {
     // Mapear umbrales (40, 60, 75) a Y. Y=0 está arriba.
-    double yAt(int pct) =>
-        plot.top + plot.height - plot.height * (pct / 100);
+    double yAt(int pct) => plot.top + plot.height - plot.height * (pct / 100);
 
     // Banda óptima 75-100 (verde) en el TOP.
     canvas.drawRect(
@@ -397,8 +405,7 @@ class _ImrTrendPainter extends CustomPainter {
     for (final t in ticks) {
       final y = plot.top + plot.height - plot.height * (t / 100);
       // Línea de grid horizontal.
-      canvas.drawLine(
-          Offset(plot.left, y), Offset(plot.right, y), gridPaint);
+      canvas.drawLine(Offset(plot.left, y), Offset(plot.right, y), gridPaint);
       // Label numérico a la izquierda del plot.
       _drawText(
         canvas,
@@ -409,8 +416,7 @@ class _ImrTrendPainter extends CustomPainter {
     }
   }
 
-  void _drawDashedHorizontal(
-      Canvas canvas, Offset a, Offset b, Color color) {
+  void _drawDashedHorizontal(Canvas canvas, Offset a, Offset b, Color color) {
     final paint = Paint()
       ..color = color
       ..strokeWidth = 1
@@ -427,8 +433,7 @@ class _ImrTrendPainter extends CustomPainter {
     }
   }
 
-  void _drawAreaGradient(
-      Canvas canvas, Rect plot, List<_PlotPoint> points) {
+  void _drawAreaGradient(Canvas canvas, Rect plot, List<_PlotPoint> points) {
     final path = Path();
     path.moveTo(points.first.offset.dx, plot.bottom);
     for (int i = 0; i < points.length; i++) {
@@ -495,8 +500,7 @@ class _ImrTrendPainter extends CustomPainter {
         canvas.drawCircle(
           p.offset,
           7,
-          Paint()
-            ..color = AppColors.metabolicGreen.withValues(alpha: 0.25),
+          Paint()..color = AppColors.metabolicGreen.withValues(alpha: 0.25),
         );
         canvas.drawCircle(p.offset, 4.5, regularFill);
       } else if (isWorst) {
@@ -504,8 +508,7 @@ class _ImrTrendPainter extends CustomPainter {
         canvas.drawCircle(
           p.offset,
           7,
-          Paint()
-            ..color = const Color(0xFFFB923C).withValues(alpha: 0.30),
+          Paint()..color = const Color(0xFFFB923C).withValues(alpha: 0.30),
         );
         canvas.drawCircle(
           p.offset,
@@ -514,7 +517,8 @@ class _ImrTrendPainter extends CustomPainter {
         );
       } else if (isToday) {
         // Ring outline para hoy.
-        canvas.drawCircle(p.offset, 5, Paint()..color = const Color(0xFF1E293B));
+        canvas.drawCircle(
+            p.offset, 5, Paint()..color = const Color(0xFF1E293B));
         canvas.drawCircle(
           p.offset,
           5,
@@ -544,7 +548,8 @@ class _ImrTrendPainter extends CustomPainter {
       final daysOffset =
           (ratio * (daysInPeriod - 1)).round().clamp(0, daysInPeriod - 1);
       final date = rangeStart.add(Duration(days: daysOffset));
-      final x = plot.left + plot.width * (daysOffset / (daysInPeriod - 1).clamp(1, 1000));
+      final x = plot.left +
+          plot.width * (daysOffset / (daysInPeriod - 1).clamp(1, 1000));
       _drawText(
         canvas,
         _shortDate(date),
@@ -569,8 +574,18 @@ class _ImrTrendPainter extends CustomPainter {
 
   static String _shortDate(DateTime d) {
     const months = [
-      'ene', 'feb', 'mar', 'abr', 'may', 'jun',
-      'jul', 'ago', 'sep', 'oct', 'nov', 'dic',
+      'ene',
+      'feb',
+      'mar',
+      'abr',
+      'may',
+      'jun',
+      'jul',
+      'ago',
+      'sep',
+      'oct',
+      'nov',
+      'dic',
     ];
     return '${d.day} ${months[d.month - 1]}';
   }

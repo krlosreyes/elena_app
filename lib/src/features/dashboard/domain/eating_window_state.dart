@@ -121,9 +121,7 @@ class EatingWindowState {
       status = EatingWindowStatus.withinWindow;
       final totalSec = windowEnd.difference(windowStart).inSeconds;
       final elapsedSec = now.difference(windowStart).inSeconds;
-      progress = totalSec > 0
-          ? (elapsedSec / totalSec).clamp(0.0, 1.0)
-          : 0.0;
+      progress = totalSec > 0 ? (elapsedSec / totalSec).clamp(0.0, 1.0) : 0.0;
     }
 
     return EatingWindowState(
@@ -167,8 +165,8 @@ class EatingWindowState {
 
     if (goal == null) {
       // Sin preferencia explícita → óptimo canónico.
-      return DateTime(now.year, now.month, now.day,
-          optimal.windowStart.hour, optimal.windowStart.minute);
+      return DateTime(now.year, now.month, now.day, optimal.windowStart.hour,
+          optimal.windowStart.minute);
     }
 
     // Verificar si la preferencia del usuario está dentro de tolerancia.
@@ -183,7 +181,7 @@ class EatingWindowState {
     }
 
     // Fuera de tolerancia → óptimo canónico.
-    return DateTime(now.year, now.month, now.day,
-        optimal.windowStart.hour, optimal.windowStart.minute);
+    return DateTime(now.year, now.month, now.day, optimal.windowStart.hour,
+        optimal.windowStart.minute);
   }
 }

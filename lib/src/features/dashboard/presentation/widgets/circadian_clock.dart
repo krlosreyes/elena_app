@@ -50,12 +50,11 @@ class CircadianClock extends StatelessWidget {
           children: [
             // CAPA 1: Ciclos Biológicos (Fondo estático de 24h)
             SizedBox(
-              height: size, width: size,
+              height: size,
+              width: size,
               child: CustomPaint(
                 painter: BiologicalCyclesPainter(
-                  indicatorColor: colorDeTexto, 
-                  currentTime: now
-                ),
+                    indicatorColor: colorDeTexto, currentTime: now),
               ),
             ),
 
@@ -69,7 +68,8 @@ class CircadianClock extends StatelessWidget {
             // Si `eatingWindow == null` (providers cargando) se omite
             // la capa para no dibujar datos inventados.
             SizedBox(
-              height: size, width: size,
+              height: size,
+              width: size,
               child: CustomPaint(
                 painter: fastingState.isActive
                     ? FastingRingPainter(

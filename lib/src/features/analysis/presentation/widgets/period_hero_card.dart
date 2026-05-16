@@ -68,8 +68,7 @@ class PeriodHeroCard extends StatelessWidget {
           end: Alignment.bottomRight,
           colors: [
             const Color(0xFF1E293B),
-            (hasToday ? todayColor : Colors.white)
-                .withValues(alpha: 0.04),
+            (hasToday ? todayColor : Colors.white).withValues(alpha: 0.04),
           ],
         ),
       ),
@@ -91,8 +90,8 @@ class PeriodHeroCard extends StatelessWidget {
               ),
               if (hasToday)
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 3),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: vsColor.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(12),
@@ -192,8 +191,18 @@ class PeriodHeroCard extends StatelessWidget {
 
   static String _humanDate(DateTime d) {
     const months = [
-      'ene', 'feb', 'mar', 'abr', 'may', 'jun',
-      'jul', 'ago', 'sep', 'oct', 'nov', 'dic',
+      'ene',
+      'feb',
+      'mar',
+      'abr',
+      'may',
+      'jun',
+      'jul',
+      'ago',
+      'sep',
+      'oct',
+      'nov',
+      'dic',
     ];
     return '${d.day} ${months[d.month - 1]}';
   }
@@ -225,9 +234,8 @@ class _ImrRing extends StatelessWidget {
             size: const Size.square(size),
             painter: _RingPainter(
               progress: progress,
-              color: inactive
-                  ? Colors.white.withValues(alpha: 0.30)
-                  : zoneColor,
+              color:
+                  inactive ? Colors.white.withValues(alpha: 0.30) : zoneColor,
               trackColor: Colors.white.withValues(alpha: 0.06),
               strokeWidth: 9,
             ),

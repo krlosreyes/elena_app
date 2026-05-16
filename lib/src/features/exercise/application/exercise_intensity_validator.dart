@@ -73,7 +73,7 @@ class ExerciseIntensityValidator {
     required int durationMinutes,
   }) {
     final String exerciseType = categorizeIntensity(intensityPercent);
-    
+
     // Regla 1: No ejercitar en AUTOFAGIA con sueño deficiente
     if (currentFastingPhase == FastingPhase.autofagia && sleepQuality < 0.4) {
       return (
@@ -85,7 +85,8 @@ class ExerciseIntensityValidator {
     }
 
     // Regla 2: No HIIT en AUTOFAGIA (fase de ayuno profundo)
-    if (currentFastingPhase == FastingPhase.autofagia && exerciseType == 'HIIT') {
+    if (currentFastingPhase == FastingPhase.autofagia &&
+        exerciseType == 'HIIT') {
       return (
         true, // Permitir pero advertir fuerte
         '🚨 CRÍTICO: HIIT en Autofagia es muy riesgoso. '
@@ -95,7 +96,8 @@ class ExerciseIntensityValidator {
     }
 
     // Regla 3: No ejercicio intenso en SUEÑO (noche)
-    if (currentCircadianPhase == CircadianPhase.sueno && intensityPercent > 60) {
+    if (currentCircadianPhase == CircadianPhase.sueno &&
+        intensityPercent > 60) {
       return (
         true,
         '⚠️  Fase de SUEÑO es mala para ejercicio intenso. '

@@ -22,7 +22,8 @@ class BodyCompositionScreen extends ConsumerWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded,
+              color: Colors.white, size: 20),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: const Text(
@@ -62,14 +63,14 @@ class _BodyCompositionContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool isMale  = user.gender.toUpperCase() == 'M';
+    final bool isMale = user.gender.toUpperCase() == 'M';
     // SPEC-92: bodyFat nullable → fallback poblacional.
     final double rawFat = user.bodyFatPercentage ?? (isMale ? 15.0 : 25.0);
-    final double fat   = rawFat.clamp(1.0, 60.0);
-    final double lean  = BodyCompositionCalc.leanMass(user.weight, fat);
-    final double wCm   = user.waistCircumference ?? (user.weight * 0.48);
-    final double w     = BodyCompositionCalc.whtr(wCm, user.height);
-    final double f     = BodyCompositionCalc.ffmi(lean, user.height);
+    final double fat = rawFat.clamp(1.0, 60.0);
+    final double lean = BodyCompositionCalc.leanMass(user.weight, fat);
+    final double wCm = user.waistCircumference ?? (user.weight * 0.48);
+    final double w = BodyCompositionCalc.whtr(wCm, user.height);
+    final double f = BodyCompositionCalc.ffmi(lean, user.height);
 
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
@@ -78,8 +79,7 @@ class _BodyCompositionContent extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ── Banner de datos estimados ─────────────────────────────────────
-          if (user.isMeasurementEstimated)
-            _EstimatedBanner(),
+          if (user.isMeasurementEstimated) _EstimatedBanner(),
 
           const SizedBox(height: 20),
 
@@ -167,7 +167,10 @@ class _FatScoreHero extends StatelessWidget {
         borderRadius: BorderRadius.circular(28),
         border: Border.all(color: c.withValues(alpha: 0.3), width: 1.5),
         boxShadow: [
-          BoxShadow(color: c.withValues(alpha: 0.08), blurRadius: 24, spreadRadius: 4),
+          BoxShadow(
+              color: c.withValues(alpha: 0.08),
+              blurRadius: 24,
+              spreadRadius: 4),
         ],
       ),
       child: Column(
@@ -293,9 +296,10 @@ class _FatZoneBar extends StatelessWidget {
   }
 
   Widget _barLabel(String t) => Text(
-    t,
-    style: TextStyle(fontSize: 8, color: Colors.white.withValues(alpha: 0.3)),
-  );
+        t,
+        style:
+            TextStyle(fontSize: 8, color: Colors.white.withValues(alpha: 0.3)),
+      );
 }
 
 // ─── Contenido: Masa Magra ────────────────────────────────────────────────────
@@ -674,7 +678,9 @@ class _StatBox extends StatelessWidget {
             : Colors.white.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: highlight ? color.withValues(alpha: 0.3) : Colors.white.withValues(alpha: 0.06),
+          color: highlight
+              ? color.withValues(alpha: 0.3)
+              : Colors.white.withValues(alpha: 0.06),
         ),
       ),
       child: Column(
@@ -732,8 +738,7 @@ class _EstimatedBanner extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.info_outline_rounded,
-              color: Colors.amber, size: 16),
+          const Icon(Icons.info_outline_rounded, color: Colors.amber, size: 16),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
@@ -757,8 +762,7 @@ class _EstimatedNote extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        const Icon(Icons.warning_amber_rounded,
-            color: Colors.amber, size: 13),
+        const Icon(Icons.warning_amber_rounded, color: Colors.amber, size: 13),
         const SizedBox(width: 6),
         Expanded(
           child: Text(

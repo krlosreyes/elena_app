@@ -117,8 +117,9 @@ class _SetPasswordScreenState extends ConsumerState<SetPasswordScreen> {
                     labelText: 'Email',
                     prefixIcon: Icon(Icons.email_outlined),
                   ),
-                  validator: (v) =>
-                      (v == null || !v.contains('@')) ? 'Email no válido' : null,
+                  validator: (v) => (v == null || !v.contains('@'))
+                      ? 'Email no válido'
+                      : null,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(

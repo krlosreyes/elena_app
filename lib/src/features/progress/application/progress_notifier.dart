@@ -27,20 +27,20 @@ class ProgressState {
   final bool isLoading;
 
   const ProgressState({
-    this.imrHistory        = const [],
-    this.biometricHistory  = const [],
-    this.isLoading         = true,
+    this.imrHistory = const [],
+    this.biometricHistory = const [],
+    this.isLoading = true,
   });
 
   ProgressState copyWith({
-    List<StreakEntry>?        imrHistory,
-    List<BiometricCheckIn>?   biometricHistory,
-    bool?                     isLoading,
+    List<StreakEntry>? imrHistory,
+    List<BiometricCheckIn>? biometricHistory,
+    bool? isLoading,
   }) {
     return ProgressState(
-      imrHistory:       imrHistory       ?? this.imrHistory,
+      imrHistory: imrHistory ?? this.imrHistory,
       biometricHistory: biometricHistory ?? this.biometricHistory,
-      isLoading:        isLoading        ?? this.isLoading,
+      isLoading: isLoading ?? this.isLoading,
     );
   }
 
@@ -51,7 +51,8 @@ class ProgressState {
       imrHistory.map((e) => e.imrScore.toDouble()).toList();
 
   /// IMR del primer día registrado (línea de base).
-  int? get baselineImr => imrHistory.isNotEmpty ? imrHistory.first.imrScore : null;
+  int? get baselineImr =>
+      imrHistory.isNotEmpty ? imrHistory.first.imrScore : null;
 
   /// IMR más reciente.
   int? get latestImr => imrHistory.isNotEmpty ? imrHistory.last.imrScore : null;
@@ -77,9 +78,8 @@ class ProgressState {
   }
 
   /// Puntos de la gráfica de peso (cronológico).
-  List<double> get weightChartPoints => biometricHistory
-      .map((c) => c.weight)
-      .toList();
+  List<double> get weightChartPoints =>
+      biometricHistory.map((c) => c.weight).toList();
 
   /// Puntos de la gráfica de %grasa corporal (solo check-ins con ese dato).
   List<double> get bodyFatChartPoints => biometricHistory
@@ -87,8 +87,8 @@ class ProgressState {
       .map((c) => c.bodyFatPercentage!)
       .toList();
 
-  bool get hasEnoughImrData  => imrHistory.length  >= 3;
-  bool get hasEnoughBfData   => bodyFatChartPoints.length >= 2;
+  bool get hasEnoughImrData => imrHistory.length >= 3;
+  bool get hasEnoughBfData => bodyFatChartPoints.length >= 2;
 }
 
 // ─── Notifier ─────────────────────────────────────────────────────────────────

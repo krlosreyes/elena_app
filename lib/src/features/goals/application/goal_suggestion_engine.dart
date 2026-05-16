@@ -52,22 +52,16 @@ class GoalSuggestionEngine {
   /// Siempre devuelve las 6 sugerencias aunque algún dato sea estimado.
   static Map<GoalType, GoalSuggestion> suggest(UserModel user) {
     final bool isMale = user.gender.toLowerCase() == 'masculino' ||
-                        user.gender.toLowerCase() == 'male' ||
-                        user.gender.toLowerCase() == 'm';
+        user.gender.toLowerCase() == 'male' ||
+        user.gender.toLowerCase() == 'm';
 
     return {
-      GoalType.weightTarget:
-          _weightSuggestion(user, isMale),
-      GoalType.bodyFatTarget:
-          _bodyFatSuggestion(user, isMale),
-      GoalType.fastingDaysPerWeek:
-          _fastingDaysSuggestion(user),
-      GoalType.exerciseMinPerDay:
-          _exerciseSuggestion(user),
-      GoalType.sleepHoursPerNight:
-          _sleepSuggestion(user),
-      GoalType.hydrationLitersPerDay:
-          _hydrationSuggestion(user),
+      GoalType.weightTarget: _weightSuggestion(user, isMale),
+      GoalType.bodyFatTarget: _bodyFatSuggestion(user, isMale),
+      GoalType.fastingDaysPerWeek: _fastingDaysSuggestion(user),
+      GoalType.exerciseMinPerDay: _exerciseSuggestion(user),
+      GoalType.sleepHoursPerNight: _sleepSuggestion(user),
+      GoalType.hydrationLitersPerDay: _hydrationSuggestion(user),
     };
   }
 
@@ -83,7 +77,7 @@ class GoalSuggestionEngine {
     // SPEC-92: bodyFat nullable → si no hay dato, usar fallback
     // poblacional (15 hombre / 25 mujer) para no romper la sugerencia.
     final double rawBf = user.bodyFatPercentage ?? (isMale ? 15.0 : 25.0);
-    final double bf       = rawBf.clamp(5.0, 50.0);
+    final double bf = rawBf.clamp(5.0, 50.0);
     final double leanMass = user.weight * (1 - bf / 100);
 
     // Target bf = próxima zona mejor (igual lógica que bodyFat)
@@ -108,16 +102,16 @@ class GoalSuggestionEngine {
     }
 
     return GoalSuggestion(
-      type:              GoalType.weightTarget,
-      currentValue:      user.weight,
-      suggestedTarget:   (targetWeight * 2).round() / 2, // redondeo 0.5 kg
-      rationale:         outOfRange
+      type: GoalType.weightTarget,
+      currentValue: user.weight,
+      suggestedTarget: (targetWeight * 2).round() / 2, // redondeo 0.5 kg
+      rationale: outOfRange
           ? 'Tu masa magra es ${leanMass.toStringAsFixed(1)} kg. '
-            'Llegar a ${targetWeight.toStringAsFixed(1)} kg preserva músculo '
-            'mientras reduce la grasa que limita tu IMR.'
+              'Llegar a ${targetWeight.toStringAsFixed(1)} kg preserva músculo '
+              'mientras reduce la grasa que limita tu IMR.'
           : 'Tu composición ya está en rango. El objetivo es mantener '
-            'el peso que sostiene tu masa magra actual.',
-      shouldActivate:    outOfRange,
+              'el peso que sostiene tu masa magra actual.',
+      shouldActivate: outOfRange,
       currentStatusLabel: statusLabel,
     );
   }
@@ -137,21 +131,21 @@ class GoalSuggestionEngine {
     final double target = _nextFatZoneTarget(bf, isMale);
 
     final String currentZone = _fatZoneLabel(bf, isMale);
-    final String targetZone  = _fatZoneLabel(target, isMale);
-    final bool   outOfRange  = isMale ? bf >= 18.0 : bf >= 25.0;
+    final String targetZone = _fatZoneLabel(target, isMale);
+    final bool outOfRange = isMale ? bf >= 18.0 : bf >= 25.0;
 
     return GoalSuggestion(
-      type:              GoalType.bodyFatTarget,
-      currentValue:      bf,
-      suggestedTarget:   target,
-      rationale:         outOfRange
+      type: GoalType.bodyFatTarget,
+      currentValue: bf,
+      suggestedTarget: target,
+      rationale: outOfRange
           ? 'Estás en zona $currentZone (${bf.toStringAsFixed(0)}%). '
-            'El rango ${isMale ? "Fitness para hombres" : "Fitness para mujeres"} '
-            'es ${isMale ? "14–17%" : "21–24%"}. Alcanzar $targetZone activa '
-            'sensibilidad a la insulina y mejora tu bloque de Estructura en el IMR.'
+              'El rango ${isMale ? "Fitness para hombres" : "Fitness para mujeres"} '
+              'es ${isMale ? "14–17%" : "21–24%"}. Alcanzar $targetZone activa '
+              'sensibilidad a la insulina y mejora tu bloque de Estructura en el IMR.'
           : 'Tu %grasa ya está en zona $currentZone. '
-            'El objetivo es mantener o mejorar gradualmente.',
-      shouldActivate:    outOfRange,
+              'El objetivo es mantener o mejorar gradualmente.',
+      shouldActivate: outOfRange,
       currentStatusLabel: currentZone,
     );
   }
@@ -161,18 +155,18 @@ class GoalSuggestionEngine {
       if (bf >= 25) return 20.0; // Alto  → techo Promedio
       if (bf >= 18) return 17.0; // Promedio → techo Fitness
       if (bf >= 14) return 13.0; // Fitness → techo Atlético
-      return bf;                 // Ya atlético — mantener
+      return bf; // Ya atlético — mantener
     } else {
       if (bf >= 32) return 28.0; // Alto  → techo Promedio
       if (bf >= 25) return 24.0; // Promedio → techo Fitness
       if (bf >= 21) return 20.0; // Fitness → techo Atlético
-      return bf;                 // Ya atlético — mantener
+      return bf; // Ya atlético — mantener
     }
   }
 
   static String _fatZoneLabel(double bf, bool isMale) {
     if (isMale) {
-      if (bf < 6)  return 'Esencial';
+      if (bf < 6) return 'Esencial';
       if (bf < 14) return 'Atlético';
       if (bf < 18) return 'Fitness';
       if (bf < 25) return 'Promedio';
@@ -193,25 +187,30 @@ class GoalSuggestionEngine {
 
   static GoalSuggestion _fastingDaysSuggestion(UserModel user) {
     final double currentDays = (user.weeklyAdherence * 7).clamp(0.0, 7.0);
-    final int    roundedDays = currentDays.round();
-    final int    targetDays  = roundedDays >= 5 ? 5 : (roundedDays + 1).clamp(2, 6);
+    final int roundedDays = currentDays.round();
+    final int targetDays = roundedDays >= 5 ? 5 : (roundedDays + 1).clamp(2, 6);
 
     final bool outOfRange = roundedDays < 4;
 
     String statusLabel;
-    if (roundedDays <= 1) statusLabel = 'Sin protocolo activo';
-    else if (roundedDays < 4) statusLabel = 'Adherencia baja';
-    else if (roundedDays < 6) statusLabel = 'Adherencia moderada';
-    else statusLabel = 'Alta consistencia';
+    if (roundedDays <= 1)
+      statusLabel = 'Sin protocolo activo';
+    else if (roundedDays < 4)
+      statusLabel = 'Adherencia baja';
+    else if (roundedDays < 6)
+      statusLabel = 'Adherencia moderada';
+    else
+      statusLabel = 'Alta consistencia';
 
     return GoalSuggestion(
-      type:              GoalType.fastingDaysPerWeek,
-      currentValue:      currentDays,
-      suggestedTarget:   targetDays.toDouble(),
-      rationale:         'Tu adherencia actual es ${currentDays.toStringAsFixed(1)} días/semana. '
-                         'La investigación muestra que mantener el protocolo ≥5 días activa '
-                         'adaptaciones metabólicas sostenidas que no ocurren con menos frecuencia.',
-      shouldActivate:    outOfRange,
+      type: GoalType.fastingDaysPerWeek,
+      currentValue: currentDays,
+      suggestedTarget: targetDays.toDouble(),
+      rationale:
+          'Tu adherencia actual es ${currentDays.toStringAsFixed(1)} días/semana. '
+          'La investigación muestra que mantener el protocolo ≥5 días activa '
+          'adaptaciones metabólicas sostenidas que no ocurren con menos frecuencia.',
+      shouldActivate: outOfRange,
       currentStatusLabel: statusLabel,
     );
   }
@@ -230,19 +229,23 @@ class GoalSuggestionEngine {
     final bool outOfRange = current < 30;
 
     String statusLabel;
-    if (current < 15)  statusLabel = 'Sin actividad registrada';
-    else if (current < 30) statusLabel = 'Por debajo de recomendación OMS';
-    else if (current < 45) statusLabel = 'En rango recomendado';
-    else statusLabel = 'Nivel alto de actividad';
+    if (current < 15)
+      statusLabel = 'Sin actividad registrada';
+    else if (current < 30)
+      statusLabel = 'Por debajo de recomendación OMS';
+    else if (current < 45)
+      statusLabel = 'En rango recomendado';
+    else
+      statusLabel = 'Nivel alto de actividad';
 
     return GoalSuggestion(
-      type:              GoalType.exerciseMinPerDay,
-      currentValue:      current,
-      suggestedTarget:   target,
-      rationale:         'La OMS establece 150 min/semana como mínimo para beneficios '
-                         'metabólicos. Con ${target.toStringAsFixed(0)} min/día puedes '
-                         'sumar hasta 7.5 pts directos al bloque de Comportamiento en tu IMR.',
-      shouldActivate:    outOfRange,
+      type: GoalType.exerciseMinPerDay,
+      currentValue: current,
+      suggestedTarget: target,
+      rationale: 'La OMS establece 150 min/semana como mínimo para beneficios '
+          'metabólicos. Con ${target.toStringAsFixed(0)} min/día puedes '
+          'sumar hasta 7.5 pts directos al bloque de Comportamiento en tu IMR.',
+      shouldActivate: outOfRange,
       currentStatusLabel: statusLabel,
     );
   }
@@ -258,40 +261,44 @@ class GoalSuggestionEngine {
     bool outOfRange;
 
     if (current < 7.0) {
-      target     = 7.5;
+      target = 7.5;
       outOfRange = true;
     } else if (current > 9.0) {
-      target     = 8.0;
+      target = 8.0;
       outOfRange = false;
     } else {
-      target     = current; // Ya en rango — mantener
+      target = current; // Ya en rango — mantener
       outOfRange = false;
     }
 
     String statusLabel;
-    if (current < 6)       statusLabel = 'Privación crónica de sueño';
-    else if (current < 7)  statusLabel = 'Por debajo del rango óptimo';
-    else if (current <= 9) statusLabel = 'En rango óptimo';
-    else                   statusLabel = 'Sueño excesivo';
+    if (current < 6)
+      statusLabel = 'Privación crónica de sueño';
+    else if (current < 7)
+      statusLabel = 'Por debajo del rango óptimo';
+    else if (current <= 9)
+      statusLabel = 'En rango óptimo';
+    else
+      statusLabel = 'Sueño excesivo';
 
     return GoalSuggestion(
-      type:              GoalType.sleepHoursPerNight,
-      currentValue:      (current * 2).round() / 2.0, // redondeo 0.5 h
-      suggestedTarget:   target,
-      rationale:         '7–9 horas optimizan la regulación de cortisol y grelina. '
-                         'En ese rango, tu ayuno es significativamente más eficiente '
-                         'porque el hambre hormonal se regula durante la noche.',
-      shouldActivate:    outOfRange,
+      type: GoalType.sleepHoursPerNight,
+      currentValue: (current * 2).round() / 2.0, // redondeo 0.5 h
+      suggestedTarget: target,
+      rationale: '7–9 horas optimizan la regulación de cortisol y grelina. '
+          'En ese rango, tu ayuno es significativamente más eficiente '
+          'porque el hambre hormonal se regula durante la noche.',
+      shouldActivate: outOfRange,
       currentStatusLabel: statusLabel,
     );
   }
 
   static double _estimateSleepHours(CircadianProfile profile) {
     // Extraemos solo hora:minuto para evitar problemas de fecha
-    final double wakeDecimal  = profile.wakeUpTime.hour +
-                                profile.wakeUpTime.minute / 60.0;
-    final double sleepDecimal = profile.sleepTime.hour +
-                                profile.sleepTime.minute / 60.0;
+    final double wakeDecimal =
+        profile.wakeUpTime.hour + profile.wakeUpTime.minute / 60.0;
+    final double sleepDecimal =
+        profile.sleepTime.hour + profile.sleepTime.minute / 60.0;
     double hours = wakeDecimal - sleepDecimal;
     if (hours <= 0) hours += 24; // Cruza la medianoche
     return hours.clamp(3.0, 12.0);
@@ -303,19 +310,21 @@ class GoalSuggestionEngine {
   // Misma fórmula que HydrationNotifier para consistencia.
 
   static GoalSuggestion _hydrationSuggestion(UserModel user) {
-    final double target = (user.weight * 0.035 * 4).round() / 4.0; // redondeo 0.25 L
-    const double averageIntake = 1.5; // consumo típico sedentario (línea de base)
+    final double target =
+        (user.weight * 0.035 * 4).round() / 4.0; // redondeo 0.25 L
+    const double averageIntake =
+        1.5; // consumo típico sedentario (línea de base)
     final bool outOfRange = target > 2.0; // Casi siempre habrá oportunidad
 
     return GoalSuggestion(
-      type:              GoalType.hydrationLitersPerDay,
-      currentValue:      averageIntake,
-      suggestedTarget:   target.clamp(1.0, 4.0),
-      rationale:         'Tu cuerpo necesita ${target.toStringAsFixed(2)} L/día: '
-                         '35 ml × ${user.weight.toStringAsFixed(0)} kg. '
-                         'La hidratación adecuada mejora el transporte de cetonas durante '
-                         'el ayuno y reduce el cortisol de estrés metabólico.',
-      shouldActivate:    true, // Hidratación siempre relevante
+      type: GoalType.hydrationLitersPerDay,
+      currentValue: averageIntake,
+      suggestedTarget: target.clamp(1.0, 4.0),
+      rationale: 'Tu cuerpo necesita ${target.toStringAsFixed(2)} L/día: '
+          '35 ml × ${user.weight.toStringAsFixed(0)} kg. '
+          'La hidratación adecuada mejora el transporte de cetonas durante '
+          'el ayuno y reduce el cortisol de estrés metabólico.',
+      shouldActivate: true, // Hidratación siempre relevante
       currentStatusLabel: 'Nivel estimado (sin registro)',
     );
   }

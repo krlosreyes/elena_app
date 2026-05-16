@@ -93,15 +93,11 @@ void main() {
       for (final e in NutritionFactsLookup.all) {
         expect(e.calories, greaterThanOrEqualTo(0),
             reason: '${e.name} calories');
-        expect(e.protein, greaterThanOrEqualTo(0),
-            reason: '${e.name} protein');
-        expect(e.carbs, greaterThanOrEqualTo(0),
-            reason: '${e.name} carbs');
-        expect(e.fat, greaterThanOrEqualTo(0),
-            reason: '${e.name} fat');
+        expect(e.protein, greaterThanOrEqualTo(0), reason: '${e.name} protein');
+        expect(e.carbs, greaterThanOrEqualTo(0), reason: '${e.name} carbs');
+        expect(e.fat, greaterThanOrEqualTo(0), reason: '${e.name} fat');
         if (e.fiber != null) {
-          expect(e.fiber, greaterThanOrEqualTo(0),
-              reason: '${e.name} fiber');
+          expect(e.fiber, greaterThanOrEqualTo(0), reason: '${e.name} fiber');
         }
         if (e.glycemicIndex != null) {
           expect(e.glycemicIndex! >= 0 && e.glycemicIndex! <= 100, isTrue,

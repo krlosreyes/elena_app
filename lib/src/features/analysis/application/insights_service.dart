@@ -68,8 +68,8 @@ class InsightsService {
     }
 
     // 4. Promedio del período + tendencia general.
-    final avg = (docs.fold<int>(0, (acc, d) => acc + d.imrScore) / docs.length)
-        .round();
+    final avg =
+        (docs.fold<int>(0, (acc, d) => acc + d.imrScore) / docs.length).round();
     result.add(Insight(
       icon: Icons.show_chart_rounded,
       accent: const Color(0xFF60A5FA),

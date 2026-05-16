@@ -29,7 +29,8 @@ class TimestampConverter implements JsonConverter<DateTime, dynamic> {
 
   /// Sentinel epoch (1970-01-01 UTC) — usado cuando el dato persistido
   /// es inválido. No es `DateTime.now()` por la Ley de Factories Puras.
-  static final DateTime _epoch = DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
+  static final DateTime _epoch =
+      DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
 
   @override
   DateTime fromJson(dynamic json) {

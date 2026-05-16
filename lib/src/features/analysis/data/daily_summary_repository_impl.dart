@@ -51,10 +51,10 @@ class DailySummaryRepositoryImpl implements DailySummaryRepository {
   }) {
     return _source
         .watchRange(
-          userId: userId,
-          fromIncl: fromIncl,
-          toIncl: toIncl,
-        )
+      userId: userId,
+      fromIncl: fromIncl,
+      toIncl: toIncl,
+    )
         .map((maps) {
       return maps
           .map((m) {
@@ -74,8 +74,7 @@ class DailySummaryRepositoryImpl implements DailySummaryRepository {
 // Provider
 // ─────────────────────────────────────────────────────────────────────
 
-final dailySummaryRepositoryProvider =
-    Provider<DailySummaryRepository>((ref) {
+final dailySummaryRepositoryProvider = Provider<DailySummaryRepository>((ref) {
   return DailySummaryRepositoryImpl(
     source: FirestoreDailySummaryV1Source(),
   );

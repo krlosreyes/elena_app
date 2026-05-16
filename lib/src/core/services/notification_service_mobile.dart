@@ -96,7 +96,8 @@ class NotificationService {
       // 1. Timezones (Crucial para NotificationScheduler incluso en Web)
       tz.initializeTimeZones();
       try {
-        final String tzName = (await FlutterTimezone.getLocalTimezone()).identifier;
+        final String tzName =
+            (await FlutterTimezone.getLocalTimezone()).identifier;
         tz.setLocalLocation(tz.getLocation(tzName));
         AppLogger.info('[NotificationService] Timezone: $tzName');
       } catch (e) {
@@ -106,7 +107,8 @@ class NotificationService {
 
       if (kIsWeb) {
         _initialized = true;
-        AppLogger.info('[NotificationService] Web: Modo compatibilidad activado.');
+        AppLogger.info(
+            '[NotificationService] Web: Modo compatibilidad activado.');
         return;
       }
 
@@ -128,8 +130,7 @@ class NotificationService {
 
       await _plugin.initialize(
         settings: initSettings,
-        onDidReceiveNotificationResponse:
-            (NotificationResponse response) {
+        onDidReceiveNotificationResponse: (NotificationResponse response) {
           AppLogger.debug(
             '[NotificationService] Notification tapped: ${response.payload}',
           );
@@ -137,9 +138,8 @@ class NotificationService {
       );
 
       // 3. Android channels
-      final androidPlugin = _plugin
-          .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>();
+      final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
 
       await androidPlugin?.createNotificationChannel(_circadianChannel);
       await androidPlugin?.createNotificationChannel(_fastingChannel);
@@ -157,9 +157,8 @@ class NotificationService {
     if (kIsWeb || !_initialized) return false;
 
     try {
-      final iosPlugin = _plugin
-          .resolvePlatformSpecificImplementation<
-              IOSFlutterLocalNotificationsPlugin>();
+      final iosPlugin = _plugin.resolvePlatformSpecificImplementation<
+          IOSFlutterLocalNotificationsPlugin>();
 
       final iosGranted = await iosPlugin?.requestPermissions(
         alert: true,
@@ -172,9 +171,8 @@ class NotificationService {
         return iosGranted;
       }
 
-      final androidPlugin = _plugin
-          .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>();
+      final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
 
       final androidGranted =
           await androidPlugin?.requestNotificationsPermission();
@@ -186,8 +184,7 @@ class NotificationService {
 
       return true;
     } catch (e) {
-      AppLogger.error(
-          '[NotificationService] Error requestPermissions()', e);
+      AppLogger.error('[NotificationService] Error requestPermissions()', e);
       return false;
     }
   }
@@ -210,11 +207,9 @@ class NotificationService {
         notificationDetails: isFasting ? _fastingDetails : _circadianDetails,
       );
 
-      AppLogger.debug(
-          '[NotificationService] showImmediate: $title');
+      AppLogger.debug('[NotificationService] showImmediate: $title');
     } catch (e) {
-      AppLogger.error(
-          '[NotificationService] Error showImmediate()', e);
+      AppLogger.error('[NotificationService] Error showImmediate()', e);
     }
   }
 
@@ -232,8 +227,7 @@ class NotificationService {
       final tz.TZDateTime tzScheduled =
           tz.TZDateTime.from(scheduledTime, tz.local);
 
-      if (!repeatsDaily &&
-          tzScheduled.isBefore(tz.TZDateTime.now(tz.local))) {
+      if (!repeatsDaily && tzScheduled.isBefore(tz.TZDateTime.now(tz.local))) {
         AppLogger.debug(
             '[NotificationService] Skipped past notification: $title');
         return;
@@ -245,25 +239,21 @@ class NotificationService {
         body: body,
         scheduledDate: tzScheduled,
         notificationDetails: isFasting ? _fastingDetails : _circadianDetails,
-        androidScheduleMode:
-            AndroidScheduleMode.exactAllowWhileIdle,
-        matchDateTimeComponents:
-            repeatsDaily ? DateTimeComponents.time : null,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        matchDateTimeComponents: repeatsDaily ? DateTimeComponents.time : null,
       );
 
       AppLogger.debug(
           '[NotificationService] scheduleAt: $title → $scheduledTime');
     } catch (e) {
-      AppLogger.error(
-          '[NotificationService] Error scheduleAt()', e);
+      AppLogger.error('[NotificationService] Error scheduleAt()', e);
     }
   }
 
   static Future<void> cancel(int id) async {
     if (kIsWeb || !_initialized) return;
     await _plugin.cancel(id: id);
-    AppLogger.debug(
-        '[NotificationService] Cancelada notificación ID: $id');
+    AppLogger.debug('[NotificationService] Cancelada notificación ID: $id');
   }
 
   static Future<void> cancelAll() async {

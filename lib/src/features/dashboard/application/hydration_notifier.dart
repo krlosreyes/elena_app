@@ -21,7 +21,8 @@ class HydrationState {
     this.isGoalReached = false,
   });
 
-  double get progressPercentage => (currentAmountLiters / dailyGoalLiters).clamp(0.0, 1.0);
+  double get progressPercentage =>
+      (currentAmountLiters / dailyGoalLiters).clamp(0.0, 1.0);
 
   String get goalFormatted => dailyGoalLiters.toStringAsFixed(1);
   String get currentFormatted => currentAmountLiters.toStringAsFixed(1);
@@ -52,7 +53,8 @@ class HydrationNotifier extends StateNotifier<HydrationState> {
   }
 
   void _init() {
-    _ref.listen<AsyncValue<UserModel?>>(currentUserStreamProvider, (previous, next) {
+    _ref.listen<AsyncValue<UserModel?>>(currentUserStreamProvider,
+        (previous, next) {
       next.whenData((user) {
         if (user != null) {
           final double weight = user.weight > 0 ? user.weight : 75.0;
@@ -154,6 +156,7 @@ class HydrationNotifier extends StateNotifier<HydrationState> {
   }
 }
 
-final hydrationProvider = StateNotifierProvider<HydrationNotifier, HydrationState>((ref) {
+final hydrationProvider =
+    StateNotifierProvider<HydrationNotifier, HydrationState>((ref) {
   return HydrationNotifier(ref);
 });

@@ -51,7 +51,8 @@ class ProfileController extends StateNotifier<ProfileEditState> {
     required DateTime firstMealGoal,
     required DateTime lastMealGoal,
   }) async {
-    state = state.copyWith(isSaving: true, errorMessage: null, savedSuccessfully: false);
+    state = state.copyWith(
+        isSaving: true, errorMessage: null, savedSuccessfully: false);
 
     try {
       final updatedProfile = currentUser.profile.copyWith(
@@ -94,7 +95,8 @@ class ProfileController extends StateNotifier<ProfileEditState> {
     try {
       final updated = currentUser.copyWith(
         weight: weight ?? currentUser.weight,
-        waistCircumference: waistCircumference ?? currentUser.waistCircumference,
+        waistCircumference:
+            waistCircumference ?? currentUser.waistCircumference,
         neckCircumference: neckCircumference ?? currentUser.neckCircumference,
         bodyFatPercentage: bodyFatPercentage ?? currentUser.bodyFatPercentage,
       );
@@ -113,7 +115,8 @@ class ProfileController extends StateNotifier<ProfileEditState> {
     required UserModel currentUser,
     required String protocol,
   }) async {
-    state = state.copyWith(isSaving: true, errorMessage: null, savedSuccessfully: false);
+    state = state.copyWith(
+        isSaving: true, errorMessage: null, savedSuccessfully: false);
 
     try {
       final updatedUser = currentUser.copyWith(fastingProtocol: protocol);

@@ -39,7 +39,6 @@ class ExerciseLog with _$ExerciseLog {
     /// Etiqueta libre legacy (SPEC-03). Se mantiene para retrocompatibilidad
     /// con logs antiguos. SPEC-68 introduce `type` como enum tipado.
     required String activityType,
-
     @TimestampConverter() required DateTime timestamp,
     @Default(1.0) double intensityMultiplier,
 

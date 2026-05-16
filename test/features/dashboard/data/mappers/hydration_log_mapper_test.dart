@@ -95,9 +95,8 @@ void main() {
       );
       expect(
         () => mapper.toMap(log),
-        throwsA(isA<OutOfRange>()
-            .having((e) => e.fieldName, 'fieldName',
-                'HydrationLog.amountInLiters')),
+        throwsA(isA<OutOfRange>().having(
+            (e) => e.fieldName, 'fieldName', 'HydrationLog.amountInLiters')),
       );
     });
 

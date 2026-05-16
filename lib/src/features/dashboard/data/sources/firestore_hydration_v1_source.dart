@@ -13,7 +13,10 @@ class FirestoreHydrationV1Source implements HydrationDataSource {
       : _firestore = firestore ?? FirebaseFirestore.instance;
 
   CollectionReference<Map<String, dynamic>> _collection(String userId) =>
-      _firestore.collection('users').doc(userId).collection('hydration_history');
+      _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('hydration_history');
 
   @override
   Stream<List<Map<String, dynamic>>> streamSince({

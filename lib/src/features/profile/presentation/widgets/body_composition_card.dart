@@ -28,7 +28,7 @@ class BodyCompositionCalc {
   // ── WHTR ─────────────────────────────────────────────────────────────────
   static Color whtrColor(double w) {
     if (w < 0.43) return Colors.blueAccent;
-    if (w < 0.50) return const Color(0xFF2D9B60);   // verde óptimo
+    if (w < 0.50) return const Color(0xFF2D9B60); // verde óptimo
     if (w < 0.56) return Colors.orangeAccent;
     if (w < 0.63) return Colors.deepOrangeAccent;
     return Colors.redAccent;
@@ -44,9 +44,8 @@ class BodyCompositionCalc {
 
   // ── FFMI ─────────────────────────────────────────────────────────────────
   static String ffmiLabel(double f, bool isMale) {
-    final thresholds = isMale
-        ? [16.0, 18.0, 20.0, 22.0]
-        : [14.0, 16.0, 18.0, 20.0];
+    final thresholds =
+        isMale ? [16.0, 18.0, 20.0, 22.0] : [14.0, 16.0, 18.0, 20.0];
     final labels = [
       'Por debajo del promedio',
       'Promedio',
@@ -63,7 +62,7 @@ class BodyCompositionCalc {
   static Color ffmiColor(double f, bool isMale) {
     final base = isMale ? 18.0 : 16.0;
     if (f < base - 2) return Colors.redAccent;
-    if (f < base)     return Colors.orangeAccent;
+    if (f < base) return Colors.orangeAccent;
     if (f < base + 4) return const Color(0xFF2D9B60);
     return Colors.cyanAccent;
   }
@@ -71,7 +70,7 @@ class BodyCompositionCalc {
   // ── Grasa corporal ────────────────────────────────────────────────────────
   static String fatZoneLabel(double pct, bool isMale) {
     if (isMale) {
-      if (pct < 6)  return 'Esencial';
+      if (pct < 6) return 'Esencial';
       if (pct < 14) return 'Atlético';
       if (pct < 18) return 'Fitness';
       if (pct < 25) return 'Promedio';
@@ -88,11 +87,16 @@ class BodyCompositionCalc {
   static Color fatZoneColor(double pct, bool isMale) {
     final String zone = fatZoneLabel(pct, isMale);
     switch (zone) {
-      case 'Esencial': return Colors.blueAccent;
-      case 'Atlético': return const Color(0xFF2D9B60);
-      case 'Fitness':  return Colors.tealAccent;
-      case 'Promedio': return Colors.orangeAccent;
-      default:         return Colors.redAccent;
+      case 'Esencial':
+        return Colors.blueAccent;
+      case 'Atlético':
+        return const Color(0xFF2D9B60);
+      case 'Fitness':
+        return Colors.tealAccent;
+      case 'Promedio':
+        return Colors.orangeAccent;
+      default:
+        return Colors.redAccent;
     }
   }
 }
@@ -107,10 +111,13 @@ class BodyCompositionCard extends ConsumerWidget {
     final userAsync = ref.watch(currentUserStreamProvider);
 
     return userAsync.when(
-      loading: () => const _CardShell(child: Center(
+      loading: () => const _CardShell(
+          child: Center(
         child: SizedBox(
-          width: 20, height: 20,
-          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white30),
+          width: 20,
+          height: 20,
+          child:
+              CircularProgressIndicator(strokeWidth: 2, color: Colors.white30),
         ),
       )),
       error: (_, __) => const SizedBox.shrink(),
@@ -137,13 +144,14 @@ class _CardContent extends StatelessWidget {
     // mostrar un placeholder "Sin medir" en vez de pintar el cálculo
     // con fallback, hacerlo en SPEC separada.
     final double rawFat = user.bodyFatPercentage ?? (isMale ? 15.0 : 25.0);
-    final double fat    = rawFat.clamp(1.0, 60.0);
-    final double lean   = BodyCompositionCalc.leanMass(user.weight, fat);
-    final double wValue = user.waistCircumference ?? (user.weight * 0.48); // fallback si no hay cintura
-    final double w      = BodyCompositionCalc.whtr(wValue, user.height);
-    final double f      = BodyCompositionCalc.ffmi(lean, user.height);
+    final double fat = rawFat.clamp(1.0, 60.0);
+    final double lean = BodyCompositionCalc.leanMass(user.weight, fat);
+    final double wValue = user.waistCircumference ??
+        (user.weight * 0.48); // fallback si no hay cintura
+    final double w = BodyCompositionCalc.whtr(wValue, user.height);
+    final double f = BodyCompositionCalc.ffmi(lean, user.height);
 
-    final Color fatColor  = BodyCompositionCalc.fatZoneColor(fat, isMale);
+    final Color fatColor = BodyCompositionCalc.fatZoneColor(fat, isMale);
     final Color whtrColor = BodyCompositionCalc.whtrColor(w);
 
     return GestureDetector(
@@ -174,8 +182,7 @@ class _CardContent extends StatelessWidget {
                 ),
                 Row(
                   children: [
-                    if (user.isMeasurementEstimated)
-                      _EstimatedBadge(),
+                    if (user.isMeasurementEstimated) _EstimatedBadge(),
                     const SizedBox(width: 8),
                     Icon(Icons.chevron_right_rounded,
                         color: Colors.white.withValues(alpha: 0.3), size: 18),
@@ -293,7 +300,8 @@ class _WhtrBar extends StatelessWidget {
                     border: Border.all(color: Colors.white, width: 2),
                     boxShadow: [
                       BoxShadow(
-                        color: BodyCompositionCalc.whtrColor(whtr).withValues(alpha: 0.6),
+                        color: BodyCompositionCalc.whtrColor(whtr)
+                            .withValues(alpha: 0.6),
                         blurRadius: 6,
                       ),
                     ],
@@ -317,10 +325,10 @@ class _WhtrBar extends StatelessWidget {
   }
 
   TextStyle get _barLabel => TextStyle(
-    fontSize: 7.5,
-    color: Colors.white.withValues(alpha: 0.3),
-    fontWeight: FontWeight.w600,
-  );
+        fontSize: 7.5,
+        color: Colors.white.withValues(alpha: 0.3),
+        fontWeight: FontWeight.w600,
+      );
 }
 
 // ─── Componentes auxiliares ───────────────────────────────────────────────────

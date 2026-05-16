@@ -20,15 +20,13 @@ class PeriodComparisonService {
     }
 
     // Promedio actual.
-    final sumCurrent =
-        currentDocs.fold<int>(0, (acc, d) => acc + d.imrScore);
+    final sumCurrent = currentDocs.fold<int>(0, (acc, d) => acc + d.imrScore);
     final avgCurrent = (sumCurrent / currentDocs.length).round();
 
     // Promedio previo (solo si hay docs).
     int? avgPrevious;
     if (previousDocs.isNotEmpty) {
-      final sumPrev =
-          previousDocs.fold<int>(0, (acc, d) => acc + d.imrScore);
+      final sumPrev = previousDocs.fold<int>(0, (acc, d) => acc + d.imrScore);
       avgPrevious = (sumPrev / previousDocs.length).round();
     }
 

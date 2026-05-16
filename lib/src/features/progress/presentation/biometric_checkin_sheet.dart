@@ -32,13 +32,12 @@ class BiometricCheckInSheet extends ConsumerStatefulWidget {
       _BiometricCheckInSheetState();
 }
 
-class _BiometricCheckInSheetState
-    extends ConsumerState<BiometricCheckInSheet> {
+class _BiometricCheckInSheetState extends ConsumerState<BiometricCheckInSheet> {
   final _weightCtrl = TextEditingController();
-  final _bfCtrl     = TextEditingController();
-  final _waistCtrl  = TextEditingController();
-  final _noteCtrl   = TextEditingController();
-  final _formKey    = GlobalKey<FormState>();
+  final _bfCtrl = TextEditingController();
+  final _waistCtrl = TextEditingController();
+  final _noteCtrl = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
 
   bool _isSaving = false;
 
@@ -81,24 +80,23 @@ class _BiometricCheckInSheetState
     final imrResult = ref.read(imrProvider);
 
     final today = DateTime.now();
-    final dateKey =
-        '${today.year.toString().padLeft(4, '0')}-'
+    final dateKey = '${today.year.toString().padLeft(4, '0')}-'
         '${today.month.toString().padLeft(2, '0')}-'
         '${today.day.toString().padLeft(2, '0')}';
 
     final checkIn = BiometricCheckIn(
-      date:              dateKey,
-      userId:            user.id,
-      weight:            double.parse(_weightCtrl.text.replaceAll(',', '.')),
+      date: dateKey,
+      userId: user.id,
+      weight: double.parse(_weightCtrl.text.replaceAll(',', '.')),
       bodyFatPercentage: _bfCtrl.text.isNotEmpty
           ? double.tryParse(_bfCtrl.text.replaceAll(',', '.'))
           : null,
       waistCircumference: _waistCtrl.text.isNotEmpty
           ? double.tryParse(_waistCtrl.text.replaceAll(',', '.'))
           : null,
-      imrScore:          imrResult.totalScore,
-      notes:             _noteCtrl.text.isNotEmpty ? _noteCtrl.text.trim() : null,
-      createdAt:         today,
+      imrScore: imrResult.totalScore,
+      notes: _noteCtrl.text.isNotEmpty ? _noteCtrl.text.trim() : null,
+      createdAt: today,
     );
 
     await ref.read(progressProvider.notifier).saveCheckIn(checkIn);
@@ -135,7 +133,8 @@ class _BiometricCheckInSheetState
               const SizedBox(height: 12),
               Center(
                 child: Container(
-                  width: 40, height: 4,
+                  width: 40,
+                  height: 4,
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(2),
@@ -200,9 +199,11 @@ class _BiometricCheckInSheetState
                         controller: _weightCtrl,
                         hint: 'Ej: 78.5',
                         validator: (v) {
-                          if (v == null || v.isEmpty) return 'El peso es obligatorio';
+                          if (v == null || v.isEmpty)
+                            return 'El peso es obligatorio';
                           final n = double.tryParse(v.replaceAll(',', '.'));
-                          if (n == null || n < 20 || n > 300) return 'Valor fuera de rango';
+                          if (n == null || n < 20 || n > 300)
+                            return 'Valor fuera de rango';
                           return null;
                         },
                       ),
@@ -217,7 +218,8 @@ class _BiometricCheckInSheetState
                         validator: (v) {
                           if (v == null || v.isEmpty) return null;
                           final n = double.tryParse(v.replaceAll(',', '.'));
-                          if (n == null || n < 3 || n > 60) return 'Valor fuera de rango';
+                          if (n == null || n < 3 || n > 60)
+                            return 'Valor fuera de rango';
                           return null;
                         },
                       ),
@@ -232,7 +234,8 @@ class _BiometricCheckInSheetState
                         validator: (v) {
                           if (v == null || v.isEmpty) return null;
                           final n = double.tryParse(v.replaceAll(',', '.'));
-                          if (n == null || n < 40 || n > 200) return 'Valor fuera de rango';
+                          if (n == null || n < 40 || n > 200)
+                            return 'Valor fuera de rango';
                           return null;
                         },
                       ),
@@ -244,7 +247,8 @@ class _BiometricCheckInSheetState
                       TextFormField(
                         controller: _noteCtrl,
                         maxLines: 2,
-                        style: const TextStyle(color: Colors.white, fontSize: 13),
+                        style:
+                            const TextStyle(color: Colors.white, fontSize: 13),
                         decoration: _inputDecoration('¿Cómo te sentiste hoy?'),
                       ),
 
@@ -265,9 +269,10 @@ class _BiometricCheckInSheetState
                           ),
                           child: _isSaving
                               ? const SizedBox(
-                                  width: 20, height: 20,
+                                  width: 20,
+                                  height: 20,
                                   child: CircularProgressIndicator(
-                                    color: Colors.white, strokeWidth: 2),
+                                      color: Colors.white, strokeWidth: 2),
                                 )
                               : const Text(
                                   'Guardar medidas',
@@ -354,29 +359,30 @@ class _NumericField extends StatelessWidget {
 }
 
 InputDecoration _inputDecoration(String hint) => InputDecoration(
-  hintText: hint,
-  hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.25), fontSize: 13),
-  filled: true,
-  fillColor: const Color(0xFF1E293B),
-  border: OutlineInputBorder(
-    borderRadius: BorderRadius.circular(14),
-    borderSide: BorderSide.none,
-  ),
-  enabledBorder: OutlineInputBorder(
-    borderRadius: BorderRadius.circular(14),
-    borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
-  ),
-  focusedBorder: OutlineInputBorder(
-    borderRadius: BorderRadius.circular(14),
-    borderSide: const BorderSide(color: Color(0xFF1ABC9C), width: 1.5),
-  ),
-  errorBorder: OutlineInputBorder(
-    borderRadius: BorderRadius.circular(14),
-    borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
-  ),
-  focusedErrorBorder: OutlineInputBorder(
-    borderRadius: BorderRadius.circular(14),
-    borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
-  ),
-  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-);
+      hintText: hint,
+      hintStyle:
+          TextStyle(color: Colors.white.withValues(alpha: 0.25), fontSize: 13),
+      filled: true,
+      fillColor: const Color(0xFF1E293B),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: Color(0xFF1ABC9C), width: 1.5),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+    );

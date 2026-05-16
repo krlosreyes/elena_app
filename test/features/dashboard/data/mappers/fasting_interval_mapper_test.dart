@@ -100,9 +100,8 @@ void main() {
           startTime: start,
           endTime: endBefore,
         )),
-        throwsA(isA<InvalidValue>()
-            .having((e) => e.fieldName, 'fieldName',
-                'FastingInterval.endTime')),
+        throwsA(isA<InvalidValue>().having(
+            (e) => e.fieldName, 'fieldName', 'FastingInterval.endTime')),
       );
     });
 

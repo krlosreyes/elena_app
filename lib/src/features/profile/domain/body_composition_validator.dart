@@ -36,7 +36,8 @@ class BodyCompositionValidator {
       // WHTR (Waist-to-Height Ratio) debe ser realista
       final whtr = waistCircumference / height;
       if (whtr < 0.3 || whtr > 0.8) {
-        errors.add('Proporción cintura-estatura no realista (estima entre 0.3-0.8)');
+        errors.add(
+            'Proporción cintura-estatura no realista (estima entre 0.3-0.8)');
       }
     }
 

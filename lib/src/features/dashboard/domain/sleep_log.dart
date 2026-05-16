@@ -86,5 +86,6 @@ class SleepLog {
     return "DIGESTIÓN ACTIVA";
   }
 
-  String get gapDescription => "Cenaste ${metabolicGap.inHours}h antes de dormir";
+  String get gapDescription =>
+      "Cenaste ${metabolicGap.inHours}h antes de dormir";
 }

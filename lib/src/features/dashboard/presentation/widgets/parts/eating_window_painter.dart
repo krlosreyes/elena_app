@@ -49,8 +49,10 @@ class EatingWindowPainter extends CustomPainter {
     final double indicatorPointRadius = size.width * 0.015;
     final double netGap = size.width * 0.03;
 
-    final double radiusWindow =
-        radiusPhases - (strokeWidthPhases / 2) - netGap - (strokeWidthWindow / 2);
+    final double radiusWindow = radiusPhases -
+        (strokeWidthPhases / 2) -
+        netGap -
+        (strokeWidthWindow / 2);
     final double orbitRadius =
         (radiusPhases - (strokeWidthPhases / 2)) - (netGap / 2);
 
@@ -183,9 +185,8 @@ class EatingWindowPainter extends CustomPainter {
         dotPos,
         isEdge ? 4.0 : 2.5,
         Paint()
-          ..color = isEdge
-              ? Colors.orange
-              : Colors.orange.withValues(alpha: 0.5),
+          ..color =
+              isEdge ? Colors.orange : Colors.orange.withValues(alpha: 0.5),
       );
 
       // Ícono según posición

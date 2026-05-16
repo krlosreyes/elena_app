@@ -49,8 +49,7 @@ class NegativeValue extends ValidationError {
   }) : super(field);
 
   @override
-  String get defaultMessage =>
-      '$fieldName inválido: $value. Debe ser >= 0.';
+  String get defaultMessage => '$fieldName inválido: $value. Debe ser >= 0.';
 }
 
 /// Un valor numérico cayó fuera de un rango cerrado [min, max].

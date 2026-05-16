@@ -11,11 +11,10 @@ class BiometricRepository {
 
   final FirebaseFirestore _firestore;
 
-  CollectionReference<Map<String, dynamic>> _col(String userId) =>
-      _firestore
-          .collection('users')
-          .doc(userId)
-          .collection('biometric_history');
+  CollectionReference<Map<String, dynamic>> _col(String userId) => _firestore
+      .collection('users')
+      .doc(userId)
+      .collection('biometric_history');
 
   // ─── Escritura ────────────────────────────────────────────────────────────
 
@@ -52,10 +51,8 @@ class BiometricRepository {
 
   /// Devuelve el check-in más reciente (1 lectura — para inicialización).
   Future<BiometricCheckIn?> fetchLatest(String userId) async {
-    final snap = await _col(userId)
-        .orderBy('date', descending: true)
-        .limit(1)
-        .get();
+    final snap =
+        await _col(userId).orderBy('date', descending: true).limit(1).get();
     if (snap.docs.isEmpty) return null;
     try {
       return BiometricCheckIn.fromJson(snap.docs.first.data());

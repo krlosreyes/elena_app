@@ -45,10 +45,8 @@ void main() {
     });
 
     test('evaluateHydration: requiere ≥ 75% de la meta', () {
-      expect(
-          StreakEngine.evaluateHydration(progressPercentage: 0.75), isTrue);
-      expect(
-          StreakEngine.evaluateHydration(progressPercentage: 0.74), isFalse);
+      expect(StreakEngine.evaluateHydration(progressPercentage: 0.75), isTrue);
+      expect(StreakEngine.evaluateHydration(progressPercentage: 0.74), isFalse);
     });
 
     test('evaluateExercise: requiere ≥ 20 min (dosis mínima ACSM)', () {
@@ -466,7 +464,8 @@ void main() {
       expect(score, closeTo(0.75, 1e-9));
     });
 
-    test('Divisor es nº de entradas en ventana, NO 7 (no penaliza usuario nuevo)',
+    test(
+        'Divisor es nº de entradas en ventana, NO 7 (no penaliza usuario nuevo)',
         () {
       // Solo 3 días registrados, todos al tope → 1.0 (no 3/7).
       final h = [

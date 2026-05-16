@@ -24,8 +24,7 @@ import 'package:flutter_test/flutter_test.dart';
 // ─── Fake repository ─────────────────────────────────────────────────────────
 
 class FakeNutritionRepository implements NutritionRepository {
-  final _logsController =
-      StreamController<List<NutritionLog>>.broadcast();
+  final _logsController = StreamController<List<NutritionLog>>.broadcast();
   final List<NutritionLog> _today = [];
 
   /// Llamado por los tests para inyectar el stream que el notifier observa.

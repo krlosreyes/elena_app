@@ -75,8 +75,11 @@ Future<void> _bootstrap() async {
   if (shouldActivateAppCheck) {
     try {
       await FirebaseAppCheck.instance.activate(
-        androidProvider: kReleaseMode ? AndroidProvider.playIntegrity : AndroidProvider.debug,
-        appleProvider: kReleaseMode ? AppleProvider.appAttest : AppleProvider.debug,
+        androidProvider: kReleaseMode
+            ? AndroidProvider.playIntegrity
+            : AndroidProvider.debug,
+        appleProvider:
+            kReleaseMode ? AppleProvider.appAttest : AppleProvider.debug,
         webProvider: ReCaptchaV3Provider(kRecaptchaSiteKey),
       );
     } catch (e) {

@@ -18,20 +18,21 @@ class CorrelationResult {
   });
 
   Map<String, dynamic> toJson() => {
-    'pilarA': pilarA,
-    'pilarB': pilarB,
-    'score': score,
-    'type': type.name,
-    'insight': insight,
-  };
+        'pilarA': pilarA,
+        'pilarB': pilarB,
+        'score': score,
+        'type': type.name,
+        'insight': insight,
+      };
 
-  factory CorrelationResult.fromJson(Map<String, dynamic> json) => CorrelationResult(
-    pilarA: json['pilarA'] as String,
-    pilarB: json['pilarB'] as String,
-    score: (json['score'] as num).toDouble(),
-    type: CorrelationType.values.byName(json['type'] as String),
-    insight: json['insight'] as String,
-  );
+  factory CorrelationResult.fromJson(Map<String, dynamic> json) =>
+      CorrelationResult(
+        pilarA: json['pilarA'] as String,
+        pilarB: json['pilarB'] as String,
+        score: (json['score'] as num).toDouble(),
+        type: CorrelationType.values.byName(json['type'] as String),
+        insight: json['insight'] as String,
+      );
 }
 
 class WeeklyAnalysis {
@@ -48,18 +49,18 @@ class WeeklyAnalysis {
   });
 
   Map<String, dynamic> toJson() => {
-    'avgImr': avgImr,
-    'adherence': adherence,
-    'topPilarInfluenceIndex': topPilarInfluenceIndex,
-    'topPilarName': topPilarName,
-  };
+        'avgImr': avgImr,
+        'adherence': adherence,
+        'topPilarInfluenceIndex': topPilarInfluenceIndex,
+        'topPilarName': topPilarName,
+      };
 
   factory WeeklyAnalysis.fromJson(Map<String, dynamic> json) => WeeklyAnalysis(
-    avgImr: (json['avgImr'] as num).toDouble(),
-    adherence: (json['adherence'] as num).toDouble(),
-    topPilarInfluenceIndex: (json['topPilarInfluenceIndex'] as num).toInt(),
-    topPilarName: json['topPilarName'] as String,
-  );
+        avgImr: (json['avgImr'] as num).toDouble(),
+        adherence: (json['adherence'] as num).toDouble(),
+        topPilarInfluenceIndex: (json['topPilarInfluenceIndex'] as num).toInt(),
+        topPilarName: json['topPilarName'] as String,
+      );
 }
 
 class AnalysisCache {
@@ -76,16 +77,18 @@ class AnalysisCache {
   });
 
   Map<String, dynamic> toJson() => {
-    'lastUpdated': lastUpdated.toIso8601String(),
-    'correlations': correlations.map((c) => c.toJson()).toList(),
-    'currentWeek': currentWeek.toJson(),
-    'previousWeek': previousWeek.toJson(),
-  };
+        'lastUpdated': lastUpdated.toIso8601String(),
+        'correlations': correlations.map((c) => c.toJson()).toList(),
+        'currentWeek': currentWeek.toJson(),
+        'previousWeek': previousWeek.toJson(),
+      };
 
   factory AnalysisCache.fromJson(Map<String, dynamic> json) => AnalysisCache(
-    lastUpdated: DateTime.parse(json['lastUpdated'] as String),
-    correlations: (json['correlations'] as List).map((c) => CorrelationResult.fromJson(c)).toList(),
-    currentWeek: WeeklyAnalysis.fromJson(json['currentWeek']),
-    previousWeek: WeeklyAnalysis.fromJson(json['previousWeek']),
-  );
+        lastUpdated: DateTime.parse(json['lastUpdated'] as String),
+        correlations: (json['correlations'] as List)
+            .map((c) => CorrelationResult.fromJson(c))
+            .toList(),
+        currentWeek: WeeklyAnalysis.fromJson(json['currentWeek']),
+        previousWeek: WeeklyAnalysis.fromJson(json['previousWeek']),
+      );
 }

@@ -17,4 +17,3 @@ final minuteTickerProvider = StreamProvider<DateTime>((ref) {
 final metabolicPulseProvider = StreamProvider<DateTime>((ref) {
   return Stream.periodic(const Duration(seconds: 10), (_) => DateTime.now());
 });
-

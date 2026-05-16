@@ -89,7 +89,8 @@ class _SleepPromptSheetState extends ConsumerState<SleepPromptSheet> {
                           height: 18,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
                           ),
                         )
                       : const Icon(Icons.bedtime_rounded, size: 18),
@@ -118,25 +119,29 @@ class _SleepPromptSheetState extends ConsumerState<SleepPromptSheet> {
                 width: double.infinity,
                 height: 52,
                 child: OutlinedButton(
-                  onPressed: _isStarting ? null : () {
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: const Text(
-                          'Puedes registrar tu sueño cuando estés listo. Aparecerá un recordatorio en el panel de sueño.',
-                        ),
-                        duration: const Duration(seconds: 4),
-                        backgroundColor: Colors.white.withValues(alpha: 0.1),
-                        behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    );
-                  },
+                  onPressed: _isStarting
+                      ? null
+                      : () {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: const Text(
+                                'Puedes registrar tu sueño cuando estés listo. Aparecerá un recordatorio en el panel de sueño.',
+                              ),
+                              duration: const Duration(seconds: 4),
+                              backgroundColor:
+                                  Colors.white.withValues(alpha: 0.1),
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          );
+                        },
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.white.withValues(alpha: 0.7),
-                    side: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
+                    side:
+                        BorderSide(color: Colors.white.withValues(alpha: 0.15)),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
@@ -178,7 +183,8 @@ class _SleepPromptSheetState extends ConsumerState<SleepPromptSheet> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Error al abrir registro de sueño. Intenta de nuevo.'),
+            content: const Text(
+                'Error al abrir registro de sueño. Intenta de nuevo.'),
             backgroundColor: Colors.red.withValues(alpha: 0.2),
           ),
         );

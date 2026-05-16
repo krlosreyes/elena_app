@@ -7,7 +7,8 @@ import 'package:elena_app/src/features/exercise/domain/exercise_repository.dart'
 import 'package:elena_app/src/features/exercise/application/exercise_state.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 
-final exerciseProvider = StateNotifierProvider<ExerciseNotifier, ExerciseState>((ref) {
+final exerciseProvider =
+    StateNotifierProvider<ExerciseNotifier, ExerciseState>((ref) {
   final userAsync = ref.watch(currentUserStreamProvider);
   // SPEC-50.2: ExerciseRepository (no UserRepository).
   final repo = ref.watch(exerciseRepositoryProvider);

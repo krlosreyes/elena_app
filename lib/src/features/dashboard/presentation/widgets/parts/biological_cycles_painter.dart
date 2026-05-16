@@ -5,7 +5,7 @@ import 'package:elena_app/src/core/theme/circadian_theme.dart';
 
 class BiologicalCyclesPainter extends CustomPainter {
   final Color indicatorColor;
-  final DateTime currentTime; 
+  final DateTime currentTime;
 
   BiologicalCyclesPainter({
     required this.indicatorColor,
@@ -17,7 +17,8 @@ class BiologicalCyclesPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
 
     // --- MEDIDAS PROPORCIONALES ---
-    final double radiusPhases = size.width * 0.38; // Coincide con Fasting/Eating Painters
+    final double radiusPhases =
+        size.width * 0.38; // Coincide con Fasting/Eating Painters
     final double strokeWidthPhases = size.width * 0.05;
     final rectPhases = Rect.fromCircle(center: center, radius: radiusPhases);
 
@@ -39,8 +40,7 @@ class BiologicalCyclesPainter extends CustomPainter {
       // activa por el color + el texto "ACTIVO" en blanco, pero ya
       // no domina visualmente la card.
       final Color displayColor = isActive
-          ? CircadianTheme.getColorForPhase(phase.label)
-              .withValues(alpha: 0.45)
+          ? CircadianTheme.getColorForPhase(phase.label).withValues(alpha: 0.45)
           : Colors.grey.withValues(alpha: 0.15);
 
       _drawPhase(
@@ -117,7 +117,8 @@ class BiologicalCyclesPainter extends CustomPainter {
     );
   }
 
-  void _drawHourMarkers(Canvas canvas, Offset center, double radius, double fullWidth) {
+  void _drawHourMarkers(
+      Canvas canvas, Offset center, double radius, double fullWidth) {
     final paint = Paint()
       ..color = indicatorColor.withValues(alpha: 0.3)
       ..strokeWidth = 1.2;
@@ -130,12 +131,14 @@ class BiologicalCyclesPainter extends CustomPainter {
     for (int i = 0; i < 24; i++) {
       double angle = (i * (2 * math.pi / 24)) - (math.pi / 2);
       bool isMajor = i % 6 == 0;
-      
+
       double end = isMajor ? markerEndBase + 5 : markerEndBase;
-      
+
       canvas.drawLine(
-        Offset(center.dx + markerStart * math.cos(angle), center.dy + markerStart * math.sin(angle)),
-        Offset(center.dx + end * math.cos(angle), center.dy + end * math.sin(angle)),
+        Offset(center.dx + markerStart * math.cos(angle),
+            center.dy + markerStart * math.sin(angle)),
+        Offset(center.dx + end * math.cos(angle),
+            center.dy + end * math.sin(angle)),
         paint,
       );
 
@@ -152,16 +155,27 @@ class BiologicalCyclesPainter extends CustomPainter {
           ),
           textDirection: TextDirection.ltr,
         )..layout();
-        
-        tp.paint(canvas, Offset(
-          center.dx + textDistance * math.cos(angle) - tp.width / 2,
-          center.dy + textDistance * math.sin(angle) - tp.height / 2,
-        ));
+
+        tp.paint(
+            canvas,
+            Offset(
+              center.dx + textDistance * math.cos(angle) - tp.width / 2,
+              center.dy + textDistance * math.sin(angle) - tp.height / 2,
+            ));
       }
     }
   }
 
-  void _drawPhase(Canvas canvas, Rect rect, double startH, double endH, Color color, String label, double strokeWidth, bool isActive, double fullWidth) {
+  void _drawPhase(
+      Canvas canvas,
+      Rect rect,
+      double startH,
+      double endH,
+      Color color,
+      String label,
+      double strokeWidth,
+      bool isActive,
+      double fullWidth) {
     double startHour = startH;
     double endHour = endH;
     if (endHour <= startHour) endHour += 24;
@@ -179,9 +193,9 @@ class BiologicalCyclesPainter extends CustomPainter {
     // Texto de la fase adaptable
     final tp = TextPainter(
       text: TextSpan(
-        text: label.toUpperCase(), 
+        text: label.toUpperCase(),
         style: TextStyle(
-          color: isActive ? Colors.white : Colors.grey.withValues(alpha: 0.4), 
+          color: isActive ? Colors.white : Colors.grey.withValues(alpha: 0.4),
           fontSize: fullWidth * 0.018, // Fuente proporcional
           fontWeight: isActive ? FontWeight.w900 : FontWeight.w400,
           letterSpacing: 0.5,
@@ -195,22 +209,24 @@ class BiologicalCyclesPainter extends CustomPainter {
     double midAngle = startAngle + (sweepAngle / 2);
     canvas.rotate(midAngle + math.pi / 2);
     double checkAngle = (midAngle + math.pi / 2) % (2 * math.pi);
-    
+
     // El offset de los textos ahora depende del radio dinámico del rect
     double textRadiusOffset = rect.width / 2;
 
     if (checkAngle > math.pi / 2 && checkAngle < 3 * math.pi / 2) {
       canvas.rotate(math.pi);
-      tp.paint(canvas, Offset(-tp.width / 2, textRadiusOffset - (tp.height / 2)));
+      tp.paint(
+          canvas, Offset(-tp.width / 2, textRadiusOffset - (tp.height / 2)));
     } else {
-      tp.paint(canvas, Offset(-tp.width / 2, -textRadiusOffset - (tp.height / 2)));
+      tp.paint(
+          canvas, Offset(-tp.width / 2, -textRadiusOffset - (tp.height / 2)));
     }
     canvas.restore();
   }
 
   @override
   bool shouldRepaint(covariant BiologicalCyclesPainter oldDelegate) {
-    return oldDelegate.currentTime.minute != currentTime.minute || 
-           oldDelegate.currentTime.hour != currentTime.hour;
+    return oldDelegate.currentTime.minute != currentTime.minute ||
+        oldDelegate.currentTime.hour != currentTime.hour;
   }
 }

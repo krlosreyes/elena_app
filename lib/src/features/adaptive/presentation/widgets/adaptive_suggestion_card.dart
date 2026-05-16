@@ -16,12 +16,14 @@ class AdaptiveSuggestionCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final suggestion = ref.watch(adaptiveProvider);
-    final dismissed = ref.watch(uiInteractionProvider).isAdaptiveSuggestionDismissed;
+    final dismissed =
+        ref.watch(uiInteractionProvider).isAdaptiveSuggestionDismissed;
 
     if (suggestion == null || dismissed) return const SizedBox.shrink();
 
     final isLevelUp = suggestion.type == SuggestionType.levelUp;
-    final primaryColor = isLevelUp ? const Color(0xFF818CF8) : const Color(0xFFFBBF24);
+    final primaryColor =
+        isLevelUp ? const Color(0xFF818CF8) : const Color(0xFFFBBF24);
 
     return Container(
       width: double.infinity,
@@ -36,7 +38,8 @@ class AdaptiveSuggestionCard extends ConsumerWidget {
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: primaryColor.withValues(alpha: 0.3), width: 1.5),
+        border:
+            Border.all(color: primaryColor.withValues(alpha: 0.3), width: 1.5),
         boxShadow: [
           BoxShadow(
             color: primaryColor.withValues(alpha: 0.05),
@@ -106,7 +109,8 @@ class AdaptiveSuggestionCard extends ConsumerWidget {
               Expanded(
                 flex: 2,
                 child: ElevatedButton(
-                  onPressed: () => _showConfirmationDialog(context, ref, suggestion),
+                  onPressed: () =>
+                      _showConfirmationDialog(context, ref, suggestion),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primaryColor,
                     foregroundColor: Colors.white,
@@ -131,7 +135,8 @@ class AdaptiveSuggestionCard extends ConsumerWidget {
     );
   }
 
-  void _showConfirmationDialog(BuildContext context, WidgetRef ref, AdaptiveSuggestion suggestion) {
+  void _showConfirmationDialog(
+      BuildContext context, WidgetRef ref, AdaptiveSuggestion suggestion) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -139,7 +144,8 @@ class AdaptiveSuggestionCard extends ConsumerWidget {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Text(
           suggestion.title,
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style:
+              const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -152,14 +158,16 @@ class AdaptiveSuggestionCard extends ConsumerWidget {
             const SizedBox(height: 20),
             const Text(
               '¿Deseas aplicar estos cambios a tu protocolo actual?',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+              style:
+                  TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
             ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancelar', style: TextStyle(color: Colors.white.withValues(alpha: 0.5))),
+            child: Text('Cancelar',
+                style: TextStyle(color: Colors.white.withValues(alpha: 0.5))),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -189,9 +197,12 @@ class AdaptiveSuggestionCard extends ConsumerWidget {
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF10B981),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
             ),
-            child: const Text('Confirmar Cambio', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            child: const Text('Confirmar Cambio',
+                style: TextStyle(
+                    color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
       ),

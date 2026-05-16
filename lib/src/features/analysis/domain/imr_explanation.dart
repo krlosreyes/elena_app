@@ -9,23 +9,35 @@ import 'package:flutter/material.dart';
 class IMRZoneColors {
   static Color forZone(String zone) {
     switch (zone) {
-      case 'OPTIMIZADO':  return const Color(0xFF1ABC9C); // teal
-      case 'EFICIENTE':   return const Color(0xFF27AE60); // green
-      case 'FUNCIONAL':   return const Color(0xFFF39C12); // amber
-      case 'INESTABLE':   return const Color(0xFFE67E22); // orange
-      case 'DETERIORADO': return const Color(0xFFC0392B); // red
-      default:            return const Color(0xFF64748B); // grey
+      case 'OPTIMIZADO':
+        return const Color(0xFF1ABC9C); // teal
+      case 'EFICIENTE':
+        return const Color(0xFF27AE60); // green
+      case 'FUNCIONAL':
+        return const Color(0xFFF39C12); // amber
+      case 'INESTABLE':
+        return const Color(0xFFE67E22); // orange
+      case 'DETERIORADO':
+        return const Color(0xFFC0392B); // red
+      default:
+        return const Color(0xFF64748B); // grey
     }
   }
 
   static String emojiForZone(String zone) {
     switch (zone) {
-      case 'OPTIMIZADO':  return '🏆';
-      case 'EFICIENTE':   return '✅';
-      case 'FUNCIONAL':   return '⚡';
-      case 'INESTABLE':   return '⚠️';
-      case 'DETERIORADO': return '🔴';
-      default:            return '📊';
+      case 'OPTIMIZADO':
+        return '🏆';
+      case 'EFICIENTE':
+        return '✅';
+      case 'FUNCIONAL':
+        return '⚡';
+      case 'INESTABLE':
+        return '⚠️';
+      case 'DETERIORADO':
+        return '🔴';
+      default:
+        return '📊';
     }
   }
 
@@ -33,19 +45,19 @@ class IMRZoneColors {
     switch (zone) {
       case 'OPTIMIZADO':
         return 'Tu metabolismo opera en su máximo potencial. '
-               'Mantén la consistencia para sostener este estado.';
+            'Mantén la consistencia para sostener este estado.';
       case 'EFICIENTE':
         return 'Tu cuerpo quema grasa de manera eficiente y mantiene '
-               'un equilibrio hormonal sólido. Estás cerca del tope.';
+            'un equilibrio hormonal sólido. Estás cerca del tope.';
       case 'FUNCIONAL':
         return 'Tu metabolismo funciona bien pero tiene margen de mejora. '
-               'Un ajuste en el pilar más débil puede elevar tu IMR significativamente.';
+            'Un ajuste en el pilar más débil puede elevar tu IMR significativamente.';
       case 'INESTABLE':
         return 'Tu metabolismo envía señales de alerta. '
-               'Prioriza el pilar indicado para estabilizar el sistema.';
+            'Prioriza el pilar indicado para estabilizar el sistema.';
       case 'DETERIORADO':
         return 'Tu sistema metabólico necesita atención urgente. '
-               'Comenzar con el ayuno consciente es el primer paso más impactante.';
+            'Comenzar con el ayuno consciente es el primer paso más impactante.';
       default:
         return 'Registra tus pilares para que Elena pueda calcular tu IMR.';
     }

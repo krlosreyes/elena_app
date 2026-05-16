@@ -130,9 +130,8 @@ void main() {
     test('rechaza durationMinutes <= 0 con OutOfRange', () {
       expect(
         () => mapper.toMap(_log(durationMinutes: 0)),
-        throwsA(isA<OutOfRange>()
-            .having((e) => e.fieldName, 'fieldName',
-                'ExerciseLog.durationMinutes')),
+        throwsA(isA<OutOfRange>().having(
+            (e) => e.fieldName, 'fieldName', 'ExerciseLog.durationMinutes')),
       );
       expect(
         () => mapper.toMap(_log(durationMinutes: -5)),
@@ -148,9 +147,8 @@ void main() {
     test('rechaza heartRateAvg < 30 con OutOfRange', () {
       expect(
         () => mapper.toMap(_log(heartRateAvg: 25)),
-        throwsA(isA<OutOfRange>()
-            .having((e) => e.fieldName, 'fieldName',
-                'ExerciseLog.heartRateAvg')),
+        throwsA(isA<OutOfRange>().having(
+            (e) => e.fieldName, 'fieldName', 'ExerciseLog.heartRateAvg')),
       );
     });
 

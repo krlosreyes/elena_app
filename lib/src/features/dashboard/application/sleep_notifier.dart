@@ -17,15 +17,15 @@ class SleepState {
   final bool isWaitingForWakeUp;
 
   SleepState({
-    this.lastLog, 
-    this.isSleepMode = false, 
+    this.lastLog,
+    this.isSleepMode = false,
     this.isSaving = false,
     this.isWaitingForWakeUp = false,
   });
 
   SleepState copyWith({
-    SleepLog? lastLog, 
-    bool? isSleepMode, 
+    SleepLog? lastLog,
+    bool? isSleepMode,
     bool? isSaving,
     bool? isWaitingForWakeUp,
   }) {
@@ -48,7 +48,8 @@ class SleepNotifier extends StateNotifier<SleepState> {
   }
 
   void _init() {
-    _ref.listen<AsyncValue<UserModel?>>(currentUserStreamProvider, (previous, next) {
+    _ref.listen<AsyncValue<UserModel?>>(currentUserStreamProvider,
+        (previous, next) {
       next.whenData((user) {
         if (user != null) {
           _initSleepSubscription(user.id);
@@ -68,10 +69,8 @@ class SleepNotifier extends StateNotifier<SleepState> {
     _sleepSubscription?.cancel();
     // SPEC-50: consumimos sleepRepositoryProvider en lugar de
     // userRepositoryProvider — Sleep ya no vive en el repo monolítico.
-    _sleepSubscription = _ref
-        .read(sleepRepositoryProvider)
-        .watchLatest(userId)
-        .listen((log) {
+    _sleepSubscription =
+        _ref.read(sleepRepositoryProvider).watchLatest(userId).listen((log) {
       if (mounted) {
         state = state.copyWith(lastLog: log);
       }
@@ -106,20 +105,20 @@ class SleepNotifier extends StateNotifier<SleepState> {
       if (user == null) return;
 
       final now = DateTime.now();
-      
-      final sleepTime = DateTime(now.year, now.month, now.day, 
+
+      final sleepTime = DateTime(now.year, now.month, now.day,
           user.profile.sleepTime.hour, user.profile.sleepTime.minute);
-      
-      final wakeTime = DateTime(now.year, now.month, now.day, 
+
+      final wakeTime = DateTime(now.year, now.month, now.day,
           user.profile.wakeUpTime.hour, user.profile.wakeUpTime.minute);
 
       // Reset de bandera a mediodía para el ciclo siguiente
       if (now.hour == 12) _manualWakeUpConfirmedToday = false;
 
       // Solo mostramos el overlay si está en rango Y NO ha confirmado manualmente
-      final bool inWakeUpWindow = now.isAfter(wakeTime) && 
-                                 now.isBefore(wakeTime.add(const Duration(hours: 4))) &&
-                                 !_manualWakeUpConfirmedToday;
+      final bool inWakeUpWindow = now.isAfter(wakeTime) &&
+          now.isBefore(wakeTime.add(const Duration(hours: 4))) &&
+          !_manualWakeUpConfirmedToday;
 
       final isNight = now.isAfter(sleepTime) || now.isBefore(wakeTime);
 
@@ -181,10 +180,11 @@ class SleepNotifier extends StateNotifier<SleepState> {
 
       // Calcular hora de dormir matemáticamente (asumiendo anoche si es de mañana)
       DateTime sleepTimeThisCycle = DateTime(now.year, now.month, now.day,
-            user.profile.sleepTime.hour, user.profile.sleepTime.minute);
+          user.profile.sleepTime.hour, user.profile.sleepTime.minute);
 
       if (now.hour < 12 && user.profile.sleepTime.hour > 12) {
-        sleepTimeThisCycle = sleepTimeThisCycle.subtract(const Duration(days: 1));
+        sleepTimeThisCycle =
+            sleepTimeThisCycle.subtract(const Duration(days: 1));
       }
 
       final realLog = SleepLog(
@@ -193,7 +193,8 @@ class SleepNotifier extends StateNotifier<SleepState> {
         id: _dayDocId(now),
         fellAsleep: sleepTimeThisCycle,
         wokeUp: now,
-        lastMealTime: fastingState.startTime ?? sleepTimeThisCycle.subtract(const Duration(hours: 4)),
+        lastMealTime: fastingState.startTime ??
+            sleepTimeThisCycle.subtract(const Duration(hours: 4)),
       );
 
       try {
@@ -237,8 +238,10 @@ class SleepNotifier extends StateNotifier<SleepState> {
 
     try {
       // 1. Construir fechas base (hoy)
-      DateTime wakeTimeDt = DateTime(now.year, now.month, now.day, wakeTime.hour, wakeTime.minute);
-      DateTime bedtimeDt = DateTime(now.year, now.month, now.day, bedtime.hour, bedtime.minute);
+      DateTime wakeTimeDt = DateTime(
+          now.year, now.month, now.day, wakeTime.hour, wakeTime.minute);
+      DateTime bedtimeDt =
+          DateTime(now.year, now.month, now.day, bedtime.hour, bedtime.minute);
 
       // 2. Si la hora de dormir es mayor a la de despertar (ej: 23:00 vs 07:00),
       // asumimos que se acostó el día anterior.
@@ -252,7 +255,8 @@ class SleepNotifier extends StateNotifier<SleepState> {
         id: _dayDocId(now),
         fellAsleep: bedtimeDt,
         wokeUp: wakeTimeDt,
-        lastMealTime: fastingState.startTime ?? bedtimeDt.subtract(const Duration(hours: 4)),
+        lastMealTime: fastingState.startTime ??
+            bedtimeDt.subtract(const Duration(hours: 4)),
         sleepLatencyMinutes: sleepLatencyMinutes,
         nightAwakenings: nightAwakenings,
         subjectiveQuality: subjectiveQuality,
@@ -265,7 +269,7 @@ class SleepNotifier extends StateNotifier<SleepState> {
         isSaving: false,
         isWaitingForWakeUp: false,
       );
-      
+
       AppLogger.debug(
         'Registro manual de sueño guardado: ${realLog.duration.inHours}h',
       );
@@ -293,9 +297,7 @@ class SleepNotifier extends StateNotifier<SleepState> {
 
     state = state.copyWith(isSaving: true);
     try {
-      await _ref
-          .read(sleepRepositoryProvider)
-          .delete(uid, lastLog.id);
+      await _ref.read(sleepRepositoryProvider).delete(uid, lastLog.id);
       // Optimistic: limpiamos el state local. NO usamos copyWith
       // porque su contrato actual interpreta `null` como "no
       // sobrescribir" (`lastLog ?? this.lastLog`). Construimos uno

@@ -177,10 +177,9 @@ class ProtocolSelectorSheet extends StatelessWidget {
                 itemBuilder: (ctx, i) {
                   final info = _kProtocols[i];
                   final isCurrent = info.code == currentProtocol;
-                  final isRecommended =
-                      recommendedProtocol != null &&
-                          info.code == recommendedProtocol &&
-                          !isCurrent;
+                  final isRecommended = recommendedProtocol != null &&
+                      info.code == recommendedProtocol &&
+                      !isCurrent;
                   return _ProtocolItem(
                     info: info,
                     isCurrent: isCurrent,

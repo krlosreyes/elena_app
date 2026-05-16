@@ -25,16 +25,21 @@ class AdaptiveSuggestion {
 }
 
 class AdaptiveEngine {
-  static const List<String> _fastingLevels = ['Ninguno', '12:12', '14:10', '16:8'];
+  static const List<String> _fastingLevels = [
+    'Ninguno',
+    '12:12',
+    '14:10',
+    '16:8'
+  ];
 
   /// Evalúa estabilidad: al menos 6 de los últimos 7 días con IMR >= 75 (SPEC-08)
   static bool isIMRStable(List<StreakEntry> history) {
     if (history.length < 7) return false;
-    
+
     // Tomar los últimos 7 días
     final last7 = history.take(7);
     final stableDays = last7.where((e) => e.imrScore >= 75).length;
-    
+
     return stableDays >= 6;
   }
 
@@ -55,18 +60,20 @@ class AdaptiveEngine {
         return AdaptiveSuggestion(
           type: SuggestionType.levelUp,
           title: 'Subida de Nivel Sugerida',
-          description: 'Tu estabilidad metabólica es excepcional. Podrías beneficiarte de ampliar tu ventana de ayuno a $nextProtocol.',
+          description:
+              'Tu estabilidad metabólica es excepcional. Podrías beneficiarte de ampliar tu ventana de ayuno a $nextProtocol.',
           newProtocol: nextProtocol,
           reason: 'Alta adherencia y IMR estable detectados.',
         );
       }
-      
+
       // Si ya está en 16:8, sugerir micro-entrenamiento
       if (currentExerciseGoal < 45) {
         return AdaptiveSuggestion(
           type: SuggestionType.levelUp,
           title: 'Mejora de Intensidad',
-          description: 'Estás dominando tu protocolo. ¿Te gustaría añadir un micro-entrenamiento aumentando tu meta de ejercicio a ${currentExerciseGoal + 10} min?',
+          description:
+              'Estás dominando tu protocolo. ¿Te gustaría añadir un micro-entrenamiento aumentando tu meta de ejercicio a ${currentExerciseGoal + 10} min?',
           newExerciseGoal: currentExerciseGoal + 10,
           reason: 'Protocolo actual dominado.',
         );
@@ -74,23 +81,26 @@ class AdaptiveEngine {
     }
 
     // 2. Lógica de SIMPLIFICACIÓN (Engagement Regular o Crítico)
-    if (engagement == EngagementLevel.critico || engagement == EngagementLevel.regular) {
+    if (engagement == EngagementLevel.critico ||
+        engagement == EngagementLevel.regular) {
       if (currentProtocol != 'Ninguno' && currentProtocol != '12:12') {
         return AdaptiveSuggestion(
           type: SuggestionType.simplify,
           title: 'Recuperar Ritmo',
-          description: 'Parece que el ritmo actual es exigente. Simplificar a un protocolo de 12:12 te ayudará a recuperar consistencia sin estrés.',
+          description:
+              'Parece que el ritmo actual es exigente. Simplificar a un protocolo de 12:12 te ayudará a recuperar consistencia sin estrés.',
           newProtocol: '12:12',
           reason: 'Baja adherencia detectada.',
         );
       }
-      
+
       // Si ya está en 12:12 o Ninguno, sugerir priorizar Hidratación
       if (engagement == EngagementLevel.critico) {
         return const AdaptiveSuggestion(
           type: SuggestionType.simplify,
           title: 'Enfoque en lo Esencial',
-          description: 'Para retomar el control, ignora el ayuno hoy y enfócate únicamente en tu hidratación. Mañana será otro día.',
+          description:
+              'Para retomar el control, ignora el ayuno hoy y enfócate únicamente en tu hidratación. Mañana será otro día.',
           reason: 'Nivel de compromiso crítico.',
         );
       }

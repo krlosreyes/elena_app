@@ -144,8 +144,7 @@ class ScoreEngine {
     // 1.04 a las 18:00, 1.018 a las 19:00, ≈1.0 a partir de 21:00.
     // Asíntota superior 1.15 (preserva el techo del binario anterior).
     // SPEC-70: ref IMR_BIBLIOGRAPHY.md §3.3.
-    final double mealHourFloat =
-        lastMealTime.hour + lastMealTime.minute / 60.0;
+    final double mealHourFloat = lastMealTime.hour + lastMealTime.minute / 60.0;
     final double etrfSigmoid =
         1.0 / (1.0 + math.exp(-(mealHourFloat - 17.0) / 1.0));
     final double etrfBonus = 1.0 + 0.15 * (1.0 - etrfSigmoid);
@@ -289,7 +288,8 @@ class ScoreEngine {
         (6.25 * user.height) -
         (5 * user.age) +
         (isMale ? 5 : -161);
-    final int metabolicAge = _metabolicAgeFromStructure(user.age, structureBlock);
+    final int metabolicAge =
+        _metabolicAgeFromStructure(user.age, structureBlock);
 
     return IMRv2Result(
       totalScore: score,
@@ -365,7 +365,8 @@ class ScoreEngine {
     if (circadian < 0.7) {
       return 'Alerta: Ingesta nocturna detectada. Esto bloquea la reparación celular.';
     }
-    if (s < 60) return 'Prioridad: Reducción de grasa visceral y ajuste de ritmos.';
+    if (s < 60)
+      return 'Prioridad: Reducción de grasa visceral y ajuste de ritmos.';
     return 'Estado metabólico funcional con margen de mejora.';
   }
 }

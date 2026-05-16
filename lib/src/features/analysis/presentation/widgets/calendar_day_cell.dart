@@ -39,9 +39,7 @@ class CalendarDayCell extends StatelessWidget {
         aspectRatio: 1,
         child: CustomPaint(
           painter: _CalendarRingPainter(
-            progress: imrScore != null
-                ? (imrScore!.clamp(0, 100) / 100.0)
-                : 0,
+            progress: imrScore != null ? (imrScore!.clamp(0, 100) / 100.0) : 0,
             isToday: isToday,
             isFuture: isFuture,
             hasData: imrScore != null,
@@ -109,8 +107,7 @@ class _CalendarRingPainter extends CustomPainter {
     if (hasData && progress > 0) {
       final color = isToday
           ? AppColors.metabolicGreen
-          : AppColors.metabolicGreen
-              .withValues(alpha: 0.85);
+          : AppColors.metabolicGreen.withValues(alpha: 0.85);
       final progressPaint = Paint()
         ..color = color
         ..style = PaintingStyle.stroke

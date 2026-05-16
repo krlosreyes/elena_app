@@ -104,8 +104,7 @@ class ProfileScreen extends ConsumerWidget {
             icon: Icon(Icons.grid_view_rounded), label: 'Hoy'),
         BottomNavigationBarItem(
             icon: Icon(Icons.insights_rounded), label: 'Análisis'),
-        BottomNavigationBarItem(
-            icon: Icon(Icons.person), label: 'Perfil'),
+        BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Perfil'),
       ],
     );
   }
@@ -150,8 +149,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
     return DateTime(now.year, now.month, now.day, time.hour, time.minute);
   }
 
-  Future<void> _pickTime(
-      TimeOfDay current, ValueChanged<TimeOfDay> onPicked,
+  Future<void> _pickTime(TimeOfDay current, ValueChanged<TimeOfDay> onPicked,
       {bool isMealTimePicker = false}) async {
     final picked = await showTimePicker(
       context: context,
@@ -469,11 +467,9 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
             rows: [
               _DataRow.readonly('Nombre', widget.user.name),
               _DataRow.readonly('Edad', '${widget.user.age} años'),
-              _DataRow.readonly(
-                  'Género',
+              _DataRow.readonly('Género',
                   widget.user.gender == 'M' ? 'Masculino' : 'Femenino'),
-              _DataRow.readonly(
-                  'Estatura', '${widget.user.height.toInt()} cm'),
+              _DataRow.readonly('Estatura', '${widget.user.height.toInt()} cm'),
               _DataRow.editable(
                 label: 'Peso',
                 value: '${widget.user.weight.toInt()} kg',
@@ -481,14 +477,12 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
               ),
               _DataRow.editable(
                 label: 'Cintura',
-                value:
-                    '${widget.user.waistCircumference?.toInt() ?? 0} cm',
+                value: '${widget.user.waistCircumference?.toInt() ?? 0} cm',
                 onTap: _editWaist,
               ),
               _DataRow.editable(
                 label: 'Cuello',
-                value:
-                    '${widget.user.neckCircumference?.toInt() ?? 0} cm',
+                value: '${widget.user.neckCircumference?.toInt() ?? 0} cm',
                 onTap: _editNeck,
               ),
               _DataRow.info(
@@ -518,8 +512,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
                 label: 'Despertar',
                 value: _wakeUpTime.format(context),
                 valueColor: const Color(0xFFEAB308),
-                onTap: () =>
-                    _pickTime(_wakeUpTime, (t) => _wakeUpTime = t),
+                onTap: () => _pickTime(_wakeUpTime, (t) => _wakeUpTime = t),
               ),
               _DataRow.icon(
                 icon: Icons.nightlight_round,
@@ -527,8 +520,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
                 label: 'Dormir',
                 value: _sleepTime.format(context),
                 valueColor: const Color(0xFF818CF8),
-                onTap: () =>
-                    _pickTime(_sleepTime, (t) => _sleepTime = t),
+                onTap: () => _pickTime(_sleepTime, (t) => _sleepTime = t),
               ),
               _DataRow.icon(
                 icon: Icons.restaurant_outlined,
@@ -546,8 +538,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
                 label: 'Última comida',
                 value: _lastMealGoal.format(context),
                 valueColor: const Color(0xFFFB923C),
-                onTap: () => _pickTime(
-                    _lastMealGoal, (t) => _lastMealGoal = t,
+                onTap: () => _pickTime(_lastMealGoal, (t) => _lastMealGoal = t,
                     isMealTimePicker: true),
               ),
             ],
@@ -589,9 +580,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
     final parts = protocol.split(':');
     final fastingHours =
         parts.isNotEmpty ? (int.tryParse(parts.first) ?? 16) : 16;
-    final feedingHours = parts.length > 1
-        ? (int.tryParse(parts[1]) ?? 8)
-        : 8;
+    final feedingHours = parts.length > 1 ? (int.tryParse(parts[1]) ?? 8) : 8;
 
     return Container(
       decoration: BoxDecoration(
@@ -603,8 +592,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding:
-                const EdgeInsets.fromLTRB(18, 14, 18, 6),
+            padding: const EdgeInsets.fromLTRB(18, 14, 18, 6),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -629,8 +617,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
             ),
           ),
           Padding(
-            padding:
-                const EdgeInsets.fromLTRB(18, 0, 18, 12),
+            padding: const EdgeInsets.fromLTRB(18, 0, 18, 12),
             child: Text(
               '${fastingHours}h ayuno · ${feedingHours}h ventana',
               style: TextStyle(
@@ -655,8 +642,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
               bottomRight: Radius.circular(14),
             ),
             child: Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 18, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
               child: Row(
                 children: [
                   const Text(
@@ -670,8 +656,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
                   const Spacer(),
                   Icon(
                     Icons.arrow_forward_rounded,
-                    color: AppColors.metabolicGreen
-                        .withValues(alpha: 0.8),
+                    color: AppColors.metabolicGreen.withValues(alpha: 0.8),
                     size: 16,
                   ),
                 ],
@@ -949,8 +934,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.surfaceDark,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Cerrar sesión',
             style: TextStyle(fontWeight: FontWeight.w900)),
         content: const Text(
@@ -967,9 +951,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
             onPressed: () async {
               Navigator.pop(ctx);
               // CA-02-03: Firebase cierra sesión y el guard redirige a /login
-              await ref
-                  .read(profileControllerProvider.notifier)
-                  .signOut();
+              await ref.read(profileControllerProvider.notifier).signOut();
               if (context.mounted) context.go('/login');
             },
             child: const Text('CERRAR SESIÓN',
@@ -992,16 +974,15 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setModalState) => AlertDialog(
           backgroundColor: AppColors.surfaceDark,
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: const Row(
             children: [
               Icon(Icons.warning_amber_rounded,
                   color: Colors.redAccent, size: 20),
               SizedBox(width: 8),
               Text('Eliminar cuenta',
-                  style: TextStyle(
-                      fontWeight: FontWeight.w900, fontSize: 16)),
+                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
             ],
           ),
           content: Column(
@@ -1010,14 +991,13 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
             children: [
               const Text(
                 'Esta acción es permanente. Se eliminarán tu cuenta y todos tus datos metabólicos de Firestore.',
-                style:
-                    TextStyle(color: Color(0xFF94A3B8), fontSize: 13, height: 1.4),
+                style: TextStyle(
+                    color: Color(0xFF94A3B8), fontSize: 13, height: 1.4),
               ),
               const SizedBox(height: 20),
               const Text(
                 'Escribe ELIMINAR para confirmar:',
-                style: TextStyle(
-                    fontSize: 12, fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
               TextField(
@@ -1026,19 +1006,17 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
                 textCapitalization: TextCapitalization.characters,
                 decoration: InputDecoration(
                   hintText: 'ELIMINAR',
-                  hintStyle: const TextStyle(
-                      color: Color(0xFF475569), fontSize: 13),
+                  hintStyle:
+                      const TextStyle(color: Color(0xFF475569), fontSize: 13),
                   filled: true,
                   fillColor: AppColors.backgroundDark,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide:
-                        const BorderSide(color: Color(0xFF334155)),
+                    borderSide: const BorderSide(color: Color(0xFF334155)),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide:
-                        const BorderSide(color: Colors.redAccent),
+                    borderSide: const BorderSide(color: Colors.redAccent),
                   ),
                 ),
                 onChanged: (val) {
@@ -1482,8 +1460,7 @@ class _DisclosureSectionState extends State<_DisclosureSection>
             onTap: _toggle,
             borderRadius: BorderRadius.circular(10),
             child: Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
               child: Row(
                 children: [
                   Text(
@@ -1533,9 +1510,8 @@ class _DisclosureSectionState extends State<_DisclosureSection>
             padding: const EdgeInsets.only(top: 8),
             child: widget.child,
           ),
-          crossFadeState: _expanded
-              ? CrossFadeState.showSecond
-              : CrossFadeState.showFirst,
+          crossFadeState:
+              _expanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
         ),
       ],
     );

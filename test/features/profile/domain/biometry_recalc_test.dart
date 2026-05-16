@@ -97,7 +97,9 @@ void main() {
       expect(result.isCoherent, isFalse);
     });
 
-    test('cintura ≤ cuello (incoherente físicamente) cae a default seguro y NO se marca como ALTA', () {
+    test(
+        'cintura ≤ cuello (incoherente físicamente) cae a default seguro y NO se marca como ALTA',
+        () {
       // El BodyFatCalculator devuelve 15.0 como default masculino cuando
       // waist - neck <= 0. BiometryRecalc lo deja pasar pero la confidence
       // queda en MEDIA o el flag isCoherent en false porque la masa magra

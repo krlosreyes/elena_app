@@ -48,7 +48,14 @@ void main() {
     test('detecta pilar a trabajar (Hidratación siempre baja)', () {
       final docs = List<DailySummaryDoc>.generate(
         7,
-        (i) => _doc(date: '2026-05-0${i + 1}', imr: 70, f: 1.0, s: 1.0, e: 1.0, m: 1.0, h: 0.1),
+        (i) => _doc(
+            date: '2026-05-0${i + 1}',
+            imr: 70,
+            f: 1.0,
+            s: 1.0,
+            e: 1.0,
+            m: 1.0,
+            h: 0.1),
       );
       final out = InsightsService.generate(docs);
       final weak = out.firstWhere(

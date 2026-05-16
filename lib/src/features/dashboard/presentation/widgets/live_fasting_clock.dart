@@ -136,8 +136,7 @@ class _LiveFastingClockState extends State<LiveFastingClock> {
 
   String _twoDigits(int n) => n.toString().padLeft(2, '0');
 
-  String _fmt(Duration d) =>
-      '${_twoDigits(d.inHours)}:'
+  String _fmt(Duration d) => '${_twoDigits(d.inHours)}:'
       '${_twoDigits(d.inMinutes.remainder(60))}:'
       '${_twoDigits(d.inSeconds.remainder(60))}';
 
@@ -161,9 +160,8 @@ class _LiveFastingClockState extends State<LiveFastingClock> {
   Widget build(BuildContext context) {
     // En modo countdown bajamos un poco el contraste para diferenciar
     // visualmente que es "tiempo restante" y no "tiempo acumulado".
-    final color = _isCountdownMode
-        ? widget.color.withValues(alpha: 0.85)
-        : widget.color;
+    final color =
+        _isCountdownMode ? widget.color.withValues(alpha: 0.85) : widget.color;
     return Text(
       _displayText,
       style: TextStyle(

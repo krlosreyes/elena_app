@@ -67,7 +67,9 @@ void main() {
           CircadianEngine.currentPhase(at(22, 29)), CircadianPhase.creatividad);
     });
 
-    test('22:30 → sueno (inicio de la fase SUEÑO; lock intestinal SPEC-70.5 ya activo desde 21:30)', () {
+    test(
+        '22:30 → sueno (inicio de la fase SUEÑO; lock intestinal SPEC-70.5 ya activo desde 21:30)',
+        () {
       expect(CircadianEngine.currentPhase(at(22, 30)), CircadianPhase.sueno);
     });
 

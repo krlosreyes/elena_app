@@ -17,7 +17,8 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('SPEC-79 smoke — OnboardingController.completeOnboarding', () {
-    test('sin imr.current previo: dispara saveProfile + updateCurrentImr baseline',
+    test(
+        'sin imr.current previo: dispara saveProfile + updateCurrentImr baseline',
         () async {
       final repo = _RecordingRepo();
       final container = ProviderContainer(overrides: [

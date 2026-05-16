@@ -91,13 +91,16 @@ class _SleepInputSheetState extends ConsumerState<SleepInputSheet> {
       );
 
   void _submit() {
-    ref.read(sleepProvider.notifier).saveManualSleep(
-      bedtime: _bedtime,
-      wakeTime: _wakeTime,
-      sleepLatencyMinutes: _latencyMinutes?.round(),
-      nightAwakenings: _awakenings,
-      subjectiveQuality: _subjectiveQuality,
-    ).then((_) {
+    ref
+        .read(sleepProvider.notifier)
+        .saveManualSleep(
+          bedtime: _bedtime,
+          wakeTime: _wakeTime,
+          sleepLatencyMinutes: _latencyMinutes?.round(),
+          nightAwakenings: _awakenings,
+          subjectiveQuality: _subjectiveQuality,
+        )
+        .then((_) {
       if (mounted) Navigator.pop(context);
     }).catchError((error) {
       if (mounted) {
@@ -192,9 +195,8 @@ class _SleepInputSheetState extends ConsumerState<SleepInputSheet> {
             AnimatedSize(
               duration: const Duration(milliseconds: 240),
               curve: Curves.easeInOutCubic,
-              child: _showDetail
-                  ? _buildDetailSection()
-                  : const SizedBox.shrink(),
+              child:
+                  _showDetail ? _buildDetailSection() : const SizedBox.shrink(),
             ),
 
             // ── CTA ───────────────────────────────────────────────────
@@ -302,12 +304,13 @@ class _SleepInputSheetState extends ConsumerState<SleepInputSheet> {
                 final rating = i + 1;
                 final selected = (_subjectiveQuality ?? 0) >= rating;
                 return GestureDetector(
-                  onTap: () =>
-                      setState(() => _subjectiveQuality = rating),
+                  onTap: () => setState(() => _subjectiveQuality = rating),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4),
                     child: Icon(
-                      selected ? Icons.star_rounded : Icons.star_outline_rounded,
+                      selected
+                          ? Icons.star_rounded
+                          : Icons.star_outline_rounded,
                       size: 32,
                       color: selected
                           ? _accentColor

@@ -22,7 +22,10 @@ void main() {
           kPrivacyPolicySections.map((s) => s.title.toLowerCase()).toList();
       expect(titles.any((t) => t.contains('datos')), isTrue);
       expect(titles.any((t) => t.contains('derechos')), isTrue);
-      expect(titles.any((t) => t.contains('retención') || t.contains('eliminación')), isTrue);
+      expect(
+          titles
+              .any((t) => t.contains('retención') || t.contains('eliminación')),
+          isTrue);
     });
   });
 
@@ -38,7 +41,9 @@ void main() {
       }
     });
 
-    test('contiene aceptación, limitación de responsabilidad y disclaimer médico-like', () {
+    test(
+        'contiene aceptación, limitación de responsabilidad y disclaimer médico-like',
+        () {
       final titles =
           kTermsOfServiceSections.map((s) => s.title.toLowerCase()).toList();
       expect(titles.any((t) => t.contains('aceptación')), isTrue);

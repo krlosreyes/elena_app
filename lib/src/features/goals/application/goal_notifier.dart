@@ -47,10 +47,8 @@ class GoalNotifier extends StateNotifier<GoalsMap> {
 
   void _subscribeToGoals(String userId) {
     _goalsSubscription?.cancel();
-    _goalsSubscription = _ref
-        .read(goalRepositoryProvider)
-        .watchGoals(userId)
-        .listen((goals) {
+    _goalsSubscription =
+        _ref.read(goalRepositoryProvider).watchGoals(userId).listen((goals) {
       if (mounted) state = goals;
     });
   }
@@ -68,9 +66,7 @@ class GoalNotifier extends StateNotifier<GoalsMap> {
     if (_currentUserId == null) return;
     final updated = {...state, goal.type: goal};
     state = updated;
-    await _ref
-        .read(goalRepositoryProvider)
-        .saveGoals(_currentUserId!, updated);
+    await _ref.read(goalRepositoryProvider).saveGoals(_currentUserId!, updated);
   }
 
   /// Desactiva un objetivo (lo mantiene en Firestore pero con isActive = false).
@@ -92,18 +88,14 @@ class GoalNotifier extends StateNotifier<GoalsMap> {
     if (_currentUserId == null) return;
     final updated = Map<GoalType, UserGoal>.from(state)..remove(type);
     state = updated;
-    await _ref
-        .read(goalRepositoryProvider)
-        .saveGoals(_currentUserId!, updated);
+    await _ref.read(goalRepositoryProvider).saveGoals(_currentUserId!, updated);
   }
 
   /// Persiste todos los goals actuales (útil tras el setup masivo).
   Future<void> saveAll(Map<GoalType, UserGoal> goals) async {
     if (_currentUserId == null) return;
     state = goals;
-    await _ref
-        .read(goalRepositoryProvider)
-        .saveGoals(_currentUserId!, goals);
+    await _ref.read(goalRepositoryProvider).saveGoals(_currentUserId!, goals);
   }
 
   /// Lista de goals activos ordenados por pilar.

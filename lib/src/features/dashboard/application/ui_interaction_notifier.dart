@@ -26,9 +26,12 @@ class UiInteractionState {
     bool? isHydrationCoachDismissed,
   }) {
     return UiInteractionState(
-      isEngagementBannerDismissed: isEngagementBannerDismissed ?? this.isEngagementBannerDismissed,
-      isAdaptiveSuggestionDismissed: isAdaptiveSuggestionDismissed ?? this.isAdaptiveSuggestionDismissed,
-      isHydrationCoachDismissed: isHydrationCoachDismissed ?? this.isHydrationCoachDismissed,
+      isEngagementBannerDismissed:
+          isEngagementBannerDismissed ?? this.isEngagementBannerDismissed,
+      isAdaptiveSuggestionDismissed:
+          isAdaptiveSuggestionDismissed ?? this.isAdaptiveSuggestionDismissed,
+      isHydrationCoachDismissed:
+          isHydrationCoachDismissed ?? this.isHydrationCoachDismissed,
     );
   }
 }
@@ -59,6 +62,7 @@ class UiInteractionNotifier extends StateNotifier<UiInteractionState> {
   }
 }
 
-final uiInteractionProvider = StateNotifierProvider<UiInteractionNotifier, UiInteractionState>((ref) {
+final uiInteractionProvider =
+    StateNotifierProvider<UiInteractionNotifier, UiInteractionState>((ref) {
   return UiInteractionNotifier();
 });

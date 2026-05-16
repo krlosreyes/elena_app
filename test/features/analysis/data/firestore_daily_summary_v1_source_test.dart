@@ -59,10 +59,8 @@ void main() {
       final read = await source.readDoc(userId: userId, docId: '20260515');
       expect(read!['imrScore'], 72);
 
-      final col = firestore
-          .collection('users')
-          .doc(userId)
-          .collection('daily_summary');
+      final col =
+          firestore.collection('users').doc(userId).collection('daily_summary');
       final all = await col.get();
       expect(all.docs.length, 1, reason: 'No se duplica');
     });

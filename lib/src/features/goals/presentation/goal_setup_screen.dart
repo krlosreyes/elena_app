@@ -40,16 +40,21 @@ class _GoalSetupScreenState extends ConsumerState<GoalSetupScreen> {
   }
 
   void _buildDrafts() {
-    final userAsync     = ref.read(currentUserStreamProvider);
+    final userAsync = ref.read(currentUserStreamProvider);
     final existingGoals = ref.read(goalsProvider);
-    final user          = userAsync.valueOrNull;
+    final user = userAsync.valueOrNull;
 
     if (user == null) {
       // Fallback vacío — no debería ocurrir si la ruta está protegida
       _drafts = {
         for (final t in GoalType.values)
-          t: _GoalDraft(type: t, target: 0, current: 0,
-                        rationale: '', statusLabel: '', isActive: false),
+          t: _GoalDraft(
+              type: t,
+              target: 0,
+              current: 0,
+              rationale: '',
+              statusLabel: '',
+              isActive: false),
       };
       return;
     }
@@ -59,14 +64,14 @@ class _GoalSetupScreenState extends ConsumerState<GoalSetupScreen> {
     _drafts = {
       for (final type in GoalType.values)
         type: _GoalDraft(
-          type:        type,
-          target:      existingGoals[type]?.targetValue
-                       ?? suggestions[type]!.suggestedTarget,
-          current:     suggestions[type]!.currentValue,
-          rationale:   suggestions[type]!.rationale,
+          type: type,
+          target: existingGoals[type]?.targetValue ??
+              suggestions[type]!.suggestedTarget,
+          current: suggestions[type]!.currentValue,
+          rationale: suggestions[type]!.rationale,
           statusLabel: suggestions[type]!.currentStatusLabel,
-          isActive:    existingGoals[type]?.isActive
-                       ?? suggestions[type]!.shouldActivate,
+          isActive: existingGoals[type]?.isActive ??
+              suggestions[type]!.shouldActivate,
           originalSuggestion: suggestions[type]!.suggestedTarget,
         ),
     };
@@ -78,11 +83,11 @@ class _GoalSetupScreenState extends ConsumerState<GoalSetupScreen> {
     for (final draft in _drafts.values) {
       if (draft.isActive) {
         goals[draft.type] = UserGoal(
-          type:        draft.type,
+          type: draft.type,
           targetValue: draft.target,
-          startValue:  draft.current,
-          isActive:    true,
-          createdAt:   DateTime.now(),
+          startValue: draft.current,
+          isActive: true,
+          createdAt: DateTime.now(),
         );
       }
     }
@@ -186,13 +191,13 @@ class _GoalSetupScreenState extends ConsumerState<GoalSetupScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
               children: [
                 ...GoalType.values.map((type) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: _SuggestionCard(
-                    draft: _drafts[type]!,
-                    onChanged: (updated) =>
-                        setState(() => _drafts[type] = updated),
-                  ),
-                )),
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: _SuggestionCard(
+                        draft: _drafts[type]!,
+                        onChanged: (updated) =>
+                            setState(() => _drafts[type] = updated),
+                      ),
+                    )),
                 const SizedBox(height: 12),
               ],
             ),
@@ -216,9 +221,10 @@ class _GoalSetupScreenState extends ConsumerState<GoalSetupScreen> {
                 ),
                 child: _isSaving
                     ? const SizedBox(
-                        width: 20, height: 20,
+                        width: 20,
+                        height: 20,
                         child: CircularProgressIndicator(
-                          color: Colors.white, strokeWidth: 2),
+                            color: Colors.white, strokeWidth: 2),
                       )
                     : Text(
                         activeCount == 0
@@ -243,12 +249,12 @@ class _GoalSetupScreenState extends ConsumerState<GoalSetupScreen> {
 
 class _GoalDraft {
   final GoalType type;
-  final double   target;
-  final double   current;
-  final String   rationale;
-  final String   statusLabel;
-  final bool     isActive;
-  final double?  originalSuggestion;
+  final double target;
+  final double current;
+  final String rationale;
+  final String statusLabel;
+  final bool isActive;
+  final double? originalSuggestion;
 
   const _GoalDraft({
     required this.type,
@@ -261,12 +267,12 @@ class _GoalDraft {
   });
 
   _GoalDraft copyWith({double? target, bool? isActive}) => _GoalDraft(
-        type:               type,
-        target:             target ?? this.target,
-        current:            current,
-        rationale:          rationale,
-        statusLabel:        statusLabel,
-        isActive:           isActive ?? this.isActive,
+        type: type,
+        target: target ?? this.target,
+        current: current,
+        rationale: rationale,
+        statusLabel: statusLabel,
+        isActive: isActive ?? this.isActive,
         originalSuggestion: originalSuggestion,
       );
 }
@@ -289,12 +295,18 @@ class _SuggestionCardState extends State<_SuggestionCard> {
 
   String _fmt(GoalType type, double value) {
     switch (type) {
-      case GoalType.weightTarget:          return '${value.toStringAsFixed(1)} kg';
-      case GoalType.bodyFatTarget:         return '${value.toStringAsFixed(0)}%';
-      case GoalType.fastingDaysPerWeek:    return '${value.toStringAsFixed(0)} días/sem';
-      case GoalType.exerciseMinPerDay:     return '${value.toStringAsFixed(0)} min/día';
-      case GoalType.sleepHoursPerNight:    return '${value.toStringAsFixed(1)} h/noche';
-      case GoalType.hydrationLitersPerDay: return '${value.toStringAsFixed(2)} L/día';
+      case GoalType.weightTarget:
+        return '${value.toStringAsFixed(1)} kg';
+      case GoalType.bodyFatTarget:
+        return '${value.toStringAsFixed(0)}%';
+      case GoalType.fastingDaysPerWeek:
+        return '${value.toStringAsFixed(0)} días/sem';
+      case GoalType.exerciseMinPerDay:
+        return '${value.toStringAsFixed(0)} min/día';
+      case GoalType.sleepHoursPerNight:
+        return '${value.toStringAsFixed(1)} h/noche';
+      case GoalType.hydrationLitersPerDay:
+        return '${value.toStringAsFixed(2)} L/día';
     }
   }
 
@@ -311,12 +323,18 @@ class _SuggestionCardState extends State<_SuggestionCard> {
 
   double _snap(GoalType type, double raw) {
     switch (type) {
-      case GoalType.weightTarget:          return (raw * 2).round() / 2;
-      case GoalType.bodyFatTarget:         return raw.roundToDouble();
-      case GoalType.fastingDaysPerWeek:    return raw.roundToDouble();
-      case GoalType.exerciseMinPerDay:     return (raw / 5).round() * 5.0;
-      case GoalType.sleepHoursPerNight:    return (raw * 2).round() / 2;
-      case GoalType.hydrationLitersPerDay: return (raw * 4).round() / 4;
+      case GoalType.weightTarget:
+        return (raw * 2).round() / 2;
+      case GoalType.bodyFatTarget:
+        return raw.roundToDouble();
+      case GoalType.fastingDaysPerWeek:
+        return raw.roundToDouble();
+      case GoalType.exerciseMinPerDay:
+        return (raw / 5).round() * 5.0;
+      case GoalType.sleepHoursPerNight:
+        return (raw * 2).round() / 2;
+      case GoalType.hydrationLitersPerDay:
+        return (raw * 4).round() / 4;
     }
   }
 
@@ -326,16 +344,15 @@ class _SuggestionCardState extends State<_SuggestionCard> {
 
     // Meta vacía para acceder a propiedades estáticas (emoji, color, etc.)
     final meta = UserGoal(
-      type:        draft.type,
+      type: draft.type,
       targetValue: draft.target,
-      startValue:  draft.current,
-      isActive:    draft.isActive,
-      createdAt:   DateTime.now(),
+      startValue: draft.current,
+      isActive: draft.isActive,
+      createdAt: DateTime.now(),
     );
 
     final Color c = draft.isActive ? meta.pillarColor : Colors.white24;
-    final bool  isSuggestionValue =
-        widget.draft.originalSuggestion != null &&
+    final bool isSuggestionValue = widget.draft.originalSuggestion != null &&
         (draft.target - widget.draft.originalSuggestion!).abs() < 0.01;
 
     return AnimatedContainer(
@@ -355,7 +372,6 @@ class _SuggestionCardState extends State<_SuggestionCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-
           // ── Fila principal ───────────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 14, 12, 0),
@@ -380,7 +396,9 @@ class _SuggestionCardState extends State<_SuggestionCard> {
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w800,
-                              color: draft.isActive ? Colors.white : Colors.white38,
+                              color: draft.isActive
+                                  ? Colors.white
+                                  : Colors.white38,
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -474,7 +492,8 @@ class _SuggestionCardState extends State<_SuggestionCard> {
                           ? Alignment.centerRight
                           : Alignment.centerLeft,
                       child: Container(
-                        width: 20, height: 20,
+                        width: 20,
+                        height: 20,
                         margin: const EdgeInsets.symmetric(horizontal: 2),
                         decoration: const BoxDecoration(
                           color: Colors.white,
@@ -499,24 +518,23 @@ class _SuggestionCardState extends State<_SuggestionCard> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-
                   // Slider de ajuste fino
                   SliderTheme(
                     data: SliderThemeData(
-                      activeTrackColor:   c,
+                      activeTrackColor: c,
                       inactiveTrackColor: Colors.white.withValues(alpha: 0.08),
-                      thumbColor:         c,
-                      overlayColor:       c.withValues(alpha: 0.12),
-                      trackHeight:        4,
+                      thumbColor: c,
+                      overlayColor: c.withValues(alpha: 0.12),
+                      trackHeight: 4,
                       thumbShape: const RoundSliderThumbShape(
                         enabledThumbRadius: 7,
                       ),
                     ),
                     child: Slider(
-                      value: draft.target.clamp(
-                        _sliderMin(meta), _sliderMax(meta)),
-                      min:       _sliderMin(meta),
-                      max:       _sliderMax(meta),
+                      value: draft.target
+                          .clamp(_sliderMin(meta), _sliderMax(meta)),
+                      min: _sliderMin(meta),
+                      max: _sliderMax(meta),
                       onChanged: (val) => widget.onChanged(
                         draft.copyWith(target: _snap(draft.type, val)),
                       ),
@@ -541,8 +559,8 @@ class _SuggestionCardState extends State<_SuggestionCard> {
                           GestureDetector(
                             onTap: () => widget.onChanged(
                               draft.copyWith(
-                                target: widget.draft.originalSuggestion
-                                        ?? draft.target,
+                                target: widget.draft.originalSuggestion ??
+                                    draft.target,
                               ),
                             ),
                             child: const Text(

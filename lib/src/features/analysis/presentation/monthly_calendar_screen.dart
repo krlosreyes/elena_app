@@ -22,8 +22,7 @@ class MonthlyCalendarScreen extends ConsumerStatefulWidget {
       _MonthlyCalendarScreenState();
 }
 
-class _MonthlyCalendarScreenState
-    extends ConsumerState<MonthlyCalendarScreen> {
+class _MonthlyCalendarScreenState extends ConsumerState<MonthlyCalendarScreen> {
   late MonthKey _currentMonth;
 
   @override
@@ -34,8 +33,8 @@ class _MonthlyCalendarScreenState
 
   @override
   Widget build(BuildContext context) {
-    final monthLabel = DateFormat("MMMM 'de' yyyy", 'es')
-        .format(_currentMonth.firstDay());
+    final monthLabel =
+        DateFormat("MMMM 'de' yyyy", 'es').format(_currentMonth.firstDay());
 
     final docsAsync = ref.watch(monthlySummariesProvider(_currentMonth));
 
@@ -177,7 +176,8 @@ class _MonthlyCalendarScreenState
         final isToday = date.year == today.year &&
             date.month == today.month &&
             date.day == today.day;
-        final isFuture = date.isAfter(DateTime(today.year, today.month, today.day));
+        final isFuture =
+            date.isAfter(DateTime(today.year, today.month, today.day));
 
         return CalendarDayCell(
           dayNumber: dayNum,

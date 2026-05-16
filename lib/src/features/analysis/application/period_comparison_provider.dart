@@ -38,9 +38,8 @@ class PeriodData {
 /// client-side en current + previous, computa el comparison y
 /// devuelve ambos. `autoDispose` libera el stream al salir; el caché
 /// offline de Firestore absorbe el cold-start al volver.
-final periodDataProvider =
-    StreamProvider.family.autoDispose<PeriodData, AnalysisPeriod>(
-        (ref, period) {
+final periodDataProvider = StreamProvider.family
+    .autoDispose<PeriodData, AnalysisPeriod>((ref, period) {
   final uid = ref.watch(authStateProvider).value?.uid;
   if (uid == null) {
     return Stream.value(PeriodData(
@@ -55,8 +54,7 @@ final periodDataProvider =
   final todayMidnight = DateTime(today.year, today.month, today.day);
   final doubleFrom =
       todayMidnight.subtract(Duration(days: 2 * period.days - 1));
-  final currentFrom =
-      todayMidnight.subtract(Duration(days: period.days - 1));
+  final currentFrom = todayMidnight.subtract(Duration(days: period.days - 1));
   final boundary = _fmt(currentFrom);
 
   return repo
@@ -86,9 +84,8 @@ final periodDataProvider =
 
 /// Selector derivado: expone solo el `PeriodComparison` cuando la UI
 /// solo necesita ese fragmento (e.g., hero card).
-final periodComparisonProvider =
-    Provider.family.autoDispose<AsyncValue<PeriodComparison>, AnalysisPeriod>(
-        (ref, period) {
+final periodComparisonProvider = Provider.family
+    .autoDispose<AsyncValue<PeriodComparison>, AnalysisPeriod>((ref, period) {
   return ref.watch(periodDataProvider(period)).whenData((d) => d.comparison);
 });
 
@@ -98,4 +95,3 @@ final currentPeriodDocsProvider = Provider.family
         (ref, period) {
   return ref.watch(periodDataProvider(period)).whenData((d) => d.currentDocs);
 });
-

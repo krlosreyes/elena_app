@@ -32,10 +32,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     await ref.read(authControllerProvider.notifier).signUp(
-      _emailController.text.trim(),
-      _passwordController.text.trim(),
-      _nameController.text.trim(),
-    );
+          _emailController.text.trim(),
+          _passwordController.text.trim(),
+          _nameController.text.trim(),
+        );
   }
 
   @override
@@ -43,7 +43,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     ref.listen<AsyncValue<void>>(authControllerProvider, (prev, next) {
       next.whenOrNull(
         error: (err, _) => ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(err.toString()), backgroundColor: Colors.redAccent),
+          SnackBar(
+              content: Text(err.toString()), backgroundColor: Colors.redAccent),
         ),
       );
     });
@@ -62,39 +63,57 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               children: [
                 Text(
                   "Crear Cuenta",
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w900),
+                  style: Theme.of(context)
+                      .textTheme
+                      .headlineMedium
+                      ?.copyWith(fontWeight: FontWeight.w900),
                 ),
                 const Text("Únete al Ecosistema Metamorfosis Real"),
                 const SizedBox(height: 40),
 
                 TextFormField(
                   controller: _nameController,
-                  decoration: const InputDecoration(labelText: "Nombre Completo", prefixIcon: Icon(Icons.person_outline)),
-                  validator: (val) => (val == null || val.isEmpty) ? "Campo requerido" : null,
+                  decoration: const InputDecoration(
+                      labelText: "Nombre Completo",
+                      prefixIcon: Icon(Icons.person_outline)),
+                  validator: (val) =>
+                      (val == null || val.isEmpty) ? "Campo requerido" : null,
                 ),
                 const SizedBox(height: 16),
 
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(labelText: "Email", prefixIcon: Icon(Icons.email_outlined)),
-                  validator: (val) => (val == null || !val.contains('@')) ? "Email inválido" : null,
+                  decoration: const InputDecoration(
+                      labelText: "Email",
+                      prefixIcon: Icon(Icons.email_outlined)),
+                  validator: (val) => (val == null || !val.contains('@'))
+                      ? "Email inválido"
+                      : null,
                 ),
                 const SizedBox(height: 16),
 
                 TextFormField(
                   controller: _passwordController,
                   obscureText: true,
-                  decoration: const InputDecoration(labelText: "Contraseña", prefixIcon: Icon(Icons.lock_outline)),
-                  validator: (val) => (val == null || val.length < 6) ? "Mínimo 6 caracteres" : null,
+                  decoration: const InputDecoration(
+                      labelText: "Contraseña",
+                      prefixIcon: Icon(Icons.lock_outline)),
+                  validator: (val) => (val == null || val.length < 6)
+                      ? "Mínimo 6 caracteres"
+                      : null,
                 ),
                 const SizedBox(height: 16),
 
                 TextFormField(
                   controller: _confirmPasswordController,
                   obscureText: true,
-                  decoration: const InputDecoration(labelText: "Confirmar Contraseña", prefixIcon: Icon(Icons.lock_reset)),
-                  validator: (val) => val != _passwordController.text ? "Las contraseñas no coinciden" : null,
+                  decoration: const InputDecoration(
+                      labelText: "Confirmar Contraseña",
+                      prefixIcon: Icon(Icons.lock_reset)),
+                  validator: (val) => val != _passwordController.text
+                      ? "Las contraseñas no coinciden"
+                      : null,
                 ),
                 const SizedBox(height: 32),
 
@@ -104,11 +123,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     onPressed: isLoading ? null : _submit,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.metabolicGreen,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16)),
                     ),
                     child: isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text("REGISTRARME", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text("REGISTRARME",
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold)),
                   ),
                 ),
 

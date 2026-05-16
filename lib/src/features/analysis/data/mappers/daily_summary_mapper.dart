@@ -51,10 +51,8 @@ class DailySummaryMapper {
       imrScore: (map['imrScore'] as num?)?.toInt() ?? 0,
       fastingProgress: (map['fastingProgress'] as num?)?.toDouble() ?? 0.0,
       sleepProgress: (map['sleepProgress'] as num?)?.toDouble() ?? 0.0,
-      hydrationProgress:
-          (map['hydrationProgress'] as num?)?.toDouble() ?? 0.0,
-      exerciseProgress:
-          (map['exerciseProgress'] as num?)?.toDouble() ?? 0.0,
+      hydrationProgress: (map['hydrationProgress'] as num?)?.toDouble() ?? 0.0,
+      exerciseProgress: (map['exerciseProgress'] as num?)?.toDouble() ?? 0.0,
       mealsProgress: (map['mealsProgress'] as num?)?.toDouble() ?? 0.0,
       updatedAt: (map['updatedAt'] as Timestamp?)?.toDate() ??
           DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),

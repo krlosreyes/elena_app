@@ -39,8 +39,7 @@ class StreakEngine {
   /// no metamorfosis". AASM Practice Guidelines establece 7-9h como rango
   /// óptimo; por debajo de 7h el eje grelina/leptina se altera y aumenta
   /// el riesgo de obesidad, T2D e hipertensión.
-  static bool evaluateSleep({required double sleepHours}) =>
-      sleepHours >= 7.0;
+  static bool evaluateSleep({required double sleepHours}) => sleepHours >= 7.0;
 
   /// Evalúa si la hidratación alcanzó el 75% de la meta.
   /// SPEC-70 §7.2 — ENGINEERING JUDGMENT (mínimo funcional sin
@@ -55,8 +54,7 @@ class StreakEngine {
 
   /// Evalúa si se registró al menos 1 comida en el día.
   /// SPEC-70 §7.4 — LOW (proxy de engagement, no de calidad nutricional).
-  static bool evaluateNutrition({required int mealsLogged}) =>
-      mealsLogged >= 1;
+  static bool evaluateNutrition({required int mealsLogged}) => mealsLogged >= 1;
 
   // ─────────────────────────────────────────────────────────────────────────
   // Métricas de racha desde historial
@@ -72,11 +70,14 @@ class StreakEngine {
 
     final sorted = _sortedDescending(history);
     final today = _todayKey();
-    final yesterday = _dateKey(DateTime.now().subtract(const Duration(days: 1)));
+    final yesterday =
+        _dateKey(DateTime.now().subtract(const Duration(days: 1)));
 
     // Punto de partida: si hoy califica, empezar desde hoy; si no, desde ayer.
     int start = 0;
-    if (sorted.isNotEmpty && sorted.first.date == today && !sorted.first.qualifiesForStreak) {
+    if (sorted.isNotEmpty &&
+        sorted.first.date == today &&
+        !sorted.first.qualifiesForStreak) {
       start = 1; // Saltar el día de hoy incompleto
     }
 
@@ -94,7 +95,8 @@ class StreakEngine {
         expectedDate = entry.date;
         streak++;
       } else {
-        final expected = DateTime.parse(expectedDate).subtract(const Duration(days: 1));
+        final expected =
+            DateTime.parse(expectedDate).subtract(const Duration(days: 1));
         if (entry.date == _dateKey(expected)) {
           streak++;
           expectedDate = entry.date;
@@ -214,8 +216,7 @@ class StreakEngine {
 
   static String _todayKey() => _dateKey(DateTime.now());
 
-  static String _dateKey(DateTime d) =>
-      '${d.year.toString().padLeft(4, '0')}-'
+  static String _dateKey(DateTime d) => '${d.year.toString().padLeft(4, '0')}-'
       '${d.month.toString().padLeft(2, '0')}-'
       '${d.day.toString().padLeft(2, '0')}';
 }

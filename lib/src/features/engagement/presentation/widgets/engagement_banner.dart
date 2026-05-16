@@ -17,7 +17,8 @@ class EngagementBanner extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final engagement = ref.watch(engagementProvider);
-    final dismissed = ref.watch(uiInteractionProvider).isEngagementBannerDismissed;
+    final dismissed =
+        ref.watch(uiInteractionProvider).isEngagementBannerDismissed;
 
     if (engagement.level == EngagementLevel.neutro || dismissed) {
       return const SizedBox.shrink();
@@ -91,8 +92,9 @@ class EngagementBanner extends ConsumerWidget {
               color: statusColor.withValues(alpha: 0.7),
               size: 20,
             ),
-            onPressed: () =>
-                ref.read(uiInteractionProvider.notifier).dismissEngagementBanner(),
+            onPressed: () => ref
+                .read(uiInteractionProvider.notifier)
+                .dismissEngagementBanner(),
           ),
         ],
       ),

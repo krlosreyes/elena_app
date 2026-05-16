@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 
 /// Fases biológicas extendidas según el mapa cronológico del ayuno real
 enum FastingPhase {
-  none,            // Estado inicial/Alimentación
+  none, // Estado inicial/Alimentación
   postAbsorption, // 0-12h: Descenso de insulina
-  transition,     // 12-18h: Gluconeogénesis
-  fatBurning,     // 18-24h: Cetosis nutricional
-  autophagy,      // 24-48h: Reciclaje celular
-  survival        // 48h+: Conservación profunda
+  transition, // 12-18h: Gluconeogénesis
+  fatBurning, // 18-24h: Cetosis nutricional
+  autophagy, // 24-48h: Reciclaje celular
+  survival // 48h+: Conservación profunda
 }
 
 class FastingState {
@@ -18,9 +18,9 @@ class FastingState {
   final Duration timeUntilLock;
   final bool isActive;
   final String fastingProtocol; // ej: "16:8", "18:6"
-  
+
   // --- PROACTIVIDAD: ALERTA DE VENTANA CRÍTICA ---
-  final bool nearSleepWarning; 
+  final bool nearSleepWarning;
 
   // --- ESTADOS DE CONFIRMACIÓN MANUAL ---
   final bool isWaitingForFastingEnd;
@@ -56,11 +56,10 @@ class FastingState {
   factory FastingState.initial() => FastingState();
 
   /// --- LÓGICA DE PROGRESO Y TARGET ---
-  
+
   int get targetHours {
-    final cleanProtocol = fastingProtocol.contains(':') 
-        ? fastingProtocol.split(':').first 
-        : "16";
+    final cleanProtocol =
+        fastingProtocol.contains(':') ? fastingProtocol.split(':').first : "16";
     return int.tryParse(cleanProtocol) ?? 16;
   }
 
@@ -86,12 +85,18 @@ class FastingState {
 
   String get metabolicMilestone {
     switch (phase) {
-      case FastingPhase.none: return "Estado Anabólico";
-      case FastingPhase.postAbsorption: return "Descenso de Insulina";
-      case FastingPhase.transition: return "Inicio de Cetogénesis";
-      case FastingPhase.fatBurning: return "Quema de Grasa";
-      case FastingPhase.autophagy: return "Autofagia Activa";
-      case FastingPhase.survival: return "Regeneración Celular";
+      case FastingPhase.none:
+        return "Estado Anabólico";
+      case FastingPhase.postAbsorption:
+        return "Descenso de Insulina";
+      case FastingPhase.transition:
+        return "Inicio de Cetogénesis";
+      case FastingPhase.fatBurning:
+        return "Quema de Grasa";
+      case FastingPhase.autophagy:
+        return "Autofagia Activa";
+      case FastingPhase.survival:
+        return "Regeneración Celular";
     }
   }
 
@@ -105,12 +110,15 @@ class FastingState {
 
   String get nextMilestoneLabel {
     if (isActive) {
-      if (duration.inHours < 12) return "SIGUIENTE ETAPA: DESCENSO DE INSULINA (12H)";
+      if (duration.inHours < 12)
+        return "SIGUIENTE ETAPA: DESCENSO DE INSULINA (12H)";
       if (duration.inHours < 18) return "SIGUIENTE ETAPA: QUEMA DE GRASA (18H)";
       if (duration.inHours < 24) return "SIGUIENTE ETAPA: AUTOFAGIA (24H)";
       return "FASE DE REGENERACIÓN PROFUNDA";
     } else {
-      return nearSleepWarning ? "ATENCIÓN: RIESGO DE INSULINA NOCTURNA" : "META: INICIAR AYUNO";
+      return nearSleepWarning
+          ? "ATENCIÓN: RIESGO DE INSULINA NOCTURNA"
+          : "META: INICIAR AYUNO";
     }
   }
 
@@ -149,8 +157,10 @@ class FastingState {
       isActive: isActive ?? this.isActive,
       fastingProtocol: fastingProtocol ?? this.fastingProtocol,
       nearSleepWarning: nearSleepWarning ?? this.nearSleepWarning,
-      isWaitingForFastingEnd: isWaitingForFastingEnd ?? this.isWaitingForFastingEnd,
-      isWaitingForFeedingEnd: isWaitingForFeedingEnd ?? this.isWaitingForFeedingEnd,
+      isWaitingForFastingEnd:
+          isWaitingForFastingEnd ?? this.isWaitingForFastingEnd,
+      isWaitingForFeedingEnd:
+          isWaitingForFeedingEnd ?? this.isWaitingForFeedingEnd,
       isSaving: isSaving ?? this.isSaving,
       completedToday: completedToday ?? this.completedToday,
     );

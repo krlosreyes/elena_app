@@ -32,8 +32,10 @@ void main() {
         const Duration(hours: 14),
       );
       final joined = list.join(' ').toLowerCase();
-      expect(joined, anyOf(contains('cetogén'), contains('cetog'),
-          contains('gluconeogénesis')));
+      expect(
+          joined,
+          anyOf(contains('cetogén'), contains('cetog'),
+              contains('gluconeogénesis')));
       expect(joined, contains('grasa'));
     });
 

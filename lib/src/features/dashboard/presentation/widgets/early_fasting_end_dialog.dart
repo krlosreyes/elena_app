@@ -51,10 +51,9 @@ class EarlyFastingEndDialog extends StatelessWidget {
     final int minutes = elapsed.inMinutes % 60;
     final String elapsedLabel =
         hours > 0 ? '${hours}h ${minutes}min' : '${minutes}min';
-    final int progressPct =
-        ((elapsed.inSeconds / (targetHours * 3600)) * 100)
-            .clamp(0, 100)
-            .round();
+    final int progressPct = ((elapsed.inSeconds / (targetHours * 3600)) * 100)
+        .clamp(0, 100)
+        .round();
 
     return AlertDialog(
       backgroundColor: const Color(0xFF1E293B),
@@ -76,8 +75,7 @@ class EarlyFastingEndDialog extends StatelessWidget {
           children: [
             // Progreso actual.
             Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
                 color: AppColors.metabolicGreen.withValues(alpha: 0.10),
                 borderRadius: BorderRadius.circular(10),

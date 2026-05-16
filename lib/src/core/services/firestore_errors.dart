@@ -23,7 +23,6 @@ class FirestoreErrors {
       return true;
     }
     final s = err.toString().toLowerCase();
-    return s.contains('permission-denied') ||
-        s.contains('permission_denied');
+    return s.contains('permission-denied') || s.contains('permission_denied');
   }
 }

@@ -24,8 +24,7 @@ class GoalRepository {
     Map<GoalType, UserGoal> goals,
   ) async {
     final Map<String, dynamic> serialized = {
-      for (final entry in goals.entries)
-        entry.key.name: entry.value.toJson(),
+      for (final entry in goals.entries) entry.key.name: entry.value.toJson(),
     };
 
     await _userDoc(userId).set(

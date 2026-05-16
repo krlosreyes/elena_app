@@ -53,9 +53,8 @@ class PeriodComparison {
 
   /// Diferencia respecto al período anterior. `null` si no hay
   /// comparación disponible.
-  int? get delta => imrAveragePrevious != null
-      ? imrAverage - imrAveragePrevious!
-      : null;
+  int? get delta =>
+      imrAveragePrevious != null ? imrAverage - imrAveragePrevious! : null;
 
   /// Diferencia entre HOY y el promedio del período. Permite
   /// comunicar "tu día va mejor/peor que tu promedio". `null` si no

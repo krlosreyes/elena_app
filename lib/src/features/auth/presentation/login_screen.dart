@@ -42,7 +42,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     ref.listen<AsyncValue<void>>(authControllerProvider, (prev, next) {
       next.whenOrNull(
         error: (err, _) => ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(err.toString()), backgroundColor: Colors.redAccent),
+          SnackBar(
+              content: Text(err.toString()), backgroundColor: Colors.redAccent),
         ),
       );
     });
@@ -66,8 +67,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     'assets/images/elena_logo.png',
                     height: 100,
                     errorBuilder: (ctx, err, st) => const Icon(
-                      Icons.shield_moon_outlined, 
-                      size: 80, 
+                      Icons.shield_moon_outlined,
+                      size: 80,
                       color: AppColors.metabolicGreen,
                     ),
                   ),
@@ -76,17 +77,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     "Bienvenid@",
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 4,
-                    ),
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 4,
+                        ),
                   ),
                   Text(
                     "Vida solo hay una...Y TODO CUENTA!",
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      color: Colors.grey,
-                      letterSpacing: 1.2,
-                    ),
+                          color: Colors.grey,
+                          letterSpacing: 1.2,
+                        ),
                   ),
                   const SizedBox(height: 48),
 
@@ -98,7 +99,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       labelText: "Email",
                       prefixIcon: Icon(Icons.email_outlined),
                     ),
-                    validator: (val) => (val == null || !val.contains('@')) ? "Email no válido" : null,
+                    validator: (val) => (val == null || !val.contains('@'))
+                        ? "Email no válido"
+                        : null,
                   ),
                   const SizedBox(height: 16),
 
@@ -110,9 +113,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       labelText: "Contraseña",
                       prefixIcon: Icon(Icons.lock_outline),
                     ),
-                    validator: (val) => (val == null || val.length < 6) ? "Mínimo 6 caracteres" : null,
+                    validator: (val) => (val == null || val.length < 6)
+                        ? "Mínimo 6 caracteres"
+                        : null,
                   ),
-                  
+
                   // Link de recuperación
                   Align(
                     alignment: Alignment.centerRight,
@@ -130,11 +135,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       onPressed: isLoading ? null : _submit,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.metabolicGreen,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16)),
                       ),
-                      child: isLoading 
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text("Iniciar METAMORFOSIS", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),
+                      child: isLoading
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : const Text("Iniciar METAMORFOSIS",
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                  color: Colors.white)),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -146,7 +156,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       const Text("¿No tienes cuenta?"),
                       TextButton(
                         onPressed: () => context.push('/register'),
-                        child: const Text("Regístrate aquí", style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.metabolicGreen)),
+                        child: const Text("Regístrate aquí",
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.metabolicGreen)),
                       ),
                     ],
                   ),

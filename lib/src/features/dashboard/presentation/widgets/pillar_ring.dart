@@ -102,9 +102,7 @@ class PillarRing extends StatelessWidget {
             label,
             style: TextStyle(
               fontSize: 10,
-              color: isSelected
-                  ? color
-                  : Colors.white.withValues(alpha: 0.6),
+              color: isSelected ? color : Colors.white.withValues(alpha: 0.6),
               fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
             ),
           ),

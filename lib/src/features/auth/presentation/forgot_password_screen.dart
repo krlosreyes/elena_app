@@ -16,11 +16,13 @@ class ForgotPasswordScreen extends ConsumerWidget {
         padding: const EdgeInsets.all(32.0),
         child: Column(
           children: [
-            const Text("Ingresa tu email para recibir un enlace de restauración."),
+            const Text(
+                "Ingresa tu email para recibir un enlace de restauración."),
             const SizedBox(height: 24),
             TextField(
               controller: emailController,
-              decoration: const InputDecoration(labelText: "Email", prefixIcon: Icon(Icons.email_outlined)),
+              decoration: const InputDecoration(
+                  labelText: "Email", prefixIcon: Icon(Icons.email_outlined)),
             ),
             const SizedBox(height: 32),
             SizedBox(
@@ -28,9 +30,12 @@ class ForgotPasswordScreen extends ConsumerWidget {
               height: 50,
               child: ElevatedButton(
                 onPressed: () async {
-                  await ref.read(authRepositoryProvider).sendPasswordResetEmail(emailController.text.trim());
+                  await ref
+                      .read(authRepositoryProvider)
+                      .sendPasswordResetEmail(emailController.text.trim());
                   if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Enlace enviado si el correo existe.")));
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                        content: Text("Enlace enviado si el correo existe.")));
                     Navigator.pop(context);
                   }
                 },

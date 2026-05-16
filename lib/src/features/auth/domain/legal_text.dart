@@ -27,8 +27,7 @@ class LegalSection {
 const List<LegalSection> kPrivacyPolicySections = [
   LegalSection(
     title: 'Datos que recolectamos',
-    body:
-        'Identidad: correo electrónico y nombre que proporcionas al '
+    body: 'Identidad: correo electrónico y nombre que proporcionas al '
         'registrarte.\n\n'
         'Biometría: peso, altura, circunferencias (cintura, cuello), '
         'porcentaje de grasa corporal estimado mediante fórmula US Navy. '
@@ -45,8 +44,7 @@ const List<LegalSection> kPrivacyPolicySections = [
   ),
   LegalSection(
     title: 'Para qué usamos tus datos',
-    body:
-        'Para calcular tu IMR y mostrarte recomendaciones personalizadas '
+    body: 'Para calcular tu IMR y mostrarte recomendaciones personalizadas '
         'sobre los 5 pilares (ayuno, ejercicio, nutrición, sueño, '
         'hidratación).\n\n'
         'Para sincronizar tu cuenta entre la app móvil y el sitio web '
@@ -60,8 +58,7 @@ const List<LegalSection> kPrivacyPolicySections = [
   ),
   LegalSection(
     title: 'Con quién compartimos',
-    body:
-        'Google Firebase (Authentication, Firestore, App Check, '
+    body: 'Google Firebase (Authentication, Firestore, App Check, '
         'Crashlytics): infraestructura de autenticación y base de datos. '
         'Los datos están encriptados en tránsito y reposo. Firebase actúa '
         'como procesador de datos bajo nuestras instrucciones, sujeto a '
@@ -74,8 +71,7 @@ const List<LegalSection> kPrivacyPolicySections = [
   ),
   LegalSection(
     title: 'Retención y eliminación',
-    body:
-        'Tus datos se conservan mientras tu cuenta esté activa. Cuando '
+    body: 'Tus datos se conservan mientras tu cuenta esté activa. Cuando '
         'eliminas tu cuenta desde Perfil → ELIMINAR CUENTA, se borra '
         'inmediatamente tu documento principal en Firestore y tu usuario '
         'de Firebase Authentication. Las subcolecciones históricas '
@@ -86,8 +82,7 @@ const List<LegalSection> kPrivacyPolicySections = [
   ),
   LegalSection(
     title: 'Tus derechos',
-    body:
-        'Acceso: puedes ver todos tus datos desde la app en Perfil y '
+    body: 'Acceso: puedes ver todos tus datos desde la app en Perfil y '
         'desde el sitio web.\n\n'
         'Rectificación: puedes editar tu biometría desde Perfil → '
         'HARDWARE BIOLÓGICO.\n\n'
@@ -100,8 +95,7 @@ const List<LegalSection> kPrivacyPolicySections = [
   ),
   LegalSection(
     title: 'Disclaimer médico',
-    body:
-        'ElenaApp NO es un dispositivo médico. El IMR es un indicador '
+    body: 'ElenaApp NO es un dispositivo médico. El IMR es un indicador '
         'informativo basado en literatura científica revisada (ver '
         'IMR_BIBLIOGRAPHY.md en el repositorio), no un diagnóstico. Si '
         'tienes alguna condición médica o estás en una de las '
@@ -111,8 +105,7 @@ const List<LegalSection> kPrivacyPolicySections = [
   ),
   LegalSection(
     title: 'Cambios a esta política',
-    body:
-        'Si modificamos esta política sustancialmente, te lo notificaremos '
+    body: 'Si modificamos esta política sustancialmente, te lo notificaremos '
         'la próxima vez que abras la app. Tu uso continuado constituye '
         'aceptación de la versión actual.\n\n'
         'Versión actual: 1. Última actualización: mayo 2026.',
@@ -126,15 +119,13 @@ const List<LegalSection> kPrivacyPolicySections = [
 const List<LegalSection> kTermsOfServiceSections = [
   LegalSection(
     title: 'Aceptación',
-    body:
-        'Al crear una cuenta o iniciar sesión en ElenaApp aceptas estos '
+    body: 'Al crear una cuenta o iniciar sesión en ElenaApp aceptas estos '
         'términos y nuestra Política de Privacidad. Si no estás de '
         'acuerdo con alguna parte, debes dejar de usar la app.',
   ),
   LegalSection(
     title: 'Qué ofrecemos',
-    body:
-        'ElenaApp es una herramienta de seguimiento de salud metabólica '
+    body: 'ElenaApp es una herramienta de seguimiento de salud metabólica '
         'basada en el Índice Metabólico Real (IMR). Combina información '
         'de cinco pilares — ayuno, ejercicio, nutrición, sueño, '
         'hidratación — para mostrarte un único score y recomendaciones '
@@ -146,8 +137,7 @@ const List<LegalSection> kTermsOfServiceSections = [
   ),
   LegalSection(
     title: 'Tu cuenta',
-    body:
-        'Eres responsable de mantener la confidencialidad de tu '
+    body: 'Eres responsable de mantener la confidencialidad de tu '
         'contraseña. Cualquier actividad ejecutada con tu cuenta se '
         'considera tuya.\n\n'
         'Debes proporcionar información veraz en tu perfil. Datos '
@@ -157,8 +147,7 @@ const List<LegalSection> kTermsOfServiceSections = [
   ),
   LegalSection(
     title: 'Conducta aceptable',
-    body:
-        'No uses la app para fines ilegales. No intentes acceder a '
+    body: 'No uses la app para fines ilegales. No intentes acceder a '
         'cuentas de otros usuarios. No realices ingeniería inversa, '
         'descompilación o extracción de datos masiva.\n\n'
         'Reserva legal: nos reservamos el derecho de suspender cuentas '
@@ -166,8 +155,7 @@ const List<LegalSection> kTermsOfServiceSections = [
   ),
   LegalSection(
     title: 'Limitación de responsabilidad',
-    body:
-        'ElenaApp se ofrece "tal cual". No garantizamos que el servicio '
+    body: 'ElenaApp se ofrece "tal cual". No garantizamos que el servicio '
         'sea ininterrumpido o libre de errores.\n\n'
         'NO somos responsables de decisiones de salud tomadas con base '
         'en información del app. Consulta siempre con un profesional '
@@ -179,16 +167,14 @@ const List<LegalSection> kTermsOfServiceSections = [
   ),
   LegalSection(
     title: 'Cambios a estos términos',
-    body:
-        'Podemos actualizar estos términos. Las versiones materiales se '
+    body: 'Podemos actualizar estos términos. Las versiones materiales se '
         'notificarán al abrir la app. Tu uso continuado tras la '
         'actualización constituye aceptación.\n\n'
         'Versión actual: 1. Última actualización: mayo 2026.',
   ),
   LegalSection(
     title: 'Ley aplicable',
-    body:
-        'Estos términos se rigen por la legislación colombiana. '
+    body: 'Estos términos se rigen por la legislación colombiana. '
         'Cualquier disputa se resolverá en los tribunales competentes '
         'de Bogotá, Colombia.',
   ),

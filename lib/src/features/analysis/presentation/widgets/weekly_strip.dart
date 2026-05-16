@@ -71,8 +71,9 @@ class _DayCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final activeColor =
-        isToday ? AppColors.metabolicGreen : Colors.white.withValues(alpha: 0.18);
+    final activeColor = isToday
+        ? AppColors.metabolicGreen
+        : Colors.white.withValues(alpha: 0.18);
     return Column(
       children: [
         Text(

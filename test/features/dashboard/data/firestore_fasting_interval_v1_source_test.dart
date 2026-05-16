@@ -145,7 +145,9 @@ void main() {
     });
   });
 
-  group('SPEC-99 — streamLatest prioriza intervalo abierto sobre cerrado más reciente', () {
+  group(
+      'SPEC-99 — streamLatest prioriza intervalo abierto sobre cerrado más reciente',
+      () {
     const userId = 'user-1';
 
     test(

@@ -27,9 +27,9 @@ class ProgressScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final progress    = ref.watch(progressProvider);
-    final goals       = ref.watch(goalsProvider);
-    final userAsync   = ref.watch(currentUserStreamProvider);
+    final progress = ref.watch(progressProvider);
+    final goals = ref.watch(goalsProvider);
+    final userAsync = ref.watch(currentUserStreamProvider);
     final streakState = ref.watch(streakProvider);
 
     final user = userAsync.valueOrNull;
@@ -89,9 +89,9 @@ class ProgressScreen extends ConsumerWidget {
 
                   // ── 1. Hero IMR ────────────────────────────────────────────
                   _ImrHero(
-                    currentImr:  currentImr,
+                    currentImr: currentImr,
                     baselineImr: progress.baselineImr,
-                    delta:       progress.imrDelta,
+                    delta: progress.imrDelta,
                     daysTracked: progress.imrHistory.length,
                   ),
                   const SizedBox(height: 20),
@@ -101,8 +101,9 @@ class ProgressScreen extends ConsumerWidget {
                   const SizedBox(height: 10),
                   progress.hasEnoughImrData
                       ? TrendChart(
-                          data:  progress.imrChartPoints,
-                          label: 'IMR — últimos ${progress.imrHistory.length} días',
+                          data: progress.imrChartPoints,
+                          label:
+                              'IMR — últimos ${progress.imrHistory.length} días',
                           color: const Color(0xFF1ABC9C),
                         )
                       : _UnlockCard(
@@ -116,13 +117,13 @@ class ProgressScreen extends ConsumerWidget {
                   _SectionLabel('COMPOSICIÓN CORPORAL'),
                   const SizedBox(height: 10),
                   _BiometricSection(
-                    history:   progress.biometricHistory,
+                    history: progress.biometricHistory,
                     hasEnoughWeight: progress.weightChartPoints.length >= 2,
-                    hasEnoughBf:    progress.hasEnoughBfData,
-                    weightPoints:   progress.weightChartPoints,
-                    bfPoints:       progress.bodyFatChartPoints,
-                    latestWeight:   progress.latestWeight,
-                    latestBf:       progress.latestBodyFat,
+                    hasEnoughBf: progress.hasEnoughBfData,
+                    weightPoints: progress.weightChartPoints,
+                    bfPoints: progress.bodyFatChartPoints,
+                    latestWeight: progress.latestWeight,
+                    latestBf: progress.latestBodyFat,
                     onCheckIn: () => showBiometricCheckInSheet(context),
                   ),
                   const SizedBox(height: 20),
@@ -155,10 +156,10 @@ class _ImrHero extends StatelessWidget {
     required this.daysTracked,
   });
 
-  final int  currentImr;
+  final int currentImr;
   final int? baselineImr;
   final int? delta;
-  final int  daysTracked;
+  final int daysTracked;
 
   Color get _zoneColor {
     if (currentImr >= 90) return const Color(0xFF1ABC9C);
@@ -221,7 +222,10 @@ class _ImrHero extends StatelessWidget {
           ),
 
           const SizedBox(width: 20),
-          Container(width: 1, height: 70, color: Colors.white.withValues(alpha: 0.08)),
+          Container(
+              width: 1,
+              height: 70,
+              color: Colors.white.withValues(alpha: 0.08)),
           const SizedBox(width: 20),
 
           // Stats
@@ -310,8 +314,8 @@ class _BiometricSection extends StatelessWidget {
   });
 
   final List<BiometricCheckIn> history;
-  final bool    hasEnoughWeight;
-  final bool    hasEnoughBf;
+  final bool hasEnoughWeight;
+  final bool hasEnoughBf;
   final List<double> weightPoints;
   final List<double> bfPoints;
   final double? latestWeight;
@@ -333,7 +337,7 @@ class _BiometricSection extends StatelessWidget {
         // Gráfica de peso
         if (hasEnoughWeight) ...[
           TrendChart(
-            data:  weightPoints,
+            data: weightPoints,
             label: 'Peso — ${history.length} mediciones',
             color: const Color(0xFF3498DB),
           ),
@@ -343,7 +347,7 @@ class _BiometricSection extends StatelessWidget {
         // Gráfica de %grasa
         if (hasEnoughBf) ...[
           TrendChart(
-            data:  bfPoints,
+            data: bfPoints,
             label: '% Grasa — ${bfPoints.length} mediciones',
             color: const Color(0xFFF39C12),
           ),
@@ -591,9 +595,9 @@ class _GoalProgressSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final user          = ref.watch(currentUserStreamProvider).valueOrNull;
-    final streakState   = ref.watch(streakProvider);
-    final sleepState    = ref.watch(sleepProvider);
+    final user = ref.watch(currentUserStreamProvider).valueOrNull;
+    final streakState = ref.watch(streakProvider);
+    final sleepState = ref.watch(sleepProvider);
     final exerciseState = ref.watch(exerciseProvider);
     final hydrationState = ref.watch(hydrationProvider);
 
@@ -619,8 +623,8 @@ class _GoalProgressSection extends ConsumerWidget {
     return Column(
       children: goals.map((goal) {
         final double current = _current(goal.type);
-        final double prog    = goal.progress(current);
-        final Color  c       = goal.pillarColor;
+        final double prog = goal.progress(current);
+        final Color c = goal.pillarColor;
 
         return Padding(
           padding: const EdgeInsets.only(bottom: 12),
@@ -676,7 +680,8 @@ class _GoalProgressSection extends ConsumerWidget {
                           color: c,
                           borderRadius: BorderRadius.circular(3),
                           boxShadow: [
-                            BoxShadow(color: c.withValues(alpha: 0.4), blurRadius: 4),
+                            BoxShadow(
+                                color: c.withValues(alpha: 0.4), blurRadius: 4),
                           ],
                         ),
                       ),
@@ -690,13 +695,15 @@ class _GoalProgressSection extends ConsumerWidget {
                     Text(
                       'Inicio: ${goal.startValue.toStringAsFixed(1)} ${goal.unit}',
                       style: TextStyle(
-                        fontSize: 9, color: Colors.white.withValues(alpha: 0.3)),
+                          fontSize: 9,
+                          color: Colors.white.withValues(alpha: 0.3)),
                     ),
                     Text(
                       'Meta: ${goal.targetValue.toStringAsFixed(1)} ${goal.unit}',
                       style: TextStyle(
-                        fontSize: 9, color: c.withValues(alpha: 0.7),
-                        fontWeight: FontWeight.w700),
+                          fontSize: 9,
+                          color: c.withValues(alpha: 0.7),
+                          fontWeight: FontWeight.w700),
                     ),
                   ],
                 ),
@@ -807,8 +814,8 @@ class _UnlockCard extends StatelessWidget {
     required this.required,
     required this.message,
   });
-  final int    current;
-  final int    required;
+  final int current;
+  final int required;
   final String message;
 
   @override
@@ -851,8 +858,8 @@ class _UnlockCard extends StatelessWidget {
           ClipRRect(
             borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
-              value:           prog,
-              minHeight:       6,
+              value: prog,
+              minHeight: 6,
               backgroundColor: Colors.white.withValues(alpha: 0.08),
               valueColor: const AlwaysStoppedAnimation<Color>(
                 Color(0xFF1ABC9C),

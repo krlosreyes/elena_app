@@ -24,14 +24,16 @@ class NotificationService {
     try {
       // Inicializar timezone incluso en Web para evitar errores en NotificationScheduler
       tz.initializeTimeZones();
-      // En Web, no podemos obtener el timezone local de forma fiable con flutter_timezone 
+      // En Web, no podemos obtener el timezone local de forma fiable con flutter_timezone
       // fácilmente sin permisos extra, así que seteamos UTC o dejamos que tz.local falle graciosamente
       // mediante un default si es necesario. Pero la llamada a initializeTimeZones() activa el sistema.
-      tz.setLocalLocation(tz.getLocation('UTC')); 
-      
-      AppLogger.info('[NotificationService] Web: Timezone UTC inicializado para compatibilidad.');
+      tz.setLocalLocation(tz.getLocation('UTC'));
+
+      AppLogger.info(
+          '[NotificationService] Web: Timezone UTC inicializado para compatibilidad.');
     } catch (e) {
-      AppLogger.debug('[NotificationService] Web: Error al inicializar timezone: $e');
+      AppLogger.debug(
+          '[NotificationService] Web: Error al inicializar timezone: $e');
     }
   }
 

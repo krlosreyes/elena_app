@@ -110,8 +110,7 @@ class OrchestratorEngine {
     final coherence = state.metabolicCoherence;
 
     // ── 9. Horas desde última comida ─────────────────────────────────────
-    final hoursSinceLastMeal =
-        now.difference(lastMealTime).inMinutes / 60.0;
+    final hoursSinceLastMeal = now.difference(lastMealTime).inMinutes / 60.0;
 
     // ── 10. Recomendaciones tipadas ──────────────────────────────────────
     final recommendations = _generateRecommendations(
@@ -179,8 +178,7 @@ class OrchestratorEngine {
     final firstMinutes = firstMeal.hour * 60 + firstMeal.minute;
     final lastMinutes = lastMeal.hour * 60 + lastMeal.minute;
 
-    final isInWindow =
-        nowMinutes >= firstMinutes && nowMinutes <= lastMinutes;
+    final isInWindow = nowMinutes >= firstMinutes && nowMinutes <= lastMinutes;
     final minutesToClose = lastMinutes - nowMinutes;
 
     return (isInWindow, isInWindow, isInWindow ? minutesToClose : null);
@@ -293,8 +291,7 @@ class OrchestratorEngine {
     final List<String> violations = [];
 
     // Deshidratación en autofagia
-    if (fastingPhase == FastingPhase.autofagia &&
-        state.hydrationLevel < 0.5) {
+    if (fastingPhase == FastingPhase.autofagia && state.hydrationLevel < 0.5) {
       violations.add(
         'Riesgo deshidratación en Autofagia: hidratación al '
         '${(state.hydrationLevel * 100).toStringAsFixed(0)}%',
@@ -302,8 +299,7 @@ class OrchestratorEngine {
     }
 
     // Sueño deficiente en fase nocturna
-    if (circadianPhase == CircadianPhase.sueno &&
-        state.sleepQuality < 0.5) {
+    if (circadianPhase == CircadianPhase.sueno && state.sleepQuality < 0.5) {
       violations.add(
         'Recovery bajo: calidad sueño '
         '${(state.sleepQuality * 100).toStringAsFixed(0)}%',
@@ -344,8 +340,7 @@ class OrchestratorEngine {
     final List<Recommendation> recs = [];
 
     // Hidratación urgente en autofagia
-    if (fastingPhase == FastingPhase.autofagia &&
-        state.hydrationLevel < 0.5) {
+    if (fastingPhase == FastingPhase.autofagia && state.hydrationLevel < 0.5) {
       recs.add(const Recommendation(
         id: 'hydrate_during_autophagy',
         priority: RecommendationPriority.high,

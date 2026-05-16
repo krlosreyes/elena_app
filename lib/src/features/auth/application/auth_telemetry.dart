@@ -19,7 +19,8 @@ import 'package:elena_app/src/features/auth/domain/app_account.dart';
 
 abstract class AuthTelemetry {
   void signInAttempt();
-  void signInSuccess({required AppProfileStatus status, required bool isFirstLogin});
+  void signInSuccess(
+      {required AppProfileStatus status, required bool isFirstLogin});
   void signInFailure({required String reason});
   void mrUserFirstLogin();
   void appProfileStatusObserved(AppProfileStatus status);

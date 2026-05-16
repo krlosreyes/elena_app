@@ -91,8 +91,9 @@ class NutritionValidator {
     }
 
     // Regla 5: Tiempo circadiano desfavorable (Fase SUEÑO/CREATIVIDAD tardía)
-    if ((currentCircadianPhase == CircadianPhase.sueno || 
-         currentCircadianPhase == CircadianPhase.creatividad) && carbsG > 60) {
+    if ((currentCircadianPhase == CircadianPhase.sueno ||
+            currentCircadianPhase == CircadianPhase.creatividad) &&
+        carbsG > 60) {
       return (
         true,
         '⚠️  Fase circadiana tardía con >60g carbos. '
@@ -133,7 +134,7 @@ class NutritionValidator {
     if (currentCircadianPhase == CircadianPhase.sueno) {
       return false;
     }
-    return true; 
+    return true;
   }
 
   /// Valida composición de macros para coherencia metabólica

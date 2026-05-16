@@ -44,8 +44,7 @@ void main() {
   });
 
   group('signInWithEmail — clasificación de profileStatus', () {
-    test(
-        'CA-73-01: usuario MR sin doc users/{uid} → AppAccount(NEW_PROFILE)',
+    test('CA-73-01: usuario MR sin doc users/{uid} → AppAccount(NEW_PROFILE)',
         () async {
       // No hay doc Firestore.
       final account = await repo.signInWithEmail(
@@ -153,8 +152,7 @@ void main() {
   });
 
   group('Helpers — métadatos preservados', () {
-    test('rawProfile preserva exactamente el shape original del doc',
-        () async {
+    test('rawProfile preserva exactamente el shape original del doc', () async {
       final originalShape = {
         'name': 'Carlos MR',
         'email': testEmail,

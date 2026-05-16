@@ -29,8 +29,7 @@ class ExerciseInputSheet extends ConsumerStatefulWidget {
   const ExerciseInputSheet({super.key});
 
   @override
-  ConsumerState<ExerciseInputSheet> createState() =>
-      _ExerciseInputSheetState();
+  ConsumerState<ExerciseInputSheet> createState() => _ExerciseInputSheetState();
 }
 
 class _ExerciseInputSheetState extends ConsumerState<ExerciseInputSheet> {
@@ -237,8 +236,7 @@ class _ExerciseInputSheetState extends ConsumerState<ExerciseInputSheet> {
             label: 'CATEGORÍA',
             hint: 'Determina el multiplicador metabólico',
             valueText: _type == null ? 'No seleccionada' : _typeLabel(_type!),
-            onClear:
-                _type == null ? null : () => setState(() => _type = null),
+            onClear: _type == null ? null : () => setState(() => _type = null),
           ),
           const SizedBox(height: 8),
           Wrap(
@@ -328,7 +326,8 @@ class _ExerciseInputSheetState extends ConsumerState<ExerciseInputSheet> {
               hintText: 'Ej: 142',
               hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.30)),
               suffixText: 'bpm',
-              suffixStyle: TextStyle(color: Colors.white.withValues(alpha: 0.45)),
+              suffixStyle:
+                  TextStyle(color: Colors.white.withValues(alpha: 0.45)),
               filled: true,
               fillColor: Colors.white.withValues(alpha: 0.05),
               border: OutlineInputBorder(

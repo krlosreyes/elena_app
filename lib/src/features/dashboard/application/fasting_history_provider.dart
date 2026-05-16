@@ -36,7 +36,6 @@ final hasCompletedFastingTodayProvider = Provider<bool>((ref) {
   // ¿Fue completado al 100%?
   final fastingState = ref.watch(fastingProvider);
   final targetSeconds = fastingState.targetHours * 3600;
-  final actualSeconds =
-      endTime.difference(lastClosed.startTime).inSeconds;
+  final actualSeconds = endTime.difference(lastClosed.startTime).inSeconds;
   return actualSeconds >= targetSeconds;
 });

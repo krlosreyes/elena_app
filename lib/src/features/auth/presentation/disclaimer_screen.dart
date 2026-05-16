@@ -194,9 +194,7 @@ class _AcceptanceStatusCard extends StatelessWidget {
       child: Row(
         children: [
           Icon(
-            accepted
-                ? Icons.check_circle_rounded
-                : Icons.cancel_outlined,
+            accepted ? Icons.check_circle_rounded : Icons.cancel_outlined,
             color: accepted ? AppColors.statusGood : AppColors.textMuted,
             size: 26,
           ),
@@ -210,9 +208,8 @@ class _AcceptanceStatusCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
-                    color: accepted
-                        ? AppColors.statusGood
-                        : AppColors.textPrimary,
+                    color:
+                        accepted ? AppColors.statusGood : AppColors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 2),

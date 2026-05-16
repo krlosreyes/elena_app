@@ -360,8 +360,7 @@ class NutritionFactsLookup {
   ];
 
   /// Devuelve el catálogo completo (vista de solo lectura).
-  static List<NutritionFactsEntry> get all =>
-      List.unmodifiable(_catalog);
+  static List<NutritionFactsEntry> get all => List.unmodifiable(_catalog);
 
   /// Búsqueda case-insensitive por nombre o alias. Devuelve la primera
   /// entrada que matchee, o `null` si nada coincide.

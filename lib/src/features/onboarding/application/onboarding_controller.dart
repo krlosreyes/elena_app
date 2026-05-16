@@ -60,10 +60,8 @@ class OnboardingController extends StateNotifier<AsyncValue<void>> {
       // `imrPersistenceProvider` actualizará con un valor mejor.
       try {
         final accountAtOnboarding = _ref.read(authStateProvider).value;
-        final hasPreviousImr =
-            accountAtOnboarding?.rawProfile?['imr'] is Map &&
-                (accountAtOnboarding!.rawProfile!['imr']
-                        as Map)['current'] is Map;
+        final hasPreviousImr = accountAtOnboarding?.rawProfile?['imr'] is Map &&
+            (accountAtOnboarding!.rawProfile!['imr'] as Map)['current'] is Map;
 
         if (hasPreviousImr) {
           AppLogger.info(

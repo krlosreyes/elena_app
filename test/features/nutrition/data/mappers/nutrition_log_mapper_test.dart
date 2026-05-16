@@ -71,8 +71,7 @@ void main() {
         () => mapper.toMap(_log(timestamp: far)),
         throwsA(isA<FutureTimestamp>()
             .having((e) => e.fieldName, 'fieldName', 'NutritionLog.timestamp')
-            .having((e) => e.toleranceFromNow.inSeconds,
-                'tolerance secs', 60)),
+            .having((e) => e.toleranceFromNow.inSeconds, 'tolerance secs', 60)),
       );
     });
   });

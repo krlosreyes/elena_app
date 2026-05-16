@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart'; 
+import 'package:go_router/go_router.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/core/engine/imr_persistence_provider.dart';
 import 'package:elena_app/src/core/engine/metabolic_state_provider.dart';
@@ -30,6 +30,7 @@ import 'package:elena_app/src/features/adaptive/presentation/widgets/adaptive_su
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
 import 'package:elena_app/src/features/nutrition/presentation/add_past_meal_sheet.dart';
 import 'package:elena_app/src/features/dashboard/presentation/sleep_input_sheet.dart';
+
 // SPEC-88 fix: BodyCompositionCard y GoalsDashboardWidget se retiraron
 // del Dashboard. La primera vive ahora en Profile; la segunda queda
 // accesible vía `/goals/setup`. Los imports se mantuvieron eliminados
@@ -117,10 +118,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     ref.watch(imrPersistenceProvider);
 
     return userAsync.when(
-      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
-      error: (err, stack) => Scaffold(body: Center(child: Text('Fallo de Hardware: $err'))),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
+      error: (err, stack) =>
+          Scaffold(body: Center(child: Text('Fallo de Hardware: $err'))),
       data: (user) {
-        if (user == null) return const Scaffold(body: Center(child: CircularProgressIndicator()));
+        if (user == null)
+          return const Scaffold(
+              body: Center(child: CircularProgressIndicator()));
 
         WidgetsBinding.instance.addPostFrameCallback((_) {
           ref.read(sleepProvider.notifier).updateSleepConsciousness();
@@ -135,7 +140,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 children: [
                   const SizedBox(height: 10),
                   const ElenaHeader(title: "Metamorfosis Real"),
-                  const SizedBox(height: 10), 
+                  const SizedBox(height: 10),
 
                   // BANNER DE ENGAGEMENT (SPEC-07 + SPEC-72.2 dismiss por sesión)
                   const EngagementBanner(),
@@ -143,14 +148,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
                   // MOTOR ADAPTATIVO (SPEC-08)
                   const AdaptiveSuggestionCard(),
-                  const SizedBox(height: 16), 
-                  
+                  const SizedBox(height: 16),
+
                   Stack(
                     alignment: Alignment.center,
                     children: [
                       Center(
                         child: SizedBox(
-                          width: MediaQuery.of(context).size.width * 0.78, 
+                          width: MediaQuery.of(context).size.width * 0.78,
                           child: AspectRatio(
                             aspectRatio: 1.0,
                             child: CircadianClock(
@@ -173,7 +178,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         _buildFeedingEndOverlay(context, ref, fastingState),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 16),
 
                   if (fastingState.metabolicAlert != null) ...[
@@ -297,7 +302,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 label: 'Ayuno',
                 isSelected: _selectedPillar == SelectedPillar.ayuno,
                 completed: fastingState.progressPercentage >= 1.0,
-                onTap: () => setState(() => _selectedPillar = SelectedPillar.ayuno),
+                onTap: () =>
+                    setState(() => _selectedPillar = SelectedPillar.ayuno),
               ),
               PillarRing(
                 icon: Icons.nightlight_round,
@@ -310,7 +316,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 isSelected: _selectedPillar == SelectedPillar.sueno,
                 completed: sleep.lastLog != null &&
                     sleep.lastLog!.duration.inHours >= 7,
-                onTap: () => setState(() => _selectedPillar = SelectedPillar.sueno),
+                onTap: () =>
+                    setState(() => _selectedPillar = SelectedPillar.sueno),
               ),
               PillarRing(
                 icon: Icons.water_drop_rounded,
@@ -319,8 +326,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 label: 'Hidratación',
                 isSelected: _selectedPillar == SelectedPillar.hidratacion,
                 completed: hydration.isGoalReached,
-                onTap: () =>
-                    setState(() => _selectedPillar = SelectedPillar.hidratacion),
+                onTap: () => setState(
+                    () => _selectedPillar = SelectedPillar.hidratacion),
               ),
               Builder(builder: (_) {
                 // SPEC-113.bugfix: usar `user.exerciseGoalMinutes`
@@ -329,17 +336,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 // — ambos hardcoded y desalineados con el objetivo
                 // real sugerido al usuario.
                 final user = ref.watch(currentUserStreamProvider).value;
-                final goal =
-                    (user?.exerciseGoalMinutes ?? 20).clamp(1, 240);
-                final progress = (exercise.todayMinutes / goal.toDouble())
-                    .clamp(0.0, 1.0);
+                final goal = (user?.exerciseGoalMinutes ?? 20).clamp(1, 240);
+                final progress =
+                    (exercise.todayMinutes / goal.toDouble()).clamp(0.0, 1.0);
                 return PillarRing(
                   icon: Icons.fitness_center_rounded,
                   color: Colors.tealAccent,
                   progress: progress,
                   label: 'Ejercicio',
-                  isSelected:
-                      _selectedPillar == SelectedPillar.ejercicio,
+                  isSelected: _selectedPillar == SelectedPillar.ejercicio,
                   completed: exercise.todayMinutes >= goal,
                   onTap: () => setState(
                       () => _selectedPillar = SelectedPillar.ejercicio),
@@ -359,8 +364,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   isSelected: _selectedPillar == SelectedPillar.comidas,
                   completed:
                       nutrition.mealsLoggedToday >= nutrition.targetMeals,
-                  onTap: () => setState(
-                      () => _selectedPillar = SelectedPillar.comidas),
+                  onTap: () =>
+                      setState(() => _selectedPillar = SelectedPillar.comidas),
                 ),
               ),
             ],
@@ -385,7 +390,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     FastingState state,
   ) {
     final isActive = state.isActive;
-    final accent = isActive ? AppColors.metabolicGreen : AppColors.metabolicGreen;
+    final accent =
+        isActive ? AppColors.metabolicGreen : AppColors.metabolicGreen;
     final pct = (state.progressPercentage.clamp(0.0, 1.0) * 100).round();
 
     // SPEC-61: el display HH:MM:SS lo renderiza LiveFastingClock con su
@@ -453,7 +459,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: accent.withValues(alpha: 0.6)),
@@ -647,22 +654,24 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       SelectedPillar.ejercicio =>
         _buildEjercicioCard(context, ref, exercise, user),
       SelectedPillar.comidas => _buildComidasCard(
-          context, ref, nutrition,
+          context,
+          ref,
+          nutrition,
           isFastingActive: fastingState.isActive,
         ),
     };
   }
 
   // ─── SUEÑO: "Soporte Metabólico" ──────────────────────────────────────
-  Widget _buildSuenoCard(BuildContext context, WidgetRef ref, SleepState state) {
+  Widget _buildSuenoCard(
+      BuildContext context, WidgetRef ref, SleepState state) {
     const accent = Color(0xFF818CF8);
     final log = state.lastLog;
     final hasLog = log != null;
     final hours = hasLog ? log.duration.inHours : 0;
     final minutes = hasLog ? log.duration.inMinutes.remainder(60) : 0;
-    final progress = hasLog
-        ? (log.duration.inMinutes / (8 * 60)).clamp(0.0, 1.0)
-        : 0.0;
+    final progress =
+        hasLog ? (log.duration.inMinutes / (8 * 60)).clamp(0.0, 1.0) : 0.0;
     final pct = (progress * 100).round();
 
     String fmt(DateTime? dt) {
@@ -680,8 +689,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            _miniStat('Dormiste', hasLog ? '${hours}h ${minutes}m' : '—',
-                accent, big: true),
+            _miniStat(
+                'Dormiste', hasLog ? '${hours}h ${minutes}m' : '—', accent,
+                big: true),
             _miniStat('Acostado', fmt(log?.fellAsleep), Colors.white),
             _miniStat('Despertaste', fmt(log?.wokeUp), Colors.white),
           ],
@@ -767,8 +777,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     // Ya hay log de hoy → diálogo con bedtime/waketime/duración/calidad
     // y tres opciones.
-    final choice =
-        await SleepExistingLogDialog.show(context, log: log);
+    final choice = await SleepExistingLogDialog.show(context, log: log);
 
     if (!context.mounted) return;
 
@@ -919,7 +928,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         const SizedBox(height: 16),
         _benefitChip(
           accent: accent,
-          text: 'Cada 250ml mejora el flujo linfático y la eliminación de metabolitos',
+          text:
+              'Cada 250ml mejora el flujo linfático y la eliminación de metabolitos',
         ),
         const SizedBox(height: 18),
         Row(
@@ -930,9 +940,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 accent: accent,
                 onPressed: state.isSaving
                     ? null
-                    : () => ref
-                        .read(hydrationProvider.notifier)
-                        .addWater(0.250),
+                    : () =>
+                        ref.read(hydrationProvider.notifier).addWater(0.250),
               ),
             ),
             const SizedBox(width: 12),
@@ -942,9 +951,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 accent: accent,
                 onPressed: state.isSaving
                     ? null
-                    : () => ref
-                        .read(hydrationProvider.notifier)
-                        .addWater(0.500),
+                    : () =>
+                        ref.read(hydrationProvider.notifier).addWater(0.500),
               ),
             ),
           ],
@@ -963,8 +971,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   // ─── EJERCICIO: "Sarcopenia & Resistencia" ────────────────────────────
-  Widget _buildEjercicioCard(BuildContext context, WidgetRef ref,
-      ExerciseState state, dynamic user) {
+  Widget _buildEjercicioCard(
+      BuildContext context, WidgetRef ref, ExerciseState state, dynamic user) {
     const accent = Color(0xFF2DD4BF);
     final goal = (user?.exerciseGoalMinutes ?? 30) as int;
     final minutes = state.todayMinutes;
@@ -1117,9 +1125,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 icon: Icons.undo_rounded,
                 onPressed: isFastingActive || state.todayLogs.isEmpty
                     ? null
-                    : () => ref
-                        .read(nutritionProvider.notifier)
-                        .removeLastMeal(),
+                    : () =>
+                        ref.read(nutritionProvider.notifier).removeLastMeal(),
               ),
             ],
           ),
@@ -1136,8 +1143,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () async {
-        final goToFasting =
-            await MealsLockedDuringFastingDialog.show(context);
+        final goToFasting = await MealsLockedDuringFastingDialog.show(context);
         if (goToFasting == true && mounted) {
           setState(() => _selectedPillar = SelectedPillar.ayuno);
         }
@@ -1240,7 +1246,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: accent.withValues(alpha: 0.6)),
@@ -1446,45 +1453,98 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   // --- OVERLAYS Y PICKERS SE MANTIENEN ---
 
-  Widget _buildFastingEndOverlay(BuildContext context, WidgetRef ref, FastingState state) {
+  Widget _buildFastingEndOverlay(
+      BuildContext context, WidgetRef ref, FastingState state) {
     return _buildBaseOverlay(
-      context: context, icon: Icons.emoji_events_rounded, iconColor: AppColors.metabolicGreen,
-      title: "¡META ALCANZADA!", subtitle: "Has completado tus ${state.targetHours}h de ayuno.",
-      buttonLabel: "CONFIRMAR HITO REAL", isSaving: state.isSaving,
+      context: context,
+      icon: Icons.emoji_events_rounded,
+      iconColor: AppColors.metabolicGreen,
+      title: "¡META ALCANZADA!",
+      subtitle: "Has completado tus ${state.targetHours}h de ayuno.",
+      buttonLabel: "CONFIRMAR HITO REAL",
+      isSaving: state.isSaving,
       onConfirm: () => _showManualTimePicker(context, ref, isFeeding: false),
     );
   }
 
-  Widget _buildFeedingEndOverlay(BuildContext context, WidgetRef ref, FastingState state) {
+  Widget _buildFeedingEndOverlay(
+      BuildContext context, WidgetRef ref, FastingState state) {
     return _buildBaseOverlay(
-      context: context, icon: Icons.timer_off_rounded, iconColor: Colors.orangeAccent,
-      title: "FIN DE VENTANA", subtitle: "Tu ventana de alimentación ha terminado.",
-      buttonLabel: "CONFIRMAR CIERRE", isSaving: state.isSaving,
+      context: context,
+      icon: Icons.timer_off_rounded,
+      iconColor: Colors.orangeAccent,
+      title: "FIN DE VENTANA",
+      subtitle: "Tu ventana de alimentación ha terminado.",
+      buttonLabel: "CONFIRMAR CIERRE",
+      isSaving: state.isSaving,
       onConfirm: () => _showManualTimePicker(context, ref, isFeeding: true),
     );
   }
 
-  Widget _buildWakeUpOverlay(BuildContext context, WidgetRef ref, bool isSaving) {
+  Widget _buildWakeUpOverlay(
+      BuildContext context, WidgetRef ref, bool isSaving) {
     return _buildBaseOverlay(
-      context: context, icon: Icons.wb_sunny_rounded, iconColor: Colors.orangeAccent,
-      title: "¿YA DESPERTASTE?", subtitle: "Elena detecta actividad matutina.",
-      buttonLabel: "SÍ, DESPERTÉ", isSaving: isSaving,
+      context: context,
+      icon: Icons.wb_sunny_rounded,
+      iconColor: Colors.orangeAccent,
+      title: "¿YA DESPERTASTE?",
+      subtitle: "Elena detecta actividad matutina.",
+      buttonLabel: "SÍ, DESPERTÉ",
+      isSaving: isSaving,
       onConfirm: () => ref.read(sleepProvider.notifier).confirmManualWakeUp(),
     );
   }
 
-  Widget _buildBaseOverlay({required BuildContext context, required IconData icon, required Color iconColor, required String title, required String subtitle, required String buttonLabel, required bool isSaving, required VoidCallback onConfirm}) {
+  Widget _buildBaseOverlay(
+      {required BuildContext context,
+      required IconData icon,
+      required Color iconColor,
+      required String title,
+      required String subtitle,
+      required String buttonLabel,
+      required bool isSaving,
+      required VoidCallback onConfirm}) {
     return Container(
-      padding: const EdgeInsets.all(20), margin: const EdgeInsets.symmetric(horizontal: 40),
-      decoration: BoxDecoration(color: const Color(0xFF0F172A).withValues(alpha: 0.98), borderRadius: BorderRadius.circular(30), border: Border.all(color: iconColor, width: 2), boxShadow: [BoxShadow(color: iconColor.withValues(alpha: 0.2), blurRadius: 15)]),
+      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.symmetric(horizontal: 40),
+      decoration: BoxDecoration(
+          color: const Color(0xFF0F172A).withValues(alpha: 0.98),
+          borderRadius: BorderRadius.circular(30),
+          border: Border.all(color: iconColor, width: 2),
+          boxShadow: [
+            BoxShadow(color: iconColor.withValues(alpha: 0.2), blurRadius: 15)
+          ]),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         Icon(icon, color: iconColor, size: 28),
         const SizedBox(height: 12),
-        Text(title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13)),
+        Text(title,
+            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13)),
         const SizedBox(height: 8),
-        Text(subtitle, textAlign: TextAlign.center, style: TextStyle(fontSize: 10, color: Colors.white.withValues(alpha: 0.7))),
+        Text(subtitle,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+                fontSize: 10, color: Colors.white.withValues(alpha: 0.7))),
         const SizedBox(height: 16),
-        SizedBox(width: double.infinity, height: 42, child: ElevatedButton(onPressed: isSaving ? null : onConfirm, style: ElevatedButton.styleFrom(backgroundColor: iconColor, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))), child: isSaving ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : Text(buttonLabel, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 12)))),
+        SizedBox(
+            width: double.infinity,
+            height: 42,
+            child: ElevatedButton(
+                onPressed: isSaving ? null : onConfirm,
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: iconColor,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12))),
+                child: isSaving
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                            color: Colors.white, strokeWidth: 2))
+                    : Text(buttonLabel,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            fontSize: 12)))),
       ]),
     );
   }
@@ -1629,19 +1689,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     : (completedToday
                         ? Icons.check_circle_outline
                         : Icons.play_circle_outline),
-                color: Colors.white.withValues(
-                    alpha: (disabled && !isActive) ? 0.5 : 1.0),
+                color: Colors.white
+                    .withValues(alpha: (disabled && !isActive) ? 0.5 : 1.0),
                 size: 22,
               ),
         label: Text(
           isActive
               ? 'Finalizar Ayuno'
-              : (completedToday
-                  ? 'Ayuno de hoy completado'
-                  : 'Iniciar Ayuno'),
+              : (completedToday ? 'Ayuno de hoy completado' : 'Iniciar Ayuno'),
           style: TextStyle(
-            color: Colors.white.withValues(
-                alpha: (disabled && !isActive) ? 0.5 : 1.0),
+            color: Colors.white
+                .withValues(alpha: (disabled && !isActive) ? 0.5 : 1.0),
             fontWeight: FontWeight.w800,
             fontSize: 14,
           ),
@@ -1717,9 +1775,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             ),
             const SizedBox(width: 6),
             Icon(
-              isActive
-                  ? Icons.lock_outline_rounded
-                  : Icons.expand_more_rounded,
+              isActive ? Icons.lock_outline_rounded : Icons.expand_more_rounded,
               size: 14,
               color: Colors.white.withValues(alpha: alpha),
             ),
@@ -1845,20 +1901,66 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         .correctFastingStartTime(finalDateTime);
   }
 
-  Future<void> _showManualTimePicker(BuildContext context, WidgetRef ref, {required bool isFeeding}) async {
+  Future<void> _showManualTimePicker(BuildContext context, WidgetRef ref,
+      {required bool isFeeding}) async {
     final DateTime now = DateTime.now();
     final fastingState = ref.read(fastingProvider);
-    final Color primaryColor = isFeeding ? Colors.orangeAccent : AppColors.metabolicGreen;
-    final DateTime? pickedDate = await showDatePicker(context: context, initialDate: now, firstDate: now.subtract(const Duration(days: 7)), lastDate: now.add(const Duration(days: 1)), builder: (context, child) => Theme(data: ThemeData.dark().copyWith(colorScheme: ColorScheme.dark(primary: primaryColor), dialogBackgroundColor: const Color(0xFF1E293B)), child: child!));
+    final Color primaryColor =
+        isFeeding ? Colors.orangeAccent : AppColors.metabolicGreen;
+    final DateTime? pickedDate = await showDatePicker(
+        context: context,
+        initialDate: now,
+        firstDate: now.subtract(const Duration(days: 7)),
+        lastDate: now.add(const Duration(days: 1)),
+        builder: (context, child) => Theme(
+            data: ThemeData.dark().copyWith(
+                colorScheme: ColorScheme.dark(primary: primaryColor),
+                dialogBackgroundColor: const Color(0xFF1E293B)),
+            child: child!));
     if (pickedDate == null) return;
-    final TimeOfDay? pickedTime = await showTimePicker(context: context, initialTime: TimeOfDay.fromDateTime(now), builder: (context, child) => Theme(data: ThemeData.dark().copyWith(colorScheme: ColorScheme.dark(primary: primaryColor), dialogBackgroundColor: const Color(0xFF1E293B)), child: child!));
+    final TimeOfDay? pickedTime = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay.fromDateTime(now),
+        builder: (context, child) => Theme(
+            data: ThemeData.dark().copyWith(
+                colorScheme: ColorScheme.dark(primary: primaryColor),
+                dialogBackgroundColor: const Color(0xFF1E293B)),
+            child: child!));
     if (pickedTime == null) return;
-    final DateTime finalDateTime = DateTime(pickedDate.year, pickedDate.month, pickedDate.day, pickedTime.hour, pickedTime.minute);
-    if (isFeeding) { ref.read(fastingProvider.notifier).confirmFeedingEnd(finalDateTime); } else { if (fastingState.isActive) { ref.read(fastingProvider.notifier).confirmManualFastingEnd(finalDateTime); } else { ref.read(fastingProvider.notifier).startFastingManual(finalDateTime); } }
+    final DateTime finalDateTime = DateTime(pickedDate.year, pickedDate.month,
+        pickedDate.day, pickedTime.hour, pickedTime.minute);
+    if (isFeeding) {
+      ref.read(fastingProvider.notifier).confirmFeedingEnd(finalDateTime);
+    } else {
+      if (fastingState.isActive) {
+        ref
+            .read(fastingProvider.notifier)
+            .confirmManualFastingEnd(finalDateTime);
+      } else {
+        ref.read(fastingProvider.notifier).startFastingManual(finalDateTime);
+      }
+    }
   }
 
   Widget _buildMetabolicAlertBanner(String message) {
-    return Container(width: double.infinity, padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10), decoration: BoxDecoration(color: Colors.redAccent.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.redAccent.withValues(alpha: 0.2))), child: Row(children: [const Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 16), const SizedBox(width: 10), Expanded(child: Text(message, style: const TextStyle(color: Colors.redAccent, fontSize: 9, fontWeight: FontWeight.bold)))]));
+    return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+            color: Colors.redAccent.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.redAccent.withValues(alpha: 0.2))),
+        child: Row(children: [
+          const Icon(Icons.warning_amber_rounded,
+              color: Colors.redAccent, size: 16),
+          const SizedBox(width: 10),
+          Expanded(
+              child: Text(message,
+                  style: const TextStyle(
+                      color: Colors.redAccent,
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold)))
+        ]));
   }
 
   // SPEC-72.2: _buildEngagementBanner eliminado. Reemplazado por
@@ -1870,6 +1972,23 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     int currentIndex = 0;
     if (location.startsWith('/analysis')) currentIndex = 1;
     if (location.startsWith('/profile')) currentIndex = 2;
-    return BottomNavigationBar(backgroundColor: const Color(0xFF0F172A), selectedItemColor: AppColors.metabolicGreen, unselectedItemColor: Colors.grey.withValues(alpha: 0.5), currentIndex: currentIndex, type: BottomNavigationBarType.fixed, onTap: (index) { if (index == 0) context.go('/dashboard'); if (index == 1) context.go('/analysis'); if (index == 2) context.go('/profile'); }, items: const [BottomNavigationBarItem(icon: Icon(Icons.grid_view_rounded), label: "Hoy"), BottomNavigationBarItem(icon: Icon(Icons.insights_rounded), label: "Análisis"), BottomNavigationBarItem(icon: Icon(Icons.person), label: "Perfil")]);
+    return BottomNavigationBar(
+        backgroundColor: const Color(0xFF0F172A),
+        selectedItemColor: AppColors.metabolicGreen,
+        unselectedItemColor: Colors.grey.withValues(alpha: 0.5),
+        currentIndex: currentIndex,
+        type: BottomNavigationBarType.fixed,
+        onTap: (index) {
+          if (index == 0) context.go('/dashboard');
+          if (index == 1) context.go('/analysis');
+          if (index == 2) context.go('/profile');
+        },
+        items: const [
+          BottomNavigationBarItem(
+              icon: Icon(Icons.grid_view_rounded), label: "Hoy"),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.insights_rounded), label: "Análisis"),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: "Perfil")
+        ]);
   }
 }

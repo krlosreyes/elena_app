@@ -26,8 +26,7 @@ void main() {
   });
 
   group('CoherenceEngine.calculate — penalizaciones por dimensión', () {
-    test('SPEC-70.5: Sueño < 7h penaliza -0.20 (umbral subido de 6.5 a 7)',
-        () {
+    test('SPEC-70.5: Sueño < 7h penaliza -0.20 (umbral subido de 6.5 a 7)', () {
       final c = CoherenceEngine.calculate(
         sleepHours: 5,
         hydrationLevel: 1.0,
@@ -88,7 +87,9 @@ void main() {
   });
 
   group('CoherenceEngine.calculate — combinaciones', () {
-    test('Sueño 5h + hidratación 0.3 + alineación 0.6 = 1 - 0.20 - 0.15 - 0.15 = 0.50', () {
+    test(
+        'Sueño 5h + hidratación 0.3 + alineación 0.6 = 1 - 0.20 - 0.15 - 0.15 = 0.50',
+        () {
       final c = CoherenceEngine.calculate(
         sleepHours: 5,
         hydrationLevel: 0.3,
@@ -112,7 +113,8 @@ void main() {
     });
   });
 
-  group('CA-71-01: una sola penalización por dimensión (sin doble descuento)', () {
+  group('CA-71-01: una sola penalización por dimensión (sin doble descuento)',
+      () {
     // La invariante de SPEC-71: en el flujo completo (builder construye state
     // con CoherenceEngine, orchestrator usa state.metabolicCoherence directo),
     // un sueño deficiente penaliza UNA vez, no dos.
@@ -124,7 +126,8 @@ void main() {
     // Validación directa contra el engine: el resultado del engine es estable
     // y no se ajusta downstream.
 
-    test('Sueño 5h: engine produce 0.80 — no se descuenta más en orchestrator', () {
+    test('Sueño 5h: engine produce 0.80 — no se descuenta más en orchestrator',
+        () {
       final fromEngine = CoherenceEngine.calculate(
         sleepHours: 5,
         hydrationLevel: 1.0,

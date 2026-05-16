@@ -143,7 +143,8 @@ class FirebaseAuthRepository implements AuthRepository {
   Future<void> setPassword(String newPassword) async {
     final user = _auth.currentUser;
     if (user == null) {
-      throw Exception('Sesión no encontrada. Vuelve a abrir el link del email.');
+      throw Exception(
+          'Sesión no encontrada. Vuelve a abrir el link del email.');
     }
     try {
       await user.updatePassword(newPassword);

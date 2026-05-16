@@ -113,14 +113,12 @@ void main() {
       expect(d.inMinutes, 30);
     });
 
-    test('a las 21:30 exactas: timeUntilLock = 0 (estás justo en el lock)',
-        () {
+    test('a las 21:30 exactas: timeUntilLock = 0 (estás justo en el lock)', () {
       final d = CircadianRules.timeUntilLock(at(21, 30));
       expect(d, Duration.zero);
     });
 
-    test('a las 21:31 (un minuto después): cuenta hasta 21:30 de mañana',
-        () {
+    test('a las 21:31 (un minuto después): cuenta hasta 21:30 de mañana', () {
       final d = CircadianRules.timeUntilLock(at(21, 31));
       // 21:31 → 21:30 de mañana = 23h 59m.
       expect(d.inHours, 23);

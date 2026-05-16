@@ -103,8 +103,8 @@ void main() {
     test('rechaza date con formato incorrecto con InvalidValue', () {
       expect(
         () => mapper.toMap(_entry(date: '2026/05/01')),
-        throwsA(isA<InvalidValue>()
-            .having((e) => e.value, 'value', '2026/05/01')),
+        throwsA(
+            isA<InvalidValue>().having((e) => e.value, 'value', '2026/05/01')),
       );
       expect(
         () => mapper.toMap(_entry(date: 'mayo-1-2026')),

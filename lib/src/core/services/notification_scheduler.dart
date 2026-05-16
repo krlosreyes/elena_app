@@ -34,7 +34,8 @@ class NotificationScheduler {
         hour: profile.wakeUpTime.hour,
         minute: profile.wakeUpTime.minute,
         title: '☀️ Fase ALERTA',
-        body: 'Tu cortisol está al máximo. El mejor momento para hacer trabajo cognitivo profundo.',
+        body:
+            'Tu cortisol está al máximo. El mejor momento para hacer trabajo cognitivo profundo.',
       );
 
       // ── 2. Apertura de ventana de alimentación ───────────────────────────
@@ -45,7 +46,8 @@ class NotificationScheduler {
           hour: firstMeal.hour,
           minute: firstMeal.minute,
           title: '🍽️ Ventana de alimentación abierta',
-          body: 'Tu sistema digestivo está listo. Primera comida dentro del protocolo eTRF.',
+          body:
+              'Tu sistema digestivo está listo. Primera comida dentro del protocolo eTRF.',
         );
       }
 
@@ -79,7 +81,8 @@ class NotificationScheduler {
         hour: 21,
         minute: 0,
         title: '⚠️ 30 min. Cierre inminente',
-        body: 'Última oportunidad. Comer después de las 21:30 bloquea la reparación celular.',
+        body:
+            'Última oportunidad. Comer después de las 21:30 bloquea la reparación celular.',
       );
 
       // ── 6. Bloqueo intestinal activo (21:30) ─────────────────────────────
@@ -88,7 +91,8 @@ class NotificationScheduler {
         hour: 21,
         minute: 30,
         title: '🧬 Bloqueo intestinal activo',
-        body: 'Tu cuerpo inicia la limpieza glinfática y la reparación celular.',
+        body:
+            'Tu cuerpo inicia la limpieza glinfática y la reparación celular.',
       );
 
       // ── 7. Recordatorio de sueño ─────────────────────────────────────────
@@ -97,14 +101,16 @@ class NotificationScheduler {
         hour: profile.sleepTime.hour,
         minute: profile.sleepTime.minute,
         title: '🌙 Fase SUEÑO',
-        body: 'Hora de dormir. La hormona del crecimiento se libera en las primeras 2 horas.',
+        body:
+            'Hora de dormir. La hormona del crecimiento se libera en las primeras 2 horas.',
       );
 
       AppLogger.info(
         '[NotificationScheduler] Agenda circadiana programada para ${user.name}.',
       );
     } catch (e, st) {
-      AppLogger.error('[NotificationScheduler] Error scheduleCircadianDay()', e, st);
+      AppLogger.error(
+          '[NotificationScheduler] Error scheduleCircadianDay()', e, st);
     }
   }
 
@@ -123,7 +129,8 @@ class NotificationScheduler {
       await NotificationService.scheduleAt(
         id: NotificationIds.fasting12h,
         title: '⚡ 12 horas de ayuno',
-        body: 'Insulina en mínimos. Gluconeogénesis activa. Tu cuerpo está usando reservas.',
+        body:
+            'Insulina en mínimos. Gluconeogénesis activa. Tu cuerpo está usando reservas.',
         scheduledTime: m12h,
         repeatsDaily: false,
         isFasting: true,
@@ -132,7 +139,8 @@ class NotificationScheduler {
       await NotificationService.scheduleAt(
         id: NotificationIds.fasting18h,
         title: '🔥 18 horas — Cetosis activa',
-        body: '¡Cetosis nutricional confirmada! Tu cerebro funciona con cuerpos cetónicos.',
+        body:
+            '¡Cetosis nutricional confirmada! Tu cerebro funciona con cuerpos cetónicos.',
         scheduledTime: m18h,
         repeatsDaily: false,
         isFasting: true,
@@ -141,7 +149,8 @@ class NotificationScheduler {
       await NotificationService.scheduleAt(
         id: NotificationIds.fasting24h,
         title: '🧬 24 horas — Autofagia iniciada',
-        body: 'Tu sistema está reciclando células dañadas. Este es el nivel de limpieza profunda.',
+        body:
+            'Tu sistema está reciclando células dañadas. Este es el nivel de limpieza profunda.',
         scheduledTime: m24h,
         repeatsDaily: false,
         isFasting: true,

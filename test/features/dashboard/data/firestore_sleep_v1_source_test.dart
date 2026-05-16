@@ -49,10 +49,8 @@ void main() {
     });
 
     test('no afecta logs de otros usuarios', () async {
-      final mine = firestore
-          .collection('users')
-          .doc(userId)
-          .collection('sleep_history');
+      final mine =
+          firestore.collection('users').doc(userId).collection('sleep_history');
       final other = firestore
           .collection('users')
           .doc('other-user')

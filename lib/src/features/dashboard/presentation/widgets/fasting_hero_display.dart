@@ -161,8 +161,7 @@ class _FastingHeroDisplayState extends State<FastingHeroDisplay> {
   Widget _buildEatingWindow(Color colorBase) {
     final w = widget.eatingWindow!;
     final remaining = w.windowEnd.difference(_now);
-    final remainingSafe =
-        remaining.isNegative ? Duration.zero : remaining;
+    final remainingSafe = remaining.isNegative ? Duration.zero : remaining;
     final closesAt = _fmtClock(w.windowEnd);
 
     return _Layout(
@@ -196,8 +195,7 @@ class _FastingHeroDisplayState extends State<FastingHeroDisplay> {
 
   String _twoDigits(int n) => n.toString().padLeft(2, '0');
 
-  String _fmtHms(Duration d) =>
-      '${_twoDigits(d.inHours)}:'
+  String _fmtHms(Duration d) => '${_twoDigits(d.inHours)}:'
       '${_twoDigits(d.inMinutes.remainder(60))}:'
       '${_twoDigits(d.inSeconds.remainder(60))}';
 

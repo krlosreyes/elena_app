@@ -175,24 +175,21 @@ class StreakNotifier extends StateNotifier<StreakState> {
     final nutrition = _ref.read(nutritionProvider);
     final userModel = _ref.read(currentUserStreamProvider).valueOrNull;
 
-    final double fastingHours = fasting.isActive
-        ? fasting.duration.inSeconds / 3600.0
-        : 0.0;
+    final double fastingHours =
+        fasting.isActive ? fasting.duration.inSeconds / 3600.0 : 0.0;
 
-    final double sleepHours =
-        sleep.lastLog?.duration.inHours.toDouble() ?? 0.0;
+    final double sleepHours = sleep.lastLog?.duration.inHours.toDouble() ?? 0.0;
 
     // Obtener protocolo con fallback al estado actual si el provider está cargando (evita toggles)
-    final String currentProtocol = userModel?.fastingProtocol ??
-                                  (_userId != null ? '16:8' : 'Ninguno');
+    final String currentProtocol =
+        userModel?.fastingProtocol ?? (_userId != null ? '16:8' : 'Ninguno');
 
     // SPEC-65: magnitudes continuas. Calculadas una sola vez aquí — NO
     // duplicamos la lógica de los `evaluateX` (esos siguen siendo el
     // umbral binario). Las magnitudes son el "cuánto", no el "si o no".
-    final double fastingMagnitude =
-        _fastingTargetHours(currentProtocol) > 0
-            ? fastingHours / _fastingTargetHours(currentProtocol)
-            : 0.0;
+    final double fastingMagnitude = _fastingTargetHours(currentProtocol) > 0
+        ? fastingHours / _fastingTargetHours(currentProtocol)
+        : 0.0;
     final double? sleepQualityScore = sleep.lastLog == null
         ? null
         : SleepQualityCalculator.calculate(
@@ -207,8 +204,7 @@ class StreakNotifier extends StateNotifier<StreakState> {
     // Sesiones largas pueden superar 1.0; el calc de dailyQualityScore
     // aplica clamp en [0, 1] ahí.
     final double exerciseMagnitude = exercise.todayMinutes / 30.0;
-    final double nutritionMagnitude =
-        nutrition.nutritionScore.clamp(0.0, 1.0);
+    final double nutritionMagnitude = nutrition.nutritionScore.clamp(0.0, 1.0);
 
     final newEntry = StreakEntry(
       date: _todayKey,
@@ -226,7 +222,8 @@ class StreakNotifier extends StateNotifier<StreakState> {
       nutritionLogged: StreakEngine.evaluateNutrition(
         mealsLogged: nutrition.mealsLoggedToday,
       ),
-      imrScore: state.todayEntry?.imrScore ?? 0, // Preservar el IMR actual con null-safety
+      imrScore: state.todayEntry?.imrScore ??
+          0, // Preservar el IMR actual con null-safety
       fastingMagnitude: fastingMagnitude,
       sleepQualityScore: sleepQualityScore,
       hydrationMagnitude: hydrationMagnitude,
@@ -334,7 +331,8 @@ class StreakNotifier extends StateNotifier<StreakState> {
       // SPEC-50.3: StreakRepository (no UserRepository).
       final StreakRepository repo = _ref.read(streakRepositoryProvider);
       await repo.save(uid, entry);
-      AppLogger.debug('[StreakNotifier] Racha guardada: ${entry.date} — ${entry.pillarsCompleted}/5 pilares');
+      AppLogger.debug(
+          '[StreakNotifier] Racha guardada: ${entry.date} — ${entry.pillarsCompleted}/5 pilares');
     } catch (e) {
       // SPEC-87 fix: si entre el guard y el await el usuario hizo
       // logout, la escritura falla con permission-denied. Es ruido

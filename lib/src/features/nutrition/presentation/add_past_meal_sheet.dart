@@ -129,8 +129,7 @@ class _AddPastMealSheetState extends ConsumerState<AddPastMealSheet> {
       _carbsController.text = entry.carbs.toStringAsFixed(1);
       _fatController.text = entry.fat.toStringAsFixed(1);
       _fiberController.text = entry.fiber?.toStringAsFixed(1) ?? '';
-      _glycemicIndexController.text =
-          entry.glycemicIndex?.toString() ?? '';
+      _glycemicIndexController.text = entry.glycemicIndex?.toString() ?? '';
       _source = NutritionLogSource.catalog;
       _searchController.clear();
       _searchQuery = '';
@@ -421,11 +420,10 @@ class _AddPastMealSheetState extends ConsumerState<AddPastMealSheet> {
                 width: double.infinity,
                 height: 48,
                 child: OutlinedButton(
-                  onPressed:
-                      _isSaving ? null : () => Navigator.pop(context),
+                  onPressed: _isSaving ? null : () => Navigator.pop(context),
                   style: OutlinedButton.styleFrom(
-                    side: BorderSide(
-                        color: Colors.white.withValues(alpha: 0.15)),
+                    side:
+                        BorderSide(color: Colors.white.withValues(alpha: 0.15)),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -491,8 +489,8 @@ class _AddPastMealSheetState extends ConsumerState<AddPastMealSheet> {
                         }),
                       ),
                 border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 12, vertical: 12),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
               ),
             ),
           ),
@@ -517,8 +515,8 @@ class _AddPastMealSheetState extends ConsumerState<AddPastMealSheet> {
                 GestureDetector(
                   onTap: _clearAllMacros,
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     child: Row(
                       children: [
                         Icon(
@@ -544,8 +542,7 @@ class _AddPastMealSheetState extends ConsumerState<AddPastMealSheet> {
           if (_source == NutritionLogSource.catalog) ...[
             const SizedBox(height: 6),
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 color: _accentColor.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(6),
@@ -666,8 +663,7 @@ class _AddPastMealSheetState extends ConsumerState<AddPastMealSheet> {
             onTap: () => _applyEntry(entry),
             borderRadius: BorderRadius.circular(10),
             child: Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               child: Row(
                 children: [
                   Expanded(
@@ -800,8 +796,7 @@ class _MacroInput extends StatelessWidget {
           style: const TextStyle(color: Colors.white, fontSize: 14),
           decoration: InputDecoration(
             hintText: '—',
-            hintStyle:
-                TextStyle(color: Colors.white.withValues(alpha: 0.30)),
+            hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.30)),
             suffixText: suffix,
             suffixStyle: TextStyle(
               color: Colors.white.withValues(alpha: 0.45),

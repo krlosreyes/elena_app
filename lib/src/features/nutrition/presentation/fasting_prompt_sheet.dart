@@ -88,7 +88,8 @@ class _FastingPromptSheetState extends ConsumerState<FastingPromptSheet> {
                           height: 18,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
                           ),
                         )
                       : const Icon(Icons.play_circle_fill_rounded, size: 18),
@@ -117,25 +118,29 @@ class _FastingPromptSheetState extends ConsumerState<FastingPromptSheet> {
                 width: double.infinity,
                 height: 52,
                 child: OutlinedButton(
-                  onPressed: _isStarting ? null : () {
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: const Text(
-                          'Puedes iniciar el ayuno cuando estés listo. Aparecerá un recordatorio en el panel de nutrición.',
-                        ),
-                        duration: const Duration(seconds: 4),
-                        backgroundColor: Colors.white.withValues(alpha: 0.1),
-                        behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    );
-                  },
+                  onPressed: _isStarting
+                      ? null
+                      : () {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: const Text(
+                                'Puedes iniciar el ayuno cuando estés listo. Aparecerá un recordatorio en el panel de nutrición.',
+                              ),
+                              duration: const Duration(seconds: 4),
+                              backgroundColor:
+                                  Colors.white.withValues(alpha: 0.1),
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          );
+                        },
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.white.withValues(alpha: 0.7),
-                    side: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
+                    side:
+                        BorderSide(color: Colors.white.withValues(alpha: 0.15)),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
@@ -169,7 +174,8 @@ class _FastingPromptSheetState extends ConsumerState<FastingPromptSheet> {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('✓ Ayuno iniciado. Que comience la quema de grasa.'),
+            content:
+                const Text('✓ Ayuno iniciado. Que comience la quema de grasa.'),
             duration: const Duration(seconds: 3),
             backgroundColor: Colors.green.withValues(alpha: 0.2),
             behavior: SnackBarBehavior.floating,

@@ -36,13 +36,13 @@ class BodyFatCalculator {
     final difference = waistCm - neckCm;
 
     // Evitar log de números <= 0
-    if (difference <= 0 || heightCm <= 0) return 15.0; // Default masculino promedio
+    if (difference <= 0 || heightCm <= 0)
+      return 15.0; // Default masculino promedio
 
     final log10Difference = math.log(difference) / math.log(10);
     final log10Height = math.log(heightCm) / math.log(10);
 
-    final bodyFat =
-        86.010 * log10Difference - 70.041 * log10Height + 36.76;
+    final bodyFat = 86.010 * log10Difference - 70.041 * log10Height + 36.76;
 
     // Clamp a rangos realistas (2-60%)
     return bodyFat.clamp(2.0, 60.0);

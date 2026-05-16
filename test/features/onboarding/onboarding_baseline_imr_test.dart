@@ -36,8 +36,7 @@ void main() {
 
     test('repo.updateCurrentImr recibe el baseline con imrScore <= 50',
         () async {
-      final controller =
-          container.read(onboardingControllerProvider.notifier);
+      final controller = container.read(onboardingControllerProvider.notifier);
       await controller.completeOnboarding(_testUser());
 
       expect(repo.capturedUid, 'test-uid');
@@ -58,8 +57,7 @@ void main() {
     });
 
     test('imr.current contiene los campos canónicos derivados', () async {
-      final controller =
-          container.read(onboardingControllerProvider.notifier);
+      final controller = container.read(onboardingControllerProvider.notifier);
       await controller.completeOnboarding(_testUser());
 
       final imr = repo.capturedImr!;
@@ -75,8 +73,7 @@ void main() {
     });
 
     test('saveProfile también se llamó (preserva flujo legacy)', () async {
-      final controller =
-          container.read(onboardingControllerProvider.notifier);
+      final controller = container.read(onboardingControllerProvider.notifier);
       await controller.completeOnboarding(_testUser());
 
       expect(repo.savedUser, isNotNull);
@@ -108,8 +105,7 @@ void main() {
 
     test('NO persiste baseline cuando imr.current ya existe en rawProfile',
         () async {
-      final controller =
-          container.read(onboardingControllerProvider.notifier);
+      final controller = container.read(onboardingControllerProvider.notifier);
       await controller.completeOnboarding(_testUser());
 
       // saveProfile sí se llamó (legacy preservado).

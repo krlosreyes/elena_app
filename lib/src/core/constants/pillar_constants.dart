@@ -46,7 +46,7 @@ abstract class PillarConstants {
   // Cuando un pilar funcional agrupa varias dimensiones (Soporte Metabólico),
   // estas etiquetas identifican la métrica específica en filas de resumen.
 
-  static const String trackingLabelSueno       = 'Sueño';
+  static const String trackingLabelSueno = 'Sueño';
   static const String trackingLabelHidratacion = 'Hidratación';
 
   // ── Descripciones científicas breves (1-2 oraciones) ─────────────────────────
@@ -55,27 +55,22 @@ abstract class PillarConstants {
   static const Map<String, String> descriptions = {
     pilarAyuno:
         'El ayuno activa la lipólisis visceral a partir de las 14-16 horas, '
-        'cuando el glucógeno hepático se agota y el cuerpo cambia de fuente '
-        'energética. La consistencia semanal produce adaptaciones metabólicas '
-        'que duran días después del ayuno.',
-
+            'cuando el glucógeno hepático se agota y el cuerpo cambia de fuente '
+            'energética. La consistencia semanal produce adaptaciones metabólicas '
+            'que duran días después del ayuno.',
     pilarEjercicio:
         'La masa muscular es el predictor más fuerte de longevidad metabólica '
-        '(Wolfe, 2006). El entrenamiento de resistencia activa AMPK y mejora '
-        'la sensibilidad a la insulina durante 24-48 horas post-esfuerzo.',
-
+            '(Wolfe, 2006). El entrenamiento de resistencia activa AMPK y mejora '
+            'la sensibilidad a la insulina durante 24-48 horas post-esfuerzo.',
     pilarNutricion:
         'La calidad de los macronutrientes y el índice insulínico de los '
-        'alimentos determinan la carga glucémica real de cada comida. '
-        'Comer dentro de la ventana circadiana potencia el efecto del ayuno.',
-
+            'alimentos determinan la carga glucémica real de cada comida. '
+            'Comer dentro de la ventana circadiana potencia el efecto del ayuno.',
     pilarSoporte:
         'El sueño regula cortisol, grelina y leptina — hormonas que controlan '
-        'el hambre, el estrés y la recuperación muscular. La hidratación '
-        'adecuada transporta cetonas y optimiza la función metabólica celular.',
-
-    pilarInsulina:
-        'La insulina es el regulador central del metabolismo de grasa '
+            'el hambre, el estrés y la recuperación muscular. La hidratación '
+            'adecuada transporta cetonas y optimiza la función metabólica celular.',
+    pilarInsulina: 'La insulina es el regulador central del metabolismo de grasa '
         '(Crofts et al., 2015). Concentrar las comidas en la primera mitad '
         'del día, alineadas con el ritmo circadiano, minimiza los picos '
         'insulínicos y potencia la quema de grasa durante el ayuno nocturno.',
@@ -84,21 +79,21 @@ abstract class PillarConstants {
   // ── Colores por pilar ─────────────────────────────────────────────────────────
 
   static const Map<String, Color> colors = {
-    pilarAyuno:     Color(0xFF10B981),  // verde esmeralda
-    pilarEjercicio: Color(0xFF2DD4BF),  // teal
-    pilarNutricion: Color(0xFFFB923C),  // naranja
-    pilarSoporte:   Color(0xFF818CF8),  // índigo
-    pilarInsulina:  Color(0xFFF59E0B),  // ámbar
+    pilarAyuno: Color(0xFF10B981), // verde esmeralda
+    pilarEjercicio: Color(0xFF2DD4BF), // teal
+    pilarNutricion: Color(0xFFFB923C), // naranja
+    pilarSoporte: Color(0xFF818CF8), // índigo
+    pilarInsulina: Color(0xFFF59E0B), // ámbar
   };
 
   // ── Emojis por pilar ──────────────────────────────────────────────────────────
 
   static const Map<String, String> emojis = {
-    pilarAyuno:     '⏱️',
+    pilarAyuno: '⏱️',
     pilarEjercicio: '💪',
     pilarNutricion: '🥦',
-    pilarSoporte:   '🌙',
-    pilarInsulina:  '⚡',
+    pilarSoporte: '🌙',
+    pilarInsulina: '⚡',
   };
 
   // ── Mapping funcional → dimensiones de tracking ───────────────────────────────
@@ -106,11 +101,11 @@ abstract class PillarConstants {
   // pertenece una dimensión de tracking, sin hardcodear strings en múltiples sitios.
 
   static const Map<String, List<String>> trackingMap = {
-    pilarAyuno:     ['FastingNotifier', 'FastingInterval'],
+    pilarAyuno: ['FastingNotifier', 'FastingInterval'],
     pilarEjercicio: ['ExerciseNotifier', 'ExerciseLog'],
     pilarNutricion: ['NutritionNotifier', 'NutritionLog'],
-    pilarSoporte:   ['SleepNotifier', 'HydrationNotifier'],
-    pilarInsulina:  ['NutritionNotifier', 'NutritionLog', 'circadianAlignment'],
+    pilarSoporte: ['SleepNotifier', 'HydrationNotifier'],
+    pilarInsulina: ['NutritionNotifier', 'NutritionLog', 'circadianAlignment'],
   };
 
   // ── Mapping IMR → pilares funcionales ────────────────────────────────────────
@@ -123,7 +118,7 @@ abstract class PillarConstants {
   //                                 + Nutrición Científica
   //                                 + Soporte Metabólico
 
-  static const String imrBlockEstructura    = 'Composición Corporal';
-  static const String imrBlockMetabolico    = pilarAyuno;           // 'Ayuno Consciente'
+  static const String imrBlockEstructura = 'Composición Corporal';
+  static const String imrBlockMetabolico = pilarAyuno; // 'Ayuno Consciente'
   static const String imrBlockComportamiento = 'Hábitos Circadianos';
 }

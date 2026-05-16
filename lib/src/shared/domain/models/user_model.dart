@@ -40,14 +40,14 @@ class UserModel with _$UserModel {
     // no hay datos para calcular, queda null y el ScoreEngine usa
     // fallback marcando `confidenceLevel: 'BAJA'`.
     double? bodyFatPercentage,
-    
+
     // --- Inferencia ---
-    @Default(30) int pantSize,      
-    @Default('M') String shirtSize, 
-    @Default(true) bool isMeasurementEstimated, 
+    @Default(30) int pantSize,
+    @Default('M') String shirtSize,
+    @Default(true) bool isMeasurementEstimated,
     @Default(0.0) double imrStdDev,
     @Default('BAJA') String confidenceLevel,
-    
+
     // --- Hábitos ---
     @Default(3) int mealsPerDay,
     @Default('Ninguno') String fastingProtocol,
@@ -75,11 +75,11 @@ class UserModel with _$UserModel {
     // aceptado (compatible con usuarios pre-SPEC-76 que se
     // re-promptean automáticamente al abrir la app).
     @Default(0) int healthDisclaimerVersion,
-
     required CircadianProfile profile,
   }) = _UserModel;
 
-  factory UserModel.fromJson(Map<String, dynamic> json) => _$UserModelFromJson(json);
+  factory UserModel.fromJson(Map<String, dynamic> json) =>
+      _$UserModelFromJson(json);
 }
 
 @freezed
@@ -91,7 +91,8 @@ class CircadianProfile with _$CircadianProfile {
     @OptionalTimestampConverter() DateTime? lastMealGoal,
   }) = _CircadianProfile;
 
-  factory CircadianProfile.fromJson(Map<String, dynamic> json) => _$CircadianProfileFromJson(json);
+  factory CircadianProfile.fromJson(Map<String, dynamic> json) =>
+      _$CircadianProfileFromJson(json);
 }
 
 // --- NUEVO MODELO PARA EL HISTORIAL (COORDENADAS TEMPORALES) ---
@@ -111,5 +112,6 @@ class FastingInterval with _$FastingInterval {
     String? note,
   }) = _FastingInterval;
 
-  factory FastingInterval.fromJson(Map<String, dynamic> json) => _$FastingIntervalFromJson(json);
+  factory FastingInterval.fromJson(Map<String, dynamic> json) =>
+      _$FastingIntervalFromJson(json);
 }

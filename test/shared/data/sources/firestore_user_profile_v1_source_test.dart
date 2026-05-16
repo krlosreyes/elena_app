@@ -43,8 +43,7 @@ void main() {
       expect(emitted!['id'], uid);
     });
 
-    test('doc con id distinto al path → el path gana (autoritativo)',
-        () async {
+    test('doc con id distinto al path → el path gana (autoritativo)', () async {
       const uid = 'real-uid';
       // Simulamos doc corrupto con id stale.
       await firestore.collection('users').doc(uid).set({
