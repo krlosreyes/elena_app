@@ -58,4 +58,3 @@ Spec-Driven Development (SDD). Cada cambio significativo se documenta en `specs/
 
 
 
-
