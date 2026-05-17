@@ -57,3 +57,4 @@ flutter build apk --release --split-per-abi
 Spec-Driven Development (SDD). Cada cambio significativo se documenta en `specs/SPEC-XXX-titulo.md` antes de implementarse. La rama `mvp-core-clean` recibe commits con prefijo `SPEC-XXX:`.
 
 
+
