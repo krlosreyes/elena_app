@@ -75,6 +75,42 @@ class UserModel with _$UserModel {
     // aceptado (compatible con usuarios pre-SPEC-76 que se
     // re-promptean automáticamente al abrir la app).
     @Default(0) int healthDisclaimerVersion,
+
+    // --- SPEC-137: Sistema nervioso (Frank Suárez) ---
+    //
+    // Captura en onboarding Paso 3.A con 5 preguntas (§RF-137-08.A).
+    // Modula la sugerencia de proporción A:E del plato (§RF-137-09)
+    // y la sugerencia inicial de protocolo de ayuno (§RF-137-08.C).
+    //
+    // Campos planos (no anidados) para minimizar el ruido del freezed
+    // y mantener la deserialización trivial. La reconstrucción del
+    // objeto `NervousSystemScore` se hace on-demand desde el caller
+    // via `NervousSystemScore.fromMap`.
+    //
+    // Default 'unknown' (no 'passive') para que usuarios pre-SPEC-137
+    // disparen el banner de "responder después" en el dashboard hasta
+    // que completen el sub-step (§RF-137-08.E).
+
+    /// 'passive' | 'excited' | 'unknown'. Default 'unknown' = aún no
+    /// se ha clasificado al usuario.
+    @Default('unknown') String nervousSystem,
+
+    /// True si el usuario respondió ≥ 3 de las 5 preguntas del
+    /// onboarding 3.A. Default false = no responde, dispara banner
+    /// recordatorio cada 7 días.
+    @Default(false) bool nervousSystemDeclared,
+
+    /// Score crudo de las 5 preguntas para recalibración futura
+    /// (§RF-137-08.F). Shape: { 'passive': N, 'excited': N, 'unknown': N }
+    /// donde la suma ≤ 5 (5 si respondió todas, menos si saltó).
+    /// Default {} = nunca declaró.
+    @Default(<String, int>{}) Map<String, int> nervousSystemScore,
+
+    /// Flag de aceptación del dialog de incongruencia protocolo×SN
+    /// (§RF-137-08.D). Ej. "20:4-on-excited" significa "el usuario
+    /// excitado eligió 20:4 a pesar de la advertencia". Null si nunca
+    /// disparó el dialog.
+    String? protocolWarningAccepted,
     required CircadianProfile profile,
   }) = _UserModel;
 

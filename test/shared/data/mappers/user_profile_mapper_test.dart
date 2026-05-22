@@ -133,4 +133,81 @@ void main() {
       expect(map['bodyFatPercentage'], isNull);
     });
   });
+
+  group('SPEC-137 — sistema nervioso en shape canónico', () {
+    UserModel userWithSN({
+      String nervousSystem = 'unknown',
+      bool nervousSystemDeclared = false,
+      Map<String, int> nervousSystemScore = const {},
+      String? protocolWarningAccepted,
+    }) {
+      return UserModel(
+        id: 'user-sn',
+        age: 30,
+        gender: 'M',
+        weight: 75,
+        height: 175,
+        bodyFatPercentage: 20,
+        profile: profile(),
+        nervousSystem: nervousSystem,
+        nervousSystemDeclared: nervousSystemDeclared,
+        nervousSystemScore: nervousSystemScore,
+        protocolWarningAccepted: protocolWarningAccepted,
+      );
+    }
+
+    test('por defecto persiste unknown / not declared / score vacío', () {
+      final map = mapper.toMap(user());
+      final habits = map['habits'] as Map<String, dynamic>;
+      final ns = habits['nervousSystem'] as Map<String, dynamic>;
+      expect(ns['classification'], 'unknown');
+      expect(ns['declared'], isFalse);
+      expect(ns['score'], <String, int>{});
+    });
+
+    test('usuario clasificado excited con score 1/3/1 persiste correctamente',
+        () {
+      final u = userWithSN(
+        nervousSystem: 'excited',
+        nervousSystemDeclared: true,
+        nervousSystemScore: const {'passive': 1, 'excited': 3, 'unknown': 1},
+      );
+      final map = mapper.toMap(u);
+      final habits = map['habits'] as Map<String, dynamic>;
+      final ns = habits['nervousSystem'] as Map<String, dynamic>;
+      expect(ns['classification'], 'excited');
+      expect(ns['declared'], isTrue);
+      expect(ns['score'], {'passive': 1, 'excited': 3, 'unknown': 1});
+    });
+
+    test('protocolWarningAccepted null persiste como null en onboarding',
+        () {
+      final map = mapper.toMap(user());
+      final onboarding = map['onboarding'] as Map<String, dynamic>;
+      expect(onboarding['protocolWarningAccepted'], isNull);
+    });
+
+    test('protocolWarningAccepted con valor persiste el string', () {
+      final u = userWithSN(protocolWarningAccepted: '20:4-on-excited');
+      final map = mapper.toMap(u);
+      final onboarding = map['onboarding'] as Map<String, dynamic>;
+      expect(onboarding['protocolWarningAccepted'], '20:4-on-excited');
+    });
+
+    test('round-trip preserva los campos SN (toJson → fromJson)', () {
+      final original = userWithSN(
+        nervousSystem: 'passive',
+        nervousSystemDeclared: true,
+        nervousSystemScore: const {'passive': 4, 'excited': 0, 'unknown': 1},
+        protocolWarningAccepted: '20:4-on-excited',
+      );
+      final map = mapper.toMap(original);
+      final round = mapper.fromMap(map);
+      expect(round.nervousSystem, 'passive');
+      expect(round.nervousSystemDeclared, isTrue);
+      expect(round.nervousSystemScore,
+          {'passive': 4, 'excited': 0, 'unknown': 1});
+      expect(round.protocolWarningAccepted, '20:4-on-excited');
+    });
+  });
 }

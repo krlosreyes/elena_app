@@ -37,6 +37,14 @@ _$UserModelImpl _$$UserModelImplFromJson(Map<String, dynamic> json) =>
           .fromJson(json['healthDisclaimerAcceptedAt']),
       healthDisclaimerVersion:
           (json['healthDisclaimerVersion'] as num?)?.toInt() ?? 0,
+      nervousSystem: json['nervousSystem'] as String? ?? 'unknown',
+      nervousSystemDeclared: json['nervousSystemDeclared'] as bool? ?? false,
+      nervousSystemScore:
+          (json['nervousSystemScore'] as Map<String, dynamic>?)?.map(
+                (k, e) => MapEntry(k, (e as num).toInt()),
+              ) ??
+              const <String, int>{},
+      protocolWarningAccepted: json['protocolWarningAccepted'] as String?,
       profile:
           CircadianProfile.fromJson(json['profile'] as Map<String, dynamic>),
     );
@@ -67,6 +75,10 @@ Map<String, dynamic> _$$UserModelImplToJson(_$UserModelImpl instance) =>
       'healthDisclaimerAcceptedAt': const OptionalTimestampConverter()
           .toJson(instance.healthDisclaimerAcceptedAt),
       'healthDisclaimerVersion': instance.healthDisclaimerVersion,
+      'nervousSystem': instance.nervousSystem,
+      'nervousSystemDeclared': instance.nervousSystemDeclared,
+      'nervousSystemScore': instance.nervousSystemScore,
+      'protocolWarningAccepted': instance.protocolWarningAccepted,
       'profile': instance.profile.toJson(),
     };
 

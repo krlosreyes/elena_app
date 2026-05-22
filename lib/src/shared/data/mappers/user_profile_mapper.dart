@@ -115,8 +115,20 @@ Map<String, dynamic> userToCanonicalMirror(UserModel user) {
       'exerciseMinutesPerDay': user.exerciseGoalMinutes,
       'sleepQuality': null,
       'hydrationLitresPerDay': null,
+      // SPEC-137: el sistema nervioso vive bajo habits.nervousSystem.*
+      // en el shape canónico para que el sitio MR pueda leerlo si
+      // quiere personalizar contenido. La app sigue leyéndolo del
+      // shape legacy plano.
+      'nervousSystem': <String, dynamic>{
+        'classification': user.nervousSystem,
+        'declared': user.nervousSystemDeclared,
+        'score': user.nervousSystemScore,
+      },
       'source': 'self_report',
       'updatedAt': nowIso,
+    },
+    'onboarding': <String, dynamic>{
+      'protocolWarningAccepted': user.protocolWarningAccepted,
     },
     'meta': <String, dynamic>{
       'schemaVersion': 1,

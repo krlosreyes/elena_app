@@ -68,7 +68,41 @@ mixin _$UserModel {
 // vuelven a ver el paso 0 del onboarding. Default 0 = nunca
 // aceptado (compatible con usuarios pre-SPEC-76 que se
 // re-promptean automáticamente al abrir la app).
-  int get healthDisclaimerVersion => throw _privateConstructorUsedError;
+  int get healthDisclaimerVersion =>
+      throw _privateConstructorUsedError; // --- SPEC-137: Sistema nervioso (Frank Suárez) ---
+//
+// Captura en onboarding Paso 3.A con 5 preguntas (§RF-137-08.A).
+// Modula la sugerencia de proporción A:E del plato (§RF-137-09)
+// y la sugerencia inicial de protocolo de ayuno (§RF-137-08.C).
+//
+// Campos planos (no anidados) para minimizar el ruido del freezed
+// y mantener la deserialización trivial. La reconstrucción del
+// objeto `NervousSystemScore` se hace on-demand desde el caller
+// via `NervousSystemScore.fromMap`.
+//
+// Default 'unknown' (no 'passive') para que usuarios pre-SPEC-137
+// disparen el banner de "responder después" en el dashboard hasta
+// que completen el sub-step (§RF-137-08.E).
+  /// 'passive' | 'excited' | 'unknown'. Default 'unknown' = aún no
+  /// se ha clasificado al usuario.
+  String get nervousSystem => throw _privateConstructorUsedError;
+
+  /// True si el usuario respondió ≥ 3 de las 5 preguntas del
+  /// onboarding 3.A. Default false = no responde, dispara banner
+  /// recordatorio cada 7 días.
+  bool get nervousSystemDeclared => throw _privateConstructorUsedError;
+
+  /// Score crudo de las 5 preguntas para recalibración futura
+  /// (§RF-137-08.F). Shape: { 'passive': N, 'excited': N, 'unknown': N }
+  /// donde la suma ≤ 5 (5 si respondió todas, menos si saltó).
+  /// Default {} = nunca declaró.
+  Map<String, int> get nervousSystemScore => throw _privateConstructorUsedError;
+
+  /// Flag de aceptación del dialog de incongruencia protocolo×SN
+  /// (§RF-137-08.D). Ej. "20:4-on-excited" significa "el usuario
+  /// excitado eligió 20:4 a pesar de la advertencia". Null si nunca
+  /// disparó el dialog.
+  String? get protocolWarningAccepted => throw _privateConstructorUsedError;
   CircadianProfile get profile => throw _privateConstructorUsedError;
 
   /// Serializes this UserModel to a JSON map.
@@ -110,6 +144,10 @@ abstract class $UserModelCopyWith<$Res> {
       bool healthDisclaimerAccepted,
       @OptionalTimestampConverter() DateTime? healthDisclaimerAcceptedAt,
       int healthDisclaimerVersion,
+      String nervousSystem,
+      bool nervousSystemDeclared,
+      Map<String, int> nervousSystemScore,
+      String? protocolWarningAccepted,
       CircadianProfile profile});
 
   $CircadianProfileCopyWith<$Res> get profile;
@@ -153,6 +191,10 @@ class _$UserModelCopyWithImpl<$Res, $Val extends UserModel>
     Object? healthDisclaimerAccepted = null,
     Object? healthDisclaimerAcceptedAt = freezed,
     Object? healthDisclaimerVersion = null,
+    Object? nervousSystem = null,
+    Object? nervousSystemDeclared = null,
+    Object? nervousSystemScore = null,
+    Object? protocolWarningAccepted = freezed,
     Object? profile = null,
   }) {
     return _then(_value.copyWith(
@@ -248,6 +290,22 @@ class _$UserModelCopyWithImpl<$Res, $Val extends UserModel>
           ? _value.healthDisclaimerVersion
           : healthDisclaimerVersion // ignore: cast_nullable_to_non_nullable
               as int,
+      nervousSystem: null == nervousSystem
+          ? _value.nervousSystem
+          : nervousSystem // ignore: cast_nullable_to_non_nullable
+              as String,
+      nervousSystemDeclared: null == nervousSystemDeclared
+          ? _value.nervousSystemDeclared
+          : nervousSystemDeclared // ignore: cast_nullable_to_non_nullable
+              as bool,
+      nervousSystemScore: null == nervousSystemScore
+          ? _value.nervousSystemScore
+          : nervousSystemScore // ignore: cast_nullable_to_non_nullable
+              as Map<String, int>,
+      protocolWarningAccepted: freezed == protocolWarningAccepted
+          ? _value.protocolWarningAccepted
+          : protocolWarningAccepted // ignore: cast_nullable_to_non_nullable
+              as String?,
       profile: null == profile
           ? _value.profile
           : profile // ignore: cast_nullable_to_non_nullable
@@ -298,6 +356,10 @@ abstract class _$$UserModelImplCopyWith<$Res>
       bool healthDisclaimerAccepted,
       @OptionalTimestampConverter() DateTime? healthDisclaimerAcceptedAt,
       int healthDisclaimerVersion,
+      String nervousSystem,
+      bool nervousSystemDeclared,
+      Map<String, int> nervousSystemScore,
+      String? protocolWarningAccepted,
       CircadianProfile profile});
 
   @override
@@ -340,6 +402,10 @@ class __$$UserModelImplCopyWithImpl<$Res>
     Object? healthDisclaimerAccepted = null,
     Object? healthDisclaimerAcceptedAt = freezed,
     Object? healthDisclaimerVersion = null,
+    Object? nervousSystem = null,
+    Object? nervousSystemDeclared = null,
+    Object? nervousSystemScore = null,
+    Object? protocolWarningAccepted = freezed,
     Object? profile = null,
   }) {
     return _then(_$UserModelImpl(
@@ -435,6 +501,22 @@ class __$$UserModelImplCopyWithImpl<$Res>
           ? _value.healthDisclaimerVersion
           : healthDisclaimerVersion // ignore: cast_nullable_to_non_nullable
               as int,
+      nervousSystem: null == nervousSystem
+          ? _value.nervousSystem
+          : nervousSystem // ignore: cast_nullable_to_non_nullable
+              as String,
+      nervousSystemDeclared: null == nervousSystemDeclared
+          ? _value.nervousSystemDeclared
+          : nervousSystemDeclared // ignore: cast_nullable_to_non_nullable
+              as bool,
+      nervousSystemScore: null == nervousSystemScore
+          ? _value._nervousSystemScore
+          : nervousSystemScore // ignore: cast_nullable_to_non_nullable
+              as Map<String, int>,
+      protocolWarningAccepted: freezed == protocolWarningAccepted
+          ? _value.protocolWarningAccepted
+          : protocolWarningAccepted // ignore: cast_nullable_to_non_nullable
+              as String?,
       profile: null == profile
           ? _value.profile
           : profile // ignore: cast_nullable_to_non_nullable
@@ -470,8 +552,13 @@ class _$UserModelImpl implements _UserModel {
       this.healthDisclaimerAccepted = false,
       @OptionalTimestampConverter() this.healthDisclaimerAcceptedAt,
       this.healthDisclaimerVersion = 0,
+      this.nervousSystem = 'unknown',
+      this.nervousSystemDeclared = false,
+      final Map<String, int> nervousSystemScore = const <String, int>{},
+      this.protocolWarningAccepted,
       required this.profile})
-      : _pathologies = pathologies;
+      : _pathologies = pathologies,
+        _nervousSystemScore = nervousSystemScore;
 
   factory _$UserModelImpl.fromJson(Map<String, dynamic> json) =>
       _$$UserModelImplFromJson(json);
@@ -570,12 +657,64 @@ class _$UserModelImpl implements _UserModel {
   @override
   @JsonKey()
   final int healthDisclaimerVersion;
+// --- SPEC-137: Sistema nervioso (Frank Suárez) ---
+//
+// Captura en onboarding Paso 3.A con 5 preguntas (§RF-137-08.A).
+// Modula la sugerencia de proporción A:E del plato (§RF-137-09)
+// y la sugerencia inicial de protocolo de ayuno (§RF-137-08.C).
+//
+// Campos planos (no anidados) para minimizar el ruido del freezed
+// y mantener la deserialización trivial. La reconstrucción del
+// objeto `NervousSystemScore` se hace on-demand desde el caller
+// via `NervousSystemScore.fromMap`.
+//
+// Default 'unknown' (no 'passive') para que usuarios pre-SPEC-137
+// disparen el banner de "responder después" en el dashboard hasta
+// que completen el sub-step (§RF-137-08.E).
+  /// 'passive' | 'excited' | 'unknown'. Default 'unknown' = aún no
+  /// se ha clasificado al usuario.
+  @override
+  @JsonKey()
+  final String nervousSystem;
+
+  /// True si el usuario respondió ≥ 3 de las 5 preguntas del
+  /// onboarding 3.A. Default false = no responde, dispara banner
+  /// recordatorio cada 7 días.
+  @override
+  @JsonKey()
+  final bool nervousSystemDeclared;
+
+  /// Score crudo de las 5 preguntas para recalibración futura
+  /// (§RF-137-08.F). Shape: { 'passive': N, 'excited': N, 'unknown': N }
+  /// donde la suma ≤ 5 (5 si respondió todas, menos si saltó).
+  /// Default {} = nunca declaró.
+  final Map<String, int> _nervousSystemScore;
+
+  /// Score crudo de las 5 preguntas para recalibración futura
+  /// (§RF-137-08.F). Shape: { 'passive': N, 'excited': N, 'unknown': N }
+  /// donde la suma ≤ 5 (5 si respondió todas, menos si saltó).
+  /// Default {} = nunca declaró.
+  @override
+  @JsonKey()
+  Map<String, int> get nervousSystemScore {
+    if (_nervousSystemScore is EqualUnmodifiableMapView)
+      return _nervousSystemScore;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableMapView(_nervousSystemScore);
+  }
+
+  /// Flag de aceptación del dialog de incongruencia protocolo×SN
+  /// (§RF-137-08.D). Ej. "20:4-on-excited" significa "el usuario
+  /// excitado eligió 20:4 a pesar de la advertencia". Null si nunca
+  /// disparó el dialog.
+  @override
+  final String? protocolWarningAccepted;
   @override
   final CircadianProfile profile;
 
   @override
   String toString() {
-    return 'UserModel(id: $id, name: $name, age: $age, gender: $gender, weight: $weight, height: $height, waistCircumference: $waistCircumference, neckCircumference: $neckCircumference, bodyFatPercentage: $bodyFatPercentage, pantSize: $pantSize, shirtSize: $shirtSize, isMeasurementEstimated: $isMeasurementEstimated, imrStdDev: $imrStdDev, confidenceLevel: $confidenceLevel, mealsPerDay: $mealsPerDay, fastingProtocol: $fastingProtocol, pathologies: $pathologies, activityLevel: $activityLevel, weeklyAdherence: $weeklyAdherence, exerciseGoalMinutes: $exerciseGoalMinutes, healthDisclaimerAccepted: $healthDisclaimerAccepted, healthDisclaimerAcceptedAt: $healthDisclaimerAcceptedAt, healthDisclaimerVersion: $healthDisclaimerVersion, profile: $profile)';
+    return 'UserModel(id: $id, name: $name, age: $age, gender: $gender, weight: $weight, height: $height, waistCircumference: $waistCircumference, neckCircumference: $neckCircumference, bodyFatPercentage: $bodyFatPercentage, pantSize: $pantSize, shirtSize: $shirtSize, isMeasurementEstimated: $isMeasurementEstimated, imrStdDev: $imrStdDev, confidenceLevel: $confidenceLevel, mealsPerDay: $mealsPerDay, fastingProtocol: $fastingProtocol, pathologies: $pathologies, activityLevel: $activityLevel, weeklyAdherence: $weeklyAdherence, exerciseGoalMinutes: $exerciseGoalMinutes, healthDisclaimerAccepted: $healthDisclaimerAccepted, healthDisclaimerAcceptedAt: $healthDisclaimerAcceptedAt, healthDisclaimerVersion: $healthDisclaimerVersion, nervousSystem: $nervousSystem, nervousSystemDeclared: $nervousSystemDeclared, nervousSystemScore: $nervousSystemScore, protocolWarningAccepted: $protocolWarningAccepted, profile: $profile)';
   }
 
   @override
@@ -627,6 +766,15 @@ class _$UserModelImpl implements _UserModel {
             (identical(
                     other.healthDisclaimerVersion, healthDisclaimerVersion) ||
                 other.healthDisclaimerVersion == healthDisclaimerVersion) &&
+            (identical(other.nervousSystem, nervousSystem) ||
+                other.nervousSystem == nervousSystem) &&
+            (identical(other.nervousSystemDeclared, nervousSystemDeclared) ||
+                other.nervousSystemDeclared == nervousSystemDeclared) &&
+            const DeepCollectionEquality()
+                .equals(other._nervousSystemScore, _nervousSystemScore) &&
+            (identical(
+                    other.protocolWarningAccepted, protocolWarningAccepted) ||
+                other.protocolWarningAccepted == protocolWarningAccepted) &&
             (identical(other.profile, profile) || other.profile == profile));
   }
 
@@ -657,6 +805,10 @@ class _$UserModelImpl implements _UserModel {
         healthDisclaimerAccepted,
         healthDisclaimerAcceptedAt,
         healthDisclaimerVersion,
+        nervousSystem,
+        nervousSystemDeclared,
+        const DeepCollectionEquality().hash(_nervousSystemScore),
+        protocolWarningAccepted,
         profile
       ]);
 
@@ -701,6 +853,10 @@ abstract class _UserModel implements UserModel {
       final bool healthDisclaimerAccepted,
       @OptionalTimestampConverter() final DateTime? healthDisclaimerAcceptedAt,
       final int healthDisclaimerVersion,
+      final String nervousSystem,
+      final bool nervousSystemDeclared,
+      final Map<String, int> nervousSystemScore,
+      final String? protocolWarningAccepted,
       required final CircadianProfile profile}) = _$UserModelImpl;
 
   factory _UserModel.fromJson(Map<String, dynamic> json) =
@@ -774,7 +930,44 @@ abstract class _UserModel implements UserModel {
 // aceptado (compatible con usuarios pre-SPEC-76 que se
 // re-promptean automáticamente al abrir la app).
   @override
-  int get healthDisclaimerVersion;
+  int get healthDisclaimerVersion; // --- SPEC-137: Sistema nervioso (Frank Suárez) ---
+//
+// Captura en onboarding Paso 3.A con 5 preguntas (§RF-137-08.A).
+// Modula la sugerencia de proporción A:E del plato (§RF-137-09)
+// y la sugerencia inicial de protocolo de ayuno (§RF-137-08.C).
+//
+// Campos planos (no anidados) para minimizar el ruido del freezed
+// y mantener la deserialización trivial. La reconstrucción del
+// objeto `NervousSystemScore` se hace on-demand desde el caller
+// via `NervousSystemScore.fromMap`.
+//
+// Default 'unknown' (no 'passive') para que usuarios pre-SPEC-137
+// disparen el banner de "responder después" en el dashboard hasta
+// que completen el sub-step (§RF-137-08.E).
+  /// 'passive' | 'excited' | 'unknown'. Default 'unknown' = aún no
+  /// se ha clasificado al usuario.
+  @override
+  String get nervousSystem;
+
+  /// True si el usuario respondió ≥ 3 de las 5 preguntas del
+  /// onboarding 3.A. Default false = no responde, dispara banner
+  /// recordatorio cada 7 días.
+  @override
+  bool get nervousSystemDeclared;
+
+  /// Score crudo de las 5 preguntas para recalibración futura
+  /// (§RF-137-08.F). Shape: { 'passive': N, 'excited': N, 'unknown': N }
+  /// donde la suma ≤ 5 (5 si respondió todas, menos si saltó).
+  /// Default {} = nunca declaró.
+  @override
+  Map<String, int> get nervousSystemScore;
+
+  /// Flag de aceptación del dialog de incongruencia protocolo×SN
+  /// (§RF-137-08.D). Ej. "20:4-on-excited" significa "el usuario
+  /// excitado eligió 20:4 a pesar de la advertencia". Null si nunca
+  /// disparó el dialog.
+  @override
+  String? get protocolWarningAccepted;
   @override
   CircadianProfile get profile;
 

@@ -34,6 +34,10 @@ class CanonicalToLegacyAdapter {
   ///   - exerciseGoalMinutes ← habits.exerciseMinutesPerDay
   ///   - lastMealGoal      ← habits.lastMealHour (float → DateTime)
   ///   - healthDisclaimerAccepted ← raw.healthDisclaimerAccepted
+  ///   - nervousSystem               ← habits.nervousSystem.classification (SPEC-137)
+  ///   - nervousSystemDeclared       ← habits.nervousSystem.declared
+  ///   - nervousSystemScore          ← habits.nervousSystem.score
+  ///   - protocolWarningAccepted     ← onboarding.protocolWarningAccepted
   static Map<String, dynamic> deriveLegacyFields(
     Map<String, dynamic>? raw,
   ) {
@@ -92,6 +96,49 @@ class CanonicalToLegacyAdapter {
       );
       if (lastMealHour != null) {
         result['lastMealGoal'] = _hourFloatToDateTime(lastMealHour);
+      }
+
+      // SPEC-137: sistema nervioso bajo habits.nervousSystem.*
+      // Tolerancia: si el sub-objeto no existe o el shape es raro,
+      // se omiten los campos (caller usa defaults del UserModel).
+      final nervousSystemSub = habitsMap['nervousSystem'];
+      if (nervousSystemSub is Map) {
+        final nsMap = nervousSystemSub.cast<String, dynamic>();
+
+        final classification = nsMap['classification'];
+        if (classification is String &&
+            const {'passive', 'excited', 'unknown'}.contains(classification)) {
+          result['nervousSystem'] = classification;
+        }
+
+        final declared = nsMap['declared'];
+        if (declared is bool) {
+          result['nervousSystemDeclared'] = declared;
+        }
+
+        final score = nsMap['score'];
+        if (score is Map) {
+          // Coerce los conteos a int por si vienen como num.
+          final scoreClean = <String, int>{};
+          score.forEach((key, value) {
+            if (key is String) {
+              final asInt = _toInt(value);
+              if (asInt != null) scoreClean[key] = asInt;
+            }
+          });
+          if (scoreClean.isNotEmpty) {
+            result['nervousSystemScore'] = scoreClean;
+          }
+        }
+      }
+    }
+
+    // SPEC-137: onboarding.protocolWarningAccepted
+    final onboarding = raw['onboarding'];
+    if (onboarding is Map) {
+      final accepted = onboarding['protocolWarningAccepted'];
+      if (accepted is String && accepted.isNotEmpty) {
+        result['protocolWarningAccepted'] = accepted;
       }
     }
 

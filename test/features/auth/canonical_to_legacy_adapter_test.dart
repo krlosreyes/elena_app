@@ -239,4 +239,137 @@ void main() {
       expect(r['healthDisclaimerAccepted'], isTrue);
     });
   });
+
+  group('SPEC-137 — sistema nervioso desde habits.nervousSystem.*', () {
+    test('lee classification, declared y score válidos', () {
+      final r = CanonicalToLegacyAdapter.deriveLegacyFields({
+        'habits': {
+          'nervousSystem': {
+            'classification': 'excited',
+            'declared': true,
+            'score': {'passive': 1, 'excited': 3, 'unknown': 1},
+          },
+        },
+      });
+      expect(r['nervousSystem'], 'excited');
+      expect(r['nervousSystemDeclared'], isTrue);
+      expect(r['nervousSystemScore'],
+          {'passive': 1, 'excited': 3, 'unknown': 1});
+    });
+
+    test('classification "passive" es aceptada', () {
+      final r = CanonicalToLegacyAdapter.deriveLegacyFields({
+        'habits': {
+          'nervousSystem': {'classification': 'passive', 'declared': true},
+        },
+      });
+      expect(r['nervousSystem'], 'passive');
+    });
+
+    test('classification "unknown" es aceptada', () {
+      final r = CanonicalToLegacyAdapter.deriveLegacyFields({
+        'habits': {
+          'nervousSystem': {'classification': 'unknown', 'declared': false},
+        },
+      });
+      expect(r['nervousSystem'], 'unknown');
+    });
+
+    test('classification con valor inválido NO se propaga (queda en default)',
+        () {
+      final r = CanonicalToLegacyAdapter.deriveLegacyFields({
+        'habits': {
+          'nervousSystem': {'classification': 'fast', 'declared': true},
+        },
+      });
+      expect(r.containsKey('nervousSystem'), isFalse,
+          reason: 'valor fuera del enum debe omitirse, no propagarse');
+      expect(r['nervousSystemDeclared'], isTrue);
+    });
+
+    test('habits.nervousSystem ausente → no agrega campos SN', () {
+      final r = CanonicalToLegacyAdapter.deriveLegacyFields({
+        'habits': {'fastingHours': 16},
+      });
+      expect(r.containsKey('nervousSystem'), isFalse);
+      expect(r.containsKey('nervousSystemDeclared'), isFalse);
+      expect(r.containsKey('nervousSystemScore'), isFalse);
+    });
+
+    test('score con tipos mezclados (int/double/string) se coerce a int', () {
+      final r = CanonicalToLegacyAdapter.deriveLegacyFields({
+        'habits': {
+          'nervousSystem': {
+            'classification': 'passive',
+            'declared': true,
+            'score': {'passive': 3, 'excited': 1.0, 'unknown': '1'},
+          },
+        },
+      });
+      expect(r['nervousSystemScore'], {
+        'passive': 3,
+        'excited': 1,
+        'unknown': 1,
+      });
+    });
+
+    test('score vacío NO produce campo (mapa vacío equivale a ausente)', () {
+      final r = CanonicalToLegacyAdapter.deriveLegacyFields({
+        'habits': {
+          'nervousSystem': {
+            'classification': 'passive',
+            'score': <String, dynamic>{},
+          },
+        },
+      });
+      expect(r.containsKey('nervousSystemScore'), isFalse);
+    });
+
+    test('declared no-bool se ignora', () {
+      final r = CanonicalToLegacyAdapter.deriveLegacyFields({
+        'habits': {
+          'nervousSystem': {'declared': 'yes'},
+        },
+      });
+      expect(r.containsKey('nervousSystemDeclared'), isFalse);
+    });
+
+    test('habits.nervousSystem como string en lugar de Map → no rompe', () {
+      final r = CanonicalToLegacyAdapter.deriveLegacyFields({
+        'habits': {'nervousSystem': 'excited'},
+      });
+      expect(r.containsKey('nervousSystem'), isFalse,
+          reason: 'shape inesperado se ignora, no lanza');
+    });
+  });
+
+  group('SPEC-137 — protocolWarningAccepted desde onboarding.*', () {
+    test('valor string no vacío se lee', () {
+      final r = CanonicalToLegacyAdapter.deriveLegacyFields({
+        'onboarding': {'protocolWarningAccepted': '20:4-on-excited'},
+      });
+      expect(r['protocolWarningAccepted'], '20:4-on-excited');
+    });
+
+    test('null no se propaga', () {
+      final r = CanonicalToLegacyAdapter.deriveLegacyFields({
+        'onboarding': {'protocolWarningAccepted': null},
+      });
+      expect(r.containsKey('protocolWarningAccepted'), isFalse);
+    });
+
+    test('string vacío no se propaga', () {
+      final r = CanonicalToLegacyAdapter.deriveLegacyFields({
+        'onboarding': {'protocolWarningAccepted': ''},
+      });
+      expect(r.containsKey('protocolWarningAccepted'), isFalse);
+    });
+
+    test('onboarding ausente → no rompe', () {
+      final r = CanonicalToLegacyAdapter.deriveLegacyFields({
+        'displayName': 'Carlos',
+      });
+      expect(r.containsKey('protocolWarningAccepted'), isFalse);
+    });
+  });
 }
