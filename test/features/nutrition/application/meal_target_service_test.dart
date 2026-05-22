@@ -74,7 +74,9 @@ void main() {
     });
 
     test('protocolo desconocido cae al fallback', () {
-      final t = service.targetForProtocol('14:10');
+      // '13:11' no está en el catálogo de SPEC-98 (los 8 conocidos:
+      // Ninguno, 12:12, 14:10, 16:8, 18:6, 20:4, 22:2, OMAD).
+      final t = service.targetForProtocol('13:11');
       expect(t.meals, 3);
       expect(t.allowsSnack, isTrue);
     });
