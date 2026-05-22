@@ -14,8 +14,16 @@
 // para que cualquier instancia del modelo sea consistente desde su origen.
 // SPEC-62: las violaciones lanzan ValidationError tipado (NegativeValue,
 // OutOfRange) en lugar de FormatException con mensaje string.
+//
+// SPEC-137: extendido con `ratio` (MealRatio, default a2e1) y
+// `isCheatDay` (bool, default false). El `ratio` se vuelve la unidad
+// atómica del registro — los macros opcionales de SPEC-64 sobreviven
+// para usuarios power y para integración futura con HealthKit Dietary
+// (Fase 2), pero ya no son la métrica primaria del pilar Nutrición.
+// Ver `docs/NUTRITION_BIBLIOGRAPHY.md §1.2` para el criterio "simple".
 
 import 'package:elena_app/src/core/errors/validation_error.dart';
+import 'package:elena_app/src/features/nutrition/domain/meal_ratio.dart';
 
 class NutritionLog {
   /// Identificador único.
@@ -54,6 +62,25 @@ class NutritionLog {
   /// Origen del dato nutricional para trazabilidad de SPEC-70.
   final NutritionLogSource source;
 
+  // ── SPEC-137: clasificación operacional del plato ─────────────────────
+
+  /// Proporción Tipo A : Tipo E del plato (Frank Suárez).
+  ///
+  /// Es la unidad atómica del registro nutricional desde SPEC-137.
+  /// Default `MealRatio.a2e1` (2x1) para:
+  /// 1. Retrocompatibilidad con tests pre-SPEC-137 que construyen
+  ///    NutritionLog sin pasar ratio.
+  /// 2. Logs históricos en Firestore sin el campo (ver mapper).
+  final MealRatio ratio;
+
+  /// True si el log se registró durante un "día de permitidos"
+  /// (cheat day, RF-137-07). Default false.
+  ///
+  /// Los logs con isCheatDay=true cuentan normal hacia el Cociente A
+  /// del día, pero el día completo se excluye del cálculo
+  /// `weeklyAdherence`.
+  final bool isCheatDay;
+
   NutritionLog({
     required this.id,
     required this.timestamp,
@@ -66,6 +93,8 @@ class NutritionLog {
     this.fiber,
     this.glycemicIndex,
     this.source = NutritionLogSource.userInput,
+    this.ratio = MealRatio.a2e1,
+    this.isCheatDay = false,
   }) {
     _validateNonNegative('calories', calories);
     _validateNonNegative('protein', protein);
@@ -100,6 +129,8 @@ class NutritionLog {
     double? fiber,
     int? glycemicIndex,
     NutritionLogSource? source,
+    MealRatio? ratio,
+    bool? isCheatDay,
   }) {
     return NutritionLog(
       id: id ?? this.id,
@@ -114,6 +145,8 @@ class NutritionLog {
       fiber: fiber ?? this.fiber,
       glycemicIndex: glycemicIndex ?? this.glycemicIndex,
       source: source ?? this.source,
+      ratio: ratio ?? this.ratio,
+      isCheatDay: isCheatDay ?? this.isCheatDay,
     );
   }
 

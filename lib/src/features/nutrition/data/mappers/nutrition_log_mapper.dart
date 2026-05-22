@@ -4,10 +4,17 @@
 // logs antiguos (escritos antes de SPEC-64) NO tendrán esos campos en el
 // payload — el mapper los leerá como null, lo que semánticamente significa
 // "no se midió". Backward compatible.
+//
+// SPEC-137: persiste también `ratio` (MealRatio.persistenceKey, default
+// "a2e1" si el log no lo tiene) y `isCheatDay` (bool, default false).
+// Logs antiguos pre-SPEC-137 caen al default a2e1 — documentado en
+// `MealRatio.fromPersistenceKey(null)` y en NUTRITION_BIBLIOGRAPHY.md
+// §13.
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:elena_app/src/core/errors/validation_error.dart';
+import 'package:elena_app/src/features/nutrition/domain/meal_ratio.dart';
 import 'package:elena_app/src/features/nutrition/domain/nutrition_log.dart';
 
 const Set<String> _kValidLabels = {
@@ -37,6 +44,13 @@ class NutritionLogMapper {
     if (log.fat != null) map['fat'] = log.fat;
     if (log.fiber != null) map['fiber'] = log.fiber;
     if (log.glycemicIndex != null) map['glycemicIndex'] = log.glycemicIndex;
+    // SPEC-137: ratio e isCheatDay son siempre persistidos (no son
+    // nullables en el modelo). Para logs nuevos esto siempre escribe
+    // el valor canónico. Para logs antiguos, fromMap inyectó el default
+    // al leer y toMap volverá a escribirlo, materializando la migración
+    // de manera incremental sin necesidad de un script de backfill.
+    map['ratio'] = log.ratio.persistenceKey;
+    map['isCheatDay'] = log.isCheatDay;
     return map;
   }
 
@@ -60,6 +74,12 @@ class NutritionLogMapper {
 
     final source = _parseSource(map['source'] as String?);
 
+    // SPEC-137: logs antiguos sin campo `ratio` caen al default a2e1
+    // vía MealRatio.fromPersistenceKey(null). Logs sin `isCheatDay`
+    // caen a false. Ambos son retrocompatibles por diseño.
+    final ratio = MealRatio.fromPersistenceKey(map['ratio'] as String?);
+    final isCheatDay = map['isCheatDay'] as bool? ?? false;
+
     final log = NutritionLog(
       id: id,
       timestamp: timestamp,
@@ -72,6 +92,8 @@ class NutritionLogMapper {
       fiber: _toDouble(map['fiber']),
       glycemicIndex: _toInt(map['glycemicIndex']),
       source: source,
+      ratio: ratio,
+      isCheatDay: isCheatDay,
     );
     _validate(log);
     return log;
