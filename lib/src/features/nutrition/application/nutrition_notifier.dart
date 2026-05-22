@@ -14,6 +14,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:elena_app/src/features/nutrition/data/nutrition_repository_impl.dart';
+import 'package:elena_app/src/features/nutrition/domain/meal_ratio.dart';
 import 'package:elena_app/src/features/nutrition/domain/nutrition_log.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
@@ -155,6 +156,11 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
     double? fiber,
     int? glycemicIndex,
     NutritionLogSource source = NutritionLogSource.userInput,
+    // SPEC-137: clasificación A:E del plato. Default a2e1 (2x1) para
+    // callers que no pasen ratio (tests existentes, código legacy).
+    MealRatio ratio = MealRatio.a2e1,
+    // SPEC-137: marca el log como día de permitidos. Default false.
+    bool isCheatDay = false,
   }) async {
     final userId = _activeUserId;
     if (userId == null) return;
@@ -175,6 +181,8 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
       fiber: fiber,
       glycemicIndex: glycemicIndex,
       source: source,
+      ratio: ratio,
+      isCheatDay: isCheatDay,
     );
 
     if (mounted) state = state.copyWith(isSaving: true);

@@ -25,8 +25,11 @@ import 'package:elena_app/src/features/exercise/application/exercise_state.dart'
 import 'package:elena_app/src/features/exercise/presentation/exercise_input_sheet.dart';
 import 'package:elena_app/src/features/engagement/presentation/widgets/engagement_banner.dart';
 import 'package:elena_app/src/features/adaptive/presentation/widgets/adaptive_suggestion_card.dart';
+import 'package:elena_app/src/features/nutrition/application/cociente_a_service.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
 import 'package:elena_app/src/features/nutrition/presentation/add_past_meal_sheet.dart';
+// SPEC-137: registro con clasificación A:E y navegación a la vista semanal.
+import 'package:elena_app/src/features/nutrition/presentation/plate_ratio_sheet.dart';
 import 'package:elena_app/src/features/dashboard/presentation/sleep_input_sheet.dart';
 
 // SPEC-88 fix: BodyCompositionCard y GoalsDashboardWidget se retiraron
@@ -1099,7 +1102,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     const accent = Color(0xFFFB923C);
     final progress = state.progressPercentage;
     final pct = (progress * 100).round();
-    final scoreNum = (state.nutritionScore.clamp(0.0, 1.0) * 100).round();
+    // SPEC-137: el mini-stat "Score nutricional" pasa a ser el
+    // Cociente A — porcentaje de platos A-dominantes registrados hoy.
+    // Es la métrica que el usuario MR entiende sin tutorial (Frank
+    // Suárez Tipo A/E). Ver NUTRITION_BIBLIOGRAPHY.md §1.
+    const cocienteService = CocienteAService();
+    final cocienteA = cocienteService.calculate(state.todayLogs);
+    final cocientePct = (cocienteA * 100).round();
+    final aDominantCount = cocienteService.aDominantCount(state.todayLogs);
 
     final card = _pillarCardShell(
       title: 'Nutrición Científica',
@@ -1125,7 +1135,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   _miniStat('Próxima', state.nextMealLabel, accent, big: true),
                   _miniStat('En', _estimateNextMealIn(state), accent,
                       big: true),
-                  _miniStat('Score nutricional', '$scoreNum', Colors.white,
+                  // SPEC-137: Cociente A reemplaza el "Score nutricional"
+                  // numérico (que no era accionable).
+                  _miniStat('Cociente A', '$cocientePct%',
+                      _cocienteAColor(cocienteA),
                       big: true),
                 ],
               ),
@@ -1137,13 +1150,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     : 'Mantén tus comidas dentro de la ventana circadiana para alinear tu ritmo metabólico.',
               ),
               const SizedBox(height: 18),
+              // SPEC-137: el botón principal abre `PlateRatioSheet` —
+              // el usuario clasifica el plato por proporción A:E y
+              // confirma. Reemplaza el `logMeal()` directo que dejaba
+              // el plato sin clasificación (default a2e1).
               _primaryButton(
                 label: 'Registrar ${state.nextMealLabel}',
                 icon: Icons.restaurant_rounded,
                 color: accent,
                 onPressed: isFastingActive || state.isSaving
                     ? null
-                    : () => ref.read(nutritionProvider.notifier).logMeal(),
+                    : () => PlateRatioSheet.show(context),
               ),
               const SizedBox(height: 10),
               _secondaryButton(
@@ -1166,6 +1183,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     ? null
                     : () =>
                         ref.read(nutritionProvider.notifier).removeLastMeal(),
+              ),
+              const SizedBox(height: 10),
+              // SPEC-137 §RF-137-12: link a la vista semanal del pilar.
+              _secondaryButton(
+                label: aDominantCount == 0
+                    ? 'Ver semana →'
+                    : 'Ver semana → · $aDominantCount A-dominantes hoy',
+                icon: Icons.calendar_view_week_rounded,
+                onPressed: () => context.push('/nutrition/weekly'),
               ),
             ],
           ),
@@ -1234,6 +1260,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   // Solo UI: usa horarios estándar (Desayuno 8:00, Almuerzo 13:00, Cena
   // 19:00, Snack 16:00) y devuelve la diferencia hasta now. Es un placeholder
   // hasta que SPEC-64 introduzca la lógica de ventana real.
+  /// SPEC-137: color del Cociente A para el mini-stat de Hoy.
+  /// Sigue los mismos thresholds de la pantalla semanal.
+  Color _cocienteAColor(double cociente) {
+    if (cociente >= 0.75) return AppColors.statusGood;
+    if (cociente >= 0.50) return AppColors.accent;
+    if (cociente >= 0.25) return AppColors.statusWarn;
+    return AppColors.statusBad;
+  }
+
   String _estimateNextMealIn(NutritionState state) {
     if (state.mealsLoggedToday >= state.targetMeals) return '—';
     const targets = {
