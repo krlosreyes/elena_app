@@ -8,6 +8,7 @@ import 'package:elena_app/src/features/dashboard/domain/fasting_status.dart';
 import 'package:elena_app/src/features/dashboard/domain/sleep_log.dart';
 import 'package:elena_app/src/features/dashboard/domain/sleep_quality_calculator.dart';
 import 'package:elena_app/src/features/exercise/application/exercise_state.dart';
+import 'package:elena_app/src/features/nutrition/application/cociente_a_service.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 
@@ -97,15 +98,33 @@ class MetabolicStateBuilder {
     // Normalización: (minutos / 60).clamp(0, 1.0)
     final double exerciseLoad = (exercise.todayMinutes / 60.0).clamp(0.0, 1.0);
 
-    // ── glycemicLoad ─────────────────────────────────────────────────────
-    // Calculado desde datos base de nutrición.
-    // Fórmula: 60% adherencia de comidas + 40% adherencia de ventana.
-    // NO usamos nutrition.nutritionScore (puede tener ajuste de orchestrator).
-    final double mealRatio =
-        (nutrition.mealsLoggedToday / nutrition.targetMeals.clamp(1, 10))
-            .clamp(0.0, 1.0);
-    final double glycemicLoad =
-        (0.60 * mealRatio) + (0.40 * nutrition.windowAdherence);
+    // ── glycemicLoad + nutritionScoreRaw ─────────────────────────────────
+    // SPEC-137: el pilar Nutrición pasa de medir "cuántas comidas
+    // registraste dentro de la ventana" a medir "qué proporción A:E
+    // tuvieron tus platos". La unidad atómica es `MealRatio` y la
+    // métrica visible es el Cociente A.
+    //
+    // Fórmula vigente:
+    //   nutritionScoreRaw = 0.70 × cocienteA + 0.30 × windowAdherence
+    //
+    // Donde cocienteA = porcentaje de platos A-dominantes registrados.
+    // El campo `glycemicLoad` del MetabolicState ahora refleja
+    // directamente el cocienteA — sigue siendo la "carga glucémica
+    // proxy" del día, pero estimada por proporción A:E (proxy
+    // hormonal de IG×CG) en lugar de "comidas registradas".
+    //
+    // Pre-SPEC-137 era:
+    //   mealRatio    = mealsLoggedToday / targetMeals (clamp 0-1)
+    //   glycemicLoad = 0.60 × mealRatio + 0.40 × windowAdherence
+    //   nutritionScoreRaw = glycemicLoad
+    //
+    // Razón del cambio documentada en NUTRITION_BIBLIOGRAPHY.md §1 y
+    // en feedback_pillar_nutrition.md (memoria persistente).
+    const cocienteAService = CocienteAService();
+    final double cocienteA = cocienteAService.calculate(nutrition.todayLogs);
+    final double glycemicLoad = cocienteA;
+    final double nutritionScoreRaw =
+        (0.70 * cocienteA) + (0.30 * nutrition.windowAdherence);
 
     // ── hydrationLevel ───────────────────────────────────────────────────
     // Calculado desde litros actuales / goal.
@@ -145,7 +164,9 @@ class MetabolicStateBuilder {
       fastingHoursRaw: maxFastingHoursToday,
       sleepHoursRaw: sleepHours,
       exerciseMinutesRaw: exercise.todayMinutes.toDouble(),
-      nutritionScoreRaw: glycemicLoad, // El builder es la fuente de verdad
+      // SPEC-137: ya no es == glycemicLoad. El builder sigue siendo la
+      // fuente de verdad — calculamos ambos arriba de manera explícita.
+      nutritionScoreRaw: nutritionScoreRaw,
       weeklyAdherence: weeklyAdherence,
       weeklyQualityScore: weeklyQualityScore,
       lastMealTime: stableLastMeal,
