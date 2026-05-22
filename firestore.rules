@@ -1,54 +1,116 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // 1. Regla para la colección de usuarios
+
+    // ─────────────────────────────────────────────────────────────────
+    // SPEC-81: Funciones auxiliares de validación.
+    //
+    // - signedIn(): el caller pasó el access token de Firebase Auth.
+    // - isOwner(uid): además, su `uid` coincide con el path/recurso.
+    // - withinSizeLimit(): tope defensivo de 100KB por documento. Un
+    //   UserModel completo pesa <10KB; el límite blinda contra abuso
+    //   (payloads gigantes que saturen la cuota o sirvan como exfil
+    //   vector). No aplica a subcolecciones grandes intencionalmente
+    //   chicas (logs diarios de sueño, hidratación, etc.).
+    // - idMatchesOrAbsent(uid): si el doc trae campo `id`, debe ser
+    //   == uid del path. Defensa en profundidad — el mapper canónico
+    //   (SPEC-82) escribe `id: uid`; un cliente comprometido que
+    //   intentara escribir `id: 'otro-uid'` queda rechazado.
+    // ─────────────────────────────────────────────────────────────────
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function withinSizeLimit() {
+      return request.resource.size() < 100000;
+    }
+
+    function idMatchesOrAbsent(uid) {
+      return !('id' in request.resource.data)
+          || request.resource.data.id == uid;
+    }
+
+    // 1. users/{userId}: doc principal del usuario.
+    //    Lectura/escritura solo del propio dueño + tamaño limitado +
+    //    `id` (si presente) debe coincidir con el path.
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-      
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId)
+                   && withinSizeLimit()
+                   && idMatchesOrAbsent(userId);
+
+      // Subcolecciones (logs de sueño, hidratación, ejercicio, etc.):
+      // mismo dueño, mismo límite de tamaño. Sin id-match porque los
+      // docs hijos pueden o no tener `id` y el path ya enlaza al
+      // dueño vía wildcard.
       match /{allPaths=**} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow read: if isOwner(userId);
+        allow write: if isOwner(userId) && withinSizeLimit();
       }
     }
 
-    // 2. user_food_suggestions — catálogo global de sugerencias
-    //    Cualquier usuario autenticado puede leer.
-    //    Escritura permitida solo a usuarios autenticados (seed + last_shown updates).
+    // 2. user_food_suggestions: catálogo global de sugerencias.
+    //    Cualquier autenticado lee (autocompletado). Escritura abierta
+    //    a autenticados (seed + last_shown updates).
+    //    Out of scope SPEC-81: rate limiting para anti-spam — futura
+    //    SPEC con Cloud Functions.
     match /user_food_suggestions/{docId} {
-      allow read, write: if request.auth != null;
+      allow read: if signedIn();
+      allow write: if signedIn() && withinSizeLimit();
     }
 
-    // 3. master_food_db — Base de datos maestra de alimentos
+    // 3. master_food_db: catálogo maestro de alimentos.
     match /master_food_db/{docId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null;
+      allow read: if signedIn();
+      allow write: if signedIn() && withinSizeLimit();
     }
 
-    // 4. master_exercises_db — Base de datos maestra de ejercicios
+    // 4. master_exercises_db: catálogo maestro de ejercicios.
     match /master_exercises_db/{docId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null;
+      allow read: if signedIn();
+      allow write: if signedIn() && withinSizeLimit();
     }
 
-    // 5. Contenido público
+    // 5. metamorfosis_posts: contenido público (blog/educativo).
+    //    Lectura sin auth, escritura solo desde backend/Console.
     match /metamorfosis_posts/{postId} {
       allow read: if true;
       allow write: if false;
     }
 
-    // 6. SPEC-73 BUGFIX: fasting_history es colección top-level (schema
-    //    legacy preservado por SPEC-50.4). Cada doc tiene `userId` como
-    //    campo. Permitimos lectura y escritura solo cuando el `userId`
-    //    del doc (o del payload entrante) coincide con el uid auth.
-    //    Sin esta regla los notifiers fallan con permission-denied al
-    //    llegar al dashboard.
+    // 6. fasting_history: SPEC-50.4 schema legacy top-level con
+    //    `userId` como campo del doc. Ownership por campo, no por
+    //    path. SPEC-81 agrega size limit.
     match /fasting_history/{docId} {
-      allow read: if request.auth != null
+      allow read: if signedIn()
         && resource.data.userId == request.auth.uid;
-      allow create: if request.auth != null
-        && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if request.auth != null
+      allow create: if signedIn()
+        && request.resource.data.userId == request.auth.uid
+        && withinSizeLimit();
+      allow update: if signedIn()
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.userId == request.auth.uid
+        && withinSizeLimit();
+      allow delete: if signedIn()
         && resource.data.userId == request.auth.uid;
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // SPEC-81: Denial-by-default explícito.
+    //
+    // Firestore deniega por defecto cualquier ruta sin match — esta
+    // regla lo hace EXPLÍCITO para que si en el futuro alguien agrega
+    // una colección nueva sin escribir su rule, el deploy aún esté
+    // protegido. Las rules de arriba ya tienen `allow read/write: if
+    // <cond>`; una collection no listada llega aquí y queda en
+    // `if false`.
+    // ─────────────────────────────────────────────────────────────────
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

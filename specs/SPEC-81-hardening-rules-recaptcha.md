@@ -1,8 +1,8 @@
 # SPEC-81 — Hardening de `firestore.rules` + reCAPTCHA v3 real
 
-**Estado:** DRAFT
-**Versión:** 1.0
-**Fecha:** 2026-05-13
+**Estado:** Cerrado · 2026-05-16
+**Versión:** 1.1
+**Fecha:** 2026-05-13 (draft) → 2026-05-16 (cerrado)
 **Tipo:** Hardening pre-launch
 **Marco normativo:** `CONSTITUTION.md`, Apple App Store Review Guideline 5.1.2 (data security), Google reCAPTCHA v3 docs.
 
@@ -82,4 +82,29 @@ reCAPTCHA:
 
 # 9. Resultado
 
-(Se completa al cerrar el SPEC.)
+**Cambios aplicados (2026-05-16):**
+
+| Archivo | Cambio |
+|---|---|
+| `firestore.rules` | Reescrito con funciones helper (`signedIn`, `isOwner`, `withinSizeLimit`, `idMatchesOrAbsent`), validación de tamaño 100KB en escrituras a `users/{uid}` y subcolecciones, `id` match soft en `users/{uid}` (solo si el campo está presente — no rompe escrituras legacy), update explícito en `fasting_history` valida tanto `resource.data.userId` como `request.resource.data.userId`, **denial-by-default explícito** al final con `match /{document=**} { allow read, write: if false; }` |
+| `lib/src/core/config/recaptcha_config.dart` | Sin cambios — ya estaba bien estructurado con `kRecaptchaSiteKey` + `_kPlaceholderKey` + getter `recaptchaIsPlaceholder` desde el draft inicial |
+| `lib/main.dart` | Sin cambios — el warning de placeholder ya estaba implementado |
+| `test/core/config/recaptcha_config_test.dart` | NUEVO. 2 tests: (1) confirma que la key actual ES el placeholder — CI gate que falla cuando Carlos la reemplace, recordándole actualizar el test; (2) validación de forma básica (≥20 chars, empieza por `6L`) |
+| `docs/PRODUCTION_HARDENING.md` | Actualizado: fecha al 2026-05-16, ya existía con casi toda la info — SPEC-81 lo deja como referencia oficial pre-launch |
+
+**Acciones pendientes (operativas, NO de código):**
+
+1. **Registrar dominio en Google reCAPTCHA Admin Console** (`§1` de `PRODUCTION_HARDENING.md`). Sin esto, App Check en web sigue usando placeholder en producción.
+2. **Pegar Site Key en `recaptcha_config.dart` + actualizar el test** (CI gate diseñado para forzar este paso explícitamente).
+3. **Deploy de las rules**: `firebase deploy --only firestore:rules` desde la máquina con Firebase CLI logueada al proyecto `elena-app-2026-v1`.
+4. **Verificación manual post-deploy** con dos cuentas distintas (ver `§2` de `PRODUCTION_HARDENING.md`).
+
+**Suite global tras SPEC-81:** se mantiene `+652 ~3` (`+650 ~3` previos + 2 tests del recaptcha_config).
+
+**Riesgos verificados:**
+- ✓ No rompe escrituras actuales: la regla `idMatchesOrAbsent` es soft (permite docs sin campo `id`), y el `UserModel.toJson` incluye `id` desde el ctor → cuando está presente coincide con `userId` del path.
+- ✓ Size limit 100KB es defensivo: docs reales pesan <10KB.
+- ✓ `fasting_history` queda blindado en update (antes solo validaba `resource.data.userId`, ahora también `request.resource.data.userId` — evita que un cliente cambie el `userId` del doc en su update).
+- ✓ Denial-by-default explícito sin colección huérfana: revisé `lib/` y todas las colecciones referenciadas (`users`, `user_food_suggestions`, `master_food_db`, `master_exercises_db`, `metamorfosis_posts`, `fasting_history`) tienen su rule específica.
+
+**Próximo:** sin SPECs explícitos pendientes en fase 1 después de éste. Roadmap Producción 10/10 fase 1 cerrada — siguiente bloque es fase 2 (soft-launch).

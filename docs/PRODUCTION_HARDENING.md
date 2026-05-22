@@ -1,6 +1,6 @@
 # Production Hardening Checklist — SPEC-81
 
-**Última actualización:** 13 de mayo de 2026
+**Última actualización:** 16 de mayo de 2026 (SPEC-81 cerrado, rules listas para deploy)
 
 Checklist obligatoria antes de subir un build de release a App Store / Play Store / Firebase Hosting.
 
