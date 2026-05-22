@@ -25,10 +25,17 @@ class ImrTrendChart extends StatelessWidget {
   final List<DailySummaryDoc> docs;
   final int daysInPeriod;
 
+  /// SPEC-117.bugfix: instante "ahora" inyectable para tests
+  /// deterministas. En producción es `null` y el painter usa
+  /// `DateTime.now()`. En golden tests, pasarlo fijo evita que el
+  /// render dependa del día de la corrida.
+  final DateTime? now;
+
   const ImrTrendChart({
     super.key,
     required this.docs,
     required this.daysInPeriod,
+    this.now,
   });
 
   @override
@@ -87,7 +94,7 @@ class ImrTrendChart extends StatelessWidget {
                 docs: docs,
                 daysInPeriod: daysInPeriod,
                 stats: stats,
-                now: DateTime.now(),
+                now: now ?? DateTime.now(),
               ),
             ),
           ),

@@ -74,6 +74,11 @@ void main() {
 
   group('ImrTrendChart golden', () {
     testWidgets('semana con varios datos — golden', (tester) async {
+      // SPEC-117.bugfix: pasamos `now` fijo para que el render sea
+      // determinista. Antes el painter consumía DateTime.now() y el
+      // dot resaltado de "hoy" cambiaba según el día de la corrida,
+      // generando 4.96% de diff de píxeles entre el golden y el test
+      // image cualquier día distinto al de generación del golden.
       await tester.pumpWidget(_wrap(
         ImrTrendChart(
           docs: [
@@ -86,6 +91,7 @@ void main() {
             _doc('2026-05-16', 75),
           ],
           daysInPeriod: 7,
+          now: DateTime(2026, 5, 16, 12, 0),
         ),
       ));
       await expectLater(
