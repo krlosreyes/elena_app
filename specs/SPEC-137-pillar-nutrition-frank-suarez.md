@@ -84,17 +84,33 @@ Los chips opcionales de composición (proteína animal, verduras verdes, almendr
 
 ### RF-137-03 — Inferencia de target de comidas por protocolo
 
-Crear servicio puro `MealTargetService.targetForProtocol(String protocol, EatingWindowState window)`:
+Crear servicio puro `MealTargetService.targetForProtocol(String protocol)`.
+
+Cubre los **8 protocolos** que el proyecto persiste tras SPEC-98 en
+`UserModel.fastingProtocol`. Cualquier valor fuera de esta tabla cae al
+fallback "Ninguno" (3 + snack).
 
 | Protocolo | Ventana | Target comidas | Snack opcional | Razón |
 |---|---|---|---|---|
-| `"Ninguno"` | ~14 h (06:30 – 20:30) | 3 | Sí (entre comidas, A-dominante) | Adulto sano sin TRF (`docs/CIRCADIAN_BIBLIOGRAPHY.md §4`). |
-| `"16:8"` | 8 h (12:30 – 20:30) | 2 (almuerzo + cena) | Sí (frutos secos / Tipo A) | Salta desayuno; sostiene cena social. |
-| `"18:6"` | 6 h (14:30 – 20:30) | 2 (comida + cena) | No | Ventana concentrada; tercer plato fragmenta innecesariamente. |
-| `"20:4"` | 4 h (16:30 – 20:30) | 1 (con opción 2) | No | One Meal a Day modificado. Una comida principal completa más una ligera previa al cierre. |
-| Cualquier otro | windowHours del fallback (14 h) | 3 | Sí | Default sensible idéntico a "Ninguno". |
+| `"Ninguno"` | ~14 h (06:30 – 20:30) | 3 | Sí (A-dominante entre comidas) | Adulto sano sin TRF. |
+| `"12:12"` | 12 h (08:30 – 20:30) | 3 | Sí | Entrada cómoda al TRF; ventana aún soporta 3 comidas. |
+| `"14:10"` | 10 h (10:30 – 20:30) | 2 | Sí | Salta o liviana el desayuno; 2 principales + snack. |
+| `"16:8"` | 8 h (12:30 – 20:30) | 2 (almuerzo + cena) | Sí | El más popular. Salta desayuno, sostiene cena social. |
+| `"18:6"` | 6 h (14:30 – 20:30) | 2 (comida + cena) | No | Ventana concentrada; tercer plato fragmenta. |
+| `"20:4"` | 4 h (16:30 – 20:30) | 1 (+1 opcional) | No | OMAD modificado. Comida principal + opcional ligera previa al cierre. |
+| `"22:2"` | 2 h (18:30 – 20:30) | 1 | No | Ventana mínima sostenible. Una comida principal densa. |
+| `"OMAD"` | ~1 h variable | 1 | No | One Meal a Day estricto. |
+| Cualquier otro | fallback (~14 h) | 3 | Sí | Default sensible idéntico a "Ninguno". |
 
-El target se persiste en `user_model.mealsPerDay` SÓLO si el usuario lo edita manualmente desde Perfil. Si no, se calcula on-the-fly desde el protocolo activo del día. **El usuario nuevo en onboarding ya no responde "¿cuántas comidas al día?"** (RF-137-08).
+**Reglas operacionales de la tabla** (también documentadas en
+`NUTRITION_BIBLIOGRAPHY.md §7.1`):
+
+- Ventana ≥ 12 h → 3 comidas.
+- Ventana entre 6 h y 10 h → 2 comidas.
+- Ventana ≤ 4 h → 1 comida.
+- Snack opcional permitido si ventana ≥ 8 h y espaciado ≥ 4 h entre principales.
+
+El target se calcula on-the-fly desde el protocolo activo del día. **El usuario nuevo en onboarding ya no responde "¿cuántas comidas al día?"** (RF-137-08). El campo legacy `user_model.mealsPerDay` queda solo como override manual desde Perfil (deprecado para usuarios nuevos).
 
 ### RF-137-04 — Cálculo del Cociente A
 
@@ -448,12 +464,18 @@ Campo nuevo en `users/{uid}`:
 - `aFraction` retorna los valores esperados.
 
 `test/features/nutrition/application/meal_target_service_test.dart`:
-- protocolo `"Ninguno"` → 3.
-- `"16:8"` → 2.
-- `"18:6"` → 2.
-- `"20:4"` → 1.
-- Protocolo desconocido → fallback 3.
-- Snack opcional solo en `"Ninguno"` y `"16:8"`.
+- Los **8 protocolos** mapean a sus targets canónicos:
+  - `"Ninguno"` → 3, snack
+  - `"12:12"` → 3, snack
+  - `"14:10"` → 2, snack
+  - `"16:8"` → 2, snack
+  - `"18:6"` → 2, sin snack
+  - `"20:4"` → 1, sin snack
+  - `"22:2"` → 1, sin snack
+  - `"OMAD"` → 1, sin snack
+- Protocolo desconocido / null / "" → fallback 3 + snack.
+- Progresión decreciente: a menor ventana, menor cardinalidad.
+- Progresión del snack: solo ventanas ≥ 8 h lo permiten.
 
 `test/features/nutrition/application/cociente_a_service_test.dart`:
 - Lista vacía → 0.0.

@@ -44,18 +44,29 @@ class MealTarget {
 /// Servicio puro (sin Riverpod, sin Flutter) que mapea el string del
 /// protocolo de ayuno a un [MealTarget].
 ///
-/// Acepta los cuatro valores canónicos que el proyecto persiste en
-/// `UserModel.fastingProtocol`: "Ninguno", "16:8", "18:6", "20:4".
+/// Acepta los 8 valores canónicos que el proyecto persiste en
+/// `UserModel.fastingProtocol` (SPEC-98): "Ninguno", "12:12", "14:10",
+/// "16:8", "18:6", "20:4", "22:2", "OMAD".
 /// Cualquier otro string cae al fallback "Ninguno" (3 + snack).
 class MealTargetService {
   const MealTargetService();
 
   /// Tabla canónica de §RF-137-03 / NUTRITION_BIBLIOGRAPHY.md §7.1.
+  ///
+  /// Regla operacional: el target decrece a medida que la ventana se
+  /// comprime. Una ventana ≥ 12h soporta 3 comidas; entre 6h y 10h
+  /// sostiene 2; ≤ 4h sostiene 1. El snack opcional se permite cuando
+  /// el espaciado entre comidas principales es ≥ 4h (no fragmenta
+  /// digestión).
   static const Map<String, MealTarget> _byProtocol = {
     'Ninguno': MealTarget(meals: 3, allowsSnack: true),
+    '12:12': MealTarget(meals: 3, allowsSnack: true),
+    '14:10': MealTarget(meals: 2, allowsSnack: true),
     '16:8': MealTarget(meals: 2, allowsSnack: true),
     '18:6': MealTarget(meals: 2, allowsSnack: false),
     '20:4': MealTarget(meals: 1, allowsSnack: false),
+    '22:2': MealTarget(meals: 1, allowsSnack: false),
+    'OMAD': MealTarget(meals: 1, allowsSnack: false),
   };
 
   /// Default seguro para protocolos desconocidos o vacíos. Coincide con

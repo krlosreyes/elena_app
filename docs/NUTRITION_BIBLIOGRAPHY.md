@@ -262,14 +262,36 @@ La nutrición está acoplada al pilar Ayuno. Un usuario con protocolo 20:4 NO de
 
 ### §7.1 — Tabla canónica de inferencia
 
+Cubre los **8 protocolos** que el proyecto persiste tras SPEC-98 en
+`UserModel.fastingProtocol`. Todos los cierres trabajan hacia atrás
+desde las 20:30 (regla invariante por el bloqueo intestinal a 22:00,
+ver `CIRCADIAN_BIBLIOGRAPHY.md §3`).
+
 | Protocolo | Ventana de comida | Target comidas | Snack opcional | Justificación |
 |---|---|---|---|---|
-| **Ninguno** (sin TRF) | 06:30 – 20:30 (~14 h) | 3 | Sí (entre comidas, A-dominante) | Adulto sano sin restricción temporal. Refuerza desayuno tras `firstMealGoal` típico. |
-| **16:8** | 12:30 – 20:30 (8 h) | 2 (almuerzo + cena) | Sí (frutos secos / Tipo A) | Salta desayuno. Mantiene cena social. El más popular. |
-| **18:6** | 14:30 – 20:30 (6 h) | 2 (comida + cena) | No | Ventana concentrada. Tercer plato fragmentaría innecesariamente. |
-| **20:4** | 16:30 – 20:30 (4 h) | 1 (con opción 2) | No | OMAD modificado. Una comida principal + opción de comida ligera previa. |
+| **Ninguno** (sin TRF) | 06:30 – 20:30 (~14 h) | 3 | Sí (A-dominante entre comidas) | Adulto sano sin restricción temporal. Educativo. |
+| **12:12** (Principiante) | 08:30 – 20:30 (12 h) | 3 | Sí | Entrada cómoda al TRF sin romper rutinas sociales. Misma cardinalidad que "Ninguno" porque la ventana sigue siendo amplia. |
+| **14:10** (Principiante) | 10:30 – 20:30 (10 h) | 2 | Sí | Punto medio. Salta o liviana el desayuno; sostiene almuerzo + cena + 1 snack. |
+| **16:8** (Intermedio) | 12:30 – 20:30 (8 h) | 2 (almuerzo + cena) | Sí | El más popular. Salta desayuno, mantiene cena social. |
+| **18:6** (Intermedio) | 14:30 – 20:30 (6 h) | 2 (comida + cena) | No | Ventana concentrada. Un tercer plato fragmenta digestión. |
+| **20:4** (Avanzado) | 16:30 – 20:30 (4 h) | 1 (+1 opcional) | No | OMAD modificado. Una comida principal completa más una ligera previa al cierre, si hay hambre real. |
+| **22:2** (Avanzado) | 18:30 – 20:30 (2 h) | 1 | No | Ventana mínima sostenible. Una sola comida principal densa nutricionalmente. |
+| **OMAD** (Experto) | ~1 h variable | 1 | No | Una sola comida al día. Estricto para usuarios con experiencia y supervisión recomendada. |
 
-Coherente con `docs/CIRCADIAN_BIBLIOGRAPHY.md §4` (apertura/cierre canónicos). El cierre 20:30 es invariante por el bloqueo intestinal a 22:00.
+**Regla operacional de la cardinalidad:**
+
+- Ventana ≥ 12 h → 3 comidas (Ninguno, 12:12).
+- Ventana entre 6 h y 10 h → 2 comidas (14:10, 16:8, 18:6).
+- Ventana ≤ 4 h → 1 comida (20:4, 22:2, OMAD).
+
+**Regla operacional del snack:** se permite si el espaciado entre
+comidas principales es ≥ 4 h y la ventana de comida es ≥ 8 h (no
+fragmenta digestión, no rompe el bloqueo intestinal). Tres protocolos
+superan ambos umbrales: Ninguno, 12:12, 14:10, 16:8.
+
+Coherente con `docs/CIRCADIAN_BIBLIOGRAPHY.md §4` (apertura/cierre
+canónicos). El cierre 20:30 es invariante por el bloqueo intestinal a
+22:00.
 
 ### §7.2 — Manejo de ventana extendida
 
