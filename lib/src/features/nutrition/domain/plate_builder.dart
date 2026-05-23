@@ -142,15 +142,20 @@ class PlateBuilder {
   /// Sugerencia textual de mejora. Null si el plato ya está en el
   /// nivel máximo o si está vacío.
   ///
-  /// Estrategia:
-  /// 1. Busca el primer Food Tipo E del plato con [Food.substituteHint]
-  ///    no-null.
-  /// 2. Sugiere reemplazarlo: "Cambiá el arroz por brócoli o espinaca y
-  ///    subís a Excelente plato".
-  /// 3. Si no hay reemplazo natural en el catálogo (leche, yogur con
-  ///    azúcar, chocolate), sugiere reducir: "Reducí el yogur con azúcar
-  ///    para mejorar tu plato".
-  /// 4. Si el plato no tiene ningún Tipo E (todo A), no hay tip.
+  /// Como el catálogo NO contiene verduras (decisión consciente de
+  /// Carlos en la tabla del 22-may-2026), los tips NO sugieren
+  /// sustituciones específicas item-por-item. En cambio, sugieren
+  /// reequilibrar la composición global del plato basándose en qué
+  /// macro está sobre/sub-representado:
+  ///
+  /// 1. Si hay carbohidratos pero faltan proteínas → "Agregá proteína
+  ///    (pollo, huevo, lentejas) para equilibrar el plato."
+  /// 2. Si hay carbohidratos pero faltan grasas → "Agregá una grasa
+  ///    saludable (aguacate, almendras) para equilibrar."
+  /// 3. Si hay carbos y suficiente proteína/grasa → "Reducí los
+  ///    carbohidratos (ej. menos arroz o pan) para subir a [nextLevel]."
+  /// 4. Si el plato es solo carbos → "Tu plato es solo carbohidratos.
+  ///    Agregá una proteína o grasa para mejorarlo."
   String? tip({bool cheatDayActive = false}) {
     if (cheatDayActive || isEmpty) return null;
     final currentLevel = quality(cheatDayActive: false);
@@ -158,53 +163,49 @@ class PlateBuilder {
     final nextLevel = currentLevel.nextLevelUp;
     if (nextLevel == null) return null;
 
-    final firstWithHint = _items.firstWhere(
-      (f) => f.quality == FoodQuality.typeE && f.substituteHint != null,
-      orElse: () => _items.firstWhere(
-        (f) => f.quality == FoodQuality.typeE,
+    final hasProtein = slotsForCategory(FoodCategory.protein) > 0;
+    final hasFat = slotsForCategory(FoodCategory.fat) > 0;
+    final hasCarbs = slotsForCategory(FoodCategory.carb) > 0;
+
+    // Caso extremo: solo carbos.
+    if (hasCarbs && !hasProtein && !hasFat) {
+      return 'Tu plato es solo carbohidratos. Agregá una proteína '
+          '(pollo, huevo, lentejas) o una grasa (aguacate, almendras) '
+          'para mejorarlo.';
+    }
+
+    // Caso: hay carbos pero faltan proteína Y grasa.
+    if (hasCarbs && !hasProtein && !hasFat) {
+      return 'Agregá proteína y grasa para equilibrar tu plato.';
+    }
+
+    // Caso: hay carbos pero falta proteína.
+    if (hasCarbs && !hasProtein) {
+      return 'Agregá proteína (pollo, huevo, lentejas) para equilibrar '
+          'tu plato.';
+    }
+
+    // Caso: hay carbos pero falta grasa.
+    if (hasCarbs && !hasFat) {
+      return 'Agregá una grasa saludable (aguacate, almendras) para '
+          'equilibrar.';
+    }
+
+    // Caso típico: hay de todo, demasiados carbos para el nivel actual.
+    if (hasCarbs) {
+      final firstCarb = _items.firstWhere(
+        (f) => f.category == FoodCategory.carb,
         orElse: () => _items.first,
-      ),
-    );
-
-    if (firstWithHint.quality != FoodQuality.typeE) {
-      return null;
-    }
-
-    if (firstWithHint.substituteHint != null) {
-      return 'Cambiá ${_articleFor(firstWithHint.name)} '
-          '${firstWithHint.name.toLowerCase()} por '
-          '${firstWithHint.substituteHint} y subís a '
-          '${nextLevel.label}.';
-    } else {
-      return 'Reducí ${_articleFor(firstWithHint.name)} '
-          '${firstWithHint.name.toLowerCase()} para llegar a '
+      );
+      return 'Reducí los carbohidratos (ej. menos '
+          '${firstCarb.name.toLowerCase()}) para subir a '
           '${nextLevel.label}.';
     }
-  }
 
-  /// Artículo gramatical aproximado para el copy ("el" / "la").
-  /// Heurística simple: nombres que terminan en 'a' o 'e' (excepto
-  /// "pescado"/"queso") → "la", el resto → "el". No es perfecto pero
-  /// cubre el catálogo curado.
-  static String _articleFor(String name) {
-    final lower = name.toLowerCase();
-    // Casos especiales del catálogo (todos los pongo aquí para evitar
-    // que la heurística falle silenciosamente).
-    const feminine = {
-      'manzana',
-      'fresa',
-      'pasta',
-      'papa',
-      'banana',
-      'leche',
-      'espinaca',
-      'lechuga',
-      'mantequilla',
-      'carne',
-      'coliflor',
-    };
-    if (feminine.contains(lower)) return 'la';
-    return 'el';
+    // Caso raro: no hay carbos pero la calidad sigue bajo Excelente
+    // (no debería ocurrir con esta tabla, todos los E son carbos).
+    return 'Tu plato puede mejorar. Probá distintas combinaciones para '
+        'subir a ${nextLevel.label}.';
   }
 
   // ── persistencia: derivar MealRatio ────────────────────────────────

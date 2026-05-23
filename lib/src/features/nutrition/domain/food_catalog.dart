@@ -1,41 +1,50 @@
 // SPEC-137 E.3: catálogo curado de alimentos para el plato armable.
 //
-// Lista corta (~35 alimentos) cubierta por NUTRITION_BIBLIOGRAPHY.md §2.
-// Tres categorías visibles al usuario (Proteína / Grasa / Carbos);
-// cada alimento tiene además una `quality` (typeA o typeE) que NO se
-// muestra como tal — el usuario percibe la calidad a través del color
-// del sector del plato (verde = todo A, ámbar = predomina E).
+// 60 alimentos LatAm (sesgo Colombia) en 3 categorías visibles al
+// usuario: Proteína / Grasa / Carbos. Lista provista por Carlos el
+// 22-may-2026 — fuente única de verdad del MVP. Para extenderla, abrir
+// SPEC nueva.
 //
-// Nombres elegidos para máxima universalidad LatAm + España neutral
-// (ej. "Aguacate" en vez de "Palta", "Banana" en vez de "Plátano" para
-// evitar confusión con plátano-plantain).
+// Clasificación A/E (interna, invisible al usuario):
+// - Proteínas → Tipo A (todas).
+// - Grasas → Tipo A (todas).
+// - Carbohidratos → Tipo E (todos).
 //
-// IMPORTANTE: el catálogo es FIJO en MVP. No se permite que el usuario
-// agregue alimentos personalizados — eso vive en SPEC-138 post-MVP.
+// El usuario percibe la calidad por el color del sector del plato (verde
+// = todo A, ámbar = todo E, mezcla en medio). Internamente el sistema
+// deriva el `MealRatio` para alimentar el Cociente A del IMR.
+//
+// NOTA OPERACIONAL: la tabla NO incluye verduras. La filosofía del
+// plato saludable (Harvard Healthy Eating Plate, Frank Suárez §3) suele
+// destacar las verduras como la mitad del plato. Carlos decidió
+// conscientemente trabajar con esta tabla — el sistema se adapta:
+// los tips de mejora ya no apuntan a "cambiá arroz por brócoli" (no
+// existe brócoli en el catálogo), sino a "agregá más proteína o grasa
+// para balancear" o "reducí los carbohidratos". Si en el futuro se
+// agregan verduras, abrir SPEC para reintroducir tips de sustitución.
 
 /// Macro-categoría visible al usuario en el plato.
 enum FoodCategory {
-  /// Proteínas (animales + queso). Sector grande del plato.
+  /// Proteínas (animales, legumbres, lácteos proteicos). Sector grande.
   protein,
 
-  /// Grasas saludables (aguacate, frutos secos, aceite). Sector pequeño.
+  /// Grasas saludables y densas (aceites, frutos secos, lácteos grasos,
+  /// embutidos). Sector pequeño.
   fat,
 
-  /// Carbohidratos (verduras, frutas, granos, lácteos). Sector grande.
-  /// Internamente mezcla calidad A (verduras, frutas bajas) y E
-  /// (almidones, dulces, lácteos azucarados).
+  /// Carbohidratos (almidones, frutas dulces, harinas, dulces, panela).
+  /// Internamente todos son Tipo E en este catálogo. Sector grande.
   carb;
 
   /// Peso visual del alimento en el plato. Refleja la regla nutricional
-  /// "un trozo de pollo o una porción de arroz ocupa más que una hoja
-  /// de lechuga o un chorrito de aceite".
+  /// "un trozo de pollo o de arroz ocupa más que un chorrito de aceite".
   int get slots => switch (this) {
         FoodCategory.protein => 2,
         FoodCategory.fat => 1,
         FoodCategory.carb => 2,
       };
 
-  /// Etiqueta corta para UI (chips de categoría, label en el plato).
+  /// Etiqueta corta para UI.
   String get label => switch (this) {
         FoodCategory.protein => 'Proteína',
         FoodCategory.fat => 'Grasa',
@@ -44,9 +53,6 @@ enum FoodCategory {
 }
 
 /// Calidad metabólica del alimento (interna — no visible al usuario).
-///
-/// Determina el color del sector del plato y el cómputo del Cociente A.
-/// Documentado en `NUTRITION_BIBLIOGRAPHY.md §2`.
 enum FoodQuality {
   /// Tipo A — baja respuesta insulínica. Verde en el plato.
   typeA,
@@ -60,7 +66,7 @@ class Food {
   /// Slug estable para persistencia futura. NUNCA cambia.
   final String id;
 
-  /// Nombre visible al usuario (LatAm-neutro).
+  /// Nombre visible al usuario.
   final String name;
 
   /// En qué sector del plato vive.
@@ -69,34 +75,20 @@ class Food {
   /// Calidad metabólica (interna).
   final FoodQuality quality;
 
-  /// Sugerencia textual para reemplazo cuando este alimento Tipo E
-  /// está rebajando la calidad del plato. Null para alimentos Tipo A
-  /// (no necesitan reemplazo) o para Tipo E sin sustituto natural en
-  /// el catálogo (la app sugerirá "reducir" en lugar de "cambiar").
-  final String? substituteHint;
-
   const Food({
     required this.id,
     required this.name,
     required this.category,
     required this.quality,
-    this.substituteHint,
   });
 }
 
-/// Catálogo curado y FIJO en MVP. ~35 alimentos cubriendo el 80% de
-/// platos típicos LatAm.
+/// Catálogo curado y FIJO en MVP. 60 alimentos provistos por Carlos.
 class FoodCatalog {
   const FoodCatalog._();
 
   // ── Proteínas (todas Tipo A) ─────────────────────────────────────────
   static const List<Food> proteins = [
-    Food(
-      id: 'huevo',
-      name: 'Huevo',
-      category: FoodCategory.protein,
-      quality: FoodQuality.typeA,
-    ),
     Food(
       id: 'pollo',
       name: 'Pollo',
@@ -104,8 +96,14 @@ class FoodCatalog {
       quality: FoodQuality.typeA,
     ),
     Food(
-      id: 'pavo',
-      name: 'Pavo',
+      id: 'huevo',
+      name: 'Huevo',
+      category: FoodCategory.protein,
+      quality: FoodQuality.typeA,
+    ),
+    Food(
+      id: 'carne_res',
+      name: 'Carne de res',
       category: FoodCategory.protein,
       quality: FoodQuality.typeA,
     ),
@@ -122,26 +120,92 @@ class FoodCatalog {
       quality: FoodQuality.typeA,
     ),
     Food(
-      id: 'camaron',
-      name: 'Camarón',
-      category: FoodCategory.protein,
-      quality: FoodQuality.typeA,
-    ),
-    Food(
-      id: 'carne',
-      name: 'Carne',
-      category: FoodCategory.protein,
-      quality: FoodQuality.typeA,
-    ),
-    Food(
       id: 'cerdo',
       name: 'Cerdo',
       category: FoodCategory.protein,
       quality: FoodQuality.typeA,
     ),
     Food(
-      id: 'queso',
-      name: 'Queso',
+      id: 'lentejas',
+      name: 'Lentejas',
+      category: FoodCategory.protein,
+      quality: FoodQuality.typeA,
+    ),
+    Food(
+      id: 'frijoles',
+      name: 'Fríjoles',
+      category: FoodCategory.protein,
+      quality: FoodQuality.typeA,
+    ),
+    Food(
+      id: 'garbanzos',
+      name: 'Garbanzos',
+      category: FoodCategory.protein,
+      quality: FoodQuality.typeA,
+    ),
+    Food(
+      id: 'queso_campesino',
+      name: 'Queso campesino',
+      category: FoodCategory.protein,
+      quality: FoodQuality.typeA,
+    ),
+    Food(
+      id: 'yogur_griego',
+      name: 'Yogur griego',
+      category: FoodCategory.protein,
+      quality: FoodQuality.typeA,
+    ),
+    Food(
+      id: 'leche',
+      name: 'Leche',
+      category: FoodCategory.protein,
+      quality: FoodQuality.typeA,
+    ),
+    Food(
+      id: 'jamon',
+      name: 'Jamón',
+      category: FoodCategory.protein,
+      quality: FoodQuality.typeA,
+    ),
+    Food(
+      id: 'pechuga_pavo',
+      name: 'Pechuga de pavo',
+      category: FoodCategory.protein,
+      quality: FoodQuality.typeA,
+    ),
+    Food(
+      id: 'sardinas',
+      name: 'Sardinas',
+      category: FoodCategory.protein,
+      quality: FoodQuality.typeA,
+    ),
+    Food(
+      id: 'tofu',
+      name: 'Tofu',
+      category: FoodCategory.protein,
+      quality: FoodQuality.typeA,
+    ),
+    Food(
+      id: 'suero_costeno',
+      name: 'Suero costeño',
+      category: FoodCategory.protein,
+      quality: FoodQuality.typeA,
+    ),
+    Food(
+      id: 'quinua',
+      name: 'Quinua',
+      category: FoodCategory.protein,
+      quality: FoodQuality.typeA,
+    ),
+    Food(
+      id: 'habichuelas',
+      name: 'Habichuelas',
+      category: FoodCategory.protein,
+      quality: FoodQuality.typeA,
+    ),
+    Food(
+      id: 'mariscos',
+      name: 'Mariscos',
       category: FoodCategory.protein,
       quality: FoodQuality.typeA,
     ),
@@ -156,8 +220,56 @@ class FoodCatalog {
       quality: FoodQuality.typeA,
     ),
     Food(
-      id: 'almendras',
-      name: 'Almendras',
+      id: 'aceite_vegetal',
+      name: 'Aceite vegetal',
+      category: FoodCategory.fat,
+      quality: FoodQuality.typeA,
+    ),
+    Food(
+      id: 'mantequilla',
+      name: 'Mantequilla',
+      category: FoodCategory.fat,
+      quality: FoodQuality.typeA,
+    ),
+    Food(
+      id: 'margarina',
+      name: 'Margarina',
+      category: FoodCategory.fat,
+      quality: FoodQuality.typeA,
+    ),
+    Food(
+      id: 'queso_amarillo',
+      name: 'Queso amarillo',
+      category: FoodCategory.fat,
+      quality: FoodQuality.typeA,
+    ),
+    Food(
+      id: 'crema_de_leche',
+      name: 'Crema de leche',
+      category: FoodCategory.fat,
+      quality: FoodQuality.typeA,
+    ),
+    Food(
+      id: 'tocino',
+      name: 'Tocino',
+      category: FoodCategory.fat,
+      quality: FoodQuality.typeA,
+    ),
+    Food(
+      id: 'chicharron',
+      name: 'Chicharrón',
+      category: FoodCategory.fat,
+      quality: FoodQuality.typeA,
+    ),
+    Food(
+      id: 'coco',
+      name: 'Coco',
+      category: FoodCategory.fat,
+      quality: FoodQuality.typeA,
+    ),
+    Food(
+      id: 'mani',
+      name: 'Maní',
       category: FoodCategory.fat,
       quality: FoodQuality.typeA,
     ),
@@ -168,177 +280,197 @@ class FoodCatalog {
       quality: FoodQuality.typeA,
     ),
     Food(
-      id: 'aceite_oliva',
-      name: 'Aceite de oliva',
+      id: 'almendras',
+      name: 'Almendras',
       category: FoodCategory.fat,
       quality: FoodQuality.typeA,
     ),
     Food(
-      id: 'pistachos',
-      name: 'Pistachos',
+      id: 'semillas_girasol',
+      name: 'Semillas de girasol',
       category: FoodCategory.fat,
       quality: FoodQuality.typeA,
     ),
     Food(
-      id: 'mantequilla',
-      name: 'Mantequilla',
+      id: 'mayonesa',
+      name: 'Mayonesa',
+      category: FoodCategory.fat,
+      quality: FoodQuality.typeA,
+    ),
+    Food(
+      id: 'aceitunas',
+      name: 'Aceitunas',
+      category: FoodCategory.fat,
+      quality: FoodQuality.typeA,
+    ),
+    Food(
+      id: 'manteca',
+      name: 'Manteca',
+      category: FoodCategory.fat,
+      quality: FoodQuality.typeA,
+    ),
+    Food(
+      id: 'queso_crema',
+      name: 'Queso crema',
+      category: FoodCategory.fat,
+      quality: FoodQuality.typeA,
+    ),
+    Food(
+      id: 'chorizo',
+      name: 'Chorizo',
+      category: FoodCategory.fat,
+      quality: FoodQuality.typeA,
+    ),
+    Food(
+      id: 'salchicha',
+      name: 'Salchicha',
+      category: FoodCategory.fat,
+      quality: FoodQuality.typeA,
+    ),
+    Food(
+      id: 'leche_entera',
+      name: 'Leche entera',
       category: FoodCategory.fat,
       quality: FoodQuality.typeA,
     ),
   ];
 
-  // ── Carbohidratos Tipo A (verduras + frutas bajas) ──────────────────
-  static const List<Food> carbsA = [
-    Food(
-      id: 'espinaca',
-      name: 'Espinaca',
-      category: FoodCategory.carb,
-      quality: FoodQuality.typeA,
-    ),
-    Food(
-      id: 'brocoli',
-      name: 'Brócoli',
-      category: FoodCategory.carb,
-      quality: FoodQuality.typeA,
-    ),
-    Food(
-      id: 'lechuga',
-      name: 'Lechuga',
-      category: FoodCategory.carb,
-      quality: FoodQuality.typeA,
-    ),
-    Food(
-      id: 'tomate',
-      name: 'Tomate',
-      category: FoodCategory.carb,
-      quality: FoodQuality.typeA,
-    ),
-    Food(
-      id: 'pepino',
-      name: 'Pepino',
-      category: FoodCategory.carb,
-      quality: FoodQuality.typeA,
-    ),
-    Food(
-      id: 'calabacin',
-      name: 'Calabacín',
-      category: FoodCategory.carb,
-      quality: FoodQuality.typeA,
-    ),
-    Food(
-      id: 'coliflor',
-      name: 'Coliflor',
-      category: FoodCategory.carb,
-      quality: FoodQuality.typeA,
-    ),
-    Food(
-      id: 'pimiento',
-      name: 'Pimiento',
-      category: FoodCategory.carb,
-      quality: FoodQuality.typeA,
-    ),
-    Food(
-      id: 'fresa',
-      name: 'Fresa',
-      category: FoodCategory.carb,
-      quality: FoodQuality.typeA,
-    ),
-    Food(
-      id: 'manzana',
-      name: 'Manzana',
-      category: FoodCategory.carb,
-      quality: FoodQuality.typeA,
-    ),
-  ];
-
-  // ── Carbohidratos Tipo E (almidones, dulces, lácteos azucarados) ────
-  static const List<Food> carbsE = [
+  // ── Carbohidratos (todos Tipo E) ────────────────────────────────────
+  static const List<Food> carbs = [
     Food(
       id: 'arroz',
       name: 'Arroz',
       category: FoodCategory.carb,
       quality: FoodQuality.typeE,
-      substituteHint: 'brócoli o espinaca',
-    ),
-    Food(
-      id: 'pan',
-      name: 'Pan',
-      category: FoodCategory.carb,
-      quality: FoodQuality.typeE,
-      substituteHint: 'lechuga o calabacín',
-    ),
-    Food(
-      id: 'pasta',
-      name: 'Pasta',
-      category: FoodCategory.carb,
-      quality: FoodQuality.typeE,
-      substituteHint: 'calabacín o pimiento',
     ),
     Food(
       id: 'papa',
       name: 'Papa',
       category: FoodCategory.carb,
       quality: FoodQuality.typeE,
-      substituteHint: 'coliflor o pepino',
+    ),
+    Food(
+      id: 'yuca',
+      name: 'Yuca',
+      category: FoodCategory.carb,
+      quality: FoodQuality.typeE,
+    ),
+    Food(
+      id: 'platano',
+      name: 'Plátano',
+      category: FoodCategory.carb,
+      quality: FoodQuality.typeE,
+    ),
+    Food(
+      id: 'arepa',
+      name: 'Arepa',
+      category: FoodCategory.carb,
+      quality: FoodQuality.typeE,
+    ),
+    Food(
+      id: 'pan',
+      name: 'Pan',
+      category: FoodCategory.carb,
+      quality: FoodQuality.typeE,
+    ),
+    Food(
+      id: 'pasta',
+      name: 'Pasta',
+      category: FoodCategory.carb,
+      quality: FoodQuality.typeE,
+    ),
+    Food(
+      id: 'avena',
+      name: 'Avena',
+      category: FoodCategory.carb,
+      quality: FoodQuality.typeE,
     ),
     Food(
       id: 'maiz',
       name: 'Maíz',
       category: FoodCategory.carb,
       quality: FoodQuality.typeE,
-      substituteHint: 'pimiento o brócoli',
     ),
     Food(
-      id: 'banana',
-      name: 'Banana',
+      id: 'tortilla',
+      name: 'Tortilla',
       category: FoodCategory.carb,
       quality: FoodQuality.typeE,
-      substituteHint: 'manzana o fresa',
+    ),
+    Food(
+      id: 'harina',
+      name: 'Harina',
+      category: FoodCategory.carb,
+      quality: FoodQuality.typeE,
+    ),
+    Food(
+      id: 'galletas',
+      name: 'Galletas',
+      category: FoodCategory.carb,
+      quality: FoodQuality.typeE,
+    ),
+    Food(
+      id: 'azucar',
+      name: 'Azúcar',
+      category: FoodCategory.carb,
+      quality: FoodQuality.typeE,
+    ),
+    Food(
+      id: 'banano',
+      name: 'Banano',
+      category: FoodCategory.carb,
+      quality: FoodQuality.typeE,
     ),
     Food(
       id: 'mango',
       name: 'Mango',
       category: FoodCategory.carb,
       quality: FoodQuality.typeE,
-      substituteHint: 'fresa o manzana',
     ),
     Food(
-      id: 'leche',
-      name: 'Leche',
+      id: 'papa_criolla',
+      name: 'Papa criolla',
       category: FoodCategory.carb,
       quality: FoodQuality.typeE,
     ),
     Food(
-      id: 'yogur_azucarado',
-      name: 'Yogur con azúcar',
+      id: 'panela',
+      name: 'Panela',
       category: FoodCategory.carb,
       quality: FoodQuality.typeE,
     ),
     Food(
-      id: 'chocolate',
-      name: 'Chocolate',
+      id: 'cereal',
+      name: 'Cereal',
+      category: FoodCategory.carb,
+      quality: FoodQuality.typeE,
+    ),
+    Food(
+      id: 'batata_camote',
+      name: 'Batata / camote',
+      category: FoodCategory.carb,
+      quality: FoodQuality.typeE,
+    ),
+    Food(
+      id: 'tapioca',
+      name: 'Tapioca',
       category: FoodCategory.carb,
       quality: FoodQuality.typeE,
     ),
   ];
 
-  /// Lista completa unificada (orden: proteínas, grasas, carbs A, carbs E).
+  /// Lista completa unificada (orden: proteínas, grasas, carbs).
   static const List<Food> all = [
     ...proteins,
     ...fats,
-    ...carbsA,
-    ...carbsE,
+    ...carbs,
   ];
 
   /// Devuelve los alimentos disponibles para una categoría.
-  /// Mantiene primero los Tipo A, después los Tipo E para que la lista
-  /// del picker presente lo más saludable arriba (efecto pre-suasivo
-  /// suave — los primeros en la lista se eligen más).
   static List<Food> byCategory(FoodCategory category) =>
       all.where((f) => f.category == category).toList(growable: false);
 
-  /// Búsqueda por id estable. Null si no existe (food borrado del
-  /// catálogo en alguna versión futura).
+  /// Búsqueda por id estable. Null si no existe.
   static Food? byId(String id) {
     for (final f in all) {
       if (f.id == id) return f;

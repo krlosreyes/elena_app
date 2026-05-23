@@ -1,22 +1,27 @@
-// Tests del FoodCatalog — SPEC-137 E.3.
+// Tests del FoodCatalog — SPEC-137 E.3 (tabla del usuario, 22-may-2026).
 //
 // Verifica:
-// - El catálogo está completo (~35 alimentos en 3 categorías).
-// - Todas las proteínas y grasas son Tipo A.
-// - Carbos mezcla A y E con substituteHint donde aplica.
-// - byId / byCategory funcionan correctamente.
-// - IDs son slugs estables (kebab/snake, sin acentos ni espacios).
+// - 60 alimentos distribuidos 20/20/20 en proteínas/grasas/carbos.
+// - Todas las proteínas y grasas son Tipo A; todos los carbos son Tipo E.
+// - IDs son slugs estables y únicos.
+// - byId / byCategory funcionan.
 
 import 'package:elena_app/src/features/nutrition/domain/food_catalog.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('FoodCatalog — estructura general', () {
-    test('expone al menos 30 alimentos', () {
-      expect(FoodCatalog.all.length, greaterThanOrEqualTo(30));
+    test('60 alimentos en total', () {
+      expect(FoodCatalog.all.length, 60);
     });
 
-    test('cada food tiene id, name, category y quality no vacíos', () {
+    test('20 proteínas, 20 grasas, 20 carbos', () {
+      expect(FoodCatalog.proteins.length, 20);
+      expect(FoodCatalog.fats.length, 20);
+      expect(FoodCatalog.carbs.length, 20);
+    });
+
+    test('cada food tiene id y name no vacíos', () {
       for (final f in FoodCatalog.all) {
         expect(f.id, isNotEmpty, reason: 'food sin id');
         expect(f.name, isNotEmpty, reason: '${f.id} sin name');
@@ -33,18 +38,17 @@ void main() {
       final slugRegex = RegExp(r'^[a-z][a-z0-9_]*$');
       for (final f in FoodCatalog.all) {
         expect(f.id, matches(slugRegex),
-            reason: '${f.id} no es un slug válido — los ids deben ser '
-                'estables para persistencia futura');
+            reason: '${f.id} no es un slug válido');
       }
     });
   });
 
-  group('FoodCatalog — invariantes por categoría', () {
+  group('FoodCatalog — invariantes A/E por categoría', () {
     test('todas las proteínas son Tipo A', () {
       for (final f in FoodCatalog.proteins) {
         expect(f.category, FoodCategory.protein);
         expect(f.quality, FoodQuality.typeA,
-            reason: '${f.name} es proteína; en Frank Suárez todas son A');
+            reason: '${f.name} debería ser Tipo A');
       }
     });
 
@@ -52,71 +56,129 @@ void main() {
       for (final f in FoodCatalog.fats) {
         expect(f.category, FoodCategory.fat);
         expect(f.quality, FoodQuality.typeA,
-            reason: '${f.name} debería ser grasa saludable Tipo A');
+            reason: '${f.name} debería ser Tipo A');
       }
     });
 
-    test('carbsA son Tipo A y carbsE son Tipo E', () {
-      for (final f in FoodCatalog.carbsA) {
+    test('todos los carbohidratos son Tipo E', () {
+      for (final f in FoodCatalog.carbs) {
         expect(f.category, FoodCategory.carb);
-        expect(f.quality, FoodQuality.typeA);
-      }
-      for (final f in FoodCatalog.carbsE) {
-        expect(f.category, FoodCategory.carb);
-        expect(f.quality, FoodQuality.typeE);
+        expect(f.quality, FoodQuality.typeE,
+            reason: '${f.name} debería ser Tipo E');
       }
     });
   });
 
-  group('FoodCatalog — substituteHint', () {
-    test('los Tipo E con sustituto natural lo tienen', () {
-      // arroz, pan, pasta, papa, maíz, banana, mango → todos tienen
-      // un Tipo A equivalente en la misma categoría (verduras).
-      final naturalSubstitutes = ['arroz', 'pan', 'pasta', 'papa', 'maiz'];
-      for (final id in naturalSubstitutes) {
-        final f = FoodCatalog.byId(id);
-        expect(f, isNotNull, reason: '$id no está en el catálogo');
-        expect(f!.substituteHint, isNotNull,
-            reason: '${f.name} es almidón y debería tener substituto');
+  group('FoodCatalog — items concretos de la tabla del usuario', () {
+    test('proteínas clave están presentes', () {
+      const expected = [
+        'pollo',
+        'huevo',
+        'carne_res',
+        'pescado',
+        'lentejas',
+        'frijoles',
+        'queso_campesino',
+        'yogur_griego',
+        'leche',
+        'suero_costeno',
+        'quinua',
+        'tofu',
+      ];
+      for (final id in expected) {
+        expect(FoodCatalog.byId(id), isNotNull,
+            reason: '$id debería existir en proteínas');
       }
     });
 
-    test('los Tipo A nunca tienen substituteHint', () {
-      final typeAItems =
-          FoodCatalog.all.where((f) => f.quality == FoodQuality.typeA);
-      for (final f in typeAItems) {
-        expect(f.substituteHint, isNull,
-            reason: '${f.name} es Tipo A y no necesita substituto');
+    test('grasas clave están presentes', () {
+      const expected = [
+        'aguacate',
+        'aceite_vegetal',
+        'mantequilla',
+        'margarina',
+        'queso_amarillo',
+        'tocino',
+        'chicharron',
+        'coco',
+        'mani',
+        'almendras',
+        'mayonesa',
+        'aceitunas',
+        'chorizo',
+        'salchicha',
+        'leche_entera',
+      ];
+      for (final id in expected) {
+        expect(FoodCatalog.byId(id), isNotNull,
+            reason: '$id debería existir en grasas');
       }
+    });
+
+    test('carbohidratos clave están presentes', () {
+      const expected = [
+        'arroz',
+        'papa',
+        'yuca',
+        'platano',
+        'arepa',
+        'pan',
+        'pasta',
+        'avena',
+        'maiz',
+        'tortilla',
+        'azucar',
+        'banano',
+        'mango',
+        'papa_criolla',
+        'panela',
+        'batata_camote',
+        'tapioca',
+      ];
+      for (final id in expected) {
+        expect(FoodCatalog.byId(id), isNotNull,
+            reason: '$id debería existir en carbos');
+      }
+    });
+
+    test('nombres con tilde se preservan correctamente', () {
+      expect(FoodCatalog.byId('atun')?.name, 'Atún');
+      expect(FoodCatalog.byId('jamon')?.name, 'Jamón');
+      expect(FoodCatalog.byId('mani')?.name, 'Maní');
+      expect(FoodCatalog.byId('frijoles')?.name, 'Fríjoles');
+      expect(FoodCatalog.byId('platano')?.name, 'Plátano');
+      expect(FoodCatalog.byId('azucar')?.name, 'Azúcar');
+      expect(FoodCatalog.byId('chicharron')?.name, 'Chicharrón');
+      expect(FoodCatalog.byId('suero_costeno')?.name, 'Suero costeño');
     });
   });
 
   group('FoodCatalog.byCategory', () {
-    test('protein devuelve sólo proteínas', () {
+    test('protein devuelve 20 alimentos, todos Tipo A', () {
       final result = FoodCatalog.byCategory(FoodCategory.protein);
-      expect(result, isNotEmpty);
+      expect(result.length, 20);
       for (final f in result) {
         expect(f.category, FoodCategory.protein);
+        expect(f.quality, FoodQuality.typeA);
       }
     });
 
-    test('fat devuelve sólo grasas', () {
+    test('fat devuelve 20 alimentos, todos Tipo A', () {
       final result = FoodCatalog.byCategory(FoodCategory.fat);
-      expect(result, isNotEmpty);
+      expect(result.length, 20);
       for (final f in result) {
         expect(f.category, FoodCategory.fat);
+        expect(f.quality, FoodQuality.typeA);
       }
     });
 
-    test('carb mezcla typeA y typeE, con A primero (efecto pre-suasivo)',
-        () {
+    test('carb devuelve 20 alimentos, todos Tipo E', () {
       final result = FoodCatalog.byCategory(FoodCategory.carb);
-      expect(result, isNotEmpty);
-      // El catálogo construye `all` con carbsA antes que carbsE.
-      // El primer elemento de carb debe ser Tipo A.
-      expect(result.first.quality, FoodQuality.typeA,
-          reason: 'los Tipo A deben aparecer primero en el picker para '
-              'sesgar suavemente al usuario hacia opciones saludables');
+      expect(result.length, 20);
+      for (final f in result) {
+        expect(f.category, FoodCategory.carb);
+        expect(f.quality, FoodQuality.typeE);
+      }
     });
   });
 
@@ -125,21 +187,15 @@ void main() {
       expect(FoodCatalog.byId('pollo')?.name, 'Pollo');
       expect(FoodCatalog.byId('aguacate')?.name, 'Aguacate');
       expect(FoodCatalog.byId('arroz')?.name, 'Arroz');
+      expect(FoodCatalog.byId('arepa')?.name, 'Arepa');
+      expect(FoodCatalog.byId('panela')?.name, 'Panela');
     });
 
     test('devuelve null para ids inexistentes', () {
       expect(FoodCatalog.byId('foo'), isNull);
       expect(FoodCatalog.byId(''), isNull);
-    });
-
-    test('los nombres específicos LatAm-universal están presentes', () {
-      // Aguacate (no Palta), Banana (no Plátano).
-      expect(FoodCatalog.byId('aguacate'), isNotNull);
-      expect(FoodCatalog.byId('banana'), isNotNull);
-      // No deberían existir las variantes regionales para evitar
-      // duplicación.
-      expect(FoodCatalog.byId('palta'), isNull);
-      expect(FoodCatalog.byId('platano'), isNull);
+      expect(FoodCatalog.byId('brocoli'), isNull,
+          reason: 'la tabla no incluye verduras como brócoli');
     });
   });
 
