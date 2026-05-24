@@ -1,4 +1,4 @@
-// Tests del PlateBuilder — SPEC-137 E.4 (scoring numérico).
+// Tests del PlateBuilder — SPEC-137 E.4 (scoring numerico).
 
 import 'package:elena_app/src/features/nutrition/domain/food_catalog.dart';
 import 'package:elena_app/src/features/nutrition/domain/meal_ratio.dart';
@@ -12,8 +12,8 @@ Food _food(String id) {
 }
 
 void main() {
-  group('PlateBuilder — operaciones básicas', () {
-    test('arranca vacío', () {
+  group('PlateBuilder operaciones basicas', () {
+    test('arranca vacio', () {
       final b = PlateBuilder();
       expect(b.isEmpty, isTrue);
       expect(b.totalSlots, 0);
@@ -35,7 +35,7 @@ void main() {
       expect(b.itemCount, 1);
     });
 
-    test('clear vacía todo', () {
+    test('clear vacia todo', () {
       final b = PlateBuilder()..add(_food('pollo'));
       b.clear();
       expect(b.isEmpty, isTrue);
@@ -47,7 +47,7 @@ void main() {
     });
   });
 
-  group('PlateBuilder — distribución por categoría', () {
+  group('PlateBuilder distribucion por categoria', () {
     test('slotsForCategory cuenta correctamente', () {
       final b = PlateBuilder()
         ..add(_food('pollo')) // 2 protein
@@ -62,33 +62,33 @@ void main() {
       final b = PlateBuilder()
         ..add(_food('pollo')) // protein 95
         ..add(_food('frijoles')); // protein 70
-      // Ambos pesan 2 slots cada uno. Promedio: (95*2 + 70*2) / 4 = 82.5 → 83.
+      // Ambos pesan 2 slots cada uno. Promedio: (95*2 + 70*2) / 4 = 82.5 -> 83.
       expect(b.qualityScoreForCategory(FoodCategory.protein),
           inInclusiveRange(82, 83));
     });
 
-    test('qualityScoreForCategory para categoría vacía es 0', () {
+    test('qualityScoreForCategory para categoria vacia es 0', () {
       final b = PlateBuilder()..add(_food('pollo'));
       expect(b.qualityScoreForCategory(FoodCategory.carb), 0);
     });
   });
 
-  group('PlateBuilder.qualityPercent — promedio ponderado', () {
-    test('vacío → 0', () {
+  group('PlateBuilder.qualityPercent promedio ponderado', () {
+    test('vacio -> 0', () {
       expect(PlateBuilder().qualityPercent, 0);
     });
 
-    test('solo pollo (95) → 95', () {
+    test('solo pollo (95) -> 95', () {
       final b = PlateBuilder()..add(_food('pollo'));
       expect(b.qualityPercent, 95);
     });
 
-    test('solo azúcar (0) → 0', () {
+    test('solo azucar (0) -> 0', () {
       final b = PlateBuilder()..add(_food('azucar'));
       expect(b.qualityPercent, 0);
     });
 
-    test('pollo + aguacate + brócoli → score alto', () {
+    test('pollo + aguacate + brocoli -> score alto', () {
       final b = PlateBuilder()
         ..add(_food('pollo')) // 95, 2 slots = 190
         ..add(_food('aguacate')) // 100, 1 slot = 100
@@ -97,26 +97,26 @@ void main() {
       expect(b.qualityPercent, inInclusiveRange(97, 98));
     });
 
-    test('pollo + arroz blanco → score medio-bajo', () {
+    test('pollo + arroz blanco -> score medio-bajo', () {
       final b = PlateBuilder()
-        ..add(_food('pollo')) // 95 × 2 = 190
-        ..add(_food('arroz')); // 10 × 2 = 20
-      // (190 + 20) / 4 = 52.5 → 53
+        ..add(_food('pollo')) // 95 x 2 = 190
+        ..add(_food('arroz')); // 10 x 2 = 20
+      // (190 + 20) / 4 = 52.5 -> 53
       expect(b.qualityPercent, inInclusiveRange(52, 53));
     });
 
-    test('pollo + aguacate + arroz (3x1 aprox) → ≥ 60', () {
+    test('pollo + aguacate + arroz (3x1 aprox) -> >= 60', () {
       final b = PlateBuilder()
-        ..add(_food('pollo')) // 95 × 2 = 190
-        ..add(_food('aguacate')) // 100 × 1 = 100
-        ..add(_food('arroz')); // 10 × 2 = 20
+        ..add(_food('pollo')) // 95 x 2 = 190
+        ..add(_food('aguacate')) // 100 x 1 = 100
+        ..add(_food('arroz')); // 10 x 2 = 20
       // (190 + 100 + 20) / 5 = 62
       expect(b.qualityPercent, inInclusiveRange(60, 63));
     });
   });
 
-  group('PlateBuilder.quality — niveles cualitativos', () {
-    test('vacío → cheatDay', () {
+  group('PlateBuilder.quality niveles cualitativos', () {
+    test('vacio -> cheatDay', () {
       expect(PlateBuilder().quality(), PlateQuality.cheatDay);
     });
 
@@ -125,15 +125,13 @@ void main() {
       expect(b.quality(cheatDayActive: true), PlateQuality.cheatDay);
     });
 
-    test('score ≥ 75 → excellent', () {
+    test('score >= 75 -> excellent', () {
       final b = PlateBuilder()..add(_food('pollo'))..add(_food('aguacate'));
       expect(b.qualityPercent, greaterThanOrEqualTo(75));
       expect(b.quality(), PlateQuality.excellent);
     });
 
-    test('score 60-74 → good', () {
-      // pollo (95×2=190) + aguacate (100×1=100) + arroz (10×2=20)
-      // = 310/5 = 62 → good
+    test('score 60-74 -> good', () {
       final b = PlateBuilder()
         ..add(_food('pollo'))
         ..add(_food('aguacate'))
@@ -142,15 +140,13 @@ void main() {
       expect(b.quality(), PlateQuality.good);
     });
 
-    test('score 35-59 → needsWork', () {
-      // pollo (95×2=190) + arroz (10×2=20) = 210/4 = 52 → needsWork
+    test('score 35-59 -> needsWork', () {
       final b = PlateBuilder()..add(_food('pollo'))..add(_food('arroz'));
       expect(b.qualityPercent, inInclusiveRange(35, 59));
       expect(b.quality(), PlateQuality.needsWork);
     });
 
-    test('score < 35 → cheatDay', () {
-      // 2 arroz + 1 azucar = 4 slots * 10 + 2 * 0 = 40/6 = 6.67 → cheat
+    test('score < 35 -> cheatDay', () {
       final b = PlateBuilder()
         ..add(_food('arroz'))
         ..add(_food('pan'))
@@ -160,29 +156,29 @@ void main() {
     });
   });
 
-  group('PlateBuilder.tip — sugerencias accionables', () {
-    test('vacío → null', () {
+  group('PlateBuilder.tip sugerencias accionables', () {
+    test('vacio -> null', () {
       expect(PlateBuilder().tip(), isNull);
     });
 
-    test('excellent → null', () {
+    test('excellent -> null', () {
       final b = PlateBuilder()..add(_food('pollo'))..add(_food('aguacate'));
       expect(b.tip(), isNull);
     });
 
-    test('cheatDayActive → null', () {
+    test('cheatDayActive -> null', () {
       final b = PlateBuilder()..add(_food('arroz'));
       expect(b.tip(cheatDayActive: true), isNull);
     });
 
-    test('solo carbos → sugerir proteína Y grasa', () {
+    test('solo carbos -> sugerir proteina Y grasa', () {
       final b = PlateBuilder()..add(_food('arroz'))..add(_food('pan'));
       final t = b.tip();
       expect(t, isNotNull);
       expect(t!.toLowerCase(), contains('solo tiene carbos'));
     });
 
-    test('carbos + grasa, sin proteína → sugerir proteína', () {
+    test('carbos + grasa, sin proteina -> sugerir proteina', () {
       final b = PlateBuilder()
         ..add(_food('aguacate'))
         ..add(_food('arroz'));
@@ -191,7 +187,7 @@ void main() {
       expect(t!.toLowerCase(), contains('proteína'));
     });
 
-    test('carbos + proteína, sin grasa → sugerir grasa', () {
+    test('carbos + proteina, sin grasa -> sugerir grasa', () {
       final b = PlateBuilder()
         ..add(_food('pollo'))
         ..add(_food('arroz'))
@@ -201,12 +197,12 @@ void main() {
       expect(t!.toLowerCase(), contains('grasa'));
     });
 
-    test('plato balanceado pero good → sugerir reducir item bajo', () {
+    test('plato balanceado pero good -> sugerir reducir item bajo', () {
       final b = PlateBuilder()
         ..add(_food('pollo'))
         ..add(_food('aguacate'))
         ..add(_food('arroz'));
-      // arroz tiene el score más bajo (10) — debería aparecer en el tip.
+      // arroz tiene el score mas bajo (10) — deberia aparecer en el tip.
       final t = b.tip();
       expect(t, isNotNull);
       expect(t!.toLowerCase(), contains('arroz'));
@@ -214,24 +210,22 @@ void main() {
   });
 
   group('PlateBuilder.derivedMealRatio', () {
-    test('vacío → a2e1', () {
+    test('vacio -> a2e1', () {
       expect(PlateBuilder().derivedMealRatio, MealRatio.a2e1);
     });
 
-    test('score 100 (todo óptimo) → allA o a3e1', () {
+    test('score 100 (todo optimo) -> allA o a3e1', () {
       final b = PlateBuilder()..add(_food('brocoli'));
-      expect(b.derivedMealRatio,
-          anyOf(MealRatio.allA, MealRatio.a3e1));
+      expect(b.derivedMealRatio, anyOf(MealRatio.allA, MealRatio.a3e1));
     });
 
-    test('score ≥70 → a3e1 (3x1)', () {
+    test('score >= 70 -> a3e1 (3x1)', () {
       final b = PlateBuilder()..add(_food('pollo'));
       expect(b.qualityPercent, greaterThanOrEqualTo(70));
-      expect(b.derivedMealRatio,
-          anyOf(MealRatio.allA, MealRatio.a3e1));
+      expect(b.derivedMealRatio, anyOf(MealRatio.allA, MealRatio.a3e1));
     });
 
-    test('score ~62 → a2e1', () {
+    test('score ~62 -> a2e1', () {
       final b = PlateBuilder()
         ..add(_food('pollo'))
         ..add(_food('aguacate'))
@@ -239,12 +233,12 @@ void main() {
       expect(b.derivedMealRatio, MealRatio.a2e1);
     });
 
-    test('score ~52 → a1e1', () {
+    test('score ~52 -> a1e1', () {
       final b = PlateBuilder()..add(_food('pollo'))..add(_food('arroz'));
       expect(b.derivedMealRatio, MealRatio.a1e1);
     });
 
-    test('score muy bajo → allE', () {
+    test('score muy bajo -> allE', () {
       final b = PlateBuilder()
         ..add(_food('arroz'))
         ..add(_food('pan'))
@@ -254,7 +248,7 @@ void main() {
   });
 
   group('PlateQuality enum', () {
-    test('nextLevelUp progresión', () {
+    test('nextLevelUp progresion', () {
       expect(PlateQuality.cheatDay.nextLevelUp, PlateQuality.needsWork);
       expect(PlateQuality.needsWork.nextLevelUp, PlateQuality.good);
       expect(PlateQuality.good.nextLevelUp, PlateQuality.excellent);
