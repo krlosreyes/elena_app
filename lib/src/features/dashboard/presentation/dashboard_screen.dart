@@ -27,8 +27,8 @@ import 'package:elena_app/src/features/engagement/presentation/widgets/engagemen
 import 'package:elena_app/src/features/adaptive/presentation/widgets/adaptive_suggestion_card.dart';
 import 'package:elena_app/src/features/nutrition/application/cociente_a_service.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
-import 'package:elena_app/src/features/nutrition/presentation/add_past_meal_sheet.dart';
-// SPEC-137: registro con clasificación A:E y navegación a la vista semanal.
+// SPEC-137 E.4: registro unificado con TimePicker. AddPastMealSheet
+// eliminado — el PlateRatioSheet ahora cubre comida actual y pasada.
 import 'package:elena_app/src/features/nutrition/presentation/plate_ratio_sheet.dart';
 import 'package:elena_app/src/features/dashboard/presentation/sleep_input_sheet.dart';
 
@@ -1163,19 +1163,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     : () => PlateRatioSheet.show(context),
               ),
               const SizedBox(height: 10),
-              _secondaryButton(
-                label: 'Registrar comida pasada',
-                icon: Icons.history_rounded,
-                onPressed: isFastingActive
-                    ? null
-                    : () => showModalBottomSheet<void>(
-                          context: context,
-                          isScrollControlled: true,
-                          backgroundColor: Colors.transparent,
-                          builder: (_) => const AddPastMealSheet(),
-                        ),
-              ),
-              const SizedBox(height: 10),
+              // SPEC-137 E.4: el botón "Registrar comida pasada" se
+              // eliminó. El TimePicker del PlateRatioSheet permite
+              // ajustar la hora del plato actual o pasado en el mismo
+              // flujo, sin segundo sheet.
               _secondaryButton(
                 label: 'Deshacer última comida registrada',
                 icon: Icons.undo_rounded,

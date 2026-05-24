@@ -1,18 +1,15 @@
-// SPEC-137 E.3: sheet de registro del pilar Nutrición — plato armable.
+// SPEC-137 E.4: sheet de registro del pilar Nutrición — versión final.
 //
-// REEMPLAZA la versión de E.1 (5 cards de proporción A:E rejected por
-// abstracta). El nuevo paradigma: el usuario CONSTRUYE el plato
-// seleccionando alimentos del catálogo curado (FoodCatalog). El círculo
-// central refleja en tiempo real la composición (Proteína / Grasa /
-// Carbos) coloreada por calidad metabólica (verde = A, ámbar = E).
-//
-// Bajo el plato, un badge cualitativo: "Excelente plato" / "Buen plato"
-// / "Plato mejorable" / "Día de permitidos", más un tip accionable
-// ("Cambiá el arroz por brócoli y subís a Excelente").
-//
-// IMPORTANTE: el usuario nunca ve "% A" ni "2 a 1" en pantalla. Esos
-// conceptos viven internamente para persistir el `MealRatio` derivado
-// que alimenta el Cociente A del IMR.
+// Cambios clave vs E.3:
+// - Selector de alimentos por BUSCADOR (TextField con autocompletar)
+//   inspirado en el patrón del AddPastMealSheet (que se elimina).
+// - Score numérico continuo (0-100) por alimento. El círculo se colorea
+//   por calidad promedio ponderada, no por categorías binarias A/E.
+// - TimePicker para registrar comida pasada (unifica el flujo y permite
+//   eliminar el AddPastMealSheet legacy).
+// - Sin nomenclatura "Tipo A / Tipo E" en código ni UI (blindaje legal
+//   respecto a marca registrada NaturalSlim®). Internamente usamos
+//   `qualityScore`; al usuario solo le mostramos badge cualitativo.
 
 import 'dart:math' as math;
 
@@ -30,19 +27,21 @@ class PlateRatioSheet extends ConsumerStatefulWidget {
   /// label sugerido según la hora del día.
   final String? label;
 
-  /// Timestamp del plato. Si es null, ahora.
-  final DateTime? mealTime;
+  /// Timestamp inicial del plato. Si es null, ahora. El usuario puede
+  /// modificarlo via TimePicker (E.4 unifica el flujo "registrar comida
+  /// pasada" que vivía en AddPastMealSheet).
+  final DateTime? initialMealTime;
 
   const PlateRatioSheet({
     super.key,
     this.label,
-    this.mealTime,
+    this.initialMealTime,
   });
 
   static Future<void> show(
     BuildContext context, {
     String? label,
-    DateTime? mealTime,
+    DateTime? initialMealTime,
   }) {
     return showModalBottomSheet<void>(
       context: context,
@@ -51,7 +50,10 @@ class PlateRatioSheet extends ConsumerStatefulWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (_) => PlateRatioSheet(label: label, mealTime: mealTime),
+      builder: (_) => PlateRatioSheet(
+        label: label,
+        initialMealTime: initialMealTime,
+      ),
     );
   }
 
@@ -61,7 +63,22 @@ class PlateRatioSheet extends ConsumerStatefulWidget {
 
 class _PlateRatioSheetState extends ConsumerState<PlateRatioSheet> {
   final PlateBuilder _builder = PlateBuilder();
+  final TextEditingController _searchController = TextEditingController();
+  late DateTime _mealTime;
   bool _submitting = false;
+  bool _showTimePicker = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _mealTime = widget.initialMealTime ?? DateTime.now();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -69,11 +86,14 @@ class _PlateRatioSheetState extends ConsumerState<PlateRatioSheet> {
     final cheatActive = cheatDay.isActiveToday;
     final quality = _builder.quality(cheatDayActive: cheatActive);
     final tip = _builder.tip(cheatDayActive: cheatActive);
+    final searchResults = FoodCatalog.search(_searchController.text);
 
     final mediaPadding = MediaQuery.of(context).padding.bottom;
 
     return Padding(
-      padding: EdgeInsets.only(bottom: mediaPadding),
+      padding: EdgeInsets.only(
+        bottom: mediaPadding + MediaQuery.of(context).viewInsets.bottom,
+      ),
       child: SafeArea(
         top: false,
         child: SingleChildScrollView(
@@ -93,8 +113,8 @@ class _PlateRatioSheetState extends ConsumerState<PlateRatioSheet> {
                 ),
               ),
               const SizedBox(height: 2),
-              Text(
-                'Tocá lo que comiste. El plato te dice qué tan sano fue.',
+              const Text(
+                'Buscá y agregá lo que comiste. El plato te dice qué tan sano fue.',
                 style: TextStyle(
                   color: AppColors.textSecondary,
                   fontSize: 13,
@@ -106,7 +126,10 @@ class _PlateRatioSheetState extends ConsumerState<PlateRatioSheet> {
                   width: 220,
                   height: 220,
                   child: CustomPaint(
-                    painter: PlatePainter(builder: _builder),
+                    painter: PlatePainter(
+                      builder: _builder,
+                      cheatDayActive: cheatActive,
+                    ),
                   ),
                 ),
               ),
@@ -121,17 +144,40 @@ class _PlateRatioSheetState extends ConsumerState<PlateRatioSheet> {
                 ),
                 const SizedBox(height: 14),
               ],
-              const Text(
-                'AGREGAR ALIMENTO',
-                style: TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 11,
-                  letterSpacing: 1.2,
-                  fontWeight: FontWeight.w600,
-                ),
+              _SearchField(
+                controller: _searchController,
+                onChanged: (_) => setState(() {}),
               ),
-              const SizedBox(height: 10),
-              _CategoryGrid(onPick: _openPicker),
+              if (searchResults.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                _SearchResults(
+                  results: searchResults,
+                  onPick: (food) {
+                    setState(() {
+                      _builder.add(food);
+                      _searchController.clear();
+                    });
+                  },
+                ),
+              ],
+              const SizedBox(height: 14),
+              _MealTimeRow(
+                mealTime: _mealTime,
+                expanded: _showTimePicker,
+                onToggle: () =>
+                    setState(() => _showTimePicker = !_showTimePicker),
+                onTimePicked: (t) {
+                  setState(() {
+                    _mealTime = DateTime(
+                      _mealTime.year,
+                      _mealTime.month,
+                      _mealTime.day,
+                      t.hour,
+                      t.minute,
+                    );
+                  });
+                },
+              ),
               const SizedBox(height: 14),
               _CheatDayToggle(
                 cheatDay: cheatDay,
@@ -142,7 +188,8 @@ class _PlateRatioSheetState extends ConsumerState<PlateRatioSheet> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _builder.isEmpty || _submitting ? null : _submit,
+                  onPressed:
+                      _builder.isEmpty || _submitting ? null : _submit,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.metabolicGreen,
                     foregroundColor: AppColors.bgBase,
@@ -188,21 +235,6 @@ class _PlateRatioSheetState extends ConsumerState<PlateRatioSheet> {
         ),
       );
 
-  Future<void> _openPicker(FoodCategory category) async {
-    final picked = await showModalBottomSheet<Food>(
-      context: context,
-      backgroundColor: AppColors.bgSurface,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (_) => _FoodPicker(category: category),
-    );
-    if (picked != null && mounted) {
-      setState(() => _builder.add(picked));
-    }
-  }
-
   Future<void> _submit() async {
     if (_builder.isEmpty) return;
     setState(() => _submitting = true);
@@ -210,7 +242,7 @@ class _PlateRatioSheetState extends ConsumerState<PlateRatioSheet> {
       final isCheatDay = ref.read(cheatDayProvider).isActiveToday;
       await ref.read(nutritionProvider.notifier).logMeal(
             label: widget.label,
-            mealTime: widget.mealTime,
+            mealTime: _mealTime,
             ratio: _builder.derivedMealRatio,
             isCheatDay: isCheatDay,
           );
@@ -268,27 +300,26 @@ class _PlateRatioSheetState extends ConsumerState<PlateRatioSheet> {
   }
 }
 
-// ── Painter del círculo central ───────────────────────────────────────
+// ── Painter del círculo ───────────────────────────────────────────────
 
-/// Dibuja el plato sólido con sectores proporcionales a la composición
-/// del PlateBuilder. El color de cada sector refleja la calidad
-/// metabólica de los alimentos de esa categoría.
+/// Dibuja el plato sólido. Cada sector representa una categoría (proteína
+/// / grasa / carbos) con tamaño proporcional a sus slots. El COLOR de
+/// cada sector refleja la calidad promedio de los alimentos de esa
+/// categoría (verde si score alto, ámbar si bajo).
 class PlatePainter extends CustomPainter {
   final PlateBuilder builder;
+  final bool cheatDayActive;
 
-  PlatePainter({required this.builder});
+  PlatePainter({required this.builder, this.cheatDayActive = false});
 
   static const Color _emptyBg = Color(0xFF0F1B2C);
   static const Color _border = Color(0x1AFFFFFF);
-  static const Color _qualityA = Color(0xFF10B981);
-  static const Color _qualityE = Color(0xFFF59E0B);
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = size.center(Offset.zero);
     final radius = math.min(size.width, size.height) / 2 - 4;
 
-    // Fondo (plato vacío).
     final bgPaint = Paint()
       ..color = _emptyBg
       ..style = PaintingStyle.fill;
@@ -302,12 +333,10 @@ class PlatePainter extends CustomPainter {
 
     final total = builder.totalSlots;
     if (total == 0) {
-      _drawEmptyHint(canvas, center, radius);
+      _drawEmptyHint(canvas, center);
       return;
     }
 
-    // Dibujar sectores en orden fijo (Proteína → Grasa → Carbos) para
-    // que el usuario aprenda dónde queda cada categoría.
     const categoriesInOrder = [
       FoodCategory.protein,
       FoodCategory.fat,
@@ -318,14 +347,13 @@ class PlatePainter extends CustomPainter {
     for (final category in categoriesInOrder) {
       final slots = builder.slotsForCategory(category);
       if (slots == 0) continue;
-
       final sweep = (slots / total) * 2 * math.pi;
-      final color = _colorForCategory(category);
-
+      final color = _colorForScore(
+        builder.qualityScoreForCategory(category),
+      );
       final paint = Paint()
         ..color = color
         ..style = PaintingStyle.fill;
-
       canvas.drawArc(
         Rect.fromCircle(center: center, radius: radius),
         startAngle,
@@ -333,32 +361,20 @@ class PlatePainter extends CustomPainter {
         true,
         paint,
       );
-
-      _drawCategoryLabel(
-        canvas,
-        center,
-        radius,
-        startAngle,
-        sweep,
-        category,
-      );
-
+      _drawCategoryLabel(canvas, center, radius, startAngle, sweep, category);
       startAngle += sweep;
     }
 
-    // Línea sutil entre sectores para distinguirlos sin agresividad.
     _drawSectorDividers(canvas, center, radius, total, categoriesInOrder);
   }
 
-  Color _colorForCategory(FoodCategory category) {
-    final totalSlots = builder.slotsForCategory(category);
-    if (totalSlots == 0) return _emptyBg;
-    final aSlots = builder.qualityASlotsForCategory(category);
-    final aFraction = aSlots / totalSlots;
-    // Si todos los alimentos de la categoría son A → verde puro.
-    // Si todos son E → ámbar puro.
-    // Si mezclado → interpolación lineal.
-    return Color.lerp(_qualityE, _qualityA, aFraction) ?? _qualityA;
+  /// Mapea un score 0-100 a un color (rojo → ámbar → verde).
+  static Color _colorForScore(int score) {
+    if (score >= 85) return const Color(0xFF10B981); // verde fuerte
+    if (score >= 70) return const Color(0xFF34D399); // verde claro
+    if (score >= 50) return const Color(0xFFFBBF24); // amarillo
+    if (score >= 30) return const Color(0xFFF59E0B); // ámbar
+    return const Color(0xFFEF4444); // rojo
   }
 
   void _drawCategoryLabel(
@@ -379,8 +395,8 @@ class PlatePainter extends CustomPainter {
     final textPainter = TextPainter(
       text: TextSpan(
         text: category.label.toUpperCase(),
-        style: TextStyle(
-          color: const Color(0xFF052E1A),
+        style: const TextStyle(
+          color: Color(0xFF052E1A),
           fontSize: 11,
           fontWeight: FontWeight.w700,
           letterSpacing: 0.5,
@@ -421,7 +437,7 @@ class PlatePainter extends CustomPainter {
     }
   }
 
-  void _drawEmptyHint(Canvas canvas, Offset center, double radius) {
+  void _drawEmptyHint(Canvas canvas, Offset center) {
     final textPainter = TextPainter(
       text: const TextSpan(
         text: 'Plato vacío',
@@ -446,7 +462,9 @@ class PlatePainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant PlatePainter oldDelegate) =>
       oldDelegate.builder.itemCount != builder.itemCount ||
-      oldDelegate.builder.totalSlots != builder.totalSlots;
+      oldDelegate.builder.totalSlots != builder.totalSlots ||
+      oldDelegate.builder.qualityPercent != builder.qualityPercent ||
+      oldDelegate.cheatDayActive != cheatDayActive;
 }
 
 // ── Sub-widgets ───────────────────────────────────────────────────────
@@ -530,9 +548,7 @@ class _SelectedChips extends StatelessWidget {
       spacing: 6,
       runSpacing: 6,
       children: builder.items.map((f) {
-        final accent = f.quality == FoodQuality.typeA
-            ? AppColors.statusGood
-            : AppColors.statusWarn;
+        final color = PlatePainter._colorForScore(f.qualityScore);
         return InkWell(
           onTap: () => onRemove(f),
           borderRadius: BorderRadius.circular(999),
@@ -540,7 +556,7 @@ class _SelectedChips extends StatelessWidget {
             padding:
                 const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
-              color: accent.withValues(alpha: 0.18),
+              color: color.withValues(alpha: 0.18),
               borderRadius: BorderRadius.circular(999),
             ),
             child: Row(
@@ -549,13 +565,13 @@ class _SelectedChips extends StatelessWidget {
                 Text(
                   f.name,
                   style: TextStyle(
-                    color: accent,
+                    color: color,
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 const SizedBox(width: 6),
-                Icon(Icons.close, size: 12, color: accent),
+                Icon(Icons.close, size: 12, color: color),
               ],
             ),
           ),
@@ -565,87 +581,199 @@ class _SelectedChips extends StatelessWidget {
   }
 }
 
-class _CategoryGrid extends StatelessWidget {
-  final void Function(FoodCategory category) onPick;
+class _SearchField extends StatelessWidget {
+  final TextEditingController controller;
+  final ValueChanged<String> onChanged;
 
-  const _CategoryGrid({required this.onPick});
+  const _SearchField({required this.controller, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _CategoryButton(
-            category: FoodCategory.protein,
-            icon: Icons.set_meal_outlined,
-            color: AppColors.statusGood,
-            onTap: () => onPick(FoodCategory.protein),
-          ),
+    return TextField(
+      controller: controller,
+      onChanged: onChanged,
+      style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
+      decoration: InputDecoration(
+        hintText: 'Buscar alimento (pollo, aguacate, arroz...)',
+        hintStyle: const TextStyle(
+          color: AppColors.textMuted,
+          fontSize: 14,
         ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _CategoryButton(
-            category: FoodCategory.fat,
-            icon: Icons.water_drop_outlined,
-            color: AppColors.statusGood,
-            onTap: () => onPick(FoodCategory.fat),
-          ),
+        prefixIcon: const Icon(Icons.search, color: AppColors.textSecondary),
+        filled: true,
+        fillColor: AppColors.bgElevated,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
         ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _CategoryButton(
-            category: FoodCategory.carb,
-            icon: Icons.bakery_dining_outlined,
-            color: AppColors.statusWarn,
-            onTap: () => onPick(FoodCategory.carb),
-          ),
-        ),
-      ],
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      ),
     );
   }
 }
 
-class _CategoryButton extends StatelessWidget {
-  final FoodCategory category;
-  final IconData icon;
-  final Color color;
-  final VoidCallback onTap;
+class _SearchResults extends StatelessWidget {
+  final List<Food> results;
+  final void Function(Food food) onPick;
 
-  const _CategoryButton({
-    required this.category,
-    required this.icon,
-    required this.color,
-    required this.onTap,
-  });
+  const _SearchResults({required this.results, required this.onPick});
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: color.withValues(alpha: 0.14),
-      borderRadius: BorderRadius.circular(10),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: color.withValues(alpha: 0.35)),
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.bgElevated,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.borderDefault),
+      ),
+      child: Column(
+        children: results.map((f) {
+          final color = PlatePainter._colorForScore(f.qualityScore);
+          return InkWell(
+            onTap: () => onPick(f),
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(
+                    color: AppColors.borderSubtle.withValues(alpha: 0.5),
+                    width: 0.5,
+                  ),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color: color,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      f.name,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppColors.bgSurface,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      f.category.label,
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  const Icon(Icons.add_circle_outline,
+                      color: AppColors.accent, size: 20),
+                ],
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
+class _MealTimeRow extends StatelessWidget {
+  final DateTime mealTime;
+  final bool expanded;
+  final VoidCallback onToggle;
+  final ValueChanged<TimeOfDay> onTimePicked;
+
+  const _MealTimeRow({
+    required this.mealTime,
+    required this.expanded,
+    required this.onToggle,
+    required this.onTimePicked,
+  });
+
+  String _format(DateTime t) {
+    final hh = t.hour.toString().padLeft(2, '0');
+    final mm = t.minute.toString().padLeft(2, '0');
+    return '$hh:$mm';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () async {
+        final picked = await showTimePicker(
+          context: context,
+          initialTime: TimeOfDay.fromDateTime(mealTime),
+          builder: (context, child) => Theme(
+            data: Theme.of(context).copyWith(
+              colorScheme: ColorScheme.dark(
+                primary: AppColors.metabolicGreen,
+                surface: AppColors.bgElevated,
+                onSurface: AppColors.textPrimary,
+              ),
+            ),
+            child: child!,
           ),
-          child: Column(
-            children: [
-              Icon(icon, color: color, size: 22),
-              const SizedBox(height: 6),
-              Text(
-                category.label,
+        );
+        if (picked != null) onTimePicked(picked);
+        onToggle();
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: AppColors.bgElevated,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.borderDefault),
+        ),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.access_time_rounded,
+              color: AppColors.textSecondary,
+              size: 20,
+            ),
+            const SizedBox(width: 10),
+            const Expanded(
+              child: Text(
+                'Hora del plato',
                 style: TextStyle(
-                  color: color,
-                  fontSize: 12,
+                  color: AppColors.textPrimary,
+                  fontSize: 14,
                   fontWeight: FontWeight.w600,
                 ),
               ),
-            ],
-          ),
+            ),
+            Text(
+              _format(mealTime),
+              style: const TextStyle(
+                color: AppColors.accent,
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(width: 6),
+            const Icon(
+              Icons.edit_outlined,
+              color: AppColors.textSecondary,
+              size: 16,
+            ),
+          ],
         ),
       ),
     );
@@ -705,89 +833,6 @@ class _CheatDayToggle extends StatelessWidget {
             },
           ),
         ],
-      ),
-    );
-  }
-}
-
-// ── Picker secundario de alimentos por categoría ──────────────────────
-
-class _FoodPicker extends StatelessWidget {
-  final FoodCategory category;
-  const _FoodPicker({required this.category});
-
-  @override
-  Widget build(BuildContext context) {
-    final items = FoodCatalog.byCategory(category);
-    final mediaPadding = MediaQuery.of(context).padding.bottom;
-    return Padding(
-      padding: EdgeInsets.only(bottom: mediaPadding),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 18, 20, 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: AppColors.borderStrong,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 14),
-              Text(
-                'Elegí un ${category.label.toLowerCase()}',
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: items.map((f) {
-                  final accent = f.quality == FoodQuality.typeA
-                      ? AppColors.statusGood
-                      : AppColors.statusWarn;
-                  return Material(
-                    color: accent.withValues(alpha: 0.14),
-                    borderRadius: BorderRadius.circular(10),
-                    child: InkWell(
-                      onTap: () => Navigator.of(context).pop(f),
-                      borderRadius: BorderRadius.circular(10),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 10),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                              color: accent.withValues(alpha: 0.35)),
-                        ),
-                        child: Text(
-                          f.name,
-                          style: TextStyle(
-                            color: accent,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 16),
-            ],
-          ),
-        ),
       ),
     );
   }
