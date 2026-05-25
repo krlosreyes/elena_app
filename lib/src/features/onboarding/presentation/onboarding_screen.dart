@@ -19,6 +19,8 @@ import 'package:elena_app/src/features/profile/domain/body_fat_calculator.dart';
 import 'package:elena_app/src/features/auth/domain/health_disclaimer.dart';
 // SPEC-137 F: clasificación del sistema nervioso en onboarding Paso 3.
 import 'package:elena_app/src/features/nutrition/domain/nervous_system.dart';
+// SPEC-131: pantallas educativas para usuarios cero-contexto.
+import 'package:elena_app/src/features/onboarding/presentation/widgets/intro_screens.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -48,7 +50,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   //   1 = Biometría
   //   2 = Ritmos circadianos
   //   3 = Hábitos
+  //
+  // SPEC-131: ids ≥ 100 reservados para pantallas educativas que se
+  // muestran SOLO a usuarios cero-contexto (profileStatus = newProfile).
+  //   100 = Bienvenida (qué es ElenaApp)
+  //   101 = Qué es el IMR
+  //   102 = Por qué pedimos estos datos
   List<int> _activeSteps = const [0, 1, 2, 3];
+
+  static const List<int> _kIntroStepIds = [100, 101, 102];
 
   // --- PASO 1: HARDWARE ---
   DateTime _birthDate = DateTime(1980, 1, 1);
@@ -260,7 +270,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         prefill.waistCircumference != null &&
         bodyFatMeasured;
 
+    // SPEC-131: usuarios cero-contexto (newProfile) ven 3 pantallas
+    // educativas ANTES del flujo tradicional. Usuarios MR (partialProfile)
+    // no las ven — ya conocen el método.
+    final isColdInstall =
+        account.profileStatus == AppProfileStatus.newProfile;
+
     final activeSteps = <int>[
+      if (isColdInstall) ..._kIntroStepIds,
       if (disclaimerNeedsReprompt) 0,
       if (!biometryComplete) 1,
       2,
@@ -334,9 +351,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final state = ref.watch(onboardingControllerProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // SPEC-84: PageView solo con los pasos activos.
+    // SPEC-84 + SPEC-131: PageView solo con los pasos activos. Los
+    // educativos (100-102) preceden a los tradicionales (0-3) cuando
+    // el usuario es cero-contexto.
     final pages = _activeSteps.map((index) {
       switch (index) {
+        case 100:
+          return IntroWelcomeStep(isDark: isDark);
+        case 101:
+          return IntroImrStep(isDark: isDark);
+        case 102:
+          return IntroDataStep(isDark: isDark);
         case 0:
           return _buildStepDisclaimer(isDark);
         case 1:
@@ -534,6 +559,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           if (_prefill.filledCount > 0)
             PrefillChip(filledCount: _prefill.filledCount),
           _header("Hardware Base", "Identidad y Antropometría", isDark),
+          _stepHelperLine(
+            'Estas medidas nos sirven para estimar tu composición '
+            'corporal sin pedirte que adivines tu % de grasa.',
+            isDark,
+          ),
           _simpleSelector(
               "Nacimiento", DateFormat('dd/MM/yyyy').format(_birthDate),
               () async {
@@ -619,6 +649,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         padding: const EdgeInsets.all(24),
         children: [
           _header("Ritmo Circadiano", "Sincronización horaria", isDark),
+          _stepHelperLine(
+            'Tu reloj biológico decide cuándo el ayuno funciona mejor. '
+            'Vamos a alinear tu ventana de comida con tus horarios reales.',
+            isDark,
+          ),
           _simpleSelector("Despertar", _wakeUpTime.format(context), () async {
             final time = await showTimePicker(
                 context: context, initialTime: _wakeUpTime);
@@ -662,6 +697,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         padding: const EdgeInsets.all(24),
         children: [
           _header("Protocolo", "Hábitos metabólicos", isDark),
+          _stepHelperLine(
+            'Ya tenemos tu perfil físico. Ahora vamos a conocerte un '
+            'poco más y a elegir cómo querés ayunar.',
+            isDark,
+          ),
           // SPEC-137 F: 3.A — 5 preguntas del sistema nervioso.
           _buildSnSection(isDark),
           const SizedBox(height: 16),
@@ -1370,6 +1410,46 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 fontWeight: FontWeight.w500)),
         const SizedBox(height: 24)
       ]);
+
+  /// SPEC-131: línea explicativa contextual debajo del header de cada
+  /// paso. Da contexto al usuario cero-contexto sobre POR QUÉ pedimos
+  /// estos datos sin invadir visualmente.
+  Widget _stepHelperLine(String text, bool isDark) => Padding(
+        padding: const EdgeInsets.only(bottom: 20, top: 0),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: AppColors.metabolicGreen.withValues(alpha: 0.10),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: AppColors.metabolicGreen.withValues(alpha: 0.25),
+            ),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                Icons.lightbulb_outline,
+                color: AppColors.metabolicGreen,
+                size: 18,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  text,
+                  style: TextStyle(
+                    color: isDark
+                        ? AppColors.textSecondary
+                        : const Color(0xFF475569),
+                    fontSize: 13,
+                    height: 1.45,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
 
   // SPEC-74 §RF-74-02/03: header con saludo contextual.
   //   - Usuario MR con displayName: "Hola {nombre}, completemos tu perfil metabólico"
