@@ -27,6 +27,8 @@ import 'package:elena_app/src/features/engagement/presentation/widgets/engagemen
 import 'package:elena_app/src/features/adaptive/presentation/widgets/adaptive_suggestion_card.dart';
 import 'package:elena_app/src/features/nutrition/application/cociente_a_service.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
+// SPEC-137 E.5: regla del intervalo 3h (lastMealAt + 3h) para "Próxima En".
+import 'package:elena_app/src/features/nutrition/domain/meal_interval_rules.dart';
 // SPEC-137 E.4: registro unificado con TimePicker. AddPastMealSheet
 // eliminado — el PlateRatioSheet ahora cubre comida actual y pasada.
 import 'package:elena_app/src/features/nutrition/presentation/plate_ratio_sheet.dart';
@@ -1268,19 +1270,23 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     return AppColors.statusBad;
   }
 
+  /// SPEC-137 E.5: tiempo hasta la próxima comida sugerida.
+  ///
+  /// Antes calculaba contra horarios fijos del día (Desayuno=8h,
+  /// Almuerzo=13h, etc.), lo cual chocaba con la regla del intervalo
+  /// 3h documentada en NUTRITION_BIBLIOGRAPHY §15. Ahora usa el mismo
+  /// sistema: `lastMealAt + 3h`.
+  ///
+  /// Devuelve:
+  /// - "—" si no hay comidas hoy o se llegó al target.
+  /// - "Ahora" si ya pasó el momento sugerido.
+  /// - "Xh Ym" o "Xm" según corresponda.
   String _estimateNextMealIn(NutritionState state) {
     if (state.mealsLoggedToday >= state.targetMeals) return '—';
-    const targets = {
-      'Desayuno': 8,
-      'Almuerzo': 13,
-      'Cena': 19,
-      'Snack': 16,
-    };
-    final hour = targets[state.nextMealLabel];
-    if (hour == null) return '—';
-    final now = DateTime.now();
-    final target = DateTime(now.year, now.month, now.day, hour);
-    final diff = target.difference(now);
+    final lastMealAt = MealIntervalRules.lastMealOf(state.todayLogs);
+    final nextAt = MealIntervalRules.nextSuggestedAt(lastMealAt);
+    if (nextAt == null) return '—';
+    final diff = nextAt.difference(DateTime.now());
     if (diff.isNegative) return 'Ahora';
     if (diff.inHours >= 1) {
       return '${diff.inHours}h ${diff.inMinutes.remainder(60)}m';

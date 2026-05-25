@@ -16,6 +16,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:elena_app/src/core/providers/ticker_providers.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/nutrition/application/cheat_day_notifier.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
@@ -68,11 +69,19 @@ class _PlateRatioSheetState extends ConsumerState<PlateRatioSheet> {
   late DateTime _mealTime;
   bool _submitting = false;
   bool _showTimePicker = false;
+  // SPEC-137 E.5 fix: si el usuario NO tocó el TimePicker, el timestamp
+  // del log debe ser el momento de CONFIRMAR (no el de abrir el sheet),
+  // para que el countdown a la próxima comida arranque desde "ahora"
+  // real y no desde "cuando se abrió el sheet hace 10 minutos".
+  bool _userEditedTime = false;
 
   @override
   void initState() {
     super.initState();
     _mealTime = widget.initialMealTime ?? DateTime.now();
+    // Si el caller pasó un timestamp explícito (caso "registrar comida
+    // pasada"), respetarlo desde el inicio.
+    _userEditedTime = widget.initialMealTime != null;
   }
 
   @override
@@ -88,6 +97,13 @@ class _PlateRatioSheetState extends ConsumerState<PlateRatioSheet> {
     final quality = _builder.quality(cheatDayActive: cheatActive);
     final tip = _builder.tip(cheatDayActive: cheatActive);
     final searchResults = FoodCatalog.search(_searchController.text);
+    // SPEC-137 E.5 fix: si el usuario NO tocó el TimePicker, la fila
+    // de hora muestra "ahora" en vivo. Refresca cada 10s via el pulso.
+    // Si tocó el picker (caso registrar comida pasada), respetamos
+    // _mealTime ya editado.
+    final pulse =
+        ref.watch(metabolicPulseProvider).valueOrNull ?? DateTime.now();
+    final displayedMealTime = _userEditedTime ? _mealTime : pulse;
 
     final mediaPadding = MediaQuery.of(context).padding.bottom;
 
@@ -163,19 +179,27 @@ class _PlateRatioSheetState extends ConsumerState<PlateRatioSheet> {
               ],
               const SizedBox(height: 14),
               _MealTimeRow(
-                mealTime: _mealTime,
+                mealTime: displayedMealTime,
                 expanded: _showTimePicker,
                 onToggle: () =>
                     setState(() => _showTimePicker = !_showTimePicker),
                 onTimePicked: (t) {
                   setState(() {
+                    // Anclamos el día al "ahora" en vivo (no al
+                    // _mealTime stale del initState), luego el usuario
+                    // ajusta hora/minuto.
+                    final base = DateTime.now();
                     _mealTime = DateTime(
-                      _mealTime.year,
-                      _mealTime.month,
-                      _mealTime.day,
+                      base.year,
+                      base.month,
+                      base.day,
                       t.hour,
                       t.minute,
                     );
+                    // SPEC-137 E.5 fix: usuario tocó el TimePicker —
+                    // respetar este timestamp en el submit (no
+                    // sobrescribir con DateTime.now()).
+                    _userEditedTime = true;
                   });
                 },
               ),
@@ -241,9 +265,16 @@ class _PlateRatioSheetState extends ConsumerState<PlateRatioSheet> {
     setState(() => _submitting = true);
     try {
       final isCheatDay = ref.read(cheatDayProvider).isActiveToday;
+      // SPEC-137 E.5 fix: si el usuario NO tocó el TimePicker, el
+      // timestamp del log debe ser AHORA (no el momento en que abrió
+      // el sheet). Esto evita que el countdown a la próxima comida
+      // arranque 5-10 min "atrasado" por el tiempo que tardó en
+      // armar el plato.
+      final effectiveMealTime =
+          _userEditedTime ? _mealTime : DateTime.now();
       await ref.read(nutritionProvider.notifier).logMeal(
             label: widget.label,
-            mealTime: _mealTime,
+            mealTime: effectiveMealTime,
             ratio: _builder.derivedMealRatio,
             isCheatDay: isCheatDay,
             forceLog: forceLog,
