@@ -17,6 +17,8 @@ import 'package:elena_app/src/features/dashboard/domain/optimal_schedule.dart';
 import 'package:elena_app/src/features/profile/domain/body_fat_calculator.dart';
 // SPEC-76: disclaimer canonicalizado + versión.
 import 'package:elena_app/src/features/auth/domain/health_disclaimer.dart';
+// SPEC-137 F: clasificación del sistema nervioso en onboarding Paso 3.
+import 'package:elena_app/src/features/nutrition/domain/nervous_system.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -78,6 +80,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   String _fastingProtocol = "16:8";
   List<String> _pathologies = ["Ninguna"];
 
+  // SPEC-137 F: 5 preguntas del sistema nervioso. Cada índice 0-4
+  // corresponde a una pregunta calibrada (§RF-137-08.A). Null hasta
+  // que el usuario responda. Si el usuario tap "responder después",
+  // _snSkipped pasa a true y el sub-step se colapsa.
+  final List<NervousSystemAnswer?> _snAnswers =
+      List<NervousSystemAnswer?>.filled(5, null);
+  bool _snSkipped = false;
+  // Si el usuario está clasificado Excitado y elige 20:4, registramos
+  // que aceptó la advertencia para no repetirla en futuros cambios.
+  String? _protocolWarningAccepted;
+
   final List<String> _pathologyOptions = [
     "Ninguna",
     "Prediabetes",
@@ -89,6 +102,51 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     "Anemia",
     "Resistencia Insulina"
   ];
+
+  // SPEC-137 F: las 5 preguntas calibradas con sus opciones.
+  // Copy aprobado por Carlos (NUTRITION_BIBLIOGRAPHY §5).
+  static const List<_SnQuestion> _kSnQuestions = [
+    _SnQuestion(
+      prompt: 'Cuando suena tu alarma en la mañana, ¿cómo te sientes?',
+      passive: _SnOption('🐢', 'Lento, me cuesta levantarme'),
+      excited: _SnOption('⚡', 'Alerta, listo para empezar'),
+    ),
+    _SnQuestion(
+      prompt: 'Cuando te acuestas en la noche, ¿qué pasa primero?',
+      passive: _SnOption('😴', 'Caigo rendido en menos de 10 minutos'),
+      excited: _SnOption('🧠', 'Doy vueltas pensando, tardo en dormirme'),
+    ),
+    _SnQuestion(
+      prompt: 'En la primera hora después de despertar, tu cuerpo te pide:',
+      passive: _SnOption('🍳', 'Comida — tengo hambre real'),
+      excited: _SnOption('☕', 'Solo agua o café, sin hambre'),
+    ),
+    _SnQuestion(
+      prompt:
+          'En un día normal sin nada importante, lo que más notas en ti es:',
+      passive: _SnOption('🌊', 'Calma, a veces cansancio'),
+      excited: _SnOption('⚡', 'Tensión, prisa, mente acelerada'),
+    ),
+    _SnQuestion(
+      prompt: 'Después de comer una porción de carne roja (res, cerdo o '
+          'cordero), te sientes:',
+      passive: _SnOption('💪', 'Satisfecho y con energía'),
+      excited: _SnOption('😴', 'Pesado, lento o hinchado'),
+    ),
+  ];
+
+  /// Calcula el resultado del SN basado en las respuestas actuales.
+  /// Si el usuario saltó, devuelve unknown.
+  NervousSystemScore get _snScore =>
+      NervousSystemScore.fromAnswers(_snAnswers.whereType<NervousSystemAnswer>()
+          .toList());
+
+  NervousSystem get _classifiedNervousSystem =>
+      _snSkipped ? NervousSystem.unknown : _snScore.classify();
+
+  bool get _snDeclared =>
+      !_snSkipped &&
+      _snAnswers.whereType<NervousSystemAnswer>().length >= 3;
 
   void _inferMedidas() {
     setState(() {
@@ -604,6 +662,21 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         padding: const EdgeInsets.all(24),
         children: [
           _header("Protocolo", "Hábitos metabólicos", isDark),
+          // SPEC-137 F: 3.A — 5 preguntas del sistema nervioso.
+          _buildSnSection(isDark),
+          const SizedBox(height: 16),
+          // SPEC-137 F: 3.B — tarjeta de sugerencia visual según SN.
+          _buildSnSuggestionCard(isDark),
+          const SizedBox(height: 16),
+          _simpleSelector(
+              "Ayuno",
+              _fastingProtocol,
+              () => _showSimpleOptions(
+                  "Ayuno",
+                  ["Ninguno", "16:8", "18:6", "20:4"],
+                  (v) => _handleProtocolChange(v),
+                  isDark),
+              isDark),
           _stepperSelector(
               label: "Comidas al día",
               value: _mealsPerDay.toDouble(),
@@ -612,30 +685,307 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               max: 6,
               onChanged: (v) => setState(() => _mealsPerDay = v.toInt()),
               isDark: isDark),
-          _simpleSelector(
-              "Ayuno",
-              _fastingProtocol,
-              () => _showSimpleOptions(
-                  "Ayuno",
-                  ["Ninguno", "16:8", "18:6", "20:4"],
-                  (v) => setState(() {
-                        _fastingProtocol = v;
-                        // SPEC-96: si el usuario NO tocó horarios manualmente,
-                        // los recalculamos al cambiar protocolo para
-                        // mantener coherencia circadiana.
-                        if (!_userTouchedMealTimes) {
-                          final optimal =
-                              OptimalScheduleCalculator.forProtocol(v);
-                          _firstMealGoal = optimal.windowStart;
-                          _lastMealGoal = optimal.windowEnd;
-                        }
-                      }),
-                  isDark),
-              isDark),
           _simpleSelector("Patologías", _pathologies.join(", "),
               () => _showMultiSelectPathologies(isDark), isDark),
         ],
       );
+
+  /// SPEC-137 F: maneja el cambio de protocolo. Si el usuario está
+  /// clasificado Excitado y elige 20:4, dispara dialog de incongruencia
+  /// (§RF-137-08.D) antes de aplicar el cambio.
+  void _handleProtocolChange(String newProtocol) {
+    final isExcitedPicking20_4 =
+        _classifiedNervousSystem == NervousSystem.excited &&
+            newProtocol == '20:4' &&
+            _protocolWarningAccepted != '20:4-on-excited';
+
+    if (isExcitedPicking20_4) {
+      showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor:
+              Theme.of(ctx).brightness == Brightness.dark
+                  ? AppColors.bgElevated
+                  : Colors.white,
+          title: const Text('🤔 Una sugerencia honesta'),
+          content: const Text(
+            'Las personas con perfil Excitado (sueño superficial, '
+            'tensión baseline, apetito matutino bajo) suelen tolerar '
+            '20:4 mejor después de adaptarse con 16:8 unas semanas.\n\n'
+            'Empezar directo con 20:4 puede aumentar tu tensión, '
+            'empeorar tu sueño y romper la adherencia. No es '
+            'prohibición — es algo que hemos visto.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                _applyProtocolChange('16:8');
+              },
+              child: const Text('Empezar con 16:8'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                _protocolWarningAccepted = '20:4-on-excited';
+                _applyProtocolChange('20:4');
+              },
+              child: const Text('Mantener 20:4'),
+            ),
+          ],
+        ),
+      );
+    } else {
+      _applyProtocolChange(newProtocol);
+    }
+  }
+
+  void _applyProtocolChange(String newProtocol) {
+    setState(() {
+      _fastingProtocol = newProtocol;
+      // SPEC-96: recalcular horarios si el usuario no los tocó.
+      if (!_userTouchedMealTimes) {
+        final optimal = OptimalScheduleCalculator.forProtocol(newProtocol);
+        _firstMealGoal = optimal.windowStart;
+        _lastMealGoal = optimal.windowEnd;
+      }
+    });
+  }
+
+  /// SPEC-137 F §RF-137-08.A: sección colapsable de 5 preguntas SN.
+  Widget _buildSnSection(bool isDark) {
+    final bg = isDark ? AppColors.bgSurface : Colors.white;
+    final border = isDark ? AppColors.borderDefault : Colors.black12;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Conócete primero',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+              if (!_snSkipped)
+                TextButton(
+                  onPressed: () => setState(() => _snSkipped = true),
+                  child: const Text(
+                    'Después →',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            _snSkipped
+                ? 'Podés responder más tarde desde Perfil.'
+                : 'Cinco preguntas rápidas para personalizar tu plan.',
+            style: const TextStyle(
+              fontSize: 13,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          if (!_snSkipped) ...[
+            const SizedBox(height: 14),
+            for (var i = 0; i < _kSnQuestions.length; i++)
+              _buildSnQuestionTile(i, _kSnQuestions[i]),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSnQuestionTile(int index, _SnQuestion q) {
+    final answered = _snAnswers[index];
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '${index + 1}. ${q.prompt}',
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          _buildSnOptionRow(
+            option: q.passive,
+            selected: answered == NervousSystemAnswer.classifiesAsPassive,
+            onTap: () => setState(() =>
+                _snAnswers[index] = NervousSystemAnswer.classifiesAsPassive),
+          ),
+          const SizedBox(height: 6),
+          _buildSnOptionRow(
+            option: q.excited,
+            selected: answered == NervousSystemAnswer.classifiesAsExcited,
+            onTap: () => setState(() =>
+                _snAnswers[index] = NervousSystemAnswer.classifiesAsExcited),
+          ),
+          const SizedBox(height: 6),
+          _buildSnOptionRow(
+            option: const _SnOption('🤷', 'No estoy seguro'),
+            selected: answered == NervousSystemAnswer.unknown,
+            onTap: () => setState(
+                () => _snAnswers[index] = NervousSystemAnswer.unknown),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSnOptionRow({
+    required _SnOption option,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    final color = selected ? AppColors.metabolicGreen : AppColors.borderDefault;
+    return Material(
+      color: selected
+          ? AppColors.metabolicGreen.withValues(alpha: 0.14)
+          : Colors.transparent,
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: color, width: selected ? 1.4 : 1),
+          ),
+          child: Row(
+            children: [
+              Text(option.emoji, style: const TextStyle(fontSize: 18)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  option.text,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textPrimary,
+                    fontWeight:
+                        selected ? FontWeight.w600 : FontWeight.w400,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// SPEC-137 F §RF-137-08.C: tarjeta de sugerencia visual con tres
+  /// variantes (passive / excited / unknown).
+  Widget _buildSnSuggestionCard(bool isDark) {
+    final ns = _classifiedNervousSystem;
+    final (icon, title, lines) = switch (ns) {
+      NervousSystem.passive => (
+          '🌿',
+          'Tu perfil es Pasivo',
+          [
+            'Protocolo: 16:8 (recomendado) o 18:6',
+            'Plato sugerido: 2 a 1 (2 partes A + 1 parte E)',
+            'Proteínas rojas permitidas',
+            'Café matutino: bienvenido',
+          ],
+        ),
+      NervousSystem.excited => (
+          '⚡',
+          'Tu perfil es Excitado',
+          [
+            'Protocolo: 16:8 (no más estricto al empezar)',
+            'Plato sugerido: 3 a 1 (3 partes A + 1 parte E)',
+            'Proteínas blancas (pollo, pavo, pescado)',
+            'Café solo antes del mediodía',
+          ],
+        ),
+      NervousSystem.unknown => (
+          '🌱',
+          'Aún estamos conociéndote',
+          [
+            'Plan inicial: 16:8',
+            'Plato sugerido: 2 a 1',
+            'Podés refinarlo más adelante desde Perfil.',
+          ],
+        ),
+    };
+
+    final bg = isDark ? AppColors.bgSurface : Colors.white;
+    final border = isDark ? AppColors.borderDefault : Colors.black12;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(icon, style: const TextStyle(fontSize: 22)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          for (final line in lines)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('• ',
+                      style: TextStyle(color: AppColors.textSecondary)),
+                  Expanded(
+                    child: Text(
+                      line,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 
   void _finalSubmit() async {
     // SPEC-73: authState ahora es AppAccount?. uid en .uid, nombre en
@@ -696,6 +1046,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       healthDisclaimerAcceptedAt: _disclaimerAccepted ? DateTime.now() : null,
       healthDisclaimerVersion:
           _disclaimerAccepted ? kHealthDisclaimerVersion : 0,
+      // SPEC-137 F: persistir clasificación del sistema nervioso.
+      // Si el usuario saltó, queda como 'unknown' con declared=false
+      // para que el dashboard pueda mostrar banner recordatorio.
+      nervousSystem: _classifiedNervousSystem.persistenceKey,
+      nervousSystemDeclared: _snDeclared,
+      nervousSystemScore: _snScore.toMap(),
+      protocolWarningAccepted: _protocolWarningAccepted,
       profile: CircadianProfile(
         wakeUpTime: _timeToDateTime(_wakeUpTime),
         sleepTime: _timeToDateTime(_sleepTime),
@@ -1138,4 +1495,23 @@ class _DisclaimerItem extends StatelessWidget {
       ),
     );
   }
+}
+
+// SPEC-137 F: estructura de datos para las 5 preguntas SN.
+class _SnQuestion {
+  final String prompt;
+  final _SnOption passive;
+  final _SnOption excited;
+
+  const _SnQuestion({
+    required this.prompt,
+    required this.passive,
+    required this.excited,
+  });
+}
+
+class _SnOption {
+  final String emoji;
+  final String text;
+  const _SnOption(this.emoji, this.text);
 }
