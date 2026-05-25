@@ -33,7 +33,10 @@ class FirestoreSleepV1Source implements SleepDataSource {
       // Inyectamos el doc.id en el map para que el mapper lo use como
       // identidad — el id no se persiste en el body del doc, solo
       // como clave del Firestore document.
-      return {...doc.data(), '__docId': doc.id};
+      // Fix Web: doc.data() puede ser LegacyJavaScriptObject; forzamos
+      // conversión a Map Dart antes del spread.
+      final data = Map<String, dynamic>.from(doc.data());
+      return {...data, '__docId': doc.id};
     });
   }
 

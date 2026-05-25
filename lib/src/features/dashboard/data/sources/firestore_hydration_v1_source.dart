@@ -27,7 +27,13 @@ class FirestoreHydrationV1Source implements HydrationDataSource {
         .where('timestamp',
             isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
         .snapshots()
-        .map((snap) => snap.docs.map((d) => d.data()).toList());
+        // Fix Web: cloud_firestore_web puede retornar
+        // LegacyJavaScriptObject como `data()` aunque la collection
+        // esté tipada como Map<String, dynamic>. Forzamos conversión
+        // a Map Dart con .from() — funciona idéntico en mobile.
+        .map((snap) => snap.docs
+            .map((d) => Map<String, dynamic>.from(d.data()))
+            .toList());
   }
 
   @override

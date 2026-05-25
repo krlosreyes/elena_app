@@ -50,18 +50,22 @@ class FirestoreFastingIntervalV1Source implements FastingIntervalDataSource {
       // Esto blinda el caso de data corrupta donde haya un ayuno y
       // una ventana fantasma simultáneamente abiertos: gana el ayuno
       // y el listener pinta el state correcto.
+      // Fix Web: doc.data() puede retornar LegacyJavaScriptObject;
+      // convertimos a Map Dart en cada uso para acceso seguro por
+      // clave string.
       for (final doc in snap.docs) {
-        final data = doc.data();
+        final data = Map<String, dynamic>.from(doc.data());
         if (data['endTime'] == null && data['isFasting'] == true) {
           return data;
         }
       }
       for (final doc in snap.docs) {
-        if (doc.data()['endTime'] == null) {
-          return doc.data();
+        final data = Map<String, dynamic>.from(doc.data());
+        if (data['endTime'] == null) {
+          return data;
         }
       }
-      return snap.docs.first.data();
+      return Map<String, dynamic>.from(snap.docs.first.data());
     });
   }
 
@@ -89,7 +93,7 @@ class FirestoreFastingIntervalV1Source implements FastingIntervalDataSource {
       Map<String, dynamic>? best;
       DateTime? bestEnd;
       for (final doc in snap.docs) {
-        final data = doc.data();
+        final data = Map<String, dynamic>.from(doc.data());
         if (data['isFasting'] != true) continue;
         final endTimeRaw = data['endTime'];
         if (endTimeRaw == null) continue;

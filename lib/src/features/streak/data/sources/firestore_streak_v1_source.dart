@@ -24,7 +24,12 @@ class FirestoreStreakV1Source implements StreakDataSource {
         .where('date', isGreaterThanOrEqualTo: cutoffDateKey)
         .orderBy('date', descending: true)
         .snapshots()
-        .map((snap) => snap.docs.map((d) => d.data()).toList());
+        // Fix Web: cloud_firestore_web puede retornar
+        // LegacyJavaScriptObject como `data()` aunque la collection
+        // esté tipada. Forzamos conversión a Map Dart con .from().
+        .map((snap) => snap.docs
+            .map((d) => Map<String, dynamic>.from(d.data()))
+            .toList());
   }
 
   @override

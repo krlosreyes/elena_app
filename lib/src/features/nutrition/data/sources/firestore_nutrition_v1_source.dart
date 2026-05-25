@@ -34,8 +34,14 @@ class FirestoreNutritionV1Source implements NutritionDataSource {
         )
         .orderBy('timestamp')
         .snapshots()
+        // Fix Web: doc.data() puede retornar LegacyJavaScriptObject;
+        // forzamos conversión a Map Dart para que el mapper acceda
+        // por clave string sin TypeError.
         .map((snapshot) => snapshot.docs
-            .map((doc) => (docId: doc.id, data: doc.data()))
+            .map((doc) => (
+                  docId: doc.id,
+                  data: Map<String, dynamic>.from(doc.data()),
+                ))
             .toList(growable: false));
   }
 
@@ -71,6 +77,9 @@ class FirestoreNutritionV1Source implements NutritionDataSource {
 
     if (snapshot.docs.isEmpty) return null;
     final doc = snapshot.docs.first;
-    return (docId: doc.id, data: doc.data());
+    return (
+      docId: doc.id,
+      data: Map<String, dynamic>.from(doc.data()),
+    );
   }
 }
