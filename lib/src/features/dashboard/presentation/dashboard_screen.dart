@@ -30,6 +30,8 @@ import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.
 // SPEC-137 E.4: registro unificado con TimePicker. AddPastMealSheet
 // eliminado — el PlateRatioSheet ahora cubre comida actual y pasada.
 import 'package:elena_app/src/features/nutrition/presentation/plate_ratio_sheet.dart';
+// SPEC-137 E.5: banner countdown 30 min antes de la próxima comida.
+import 'package:elena_app/src/features/nutrition/presentation/widgets/next_meal_banner.dart';
 import 'package:elena_app/src/features/dashboard/presentation/sleep_input_sheet.dart';
 
 // SPEC-88 fix: BodyCompositionCard y GoalsDashboardWidget se retiraron
@@ -147,6 +149,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   // BANNER DE ENGAGEMENT (SPEC-07 + SPEC-72.2 dismiss por sesión)
                   const EngagementBanner(),
                   const SizedBox(height: 16),
+
+                  // SPEC-137 E.5: banner "próxima comida en X min" cuando
+                  // estamos dentro de los 30 min previos al horario
+                  // sugerido (última comida + 3h). Se auto-oculta si no
+                  // aplica o si hay día de permitidos activo.
+                  const NextMealBanner(),
 
                   // MOTOR ADAPTATIVO (SPEC-08)
                   const AdaptiveSuggestionCard(),

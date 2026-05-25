@@ -13,7 +13,9 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
+import 'package:elena_app/src/core/services/notification_scheduler.dart';
 import 'package:elena_app/src/features/nutrition/data/nutrition_repository_impl.dart';
+import 'package:elena_app/src/features/nutrition/domain/meal_interval_rules.dart';
 import 'package:elena_app/src/features/nutrition/domain/meal_ratio.dart';
 import 'package:elena_app/src/features/nutrition/domain/nutrition_log.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
@@ -161,6 +163,10 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
     MealRatio ratio = MealRatio.a2e1,
     // SPEC-137: marca el log como día de permitidos. Default false.
     bool isCheatDay = false,
+    // SPEC-137 E.5: si true, ignora el warning de intervalo 2-3h y
+    // registra igual. NO ignora el bloqueo (<2h). UI debe pasarlo en
+    // true solo después de que el usuario acepte el dialog de warning.
+    bool forceLog = false,
   }) async {
     final userId = _activeUserId;
     if (userId == null) return;
@@ -168,6 +174,39 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
     final timestamp = mealTime ?? DateTime.now();
     final effectiveLabel = label ?? state.nextMealLabel;
     final withinWindow = _isWithinCircadianWindow(timestamp);
+
+    // SPEC-137 E.5: validar intervalo entre comidas. Día de permitidos
+    // suspende la regla. Si el log es retroactivo (mealTime en el
+    // pasado), validamos contra el timestamp ingresado, no contra now.
+    final lastMealAt = MealIntervalRules.lastMealOf(state.todayLogs);
+    final check = MealIntervalRules.check(
+      lastMealAt: lastMealAt,
+      attemptAt: timestamp,
+      cheatDayActive: isCheatDay,
+    );
+
+    switch (check) {
+      case MealIntervalCheck.blocked:
+        throw MealTooSoonException(
+          lastMealAt: lastMealAt!,
+          attemptedAt: timestamp,
+          canRegisterAt:
+              lastMealAt.add(MealIntervalRules.minInterval),
+        );
+      case MealIntervalCheck.warning:
+        if (!forceLog) {
+          throw MealIntervalWarning(
+            lastMealAt: lastMealAt!,
+            attemptedAt: timestamp,
+            recommendedAt:
+                lastMealAt.add(MealIntervalRules.recommendedInterval),
+          );
+        }
+      case MealIntervalCheck.ok:
+      case MealIntervalCheck.firstMeal:
+      case MealIntervalCheck.cheatDayBypass:
+        break;
+    }
 
     final log = NutritionLog(
       id: const Uuid().v4(),
@@ -190,6 +229,20 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
       final repo = _ref.read(nutritionRepositoryProvider);
       await repo.saveMeal(userId, log);
       // El stream emitirá la nueva lista; no hay que mutar todayLogs aquí.
+
+      // SPEC-137 E.5: agendar push del SO 30 min antes de la próxima
+      // comida sugerida. Si está en cheat day, cancelar cualquier
+      // notificación previa — el usuario eligió libre y no queremos
+      // bombardearlo con recordatorios.
+      if (isCheatDay) {
+        await NotificationScheduler.cancelNextMealReminder();
+      } else {
+        final nextAt = timestamp.add(MealIntervalRules.recommendedInterval);
+        await NotificationScheduler.scheduleNextMealReminder(
+          nextMealAt: nextAt,
+          leadTime: MealIntervalRules.notificationLeadTime,
+        );
+      }
     } finally {
       if (mounted) state = state.copyWith(isSaving: false);
     }
@@ -202,6 +255,23 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
     final repo = _ref.read(nutritionRepositoryProvider);
     await repo.removeLastMeal(userId);
     // El stream emitirá la lista actualizada.
+
+    // SPEC-137 E.5: si después de remover queda alguna comida hoy,
+    // re-agendar la notificación con la nueva "última comida". Si no
+    // queda ninguna, cancelar.
+    final remaining = state.todayLogs.length > 1
+        ? state.todayLogs.sublist(0, state.todayLogs.length - 1)
+        : <NutritionLog>[];
+    final lastAt = MealIntervalRules.lastMealOf(remaining);
+    if (lastAt == null) {
+      await NotificationScheduler.cancelNextMealReminder();
+    } else {
+      final nextAt = lastAt.add(MealIntervalRules.recommendedInterval);
+      await NotificationScheduler.scheduleNextMealReminder(
+        nextMealAt: nextAt,
+        leadTime: MealIntervalRules.notificationLeadTime,
+      );
+    }
   }
 
   /// Reset diario: solo limpia el cache local. Los logs persistidos quedan

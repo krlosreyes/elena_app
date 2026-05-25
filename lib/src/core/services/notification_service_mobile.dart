@@ -21,6 +21,10 @@ class NotificationIds {
   static const int fasting12h = 200;
   static const int fasting18h = 201;
   static const int fasting24h = 202;
+
+  // SPEC-137 E.5: 30 min antes de la próxima comida sugerida
+  // (lastMealAt + 3h). One-shot, no repeatsDaily.
+  static const int nextMealReady = 300;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -201,4 +201,42 @@ class NotificationScheduler {
       repeatsDaily: true,
     );
   }
+
+  // SPEC-137 E.5: notificación one-shot 30 min antes de la próxima
+  // comida sugerida (lastMealAt + 3h). Reemplaza cualquier
+  // notificación previa del mismo id — solo hay una "próxima comida"
+  // en cualquier momento.
+  //
+  // Si la ventana ya pasó (nextMealAt - leadTime está en el pasado),
+  // no agendamos nada (solo cancelamos la previa).
+  static Future<void> scheduleNextMealReminder({
+    required DateTime nextMealAt,
+    required Duration leadTime,
+  }) async {
+    try {
+      await NotificationService.cancel(NotificationIds.nextMealReady);
+      final triggerAt = nextMealAt.subtract(leadTime);
+      if (triggerAt.isBefore(DateTime.now())) return;
+      final hh = nextMealAt.hour.toString().padLeft(2, '0');
+      final mm = nextMealAt.minute.toString().padLeft(2, '0');
+      await NotificationService.scheduleAt(
+        id: NotificationIds.nextMealReady,
+        title: '🍽️ Tu próxima comida es a las $hh:$mm',
+        body:
+            'Alístate. Faltan ${leadTime.inMinutes} min para tu próxima '
+            'comida sugerida.',
+        scheduledTime: triggerAt,
+        repeatsDaily: false,
+      );
+    } catch (e) {
+      AppLogger.error('[NotificationScheduler] scheduleNextMealReminder', e);
+    }
+  }
+
+  /// SPEC-137 E.5: cancela el recordatorio "próxima comida" — útil
+  /// cuando el usuario remueve su último log o entra en día de
+  /// permitidos.
+  static Future<void> cancelNextMealReminder() async {
+    await NotificationService.cancel(NotificationIds.nextMealReady);
+  }
 }

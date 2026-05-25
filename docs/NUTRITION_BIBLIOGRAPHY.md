@@ -413,6 +413,50 @@ Items que requieren validación clínica externa antes de ship a producción:
 
 ---
 
+## §15 — Intervalo entre comidas (SPEC-137 E.5)
+
+Toda la regla operacional vive en `lib/src/features/nutrition/domain/meal_interval_rules.dart`. Esta sección documenta el respaldo.
+
+### §15.1 — Fundamento hormonal
+
+El pico de insulina post-prandial ocurre 30-60 min después de comer en personas metabólicamente sanas. El retorno a baseline tarda **2-3 horas** en respuestas estándar a comidas mixtas (Crapo PA et al., *Diabetes* 1976; van Cauter E et al., *J Clin Invest* 1992).
+
+Comer cada **<2 horas** mantiene insulina elevada de forma crónica incluso con carga glucémica baja por plato individual (Wolever TMS, *Br J Nutr* 2003). La hiperinsulinemia sostenida promueve resistencia a insulina por downregulation de receptores (DeFronzo RA, *Diabetes Care* 2009).
+
+### §15.2 — Flexibilidad metabólica
+
+Galgani JE et al. (*Am J Physiol Endocrinol Metab* 2008) y la síntesis de Mattson MP (*Ageing Res Rev* 2017) documentan que los periodos de **≥3 horas** sin ingesta son lo que permite al cuerpo transitar del modo "glucosa" al modo "lipólisis" como combustible primario. El patrón de "grazing" (picar cada hora) bloquea ese tránsito y se asocia a peor sensibilidad a insulina y mayor adiposidad visceral.
+
+Coincide con el corpus operacional de Frank Suárez (ya documentado en `reference_frank_suarez.md`), que recomendaba 3-4 h entre comidas por la misma razón fisiológica.
+
+### §15.3 — Regla operacional ElenaApp
+
+| Intervalo desde última comida | Comportamiento |
+|---|---|
+| < 2 h | **Bloqueado**. La app rechaza el registro con dialog explicativo. El usuario debe esperar al menos hasta `lastMealAt + 2h`. |
+| 2 – 3 h | **Warning**. Dialog con dos botones: "Esperar" (cancela) o "Registrar igual" (decisión consciente, registra con `forceLog: true`). |
+| ≥ 3 h | **OK**. Sin restricción. |
+| Primera comida del día | OK por defecto. |
+| Última comida hace ≥ 18 h | Tratado como primera comida (el ayuno nocturno reseteó la insulina baseline). |
+| Día de permitidos activo | Suspende todas las reglas. Decisión consciente del usuario, respetamos. |
+
+### §15.4 — Notificación 30 min antes
+
+Cada vez que el usuario registra una comida (fuera de día de permitidos), la app agenda dos canales en paralelo:
+
+1. **Banner in-app** en el Dashboard (`NextMealBanner`): aparece cuando estamos dentro de los 30 min previos a `lastMealAt + 3h` y desaparece al pasar ese momento o al registrar la siguiente comida. Refresca cada 10 s vía `metabolicPulseProvider`.
+2. **Push local del SO** (`NotificationScheduler.scheduleNextMealReminder`): one-shot agendado para `lastMealAt + 2.5h` con copy *"Tu próxima comida es a las HH:MM. Alístate."*. Se reemplaza cada vez que el usuario registra una nueva comida.
+
+Si el usuario elimina su último log, la app re-agenda contra la comida anterior o cancela si no queda ninguna.
+
+### §15.5 — Honestidad metodológica
+
+Las constantes 2h (bloqueo) y 3h (recomendado) son **decisiones operacionales del producto** basadas en el rango central de la literatura. No son un dogma — un usuario puede tener metabolismo diferente. La opción "Registrar igual" en el warning respeta esa heterogeneidad biológica. El bloqueo absoluto solo aplica al caso extremo <2h, que la literatura sí soporta como patológico universal (hiperinsulinemia crónica).
+
+Si el equipo médico (revisión clínica) considera ajustar los umbrales, todos viven en `MealIntervalRules` — un solo punto de modificación.
+
+---
+
 ## §14 — Cómo usar este documento
 
 1. Al redactar SPEC nueva de nutrición: citar la sección aplicable de §1-§10. Si el caso no está cubierto, abrir issue para extender este doc primero.

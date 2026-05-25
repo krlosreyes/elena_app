@@ -20,6 +20,7 @@ import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/nutrition/application/cheat_day_notifier.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
 import 'package:elena_app/src/features/nutrition/domain/food_catalog.dart';
+import 'package:elena_app/src/features/nutrition/domain/meal_interval_rules.dart';
 import 'package:elena_app/src/features/nutrition/domain/plate_builder.dart';
 
 class PlateRatioSheet extends ConsumerStatefulWidget {
@@ -235,7 +236,7 @@ class _PlateRatioSheetState extends ConsumerState<PlateRatioSheet> {
         ),
       );
 
-  Future<void> _submit() async {
+  Future<void> _submit({bool forceLog = false}) async {
     if (_builder.isEmpty) return;
     setState(() => _submitting = true);
     try {
@@ -245,8 +246,19 @@ class _PlateRatioSheetState extends ConsumerState<PlateRatioSheet> {
             mealTime: _mealTime,
             ratio: _builder.derivedMealRatio,
             isCheatDay: isCheatDay,
+            forceLog: forceLog,
           );
       if (mounted) Navigator.of(context).pop();
+    } on MealTooSoonException catch (e) {
+      if (mounted) {
+        setState(() => _submitting = false);
+        await _showBlockedDialog(e);
+      }
+    } on MealIntervalWarning catch (e) {
+      if (mounted) {
+        setState(() => _submitting = false);
+        await _showWarningDialog(e);
+      }
     } catch (e) {
       if (mounted) {
         setState(() => _submitting = false);
@@ -258,6 +270,78 @@ class _PlateRatioSheetState extends ConsumerState<PlateRatioSheet> {
         );
       }
     }
+  }
+
+  /// Dialog para el caso `blocked` (< 2h desde última comida).
+  /// Solo informa — sin opción de override.
+  Future<void> _showBlockedDialog(MealTooSoonException e) async {
+    final canRegisterTime = _formatTimeOfDay(e.canRegisterAt);
+    final sinceMin = e.sinceLastMeal.inMinutes;
+    await showDialog<void>(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: AppColors.bgElevated,
+        title: const Text(
+          'Todavía es muy pronto',
+          style: TextStyle(color: AppColors.textPrimary),
+        ),
+        content: Text(
+          'Tu última comida fue hace $sinceMin minutos. Tu cuerpo todavía '
+          'tiene insulina alta. Esperá al menos hasta las '
+          '$canRegisterTime para que la digestión se complete y mantengas '
+          'tu metabolismo en flujo.',
+          style: const TextStyle(color: AppColors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Entendido'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Dialog para el caso `warning` (2-3h). Permite registrar igual
+  /// como decisión consciente del usuario.
+  Future<void> _showWarningDialog(MealIntervalWarning e) async {
+    final recommendedTime = _formatTimeOfDay(e.recommendedAt);
+    final sinceMin = e.sinceLastMeal.inMinutes;
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: AppColors.bgElevated,
+        title: const Text(
+          'Tu cuerpo necesita un poco más',
+          style: TextStyle(color: AppColors.textPrimary),
+        ),
+        content: Text(
+          'Tu última comida fue hace $sinceMin minutos. Lo ideal son 3 '
+          'horas (a partir de las $recommendedTime) para que la insulina '
+          'baje del todo. ¿Querés registrar igual?',
+          style: const TextStyle(color: AppColors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Esperar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Registrar igual'),
+          ),
+        ],
+      ),
+    );
+    if (result == true && mounted) {
+      await _submit(forceLog: true);
+    }
+  }
+
+  static String _formatTimeOfDay(DateTime t) {
+    final hh = t.hour.toString().padLeft(2, '0');
+    final mm = t.minute.toString().padLeft(2, '0');
+    return '$hh:$mm';
   }
 
   Future<void> _handleCheatDayActivate() async {
