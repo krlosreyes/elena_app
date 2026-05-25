@@ -166,6 +166,12 @@ class FoodCatalog {
 
     // Quinua — pseudocereal con proteína completa
     Food(id: 'quinua', name: 'Quinua', category: FoodCategory.protein, qualityScore: 65, searchAliases: ['quinoa']),
+
+    // SPEC-137 E.6: caldos — proteína animal diluida; score moderado-alto
+    // (75) por dilución respecto a la pieza entera.
+    Food(id: 'caldo_pollo', name: 'Caldo de pollo', category: FoodCategory.protein, qualityScore: 75, searchAliases: ['consome', 'consome de pollo', 'sopa de pollo']),
+    Food(id: 'caldo_costilla', name: 'Caldo de costilla', category: FoodCategory.protein, qualityScore: 75, searchAliases: ['caldo de res', 'caldo de hueso', 'sancocho']),
+    Food(id: 'caldo_pescado', name: 'Caldo de pescado', category: FoodCategory.protein, qualityScore: 75, searchAliases: ['sopa de pescado']),
   ];
 
   // ── GRASAS (22) ───────────────────────────────────────────────────────
@@ -204,6 +210,10 @@ class FoodCatalog {
     Food(id: 'mayonesa', name: 'Mayonesa', category: FoodCategory.fat, qualityScore: 50),
     Food(id: 'manteca', name: 'Manteca', category: FoodCategory.fat, qualityScore: 55),
     Food(id: 'margarina', name: 'Margarina', category: FoodCategory.fat, qualityScore: 30),
+
+    // SPEC-137 E.6: semillas con omega-3 y fibra — alta calidad metabólica.
+    Food(id: 'semillas_chia', name: 'Semillas de chía', category: FoodCategory.fat, qualityScore: 95, searchAliases: ['chia']),
+    Food(id: 'linaza', name: 'Linaza', category: FoodCategory.fat, qualityScore: 95, searchAliases: ['lino', 'semillas de lino']),
   ];
 
   // ── CARBOHIDRATOS (34) ────────────────────────────────────────────────
@@ -260,6 +270,27 @@ class FoodCatalog {
     Food(id: 'panela', name: 'Panela', category: FoodCategory.carb, qualityScore: 0, searchAliases: ['piloncillo', 'rapadura']),
     Food(id: 'miel', name: 'Miel', category: FoodCategory.carb, qualityScore: 5),
     Food(id: 'chocolate', name: 'Chocolate', category: FoodCategory.carb, qualityScore: 10),
+
+    // SPEC-137 E.6: comidas rápidas (harinas refinadas + ultraprocesados).
+    Food(id: 'pizza', name: 'Pizza', category: FoodCategory.carb, qualityScore: 5),
+    Food(id: 'hamburguesa', name: 'Hamburguesa', category: FoodCategory.carb, qualityScore: 5, searchAliases: ['burger']),
+    Food(id: 'salchipapa', name: 'Salchipapa', category: FoodCategory.carb, qualityScore: 3, searchAliases: ['salchipapas']),
+    Food(id: 'sandwich', name: 'Sandwich', category: FoodCategory.carb, qualityScore: 10, searchAliases: ['sándwich', 'emparedado']),
+    Food(id: 'empanada', name: 'Empanada', category: FoodCategory.carb, qualityScore: 5, searchAliases: ['empanadita']),
+
+    // Galletas — variantes específicas además de "Galletas" genérico.
+    Food(id: 'galletas_dulces', name: 'Galletas dulces', category: FoodCategory.carb, qualityScore: 3, searchAliases: ['cookies']),
+    Food(id: 'galletas_saladas', name: 'Galletas saladas', category: FoodCategory.carb, qualityScore: 8, searchAliases: ['crackers']),
+
+    // Bebidas — neutras o E según composición.
+    Food(id: 'tinto', name: 'Tinto', category: FoodCategory.carb, qualityScore: 100, searchAliases: ['café', 'cafe', 'café negro', 'café solo']),
+    Food(id: 'cafe_leche', name: 'Café con leche', category: FoodCategory.carb, qualityScore: 35, searchAliases: ['cafe con leche', 'latte']),
+    Food(id: 'capuchino', name: 'Capuchino', category: FoodCategory.carb, qualityScore: 35, searchAliases: ['cappuccino']),
+    Food(id: 'chocolate_caliente', name: 'Chocolate caliente', category: FoodCategory.carb, qualityScore: 5, searchAliases: ['chocolate con leche', 'choco caliente']),
+    Food(id: 'jugo_leche', name: 'Jugo en leche', category: FoodCategory.carb, qualityScore: 10, searchAliases: ['batido', 'licuado con leche']),
+    Food(id: 'jugo_agua', name: 'Jugo en agua', category: FoodCategory.carb, qualityScore: 15, searchAliases: ['jugo natural', 'licuado con agua']),
+    Food(id: 'gaseosa', name: 'Gaseosa', category: FoodCategory.carb, qualityScore: 0, searchAliases: ['refresco', 'soda', 'bebida gaseosa']),
+    Food(id: 'cocacola', name: 'Coca-Cola', category: FoodCategory.carb, qualityScore: 0, searchAliases: ['coca', 'cola']),
   ];
 
   /// Lista completa unificada (orden: proteínas, grasas, carbos).

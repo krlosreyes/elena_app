@@ -938,7 +938,7 @@ class _CheatDayToggle extends StatelessWidget {
           ),
           Switch.adaptive(
             value: active,
-            activeColor: AppColors.statusWarn,
+            activeThumbColor: AppColors.statusWarn,
             onChanged: (v) {
               if (v) {
                 onActivate();

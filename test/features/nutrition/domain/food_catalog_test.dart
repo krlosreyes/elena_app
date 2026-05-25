@@ -5,9 +5,12 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('FoodCatalog estructura general', () {
-    test('catalogo entre 70 y 90 alimentos', () {
+    test('catalogo entre 70 y 120 alimentos', () {
+      // SPEC-137 E.6 ampló el catálogo a ~100 con caldos, semillas,
+      // comidas rápidas y bebidas. Margen superior 120 para crecimiento
+      // futuro razonable sin romper el test.
       expect(FoodCatalog.all.length, greaterThanOrEqualTo(70));
-      expect(FoodCatalog.all.length, lessThanOrEqualTo(90));
+      expect(FoodCatalog.all.length, lessThanOrEqualTo(120));
     });
 
     test('hay al menos 20 de cada categoria', () {
@@ -230,14 +233,16 @@ void main() {
     });
 
     test('busqueda parcial encuentra multiples', () {
-      // "pa" matchea papa, papa criolla, pan, pasta, panela, pavo en
-      // "pechuga de pavo", etc. Es una subcadena comun para verificar
-      // que el buscador retorna lista (no solo un match).
-      final results = FoodCatalog.search('pa');
+      // "papa" matchea exactamente papa y papa_criolla. Usamos esta
+      // query especifica en vez de "pa" porque el catalogo creció y
+      // "pa" matchea muchos aliases regionales (palta, sopa, etc.),
+      // empujando a papa fuera del top 8 default.
+      final results = FoodCatalog.search('papa');
       final ids = results.map((f) => f.id).toList();
       expect(ids.length, greaterThan(1),
-          reason: '"pa" deberia matchear varios alimentos');
+          reason: '"papa" deberia matchear papa y papa_criolla');
       expect(ids, contains('papa'));
+      expect(ids, contains('papa_criolla'));
     });
 
     test('alias "palta" encuentra aguacate', () {
