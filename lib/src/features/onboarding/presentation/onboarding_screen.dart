@@ -21,6 +21,10 @@ import 'package:elena_app/src/features/auth/domain/health_disclaimer.dart';
 import 'package:elena_app/src/features/nutrition/domain/nervous_system.dart';
 // SPEC-131: pantallas educativas para usuarios cero-contexto.
 import 'package:elena_app/src/features/onboarding/presentation/widgets/intro_screens.dart';
+// SPEC-132 Bloque E: paso opcional para conectar HealthKit / Health Connect.
+import 'package:elena_app/src/features/health_sync/application/health_auto_sync_controller.dart';
+import 'package:elena_app/src/features/health_sync/application/health_sync_providers.dart';
+import 'package:elena_app/src/features/health_sync/presentation/onboarding_health_step.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -59,6 +63,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   List<int> _activeSteps = const [0, 1, 2, 3];
 
   static const List<int> _kIntroStepIds = [100, 101, 102];
+
+  // SPEC-132 Bloque E: id del paso "Conectar Apple Health / Health
+  // Connect". Solo aparece en cold install (newProfile) y solo en
+  // iOS/Android — se inserta DESPUÉS de habits (case 3).
+  static const int _kHealthSyncStepId = 200;
 
   // --- PASO 1: HARDWARE ---
   DateTime _birthDate = DateTime(1980, 1, 1);
@@ -276,12 +285,22 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final isColdInstall =
         account.profileStatus == AppProfileStatus.newProfile;
 
+    // SPEC-132: el step de Health solo aplica si la plataforma lo
+    // soporta. En Web/Desktop el plugin no funciona, así que lo
+    // saltamos directamente — el usuario podrá conectarse desde
+    // Perfil cuando abra la app en su teléfono. Solo se ofrece a
+    // cold installs (los usuarios MR pueden conectar después).
+    final healthSupported =
+        ref.read(healthSyncServiceProvider).isPlatformSupported;
+    final showHealthStep = isColdInstall && healthSupported;
+
     final activeSteps = <int>[
       if (isColdInstall) ..._kIntroStepIds,
       if (disclaimerNeedsReprompt) 0,
       if (!biometryComplete) 1,
       2,
       3,
+      if (showHealthStep) _kHealthSyncStepId,
     ];
 
     setState(() {
@@ -369,6 +388,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         case 2:
           return _buildStepCircadian(isDark);
         case 3:
+          return _buildStepHabits(isDark);
+        case _kHealthSyncStepId:
+          // SPEC-132 E: paso opcional. `onContinue` dispara el avance
+          // del PageView via el mismo flujo que el botón "Siguiente"
+          // de los demás pasos.
+          return OnboardingHealthStep(
+            isDark: isDark,
+            onContinue: _handleNext,
+          );
         default:
           return _buildStepHabits(isDark);
       }
@@ -1298,7 +1326,25 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     );
   }
 
-  void _handleNext() {
+  void _handleNext() async {
+    // SPEC-132 E: si el paso actual es el de Health, disparamos la
+    // solicitud de permisos ANTES de avanzar. El usuario ve el sheet
+    // nativo de iOS/Android; al cerrarlo (acepte o rechace), el flujo
+    // continúa — no bloqueamos en caso de rechazo, podrá conectar
+    // después desde Perfil > Salud.
+    final currentOriginalIndex =
+        _activeSteps.isNotEmpty ? _activeSteps[_currentStep] : 0;
+    if (currentOriginalIndex == _kHealthSyncStepId) {
+      try {
+        await ref
+            .read(healthAutoSyncControllerProvider.notifier)
+            .requestAuthorization();
+      } catch (e) {
+        AppLogger.warning('Onboarding: requestAuthorization falló: $e');
+      }
+      if (!mounted) return;
+    }
+
     // SPEC-84: navegación basada en _activeSteps (puede tener entre 1
     // y 4 entradas). El último paso activo dispara el submit.
     if (_currentStep < _activeSteps.length - 1) {
