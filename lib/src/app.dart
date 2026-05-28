@@ -6,6 +6,9 @@ import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/core/providers/notification_provider.dart';
 import 'package:elena_app/src/core/services/daily_reset_service.dart';
 import 'package:elena_app/src/features/analysis/application/daily_summary_persistence_service.dart';
+import 'package:elena_app/src/features/health_sync/application/health_auto_sync_controller.dart';
+import 'package:elena_app/src/shared/domain/models/user_model.dart';
+import 'package:elena_app/src/shared/providers/user_provider.dart';
 
 class ElenaApp extends ConsumerWidget {
   const ElenaApp({super.key});
@@ -27,6 +30,20 @@ class ElenaApp extends ConsumerWidget {
     // listener interno escucha `dailySummaryProvider` y persiste con
     // debounce + detección de cambio de día.
     ref.watch(dailySummaryPersistenceServiceProvider);
+
+    // SPEC-132 Bloque C: bootstrap del auto-sync con HealthKit /
+    // Health Connect. Escucha el stream del usuario y dispara
+    // `runIfDue()` cuando hay un usuario completo. El controller
+    // tiene debouncing interno (15 min) — el listener puede
+    // dispararse N veces sin generar N syncs.
+    ref.listen<AsyncValue<UserModel?>>(currentUserStreamProvider,
+        (prev, next) {
+      final user = next.value;
+      if (user == null || user.id.isEmpty) return;
+      ref
+          .read(healthAutoSyncControllerProvider.notifier)
+          .runIfDue(userId: user.id);
+    });
 
     return ScreenUtilInit(
       designSize: const Size(390, 844), // Medida base de iPhone
