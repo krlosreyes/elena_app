@@ -47,6 +47,10 @@ dependencies:
   flutter_screenutil: ^5.9.3
   google_fonts: ^8.0.2
 
+  # SPEC-132: Apple HealthKit (iOS) + Google Health Connect (Android).
+  # carp.dk maintainer, MIT, plugin más estable del ecosistema.
+  health: ^13.3.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

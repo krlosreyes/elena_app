@@ -11,6 +11,23 @@
     <!-- Required for vibration on notification -->
     <uses-permission android:name="android.permission.VIBRATE"/>
 
+    <!-- SPEC-132: Google Health Connect (Android). Plugin `health` requiere -->
+    <!-- declarar cada permission de READ explícitamente. Solo READ — la app -->
+    <!-- importa datos pero no escribe en Health Connect. -->
+    <uses-permission android:name="android.permission.health.READ_WEIGHT"/>
+    <uses-permission android:name="android.permission.health.READ_SLEEP"/>
+    <uses-permission android:name="android.permission.health.READ_STEPS"/>
+    <!-- Activity Recognition (steps): permission "dangerous", requiere user grant. -->
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION"/>
+
+    <!-- SPEC-132: query del paquete Health Connect para detectar instalación. -->
+    <queries>
+        <package android:name="com.google.android.apps.healthdata" />
+        <intent>
+            <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
+        </intent>
+    </queries>
+
     <application
         android:label="Elena App"
         android:name="${applicationName}"
@@ -65,7 +82,30 @@
                 <data android:host="metamorfosisreal.com"/>
                 <data android:pathPrefix="/app"/>
             </intent-filter>
+
+            <!-- SPEC-132: Health Connect requiere que la MainActivity
+                 responda al intent de "Show permissions rationale" para
+                 que Google Play pueda enlazar al uso justificado de los
+                 permisos sensibles de salud. -->
+            <intent-filter>
+                <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
+            </intent-filter>
         </activity>
+
+        <!-- SPEC-132: alias requerido por Health Connect para mostrar
+             la pantalla de "uso de permisos". Apunta a MainActivity que
+             redirigirá al usuario a la política de privacidad MR. -->
+        <activity-alias
+            android:name="ViewPermissionUsageActivity"
+            android:exported="true"
+            android:targetActivity=".MainActivity"
+            android:permission="android.permission.START_VIEW_PERMISSION_USAGE">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW_PERMISSION_USAGE" />
+                <category android:name="android.intent.category.HEALTH_PERMISSIONS" />
+            </intent-filter>
+        </activity-alias>
+
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

@@ -35,7 +35,11 @@ android {
         applicationId = "com.metamorfosis.elena.elena_app"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        // SPEC-132: el plugin `health` (Health Connect API) exige minSdk 26
+        // (Android 8.0 Oreo, 2017). Pasamos del default de Flutter (24) a 26.
+        // Impacto: usuarios con Android 7.x quedan fuera (cobertura mundial
+        // 2026 <1%, en LATAM <2%).
+        minSdk = 26
         targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
