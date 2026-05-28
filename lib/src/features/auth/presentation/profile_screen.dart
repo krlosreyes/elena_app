@@ -7,6 +7,7 @@ import 'package:elena_app/src/features/auth/application/profile_controller.dart'
 import 'package:elena_app/src/features/auth/presentation/widgets/data_group_card.dart';
 import 'package:elena_app/src/features/auth/presentation/widgets/edit_biometry_value_sheet.dart';
 import 'package:elena_app/src/features/dashboard/domain/optimal_schedule.dart';
+import 'package:elena_app/src/features/health_sync/presentation/health_sync_card.dart';
 import 'package:elena_app/src/features/profile/domain/biometry_recalc.dart';
 import 'package:elena_app/src/features/profile/presentation/widgets/body_composition_card.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
@@ -553,6 +554,12 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
         _buildSectionTitle('Protocolo de ayuno'),
         const SizedBox(height: 10),
         _buildProtocolCard(context),
+        const SizedBox(height: 24),
+
+        // ── SPEC-132: sincronización con Apple Health / Health Connect
+        _buildSectionTitle('Salud'),
+        const SizedBox(height: 10),
+        const HealthSyncCard(),
         const SizedBox(height: 24),
 
         // ── Legal ───────────────────────────────────────────────────
