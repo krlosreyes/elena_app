@@ -238,12 +238,12 @@ void main() {
   });
 
   group('pasos', () {
-    test('día con < 5000 pasos NO genera ExerciseLog', () async {
+    test('día con < 2000 pasos NO genera ExerciseLog', () async {
       final summary = await service.importResult(
         userId,
         _resultWith({
           HealthMetric.steps: [
-            _stepsSample(at: DateTime(2026, 5, 26, 12), count: 4000),
+            _stepsSample(at: DateTime(2026, 5, 26, 12), count: 1500),
           ],
         }),
       );
@@ -251,7 +251,7 @@ void main() {
       expect(exerciseRepo.saved, isEmpty);
     });
 
-    test('día con ≥ 5000 pasos genera ExerciseLog tipo LISS', () async {
+    test('día con ≥ 2000 pasos genera ExerciseLog tipo LISS', () async {
       final summary = await service.importResult(
         userId,
         _resultWith({
@@ -271,11 +271,12 @@ void main() {
         userId,
         _resultWith({
           HealthMetric.steps: [
-            _stepsSample(at: DateTime(2026, 5, 26, 9), count: 2500),
-            _stepsSample(at: DateTime(2026, 5, 26, 15), count: 3500),
+            _stepsSample(at: DateTime(2026, 5, 26, 9), count: 800),
+            _stepsSample(at: DateTime(2026, 5, 26, 15), count: 1400),
           ],
         }),
       );
+      // 800 + 1400 = 2200 ≥ 2000 threshold → 1 ExerciseLog
       expect(summary.stepsActivitiesImported, 1);
     });
 

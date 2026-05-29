@@ -52,9 +52,13 @@ class HealthImportSummary {
 }
 
 /// Umbral mínimo de pasos diarios para convertir en un `ExerciseLog`
-/// implícito tipo LISS. Debajo de esto, los pasos solo cuentan en el
-/// dashboard pero no inflan el pilar Ejercicio.
-const int _minStepsForExerciseLog = 5000;
+/// implícito tipo LISS. Decisión de producto (28-may-2026, Carlos):
+/// bajamos de 5000 (estándar ACSM "actividad iniciada") a 2000 porque
+/// la audiencia ElenaApp es usuario metabólico sedentario que rara vez
+/// supera 5000 pasos en el día — el threshold científico estaba
+/// dejando todo en cero. 2000 pasos ≈ 20 min de caminata ligera, suma
+/// real pero filtra días puramente de oficina (<2000).
+const int _minStepsForExerciseLog = 2000;
 
 /// Servicio de importación. Stateless — recibe las dependencias por
 /// constructor para que el AutoSyncController las inyecte.
@@ -136,6 +140,10 @@ class HealthImportService {
     String userId,
     List<HealthSample> samples,
   ) async {
+    AppLogger.info(
+      'HealthImport[weight]: ${samples.length} samples recibidas',
+    );
+
     // Agrupar por día.
     final byDay = <String, HealthSample>{};
     for (final s in samples) {
@@ -145,8 +153,12 @@ class HealthImportService {
         byDay[key] = s;
       }
     }
+    AppLogger.info(
+      'HealthImport[weight]: agrupado en ${byDay.length} día(s)',
+    );
 
     int imported = 0;
+    int skippedExisting = 0;
     for (final entry in byDay.entries) {
       final dateKey = entry.key;
       final sample = entry.value;
@@ -154,11 +166,15 @@ class HealthImportService {
       // Anti-duplicado: si ya hay un check-in para ese día, lo
       // respetamos. Los check-ins manuales tienen prioridad.
       final existing = await _biometricRepo.fetchToday(userId);
-      // fetchToday solo es para hoy; necesitamos cualquier día.
-      // Voy a hacer un fetch directo via path:
       final dayDoc = await _fetchByDate(userId, dateKey);
-      if (dayDoc != null) continue;
-      if (existing != null && existing.date == dateKey) continue;
+      if (dayDoc != null) {
+        skippedExisting++;
+        continue;
+      }
+      if (existing != null && existing.date == dateKey) {
+        skippedExisting++;
+        continue;
+      }
 
       final checkIn = BiometricCheckIn(
         date: dateKey,
@@ -170,6 +186,10 @@ class HealthImportService {
       await _biometricRepo.saveCheckIn(checkIn);
       imported++;
     }
+    AppLogger.info(
+      'HealthImport[weight]: importados $imported, saltados '
+      '$skippedExisting (ya existían check-ins manuales)',
+    );
     return imported;
   }
 
@@ -184,14 +204,22 @@ class HealthImportService {
     String userId,
     List<HealthSample> samples,
   ) async {
+    AppLogger.info(
+      'HealthImport[sleep]: ${samples.length} samples recibidas',
+    );
+
     int imported = 0;
+    int skippedShort = 0;
+    int skippedInvalid = 0;
     for (final s in samples) {
       // Filtros sanos: ignorar sesiones absurdamente cortas (siestas
       // < 30 min) que el plugin a veces reporta como ruido.
-      if (s.duration.inMinutes < 30) continue;
+      if (s.duration.inMinutes < 30) {
+        skippedShort++;
+        continue;
+      }
 
       final id = _sleepIdFor(s);
-      // Heurística para lastMealTime: fellAsleep - 3h.
       final assumedLastMeal = s.start.subtract(const Duration(hours: 3));
 
       try {
@@ -204,12 +232,15 @@ class HealthImportService {
         await _sleepRepo.save(userId, log);
         imported++;
       } catch (e, st) {
-        // Validación de dominio falló (rango imposible, etc.) — log y
-        // seguimos con los demás samples.
         AppLogger.warning('SleepLog inválido descartado: $e');
         AppLogger.debug('Sample: $s', e, st);
+        skippedInvalid++;
       }
     }
+    AppLogger.info(
+      'HealthImport[sleep]: importados $imported, '
+      'saltados $skippedShort siestas <30min, $skippedInvalid inválidos',
+    );
     return imported;
   }
 
@@ -222,6 +253,10 @@ class HealthImportService {
     String userId,
     List<HealthSample> samples,
   ) async {
+    AppLogger.info(
+      'HealthImport[steps]: ${samples.length} samples recibidas',
+    );
+
     // Agregar por día.
     final byDay = <String, double>{};
     final dayStart = <String, DateTime>{};
@@ -234,10 +269,23 @@ class HealthImportService {
       }
     }
 
+    // Loguear el breakdown por día para diagnóstico.
+    final breakdown = byDay.entries
+        .map((e) => '${e.key}=${e.value.round()}')
+        .join(', ');
+    AppLogger.info(
+      'HealthImport[steps]: total por día → $breakdown '
+      '(threshold = $_minStepsForExerciseLog)',
+    );
+
     int imported = 0;
+    int skippedThreshold = 0;
     for (final entry in byDay.entries) {
       final stepsCount = entry.value.round();
-      if (stepsCount < _minStepsForExerciseLog) continue;
+      if (stepsCount < _minStepsForExerciseLog) {
+        skippedThreshold++;
+        continue;
+      }
 
       final dayKey = entry.key;
       final minutes = (stepsCount / 100).round().clamp(10, 120);
@@ -260,6 +308,10 @@ class HealthImportService {
         AppLogger.debug('Day=$dayKey steps=$stepsCount', e, st);
       }
     }
+    AppLogger.info(
+      'HealthImport[steps]: importados $imported, '
+      'saltados $skippedThreshold día(s) bajo threshold',
+    );
     return imported;
   }
 

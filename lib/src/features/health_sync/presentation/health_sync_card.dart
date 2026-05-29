@@ -230,6 +230,14 @@ class _HealthSyncCardState extends ConsumerState<HealthSyncCard> {
             _formatImportSummary(lastImport),
             style: const TextStyle(fontSize: 12, color: Colors.white60),
           ),
+        ] else if (lastResult != null &&
+            lastImport != null &&
+            lastImport.totalImported == 0) ...[
+          const SizedBox(height: 4),
+          Text(
+            _formatNothingImported(lastResult, lastImport),
+            style: const TextStyle(fontSize: 12, color: Colors.white60),
+          ),
         ],
         if (lastResult != null && lastResult.hasErrors) ...[
           const SizedBox(height: 4),
@@ -340,6 +348,24 @@ class _HealthSyncCardState extends ConsumerState<HealthSyncCard> {
     if (diff.inMinutes < 60) return 'Última sync: hace ${diff.inMinutes} min';
     if (diff.inHours < 24) return 'Última sync: hace ${diff.inHours} h';
     return 'Última sync: hace ${diff.inDays} días';
+  }
+
+  String _formatNothingImported(
+    HealthSyncResult result,
+    HealthImportSummary summary,
+  ) {
+    final total = result.totalSamples;
+    if (total == 0) {
+      return 'No encontramos datos en Apple Health · Health Connect '
+          'para los últimos 7 días.';
+    }
+    // Leyó datos pero no se importó nada: el plugin trajo $total
+    // samples y todas fueron descartadas por reglas internas
+    // (siestas <30min, <2000 pasos/día, o ya existía un check-in
+    // manual). Mostramos el detalle para que el usuario entienda.
+    return 'Leídos $total registros · 0 importados '
+        '(siestas <30min, días con <2000 pasos o pesos ya registrados '
+        'manualmente).';
   }
 
   String _formatImportSummary(HealthImportSummary s) {
