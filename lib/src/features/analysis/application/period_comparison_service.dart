@@ -1,6 +1,7 @@
 // SPEC-113: servicio puro que computa la comparación del período
 // actual contra el anterior. Sin Riverpod ni Flutter.
 
+import 'package:elena_app/src/core/services/day_boundary_resolver.dart';
 import 'package:elena_app/src/features/analysis/data/daily_summary_doc.dart';
 import 'package:elena_app/src/features/analysis/domain/period_comparison.dart';
 
@@ -35,8 +36,7 @@ class PeriodComparisonService {
     // representa con un placeholder. El merge LIVE en analysis_screen
     // garantiza que normalmente este doc exista con valores en vivo.
     final now = DateTime.now();
-    final todayKey =
-        '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    final todayKey = DayBoundaryResolver.dayKeyIso(now); // SPEC-138
     int? imrToday;
     for (final d in currentDocs) {
       if (d.date == todayKey) {

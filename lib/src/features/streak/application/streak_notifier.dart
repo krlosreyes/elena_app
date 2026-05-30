@@ -13,6 +13,7 @@ import 'package:elena_app/src/features/dashboard/domain/sleep_quality_calculator
 import 'package:elena_app/src/features/exercise/application/exercise_notifier.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
+import 'package:elena_app/src/core/services/day_boundary_resolver.dart';
 import 'package:elena_app/src/core/services/firestore_errors.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 
@@ -86,12 +87,9 @@ class StreakNotifier extends StateNotifier<StreakState> {
   StreamSubscription? _historySub;
 
   /// Clave de fecha de hoy 'yyyy-MM-dd'.
-  static String get _todayKey {
-    final now = DateTime.now();
-    return '${now.year.toString().padLeft(4, '0')}-'
-        '${now.month.toString().padLeft(2, '0')}-'
-        '${now.day.toString().padLeft(2, '0')}';
-  }
+  /// SPEC-138: delega en la fuente única del día.
+  static String get _todayKey =>
+      DayBoundaryResolver.dayKeyIso(DateTime.now());
 
   StreakNotifier(this._ref) : super(const StreakState()) {
     _init();

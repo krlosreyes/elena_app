@@ -1,3 +1,4 @@
+import 'package:elena_app/src/core/services/day_boundary_resolver.dart';
 import 'package:elena_app/src/features/streak/domain/streak_entry.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -152,7 +153,8 @@ class StreakEngine {
     final now = DateTime.now();
 
     // Ventana de los últimos 7 días terminando hoy
-    final cutoff = DateTime(now.year, now.month, now.day)
+    // SPEC-138: inicio del día vía fuente única.
+    final cutoff = DayBoundaryResolver.startOfDay(now)
         .subtract(const Duration(days: 6)); // 1 día (hoy) + 6 anteriores = 7
 
     final lastWeek = history.where((e) {
@@ -186,7 +188,8 @@ class StreakEngine {
   ///   no `total/7` (que penalizaría artificialmente).
   static double computeWeeklyQualityScore(List<StreakEntry> history) {
     final now = DateTime.now();
-    final cutoff = DateTime(now.year, now.month, now.day)
+    // SPEC-138: inicio del día vía fuente única.
+    final cutoff = DayBoundaryResolver.startOfDay(now)
         .subtract(const Duration(days: 6));
 
     final lastWeek = history.where((e) {
@@ -215,7 +218,6 @@ class StreakEngine {
 
   static String _todayKey() => _dateKey(DateTime.now());
 
-  static String _dateKey(DateTime d) => '${d.year.toString().padLeft(4, '0')}-'
-      '${d.month.toString().padLeft(2, '0')}-'
-      '${d.day.toString().padLeft(2, '0')}';
+  /// SPEC-138: delega en la fuente única del día (formato ISO `YYYY-MM-DD`).
+  static String _dateKey(DateTime d) => DayBoundaryResolver.dayKeyIso(d);
 }

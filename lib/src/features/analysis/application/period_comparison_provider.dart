@@ -7,6 +7,7 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:elena_app/src/core/services/day_boundary_resolver.dart';
 import 'package:elena_app/src/features/analysis/application/period_comparison_service.dart';
 import 'package:elena_app/src/features/analysis/data/daily_summary_doc.dart';
 import 'package:elena_app/src/features/analysis/data/daily_summary_repository_impl.dart';
@@ -14,12 +15,8 @@ import 'package:elena_app/src/features/analysis/domain/analysis_period.dart';
 import 'package:elena_app/src/features/analysis/domain/period_comparison.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
 
-/// Helper: formato YYYY-MM-DD.
-String _fmt(DateTime t) {
-  final m = t.month.toString().padLeft(2, '0');
-  final d = t.day.toString().padLeft(2, '0');
-  return '${t.year}-$m-$d';
-}
+/// Helper: formato YYYY-MM-DD. SPEC-138: delega en la fuente única del día.
+String _fmt(DateTime t) => DayBoundaryResolver.dayKeyIso(t);
 
 /// Bundle con los docs del período actual + el comparison ya computado.
 /// Empaquetar ambos en un solo provider evita que la pantalla haga 2
@@ -51,7 +48,7 @@ final periodDataProvider = StreamProvider.family
 
   // Rangos.
   final today = DateTime.now();
-  final todayMidnight = DateTime(today.year, today.month, today.day);
+  final todayMidnight = DayBoundaryResolver.startOfDay(today); // SPEC-138
   final doubleFrom =
       todayMidnight.subtract(Duration(days: 2 * period.days - 1));
   final currentFrom = todayMidnight.subtract(Duration(days: period.days - 1));

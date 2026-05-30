@@ -2,6 +2,7 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:elena_app/src/core/services/day_boundary_resolver.dart';
 import 'package:elena_app/src/features/streak/data/mappers/streak_entry_mapper.dart';
 import 'package:elena_app/src/features/streak/data/sources/firestore_streak_v1_source.dart';
 import 'package:elena_app/src/features/streak/data/sources/streak_data_source.dart';
@@ -49,10 +50,8 @@ class StreakRepositoryImpl implements StreakRepository {
     );
   }
 
-  static String _formatDateKey(DateTime d) =>
-      '${d.year.toString().padLeft(4, '0')}-'
-      '${d.month.toString().padLeft(2, '0')}-'
-      '${d.day.toString().padLeft(2, '0')}';
+  /// SPEC-138: delega en la fuente única del día (ISO `YYYY-MM-DD`).
+  static String _formatDateKey(DateTime d) => DayBoundaryResolver.dayKeyIso(d);
 }
 
 // ─────────────────────────────────────────────────────────────────────
