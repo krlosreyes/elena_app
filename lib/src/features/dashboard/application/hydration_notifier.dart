@@ -122,6 +122,14 @@ class HydrationNotifier extends StateNotifier<HydrationState> {
     state = HydrationState(
       dailyGoalLiters: state.dailyGoalLiters,
     );
+    // SPEC-138: el stream `watchToday` está acotado a [startOfDay, endOfDay),
+    // así que hay que RE-SUSCRIBIR para avanzar la ventana al nuevo día. Sin
+    // esto, tras medianoche la ventana quedaría congelada en el día anterior
+    // y el día nuevo se vería vacío hasta reiniciar la app.
+    final user = _ref.read(currentUserStreamProvider).value;
+    if (user != null && user.id.isNotEmpty) {
+      _initHydrationSubscription(user.id);
+    }
   }
 
   Future<void> addWater(double amount) async {

@@ -2,6 +2,7 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:elena_app/src/core/services/day_boundary_resolver.dart';
 import 'package:elena_app/src/features/dashboard/data/mappers/hydration_log_mapper.dart';
 import 'package:elena_app/src/features/dashboard/data/sources/firestore_hydration_v1_source.dart';
 import 'package:elena_app/src/features/dashboard/data/sources/hydration_data_source.dart';
@@ -21,9 +22,11 @@ class HydrationRepositoryImpl implements HydrationRepository {
   @override
   Stream<List<HydrationLog>> watchToday(String userId) {
     final now = DateTime.now();
-    final startOfDay = DateTime(now.year, now.month, now.day);
+    final startOfDay = DayBoundaryResolver.startOfDay(now);
+    final endOfDay = DayBoundaryResolver.endOfDay(now);
     return _source
-        .streamSince(userId: userId, startOfDay: startOfDay)
+        .streamSince(
+            userId: userId, startOfDay: startOfDay, endOfDay: endOfDay)
         .map((maps) => maps.map(_mapper.fromMap).toList());
   }
 
