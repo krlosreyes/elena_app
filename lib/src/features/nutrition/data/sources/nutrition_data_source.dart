@@ -13,9 +13,15 @@ abstract class NutritionDataSource {
   /// Stream con los logs del día actual del usuario. Cada elemento de la
   /// lista es un par `(docId, payload)` para que el mapper componga el
   /// `NutritionLog` con el id correcto incluso si falta en el payload.
+  ///
+  /// SPEC-138: la ventana del día la decide la capa superior vía
+  /// `DayBoundaryResolver` y se pasa como `[startOfDay, endOfDay)`. Si no se
+  /// pasan, el source las resuelve internamente (compatibilidad).
   Stream<List<({String docId, Map<String, dynamic> data})>> watchTodayLogs(
-    String userId,
-  );
+    String userId, {
+    DateTime? startOfDay,
+    DateTime? endOfDay,
+  });
 
   /// Persiste el `data` con `docId` como clave del documento.
   Future<void> saveLog(
@@ -29,7 +35,11 @@ abstract class NutritionDataSource {
 
   /// Devuelve el documento más reciente del día actual (mayor timestamp)
   /// para resolver `removeLastMeal()`. Retorna null si no hay logs hoy.
+  ///
+  /// SPEC-138: ventana `[startOfDay, endOfDay)` opcional (ver `watchTodayLogs`).
   Future<({String docId, Map<String, dynamic> data})?> latestTodayLog(
-    String userId,
-  );
+    String userId, {
+    DateTime? startOfDay,
+    DateTime? endOfDay,
+  });
 }

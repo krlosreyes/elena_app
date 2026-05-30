@@ -9,6 +9,7 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'package:elena_app/src/core/services/day_boundary_resolver.dart';
 import 'package:elena_app/src/features/nutrition/data/sources/nutrition_data_source.dart';
 
 class FirestoreNutritionV1Source implements NutritionDataSource {
@@ -22,15 +23,22 @@ class FirestoreNutritionV1Source implements NutritionDataSource {
 
   @override
   Stream<List<({String docId, Map<String, dynamic> data})>> watchTodayLogs(
-    String userId,
-  ) {
+    String userId, {
+    DateTime? startOfDay,
+    DateTime? endOfDay,
+  }) {
     final now = DateTime.now();
-    final startOfDay = DateTime(now.year, now.month, now.day);
+    final start = startOfDay ?? DayBoundaryResolver.startOfDay(now);
+    final end = endOfDay ?? DayBoundaryResolver.endOfDay(now);
 
     return _col(userId)
         .where(
           'timestamp',
-          isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay),
+          isGreaterThanOrEqualTo: Timestamp.fromDate(start),
+        )
+        .where(
+          'timestamp',
+          isLessThan: Timestamp.fromDate(end),
         )
         .orderBy('timestamp')
         .snapshots()
@@ -61,15 +69,22 @@ class FirestoreNutritionV1Source implements NutritionDataSource {
 
   @override
   Future<({String docId, Map<String, dynamic> data})?> latestTodayLog(
-    String userId,
-  ) async {
+    String userId, {
+    DateTime? startOfDay,
+    DateTime? endOfDay,
+  }) async {
     final now = DateTime.now();
-    final startOfDay = DateTime(now.year, now.month, now.day);
+    final start = startOfDay ?? DayBoundaryResolver.startOfDay(now);
+    final end = endOfDay ?? DayBoundaryResolver.endOfDay(now);
 
     final snapshot = await _col(userId)
         .where(
           'timestamp',
-          isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay),
+          isGreaterThanOrEqualTo: Timestamp.fromDate(start),
+        )
+        .where(
+          'timestamp',
+          isLessThan: Timestamp.fromDate(end),
         )
         .orderBy('timestamp', descending: true)
         .limit(1)

@@ -8,6 +8,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:elena_app/src/core/services/day_boundary_resolver.dart';
 import 'package:elena_app/src/features/nutrition/data/mappers/nutrition_log_mapper.dart';
 import 'package:elena_app/src/features/nutrition/data/sources/firestore_nutrition_v1_source.dart';
 import 'package:elena_app/src/features/nutrition/data/sources/nutrition_data_source.dart';
@@ -26,7 +27,14 @@ class NutritionRepositoryImpl implements NutritionRepository {
 
   @override
   Stream<List<NutritionLog>> watchTodayLogs(String userId) {
-    return _source.watchTodayLogs(userId).map(
+    // SPEC-138: la ventana del día la decide aquí (fuente única) y se pasa al
+    // source, que queda agnóstico — igual que hidratación y ejercicio.
+    final now = DateTime.now();
+    final startOfDay = DayBoundaryResolver.startOfDay(now);
+    final endOfDay = DayBoundaryResolver.endOfDay(now);
+    return _source
+        .watchTodayLogs(userId, startOfDay: startOfDay, endOfDay: endOfDay)
+        .map(
           (rows) => rows
               .map((row) => _mapper.fromMap(row.data, docId: row.docId))
               .toList(growable: false),
@@ -41,7 +49,12 @@ class NutritionRepositoryImpl implements NutritionRepository {
 
   @override
   Future<void> removeLastMeal(String userId) async {
-    final latest = await _source.latestTodayLog(userId);
+    final now = DateTime.now();
+    final latest = await _source.latestTodayLog(
+      userId,
+      startOfDay: DayBoundaryResolver.startOfDay(now),
+      endOfDay: DayBoundaryResolver.endOfDay(now),
+    );
     if (latest == null) return;
     await _source.deleteLog(userId, latest.docId);
   }

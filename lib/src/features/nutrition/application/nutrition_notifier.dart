@@ -274,8 +274,10 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
     }
   }
 
-  /// Reset diario: solo limpia el cache local. Los logs persistidos quedan
-  /// para análisis longitudinal; el stream emitirá lista vacía mañana.
+  /// Reset diario: limpia el cache local. Los logs persistidos quedan para
+  /// análisis longitudinal. SPEC-138: el stream `watchTodayLogs` está acotado a
+  /// [startOfDay, endOfDay), así que re-suscribimos para avanzar la ventana al
+  /// nuevo día (sin esto el día nuevo se vería vacío hasta reiniciar la app).
   void resetDaily() {
     if (!mounted) return;
     state = state.copyWith(
@@ -283,6 +285,10 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
       nutritionScore: 0.0,
       windowAdherence: 0.0,
     );
+    final userId = _activeUserId;
+    if (userId != null) {
+      _subscribeToLogs(userId);
+    }
   }
 
   @override
