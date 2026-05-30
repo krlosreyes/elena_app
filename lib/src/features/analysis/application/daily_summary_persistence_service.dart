@@ -119,6 +119,25 @@ class DailySummaryPersistenceService {
     }
   }
 
+  /// SPEC-138 §4.4: cierre atómico del día que termina.
+  ///
+  /// Invocado por `DailyResetService` desde el timer de medianoche ANTES de
+  /// limpiar los notifiers de los pilares. Persiste el snapshot acumulado del
+  /// día que cierra bajo su propio docId (instante anterior a la nueva
+  /// medianoche), garantizando que el día anterior queda sellado aunque la app
+  /// se cierre enseguida. NO se llama en el bootstrap de arranque (allí los
+  /// streams ya re-emiten el día nuevo y el día previo ya fue persistido en la
+  /// sesión anterior).
+  Future<void> flushClosingDay() async {
+    final uid = _ref.read(authStateProvider).value?.uid;
+    if (uid == null) return;
+    final summary = _ref.read(dailySummaryProvider);
+    final closingInstant =
+        DateTime.now().subtract(const Duration(minutes: 1));
+    _debounceTimer?.cancel();
+    await _persistNow(uid, summary, closingInstant);
+  }
+
   void dispose() {
     _debounceTimer?.cancel();
   }

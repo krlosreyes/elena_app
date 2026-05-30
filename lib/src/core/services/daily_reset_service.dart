@@ -4,6 +4,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:elena_app/src/core/providers/shared_preferences_provider.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
+import 'package:elena_app/src/core/services/day_boundary_resolver.dart';
+import 'package:elena_app/src/features/analysis/application/daily_summary_persistence_service.dart';
 import 'package:elena_app/src/features/dashboard/application/fasting_notifier.dart';
 import 'package:elena_app/src/features/dashboard/application/hydration_notifier.dart';
 import 'package:elena_app/src/features/dashboard/application/sleep_notifier.dart';
@@ -41,10 +43,10 @@ class DailyResetService {
     return false;
   }
 
-  /// Obtiene clave única para hoy (yyyy-MM-dd)
-  static String _getTodayKey(DateTime date) {
-    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-  }
+  /// Obtiene clave única para hoy (yyyy-MM-dd).
+  /// SPEC-138: delega en la fuente única del día.
+  static String _getTodayKey(DateTime date) =>
+      DayBoundaryResolver.dayKeyIso(date);
 }
 
 /// SPEC-58: Notifier que detecta medianoche y triggeriza resets diarios.
@@ -87,7 +89,7 @@ class DailyResetNotifier extends StateNotifier<void> {
   void _scheduleMidnightTimer() {
     _midnightTimer?.cancel();
     final now = DateTime.now();
-    final nextMidnight = DateTime(now.year, now.month, now.day + 1);
+    final nextMidnight = DayBoundaryResolver.endOfDay(now);
     final duration = nextMidnight.difference(now);
 
     AppLogger.debug(
@@ -95,7 +97,9 @@ class DailyResetNotifier extends StateNotifier<void> {
     );
 
     _midnightTimer = Timer(duration, () async {
-      await triggerDailyReset();
+      // SPEC-138 §4.4: en el cruce de medianoche con la app viva, cerramos
+      // atómicamente el día que termina antes de limpiar los pilares.
+      await triggerDailyReset(flushClosingDay: true);
       if (mounted) _scheduleMidnightTimer();
     });
   }
@@ -106,10 +110,18 @@ class DailyResetNotifier extends StateNotifier<void> {
   /// en su `resetDaily()`. Una segunda invocación produce el mismo state.
   ///
   /// Llamado desde:
-  /// - bootstrap (si pasó medianoche desde la última sesión)
-  /// - timer al cruzar 00:00:00
-  Future<void> triggerDailyReset() async {
+  /// - bootstrap (si pasó medianoche desde la última sesión) → sin flush:
+  ///   el día previo ya quedó persistido en la sesión anterior y los streams
+  ///   re-emiten el día nuevo.
+  /// - timer al cruzar 00:00:00 → con `flushClosingDay: true` (SPEC-138 §4.4):
+  ///   sella el snapshot del día que termina antes de limpiar los pilares.
+  Future<void> triggerDailyReset({bool flushClosingDay = false}) async {
     try {
+      // SPEC-138 §4.4: cierre atómico del día que termina (solo path timer).
+      if (flushClosingDay) {
+        await _ref.read(dailySummaryPersistenceServiceProvider).flushClosingDay();
+      }
+
       // Nutrición: limpia logs en memoria del día y resetea score.
       _ref.read(nutritionProvider.notifier).resetDaily();
 
