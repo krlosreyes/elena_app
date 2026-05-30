@@ -19,10 +19,15 @@ class FirestoreExerciseV1Source implements ExerciseDataSource {
   Stream<List<Map<String, dynamic>>> streamSince({
     required String userId,
     required DateTime startOfDay,
+    DateTime? endOfDay,
   }) {
-    return _collection(userId)
-        .where('timestamp',
-            isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+    Query<Map<String, dynamic>> query = _collection(userId).where('timestamp',
+        isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay));
+    if (endOfDay != null) {
+      query = query.where('timestamp',
+          isLessThan: Timestamp.fromDate(endOfDay));
+    }
+    return query
         .snapshots()
         // Fix Web: cloud_firestore_web puede retornar
         // LegacyJavaScriptObject como `data()` aunque la collection

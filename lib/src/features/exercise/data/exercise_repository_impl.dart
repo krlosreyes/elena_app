@@ -2,6 +2,7 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:elena_app/src/core/services/day_boundary_resolver.dart';
 import 'package:elena_app/src/features/exercise/data/mappers/exercise_log_mapper.dart';
 import 'package:elena_app/src/features/exercise/data/sources/exercise_data_source.dart';
 import 'package:elena_app/src/features/exercise/data/sources/firestore_exercise_v1_source.dart';
@@ -21,9 +22,11 @@ class ExerciseRepositoryImpl implements ExerciseRepository {
   @override
   Stream<List<ExerciseLog>> watchToday(String userId) {
     final now = DateTime.now();
-    final startOfDay = DateTime(now.year, now.month, now.day);
+    final startOfDay = DayBoundaryResolver.startOfDay(now);
+    final endOfDay = DayBoundaryResolver.endOfDay(now);
     return _source
-        .streamSince(userId: userId, startOfDay: startOfDay)
+        .streamSince(
+            userId: userId, startOfDay: startOfDay, endOfDay: endOfDay)
         .map((maps) {
       return maps
           .map((m) {

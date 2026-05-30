@@ -112,11 +112,14 @@ class ExerciseNotifier extends StateNotifier<ExerciseState> {
 
   /// SPEC-58: Reset diario idempotente.
   ///
-  /// Limpia minutos en caché y mensajes de error. El stream
-  /// `watchToday` re-emitirá el total correcto del nuevo día.
+  /// Limpia minutos en caché y mensajes de error. SPEC-138: el stream
+  /// `watchToday` está acotado a [startOfDay, endOfDay), así que re-suscribimos
+  /// para avanzar la ventana al nuevo día (sin esto el día nuevo se vería vacío
+  /// hasta reiniciar la app).
   void resetDaily() {
     if (!mounted) return;
     state = const ExerciseState();
+    _initSubscription();
   }
 
   @override
