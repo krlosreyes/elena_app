@@ -11,11 +11,13 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:elena_app/src/core/services/day_boundary_resolver.dart';
 import 'package:elena_app/src/features/dashboard/application/fasting_notifier.dart'
     show fastingProvider, lastCompletedFastingProvider;
 
 /// True si el último ayuno cerrado del usuario:
-///   1. Tiene `endTime` en el día calendario de hoy (hora local), y
+///   1. Se ATRIBUYE al día de hoy (SPEC-138: por el punto medio del
+///      intervalo, no por el día calendario de `endTime`), y
 ///   2. Su duración total fue ≥ las horas objetivo del protocolo
 ///      activo (state.targetHours).
 ///
@@ -26,12 +28,15 @@ final hasCompletedFastingTodayProvider = Provider<bool>((ref) {
   final endTime = lastClosed.endTime;
   if (endTime == null) return false;
 
-  // ¿Es de hoy?
+  // SPEC-138: ¿se atribuye a hoy? Un 16:8 que cierra a las 00:30 tiene su
+  // punto medio el día anterior → cuenta para el día que la persona vivió,
+  // no para el día nuevo (corrige el "ya completaste tu ayuno de hoy" errado).
   final now = DateTime.now();
-  final isSameDay = endTime.year == now.year &&
-      endTime.month == now.month &&
-      endTime.day == now.day;
-  if (!isSameDay) return false;
+  final attributionDay = DayBoundaryResolver.attributionDayKey(
+    start: lastClosed.startTime,
+    end: endTime,
+  );
+  if (attributionDay != DayBoundaryResolver.dayKey(now)) return false;
 
   // ¿Fue completado al 100%?
   final fastingState = ref.watch(fastingProvider);
