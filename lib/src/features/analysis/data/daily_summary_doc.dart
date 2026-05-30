@@ -19,7 +19,13 @@ class DailySummaryDoc {
   /// Timestamp del último upsert. Lo escribe el data source.
   final DateTime updatedAt;
 
+  /// SPEC-138: offset de zona horaria (en minutos) con que se registró el día.
+  /// Permite reconstruir el día local correcto aunque el dispositivo cambie de
+  /// huso después. Null en docs pre-schema-v2 (legacy).
+  final int? tzOffsetMinutes;
+
   /// Versión del schema. Permite migraciones futuras sin breaking.
+  /// v2 (SPEC-138): agrega `tzOffsetMinutes`.
   final int schemaVersion;
 
   const DailySummaryDoc({
@@ -31,6 +37,7 @@ class DailySummaryDoc {
     required this.exerciseProgress,
     required this.mealsProgress,
     required this.updatedAt,
-    this.schemaVersion = 1,
+    this.tzOffsetMinutes,
+    this.schemaVersion = 2,
   });
 }

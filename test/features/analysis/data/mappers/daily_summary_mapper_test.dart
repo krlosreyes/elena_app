@@ -28,7 +28,10 @@ void main() {
       expect(doc.imrScore, 72);
       expect(doc.fastingProgress, 0.88);
       expect(doc.updatedAt, DateTime(2026, 5, 15, 18, 30));
-      expect(doc.schemaVersion, 1);
+      // SPEC-138: toDoc emite schema v2 y adjunta el offset de zona horaria.
+      expect(doc.schemaVersion, 2);
+      expect(doc.tzOffsetMinutes,
+          DateTime(2026, 5, 15, 18, 30).timeZoneOffset.inMinutes);
     });
   });
 
@@ -54,7 +57,8 @@ void main() {
         exerciseProgress: 0.58,
         mealsProgress: 1.0,
         updatedAt: DateTime(2026, 5, 15, 18, 30),
-        schemaVersion: 1,
+        tzOffsetMinutes: -300,
+        schemaVersion: 2,
       );
 
       final map = mapper.toMap(doc);
@@ -62,6 +66,7 @@ void main() {
 
       final reparsed = mapper.fromMap(map);
       expect(reparsed.date, doc.date);
+      expect(reparsed.tzOffsetMinutes, -300);
       expect(reparsed.imrScore, doc.imrScore);
       expect(reparsed.fastingProgress, doc.fastingProgress);
       expect(reparsed.sleepProgress, doc.sleepProgress);
@@ -69,7 +74,7 @@ void main() {
       expect(reparsed.exerciseProgress, doc.exerciseProgress);
       expect(reparsed.mealsProgress, doc.mealsProgress);
       expect(reparsed.updatedAt, doc.updatedAt);
-      expect(reparsed.schemaVersion, 1);
+      expect(reparsed.schemaVersion, 2);
     });
 
     test('fromMap tolera campos faltantes con defaults seguros', () {

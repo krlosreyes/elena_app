@@ -3,6 +3,7 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'package:elena_app/src/core/services/day_boundary_resolver.dart';
 import 'package:elena_app/src/features/analysis/data/daily_summary_doc.dart';
 import 'package:elena_app/src/features/analysis/domain/daily_summary.dart';
 
@@ -24,6 +25,7 @@ class DailySummaryMapper {
       exerciseProgress: summary.exerciseProgress,
       mealsProgress: summary.mealsProgress,
       updatedAt: now,
+      tzOffsetMinutes: DayBoundaryResolver.tzOffsetMinutes(now), // SPEC-138
     );
   }
 
@@ -38,6 +40,7 @@ class DailySummaryMapper {
       'exerciseProgress': doc.exerciseProgress,
       'mealsProgress': doc.mealsProgress,
       'updatedAt': Timestamp.fromDate(doc.updatedAt),
+      'tzOffsetMinutes': doc.tzOffsetMinutes,
       'schemaVersion': doc.schemaVersion,
     };
   }
@@ -56,25 +59,16 @@ class DailySummaryMapper {
       mealsProgress: (map['mealsProgress'] as num?)?.toDouble() ?? 0.0,
       updatedAt: (map['updatedAt'] as Timestamp?)?.toDate() ??
           DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
+      tzOffsetMinutes: (map['tzOffsetMinutes'] as num?)?.toInt(),
       schemaVersion: (map['schemaVersion'] as num?)?.toInt() ?? 1,
     );
   }
 
   /// Doc id canónico = `YYYYMMDD` (sin guiones para que sea válido
-  /// como id de Firestore).
-  static String docIdFor(DateTime t) {
-    final y = t.year.toString().padLeft(4, '0');
-    final m = t.month.toString().padLeft(2, '0');
-    final d = t.day.toString().padLeft(2, '0');
-    return '$y$m$d';
-  }
+  /// como id de Firestore). SPEC-138: delega en la fuente única del día.
+  static String docIdFor(DateTime t) => DayBoundaryResolver.dayKey(t);
 
   /// Formato de fecha legible `YYYY-MM-DD` (con guiones) que se
-  /// guarda como campo `date` dentro del doc.
-  String _dateKey(DateTime t) {
-    final y = t.year.toString().padLeft(4, '0');
-    final m = t.month.toString().padLeft(2, '0');
-    final d = t.day.toString().padLeft(2, '0');
-    return '$y-$m-$d';
-  }
+  /// guarda como campo `date` dentro del doc. SPEC-138: delega.
+  String _dateKey(DateTime t) => DayBoundaryResolver.dayKeyIso(t);
 }
