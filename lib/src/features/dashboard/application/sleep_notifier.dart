@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
+import 'package:elena_app/src/core/services/day_boundary_resolver.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
 import 'package:elena_app/src/features/dashboard/application/fasting_notifier.dart';
 import 'package:elena_app/src/features/dashboard/data/sleep_repository_impl.dart';
@@ -130,24 +131,14 @@ class SleepNotifier extends StateNotifier<SleepState> {
     });
   }
 
-  /// SPEC-108: id canónico de un registro de sueño por día calendario.
-  /// Unificado entre todos los paths (confirmManualWakeUp,
-  /// saveManualSleep) para evitar docs duplicados por día.
-  String _dayDocId(DateTime t) {
-    final m = t.month.toString().padLeft(2, '0');
-    final d = t.day.toString().padLeft(2, '0');
-    return 'sleep_${t.year}$m$d';
-  }
-
-  /// SPEC-108: ¿ya hay un registro de sueño persistido para el día
-  /// calendario de `t`? Útil para evitar sobreescritura automática.
-  bool _hasLogForDay(DateTime t) {
-    final log = state.lastLog;
-    if (log == null) return false;
-    return log.wokeUp.year == t.year &&
-        log.wokeUp.month == t.month &&
-        log.wokeUp.day == t.day;
-  }
+  /// SPEC-138: id canónico de un registro de sueño por DÍA DE ATRIBUCIÓN.
+  /// El sueño se atribuye al día donde transcurre la mayor parte del intervalo
+  /// (punto medio de `[fellAsleep, wokeUp]`), no al día calendario del
+  /// despertar. Así un sueño 23:00→00:30 cuenta para el día que la persona
+  /// vivió, no para el día nuevo. Unifica confirmManualWakeUp y saveManualSleep
+  /// (reemplaza el `_dayDocId` por wokeUp de SPEC-108).
+  String _attributionDocId(DateTime fellAsleep, DateTime wokeUp) =>
+      'sleep_${DayBoundaryResolver.attributionDayKey(start: fellAsleep, end: wokeUp)}';
 
   Future<void> confirmManualWakeUp() async {
     final now = DateTime.now();
@@ -158,39 +149,40 @@ class SleepNotifier extends StateNotifier<SleepState> {
 
     if (state.isSaving) return;
 
-    // SPEC-108: si el usuario YA registró su sueño de hoy manualmente
-    // (con metadata como calidad 1-5), no sobreescribimos con
-    // defaults calculados. Solo marcamos el flag interno para que el
-    // overlay automático no vuelva a saltar.
-    if (_hasLogForDay(now)) {
-      _manualWakeUpConfirmedToday = true;
-      state = state.copyWith(
-        isWaitingForWakeUp: false,
-        isSleepMode: false,
-      );
-      AppLogger.debug(
-        'confirmManualWakeUp: ya hay registro manual de hoy, no se sobreescribe',
-      );
-      return;
-    }
-
     final user = userAsync.value;
     if (user != null && user.id.isNotEmpty) {
-      state = state.copyWith(isSaving: true);
-
-      // Calcular hora de dormir matemáticamente (asumiendo anoche si es de mañana)
+      // SPEC-138: hora de dormir = ocurrencia más reciente de `sleepTime` en o
+      // antes de `now`. Si la construida para hoy cae en el futuro respecto a
+      // `now`, fue el día anterior. Regla determinista que reemplaza la
+      // heurística frágil `now.hour < 12 && sleepTime.hour > 12`.
       DateTime sleepTimeThisCycle = DateTime(now.year, now.month, now.day,
           user.profile.sleepTime.hour, user.profile.sleepTime.minute);
-
-      if (now.hour < 12 && user.profile.sleepTime.hour > 12) {
+      if (sleepTimeThisCycle.isAfter(now)) {
         sleepTimeThisCycle =
             sleepTimeThisCycle.subtract(const Duration(days: 1));
       }
 
+      final docId = _attributionDocId(sleepTimeThisCycle, now);
+
+      // SPEC-108/138: si ya hay un registro para este MISMO día de atribución,
+      // no sobreescribimos con defaults calculados; solo bajamos el overlay.
+      if (state.lastLog?.id == docId) {
+        _manualWakeUpConfirmedToday = true;
+        state = state.copyWith(
+          isWaitingForWakeUp: false,
+          isSleepMode: false,
+        );
+        AppLogger.debug(
+          'confirmManualWakeUp: ya hay registro de este día, no se sobreescribe',
+        );
+        return;
+      }
+
+      state = state.copyWith(isSaving: true);
+
       final realLog = SleepLog(
-        // SPEC-108: id unificado por día (antes `sync_*` distinto del
-        // que usaba saveManualSleep → docs duplicados).
-        id: _dayDocId(now),
+        // SPEC-138: id por día de atribución (punto medio).
+        id: docId,
         fellAsleep: sleepTimeThisCycle,
         wokeUp: now,
         lastMealTime: fastingState.startTime ??
@@ -250,9 +242,9 @@ class SleepNotifier extends StateNotifier<SleepState> {
       }
 
       final realLog = SleepLog(
-        // SPEC-108: id unificado por día (antes `manual_*` distinto
-        // del `sync_*` de confirmManualWakeUp → docs duplicados).
-        id: _dayDocId(now),
+        // SPEC-138: id por día de atribución (punto medio del intervalo),
+        // unificado con confirmManualWakeUp.
+        id: _attributionDocId(bedtimeDt, wakeTimeDt),
         fellAsleep: bedtimeDt,
         wokeUp: wakeTimeDt,
         lastMealTime: fastingState.startTime ??
