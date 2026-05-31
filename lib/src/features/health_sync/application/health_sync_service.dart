@@ -25,12 +25,35 @@ import 'package:elena_app/src/features/health_sync/domain/health_permission_stat
 import 'package:elena_app/src/features/health_sync/domain/health_sample.dart';
 import 'package:elena_app/src/features/health_sync/domain/health_sync_result.dart';
 
-/// Mapeo de nuestras métricas neutrales al enum del SDK.
-const Map<HealthMetric, hp.HealthDataType> _typeMap = {
-  HealthMetric.weight: hp.HealthDataType.WEIGHT,
-  HealthMetric.sleepSession: hp.HealthDataType.SLEEP_SESSION,
-  HealthMetric.steps: hp.HealthDataType.STEPS,
-};
+/// Mapeo de nuestras métricas neutrales a uno o más tipos del SDK.
+///
+/// IMPORTANTE: el plugin `health` ^13.3.1 usa tipos distintos según
+/// plataforma para sueño:
+///   - Android (Health Connect): `SLEEP_SESSION` agrupa toda la noche.
+///   - iOS (HealthKit): `SLEEP_SESSION` NO existe. El Apple Watch
+///     escribe sueño en MÚLTIPLES categorías: SLEEP_IN_BED + las
+///     etapas (DEEP, REM, LIGHT) o el genérico ASLEEP cuando el
+///     dispositivo no diferencia. Pedimos los 5 tipos y consolidamos
+///     por noche en `_fetchMetric`.
+List<hp.HealthDataType> _typesFor(HealthMetric metric) {
+  switch (metric) {
+    case HealthMetric.weight:
+      return [hp.HealthDataType.WEIGHT];
+    case HealthMetric.sleepSession:
+      if (!kIsWeb && Platform.isIOS) {
+        return [
+          hp.HealthDataType.SLEEP_IN_BED,
+          hp.HealthDataType.SLEEP_ASLEEP,
+          hp.HealthDataType.SLEEP_DEEP,
+          hp.HealthDataType.SLEEP_LIGHT,
+          hp.HealthDataType.SLEEP_REM,
+        ];
+      }
+      return [hp.HealthDataType.SLEEP_SESSION];
+    case HealthMetric.steps:
+      return [hp.HealthDataType.STEPS];
+  }
+}
 
 /// Servicio de sincronización con HealthKit (iOS) / Health Connect (Android).
 class HealthSyncService {
@@ -45,6 +68,19 @@ class HealthSyncService {
   };
 
   bool _configured = false;
+
+  /// SPEC-132 fix iOS: HealthKit nunca confirma el estado real de
+  /// permisos vía `hasPermissions()` — siempre retorna null. Antes
+  /// asumíamos "null = granted optimistically", pero eso causaba que
+  /// el auto-sync intentara leer SIN haber disparado nunca el sheet
+  /// nativo (porque el botón "Conectar" no aparecía). Resultado:
+  /// errores "Authorization not determined" en loop.
+  ///
+  /// Fix: trackeamos en memoria si el usuario ya solicitó autorización
+  /// en esta sesión. Si nunca lo hizo → reportamos Denied y la UI
+  /// muestra "Conectar". Una vez que `requestAuthorization` retorna
+  /// Granted, asumimos granted para el resto de la sesión.
+  bool _iosAuthRequestedThisSession = false;
 
   HealthSyncService({hp.Health? plugin}) : _plugin = plugin ?? hp.Health();
 
@@ -95,7 +131,9 @@ class HealthSyncService {
         }
       }
 
-      final types = supportedMetrics.map((m) => _typeMap[m]!).toList();
+      // _typesFor puede retornar múltiples tipos por métrica
+      // (en iOS, sleep son 5 categorías distintas).
+      final types = supportedMetrics.expand(_typesFor).toList();
       final permissions = List<hp.HealthDataAccess>.filled(
         types.length,
         hp.HealthDataAccess.READ,
@@ -107,6 +145,7 @@ class HealthSyncService {
       );
 
       if (granted) {
+        _iosAuthRequestedThisSession = true;
         return const HealthPermissionGranted();
       } else {
         return const HealthPermissionDenied();
@@ -141,7 +180,9 @@ class HealthSyncService {
         }
       }
 
-      final types = supportedMetrics.map((m) => _typeMap[m]!).toList();
+      // _typesFor puede retornar múltiples tipos por métrica
+      // (en iOS, sleep son 5 categorías distintas).
+      final types = supportedMetrics.expand(_typesFor).toList();
       final permissions = List<hp.HealthDataAccess>.filled(
         types.length,
         hp.HealthDataAccess.READ,
@@ -153,10 +194,20 @@ class HealthSyncService {
       );
 
       // hasPermissions() retorna null en iOS por la limitación de HK
-      // (no se puede saber el estado, solo intentar leer). Tratamos
-      // null como "indeterminado → asumimos granted optimistically y
-      // dejamos que sync() detecte el caso real".
-      if (has == null) return const HealthPermissionGranted();
+      // (no se puede saber el estado real, solo intentar leer).
+      //
+      // Comportamiento corregido:
+      //  - Si null Y el usuario YA solicitó autorización en esta
+      //    sesión → asumimos granted (HK no nos lo confirma pero el
+      //    usuario vio el sheet y aceptó).
+      //  - Si null Y el usuario NUNCA solicitó autorización → forzamos
+      //    Denied. Esto hace que la UI muestre el botón "Conectar" y
+      //    dispare el sheet nativo cuando el usuario lo toca.
+      if (has == null) {
+        return _iosAuthRequestedThisSession
+            ? const HealthPermissionGranted()
+            : const HealthPermissionDenied();
+      }
       return has
           ? const HealthPermissionGranted()
           : const HealthPermissionDenied();
@@ -256,9 +307,9 @@ class HealthSyncService {
     DateTime start,
     DateTime end,
   ) async {
-    final type = _typeMap[metric]!;
+    final types = _typesFor(metric);
     final points = await _plugin.getHealthDataFromTypes(
-      types: [type],
+      types: types,
       startTime: start,
       endTime: end,
     );
@@ -274,10 +325,67 @@ class HealthSyncService {
       if (sample != null) samples.add(sample);
     }
 
+    // SPEC-132 fix iOS sueño: el Apple Watch escribe MUCHAS muestras
+    // por noche (una por cada etapa: IN_BED, ASLEEP, DEEP, LIGHT, REM,
+    // a veces 20+ por sesión). Las consolidamos en 1 sample por noche
+    // antes de devolverlas — el SleepLog ya espera 1 sesión por noche.
+    if (metric == HealthMetric.sleepSession && samples.length > 1) {
+      final consolidated = _consolidateSleepByNight(samples);
+      consolidated.sort((a, b) => a.start.compareTo(b.start));
+      return consolidated;
+    }
+
     // Orden cronológico: más viejo primero. Los notifiers procesan
     // en ese orden para que el más reciente quede como "actual".
     samples.sort((a, b) => a.start.compareTo(b.start));
     return samples;
+  }
+
+  /// Agrupa samples de sueño en "noches" — muestras separadas por
+  /// gaps de menos de 2h se consideran parte de la misma sesión.
+  /// Por cada grupo emitimos 1 HealthSample con start = mínimo y
+  /// end = máximo del grupo. El valor (minutos) se recalcula del
+  /// rango total.
+  List<HealthSample> _consolidateSleepByNight(List<HealthSample> raw) {
+    if (raw.isEmpty) return raw;
+    final sorted = [...raw]..sort((a, b) => a.start.compareTo(b.start));
+
+    const maxGap = Duration(hours: 2);
+    final groups = <List<HealthSample>>[];
+    var current = <HealthSample>[sorted.first];
+
+    for (var i = 1; i < sorted.length; i++) {
+      final prev = current.last;
+      final curr = sorted[i];
+      // Si la próxima muestra arranca dentro de 2h del fin de la
+      // anterior, sigue siendo la misma sesión.
+      if (curr.start.difference(prev.end) <= maxGap) {
+        current.add(curr);
+      } else {
+        groups.add(current);
+        current = [curr];
+      }
+    }
+    groups.add(current);
+
+    return groups.map((group) {
+      final earliest = group.map((s) => s.start).reduce(
+            (a, b) => a.isBefore(b) ? a : b,
+          );
+      final latest = group.map((s) => s.end).reduce(
+            (a, b) => a.isAfter(b) ? a : b,
+          );
+      return HealthSample(
+        metric: HealthMetric.sleepSession,
+        value: latest.difference(earliest).inMinutes.toDouble(),
+        start: earliest,
+        end: latest,
+        sourceName: group.first.sourceName,
+        // El uuid del primer sample del grupo sirve como id estable —
+        // mientras el grupo no cambie de composición, este id no cambia.
+        uuid: group.first.uuid,
+      );
+    }).toList();
   }
 
   /// Traduce un `HealthDataPoint` del plugin a `HealthSample` neutral.
