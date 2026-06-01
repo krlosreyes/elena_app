@@ -20,6 +20,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/core/engine/score_engine.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
+import 'package:elena_app/src/features/progress/application/biometric_history_service.dart';
 import 'package:elena_app/src/shared/data/mappers/user_profile_mapper.dart';
 import 'package:elena_app/src/shared/data/user_profile_repository_impl.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
@@ -46,6 +47,22 @@ class OnboardingController extends StateNotifier<AsyncValue<void>> {
       // canónico (`displayName, genderCanonical, bio, habits, meta`)
       // en el mismo write.
       await _repository.saveProfile(user);
+
+      // SPEC-143: registrar baseline biométrico en `biometric_history`
+      // para que SPEC-141 tenga punto de partida del historial de IMR
+      // longitudinal. Mismo patrón try/catch que el IMR baseline más
+      // abajo — un fallo de denormalización no debe bloquear el cierre
+      // del onboarding.
+      try {
+        await _ref
+            .read(biometricHistoryServiceProvider)
+            .writeOnboardingBaseline(currentUser: user);
+      } catch (e) {
+        AppLogger.warning(
+          '[onboarding] No se persistió baseline biométrico: $e',
+          e,
+        );
+      }
 
       // SPEC-82: persistir IMR baseline (solo bloque Estructura) para
       // que el sitio web tenga score visible inmediatamente. Si la

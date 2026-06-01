@@ -1,7 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
+import 'package:elena_app/src/features/progress/application/biometric_history_service.dart';
+import 'package:elena_app/src/features/progress/domain/biometric_delta.dart';
 import 'package:elena_app/src/shared/data/user_profile_repository_impl.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
-import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
 
 /// Estado del ProfileController
 class ProfileEditState {
@@ -92,14 +94,24 @@ class ProfileController extends StateNotifier<ProfileEditState> {
       savedSuccessfully: false,
     );
     try {
-      final updated = currentUser.copyWith(
-        weight: weight ?? currentUser.weight,
-        waistCircumference:
-            waistCircumference ?? currentUser.waistCircumference,
-        neckCircumference: neckCircumference ?? currentUser.neckCircumference,
-        bodyFatPercentage: bodyFatPercentage ?? currentUser.bodyFatPercentage,
+      // SPEC-143: la edición de biometría desde Profile pasa por el
+      // servicio canónico. Garantiza dos cosas que el `saveProfile`
+      // anterior no daba: (a) versionado automático en
+      // `biometric_history/{today}` con `source: 'profile_edit'`, y
+      // (b) escritura atómica de ambos lugares vía WriteBatch.
+      //
+      // La signature pública se preserva — los callsites de Profile
+      // no necesitan saber del refactor.
+      final delta = BiometricDelta(
+        weight: weight,
+        waistCircumference: waistCircumference,
+        neckCircumference: neckCircumference,
+        bodyFatPercentage: bodyFatPercentage,
       );
-      await ref.read(userProfileRepositoryProvider).saveProfile(updated);
+      await ref.read(biometricHistoryServiceProvider).updateFromProfileEdit(
+            currentUser: currentUser,
+            delta: delta,
+          );
       state = state.copyWith(isSaving: false, savedSuccessfully: true);
     } catch (e) {
       state = state.copyWith(

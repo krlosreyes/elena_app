@@ -8,8 +8,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 import 'package:elena_app/src/core/engine/metabolic_state_provider.dart';
+import 'package:elena_app/src/features/progress/application/biometric_history_service.dart';
 import 'package:elena_app/src/features/progress/domain/biometric_checkin.dart';
-import 'package:elena_app/src/features/progress/application/progress_notifier.dart';
 
 // ─── Entry point ─────────────────────────────────────────────────────────────
 
@@ -99,7 +99,16 @@ class _BiometricCheckInSheetState extends ConsumerState<BiometricCheckInSheet> {
       createdAt: today,
     );
 
-    await ref.read(progressProvider.notifier).saveCheckIn(checkIn);
+    // SPEC-143: el sheet ahora pasa por el servicio canónico, que
+    // garantiza dos cosas que `ProgressNotifier.saveCheckIn` no daba:
+    // (a) escritura atómica de `users/{uid}` + `biometric_history`,
+    // (b) versionado con `source: 'checkin_sheet'` para auditoría.
+    // El stream de progressProvider sigue captando el cambio porque
+    // escucha el snapshot de biometric_history.
+    await ref.read(biometricHistoryServiceProvider).updateFromCheckInSheet(
+          currentUser: user,
+          checkInData: checkIn,
+        );
 
     if (mounted) {
       setState(() => _isSaving = false);
