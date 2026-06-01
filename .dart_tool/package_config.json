@@ -98,6 +98,12 @@
       "languageVersion": "3.0"
     },
     {
+      "name": "carp_serializable",
+      "rootUri": "file:///Users/carlosreyes/.pub-cache/hosted/pub.dev/carp_serializable-2.0.1",
+      "packageUri": "lib/",
+      "languageVersion": "3.3"
+    },
+    {
       "name": "cel",
       "rootUri": "file:///Users/carlosreyes/.pub-cache/hosted/pub.dev/cel-0.5.4+1",
       "packageUri": "lib/",
@@ -204,6 +210,18 @@
       "rootUri": "file:///Users/carlosreyes/.pub-cache/hosted/pub.dev/dbus-0.7.12",
       "packageUri": "lib/",
       "languageVersion": "2.17"
+    },
+    {
+      "name": "device_info_plus",
+      "rootUri": "file:///Users/carlosreyes/.pub-cache/hosted/pub.dev/device_info_plus-12.4.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.7"
+    },
+    {
+      "name": "device_info_plus_platform_interface",
+      "rootUri": "file:///Users/carlosreyes/.pub-cache/hosted/pub.dev/device_info_plus_platform_interface-7.0.3",
+      "packageUri": "lib/",
+      "languageVersion": "3.7"
     },
     {
       "name": "equatable",
@@ -474,6 +492,12 @@
       "rootUri": "file:///Users/carlosreyes/.pub-cache/hosted/pub.dev/graphs-2.3.2",
       "packageUri": "lib/",
       "languageVersion": "3.4"
+    },
+    {
+      "name": "health",
+      "rootUri": "file:///Users/carlosreyes/.pub-cache/hosted/pub.dev/health-13.3.1",
+      "packageUri": "lib/",
+      "languageVersion": "3.8"
     },
     {
       "name": "hooks",
@@ -996,6 +1020,12 @@
       "rootUri": "file:///Users/carlosreyes/.pub-cache/hosted/pub.dev/win32-5.15.0",
       "packageUri": "lib/",
       "languageVersion": "3.8"
+    },
+    {
+      "name": "win32_registry",
+      "rootUri": "file:///Users/carlosreyes/.pub-cache/hosted/pub.dev/win32_registry-2.1.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.7"
     },
     {
       "name": "xdg_directories",
