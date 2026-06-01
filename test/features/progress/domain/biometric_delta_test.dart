@@ -4,6 +4,14 @@ import 'package:elena_app/src/features/progress/domain/biometric_delta.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+// Profile circadiano default — irrelevante para los tests de BiometricDelta
+// pero requerido por UserModel. Los thresholds y la lógica del delta no
+// dependen del profile.
+final _defaultProfile = CircadianProfile(
+  wakeUpTime: DateTime(2026, 1, 1, 7, 0),
+  sleepTime: DateTime(2026, 1, 1, 23, 0),
+);
+
 UserModel _baseline({
   double weight = 75.0,
   double? waistCircumference = 90.0,
@@ -21,6 +29,7 @@ UserModel _baseline({
       neckCircumference: neckCircumference,
       bodyFatPercentage: bodyFatPercentage,
       isMeasurementEstimated: isMeasurementEstimated,
+      profile: _defaultProfile,
     );
 
 void main() {
