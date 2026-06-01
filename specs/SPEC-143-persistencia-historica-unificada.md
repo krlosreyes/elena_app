@@ -1,8 +1,8 @@
 # SPEC-143 — Persistencia histórica unificada: `imr_history` + versionado automático biométrico
 
-**Estado:** IN_PROGRESS (aprobada por Carlos 2026-06-01)
+**Estado:** CLOSED (implementada y testeada 2026-06-01)
 **Versión:** 1.0
-**Fecha:** 2026-06-01 · aprobada 2026-06-01
+**Fecha:** 2026-06-01 · aprobada 2026-06-01 · cerrada 2026-06-01
 **Tipo:** Infraestructura de datos — cierra dos gaps de persistencia detectados en auditoría 2026-06-01.
 **Líder:** Carlos
 **Implementación:** Claude
@@ -491,3 +491,23 @@ Documento inicial. Cierra dos gaps de la auditoría de persistencia del 2026-06-
 3. Notificación al equipo del sitio Metamorfosis Real como tarea de coordinación, no bloqueante.
 
 SPEC pasa de DRAFT a IN_PROGRESS. Implementación arranca en próximo sprint.
+
+### Cierre 2026-06-01 (mismo día)
+
+Implementación completada en 4 bloques de commits durante el día:
+
+**Bloque A — dominio puro.** `BiometricDelta` value object con `isSignificant`/`previousValuesAgainst`/`applyTo`. Extensión de `BiometricCheckIn` con `neckCircumference`, `source`, `previousValues`, `recordedAt` (todos nullable, backward compat). Clase `BiometricSource` con las 6 fuentes válidas como constantes. 30+ tests de dominio.
+
+**Bloque B — servicio + infra.** `BiometricHistoryService` con los 5 métodos (profileEdit, checkInSheet, healthkitSync con filtro de ruido, bodyFatRecompute con throttle 30s, onboardingBaseline) + `writeSpec143BackfillEntry`. `BiometricRepository.applyBiometricUpdate` con WriteBatch atómico cross-collection. `firestore.rules` con regla específica para `imr_history` (documentada como aspiracional por la catch-all preexistente). `watchHistory` default subido a 365 días. 15 tests del servicio con FakeFirebaseFirestore.
+
+**Bloque C — migración de callsites.** `ProfileController.updateBiometry` → usa servicio internamente (signature pública preservada). `BiometricCheckInSheet._save` → directo al servicio, salta el notifier. `OnboardingController.completeOnboarding` → agrega `writeOnboardingBaseline` post-saveProfile con try/catch que no rompe flujo. Tests SPEC-88 (4) adaptados al nuevo path con fake `_CapturingHistoryService`.
+
+**Bloque D — backfill al bootstrap + cierre.** `biometricBackfillProvider` side-effect que escucha `currentUserStreamProvider`, verifica con `repo.fetchLatest` si la historia está vacía, dispara `writeSpec143BackfillEntry` una sola vez por sesión. Montado en `dashboard_screen.dart` junto a `imrPersistenceProvider`. 5 tests del provider con stream controlado.
+
+**Out of scope confirmado:** la conexión del `HealthImportService` al servicio canónico queda para SPEC-141.2 cuando SPEC-132 cierre — hoy `_importWeights` sigue escribiendo directo a biometric_history sin actualizar `users/{uid}` ni versionar con `source`. Aceptable porque ese flujo solo se dispara cuando el sync HealthKit/HC está activo y SPEC-132 aún no está en producción.
+
+**Aprendizajes operacionales registrados:** Firestore auto-crea single-field indexes (no declarar en `firestore.indexes.json`). WriteBatch SÍ es atómico cross-collection (la nota del SPEC §R-02 sobre necesitar Transaction era defensiva en exceso). Tests del onboarding muestran warnings de Firebase no inicializado al ejecutar el backfill — esperado por el try/catch del controller, no es un defecto.
+
+**Resumen métricas finales:** suite total **949 ✓ / 3 skipped / 0 ❌** desde fresh build (`flutter clean && pub get && analyze && test`). 5 archivos nuevos en producción, 4 archivos modificados. 4 archivos nuevos en tests (60+ tests nuevos). 0 código eliminado — todos los cambios son aditivos.
+
+**Próximo paso desbloqueado:** SPEC-141 puede pasar de APPROVED-DESIGN a IN_PROGRESS cuando la validación clínica externa confirme.

@@ -27,6 +27,7 @@ import 'package:elena_app/src/features/engagement/presentation/widgets/engagemen
 import 'package:elena_app/src/features/adaptive/presentation/widgets/adaptive_suggestion_card.dart';
 import 'package:elena_app/src/features/nutrition/application/cociente_a_service.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
+import 'package:elena_app/src/features/progress/application/biometric_backfill_provider.dart';
 // SPEC-137 E.5: regla del intervalo 3h (lastMealAt + 3h) para "Próxima En".
 import 'package:elena_app/src/features/nutrition/domain/meal_interval_rules.dart';
 // SPEC-137 E.4: registro unificado con TimePicker. AddPastMealSheet
@@ -121,6 +122,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     // Metamorfosis Real). El provider es side-effect-only — el watch
     // sólo lo monta; no se usa su retorno.
     ref.watch(imrPersistenceProvider);
+
+    // SPEC-143 §RF-143-07: backfill client-side de biometric_history.
+    // Si el usuario abre la app sin ninguna entrada histórica, dispara
+    // una escritura inicial con los valores actuales. One-shot por sesión.
+    // Mismo patrón side-effect-only que imrPersistenceProvider.
+    ref.watch(biometricBackfillProvider);
 
     return userAsync.when(
       loading: () =>
