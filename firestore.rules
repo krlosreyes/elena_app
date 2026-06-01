@@ -43,6 +43,29 @@ service cloud.firestore {
                    && withinSizeLimit()
                    && idMatchesOrAbsent(userId);
 
+      // SPEC-143: imr_history — historial semanal del IMR longitudinal
+      // (SPEC-141). Validación estricta: weekISO del payload debe
+      // coincidir con el path, y totalScore debe estar en rango [0, 100].
+      //
+      // NOTA IMPORTANTE: Firestore Rules evalúa allow rules con OR
+      // entre matches concurrentes. La regla catch-all de subcolecciones
+      // (`match /{allPaths=**}`) más abajo también matchea este path y
+      // es menos restrictiva. Por lo tanto, esta validación específica
+      // hoy NO se enforza server-side — actúa como documentación de
+      // intent y queda lista para cuando una SPEC futura reescriba las
+      // rules con paths explícitos en lugar de catch-all. La validación
+      // efectiva vive client-side en BiometricHistoryService y
+      // WeeklyImrSnapshotService (SPEC-141).
+      match /imr_history/{weekISO} {
+        allow read: if isOwner(userId);
+        allow write: if isOwner(userId)
+                     && withinSizeLimit()
+                     && request.resource.data.weekISO == weekISO
+                     && request.resource.data.totalScore is number
+                     && request.resource.data.totalScore >= 0
+                     && request.resource.data.totalScore <= 100;
+      }
+
       // Subcolecciones (logs de sueño, hidratación, ejercicio, etc.):
       // mismo dueño, mismo límite de tamaño. Sin id-match porque los
       // docs hijos pueden o no tener `id` y el path ya enlaza al
