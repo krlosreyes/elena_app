@@ -121,13 +121,16 @@ match /users/{userId}/imr_history/{weekISO} {
 }
 ```
 
-**Índice compuesto** (para queries de tendencia que ordenan por fecha):
+**Índice** (para queries de tendencia que ordenan por fecha):
 
-```
-collectionGroup: imr_history
-fields:
-  - computedAt (desc)
-```
+Firestore crea automáticamente single-field indexes en ambas direcciones para
+todos los campos. La query típica `imr_history.orderBy('computedAt', desc).limit(N)`
+NO requiere declaración en `firestore.indexes.json` — falla el `firebase deploy`
+con HTTP 400 "this index is not necessary" si se intenta declarar.
+
+Si en el futuro se agregan queries multi-field sobre `imr_history` (ej. filtrar
+por `reason` Y ordenar por `computedAt`), abrir SPEC followup que declare el
+compound index correspondiente.
 
 ### RF-143-02 — `BiometricHistoryService` como punto único
 
@@ -371,7 +374,7 @@ Ver §RF-143-01.
 
 10. La subcollection `imr_history` existe en `firestore.rules` con las restricciones correctas (solo dueño lee/escribe, validación del rango 0-100).
 
-11. El índice compuesto `imr_history.computedAt desc` está publicado.
+11. La query `imr_history.orderBy('computedAt', desc).limit(N)` funciona sin requerir declaración explícita en `firestore.indexes.json` (Firestore auto-crea single-field indexes en ambas direcciones).
 
 12. `flutter analyze` sin nuevos issues.
 
