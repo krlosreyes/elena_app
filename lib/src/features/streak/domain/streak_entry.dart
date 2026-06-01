@@ -98,23 +98,34 @@ class StreakEntry {
   /// IMR >= 60 Y mínimo 3 pilares completados.
   bool get isEngaged => imrScore >= 60 && qualifiesForStreak;
 
-  /// SPEC-65: score continuo de calidad del día [0.0, 1.0].
+  /// SPEC-65 + SPEC-140: score continuo de calidad del día [0.0, 1.0].
+  /// Es la base del "Score del Día" expuesto al usuario en Dashboard.
   ///
   /// Pondera las magnitudes disponibles. Si todas están `null`, cae a
   /// `pillarsCompleted / 5.0` (señal binaria pura — comportamiento previo).
   ///
-  /// Pesos por pilar (suman 1.0). SPEC-70: ref IMR_BIBLIOGRAPHY.md §6.
-  /// - Sueño 0.25 — §6.1 MEDIUM (mayor evidencia + efectos sistémicos).
-  /// - Ayuno/Ejercicio/Hidratación 0.20 — §6.2 ENGINEERING JUDGMENT
-  ///   (co-iguales por dosis-respuesta comparable).
-  /// - Nutrición 0.15 — §6.3 ENGINEERING JUDGMENT (conservador hasta
-  ///   que macros de SPEC-64 entren al cómputo).
+  /// Pesos por pilar (suman 1.0). SPEC-140 rebalanceó con evidencia
+  /// bibliográfica — ver IMR_BIBLIOGRAPHY.md §6 actualizada.
+  /// - Sueño 0.25 — AASM 2015, Walker, Spiegel 1999 *Lancet*,
+  ///   Cappuccio 2010 *Diabetes Care*. Mayor evidencia.
+  /// - Ayuno 0.22 — Sutton 2018 *Cell Metab*, Mattson 2017,
+  ///   Lopez-Minguez 2018. Subió +0.02 vs SPEC-65 al absorber parte
+  ///   del peso del timing circadiano en este agregado simplificado.
+  /// - Ejercicio 0.20 — ACSM 2021, Pedersen-Saltin 2015. Dose-response.
+  /// - Nutrición 0.18 — Liu 2000, Brand-Miller 2003. Subió +0.03 vs
+  ///   SPEC-65 reconociendo evidencia dietética; subirá a 0.22 cuando
+  ///   SPEC-137 incorpore calidad nutricional al cómputo.
+  /// - Hidratación 0.15 — bajó -0.05 vs SPEC-65 aplicando la lógica
+  ///   de SPEC-70.5 (revisión clínica externa: "20% excesivo frente
+  ///   al impacto clínico real"). No baja a 0.10 como en IMR/Conducta
+  ///   porque Circadiano no es pilar separado aquí.
   double get dailyQualityScore {
-    const wFasting = 0.20;
+    // SPEC-140: pesos rebalanceados. Suma 1.00.
     const wSleep = 0.25;
-    const wHydration = 0.20;
+    const wFasting = 0.22;
     const wExercise = 0.20;
-    const wNutrition = 0.15;
+    const wNutrition = 0.18;
+    const wHydration = 0.15;
 
     double weightedSum = 0.0;
     double totalWeight = 0.0;

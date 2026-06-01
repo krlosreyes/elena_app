@@ -243,12 +243,12 @@ void main() {
       expect(e.dailyQualityScore, 1.0);
     });
 
-    test('Renormalización: sueño 1.0 + ayuno 0.5 → ≈0.78', () {
-      // wSleep=0.25, wFasting=0.20. total=0.45.
-      // weighted = 0.25*1.0 + 0.20*0.5 = 0.35.
-      // result = 0.35/0.45 = 0.7777...
+    test('SPEC-140: renormalización sueño 1.0 + ayuno 0.5 → ≈0.766', () {
+      // SPEC-140 pesos: wSleep=0.25, wFasting=0.22. total=0.47.
+      // weighted = 0.25*1.0 + 0.22*0.5 = 0.36.
+      // result = 0.36/0.47 = 0.76596...
       final e = entry(sleepScore: 1.0, fastingMag: 0.5);
-      expect(e.dailyQualityScore, closeTo(0.35 / 0.45, 1e-9));
+      expect(e.dailyQualityScore, closeTo(0.36 / 0.47, 1e-9));
     });
 
     test('Entrada legacy (sin magnitudes) → fallback pillars/5', () {
