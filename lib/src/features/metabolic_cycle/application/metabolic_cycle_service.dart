@@ -13,8 +13,6 @@
 
 import 'dart:async';
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/features/metabolic_cycle/domain/closure_reason.dart';
 import 'package:elena_app/src/features/metabolic_cycle/domain/cycle_feedback.dart';
@@ -72,17 +70,16 @@ class MetabolicCycleEvaluationInput {
 }
 
 /// Servicio orquestador. Singleton por sesión (Provider sin autoDispose).
+///
+/// El clock NO es campo del service — cada llamada (`evaluateAndApply`,
+/// `bootstrapIfMissing`) recibe `now` en su input. Esto facilita testing
+/// determinístico sin tener que inyectar un clock en el constructor.
 class MetabolicCycleService {
   MetabolicCycleService({
     required MetabolicCycleRepository repository,
-    DateTime Function() clock = _systemClock,
-  })  : _repository = repository,
-        _clock = clock;
+  }) : _repository = repository;
 
   final MetabolicCycleRepository _repository;
-  final DateTime Function() _clock;
-
-  static DateTime _systemClock() => DateTime.now();
 
   // ─── API pública ──────────────────────────────────────────────────────────
 

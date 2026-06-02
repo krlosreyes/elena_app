@@ -82,8 +82,7 @@ class MetabolicCycle {
   bool get isClosed => closedAt != null;
 
   /// Duración total del ciclo. Null si está abierto.
-  Duration? get totalDuration =>
-      closedAt == null ? null : closedAt!.difference(startedAt);
+  Duration? get totalDuration => closedAt?.difference(startedAt);
 
   /// Construye un cycleId canónico desde un timestamp.
   /// Usa el ISO 8601 en UTC para garantizar idempotencia cross-device.
