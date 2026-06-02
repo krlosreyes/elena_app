@@ -616,8 +616,77 @@ A partir de SPEC-82, el doc `users/{uid}` persiste un bloque `imr.current` con m
 
 ---
 
+## §13 — Día Metabólico (SPEC-149)
+
+Hasta SPEC-149, ElenaApp definió "el día" como el día calendárico local (00:00–23:59), siguiendo la decisión documentada en `DayBoundaryResolver` (SPEC-138). Esa decisión era pragmáticamente correcta (zonas horarias, persistencia, compatibilidad con el sitio web), pero **conceptualmente incorrecta** para una app cuyo dominio es salud metabólica.
+
+SPEC-149 introduce el **Día Metabólico** como capa semántica sobre los datos persistidos. El día calendárico sigue existiendo en `daily_summary/{YYYYMMDD}` para el sitio Metamorfosis Real y para la racha; el Día Metabólico vive como subcollection nueva `users/{uid}/metabolic_cycles/{cycleId}` y es la unidad sobre la que se computa el "Score del Día" mostrado al usuario y, en el futuro, sobre la que SPEC-141 anclará el `behaviorTrend30` del IMR longitudinal.
+
+### 13.1 — Definición operacional
+
+Un **Día Metabólico** (o "ciclo metabólico") es un intervalo de duración variable (típicamente 22–28h) anclado al inicio del ayuno del usuario y cerrado por uno de seis triggers documentados (ver §13.3). Tiene tres fases:
+
+| Fase | Duración típica | Definida por |
+|---|---|---|
+| Ayuno | 14–20h según protocolo | Desde `startedAt` hasta apertura de la ventana de alimentación |
+| Alimentación | 4–10h según protocolo | Desde apertura hasta cierre de la ventana |
+| Transición | 0 a varias horas | Desde cierre de ventana hasta el próximo `startedAt` |
+
+### 13.2 — Justificación bibliográfica
+
+- **Sutton EF et al. (2018, *Cell Metab*)** midió outcomes de TRE (Time-Restricted Eating) contra ventanas de feeding/fasting, no contra días calendarios. La nomenclatura `TRE 8/16` (8h feeding, 16h fasting) ancla el ciclo al inicio del ayuno, no a medianoche. Los efectos sobre sensibilidad a insulina, presión arterial y estrés oxidativo se midieron por ciclo de feeding, no por día gregoriano.
+- **Mattson MP, Longo VD, Harvie M. (2017, *Ageing Res Rev*)** documenta que el "metabolic switch" (cambio de oxidación de glucosa a oxidación de cuerpos cetónicos) ocurre típicamente a las 14–16h de ayuno continuo. Ese switch es el evento metabólico fundamental que define la mitad del ciclo, no el reloj.
+- **Lopez-Minguez J et al. (2018, *Clin Nutr*)** sobre el polimorfismo MTNR1B mostró que cenar tarde afecta la glucosa al día *siguiente*. La relación causal solo tiene sentido si entendemos el día metabólico como ciclo ayuno→ventana→ayuno: la cena tardía del día N pertenece al "ciclo metabólico del día N+1" porque la respuesta glucémica se manifiesta cuando el siguiente ayuno arranca con glucosa ya elevada.
+- **Anton SD et al. (2018, *Obesity*)** confirma que los beneficios del ayuno intermitente se miden por ciclos de feeding/fasting completos, no por suma de horas en ventanas calendárias arbitrarias.
+
+### 13.3 — Triggers de cierre
+
+Implementados en `MetabolicCycleResolver.shouldClose` (`lib/src/features/metabolic_cycle/domain/metabolic_cycle_resolver.dart`).
+
+| Razón | Trigger | Cita / Justificación |
+|---|---|---|
+| `manualNextFasting` | Usuario inicia explícitamente un nuevo ayuno ≥30 min después de `startedAt` | Decisión consciente del usuario — gold standard de cierre. Cita: Sutton 2018 (el ciclo se ancla a la decisión del usuario de entrar en fasted state) |
+| `fallback3hAfterWindow` | 3h pasaron desde `expectedWindowCloseTime` sin nuevo ayuno | Defensa contra olvido del botón. 3h es ventana de digestión completa (Wisén & Hellström 1995, *Scand J Gastroenterol*) |
+| `fallbackSleepDetected` | Sueño + ≥2h desde `lastMealTime` | El sueño con estómago vacío indica entrada natural en fasted state. Cita: Walker 2017 + Lopez-Minguez 2018 |
+| `fallbackAbsolute` | 28h desde `startedAt` sin nada | Defensa contra ciclos huérfanos. 28h cubre OMAD (One Meal A Day, ~23h ayuno + 1h ventana) con margen |
+| `fallbackCalendar` | Usuario con protocolo "Ninguno" → cierre 23:59 local | Compatibilidad con el modelo SPEC-138 para usuarios sin TRE estructurado |
+| `protocolChanged` | Usuario cambia su `fastingProtocol` | El ciclo previo bajo protocolo X queda inválido al cambiar a Y; cierre forzado y apertura nueva con el nuevo protocolo |
+
+### 13.4 — Coaching al cierre
+
+Cada cierre dispara una pantalla pasiva (`CycleClosureCard`) en el Dashboard con cuatro componentes generados por `CycleFeedbackGenerator`:
+
+1. **Score del ciclo (0–100)** — calculado al momento del cierre con las magnitudes consolidadas del ciclo.
+2. **Logros (achievements)** — pilares con magnitud ≥0.80 con copy específico + cita bibliográfica del pilar (Sutton 2018 para eTRF, Mattson 2017 para autofagia, Walker 2017 para sueño, EFSA 2010 para hidratación, ACSM 2021 para ejercicio, Jenkins 1981 + Liu 2000 para nutrición).
+3. **Gaps** — pilares <0.80 ordenados por gap descendente con copy actionable orientado al ciclo siguiente.
+4. **Insight adaptativo** — un mensaje educativo seleccionado de un pool de ~20 candidatos según el patrón del ciclo, con cita bibliográfica cuando aplica.
+
+El pool de insights está diseñado para evitar repeticiones consecutivas — el caller puede pasar `recentInsightIds` y el generador prefiere candidatos no recientes. Esta lógica conecta con SPEC-147 (Insights adaptativos de Ola 3) que extenderá el pool con análisis de patrones multi-ciclo.
+
+### 13.5 — Relación con SPEC-138 (DayBoundaryResolver)
+
+SPEC-149 **no reemplaza** `DayBoundaryResolver`. Las dos abstracciones coexisten con responsabilidades claras:
+
+| Concepto | Owner | Cuándo |
+|---|---|---|
+| Día calendárico (`YYYYMMDD`) | `DayBoundaryResolver` (SPEC-138) | `daily_summary` persistido, racha (SPEC-58 reset 00:00), sitio web Metamorfosis Real, compatibilidad legacy |
+| Día metabólico (`cycleId`) | `MetabolicCycleResolver` (SPEC-149) | Score del Día expuesto al usuario, card de cierre, futura ancla del IMR longitudinal (SPEC-141) |
+
+### 13.6 — Relación con SPEC-141 (IMR longitudinal)
+
+SPEC-141 introducirá el IMR longitudinal con cadencia semanal y el componente `behaviorTrend30` (promedio de los últimos 30 ciclos). Al cerrarse cada ciclo, su `dailyScore` queda persistido en `metabolic_cycles/{cycleId}`. SPEC-141 leerá esos scores como input del `behaviorTrend30`, en lugar de los `dailyQualityScore` calendarios actuales. Eso alinea la métrica longitudinal con la realidad metabólica del usuario.
+
+### 13.7 — Out of scope explícito
+
+- Inferencia automática de ciclos para usuarios con protocolo "Ninguno" — out of scope SPEC-149 (fallback calendárico es deliberado).
+- Modificación del `dailyScoreProvider` para anclar al ciclo en lugar del día calendárico — el provider sigue mostrando "Score del Día calendárico" en el header de PILARES HOY. El "Score del Ciclo" aparece exclusivamente en el card de cierre. Este es un compromiso pragmático para Ola 1 — el refactor profundo del provider va en Ola 2 cuando hagamos la pantalla de Análisis con historia.
+- Sincronización con HealthKit sleep para `fallbackSleepDetected` real-time — depende de SPEC-132.next.
+
+---
+
 ## Changelog
 
+- **SPEC-149** (Día Metabólico): añade §13 con la definición operacional del ciclo metabólico, los 6 triggers de cierre, el coaching post-cierre y la relación con SPEC-138 (calendárico) y SPEC-141 (IMR longitudinal). No modifica ningún bloque previo del IMR — solo introduce capa semántica nueva sobre los datos persistidos.
 - **SPEC-82** (canonical mirror): añade §12 con las fórmulas de las métricas canónicas (IMC, TMB Mifflin-St Jeor, ICA/WHtR, FFMI crudo, metabolicAge provisional) que el sitio web Metamorfosis Real consume vía `imr.current` en el doc `users/{uid}`. El bloque Estructura, Metabolismo y Conducta del IMR no cambian.
 - **SPEC-70.5** (recalibración clínica externa): bloqueo intestinal 22:30→21:30, peso Hidratación 20%→10%, peso Circadiano 28%→38%, threshold de sueño en racha 6.5h→7.0h, threshold de penalización de coherencia por sueño 6.5h→7.0h. Validado por **[Dr/Dra Nombre, Especialidad]**. Nuevas §10 (roadmap clínico) y §11 (contraindicaciones).
 - **SPEC-70.3**: FFMI baseline age-stratified.

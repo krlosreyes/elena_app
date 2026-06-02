@@ -1,8 +1,8 @@
 # SPEC-149 — Día Metabólico: ciclo ayuno↔alimentación como unidad fundamental del producto
 
-**Estado:** IN_PROGRESS (aprobada por Carlos 2026-06-01)
+**Estado:** CLOSED (implementada y testeada 2026-06-01)
 **Versión:** 1.0
-**Fecha:** 2026-06-01 · aprobada 2026-06-01
+**Fecha:** 2026-06-01 · aprobada 2026-06-01 · cerrada 2026-06-01
 **Tipo:** Cambio conceptual del modelo de "día" + nueva subcollection + cierre con coaching
 **Líder:** Carlos
 **Implementación:** Claude
@@ -545,3 +545,19 @@ Esta SPEC requiere:
 ### v1.0 — 2026-06-01
 
 Documento inicial post-feedback de Carlos sobre IMR diario que no llega a 100%. Diagnóstico: SPEC-138 definió el día como medianoche calendárica por pragmatismo, no por correspondencia metabólica. SPEC-149 introduce el Día Metabólico como capa semántica sobre los datos persistidos, anclada al ciclo ayuno↔alimentación. Aprobada por Carlos 2026-06-01 con las 4 decisiones de §12. Entra a Ola 1 del pivot estratégico passive→active coaching.
+
+### Cierre 2026-06-01 (mismo día)
+
+Implementación completada en 4 bloques durante la misma sesión:
+
+**Bloque A — dominio puro.** `MetabolicCycle` value object inmutable con `open()`/`close()`. `MetabolicCycleResolver` puro con `shouldClose()` evaluando 6 triggers en orden de prioridad. `ClosureReason` enum con serialización. `CycleFeedback` con `CycleFeedbackGenerator` que produce achievements/gaps/insight desde un pool de ~20 candidatos calibrados con citas bibliográficas (Mattson, Walker, EFSA, ACSM, Liu, Sutton, Spiegel, Lopez-Minguez). ~50 tests del dominio.
+
+**Bloque B — persistencia + service.** `MetabolicCycleRepository` interfaz + impl Firestore con mapper completo para campos opcionales del cierre. `MetabolicCycleService` orquestador con `evaluateAndApply()` (cierre + apertura encadenados) y `bootstrapIfMissing()` (creación retroactiva post-login). 5 providers Riverpod (`metabolicCycleServiceProvider`, `currentMetabolicCycleProvider`, `lastClosedMetabolicCycleProvider`, `metabolicCyclesHistoryProvider`, `hasUnreadCycleClosureProvider`). Rule específica en `firestore.rules` para `metabolic_cycles`. 8 tests del service con FakeFirebaseFirestore.
+
+**Bloque C — UI cierre.** `CycleClosureCard` con arquitectura Container/View — `CycleClosureCardView` stateless puro testeable sin Riverpod, `CycleClosureCard` ConsumerWidget wrapper que lee providers. Layout: header letterspaced + ✕ dismissable + score 48pt monospace + sección LOGRASTE verde + sección TE FALTÓ ámbar + insight con citation + CTA "Empezar mi siguiente ayuno". 10 widget tests cubriendo render condicional, edge cases, interacciones, assertion defensiva.
+
+**Bloque D — integración Dashboard + bibliografía + cierre.** `metabolicCycleEvaluatorProvider` side-effect que escucha `metabolicPulseProvider` (cada 10s) + `fastingProvider` (transición isActive false→true) y dispara `evaluateAndApply`. `metabolicCycleBootstrapProvider` one-shot al login que llama `bootstrapIfMissing`. Mount del `CycleClosureCard` en Dashboard entre `EngagementBanner` y `NextMealBanner`, conectado a `fastingProvider.notifier.startFasting()` vía callback del CTA. `IMR_BIBLIOGRAPHY.md` §13 nueva con 7 sub-secciones (definición, justificación bibliográfica, 6 triggers tabulados, coaching al cierre, relación con SPEC-138, relación con SPEC-141, out of scope explícito).
+
+**Deuda técnica diferida explícita:** el `dailyScoreProvider` (SPEC-140) sigue mostrando "Score del Día calendárico" en el header de PILARES HOY. El "Score del Ciclo" aparece exclusivamente en el card de cierre. El refactor profundo del provider para anclar al ciclo va en Ola 2 cuando construyamos la pantalla de Análisis con historia. Documentado en SPEC-149 §13.7 y en la decisión arquitectural de Bloque D.
+
+**Próximo paso desbloqueado:** Ola 1 sigue con SPEC-146 (Auth hardening) y SPEC-132.next (HealthKit observers + background delivery). Ola 2 puede empezar a planificar el refactor del Score del Día sobre ciclos en lugar de días calendarios.

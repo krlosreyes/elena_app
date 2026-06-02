@@ -29,6 +29,9 @@ import 'package:elena_app/src/features/nutrition/application/cociente_a_service.
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
 import 'package:elena_app/src/features/progress/application/biometric_backfill_provider.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/daily_score_explainer_sheet.dart';
+import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_bootstrap_provider.dart';
+import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_evaluator_provider.dart';
+import 'package:elena_app/src/features/metabolic_cycle/presentation/widgets/cycle_closure_card.dart';
 import 'package:elena_app/src/features/streak/application/daily_score_provider.dart';
 // SPEC-137 E.5: regla del intervalo 3h (lastMealAt + 3h) para "Próxima En".
 import 'package:elena_app/src/features/nutrition/domain/meal_interval_rules.dart';
@@ -131,6 +134,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     // Mismo patrón side-effect-only que imrPersistenceProvider.
     ref.watch(biometricBackfillProvider);
 
+    // SPEC-149: bootstrap del Día Metabólico. Si el usuario no tiene
+    // ciclo abierto al login, crea uno retroactivo. One-shot.
+    ref.watch(metabolicCycleBootstrapProvider);
+
+    // SPEC-149: evaluador continuo del ciclo. En cada tick del pulse
+    // metabolic (10s) chequea si el ciclo abierto debe cerrarse según
+    // las 6 razones de §RF-149-04. Side-effect-only.
+    ref.watch(metabolicCycleEvaluatorProvider);
+
     return userAsync.when(
       loading: () =>
           const Scaffold(body: Center(child: CircularProgressIndicator())),
@@ -160,6 +172,20 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   // BANNER DE ENGAGEMENT (SPEC-07 + SPEC-72.2 dismiss por sesión)
                   const EngagementBanner(),
                   const SizedBox(height: 16),
+
+                  // SPEC-149: card de cierre del Día Metabólico. Aparece
+                  // cuando hay un ciclo cerrado reciente que el usuario
+                  // aún no descartó. Es el "coaching moment" — score del
+                  // ciclo + lo que logró + faltó + insight científico +
+                  // CTA para iniciar el siguiente ayuno. Se oculta sola
+                  // cuando no aplica.
+                  CycleClosureCard(
+                    onStartNextFasting: () async {
+                      await ref
+                          .read(fastingProvider.notifier)
+                          .startFasting();
+                    },
+                  ),
 
                   // SPEC-137 E.5: banner "próxima comida en X min" cuando
                   // estamos dentro de los 30 min previos al horario
