@@ -10,9 +10,11 @@ import 'package:elena_app/src/features/auth/presentation/login_screen.dart';
 import 'package:elena_app/src/features/auth/presentation/register_screen.dart';
 import 'package:elena_app/src/features/auth/presentation/forgot_password_screen.dart';
 import 'package:elena_app/src/features/auth/presentation/set_password_screen.dart';
+import 'package:elena_app/src/features/auth/presentation/splash_screen.dart';
 import 'package:elena_app/src/features/auth/presentation/disclaimer_screen.dart';
 import 'package:elena_app/src/features/auth/presentation/privacy_policy_screen.dart';
 import 'package:elena_app/src/features/auth/presentation/terms_of_service_screen.dart';
+import 'package:elena_app/src/router/router_redirect.dart';
 import 'package:elena_app/src/features/onboarding/presentation/onboarding_screen.dart';
 import 'package:elena_app/src/features/dashboard/presentation/dashboard_screen.dart';
 // SPEC-137: vista semanal del pilar Nutrición (Cociente A + heatmap).
@@ -30,55 +32,24 @@ final goRouterProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
 
   return GoRouter(
-    initialLocation: '/dashboard',
-    redirect: (context, state) {
-      final account = authState.value;
-      final loc = state.matchedLocation;
-
-      // SPEC-77: las pantallas legales son públicas. Un usuario debe
-      // poder leerlas desde el footer del Login antes de aceptar.
-      // SPEC-78: las rutas /open son entry points de deep links;
-      // tienen su propio redirect que decide a dónde llevar al
-      // usuario según el auth state.
-      //
-      // SPEC-117 fix: las rutas legales son universalmente accesibles
-      // (autenticado o no). Antes se trataban como "público" y el
-      // redirect del caso 2 las mandaba al Dashboard cuando el
-      // usuario autenticado las visitaba desde Perfil → Legal.
-      final isLegalDoc = loc == '/legal/privacy' || loc == '/legal/terms';
-      final isPublic = loc == '/login' ||
-          loc == '/register' ||
-          loc == '/forgot-password' ||
-          loc == '/set-password' ||
-          isLegalDoc ||
-          loc.startsWith('/open');
-
-      // 1. No autenticado.
-      if (account == null) {
-        return isPublic ? null : '/login';
-      }
-
-      // 2. Autenticado en ruta pública (auth) → llevar a destino.
-      //    Las legales se excluyen porque debe poder leerlas también
-      //    el usuario autenticado desde el Perfil.
-      if (isPublic && !isLegalDoc) {
-        return account.isComplete ? '/dashboard' : '/onboarding';
-      }
-
-      // 3. Perfil incompleto (NEW o PARTIAL) → forzar onboarding,
-      //    excepto si ya está allí.
-      if (account.needsOnboarding && loc != '/onboarding') {
-        return '/onboarding';
-      }
-
-      // 4. Perfil completo intentando entrar a /onboarding → al dashboard.
-      if (account.isComplete && loc == '/onboarding') {
-        return '/dashboard';
-      }
-
-      return null;
-    },
+    // SPEC-146: initialLocation cambiado de '/dashboard' a '/splash'
+    // para evitar flash de pantallas privadas mientras Firebase Auth
+    // hidrata la sesión del keychain en cold start. La lógica completa
+    // del redirect vive en `computeRedirect` (función pura testeable).
+    initialLocation: '/splash',
+    redirect: (context, state) => computeRedirect(
+      authState: authState,
+      location: state.matchedLocation,
+    ),
     routes: [
+      // SPEC-146: ruta inicial mientras Firebase Auth hidrata la sesión.
+      // El redirect navega desde aquí al destino correcto cuando el
+      // authState resuelve.
+      GoRoute(
+        path: '/splash',
+        name: 'splash',
+        builder: (context, state) => const SplashScreen(),
+      ),
       GoRoute(
         path: '/login',
         name: 'login',
