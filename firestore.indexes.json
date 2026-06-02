@@ -29,6 +29,20 @@
       ]
     },
     {
+      "collectionGroup": "fasting_history",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "userId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startTime",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
       "collectionGroup": "metamorfosis_posts",
       "queryScope": "COLLECTION",
       "fields": [
