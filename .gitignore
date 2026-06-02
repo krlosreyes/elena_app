@@ -46,3 +46,4 @@ app.*.map.json
 .DS_Store
 test/**/failures/
 .flutter-plugins-dependencies
+.flutter-plugins-dependencies
