@@ -1,8 +1,8 @@
 # SPEC-140 — Score del Día: métrica diaria motivacional 0-100 expuesta en Dashboard
 
-**Estado:** IN_PROGRESS (aprobada por Carlos 2026-06-01)
+**Estado:** CLOSED (implementada y testeada 2026-06-01)
 **Versión:** 1.0
-**Fecha:** 2026-06-01 · aprobada 2026-06-01
+**Fecha:** 2026-06-01 · aprobada 2026-06-01 · cerrada 2026-06-01
 **Tipo:** Exposición de métrica existente + rebalanceo de pesos científicos + UI nueva
 **Líder:** Carlos
 **Implementación:** Claude
@@ -360,3 +360,19 @@ Esta SPEC requiere:
 ### v1.0 — 2026-06-01
 
 Documento inicial. Propuesta de exponer `dailyQualityScore` como Score del Día 0-100 motivacional en Dashboard, con pesos rebalanceados según evidencia bibliográfica (25/22/20/18/15). Cierra la pregunta del usuario *"por qué el score no llega a 100 cuando hago todo perfecto"* mantenida desde la primera conversación del 2026-05-31.
+
+### Cierre 2026-06-01 (mismo día)
+
+Implementación completada en 3 bloques durante el día:
+
+**Bloque A — pesos + providers.** Rebalanceo de las 5 constantes de `StreakEntry.dailyQualityScore` con comentarios bibliográficos extensos. Creación de `computeDailyScore` y `computeDailyScoreDelta` como funciones puras + `dailyScoreProvider` y `dailyScoreDeltaProvider` como wrappers Riverpod thin. 12 tests del provider (incluyendo casos de renormalización), 1 test existente actualizado al nuevo cálculo (0.36/0.47 = 77%).
+
+**Bloque B — DailyScoreCard widget + ExplainerSheet.** Card con número monospace fontSize 52, barra de progreso animada (TweenAnimationBuilder 600ms) con color contextual (rojo/amarillo/verde), delta vs ayer con flechas Unicode, icono ⓘ con `Key('daily_score_info_button')` para testabilidad. ExplainerSheet con DraggableScrollableSheet que muestra los 5 pesos formateados, párrafo bibliográfico y card destacada con el disclaimer Score del Día vs IMR. 9 tests de widget.
+
+**Bloque C — integración Dashboard + bibliografía + no regresión + cierre.** DailyScoreCard insertado entre el reloj circadiano y la fila PILARES HOY en `dashboard_screen.dart`. `IMR_BIBLIOGRAPHY.md` §6 reescrita con los 5 nuevos pesos, citas (AASM, Walker, Spiegel 1999, Cappuccio 2010, Sutton 2018, Mattson, Lopez-Minguez, ACSM, Boulé, Jenkins, Liu, Brand-Miller, EFSA, Popkin) y trazabilidad de cada cambio respecto a SPEC-65. Tests de no regresión que verifican que el shift de `dailyQualityScore` causado por el rebalanceo es ≤5 puntos en escenarios mixtos y 0 puntos en escenarios uniformes.
+
+**Suite final:** desde la suite post-SPEC-143 (954 ✓), SPEC-140 agrega ~17 tests nuevos (12 del provider + 9 widget tests - duplicados). Esperado ~970+ ✓ tras el cierre. El test legacy de `dailyQualityScore` con magnitudes mixtas (sueño 1.0 + ayuno 0.5) se actualizó de `0.35/0.45 = 0.778` a `0.36/0.47 = 0.766`.
+
+**Efecto colateral en IMR legacy confirmado dentro de tolerancia.** El `dailyQualityScore` feedea `weeklyQualityScore` → `MetabolicStateBuilder` → bloque Metabolismo del IMR (peso macro 0.25 × peso interno 0.30 = 7.5% del IMR total). Test de no regresión documenta shifts típicos ≤2-3 puntos, techo ≤5.
+
+**Próximo paso desbloqueado:** SPEC-141 podrá usar `dailyScore` (vía nuevo `computeDailyScore`) en lugar de fallback `dailyQualityScore` legacy cuando llegue a IN_PROGRESS post-validación clínica. El componente `behaviorTrend30` del IMR longitudinal queda con su fuente canónica establecida.

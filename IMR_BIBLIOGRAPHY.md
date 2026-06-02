@@ -300,32 +300,70 @@ El IMR final combina tres bloques: Estructura corporal, Metabolismo (ayuno + adh
 
 ---
 
-## §6 — Daily quality score (SPEC-65)
+## §6 — Daily quality score / Score del Día (SPEC-65 + SPEC-140)
 
-`dailyQualityScore = 0.25*sleep + 0.20*fasting + 0.20*exercise + 0.20*hydration + 0.15*nutrition`
+`dailyQualityScore = 0.25*sleep + 0.22*fasting + 0.20*exercise + 0.18*nutrition + 0.15*hydration`
 
 (Renormalizado sobre las dimensiones presentes; fallback a `pillarsCompleted/5` si todas null.)
 
-### 6.1 — Sueño 0.25 dentro del daily quality
+**SPEC-140 (2026-06-01) rebalanceó los 5 pesos con evidencia bibliográfica.** El score es la base del "Score del Día" expuesto al usuario en Dashboard (entero 0-100 motivacional). El cálculo persiste en `StreakEntry.dailyQualityScore` y es consumido por `StreakEngine.computeWeeklyQualityScore` → `MetabolicStateBuilder.weeklyQualityScore` → bloque Metabolismo del IMR legacy. Cualquier cambio aquí afecta el IMR legacy proporcionalmente (shift típico ±2-3 puntos).
 
-- **Valor:** 0.25.
-- **Confianza:** MEDIUM
-- **Justificación:** Pesa más que el resto porque es la dimensión más estudiada y con efectos sistémicos sobre los demás pilares (sueño malo afecta hambre, ánimo, capacidad de ejercitar).
-- **Código:** `lib/src/features/streak/domain/streak_entry.dart` — getter `dailyQualityScore`, constante `wSleep = 0.25`
+### 6.1 — Sueño 0.25
 
-### 6.2 — Ayuno / Ejercicio / Hidratación 0.20
+- **Valor:** 0.25 (sin cambios respecto a SPEC-65).
+- **Confianza:** MEDIUM (mayor evidencia del bloque conductual).
+- **Justificación:** Es la dimensión más estudiada y con efectos sistémicos sobre los demás pilares. Sueño malo afecta hambre (leptina/grelina), ánimo y capacidad de ejercitar.
+- **Fuentes (SPEC-140 amplió):**
+  - AASM (American Academy of Sleep Medicine). "Recommended Amount of Sleep for a Healthy Adult." *Sleep* 2015;38(6):843-844.
+  - Walker M. "Why We Sleep." Scribner, 2017.
+  - **Spiegel K, Leproult R, Van Cauter E.** "Impact of sleep debt on metabolic and endocrine function." *Lancet* 1999;354(9188):1435-9. (Privación de sueño induce intolerancia a glucosa en jóvenes sanos.)
+  - **Cappuccio FP, D'Elia L, Strazzullo P, Miller MA.** "Quantity and quality of sleep and incidence of type 2 diabetes: a systematic review and meta-analysis." *Diabetes Care* 2010;33(2):414-20.
+- **Código:** `lib/src/features/streak/domain/streak_entry.dart` — getter `dailyQualityScore`, constante `wSleep = 0.25`.
 
-- **Valores:** 0.20 cada uno.
-- **Confianza:** ENGINEERING JUDGMENT
-- **Justificación:** Co-iguales porque son las tres intervenciones diarias con dosis-respuesta más medible. No hay literatura que justifique pesos distintos entre ellas dentro del concepto "calidad del día".
-- **Código:** mismo getter.
+### 6.2 — Ayuno 0.22 (SPEC-140)
 
-### 6.3 — Nutrición 0.15
+- **Valor:** 0.22 (antes 0.20 hasta SPEC-65).
+- **Confianza:** MEDIUM.
+- **Justificación:** Evidencia aguda muy fuerte sobre sensibilidad a insulina, autofagia y metabolic switch. Subió +0.02 respecto a SPEC-65 al absorber parte del peso del *timing* circadiano que en el agregado del Score del Día no se cuenta por separado.
+- **Fuentes:**
+  - Sutton EF et al. "Early time-restricted feeding improves insulin sensitivity, blood pressure, and oxidative stress even without weight loss in men with prediabetes." *Cell Metab* 2018;27(6):1212-1221.e3.
+  - Mattson MP, Longo VD, Harvie M. "Impact of intermittent fasting on health and disease processes." *Ageing Res Rev* 2017;39:46-58.
+  - Anton SD et al. "Flipping the metabolic switch: understanding and applying the health benefits of fasting." *Obesity* 2018;26(2):254-268.
+  - Lopez-Minguez J et al. "Late dinner impairs glucose tolerance in MTNR1B risk allele carriers." *Clin Nutr* 2018;37(4):1133-1140.
+- **Código:** constante `wFasting = 0.22`.
 
-- **Valor:** 0.15.
-- **Confianza:** ENGINEERING JUDGMENT
-- **Justificación:** Mismo razonamiento que §4.4 — la métrica nutricional actual no captura calidad real. Conservador a propósito.
-- **Código:** mismo getter.
+### 6.3 — Ejercicio 0.20
+
+- **Valor:** 0.20 (sin cambios respecto a SPEC-65).
+- **Confianza:** MEDIUM (dosis-respuesta documentada).
+- **Justificación:** Dosis-respuesta sólida sobre control glucémico, presión arterial y composición corporal. Peso natural por evidencia comparable a Sueño en magnitud.
+- **Fuentes:**
+  - ACSM. "ACSM's Guidelines for Exercise Testing and Prescription." 11th ed., 2021.
+  - Pedersen BK, Saltin B. "Exercise as medicine — evidence for prescribing exercise as therapy in 26 different chronic diseases." *Scand J Med Sci Sports* 2015;25 Suppl 3:1-72.
+  - Boulé NG et al. "Effects of exercise on glycemic control and body mass in type 2 diabetes mellitus." *JAMA* 2001;286(10):1218-27.
+- **Código:** constante `wExercise = 0.20`.
+
+### 6.4 — Nutrición 0.18 (SPEC-140)
+
+- **Valor:** 0.18 (antes 0.15 hasta SPEC-65).
+- **Confianza:** ENGINEERING JUDGMENT (evidencia alta de literatura, métrica débil hoy).
+- **Justificación:** La evidencia nutricional es la más extensa de las cinco — dietas mediterránea, DASH, low-GL todas tienen meta-análisis sólidos sobre outcomes metabólicos y cardiovasculares. SPEC-140 subió +0.03 reconociendo esta evidencia, pero NO la subió a su nivel natural (0.22+) porque la métrica actual sólo captura *timing* + cantidad, no calidad. Cuando SPEC-137 (Frank Suárez Tipo A/E + post-macros) incorpore calidad nutricional real, este peso debe subir a 0.22.
+- **Fuentes:**
+  - Jenkins DJ et al. "Glycemic index of foods: a physiological basis for carbohydrate exchange." *Am J Clin Nutr* 1981;34(3):362-6.
+  - Liu S, Manson JE et al. "A prospective study of dietary glycemic load, carbohydrate intake, and risk of coronary heart disease in US women." *Am J Clin Nutr* 2000;71(6):1455-61.
+  - Brand-Miller J et al. "Low-glycemic index diets in the management of diabetes: a meta-analysis." *Diabetes Care* 2003;26(8):2261-7.
+- **Código:** constante `wNutrition = 0.18`. Ver también `docs/NUTRITION_BIBLIOGRAPHY.md` §4 para el modelo Tipo A/E.
+
+### 6.5 — Hidratación 0.15 (SPEC-140)
+
+- **Valor:** 0.15 (antes 0.20 hasta SPEC-65).
+- **Confianza:** MEDIUM (aplicación de SPEC-70.5).
+- **Justificación:** La revisión clínica externa de SPEC-70.5 dictaminó *"20% es excesivo frente al impacto clínico real comparado con ejercicio o sueño"*. SPEC-140 aplica esa lógica al agregado del Score del Día: bajó -0.05 respecto a SPEC-65. **No bajó a 0.10 como en IMR/Conducta** (§4.5) porque aquí el Circadiano no es un pilar separado — Hidratación preserva algo más de peso comparativamente.
+- **Fuentes:**
+  - EFSA Panel on Dietetic Products, Nutrition, and Allergies. "Scientific Opinion on Dietary Reference Values for water." *EFSA Journal* 2010;8(3):1459.
+  - Popkin BM, D'Anci KE, Rosenberg IH. "Water, hydration, and health." *Nutr Rev* 2010;68(8):439-58.
+- **Validación clínica heredada:** SPEC-70.5 ✅ (dictamen explícito sobre el peso de hidratación).
+- **Código:** constante `wHydration = 0.15`.
 
 ---
 

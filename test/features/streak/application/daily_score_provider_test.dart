@@ -146,4 +146,63 @@ void main() {
       expect(computeDailyScoreDelta([today, yesterday]), 0);
     });
   });
+
+  group('SPEC-140 §8.4 — no regresión IMR legacy', () {
+    // Documenta la magnitud del shift causado por el rebalanceo de
+    // pesos. SPEC §R-01 dice ±2-3 puntos típicos, ±5 como techo.
+    // El IMR legacy consume el dailyQualityScore vía weeklyQualityScore
+    // → bloque Metabolismo (peso 0.25 × 0.30 = 7.5% del IMR total).
+
+    test('Magnitudes mixtas: shift de dailyQualityScore < 5 puntos', () {
+      // Escenario realista: usuario que ayuna bien, se hidrata mal,
+      // come bien pero no se ejercita lo suficiente.
+      final entry = _entry(
+        fasting: 0.85,
+        sleep: 0.75,
+        hydration: 0.35,
+        exercise: 0.60,
+        nutrition: 0.90,
+      );
+
+      // Score con pesos SPEC-140 (vía el getter actual).
+      final newScore = entry.dailyQualityScore;
+
+      // Score con pesos pre-SPEC-140 (cálculo manual para comparación).
+      // wSleep 0.25, wFasting 0.20, wHydration 0.20, wExercise 0.20,
+      // wNutrition 0.15. Todas las magnitudes presentes → sin renormalización.
+      const wSleepOld = 0.25;
+      const wFastingOld = 0.20;
+      const wHydrationOld = 0.20;
+      const wExerciseOld = 0.20;
+      const wNutritionOld = 0.15;
+      final oldScore = wSleepOld * 0.75 +
+          wFastingOld * 0.85 +
+          wHydrationOld * 0.35 +
+          wExerciseOld * 0.60 +
+          wNutritionOld * 0.90;
+
+      final shiftPoints = ((newScore - oldScore) * 100).abs();
+
+      expect(
+        shiftPoints,
+        lessThanOrEqualTo(5.0),
+        reason: 'SPEC-140 §R-01: shift típico ±2-3 puntos, techo ±5',
+      );
+    });
+
+    test('Magnitudes uniformes: shift es 0 (∑w·q / ∑w = q sin importar pesos)',
+        () {
+      final entry = _entry(
+        fasting: 0.7,
+        sleep: 0.7,
+        hydration: 0.7,
+        exercise: 0.7,
+        nutrition: 0.7,
+      );
+      // Cuando todas las magnitudes son iguales, el score = q × 100,
+      // independiente de los pesos. Esta propiedad protege a usuarios
+      // perfectos / cero de cualquier shift por SPEC-140.
+      expect((entry.dailyQualityScore * 100).round(), 70);
+    });
+  });
 }

@@ -28,6 +28,7 @@ import 'package:elena_app/src/features/adaptive/presentation/widgets/adaptive_su
 import 'package:elena_app/src/features/nutrition/application/cociente_a_service.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
 import 'package:elena_app/src/features/progress/application/biometric_backfill_provider.dart';
+import 'package:elena_app/src/features/dashboard/presentation/widgets/daily_score_card.dart';
 // SPEC-137 E.5: regla del intervalo 3h (lastMealAt + 3h) para "Próxima En".
 import 'package:elena_app/src/features/nutrition/domain/meal_interval_rules.dart';
 // SPEC-137 E.4: registro unificado con TimePicker. AddPastMealSheet
@@ -214,6 +215,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   //     IMR bajo (confuso para el usuario).
                   // El reloj central ya cumple el rol comunicativo
                   // primario del dashboard.
+
+                  // SPEC-140: Score del Día (métrica motivacional 0-100
+                  // basada en los 5 pilares). Se ubica encima de
+                  // PILARES HOY porque es el agregado conceptual de
+                  // esos 5 anillos. Distinto del IMR (Profile/Análisis)
+                  // que es longitudinal y se mueve en semanas/meses.
+                  const DailyScoreCard(),
+                  const SizedBox(height: 18),
 
                   // PILARES HOY (5 anillos circulares interactivos)
                   _buildPillarsRow(
