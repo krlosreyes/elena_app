@@ -231,7 +231,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     exercise: exerciseState,
                     nutrition: nutritionState,
                   ),
-                  const SizedBox(height: 24),
+                  // SPEC-140.3: gap reducido de 24 → 14 para que la card
+                  // del pilar seleccionado se sienta como continuación
+                  // visual del card de "Tu Día", no como otra sección.
+                  const SizedBox(height: 14),
 
                   // Tarjeta de soporte del pilar seleccionado.
                   // Cambia dinámicamente al tocar un anillo de la fila "PILARES HOY".
@@ -305,83 +308,112 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final dailyScore = ref.watch(dailyScoreProvider);
     final delta = ref.watch(dailyScoreDeltaProvider);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Expanded(
-              child: Text(
-                'PILARES HOY',
+    // SPEC-140.2: el Score del Día vive como HEADLINE dentro del card
+    // de pilares. El label "PILARES HOY" se elimina (los 5 rings con
+    // sus iconos son autodescriptivos). El divider separa visualmente
+    // el agregado (TU DÍA) del desglose (5 pilares).
+    return Container(
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E293B),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Fila 1: label TU DÍA + ⓘ alineados a los extremos.
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'TU DÍA',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.4),
+                  color: Colors.white.withValues(alpha: 0.45),
                   fontSize: 10,
                   letterSpacing: 1.5,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-            ),
-            // SPEC-140.1: Score del Día agregado + delta + ⓘ.
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  '$dailyScore',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
+              GestureDetector(
+                key: const Key('daily_score_info_button'),
+                behavior: HitTestBehavior.opaque,
+                onTap: () => showDailyScoreExplainerSheet(context),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 2,
+                  ),
+                  child: Icon(
+                    Icons.info_outline,
+                    color: Colors.white.withValues(alpha: 0.50),
+                    size: 16,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          // Fila 2: número grande + /100 + delta + frase motivacional
+          // alineada a la derecha. SPEC-140.3: la frase llena el espacio
+          // vacío que dejaba el headline y aporta señal contextual al
+          // usuario sobre el estado de su día.
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                '$dailyScore',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 36,
+                  fontWeight: FontWeight.w900,
+                  fontFamily: 'monospace',
+                  height: 1.0,
+                ),
+              ),
+              const SizedBox(width: 2),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 5),
+                child: Text(
+                  '/100',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.35),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
                     fontFamily: 'monospace',
+                  ),
+                ),
+              ),
+              if (delta != null) ...[
+                const SizedBox(width: 12),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: _buildDailyScoreDelta(delta),
+                ),
+              ],
+              const Spacer(),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 5, left: 8),
+                child: Text(
+                  _dailyScoreMotivation(dailyScore),
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.70),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
                     height: 1.0,
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 2, left: 1),
-                  child: Text(
-                    '/100',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.35),
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      fontFamily: 'monospace',
-                    ),
-                  ),
-                ),
-                if (delta != null) ...[
-                  const SizedBox(width: 8),
-                  _buildDailyScoreDelta(delta),
-                ],
-                const SizedBox(width: 6),
-                GestureDetector(
-                  key: const Key('daily_score_info_button'),
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () => showDailyScoreExplainerSheet(context),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 4,
-                      vertical: 4,
-                    ),
-                    child: Icon(
-                      Icons.info_outline,
-                      color: Colors.white.withValues(alpha: 0.45),
-                      size: 16,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
-          decoration: BoxDecoration(
-            color: const Color(0xFF1E293B),
-            borderRadius: BorderRadius.circular(20),
+              ),
+            ],
           ),
-          child: Row(
+          const SizedBox(height: 14),
+          // Divider sutil entre headline y rings.
+          Container(
+            height: 1,
+            color: Colors.white.withValues(alpha: 0.08),
+          ),
+          const SizedBox(height: 14),
+          // Fila de los 5 pilares con % bajo cada label.
+          Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               PillarRing(
@@ -464,9 +496,22 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ),
             ],
           ),
-        ),
-      ],
+        ],
+      ),
     );
+  }
+
+  /// SPEC-140.3: frase motivacional adaptativa según el Score del Día.
+  /// 6 rangos calibrados para tono ElenaApp (encouraging, no
+  /// infantilizing, brand voice metabólica). El usuario ve un mensaje
+  /// que ancla el número en sentido emocional.
+  String _dailyScoreMotivation(int score) {
+    if (score >= 100) return 'Día perfecto';
+    if (score >= 85) return 'Casi al tope';
+    if (score >= 70) return 'Excelente día';
+    if (score >= 50) return 'Buen avance';
+    if (score >= 30) return 'Sumando';
+    return 'Vas empezando';
   }
 
   /// SPEC-140.1: render del delta del Score del Día junto al número.

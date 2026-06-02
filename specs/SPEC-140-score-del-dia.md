@@ -1,8 +1,8 @@
 # SPEC-140 — Score del Día: métrica diaria motivacional 0-100 expuesta en Dashboard
 
-**Estado:** CLOSED (implementada, refinada UX y testeada 2026-06-01)
-**Versión:** 1.1
-**Fecha:** 2026-06-01 (v1.0) · refinada 2026-06-01 (v1.1, UX rediseño Opción A) · cerrada 2026-06-01
+**Estado:** CLOSED (implementada, refinada UX 2x y testeada 2026-06-01)
+**Versión:** 1.2
+**Fecha:** 2026-06-01 (v1.0) · refinada 2026-06-01 (v1.1, UX rediseño Opción A) · refinada 2026-06-01 (v1.2, score como headline DENTRO del card) · cerrada 2026-06-01
 **Tipo:** Exposición de métrica existente + rebalanceo de pesos científicos + UI nueva
 **Líder:** Carlos
 **Implementación:** Claude
@@ -411,3 +411,85 @@ PILARES HOY                            73/100 ↑13 ⓘ
 **No es necesario re-validar clínicamente.** Es refactor UX puro — los pesos, fórmulas y citas bibliográficas son idénticas a v1.0. SPEC-141 sigue desbloqueada y consume el mismo `computeDailyScore`.
 
 **Aprendizaje de proceso:** validar UX con screenshot antes de cerrar SPEC. Si Carlos hubiera visto el diseño durante el diseño (no después de implementar), el rediseño habría sido más barato. Anotado para SPECs futuras con componente visual.
+
+### v1.2 — 2026-06-01 (mismo día, segunda iteración UX)
+
+Carlos compartió feedback del rendering de v1.1: *"ese número fuera de la card queda muy feo y sin relevancia"*. El score como sub-header de la fila PILARES HOY quedaba colgando arriba del Container, sin anchor visual con los rings que venían abajo, y sin jerarquía contra el label "PILARES HOY" con el que competía.
+
+**Diagnóstico:** el problema de v1.1 era que el score estaba EN la Row del header (Column padre), pero el Container con los rings era SU HERMANO, no su padre. Visualmente quedaba flotando.
+
+**Decisión:** mover el score COMO HEADLINE DENTRO del card. El Container que envuelve los rings ahora envuelve TODO el módulo "Tu Día" (headline + divider + rings).
+
+**Cambios v1.2:**
+
+- **Estructura invertida.** El `_buildPillarsRow` ya no retorna un `Column` con header arriba y Container abajo. Retorna directamente un `Container` con un `Column` interno que contiene: (1) Row label TU DÍA + ⓘ, (2) Row número grande + delta, (3) divider sutil 1px alpha 0.08, (4) Row de 5 PillarRings con showPercent.
+- **Label PILARES HOY eliminado.** Los 5 rings con sus iconos (⌚ 🌙 💧 💪 🍴) son autodescriptivos. El label era redundante.
+- **Número escalado a fontSize 36** (vs 22 en v1.1) — ahora tiene presencia de headline real.
+- **Padding del Container ajustado** a `EdgeInsets.fromLTRB(18, 16, 18, 16)` para acomodar el headline + rings + divider sin sentirse apretado.
+- **ⓘ alineado en la esquina superior derecha** del card, no en línea con el número. Da aire visual.
+- **Delta sigue al lado del número** como en v1.1, pero alineado al baseline correcto.
+
+**Comportamiento visual resultante:**
+
+```
+┌─────────────────────────────────────────────────┐
+│  TU DÍA                                       ⓘ │
+│  73 /100   ↑13                                  │
+│                                                 │
+│  ─────────────────────────────────              │
+│                                                 │
+│  ⌚      🌙       💧       💪        🍴           │
+│  Ayuno  Sueño   Hidrat.  Ejerc.    Comidas      │
+│  73%    85%     60%      100%      100%         │
+└─────────────────────────────────────────────────┘
+```
+
+**Sin cambios funcionales.** Los providers, pesos, fórmulas, citas y tests siguen idénticos. Solo cambia la composición visual del card.
+
+**Lección reforzada:** la primera iteración UX falló porque visualicé la Row del header en mi cabeza pero no proyecté cómo se vería sin anchor visual al Container debajo. Mockup ASCII durante propuesta NO captura esto — solo el rendering real lo hace. Para futuras SPECs con UI, *forzar* iteración Carlos→render→screenshot ANTES de cerrar, en lugar de cerrar y esperar feedback.
+
+### v1.3 — 2026-06-01 (tercera iteración UX, mismo día)
+
+Screenshot de v1.2 mostró el card con el headline correcto pero con feedback adicional de Carlos: *"hay mucho espacio vacío en la card, falta una frase motivacional o algo así al lado del Score y el espacio entre esa card y la de abajo está muy grande"*.
+
+**Diagnóstico:**
+1. El número `73 /100 ↑13` ocupaba solo el tercio izquierdo del headline — los otros dos tercios quedaban vacíos sin balance visual.
+2. El gap de 24px entre `_buildPillarsRow` y la card "Ayuno Consciente" creaba una pausa visual demasiado fuerte; las dos cards se sentían desconectadas.
+
+**Cambios v1.3:**
+
+- **Helper `_dailyScoreMotivation(int score)`** con 6 rangos de copy calibrados para tono ElenaApp (encouraging, sin diminutivos, brand metabólica). Ver tabla.
+- **Spacer + Text alineado al baseline** en la Row del número. La frase llena el espacio vacío y aporta señal contextual.
+- **Gap entre cards reducido de 24 → 14**. La card del pilar seleccionado se siente como continuación de "Tu Día".
+
+**Tabla de copy adaptativo:**
+
+| Score | Frase |
+|---|---|
+| 100 | "Día perfecto" |
+| 85-99 | "Casi al tope" |
+| 70-84 | "Excelente día" |
+| 50-69 | "Buen avance" |
+| 30-49 | "Sumando" |
+| 0-29 | "Vas empezando" |
+
+Las 6 frases evitan signos de exclamación (excepto el caso 100), no usan diminutivos ni emojis, y respetan el tono adulto-supportivo del producto. Los rangos están calibrados con margen — un usuario con 70 lee "Excelente día", uno con 69 lee "Buen avance" (rango medio), y el contraste se siente justo.
+
+**Comportamiento visual resultante:**
+
+```
+┌──────────────────────────────────────────────────┐
+│  TU DÍA                                        ⓘ │
+│  73 /100   ↑13              Excelente día        │
+│  ────────────────────────────────────            │
+│  ⌚      🌙       💧       💪        🍴            │
+│  Ayuno  Sueño   Hidrat.  Ejerc.    Comidas       │
+│  73%    85%     60%      100%      100%          │
+└──────────────────────────────────────────────────┘
+   ↑ gap 14px ↓
+┌──────────────────────────────────────────────────┐
+│  Ayuno Consciente                       En curso │
+│  ...                                              │
+```
+
+**Pendiente confirmar visualmente:** Carlos hace hot reload + screenshot. Si la frase queda bien y el gap se siente correcto, marcamos v1.3 como cierre definitivo de SPEC-140.
