@@ -2,6 +2,7 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/core/services/notification_service.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
+import 'package:elena_app/src/features/hydration/domain/hydration_message_pool.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // NotificationScheduler — Motor de agenda circadiana
@@ -238,5 +239,87 @@ class NotificationScheduler {
   /// permitidos.
   static Future<void> cancelNextMealReminder() async {
     await NotificationService.cancel(NotificationIds.nextMealReady);
+  }
+
+  // ─── SPEC-150: hidratación ──────────────────────────────────────────────
+
+  /// Cadencia default entre slots de hidratación. Documentado en
+  /// SPEC-150 §1.3 — 90 min se eligió sobre los 30 min pedidos por
+  /// Carlos basándose en Maughan 2003 + Adan 2012 + comparativa con
+  /// apps comerciales (WaterMinder, Hydro Coach).
+  static const Duration kHydrationCadence = Duration(minutes: 90);
+
+  /// Hora máxima a la que programamos hidratación. Coincide con la
+  /// alerta de bloqueo intestinal 30 min de SPEC-70.5 — durante la
+  /// fase de reparación celular no buscamos despertar al usuario.
+  static const int kHydrationCutoffHour = 21;
+
+  /// Offset desde wakeUpTime al primer slot. No notificamos
+  /// exactamente al despertar — damos 30 min de gracia.
+  static const Duration kHydrationFirstSlotOffset = Duration(minutes: 30);
+
+  /// SPEC-150 §RF-150-04: agenda los slots diarios de hidratación.
+  /// Se llama desde NotificationProvider cuando cambia el perfil
+  /// circadiano del usuario.
+  static Future<void> scheduleHydrationReminders(UserModel user) async {
+    try {
+      await NotificationService.cancelHydration();
+
+      final profile = user.profile;
+      final wakeUp = profile.wakeUpTime;
+      final sleepTime = profile.sleepTime;
+
+      // Cutoff = min(sleepTime.hour, 21). Si el usuario duerme antes de
+      // las 21, respetamos su sleep; si duerme después, paramos a 21
+      // para respetar SPEC-70.5 (bloqueo intestinal).
+      final cutoffHour = sleepTime.hour < kHydrationCutoffHour
+          ? sleepTime.hour
+          : kHydrationCutoffHour;
+
+      // Slot inicial: wakeUp + 30 min.
+      DateTime current = DateTime(
+        2000,
+        1,
+        1,
+        wakeUp.hour,
+        wakeUp.minute,
+      ).add(kHydrationFirstSlotOffset);
+
+      // Fin: cutoffHour:00 del mismo día base.
+      final endTime = DateTime(2000, 1, 1, cutoffHour, 0);
+
+      final maxSlots = NotificationIds.hydrationEnd -
+          NotificationIds.hydrationStart +
+          1;
+      int slotIndex = 0;
+      while (!current.isAfter(endTime) && slotIndex < maxSlots) {
+        final id = NotificationIds.hydrationStart + slotIndex;
+        final message = HydrationMessagePool.selectFor(
+          scheduledTime: current,
+          slotIndex: slotIndex,
+        );
+        await _scheduleCircadian(
+          id: id,
+          hour: current.hour,
+          minute: current.minute,
+          title: message.title,
+          body: '${message.body} · ${message.citation}',
+        );
+        current = current.add(kHydrationCadence);
+        slotIndex++;
+      }
+
+      AppLogger.info(
+        '[NotificationScheduler] Hidratación: $slotIndex slots programados '
+        '(wake ${wakeUp.hour}:${wakeUp.minute.toString().padLeft(2, '0')}, '
+        'cutoff ${cutoffHour}:00, cadencia ${kHydrationCadence.inMinutes}min).',
+      );
+    } catch (e, st) {
+      AppLogger.error(
+        '[NotificationScheduler] Error scheduleHydrationReminders()',
+        e,
+        st,
+      );
+    }
   }
 }

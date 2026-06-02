@@ -33,6 +33,10 @@ class NotificationSchedulerNotifier extends StateNotifier<void> {
             '[NotificationProvider] Perfil circadiano actualizado. Reprogramando agenda.',
           );
           await NotificationScheduler.scheduleCircadianDay(user);
+          // SPEC-150: hidratación reprograma junto con la agenda
+          // circadiana. Default 90 min entre slots durante la ventana
+          // de despertar, cutoff 21:00 (respeta bloqueo intestinal).
+          await NotificationScheduler.scheduleHydrationReminders(user);
         });
       },
       fireImmediately: true,

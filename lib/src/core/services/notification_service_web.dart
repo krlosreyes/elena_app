@@ -17,6 +17,9 @@ class NotificationIds {
   // SPEC-137 E.5: 30 min antes de la próxima comida sugerida
   // (lastMealAt + 3h). One-shot, no repeatsDaily.
   static const int nextMealReady = 300;
+  // SPEC-150: hidratación. Rango 400-419 (hasta 20 slots/día).
+  static const int hydrationStart = 400;
+  static const int hydrationEnd = 419;
 }
 
 class NotificationService {
@@ -76,6 +79,12 @@ class NotificationService {
   }
 
   static Future<void> cancelFasting() async {
+    // No-op en Web
+  }
+
+  // SPEC-150: hidratación es No-op en web (notificaciones nativas no
+  // funcionan igual en web). Las notifs solo aplican a iOS/Android.
+  static Future<void> cancelHydration() async {
     // No-op en Web
   }
 }

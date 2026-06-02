@@ -25,6 +25,11 @@ class NotificationIds {
   // SPEC-137 E.5: 30 min antes de la próxima comida sugerida
   // (lastMealAt + 3h). One-shot, no repeatsDaily.
   static const int nextMealReady = 300;
+
+  // SPEC-150: hidratación. Rango 400-419 reservado (hasta 20 slots/día).
+  // cancelHydration() cancela todo el rango.
+  static const int hydrationStart = 400;
+  static const int hydrationEnd = 419;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -287,5 +292,21 @@ class NotificationService {
 
     AppLogger.debug(
         '[NotificationService] Notificaciones de ayuno canceladas.');
+  }
+
+  /// SPEC-150: cancela las 20 slots reservadas a hidratación (400-419).
+  /// Se llama antes de reprogramar la agenda completa cuando cambia el
+  /// perfil circadiano del usuario.
+  static Future<void> cancelHydration() async {
+    if (kIsWeb || !_initialized) return;
+
+    for (int id = NotificationIds.hydrationStart;
+        id <= NotificationIds.hydrationEnd;
+        id++) {
+      await _plugin.cancel(id: id);
+    }
+
+    AppLogger.debug(
+        '[NotificationService] Notificaciones de hidratación canceladas.');
   }
 }
