@@ -43,6 +43,30 @@ service cloud.firestore {
                    && withinSizeLimit()
                    && idMatchesOrAbsent(userId);
 
+      // SPEC-149: metabolic_cycles — historial de ciclos metabólicos
+      // (Día Metabólico). PK = cycleId (ISO timestamp UTC del startedAt).
+      // Validación: cycleId del payload debe coincidir con el path,
+      // dailyScore en rango [0, 100] cuando esté presente.
+      //
+      // NOTA: igual que con imr_history (SPEC-143), la regla específica
+      // queda como documentación de intent — la catch-all `/{allPaths=**}`
+      // más abajo no enforza esta validación. La validación efectiva vive
+      // client-side en MetabolicCycleService.
+      match /metabolic_cycles/{cycleId} {
+        allow read: if isOwner(userId);
+        allow write: if isOwner(userId)
+                     && withinSizeLimit()
+                     && request.resource.data.cycleId == cycleId
+                     && (
+                       !('dailyScore' in request.resource.data)
+                       || (
+                         request.resource.data.dailyScore is number
+                         && request.resource.data.dailyScore >= 0
+                         && request.resource.data.dailyScore <= 100
+                       )
+                     );
+      }
+
       // SPEC-143: imr_history — historial semanal del IMR longitudinal
       // (SPEC-141). Validación estricta: weekISO del payload debe
       // coincidir con el path, y totalScore debe estar en rango [0, 100].
