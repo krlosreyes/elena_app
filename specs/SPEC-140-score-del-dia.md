@@ -1,8 +1,8 @@
 # SPEC-140 — Score del Día: métrica diaria motivacional 0-100 expuesta en Dashboard
 
-**Estado:** CLOSED (implementada y testeada 2026-06-01)
-**Versión:** 1.0
-**Fecha:** 2026-06-01 · aprobada 2026-06-01 · cerrada 2026-06-01
+**Estado:** CLOSED (implementada, refinada UX y testeada 2026-06-01)
+**Versión:** 1.1
+**Fecha:** 2026-06-01 (v1.0) · refinada 2026-06-01 (v1.1, UX rediseño Opción A) · cerrada 2026-06-01
 **Tipo:** Exposición de métrica existente + rebalanceo de pesos científicos + UI nueva
 **Líder:** Carlos
 **Implementación:** Claude
@@ -376,3 +376,38 @@ Implementación completada en 3 bloques durante el día:
 **Efecto colateral en IMR legacy confirmado dentro de tolerancia.** El `dailyQualityScore` feedea `weeklyQualityScore` → `MetabolicStateBuilder` → bloque Metabolismo del IMR (peso macro 0.25 × peso interno 0.30 = 7.5% del IMR total). Test de no regresión documenta shifts típicos ≤2-3 puntos, techo ≤5.
 
 **Próximo paso desbloqueado:** SPEC-141 podrá usar `dailyScore` (vía nuevo `computeDailyScore`) en lugar de fallback `dailyQualityScore` legacy cuando llegue a IN_PROGRESS post-validación clínica. El componente `behaviorTrend30` del IMR longitudinal queda con su fuente canónica establecida.
+
+### v1.1 — 2026-06-01 (mismo día, post-screenshot feedback)
+
+Carlos compartió screenshot del DailyScoreCard renderizado y rechazó el diseño con feedback explícito: *"No me gusta ese diseño... podríamos colocar el % a cada pilar o cambiarlo de ubicación"*.
+
+**Diagnóstico:** 3 issues confirmados.
+1. La card tomaba ~25% del viewport vertical para un solo número.
+2. La barra de progreso lineal era visualmente redundante con los anillos de los pilares (que ya muestran fill).
+3. El número agregado (73) sin contexto por pilar no era accionable.
+
+**Decisión:** rediseño UX (Opción A de las 3 propuestas). Score integrado al header de PILARES HOY, % por pilar bajo cada label, eliminación de la card separada.
+
+**Cambios v1.1:**
+
+- **Eliminación de `daily_score_card.dart`** y `daily_score_card_test.dart` (deprecados — su rol lo cumple el nuevo header del módulo Pilares).
+- **`PillarRing` extendido con `showPercent: bool = false`** (§RF-140.1-01). Renderiza `${round(progress*100)}%` como segunda línea bajo el label cuando true. Diseñado para no afectar callsites legacy que no pasen el parámetro.
+- **`_buildPillarsRow` refactorizado** (§RF-140.1-02). El header pasa de "PILARES HOY" simple a `Row` con label izquierda + score+delta+ⓘ a la derecha. El ⓘ mantiene `Key('daily_score_info_button')` para testabilidad y abre el mismo `showDailyScoreExplainerSheet` que existía.
+- **Las 5 instancias de `PillarRing` ahora pasan `showPercent: true`.**
+- **`daily_score_explainer_sheet.dart` preservado** — es el tooltip educativo del nuevo ⓘ y conserva el copy aprobado (5 pesos + disclaimer Score vs IMR).
+- **Lógica de pesos sin cambios.** El `computeDailyScore` y los providers siguen igual — solo cambia dónde se renderiza el número.
+
+**Comportamiento visual resultante:**
+
+```
+PILARES HOY                            73/100 ↑13 ⓘ
+┌────────────────────────────────────────────────────┐
+│ ⌚      🌙       💧       💪        🍴               │
+│ Ayuno  Sueño   Hidrat.  Ejerc.    Comidas          │
+│ 73%    85%     60%      100%      100%             │
+└────────────────────────────────────────────────────┘
+```
+
+**No es necesario re-validar clínicamente.** Es refactor UX puro — los pesos, fórmulas y citas bibliográficas son idénticas a v1.0. SPEC-141 sigue desbloqueada y consume el mismo `computeDailyScore`.
+
+**Aprendizaje de proceso:** validar UX con screenshot antes de cerrar SPEC. Si Carlos hubiera visto el diseño durante el diseño (no después de implementar), el rediseño habría sido más barato. Anotado para SPECs futuras con componente visual.

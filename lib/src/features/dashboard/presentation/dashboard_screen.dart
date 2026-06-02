@@ -28,7 +28,8 @@ import 'package:elena_app/src/features/adaptive/presentation/widgets/adaptive_su
 import 'package:elena_app/src/features/nutrition/application/cociente_a_service.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
 import 'package:elena_app/src/features/progress/application/biometric_backfill_provider.dart';
-import 'package:elena_app/src/features/dashboard/presentation/widgets/daily_score_card.dart';
+import 'package:elena_app/src/features/dashboard/presentation/widgets/daily_score_explainer_sheet.dart';
+import 'package:elena_app/src/features/streak/application/daily_score_provider.dart';
 // SPEC-137 E.5: regla del intervalo 3h (lastMealAt + 3h) para "Próxima En".
 import 'package:elena_app/src/features/nutrition/domain/meal_interval_rules.dart';
 // SPEC-137 E.4: registro unificado con TimePicker. AddPastMealSheet
@@ -216,15 +217,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   // El reloj central ya cumple el rol comunicativo
                   // primario del dashboard.
 
-                  // SPEC-140: Score del Día (métrica motivacional 0-100
-                  // basada en los 5 pilares). Se ubica encima de
-                  // PILARES HOY porque es el agregado conceptual de
-                  // esos 5 anillos. Distinto del IMR (Profile/Análisis)
-                  // que es longitudinal y se mueve en semanas/meses.
-                  const DailyScoreCard(),
-                  const SizedBox(height: 18),
-
-                  // PILARES HOY (5 anillos circulares interactivos)
+                  // SPEC-140 + SPEC-140.1: Score del Día integrado al
+                  // header de PILARES HOY como agregado del módulo.
+                  // El % por pilar y el score van en _buildPillarsRow.
+                  // El card separado anterior se eliminó por redundancia
+                  // visual con los anillos de cada pilar.
                   _buildPillarsRow(
                     context: context,
                     ref: ref,
@@ -292,6 +289,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   /// Fila horizontal de 5 anillos circulares — uno por pilar.
   /// Cada anillo es interactivo y abre su sheet de input correspondiente.
   /// El pilar de Ayuno está visualmente destacado cuando está activo.
+  ///
+  /// SPEC-140.1: el header ahora incluye el Score del Día (agregado de
+  /// los 5 pilares), el delta vs ayer y el icono ⓘ que abre el
+  /// explainer educativo. Cada PillarRing muestra su % bajo el label.
   Widget _buildPillarsRow({
     required BuildContext context,
     required WidgetRef ref,
@@ -301,17 +302,77 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     required ExerciseState exercise,
     required NutritionState nutrition,
   }) {
+    final dailyScore = ref.watch(dailyScoreProvider);
+    final delta = ref.watch(dailyScoreDeltaProvider);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'PILARES HOY',
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.4),
-            fontSize: 10,
-            letterSpacing: 1.5,
-            fontWeight: FontWeight.bold,
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Expanded(
+              child: Text(
+                'PILARES HOY',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.4),
+                  fontSize: 10,
+                  letterSpacing: 1.5,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            // SPEC-140.1: Score del Día agregado + delta + ⓘ.
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  '$dailyScore',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                    fontFamily: 'monospace',
+                    height: 1.0,
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 2, left: 1),
+                  child: Text(
+                    '/100',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.35),
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      fontFamily: 'monospace',
+                    ),
+                  ),
+                ),
+                if (delta != null) ...[
+                  const SizedBox(width: 8),
+                  _buildDailyScoreDelta(delta),
+                ],
+                const SizedBox(width: 6),
+                GestureDetector(
+                  key: const Key('daily_score_info_button'),
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => showDailyScoreExplainerSheet(context),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 4,
+                    ),
+                    child: Icon(
+                      Icons.info_outline,
+                      color: Colors.white.withValues(alpha: 0.45),
+                      size: 16,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
         const SizedBox(height: 10),
         Container(
@@ -330,6 +391,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 label: 'Ayuno',
                 isSelected: _selectedPillar == SelectedPillar.ayuno,
                 completed: fastingState.progressPercentage >= 1.0,
+                showPercent: true,
                 onTap: () =>
                     setState(() => _selectedPillar = SelectedPillar.ayuno),
               ),
@@ -344,6 +406,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 isSelected: _selectedPillar == SelectedPillar.sueno,
                 completed: sleep.lastLog != null &&
                     sleep.lastLog!.duration.inHours >= 7,
+                showPercent: true,
                 onTap: () =>
                     setState(() => _selectedPillar = SelectedPillar.sueno),
               ),
@@ -354,6 +417,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 label: 'Hidratación',
                 isSelected: _selectedPillar == SelectedPillar.hidratacion,
                 completed: hydration.isGoalReached,
+                showPercent: true,
                 onTap: () => setState(
                     () => _selectedPillar = SelectedPillar.hidratacion),
               ),
@@ -374,6 +438,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   label: 'Ejercicio',
                   isSelected: _selectedPillar == SelectedPillar.ejercicio,
                   completed: exercise.todayMinutes >= goal,
+                  showPercent: true,
                   onTap: () => setState(
                       () => _selectedPillar = SelectedPillar.ejercicio),
                 );
@@ -392,6 +457,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   isSelected: _selectedPillar == SelectedPillar.comidas,
                   completed:
                       nutrition.mealsLoggedToday >= nutrition.targetMeals,
+                  showPercent: true,
                   onTap: () =>
                       setState(() => _selectedPillar = SelectedPillar.comidas),
                 ),
@@ -400,6 +466,43 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  /// SPEC-140.1: render del delta del Score del Día junto al número.
+  /// Verde con ↑ si subió, rojo con ↓ si bajó, gris con ↔ si igual.
+  /// Tamaño chico — el agregado vive en el header de PILARES HOY y
+  /// no debe competir visualmente con los anillos.
+  Widget _buildDailyScoreDelta(int delta) {
+    if (delta == 0) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 2),
+        child: Text(
+          '↔0',
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.45),
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            fontFamily: 'monospace',
+          ),
+        ),
+      );
+    }
+    final isPositive = delta > 0;
+    final color =
+        isPositive ? AppColors.metabolicGreen : const Color(0xFFEF4444);
+    final arrow = isPositive ? '↑' : '↓';
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 2),
+      child: Text(
+        '$arrow${delta.abs()}',
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+          fontFamily: 'monospace',
+        ),
+      ),
     );
   }
 

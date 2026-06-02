@@ -16,6 +16,7 @@ import 'package:elena_app/src/core/theme/app_theme.dart';
 /// - Glow visual cuando `isSelected` es true.
 /// - Check verde cuando `completed` es true.
 /// - Label debajo, saturado si seleccionado.
+/// - SPEC-140.1: porcentaje opcional bajo el label (líneas 2 si `showPercent`).
 class PillarRing extends StatelessWidget {
   const PillarRing({
     super.key,
@@ -26,6 +27,7 @@ class PillarRing extends StatelessWidget {
     required this.onTap,
     this.isSelected = false,
     this.completed = false,
+    this.showPercent = false,
   });
 
   final IconData icon;
@@ -35,6 +37,12 @@ class PillarRing extends StatelessWidget {
   final VoidCallback onTap;
   final bool isSelected;
   final bool completed;
+
+  /// SPEC-140.1: si true, renderiza el % del progreso como segunda línea
+  /// bajo el label. Permite que el usuario vea el peso individual de
+  /// cada pilar sin necesidad de tocarlo. El % se redondea al entero
+  /// más cercano y se clampea a [0, 100].
+  final bool showPercent;
 
   @override
   Widget build(BuildContext context) {
@@ -106,6 +114,21 @@ class PillarRing extends StatelessWidget {
               fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
             ),
           ),
+          if (showPercent) ...[
+            const SizedBox(height: 2),
+            Text(
+              '${(progress.clamp(0.0, 1.0) * 100).round()}%',
+              style: TextStyle(
+                fontSize: 10,
+                color: isSelected
+                    ? color
+                    : Colors.white.withValues(alpha: 0.45),
+                fontWeight: FontWeight.w700,
+                fontFamily: 'monospace',
+                height: 1.0,
+              ),
+            ),
+          ],
         ],
       ),
     );
