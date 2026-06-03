@@ -32,6 +32,7 @@ import 'package:elena_app/src/features/analysis/presentation/widgets/period_sele
 import 'package:elena_app/src/features/analysis/presentation/widgets/weekly_coaching_card.dart';
 import 'package:elena_app/src/features/goals/presentation/goals_progress_dashboard.dart';
 import 'package:elena_app/src/features/metabolic_cycle/presentation/widgets/cycles_history_card.dart';
+import 'package:elena_app/src/features/nutrition/presentation/widgets/meals_ratio_card.dart';
 
 class AnalysisScreen extends ConsumerStatefulWidget {
   const AnalysisScreen({super.key});
@@ -126,6 +127,11 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                     // cerrados. Tap en fila abre CycleDetailSheet con
                     // feedback completo. Aprovecha datos de SPEC-149.
                     const CyclesHistoryCard(),
+                    const SizedBox(height: 14),
+                    // SPEC-158: distribución A:E semanal de comidas
+                    // (Frank Suárez SPEC-137 ya persistido). Insight
+                    // adaptativo por tier de % A-dominante.
+                    const MealsRatioCard(),
                     const SizedBox(height: 14),
                     // SPEC-152: tendencia de composición corporal.
                     // Consume biometric_history y expone 3 métricas con
