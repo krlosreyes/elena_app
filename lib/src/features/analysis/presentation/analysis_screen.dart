@@ -31,7 +31,7 @@ import 'package:elena_app/src/features/analysis/presentation/widgets/imr_trend_c
 import 'package:elena_app/src/features/analysis/presentation/widgets/insight_card.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/period_hero_card.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/period_selector.dart';
-import 'package:elena_app/src/features/analysis/presentation/widgets/pillars_heatmap.dart';
+import 'package:elena_app/src/features/analysis/presentation/widgets/weekly_coaching_card.dart';
 
 class AnalysisScreen extends ConsumerStatefulWidget {
   const AnalysisScreen({super.key});
@@ -111,15 +111,15 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                       daysInPeriod: _period.days,
                     ),
                     const SizedBox(height: 14),
-                    PillarsHeatmap(
-                      docs: mergedDocs,
-                      daysInPeriod: _period.days,
-                    ),
+                    // SPEC-153: reemplazó al PillarsHeatmap por un
+                    // coaching block que apunta al pilar débil con
+                    // acción concreta y cita científica. Fijo 7 días
+                    // independiente del selector temporal arriba.
+                    const WeeklyCoachingCard(),
                     const SizedBox(height: 14),
                     // SPEC-152: tendencia de composición corporal.
-                    // Resuelve la deuda "Análisis vacía" registrada
-                    // tras SPEC-143. Consume biometric_history y
-                    // expone 3 métricas con selector temporal.
+                    // Consume biometric_history y expone 3 métricas con
+                    // selector temporal independiente.
                     const BodyCompositionTrendChart(),
                     const SizedBox(height: 18),
                     Padding(

@@ -25,9 +25,16 @@ class PeriodData {
   final List<DailySummaryDoc> currentDocs;
   final PeriodComparison comparison;
 
+  /// SPEC-153: docs del período inmediatamente anterior, expuestos para
+  /// providers derivados (WeeklyCoachingCard usa current + previous para
+  /// computar deltas por pilar). La query base ya los trae — exponerlos
+  /// evita duplicar la suscripción Firestore.
+  final List<DailySummaryDoc> previousDocs;
+
   const PeriodData({
     required this.currentDocs,
     required this.comparison,
+    this.previousDocs = const [],
   });
 }
 
@@ -75,7 +82,11 @@ final periodDataProvider = StreamProvider.family
       previousDocs: previousDocs,
       daysInPeriod: period.days,
     );
-    return PeriodData(currentDocs: currentDocs, comparison: comparison);
+    return PeriodData(
+      currentDocs: currentDocs,
+      previousDocs: previousDocs,
+      comparison: comparison,
+    );
   });
 });
 
