@@ -5,7 +5,6 @@
 
 import 'package:flutter/material.dart';
 
-import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/analysis/domain/metric_series.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/chart_card_header.dart';
 
@@ -15,37 +14,35 @@ class LineChartCard extends StatelessWidget {
     required this.series,
     required this.accent,
     required this.periodLabel,
-    this.statLabel = 'ACTUAL',
+    required this.headline,
     this.deltaIsBetterIf = 'up',
   });
 
   final MetricSeries series;
   final Color accent;
   final String periodLabel;
-  final String statLabel;
+  final String headline;
   final String deltaIsBetterIf;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        color: AppColors.surfaceDark,
-        borderRadius: BorderRadius.circular(16),
+        color: const Color(0xFF0C0C0E),
+        borderRadius: BorderRadius.circular(18),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           ChartCardHeader(
-            statLabel: statLabel,
-            value: series.currentValue,
-            unit: series.unit,
-            metricLabel: series.label,
+            headline: headline,
             periodLabel: periodLabel,
             delta: series.delta,
+            deltaUnit: series.unit,
             deltaIsBetterIf: deltaIsBetterIf,
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 22),
           SizedBox(
             height: 170,
             child: _renderChart(),
