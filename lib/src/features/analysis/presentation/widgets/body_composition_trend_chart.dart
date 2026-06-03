@@ -13,6 +13,7 @@ import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/analysis/application/biometric_trend_provider.dart';
 import 'package:elena_app/src/features/analysis/domain/body_composition_metric.dart';
 import 'package:elena_app/src/features/progress/domain/biometric_checkin.dart';
+import 'package:elena_app/src/shared/providers/user_provider.dart';
 
 class BodyCompositionTrendChart extends ConsumerStatefulWidget {
   const BodyCompositionTrendChart({super.key});
@@ -30,6 +31,9 @@ class _BodyCompositionTrendChartState
   @override
   Widget build(BuildContext context) {
     final asyncCheckIns = ref.watch(biometricTrendProvider(_days));
+    // SPEC-157: necesitamos height para WHTR. Watch del user provider.
+    final user = ref.watch(currentUserStreamProvider).valueOrNull;
+    final heightCm = (user?.height ?? 0) > 0 ? user!.height : null;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
@@ -50,7 +54,7 @@ class _BodyCompositionTrendChartState
           asyncCheckIns.when(
             loading: () => _buildLoading(),
             error: (_, __) => _buildErrorBox(),
-            data: (list) => _buildContent(list),
+            data: (list) => _buildContent(list, heightCm: heightCm),
           ),
         ],
       ),
@@ -74,40 +78,46 @@ class _BodyCompositionTrendChartState
   // ─── Tabs de métrica ────────────────────────────────────────────────
 
   Widget _buildMetricTabs() {
-    return Row(
-      children: BodyCompositionMetric.values.map((m) {
-        final isSelected = m == _metric;
-        return Padding(
-          padding: const EdgeInsets.only(right: 8),
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () => setState(() => _metric = m),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? m.accentColor.withValues(alpha: 0.18)
-                    : Colors.white.withValues(alpha: 0.04),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
+    // SPEC-157: 5 tabs ya no entran en pantallas chicas. Scroll
+    // horizontal para acomodar sin acumular alto vertical.
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: BodyCompositionMetric.values.map((m) {
+          final isSelected = m == _metric;
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => setState(() => _metric = m),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
                   color: isSelected
-                      ? m.accentColor.withValues(alpha: 0.5)
-                      : Colors.transparent,
+                      ? m.accentColor.withValues(alpha: 0.18)
+                      : Colors.white.withValues(alpha: 0.04),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: isSelected
+                        ? m.accentColor.withValues(alpha: 0.5)
+                        : Colors.transparent,
+                  ),
                 ),
-              ),
-              child: Text(
-                m.label,
-                style: TextStyle(
-                  color: isSelected ? m.accentColor : Colors.white60,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.5,
+                child: Text(
+                  m.label,
+                  style: TextStyle(
+                    color: isSelected ? m.accentColor : Colors.white60,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5,
+                  ),
                 ),
               ),
             ),
-          ),
-        );
-      }).toList(),
+          );
+        }).toList(),
+      ),
     );
   }
 
@@ -176,11 +186,12 @@ class _BodyCompositionTrendChartState
     );
   }
 
-  Widget _buildContent(List<BiometricCheckIn> all) {
+  Widget _buildContent(List<BiometricCheckIn> all, {double? heightCm}) {
     // Extraer solo los valores no-null para la métrica seleccionada.
+    // SPEC-157: WHTR depende de heightCm; las otras métricas lo ignoran.
     final samples = <_TrendPoint>[];
     for (final ci in all) {
-      final v = _metric.selectValue(ci);
+      final v = _metric.selectValue(ci, heightCm: heightCm);
       if (v != null) samples.add(_TrendPoint(value: v, dateKey: ci.date));
     }
 

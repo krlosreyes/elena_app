@@ -116,4 +116,104 @@ void main() {
       );
     });
   });
+
+  // ─── SPEC-157: WHTR + Masa magra ──────────────────────────────────
+
+  group('SPEC-157 — WHTR.selectValue', () {
+    test('retorna cintura/altura cuando ambos presentes', () {
+      final ci = _checkIn(weight: 80, waist: 90);
+      final v = BodyCompositionMetric.whtr
+          .selectValue(ci, heightCm: 175);
+      expect(v, closeTo(90 / 175, 0.0001));
+    });
+
+    test('retorna null cuando heightCm es null', () {
+      final ci = _checkIn(weight: 80, waist: 90);
+      expect(
+        BodyCompositionMetric.whtr.selectValue(ci, heightCm: null),
+        isNull,
+      );
+    });
+
+    test('retorna null cuando heightCm es 0 (sentinel)', () {
+      final ci = _checkIn(weight: 80, waist: 90);
+      expect(
+        BodyCompositionMetric.whtr.selectValue(ci, heightCm: 0),
+        isNull,
+      );
+    });
+
+    test('retorna null cuando cintura es null', () {
+      final ci = _checkIn(weight: 80);
+      expect(
+        BodyCompositionMetric.whtr.selectValue(ci, heightCm: 175),
+        isNull,
+      );
+    });
+  });
+
+  group('SPEC-157 — leanMassKg.selectValue', () {
+    test('retorna weight * (1 - bf/100) cuando bf presente', () {
+      final ci = _checkIn(weight: 80, bodyFat: 20);
+      // 80 * 0.80 = 64
+      final v = BodyCompositionMetric.leanMassKg.selectValue(ci);
+      expect(v, closeTo(64.0, 0.0001));
+    });
+
+    test('retorna null cuando %grasa no se registró', () {
+      final ci = _checkIn(weight: 80);
+      expect(BodyCompositionMetric.leanMassKg.selectValue(ci), isNull);
+    });
+  });
+
+  group('SPEC-157 — labels y unidades de las nuevas métricas', () {
+    test('WHTR label y unidad adimensional', () {
+      expect(BodyCompositionMetric.whtr.label, 'WHTR');
+      expect(BodyCompositionMetric.whtr.unit, '');
+    });
+
+    test('Masa magra label y unidad kg', () {
+      expect(BodyCompositionMetric.leanMassKg.label, 'Masa magra');
+      expect(BodyCompositionMetric.leanMassKg.unit, 'kg');
+    });
+  });
+
+  group('SPEC-157 — formato WHTR 2 decimales', () {
+    test('WHTR usa 2 decimales', () {
+      expect(BodyCompositionMetric.whtr.formatValue(0.487), '0.49');
+      expect(BodyCompositionMetric.whtr.formatValue(0.5), '0.50');
+    });
+
+    test('Masa magra usa 1 decimal', () {
+      expect(BodyCompositionMetric.leanMassKg.formatValue(64.27), '64.3');
+    });
+  });
+
+  group('SPEC-157 — deltaCopyFor para WHTR sin unidad', () {
+    test('delta WHTR no incluye unidad textual', () {
+      final copy = BodyCompositionMetric.whtr.deltaCopyFor(-0.03);
+      // No tiene "kg" ni "cm" ni "%" — adimensional.
+      expect(copy, isNot(contains('kg')));
+      expect(copy, isNot(contains('cm')));
+      expect(copy, isNot(contains('%')));
+      expect(copy, contains('0.03'));
+      expect(copy, contains('menos'));
+    });
+  });
+
+  group('SPEC-157 — empty state messages nuevos', () {
+    test('WHTR menciona cintura/altura', () {
+      expect(
+        BodyCompositionMetric.whtr.emptyStateMessage,
+        contains('cintura'),
+      );
+    });
+
+    test('Masa magra menciona % de grasa', () {
+      expect(
+        BodyCompositionMetric.leanMassKg.emptyStateMessage,
+        contains('grasa'),
+      );
+    });
+  });
 }
