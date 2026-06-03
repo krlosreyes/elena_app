@@ -1,57 +1,60 @@
-// SPEC-160: pantalla Análisis reorganizada con 3 tabs por intención
-// narrativa.
+// SPEC-162: pantalla Análisis reescrita como trazabilidad +
+// causa-efecto.
 //
-// Layout: AppBar (calendario opcional) → TabBar (Resumen / Pilares /
-// Tendencia) → TabBarView con KeepAlive en cada tab → BottomNavigationBar.
+// Cuatro estados:
+//   1. Loading — alguna serie aún se está leyendo.
+//   2. Insuficiente data — <30 días → InsufficientDataView.
+//   3. Datos suficientes — bloques Resultados + Hábitos + Insights.
+//   4. Error — fallback simple.
 //
-// Los widgets de cards (PeriodHeroCard, WeeklyCoachingCard, etc.) NO
-// se tocan — solo se reorganizan en los 3 tabs.
+// El selector global de rango vive arriba de todo y aplica a las 7
+// series. Sin tabs — UN solo flujo vertical.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:elena_app/src/core/theme/app_theme.dart';
+import 'package:elena_app/src/features/analysis/application/analysis_series_providers.dart';
+import 'package:elena_app/src/features/analysis/application/causal_insights_provider.dart';
 import 'package:elena_app/src/features/analysis/presentation/monthly_calendar_screen.dart';
-import 'package:elena_app/src/features/analysis/presentation/tabs/analysis_pillars_tab.dart';
-import 'package:elena_app/src/features/analysis/presentation/tabs/analysis_summary_tab.dart';
-import 'package:elena_app/src/features/analysis/presentation/tabs/analysis_trend_tab.dart';
+import 'package:elena_app/src/features/analysis/presentation/widgets/insight_tile.dart';
+import 'package:elena_app/src/features/analysis/presentation/widgets/metric_row.dart';
+import 'package:elena_app/src/features/analysis/presentation/widgets/range_selector_chips.dart';
 
-class AnalysisScreen extends ConsumerStatefulWidget {
+class AnalysisScreen extends ConsumerWidget {
   const AnalysisScreen({super.key});
 
-  @override
-  ConsumerState<AnalysisScreen> createState() => _AnalysisScreenState();
-}
-
-class _AnalysisScreenState extends ConsumerState<AnalysisScreen>
-    with TickerProviderStateMixin {
-  late final TabController _tabController;
-
-  static const _tabs = [
-    Tab(text: 'Resumen'),
-    Tab(text: 'Pilares'),
-    Tab(text: 'Tendencia'),
-  ];
+  // Colores por hábito coherentes con SPEC-161.
+  static const _accentImr = AppColors.metabolicGreen;
+  static const _accentWeight = Color(0xFF60A5FA);
+  static const _accentFasting = AppColors.metabolicGreen;
+  static const _accentNutrition = Color(0xFFFB923C);
+  static const _accentHydration = Color(0xFF38BDF8);
+  static const _accentExercise = Color(0xFF14B8A6);
+  static const _accentSleep = Color(0xFF818CF8);
 
   @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(
-      length: _tabs.length,
-      vsync: this,
-      initialIndex: 0,
-    );
-  }
+  Widget build(BuildContext context, WidgetRef ref) {
+    final imr = ref.watch(imrSeriesProvider);
+    final weight = ref.watch(weightSeriesProvider);
+    final fasting = ref.watch(fastingHabitSeriesProvider);
+    final nutrition = ref.watch(nutritionHabitSeriesProvider);
+    final hydration = ref.watch(hydrationHabitSeriesProvider);
+    final exercise = ref.watch(exerciseHabitSeriesProvider);
+    final sleep = ref.watch(sleepHabitSeriesProvider);
+    final insights = ref.watch(causalInsightsProvider);
 
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
+    final allLoading = [
+      imr,
+      weight,
+      fasting,
+      nutrition,
+      hydration,
+      exercise,
+      sleep,
+    ].any((s) => s.isLoading);
 
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
       appBar: AppBar(
@@ -82,42 +85,29 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen>
           ),
           const SizedBox(width: 4),
         ],
-        // SPEC-160: TabBar como bottom del AppBar para mantenerla
-        // pegada al header sin que el contenido del tab tenga que
-        // dejarle espacio.
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(46),
-          child: Container(
-            color: AppColors.backgroundDark,
-            child: TabBar(
-              controller: _tabController,
-              tabs: _tabs,
-              labelColor: AppColors.metabolicGreen,
-              unselectedLabelColor: Colors.white60,
-              indicatorColor: AppColors.metabolicGreen,
-              indicatorWeight: 2.5,
-              labelStyle: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.8,
-              ),
-              unselectedLabelStyle: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.8,
-              ),
-            ),
-          ),
-        ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        physics: const PageScrollPhysics(),
-        children: const [
-          AnalysisSummaryTab(),
-          AnalysisPillarsTab(),
-          AnalysisTrendTab(),
-        ],
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const RangeSelectorChips(),
+            const SizedBox(height: 24),
+            if (allLoading)
+              _buildLoading()
+            else
+              ..._buildContent(
+                imrSeries: imr.value!,
+                weightSeries: weight.value!,
+                fastingSeries: fasting.value!,
+                nutritionSeries: nutrition.value!,
+                hydrationSeries: hydration.value!,
+                exerciseSeries: exercise.value!,
+                sleepSeries: sleep.value!,
+                insights: insights,
+              ),
+          ],
+        ),
       ),
       bottomNavigationBar: BottomNavigationBar(
         backgroundColor: const Color(0xFF0F172A),
@@ -142,6 +132,176 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen>
           BottomNavigationBarItem(
             icon: Icon(Icons.person),
             label: 'Perfil',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoading() {
+    return Container(
+      height: 320,
+      alignment: Alignment.center,
+      child: const SizedBox(
+        width: 22,
+        height: 22,
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          color: AppColors.metabolicGreen,
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildContent({
+    required imrSeries,
+    required weightSeries,
+    required fastingSeries,
+    required nutritionSeries,
+    required hydrationSeries,
+    required exerciseSeries,
+    required sleepSeries,
+    required insights,
+  }) {
+    // Si todos están vacíos, mostramos estado "arrancando".
+    final allEmpty = imrSeries.isEmpty &&
+        weightSeries.isEmpty &&
+        fastingSeries.isEmpty &&
+        nutritionSeries.isEmpty &&
+        hydrationSeries.isEmpty &&
+        exerciseSeries.isEmpty &&
+        sleepSeries.isEmpty;
+    if (allEmpty) {
+      return [_buildStartingState()];
+    }
+
+    return [
+      _sectionHeader('TUS RESULTADOS'),
+      const SizedBox(height: 12),
+      MetricRow(series: imrSeries, accent: _accentImr),
+      const SizedBox(height: 24),
+      MetricRow(series: weightSeries, accent: _accentWeight),
+      const SizedBox(height: 28),
+      _divider(),
+      const SizedBox(height: 28),
+      _sectionHeader('TUS HÁBITOS'),
+      const SizedBox(height: 12),
+      MetricRow(series: fastingSeries, accent: _accentFasting),
+      const SizedBox(height: 22),
+      MetricRow(series: nutritionSeries, accent: _accentNutrition),
+      const SizedBox(height: 22),
+      MetricRow(series: hydrationSeries, accent: _accentHydration),
+      const SizedBox(height: 22),
+      MetricRow(series: exerciseSeries, accent: _accentExercise),
+      const SizedBox(height: 22),
+      MetricRow(series: sleepSeries, accent: _accentSleep),
+      const SizedBox(height: 28),
+      _divider(),
+      const SizedBox(height: 28),
+      _sectionHeader('INSIGHTS DETECTADOS'),
+      const SizedBox(height: 4),
+      insights.when(
+        loading: () => const Padding(
+          padding: EdgeInsets.symmetric(vertical: 16),
+          child: SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: AppColors.metabolicGreen,
+            ),
+          ),
+        ),
+        error: (_, __) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Text(
+            'No pudimos cargar los insights.',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.55),
+              fontSize: 12,
+            ),
+          ),
+        ),
+        data: (list) {
+          if (list.isEmpty) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Text(
+                'Seguí registrando — Elena necesita más patrones para '
+                'devolverte conclusiones causa-efecto.',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.55),
+                  fontSize: 12,
+                  height: 1.5,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            );
+          }
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: list.map((i) => InsightTile(insight: i)).toList(),
+          );
+        },
+      ),
+    ];
+  }
+
+  Widget _sectionHeader(String label) {
+    return Text(
+      label,
+      style: TextStyle(
+        color: Colors.white.withValues(alpha: 0.50),
+        fontSize: 10,
+        letterSpacing: 1.4,
+        fontWeight: FontWeight.w900,
+      ),
+    );
+  }
+
+  Widget _divider() {
+    return Container(
+      height: 1,
+      color: Colors.white.withValues(alpha: 0.06),
+    );
+  }
+
+  Widget _buildStartingState() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('📊', style: TextStyle(fontSize: 28)),
+          const SizedBox(height: 12),
+          const Text(
+            'Tu trazabilidad arranca acá.',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Necesitás al menos 30 días de registro para que Elena '
+            'detecte causa-efecto confiable entre tus hábitos y tus '
+            'resultados.',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.65),
+              fontSize: 13,
+              height: 1.5,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'Volvé en unos días para ver tu primera detección.',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.40),
+              fontSize: 11,
+              fontStyle: FontStyle.italic,
+            ),
           ),
         ],
       ),
