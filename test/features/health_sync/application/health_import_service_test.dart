@@ -36,6 +36,12 @@ class _FakeSleepRepository implements SleepRepository {
 
   @override
   Stream<SleepLog?> watchLatest(String userId) => const Stream.empty();
+
+  /// SPEC-159: nuevo método del contrato. Para los tests de import
+  /// service no se valida el historial — Stream.empty() es suficiente.
+  @override
+  Stream<List<SleepLog>> watchRecent(String userId, {int limit = 7}) =>
+      const Stream.empty();
 }
 
 class _FakeExerciseRepository implements ExerciseRepository {

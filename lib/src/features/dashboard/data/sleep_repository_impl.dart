@@ -43,6 +43,27 @@ class SleepRepositoryImpl implements SleepRepository {
   }
 
   @override
+  Stream<List<SleepLog>> watchRecent(String userId, {int limit = 7}) {
+    return _source
+        .streamRecent(userId: userId, limit: limit)
+        .map((maps) {
+      final out = <SleepLog>[];
+      for (final map in maps) {
+        final docId = map['__docId'] as String? ?? '';
+        final body = Map<String, dynamic>.from(map)..remove('__docId');
+        try {
+          out.add(_mapper.fromMap(body, docId: docId));
+        } catch (_) {
+          // Docs corruptos se descartan en silencio (mismo patrón que
+          // watchLatest). Si toda la lista llega corrupta, devolvemos
+          // lista vacía y el widget cae a empty state.
+        }
+      }
+      return out;
+    });
+  }
+
+  @override
   Future<void> save(String userId, SleepLog log) async {
     final data = _mapper.toMap(log);
     await _source.persist(userId: userId, docId: log.id, data: data);

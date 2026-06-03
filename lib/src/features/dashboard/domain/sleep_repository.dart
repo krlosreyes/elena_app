@@ -27,6 +27,12 @@ abstract class SleepRepository {
   /// Emite `null` si el usuario no tiene historial de sueño.
   Stream<SleepLog?> watchLatest(String userId);
 
+  /// SPEC-159: Stream de los últimos [limit] ciclos de sueño ordenados
+  /// por `wokeUp` descendente (más reciente primero). Devuelve lista
+  /// vacía si no hay historial. Los docs corruptos se descartan en
+  /// silencio (mismo patrón que `watchLatest`).
+  Stream<List<SleepLog>> watchRecent(String userId, {int limit = 7});
+
   /// Persiste o sobrescribe un ciclo de sueño usando `log.id` como
   /// clave. Idempotente: re-llamar con el mismo `log` produce el mismo
   /// estado en Firestore (no duplica).

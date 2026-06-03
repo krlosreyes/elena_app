@@ -16,6 +16,15 @@ abstract class SleepDataSource {
   /// de Firestore — el mapper se encarga de traducir.
   Stream<Map<String, dynamic>?> streamLatest(String userId);
 
+  /// SPEC-159: Stream de los últimos N ciclos de sueño ordenados por
+  /// `wokeUp` descendente (más reciente primero). Cada doc incluye
+  /// `__docId` inyectado por el source, igual que `streamLatest`.
+  /// Devuelve lista vacía si el usuario no tiene historial.
+  Stream<List<Map<String, dynamic>>> streamRecent({
+    required String userId,
+    required int limit,
+  });
+
   /// Persiste o sobrescribe un documento de sueño usando `docId` como
   /// clave. Idempotente: re-llamar con el mismo `data` produce el
   /// mismo estado (no duplica).

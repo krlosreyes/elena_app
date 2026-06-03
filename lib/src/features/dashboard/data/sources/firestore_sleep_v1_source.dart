@@ -41,6 +41,23 @@ class FirestoreSleepV1Source implements SleepDataSource {
   }
 
   @override
+  Stream<List<Map<String, dynamic>>> streamRecent({
+    required String userId,
+    required int limit,
+  }) {
+    return _collection(userId)
+        .orderBy('wokeUp', descending: true)
+        .limit(limit)
+        .snapshots()
+        .map((snap) {
+      return snap.docs.map((doc) {
+        final data = Map<String, dynamic>.from(doc.data());
+        return {...data, '__docId': doc.id};
+      }).toList(growable: false);
+    });
+  }
+
+  @override
   Future<void> persist({
     required String userId,
     required String docId,
