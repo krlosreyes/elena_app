@@ -20,7 +20,6 @@ import 'package:go_router/go_router.dart';
 
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/analysis/application/daily_summary_provider.dart';
-import 'package:elena_app/src/features/analysis/application/insights_service.dart';
 import 'package:elena_app/src/features/analysis/application/period_comparison_provider.dart';
 import 'package:elena_app/src/features/analysis/data/daily_summary_doc.dart';
 import 'package:elena_app/src/features/analysis/domain/analysis_period.dart';
@@ -28,7 +27,6 @@ import 'package:elena_app/src/features/analysis/domain/daily_summary.dart';
 import 'package:elena_app/src/features/analysis/presentation/monthly_calendar_screen.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/body_composition_trend_chart.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/imr_trend_chart.dart';
-import 'package:elena_app/src/features/analysis/presentation/widgets/insight_card.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/period_hero_card.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/period_selector.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/weekly_coaching_card.dart';
@@ -127,21 +125,9 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                     // Consume biometric_history y expone 3 métricas con
                     // selector temporal independiente.
                     const BodyCompositionTrendChart(),
-                    const SizedBox(height: 18),
-                    Padding(
-                      padding: const EdgeInsets.only(left: 4, bottom: 10),
-                      child: Text(
-                        'INSIGHTS',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.55),
-                          fontSize: 10,
-                          letterSpacing: 1.4,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ),
-                    ...InsightsService.generate(mergedDocs)
-                        .map((i) => InsightCard(insight: i)),
+                    // SPEC-155: header INSIGHTS y los 4 cards generados
+                    // por InsightsService eliminados — duplicaban con
+                    // WeeklyCoachingCard (SPEC-153) y PeriodHeroCard.
                   ],
                 );
               },
