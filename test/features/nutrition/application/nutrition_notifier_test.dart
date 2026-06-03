@@ -43,6 +43,12 @@ class FakeNutritionRepository implements NutritionRepository {
   Stream<List<NutritionLog>> watchTodayLogs(String userId) =>
       _logsController.stream;
 
+  /// SPEC-149.2: para el fake reutilizamos el mismo controller — los
+  /// tests no validan filtrado por ventana, solo el flujo del notifier.
+  @override
+  Stream<List<NutritionLog>> watchSinceLogs(String userId, DateTime since) =>
+      _logsController.stream;
+
   @override
   Future<void> saveMeal(String userId, NutritionLog log) async {
     savedMeals.add(log);

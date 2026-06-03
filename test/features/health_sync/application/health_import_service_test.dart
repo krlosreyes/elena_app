@@ -47,6 +47,12 @@ class _FakeExerciseRepository implements ExerciseRepository {
 
   @override
   Stream<List<ExerciseLog>> watchToday(String userId) => const Stream.empty();
+
+  /// SPEC-149.2: nuevo método del contrato. El fake no filtra por
+  /// ventana — los tests de import service no validan eso.
+  @override
+  Stream<List<ExerciseLog>> watchSince(String userId, DateTime since) =>
+      const Stream.empty();
 }
 
 // Fake del BiometricRepository: reusamos fake_cloud_firestore para tener
