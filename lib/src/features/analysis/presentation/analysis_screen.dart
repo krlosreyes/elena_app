@@ -1,39 +1,21 @@
-// SPEC-113: pantalla Análisis rediseñada.
+// SPEC-160: pantalla Análisis reorganizada con 3 tabs por intención
+// narrativa.
 //
-// PERF (post-SPEC-113): un solo watch sobre `periodDataProvider` que
-// trae current + previous + comparison desde una sola query Firestore.
-// 4 bloques visuales (hero, tendencia, heatmap, insights) comparten
-// el mismo `.when()`.
+// Layout: AppBar (calendario opcional) → TabBar (Resumen / Pilares /
+// Tendencia) → TabBarView con KeepAlive en cada tab → BottomNavigationBar.
 //
-// Estructura:
-//   AppBar (acción: abrir vista calendario, SPEC-112)
-//   - Selector temporal (Semana / Mes / 3 Meses)
-//   - Hero card con IMR promedio + delta + mejor/peor día
-//   - Tendencia (línea CustomPaint)
-//   - Heatmap pilares × días
-//   - Insights (3-4 cards)
-//   - BottomNavigationBar
+// Los widgets de cards (PeriodHeroCard, WeeklyCoachingCard, etc.) NO
+// se tocan — solo se reorganizan en los 3 tabs.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:elena_app/src/core/theme/app_theme.dart';
-import 'package:elena_app/src/features/analysis/application/daily_summary_provider.dart';
-import 'package:elena_app/src/features/analysis/application/period_comparison_provider.dart';
-import 'package:elena_app/src/features/analysis/data/daily_summary_doc.dart';
-import 'package:elena_app/src/features/analysis/domain/analysis_period.dart';
-import 'package:elena_app/src/features/analysis/domain/daily_summary.dart';
 import 'package:elena_app/src/features/analysis/presentation/monthly_calendar_screen.dart';
-import 'package:elena_app/src/features/analysis/presentation/widgets/body_composition_trend_chart.dart';
-import 'package:elena_app/src/features/analysis/presentation/widgets/imr_trend_chart.dart';
-import 'package:elena_app/src/features/analysis/presentation/widgets/period_hero_card.dart';
-import 'package:elena_app/src/features/analysis/presentation/widgets/period_selector.dart';
-import 'package:elena_app/src/features/analysis/presentation/widgets/weekly_coaching_card.dart';
-import 'package:elena_app/src/features/goals/presentation/goals_progress_dashboard.dart';
-import 'package:elena_app/src/features/metabolic_cycle/presentation/widgets/cycles_history_card.dart';
-import 'package:elena_app/src/features/dashboard/presentation/widgets/sleep_quality_card.dart';
-import 'package:elena_app/src/features/nutrition/presentation/widgets/meals_ratio_card.dart';
+import 'package:elena_app/src/features/analysis/presentation/tabs/analysis_pillars_tab.dart';
+import 'package:elena_app/src/features/analysis/presentation/tabs/analysis_summary_tab.dart';
+import 'package:elena_app/src/features/analysis/presentation/tabs/analysis_trend_tab.dart';
 
 class AnalysisScreen extends ConsumerStatefulWidget {
   const AnalysisScreen({super.key});
@@ -42,18 +24,34 @@ class AnalysisScreen extends ConsumerStatefulWidget {
   ConsumerState<AnalysisScreen> createState() => _AnalysisScreenState();
 }
 
-class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
-  AnalysisPeriod _period = AnalysisPeriod.week;
+class _AnalysisScreenState extends ConsumerState<AnalysisScreen>
+    with TickerProviderStateMixin {
+  late final TabController _tabController;
+
+  static const _tabs = [
+    Tab(text: 'Resumen'),
+    Tab(text: 'Pilares'),
+    Tab(text: 'Tendencia'),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(
+      length: _tabs.length,
+      vsync: this,
+      initialIndex: 0,
+    );
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final dataAsync = ref.watch(periodDataProvider(_period));
-    // SPEC-113.bugfix: el doc persistido de HOY tiene debounce de 30s.
-    // Watcheamos el state LIVE y lo mezclamos para que la columna/
-    // snapshot del día actual refleje cambios inmediatos (registrar
-    // una comida, cerrar el ayuno, etc).
-    final liveToday = ref.watch(dailySummaryProvider);
-
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
       appBar: AppBar(
@@ -84,75 +82,42 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
           ),
           const SizedBox(width: 4),
         ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            PeriodSelector(
-              selected: _period,
-              onChanged: (p) => setState(() => _period = p),
+        // SPEC-160: TabBar como bottom del AppBar para mantenerla
+        // pegada al header sin que el contenido del tab tenga que
+        // dejarle espacio.
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(46),
+          child: Container(
+            color: AppColors.backgroundDark,
+            child: TabBar(
+              controller: _tabController,
+              tabs: _tabs,
+              labelColor: AppColors.metabolicGreen,
+              unselectedLabelColor: Colors.white60,
+              indicatorColor: AppColors.metabolicGreen,
+              indicatorWeight: 2.5,
+              labelStyle: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.8,
+              ),
+              unselectedLabelStyle: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.8,
+              ),
             ),
-            const SizedBox(height: 16),
-            dataAsync.when(
-              loading: () => _loadingStack(),
-              error: (e, st) => _errorBox(),
-              data: (d) {
-                final mergedDocs = _mergeWithLive(d.currentDocs, liveToday);
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    PeriodHeroCard(
-                      data: d.comparison,
-                      periodLabel: _period.label,
-                    ),
-                    const SizedBox(height: 14),
-                    ImrTrendChart(
-                      docs: mergedDocs,
-                      daysInPeriod: _period.days,
-                    ),
-                    const SizedBox(height: 14),
-                    // SPEC-153: reemplazó al PillarsHeatmap por un
-                    // coaching block que apunta al pilar débil con
-                    // acción concreta y cita científica. Fijo 7 días
-                    // independiente del selector temporal arriba.
-                    const WeeklyCoachingCard(),
-                    const SizedBox(height: 14),
-                    // SPEC-154: dashboard de progreso de objetivos
-                    // activos. Empty state con CTA al GoalSetupScreen
-                    // si el usuario no tiene objetivos definidos.
-                    const GoalsProgressDashboard(),
-                    const SizedBox(height: 14),
-                    // SPEC-156: histórico de ciclos metabólicos
-                    // cerrados. Tap en fila abre CycleDetailSheet con
-                    // feedback completo. Aprovecha datos de SPEC-149.
-                    const CyclesHistoryCard(),
-                    const SizedBox(height: 14),
-                    // SPEC-158: distribución A:E semanal de comidas
-                    // (Frank Suárez SPEC-137 ya persistido). Insight
-                    // adaptativo por tier de % A-dominante.
-                    const MealsRatioCard(),
-                    const SizedBox(height: 14),
-                    // SPEC-159: calidad subjetiva semanal de sueño.
-                    // Expone dimensiones de SPEC-69 (subjectiveQuality,
-                    // sleepLatencyMinutes, nightAwakenings) con insight
-                    // adaptativo por tier (Walker 2017 + AASM).
-                    const SleepQualityCard(),
-                    const SizedBox(height: 14),
-                    // SPEC-152: tendencia de composición corporal.
-                    // Consume biometric_history y expone 3 métricas con
-                    // selector temporal independiente.
-                    const BodyCompositionTrendChart(),
-                    // SPEC-155: header INSIGHTS y los 4 cards generados
-                    // por InsightsService eliminados — duplicaban con
-                    // WeeklyCoachingCard (SPEC-153) y PeriodHeroCard.
-                  ],
-                );
-              },
-            ),
-          ],
+          ),
         ),
+      ),
+      body: TabBarView(
+        controller: _tabController,
+        physics: const PageScrollPhysics(),
+        children: const [
+          AnalysisSummaryTab(),
+          AnalysisPillarsTab(),
+          AnalysisTrendTab(),
+        ],
       ),
       bottomNavigationBar: BottomNavigationBar(
         backgroundColor: const Color(0xFF0F172A),
@@ -179,99 +144,6 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
             label: 'Perfil',
           ),
         ],
-      ),
-    );
-  }
-
-  /// Skeleton stack: muestra los bloques en su forma final (alto
-  /// aproximado y borderRadius) para evitar el "saltito" cuando llega
-  /// la data. Un solo spinner central para no parpadear 4 veces.
-  Widget _loadingStack() {
-    Widget shimmer({required double height}) => Container(
-          height: height,
-          margin: const EdgeInsets.only(bottom: 14),
-          decoration: BoxDecoration(
-            color: const Color(0xFF1E293B),
-            borderRadius: BorderRadius.circular(20),
-          ),
-        );
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Stack(
-          alignment: Alignment.center,
-          children: [
-            Column(
-              children: [
-                shimmer(height: 160),
-                shimmer(height: 180),
-                shimmer(height: 200),
-                shimmer(height: 90),
-              ],
-            ),
-            const SizedBox(
-              width: 26,
-              height: 26,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: AppColors.metabolicGreen,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  /// SPEC-113.bugfix: reemplaza el doc persistido de HOY (que tiene
-  /// debounce de 30s) por uno construido desde el state LIVE. Si no
-  /// existía doc para hoy, lo agrega. Mantiene los docs anteriores
-  /// intactos.
-  List<DailySummaryDoc> _mergeWithLive(
-    List<DailySummaryDoc> persisted,
-    DailySummary live,
-  ) {
-    final now = DateTime.now();
-    final todayKey =
-        '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-    final liveDoc = DailySummaryDoc(
-      date: todayKey,
-      imrScore: live.imrScore,
-      fastingProgress: live.fastingProgress,
-      sleepProgress: live.sleepProgress,
-      hydrationProgress: live.hydrationProgress,
-      exerciseProgress: live.exerciseProgress,
-      mealsProgress: live.mealsProgress,
-      updatedAt: now,
-    );
-    final result = <DailySummaryDoc>[];
-    bool replaced = false;
-    for (final d in persisted) {
-      if (d.date == todayKey) {
-        result.add(liveDoc);
-        replaced = true;
-      } else {
-        result.add(d);
-      }
-    }
-    if (!replaced) result.add(liveDoc);
-    // El consumidor espera lista ordenada por fecha ascendente.
-    result.sort((a, b) => a.date.compareTo(b.date));
-    return result;
-  }
-
-  Widget _errorBox() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        'No pudimos cargar tu análisis.',
-        style: TextStyle(
-          color: Colors.white.withValues(alpha: 0.6),
-        ),
       ),
     );
   }
