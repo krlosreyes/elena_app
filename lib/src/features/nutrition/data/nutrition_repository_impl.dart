@@ -9,6 +9,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elena_app/src/core/services/day_boundary_resolver.dart';
+import 'package:elena_app/src/features/exercise/data/exercise_repository_impl.dart'
+    show kCycleWindowDuration;
 import 'package:elena_app/src/features/nutrition/data/mappers/nutrition_log_mapper.dart';
 import 'package:elena_app/src/features/nutrition/data/sources/firestore_nutrition_v1_source.dart';
 import 'package:elena_app/src/features/nutrition/data/sources/nutrition_data_source.dart';
@@ -32,8 +34,21 @@ class NutritionRepositoryImpl implements NutritionRepository {
     final now = DateTime.now();
     final startOfDay = DayBoundaryResolver.startOfDay(now);
     final endOfDay = DayBoundaryResolver.endOfDay(now);
+    return _streamMapped(userId, startOfDay, endOfDay);
+  }
+
+  @override
+  Stream<List<NutritionLog>> watchSinceLogs(String userId, DateTime since) {
+    return _streamMapped(userId, since, since.add(kCycleWindowDuration));
+  }
+
+  Stream<List<NutritionLog>> _streamMapped(
+    String userId,
+    DateTime start,
+    DateTime end,
+  ) {
     return _source
-        .watchTodayLogs(userId, startOfDay: startOfDay, endOfDay: endOfDay)
+        .watchTodayLogs(userId, startOfDay: start, endOfDay: end)
         .map(
           (rows) => rows
               .map((row) => _mapper.fromMap(row.data, docId: row.docId))

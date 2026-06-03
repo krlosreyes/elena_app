@@ -17,6 +17,11 @@ abstract class NutritionRepository {
   /// si el usuario aún no ha registrado nada hoy.
   Stream<List<NutritionLog>> watchTodayLogs(String userId);
 
+  /// SPEC-149.2: stream de logs filtrado por ventana [since, since + 28h].
+  /// Anclado al ciclo metabólico — el conteo de comidas del Día Metabólico
+  /// no se ve afectado por la medianoche calendárica.
+  Stream<List<NutritionLog>> watchSinceLogs(String userId, DateTime since);
+
   /// Persiste un nuevo registro. Usa `log.id` como clave del documento.
   Future<void> saveMeal(String userId, NutritionLog log);
 

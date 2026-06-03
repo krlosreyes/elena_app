@@ -9,6 +9,11 @@ import 'package:elena_app/src/features/exercise/data/sources/firestore_exercise_
 import 'package:elena_app/src/features/exercise/domain/exercise_log.dart';
 import 'package:elena_app/src/features/exercise/domain/exercise_repository.dart';
 
+/// SPEC-149.2: ventana máxima cubierta por watchSince. Coincide con
+/// kAbsoluteCycleLimit del MetabolicCycleResolver (el cierre forzado de
+/// ciclo a las 28h sin signals). Exposto para tests.
+const Duration kCycleWindowDuration = Duration(hours: 28);
+
 class ExerciseRepositoryImpl implements ExerciseRepository {
   final ExerciseDataSource _source;
   final ExerciseLogMapper _mapper;
@@ -24,9 +29,22 @@ class ExerciseRepositoryImpl implements ExerciseRepository {
     final now = DateTime.now();
     final startOfDay = DayBoundaryResolver.startOfDay(now);
     final endOfDay = DayBoundaryResolver.endOfDay(now);
+    return _streamMapped(userId, startOfDay, endOfDay);
+  }
+
+  @override
+  Stream<List<ExerciseLog>> watchSince(String userId, DateTime since) {
+    final end = since.add(kCycleWindowDuration);
+    return _streamMapped(userId, since, end);
+  }
+
+  Stream<List<ExerciseLog>> _streamMapped(
+    String userId,
+    DateTime start,
+    DateTime end,
+  ) {
     return _source
-        .streamSince(
-            userId: userId, startOfDay: startOfDay, endOfDay: endOfDay)
+        .streamSince(userId: userId, startOfDay: start, endOfDay: end)
         .map((maps) {
       return maps
           .map((m) {

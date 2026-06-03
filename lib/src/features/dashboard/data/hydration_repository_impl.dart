@@ -8,6 +8,8 @@ import 'package:elena_app/src/features/dashboard/data/sources/firestore_hydratio
 import 'package:elena_app/src/features/dashboard/data/sources/hydration_data_source.dart';
 import 'package:elena_app/src/features/dashboard/domain/hydration_log.dart';
 import 'package:elena_app/src/features/dashboard/domain/hydration_repository.dart';
+import 'package:elena_app/src/features/exercise/data/exercise_repository_impl.dart'
+    show kCycleWindowDuration;
 
 class HydrationRepositoryImpl implements HydrationRepository {
   final HydrationDataSource _source;
@@ -24,9 +26,21 @@ class HydrationRepositoryImpl implements HydrationRepository {
     final now = DateTime.now();
     final startOfDay = DayBoundaryResolver.startOfDay(now);
     final endOfDay = DayBoundaryResolver.endOfDay(now);
+    return _streamMapped(userId, startOfDay, endOfDay);
+  }
+
+  @override
+  Stream<List<HydrationLog>> watchSince(String userId, DateTime since) {
+    return _streamMapped(userId, since, since.add(kCycleWindowDuration));
+  }
+
+  Stream<List<HydrationLog>> _streamMapped(
+    String userId,
+    DateTime start,
+    DateTime end,
+  ) {
     return _source
-        .streamSince(
-            userId: userId, startOfDay: startOfDay, endOfDay: endOfDay)
+        .streamSince(userId: userId, startOfDay: start, endOfDay: end)
         .map((maps) => maps.map(_mapper.fromMap).toList());
   }
 

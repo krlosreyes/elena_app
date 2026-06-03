@@ -1,10 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
 // IMPORTANTE: Esta es la ruta al archivo que creamos para centralizar el usuario
-import 'package:elena_app/src/shared/providers/user_provider.dart';
+import 'package:elena_app/src/core/services/day_boundary_resolver.dart';
 import 'package:elena_app/src/features/dashboard/data/hydration_repository_impl.dart';
 import 'package:elena_app/src/features/dashboard/domain/hydration_log.dart';
+import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart';
+import 'package:elena_app/src/features/metabolic_cycle/domain/metabolic_cycle.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
+import 'package:elena_app/src/shared/providers/user_provider.dart';
 
 class HydrationState {
   final double dailyGoalLiters;
@@ -47,6 +50,8 @@ class HydrationState {
 class HydrationNotifier extends StateNotifier<HydrationState> {
   final Ref _ref;
   StreamSubscription? _hydrationSubscription;
+  String? _activeUserId;
+  DateTime? _currentCycleStartedAt;
 
   HydrationNotifier(this._ref) : super(HydrationState()) {
     _init();
@@ -65,29 +70,50 @@ class HydrationNotifier extends StateNotifier<HydrationState> {
             isGoalReached: state.currentAmountLiters >= calculatedGoal,
           );
 
-          // Iniciar suscripción a hidratación real
-          _initHydrationSubscription(user.id);
+          _activeUserId = user.id;
+          // SPEC-149.2: la suscripción concreta la hace _subscribeFor con
+          // el `since` del ciclo actual. Si todavía no llegó el ciclo,
+          // _subscribeFor usa fallback a startOfDay.
+          _subscribeFor(_currentCycleStartedAt);
         } else {
           // SPEC-11: Usuario cerró sesión — cancelar suscripción activa y
           // resetear estado al valor inicial para aislar al próximo usuario.
+          _activeUserId = null;
           _hydrationSubscription?.cancel();
           _hydrationSubscription = null;
           if (mounted) state = HydrationState();
         }
       });
     }, fireImmediately: true);
+
+    // SPEC-149.2: re-suscribir cuando cambia el inicio del ciclo
+    // metabólico — el conteo de hidratación se ancla al Día Metabólico.
+    _ref.listen<AsyncValue<MetabolicCycle?>>(
+      currentMetabolicCycleProvider,
+      (previous, next) {
+        next.whenData((cycle) {
+          final newSince = cycle?.startedAt;
+          if (newSince != _currentCycleStartedAt) {
+            _currentCycleStartedAt = newSince;
+            _subscribeFor(newSince);
+          }
+        });
+      },
+      fireImmediately: true,
+    );
   }
 
-  void _initHydrationSubscription(String userId) {
+  /// SPEC-149.2: suscripción al stream filtrado por la ventana del
+  /// ciclo metabólico. Fallback a startOfDay si no hay ciclo abierto.
+  void _subscribeFor(DateTime? cycleStartedAt) {
+    final userId = _activeUserId;
+    if (userId == null) return;
     _hydrationSubscription?.cancel();
-    // SPEC-50.1: HydrationRepository (no UserRepository).
-    // El stream ahora retorna List<HydrationLog> en lugar de la suma —
-    // lo agregamos aquí para tener acceso al historial real (antes el
-    // campo `history` solo se actualizaba optimísticamente en addWater
-    // pero nunca se reconciliaba con el storage).
+    final since =
+        cycleStartedAt ?? DayBoundaryResolver.startOfDay(DateTime.now());
     _hydrationSubscription = _ref
         .read(hydrationRepositoryProvider)
-        .watchToday(userId)
+        .watchSince(userId, since)
         .listen((logs) {
       if (mounted) {
         final total = logs.fold<double>(
@@ -109,27 +135,20 @@ class HydrationNotifier extends StateNotifier<HydrationState> {
     super.dispose();
   }
 
-  /// SPEC-58: Reset diario idempotente.
+  /// SPEC-58 + SPEC-149.2: Reset idempotente disparado al cierre del
+  /// ciclo metabólico o a medianoche calendárica (red de seguridad).
   ///
-  /// Limpia el contador en caché (currentAmountLiters, history, isGoalReached).
-  /// El stream `watchToday` del HydrationRepository re-emitirá automáticamente el conteo
-  /// correcto del nuevo día — esto solo evita que el usuario vea los litros
-  /// del día anterior durante la fracción de segundo previa al re-emit.
+  /// Limpia el contador en caché y re-suscribe el stream usando el
+  /// `since` del ciclo activo (anclado al Día Metabólico).
   ///
-  /// Conserva `dailyGoalLiters` porque depende del peso del usuario, no del día.
+  /// Conserva `dailyGoalLiters` porque depende del peso del usuario,
+  /// no del día.
   void resetDaily() {
     if (!mounted) return;
     state = HydrationState(
       dailyGoalLiters: state.dailyGoalLiters,
     );
-    // SPEC-138: el stream `watchToday` está acotado a [startOfDay, endOfDay),
-    // así que hay que RE-SUSCRIBIR para avanzar la ventana al nuevo día. Sin
-    // esto, tras medianoche la ventana quedaría congelada en el día anterior
-    // y el día nuevo se vería vacío hasta reiniciar la app.
-    final user = _ref.read(currentUserStreamProvider).value;
-    if (user != null && user.id.isNotEmpty) {
-      _initHydrationSubscription(user.id);
-    }
+    _subscribeFor(_currentCycleStartedAt);
   }
 
   Future<void> addWater(double amount) async {

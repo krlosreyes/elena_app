@@ -18,6 +18,11 @@ abstract class HydrationRepository {
   /// o reconstruir el historial visible.
   Stream<List<HydrationLog>> watchToday(String userId);
 
+  /// SPEC-149.2: stream filtrado por ventana [since, since + 28h].
+  /// Anclado al ciclo metabólico para que el conteo no se vea afectado
+  /// por la medianoche calendárica.
+  Stream<List<HydrationLog>> watchSince(String userId, DateTime since);
+
   /// Añade un registro nuevo. No sobrescribe — cada llamada crea una
   /// entrada distinta en el storage (Firestore auto-id).
   Future<void> add(String userId, HydrationLog log);

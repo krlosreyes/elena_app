@@ -13,7 +13,10 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
+import 'package:elena_app/src/core/services/day_boundary_resolver.dart';
 import 'package:elena_app/src/core/services/notification_scheduler.dart';
+import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart';
+import 'package:elena_app/src/features/metabolic_cycle/domain/metabolic_cycle.dart';
 import 'package:elena_app/src/features/nutrition/data/nutrition_repository_impl.dart';
 import 'package:elena_app/src/features/nutrition/domain/meal_interval_rules.dart';
 import 'package:elena_app/src/features/nutrition/domain/meal_ratio.dart';
@@ -93,6 +96,7 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
   CircadianProfile? _circadianProfile;
   StreamSubscription<List<NutritionLog>>? _logsSub;
   String? _activeUserId;
+  DateTime? _currentCycleStartedAt;
 
   void _init() {
     // Escucha cambios de usuario para targetMeals, perfil circadiano y stream.
@@ -110,7 +114,7 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
           _circadianProfile = user.profile;
           if (_activeUserId != user.id) {
             _activeUserId = user.id;
-            _subscribeToLogs(user.id);
+            _subscribeFor(_currentCycleStartedAt);
           }
           // Recalcula con los nuevos parámetros del usuario.
           final updated = _recalculate(state.todayLogs, user.mealsPerDay);
@@ -119,12 +123,34 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
       },
       fireImmediately: true,
     );
+
+    // SPEC-149.2: re-suscribir cuando cambia el inicio del ciclo
+    // metabólico — el conteo de comidas se ancla al Día Metabólico.
+    _ref.listen<AsyncValue<MetabolicCycle?>>(
+      currentMetabolicCycleProvider,
+      (previous, next) {
+        next.whenData((cycle) {
+          final newSince = cycle?.startedAt;
+          if (newSince != _currentCycleStartedAt) {
+            _currentCycleStartedAt = newSince;
+            _subscribeFor(newSince);
+          }
+        });
+      },
+      fireImmediately: true,
+    );
   }
 
-  void _subscribeToLogs(String userId) {
+  /// SPEC-149.2: suscripción al stream filtrado por la ventana del
+  /// ciclo metabólico. Fallback a startOfDay si no hay ciclo abierto.
+  void _subscribeFor(DateTime? cycleStartedAt) {
+    final userId = _activeUserId;
+    if (userId == null) return;
     _logsSub?.cancel();
+    final since =
+        cycleStartedAt ?? DayBoundaryResolver.startOfDay(DateTime.now());
     final repo = _ref.read(nutritionRepositoryProvider);
-    _logsSub = repo.watchTodayLogs(userId).listen(
+    _logsSub = repo.watchSinceLogs(userId, since).listen(
       (logs) {
         if (!mounted) return;
         state = _recalculate(logs, state.targetMeals);
@@ -274,10 +300,12 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
     }
   }
 
-  /// Reset diario: limpia el cache local. Los logs persistidos quedan para
-  /// análisis longitudinal. SPEC-138: el stream `watchTodayLogs` está acotado a
-  /// [startOfDay, endOfDay), así que re-suscribimos para avanzar la ventana al
-  /// nuevo día (sin esto el día nuevo se vería vacío hasta reiniciar la app).
+  /// SPEC-58 + SPEC-149.2: Reset idempotente disparado al cierre del
+  /// ciclo metabólico o a medianoche calendárica (red de seguridad).
+  ///
+  /// Limpia el cache local y re-suscribe el stream usando el `since`
+  /// del ciclo activo (anclado al Día Metabólico). Los logs persistidos
+  /// quedan intactos para análisis longitudinal.
   void resetDaily() {
     if (!mounted) return;
     state = state.copyWith(
@@ -285,10 +313,7 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
       nutritionScore: 0.0,
       windowAdherence: 0.0,
     );
-    final userId = _activeUserId;
-    if (userId != null) {
-      _subscribeToLogs(userId);
-    }
+    _subscribeFor(_currentCycleStartedAt);
   }
 
   @override
