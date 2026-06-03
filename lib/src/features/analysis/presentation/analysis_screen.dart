@@ -1,33 +1,34 @@
-// SPEC-162: pantalla Análisis reescrita como trazabilidad +
-// causa-efecto.
+// SPEC-162 + SPEC-163: pantalla Análisis como trazabilidad +
+// causa-efecto, con gráficos estilo Apple Fitness.
 //
-// Cuatro estados:
-//   1. Loading — alguna serie aún se está leyendo.
-//   2. Insuficiente data — <30 días → InsufficientDataView.
-//   3. Datos suficientes — bloques Resultados + Hábitos + Insights.
-//   4. Error — fallback simple.
-//
-// El selector global de rango vive arriba de todo y aplica a las 7
-// series. Sin tabs — UN solo flujo vertical.
+// Estructura:
+//   AppBar
+//   Selector temporal (chips prominentes)
+//   TUS RESULTADOS — LineChartCard × 2 (IMR + Peso)
+//   TUS HÁBITOS — BarChartCard × 5 (pilares oficiales)
+//   INSIGHTS DETECTADOS — lista de CausalInsight
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:elena_app/src/core/theme/app_theme.dart';
+import 'package:elena_app/src/features/analysis/application/analysis_range_provider.dart';
 import 'package:elena_app/src/features/analysis/application/analysis_series_providers.dart';
 import 'package:elena_app/src/features/analysis/application/causal_insights_provider.dart';
+import 'package:elena_app/src/features/analysis/domain/analysis_range.dart';
 import 'package:elena_app/src/features/analysis/domain/causal_insight.dart';
 import 'package:elena_app/src/features/analysis/domain/metric_series.dart';
 import 'package:elena_app/src/features/analysis/presentation/monthly_calendar_screen.dart';
+import 'package:elena_app/src/features/analysis/presentation/widgets/bar_chart_card.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/insight_tile.dart';
-import 'package:elena_app/src/features/analysis/presentation/widgets/metric_row.dart';
+import 'package:elena_app/src/features/analysis/presentation/widgets/line_chart_card.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/range_selector_chips.dart';
 
 class AnalysisScreen extends ConsumerWidget {
   const AnalysisScreen({super.key});
 
-  // Colores por hábito coherentes con SPEC-161.
+  // Acentos por métrica (coherentes con SPEC-161).
   static const _accentImr = AppColors.metabolicGreen;
   static const _accentWeight = Color(0xFF60A5FA);
   static const _accentFasting = AppColors.metabolicGreen;
@@ -38,6 +39,8 @@ class AnalysisScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final range = ref.watch(analysisRangeProvider);
+    final periodLabel = _periodLabelFor(range);
     final imr = ref.watch(imrSeriesProvider);
     final weight = ref.watch(weightSeriesProvider);
     final fasting = ref.watch(fastingHabitSeriesProvider);
@@ -47,7 +50,7 @@ class AnalysisScreen extends ConsumerWidget {
     final sleep = ref.watch(sleepHabitSeriesProvider);
     final insights = ref.watch(causalInsightsProvider);
 
-    final allLoading = [
+    final allSeries = [
       imr,
       weight,
       fasting,
@@ -55,7 +58,8 @@ class AnalysisScreen extends ConsumerWidget {
       hydration,
       exercise,
       sleep,
-    ].any((s) => s.isLoading);
+    ];
+    final allLoading = allSeries.any((s) => s.isLoading);
 
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
@@ -89,12 +93,12 @@ class AnalysisScreen extends ConsumerWidget {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const RangeSelectorChips(),
-            const SizedBox(height: 24),
+            const SizedBox(height: 22),
             if (allLoading)
               _buildLoading()
             else
@@ -107,6 +111,7 @@ class AnalysisScreen extends ConsumerWidget {
                 exerciseSeries: exercise.value!,
                 sleepSeries: sleep.value!,
                 insights: insights,
+                periodLabel: periodLabel,
               ),
           ],
         ),
@@ -142,7 +147,7 @@ class AnalysisScreen extends ConsumerWidget {
 
   Widget _buildLoading() {
     return Container(
-      height: 320,
+      height: 360,
       alignment: Alignment.center,
       child: const SizedBox(
         width: 22,
@@ -164,8 +169,8 @@ class AnalysisScreen extends ConsumerWidget {
     required MetricSeries exerciseSeries,
     required MetricSeries sleepSeries,
     required AsyncValue<List<CausalInsight>> insights,
+    required String periodLabel,
   }) {
-    // Si todos están vacíos, mostramos estado "arrancando".
     final allEmpty = imrSeries.isEmpty &&
         weightSeries.isEmpty &&
         fastingSeries.isEmpty &&
@@ -179,26 +184,54 @@ class AnalysisScreen extends ConsumerWidget {
 
     return [
       _sectionHeader('TUS RESULTADOS'),
-      const SizedBox(height: 12),
-      MetricRow(series: imrSeries, accent: _accentImr),
-      const SizedBox(height: 24),
-      MetricRow(series: weightSeries, accent: _accentWeight),
-      const SizedBox(height: 28),
-      _divider(),
+      const SizedBox(height: 10),
+      LineChartCard(
+        series: imrSeries,
+        accent: _accentImr,
+        periodLabel: periodLabel,
+        statLabel: 'ACTUAL',
+        deltaIsBetterIf: 'up',
+      ),
+      const SizedBox(height: 14),
+      LineChartCard(
+        series: weightSeries,
+        accent: _accentWeight,
+        periodLabel: periodLabel,
+        statLabel: 'ACTUAL',
+        deltaIsBetterIf: 'down',
+      ),
       const SizedBox(height: 28),
       _sectionHeader('TUS HÁBITOS'),
-      const SizedBox(height: 12),
-      MetricRow(series: fastingSeries, accent: _accentFasting),
-      const SizedBox(height: 22),
-      MetricRow(series: nutritionSeries, accent: _accentNutrition),
-      const SizedBox(height: 22),
-      MetricRow(series: hydrationSeries, accent: _accentHydration),
-      const SizedBox(height: 22),
-      MetricRow(series: exerciseSeries, accent: _accentExercise),
-      const SizedBox(height: 22),
-      MetricRow(series: sleepSeries, accent: _accentSleep),
-      const SizedBox(height: 28),
-      _divider(),
+      const SizedBox(height: 10),
+      BarChartCard(
+        series: fastingSeries,
+        accent: _accentFasting,
+        periodLabel: periodLabel,
+      ),
+      const SizedBox(height: 14),
+      BarChartCard(
+        series: nutritionSeries,
+        accent: _accentNutrition,
+        periodLabel: periodLabel,
+      ),
+      const SizedBox(height: 14),
+      BarChartCard(
+        series: hydrationSeries,
+        accent: _accentHydration,
+        periodLabel: periodLabel,
+      ),
+      const SizedBox(height: 14),
+      BarChartCard(
+        series: exerciseSeries,
+        accent: _accentExercise,
+        periodLabel: periodLabel,
+      ),
+      const SizedBox(height: 14),
+      BarChartCard(
+        series: sleepSeries,
+        accent: _accentSleep,
+        periodLabel: periodLabel,
+      ),
       const SizedBox(height: 28),
       _sectionHeader('INSIGHTS DETECTADOS'),
       const SizedBox(height: 4),
@@ -249,22 +282,33 @@ class AnalysisScreen extends ConsumerWidget {
     ];
   }
 
-  Widget _sectionHeader(String label) {
-    return Text(
-      label,
-      style: TextStyle(
-        color: Colors.white.withValues(alpha: 0.50),
-        fontSize: 10,
-        letterSpacing: 1.4,
-        fontWeight: FontWeight.w900,
-      ),
-    );
+  String _periodLabelFor(AnalysisRange r) {
+    switch (r) {
+      case AnalysisRange.d30:
+        return '30 DÍAS';
+      case AnalysisRange.m3:
+        return '3 MESES';
+      case AnalysisRange.m6:
+        return '6 MESES';
+      case AnalysisRange.y1:
+        return '1 AÑO';
+      case AnalysisRange.all:
+        return 'TODO';
+    }
   }
 
-  Widget _divider() {
-    return Container(
-      height: 1,
-      color: Colors.white.withValues(alpha: 0.06),
+  Widget _sectionHeader(String label) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: Colors.white.withValues(alpha: 0.50),
+          fontSize: 11,
+          letterSpacing: 1.4,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
     );
   }
 

@@ -1,4 +1,4 @@
-// SPEC-162: chips horizontales para seleccionar el rango temporal global.
+// SPEC-163: chips temporales estilo Apple Fitness — pills prominentes.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,40 +13,42 @@ class RangeSelectorChips extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final active = ref.watch(analysisRangeProvider);
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: AnalysisRange.values.map((r) {
-          final isSelected = r == active;
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: AnalysisRange.values.map((r) {
+        final isSelected = r == active;
+        return Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 3),
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
               onTap: () => ref.read(analysisRangeProvider.notifier).state = r,
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? AppColors.metabolicGreen.withValues(alpha: 0.18)
-                      : Colors.white.withValues(alpha: 0.04),
-                  borderRadius: BorderRadius.circular(20),
+                      ? AppColors.metabolicGreen.withValues(alpha: 0.20)
+                      : Colors.white.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(22),
                 ),
-                child: Text(
-                  r.label,
-                  style: TextStyle(
-                    color:
-                        isSelected ? AppColors.metabolicGreen : Colors.white60,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.4,
+                child: Center(
+                  child: Text(
+                    r.label,
+                    style: TextStyle(
+                      color: isSelected
+                          ? AppColors.metabolicGreen
+                          : Colors.white.withValues(alpha: 0.55),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.2,
+                    ),
                   ),
                 ),
               ),
             ),
-          );
-        }).toList(),
-      ),
+          ),
+        );
+      }).toList(),
     );
   }
 }
