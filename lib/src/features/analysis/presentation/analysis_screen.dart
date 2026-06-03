@@ -17,6 +17,8 @@ import 'package:go_router/go_router.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/analysis/application/analysis_series_providers.dart';
 import 'package:elena_app/src/features/analysis/application/causal_insights_provider.dart';
+import 'package:elena_app/src/features/analysis/domain/causal_insight.dart';
+import 'package:elena_app/src/features/analysis/domain/metric_series.dart';
 import 'package:elena_app/src/features/analysis/presentation/monthly_calendar_screen.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/insight_tile.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/metric_row.dart';
@@ -154,14 +156,14 @@ class AnalysisScreen extends ConsumerWidget {
   }
 
   List<Widget> _buildContent({
-    required imrSeries,
-    required weightSeries,
-    required fastingSeries,
-    required nutritionSeries,
-    required hydrationSeries,
-    required exerciseSeries,
-    required sleepSeries,
-    required insights,
+    required MetricSeries imrSeries,
+    required MetricSeries weightSeries,
+    required MetricSeries fastingSeries,
+    required MetricSeries nutritionSeries,
+    required MetricSeries hydrationSeries,
+    required MetricSeries exerciseSeries,
+    required MetricSeries sleepSeries,
+    required AsyncValue<List<CausalInsight>> insights,
   }) {
     // Si todos están vacíos, mostramos estado "arrancando".
     final allEmpty = imrSeries.isEmpty &&
