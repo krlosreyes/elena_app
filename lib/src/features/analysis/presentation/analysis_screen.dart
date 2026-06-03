@@ -26,6 +26,7 @@ import 'package:elena_app/src/features/analysis/data/daily_summary_doc.dart';
 import 'package:elena_app/src/features/analysis/domain/analysis_period.dart';
 import 'package:elena_app/src/features/analysis/domain/daily_summary.dart';
 import 'package:elena_app/src/features/analysis/presentation/monthly_calendar_screen.dart';
+import 'package:elena_app/src/features/analysis/presentation/widgets/body_composition_trend_chart.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/imr_trend_chart.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/insight_card.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/period_hero_card.dart';
@@ -114,6 +115,12 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                       docs: mergedDocs,
                       daysInPeriod: _period.days,
                     ),
+                    const SizedBox(height: 14),
+                    // SPEC-152: tendencia de composición corporal.
+                    // Resuelve la deuda "Análisis vacía" registrada
+                    // tras SPEC-143. Consume biometric_history y
+                    // expone 3 métricas con selector temporal.
+                    const BodyCompositionTrendChart(),
                     const SizedBox(height: 18),
                     Padding(
                       padding: const EdgeInsets.only(left: 4, bottom: 10),
