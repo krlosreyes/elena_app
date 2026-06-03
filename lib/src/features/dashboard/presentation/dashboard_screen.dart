@@ -1731,15 +1731,22 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   Widget _buildFastingEndOverlay(
       BuildContext context, WidgetRef ref, FastingState state) {
+    // SPEC-151: dos opciones legítimas. Terminar abre el flujo de cierre
+    // (time picker + persistir + abrir ventana). Continuar silencia el
+    // overlay y deja el ayuno activo en overtime — el usuario cerrará
+    // desde la card normal del dashboard cuando decida.
     return _buildBaseOverlay(
       context: context,
       icon: Icons.emoji_events_rounded,
       iconColor: AppColors.metabolicGreen,
       title: "¡META ALCANZADA!",
       subtitle: "Has completado tus ${state.targetHours}h de ayuno.",
-      buttonLabel: "CONFIRMAR HITO REAL",
+      buttonLabel: "TERMINAR AYUNO",
       isSaving: state.isSaving,
       onConfirm: () => _showManualTimePicker(context, ref, isFeeding: false),
+      secondaryButtonLabel: "CONTINUAR AYUNANDO",
+      onSecondary: () =>
+          ref.read(fastingProvider.notifier).continueFastingPastTarget(),
     );
   }
 
@@ -1771,15 +1778,23 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildBaseOverlay(
-      {required BuildContext context,
-      required IconData icon,
-      required Color iconColor,
-      required String title,
-      required String subtitle,
-      required String buttonLabel,
-      required bool isSaving,
-      required VoidCallback onConfirm}) {
+  Widget _buildBaseOverlay({
+    required BuildContext context,
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String subtitle,
+    required String buttonLabel,
+    required bool isSaving,
+    required VoidCallback onConfirm,
+    // SPEC-151: botón secundario opcional. Si ambos labels y callbacks
+    // son provistos, se renderiza debajo del primario con estilo
+    // outlined para indicar acción alternativa.
+    String? secondaryButtonLabel,
+    VoidCallback? onSecondary,
+  }) {
+    final hasSecondary =
+        secondaryButtonLabel != null && onSecondary != null;
     return Container(
       padding: const EdgeInsets.all(20),
       margin: const EdgeInsets.symmetric(horizontal: 40),
@@ -1821,6 +1836,33 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
                             fontSize: 12)))),
+        if (hasSecondary) ...[
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            height: 42,
+            child: OutlinedButton(
+              onPressed: isSaving ? null : onSecondary,
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(
+                  color: iconColor.withValues(alpha: 0.5),
+                  width: 1.5,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: Text(
+                secondaryButtonLabel,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: iconColor,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          ),
+        ],
       ]),
     );
   }

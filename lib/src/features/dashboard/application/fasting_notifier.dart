@@ -290,6 +290,32 @@ class FastingNotifier extends StateNotifier<FastingState> {
     await confirmManualFastingEnd(DateTime.now());
   }
 
+  /// SPEC-151: el usuario alcanzó su target pero decide continuar
+  /// ayunando más allá del protocolo. Cierra el overlay sin cerrar el
+  /// ayuno — el satélite queda en 100% (clampado) y el contador sigue
+  /// sumando como "overtime".
+  ///
+  /// Marca `_fastingEndConfirmedToday = true` para que el `_tick` no
+  /// vuelva a reactivar `isWaitingForFastingEnd` durante este ciclo.
+  /// Mantiene `completedToday = true` porque el target SE alcanzó —
+  /// el día cuenta para racha y pilar de ayuno completado.
+  ///
+  /// Si el usuario luego decide cerrar, lo hace desde el botón normal
+  /// de la card del dashboard (mismo flujo que cierre temprano).
+  void continueFastingPastTarget() {
+    if (!mounted) return;
+    if (!state.isActive) return; // no-op si no hay ayuno activo
+    _fastingEndConfirmedToday = true;
+    state = state.copyWith(
+      isWaitingForFastingEnd: false,
+      completedToday: true,
+    );
+    AppLogger.debug(
+      'SPEC-151: usuario eligió continuar ayuno tras alcanzar target. '
+      'Overlay silenciado, isActive sigue true.',
+    );
+  }
+
   /// CONFIRMACIÓN MANUAL ALIMENTACIÓN
   Future<void> confirmFeedingEnd(DateTime manualTime) async {
     final uid = _ref.read(authStateProvider).value?.uid;
