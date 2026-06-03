@@ -31,6 +31,7 @@ import 'package:elena_app/src/features/analysis/presentation/widgets/period_hero
 import 'package:elena_app/src/features/analysis/presentation/widgets/period_selector.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/weekly_coaching_card.dart';
 import 'package:elena_app/src/features/goals/presentation/goals_progress_dashboard.dart';
+import 'package:elena_app/src/features/metabolic_cycle/presentation/widgets/cycles_history_card.dart';
 
 class AnalysisScreen extends ConsumerStatefulWidget {
   const AnalysisScreen({super.key});
@@ -120,6 +121,11 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                     // activos. Empty state con CTA al GoalSetupScreen
                     // si el usuario no tiene objetivos definidos.
                     const GoalsProgressDashboard(),
+                    const SizedBox(height: 14),
+                    // SPEC-156: histórico de ciclos metabólicos
+                    // cerrados. Tap en fila abre CycleDetailSheet con
+                    // feedback completo. Aprovecha datos de SPEC-149.
+                    const CyclesHistoryCard(),
                     const SizedBox(height: 14),
                     // SPEC-152: tendencia de composición corporal.
                     // Consume biometric_history y expone 3 métricas con
