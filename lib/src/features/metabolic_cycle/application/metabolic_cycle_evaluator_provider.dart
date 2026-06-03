@@ -14,6 +14,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elena_app/src/core/providers/ticker_providers.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
+import 'package:elena_app/src/core/services/daily_reset_service.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
 import 'package:elena_app/src/features/dashboard/application/eating_window_provider.dart';
 import 'package:elena_app/src/features/dashboard/application/fasting_notifier.dart';
@@ -110,9 +111,27 @@ Future<void> _evaluate(
   );
 
   try {
-    await ref
+    final result = await ref
         .read(metabolicCycleServiceProvider)
         .evaluateAndApply(userId: account.uid, input: input);
+
+    // SPEC-149.1 Bug 1b: si el ciclo cerró Y abrió uno nuevo, resetear
+    // los pilares in-memory para que el contador del nuevo ciclo arranque
+    // visualmente en 0. El ancla del reset deja de ser solo medianoche
+    // calendárica — ahora también el momento del cierre del ciclo, sea
+    // la hora que sea.
+    //
+    // flushClosingDay: false porque daily_summary (SPEC-138) sigue siendo
+    // por día calendárico. Flushearlo a media tarde lo dejaría incompleto.
+    if (result.hasClosure && result.hasOpening) {
+      AppLogger.info(
+        '[metabolicCycleEvaluator] cierre cíclico detectado — '
+        'reseteando pilares in-memory para el nuevo ciclo',
+      );
+      await ref
+          .read(dailyResetProvider.notifier)
+          .triggerDailyReset(flushClosingDay: false);
+    }
   } catch (e) {
     AppLogger.warning('[metabolicCycleEvaluator] eval falló: $e', e);
   }

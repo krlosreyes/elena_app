@@ -14,7 +14,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:elena_app/src/core/providers/shared_preferences_provider.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart';
 import 'package:elena_app/src/features/metabolic_cycle/domain/metabolic_cycle.dart';
@@ -45,17 +44,18 @@ class CycleClosureCard extends ConsumerWidget {
     return CycleClosureCardView(
       cycle: cycle,
       onDismiss: () async {
-        final prefs = ref.read(sharedPreferencesProvider);
-        await dismissLastCycleClosure(prefs: prefs, cycleId: cycle.cycleId);
+        // SPEC-149.1 Bug 1a: dismiss via notifier reactivo. Antes
+        // escribía a prefs directo y el provider no se invalidaba.
+        await ref
+            .read(cycleClosureDismissalProvider.notifier)
+            .dismiss(cycle.cycleId);
       },
       onStartNextFasting: onStartNextFasting == null
           ? null
           : () async {
-              final prefs = ref.read(sharedPreferencesProvider);
-              await dismissLastCycleClosure(
-                prefs: prefs,
-                cycleId: cycle.cycleId,
-              );
+              await ref
+                  .read(cycleClosureDismissalProvider.notifier)
+                  .dismiss(cycle.cycleId);
               onStartNextFasting!();
             },
     );

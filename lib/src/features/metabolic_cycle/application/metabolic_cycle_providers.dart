@@ -57,23 +57,57 @@ final metabolicCyclesHistoryProvider =
 const String _kLastCycleClosureDismissedKey =
     'metabolicCycle.lastClosureDismissedCycleId';
 
+/// SPEC-149.1: notifier reactivo del dismissedCycleId.
+///
+/// Originalmente (SPEC-149 v1.0) `hasUnreadCycleClosureProvider` leía
+/// `prefs.getString(...)` directo. Riverpod no observa cambios internos
+/// de SharedPreferences, así que al escribir el dismiss no se invalidaba
+/// el provider y la card no se ocultaba (Bug 1a SPEC-149.1).
+///
+/// Ahora el dismissedCycleId vive como `String?` reactivo. Se hidrata
+/// desde prefs en construcción del notifier y se actualiza en memoria
+/// + prefs en cada `dismiss(cycleId)`.
+class CycleClosureDismissalNotifier extends StateNotifier<String?> {
+  CycleClosureDismissalNotifier(this._prefs)
+      : super(_prefs.getString(_kLastCycleClosureDismissedKey));
+
+  final SharedPreferences _prefs;
+
+  /// Marca el cycleId como "visto" en memoria + en prefs.
+  Future<void> dismiss(String cycleId) async {
+    await _prefs.setString(_kLastCycleClosureDismissedKey, cycleId);
+    if (mounted) state = cycleId;
+  }
+}
+
+/// Provider del dismissedCycleId reactivo. El nullable indica "ningún
+/// ciclo fue descartado aún en este device".
+final cycleClosureDismissalProvider =
+    StateNotifierProvider<CycleClosureDismissalNotifier, String?>((ref) {
+  final prefs = ref.watch(sharedPreferencesProvider);
+  return CycleClosureDismissalNotifier(prefs);
+});
+
 /// True si hay un ciclo cerrado reciente que aún NO fue descartado por
 /// el usuario. Drive el render del CycleClosureCard en Dashboard.
+///
+/// SPEC-149.1: ahora watchea `cycleClosureDismissalProvider` (reactivo)
+/// en lugar de leer prefs directamente.
 final hasUnreadCycleClosureProvider = Provider<bool>((ref) {
   final last = ref.watch(lastClosedMetabolicCycleProvider).valueOrNull;
   if (last == null) return false;
 
-  final prefs = ref.watch(sharedPreferencesProvider);
-  final dismissedCycleId =
-      prefs.getString(_kLastCycleClosureDismissedKey);
+  final dismissedCycleId = ref.watch(cycleClosureDismissalProvider);
 
   // Hay cierre no leído si el último cierre tiene un cycleId distinto
   // al último que el usuario descartó.
   return dismissedCycleId != last.cycleId;
 });
 
-/// Helper que marca el último cierre como visto. Llamado por el card al
-/// hacer tap en ✕ o al iniciar el siguiente ayuno desde el CTA.
+/// Helper legacy mantenido por compat. Internamente delega al notifier
+/// reactivo. Nuevos callers deben usar
+/// `ref.read(cycleClosureDismissalProvider.notifier).dismiss(cycleId)`.
+@Deprecated('Use cycleClosureDismissalProvider.notifier.dismiss instead.')
 Future<void> dismissLastCycleClosure({
   required SharedPreferences prefs,
   required String cycleId,

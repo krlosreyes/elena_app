@@ -180,11 +180,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   // CTA para iniciar el siguiente ayuno. Se oculta sola
                   // cuando no aplica.
                   CycleClosureCard(
-                    onStartNextFasting: () async {
-                      await ref
-                          .read(fastingProvider.notifier)
-                          .startFasting();
-                    },
+                    // SPEC-149.1 Bug 1c: si el ayuno ya está activo
+                    // (caso típico cuando la card aparece tras un trigger
+                    // manualNextFasting), el botón "Empezar mi siguiente
+                    // ayuno" sobra. Solo lo renderizamos cuando el ayuno
+                    // no está activo (cierre por fallback sleep/3h/etc).
+                    onStartNextFasting: fastingState.isActive
+                        ? null
+                        : () async {
+                            await ref
+                                .read(fastingProvider.notifier)
+                                .startFasting();
+                          },
                   ),
 
                   // SPEC-137 E.5: banner "próxima comida en X min" cuando
