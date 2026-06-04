@@ -386,13 +386,18 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
   }
 
   PillarOverviewTile _bodyFatTile(MetricSeries s) {
+    // SPEC-168.4.3 (2026-06-03): el tile se llama "Composición corporal".
+    // El valor principal sigue siendo % grasa (la lectura más universal),
+    // pero el detalle abre el BodyCompositionTrendChart con sus 5 tabs
+    // (peso, cintura, grasa, WHTR, masa magra). WHTR > 0.5 es proxy
+    // clínico del riesgo visceral.
     final v = ChartHeroComputer.aggregateValue(s, HeroAggregation.last);
     return PillarOverviewTile(
       metric: ChartMetric.bodyFatPct,
-      emoji: '🔥',
-      label: '% Grasa corporal',
+      emoji: '🧍',
+      label: 'Composición corporal',
       value: v == null ? '' : v.toStringAsFixed(1),
-      unit: '%',
+      unit: '% grasa',
       accent: _accentBodyFat,
       sparklineValues: s.points.map((p) => p.value).toList(),
     );

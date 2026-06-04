@@ -12,6 +12,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/analysis/application/biometric_trend_provider.dart';
 import 'package:elena_app/src/features/analysis/domain/body_composition_metric.dart';
+// SPEC-168.4.4: silueta humana abajo del chart, tintada por zona ACSM.
+import 'package:elena_app/src/features/analysis/presentation/widgets/body_silhouette.dart';
 import 'package:elena_app/src/features/progress/domain/biometric_checkin.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 
@@ -34,6 +36,11 @@ class _BodyCompositionTrendChartState
     // SPEC-157: necesitamos height para WHTR. Watch del user provider.
     final user = ref.watch(currentUserStreamProvider).valueOrNull;
     final heightCm = (user?.height ?? 0) > 0 ? user!.height : null;
+    // SPEC-168.4.4: zona ACSM para la silueta. Usamos el % grasa
+    // persistido en el UserProfile (más fresco que el último check-in
+    // del rango). Género normalizado a "M" => isMale=true.
+    final bodyFatPct = user?.bodyFatPercentage;
+    final isMale = (user?.gender ?? 'M').toUpperCase() == 'M';
 
     return Container(
       padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
@@ -55,6 +62,16 @@ class _BodyCompositionTrendChartState
             loading: () => _buildLoading(),
             error: (_, __) => _buildErrorBox(),
             data: (list) => _buildContent(list, heightCm: heightCm),
+          ),
+          // SPEC-168.4.4: silueta humana tintada por zona ACSM. Se
+          // muestra siempre — tanto con datos como sin ellos, en el
+          // segundo caso con copy de "Registrá tu % de grasa para...".
+          const SizedBox(height: 28),
+          Center(
+            child: BodySilhouette(
+              bodyFatPct: bodyFatPct,
+              isMale: isMale,
+            ),
           ),
         ],
       ),

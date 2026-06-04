@@ -26,6 +26,8 @@ import 'package:elena_app/src/features/analysis/domain/chart_metric.dart';
 import 'package:elena_app/src/features/analysis/domain/hero_aggregation.dart';
 import 'package:elena_app/src/features/analysis/domain/metric_series.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/bar_chart_card.dart';
+// SPEC-168.4.3: widget completo de composición corporal con tabs.
+import 'package:elena_app/src/features/analysis/presentation/widgets/body_composition_trend_chart.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/line_chart_card.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/nutrition_pie_card.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/nutrition_trend_bar_card.dart';
@@ -298,24 +300,13 @@ class _AnalysisPillarDetailScreenState
   }
 
   Widget _bodyFatCard(AggregationMode mode, String periodLabel) {
-    final s = ref.watch(bodyFatSeriesProvider);
-    if (s.value == null) return _loadingBox();
-    final target =
-        ref.watch(goalForChartProvider(ChartMetric.bodyFatPct));
-    final targetLabel =
-        ref.watch(goalLabelForChartProvider(ChartMetric.bodyFatPct));
-    return LineChartCard(
-      series: s.value!,
-      accent: _accentBodyFat,
-      periodLabel: periodLabel,
-      headline: 'Evolución de tu % grasa corporal.',
-      aggregationMode: mode,
-      heroAggregation: HeroAggregation.last,
-      targetValue: target,
-      targetLabel: targetLabel,
-      // Bajar grasa es mejor; el delta pill se colorea acorde.
-      deltaIsBetterIf: 'down',
-    );
+    // SPEC-168.4.3: reusa el widget completo de SPEC-152/157 que ya
+    // tiene 5 tabs (Peso, Cintura, % Grasa, WHTR, Masa magra). WHTR es
+    // el proxy clínico de grasa visceral cuando no hay báscula
+    // inteligente. Tiene su propio selector de período interno
+    // (30/60/90 días) — independiente del SegmentedRangeControl de
+    // arriba que aplica al resto del overview.
+    return const BodyCompositionTrendChart();
   }
 
   Widget _weightCard(AggregationMode mode, String periodLabel) {
