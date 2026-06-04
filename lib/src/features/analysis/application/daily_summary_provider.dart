@@ -16,6 +16,8 @@ import 'package:elena_app/src/features/dashboard/application/sleep_notifier.dart
     show sleepProvider;
 import 'package:elena_app/src/features/exercise/application/exercise_notifier.dart'
     show exerciseProvider;
+import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart'
+    show currentMetabolicCycleProvider;
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart'
     show nutritionProvider;
 import 'package:elena_app/src/shared/providers/user_provider.dart'
@@ -82,14 +84,28 @@ final dailySummaryProvider = Provider<DailySummary>((ref) {
   // tiene `wokeUp` en el día calendario actual. Antes el provider
   // tomaba CUALQUIER `lastLog` (incluso de hace varios días) y lo
   // pintaba como 100% del satélite Sueño — engañoso para el usuario.
+  //
+  // SPEC-149.2.bugfix (2026-06-02): el sueño debe anclarse al ciclo
+  // metabólico, no al día calendárico. Cuando el usuario cierra un
+  // ciclo a las 21:00, el sleep log de esa mañana (que pertenece al
+  // ciclo cerrado) NO debe seguir contando para el ciclo nuevo.
+  // Si hay ciclo abierto, criterio = `wokeUp >= cycle.startedAt`.
+  // Si no hay ciclo (caso edge), fallback al calendario.
   final sleepLog = sleep.lastLog;
   double sleepProgress = 0;
   if (sleepLog != null) {
-    final now = DateTime.now();
-    final isToday = sleepLog.wokeUp.year == now.year &&
-        sleepLog.wokeUp.month == now.month &&
-        sleepLog.wokeUp.day == now.day;
-    if (isToday) {
+    final currentCycle = ref.watch(currentMetabolicCycleProvider).valueOrNull;
+    bool belongsToCurrentWindow;
+    if (currentCycle != null) {
+      belongsToCurrentWindow =
+          !sleepLog.wokeUp.isBefore(currentCycle.startedAt);
+    } else {
+      final now = DateTime.now();
+      belongsToCurrentWindow = sleepLog.wokeUp.year == now.year &&
+          sleepLog.wokeUp.month == now.month &&
+          sleepLog.wokeUp.day == now.day;
+    }
+    if (belongsToCurrentWindow) {
       final durationHours = sleepLog.duration.inMinutes / 60.0;
       final durationPct = (durationHours / 8.0).clamp(0.0, 1.0);
       final quality = sleepLog.subjectiveQuality;
