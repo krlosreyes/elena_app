@@ -84,6 +84,37 @@ final imrSeriesProvider =
   }
 });
 
+// SPEC-168.4.2 (2026-06-03): serie temporal del % de grasa corporal.
+// Reusa `biometricRepository.watchHistory()` (mismo stream que peso)
+// y filtra los check-ins que NO tienen bodyFatPercentage.
+final bodyFatSeriesProvider =
+    StreamProvider.autoDispose<MetricSeries>((ref) async* {
+  final account = ref.watch(authStateProvider).value;
+  if (account == null) {
+    yield MetricSeries.empty(label: 'Grasa corporal', unit: '%');
+    return;
+  }
+  final rangeStart = ref.watch(analysisRangeStartProvider);
+  final mode = _currentMode(ref);
+  final repo = ref.watch(biometricRepositoryProvider);
+  await for (final history in repo.watchHistory(account.uid)) {
+    final filtered = history.where((c) {
+      if (c.bodyFatPercentage == null) return false;
+      if (rangeStart == null) return true;
+      final ts = DateTime.parse(c.date);
+      return ts.isAfter(rangeStart) || ts == rangeStart;
+    }).toList();
+    final points = TemporalAggregator.aggregate(
+      items: filtered,
+      timestampOf: (c) => DateTime.parse(c.date),
+      valueOf: (c) => c.bodyFatPercentage!,
+      aggregation: TemporalAggregation.last,
+      mode: mode,
+    );
+    yield MetricSeries(label: 'Grasa corporal', unit: '%', points: points);
+  }
+});
+
 final weightSeriesProvider =
     StreamProvider.autoDispose<MetricSeries>((ref) async* {
   final account = ref.watch(authStateProvider).value;

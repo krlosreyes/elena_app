@@ -44,6 +44,10 @@ class AnalysisPillarDetailScreen extends ConsumerStatefulWidget {
 
 class _AnalysisPillarDetailScreenState
     extends ConsumerState<AnalysisPillarDetailScreen> {
+  // SPEC-168.4.2: accent ámbar para % grasa corporal — coherente con
+  // BodyCompositionMetric.bodyFatPct (#F59E0B).
+  static const Color _accentBodyFat = Color(0xFFF59E0B);
+
   final ScrollController _scrollController = ScrollController();
 
   @override
@@ -96,6 +100,9 @@ class _AnalysisPillarDetailScreenState
       case ChartMetric.weight:
         return _genericTrend(weightSeriesProvider, 'Peso', 'kg',
             const Color(0xFF60A5FA), 'down', mode);
+      case ChartMetric.bodyFatPct:
+        return _genericTrend(bodyFatSeriesProvider, 'Grasa corporal',
+            '%', _accentBodyFat, 'down', mode);
       case ChartMetric.fastingHours:
         return _genericTrend(fastingHabitSeriesProvider, 'Ayuno', 'h',
             AppColors.metabolicGreen, 'up', mode);
@@ -239,6 +246,8 @@ class _AnalysisPillarDetailScreenState
         return _imrCard(mode, periodLabel);
       case ChartMetric.weight:
         return _weightCard(mode, periodLabel);
+      case ChartMetric.bodyFatPct:
+        return _bodyFatCard(mode, periodLabel);
       case ChartMetric.fastingHours:
         return _fastingCard(mode, periodLabel);
       case ChartMetric.nutritionAPct:
@@ -285,6 +294,27 @@ class _AnalysisPillarDetailScreenState
       targetValue: target,
       targetLabel: targetLabel,
       deltaIsBetterIf: 'up',
+    );
+  }
+
+  Widget _bodyFatCard(AggregationMode mode, String periodLabel) {
+    final s = ref.watch(bodyFatSeriesProvider);
+    if (s.value == null) return _loadingBox();
+    final target =
+        ref.watch(goalForChartProvider(ChartMetric.bodyFatPct));
+    final targetLabel =
+        ref.watch(goalLabelForChartProvider(ChartMetric.bodyFatPct));
+    return LineChartCard(
+      series: s.value!,
+      accent: _accentBodyFat,
+      periodLabel: periodLabel,
+      headline: 'Evolución de tu % grasa corporal.',
+      aggregationMode: mode,
+      heroAggregation: HeroAggregation.last,
+      targetValue: target,
+      targetLabel: targetLabel,
+      // Bajar grasa es mejor; el delta pill se colorea acorde.
+      deltaIsBetterIf: 'down',
     );
   }
 
@@ -402,6 +432,8 @@ class _AnalysisPillarDetailScreenState
         return 'IMR';
       case ChartMetric.weight:
         return 'Peso';
+      case ChartMetric.bodyFatPct:
+        return '% Grasa';
       case ChartMetric.fastingHours:
         return 'Ayuno';
       case ChartMetric.nutritionAPct:

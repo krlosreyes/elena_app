@@ -9,6 +9,10 @@
 enum ChartMetric {
   imr,
   weight,
+  // SPEC-168.4.2 (2026-06-03): % de grasa corporal del usuario. La
+  // serie viene del biometricRepository (`bodyFatPercentage` opcional
+  // en BiometricCheckIn). Los check-ins sin BF se filtran.
+  bodyFatPct,
   // SPEC-168.5.2 (2026-06-03): Ayuno ahora se mide en horas de ayuno
   // (avg), no en días cumplidos. La línea de objetivo es el targetHours
   // del protocolo activo (16/18/20). El goal `fastingDaysPerWeek` del

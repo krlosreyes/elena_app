@@ -40,6 +40,8 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
   // Acentos por métrica (coherentes con SPEC-161).
   static const _accentImr = AppColors.metabolicGreen;
   static const _accentWeight = Color(0xFF60A5FA);
+  // SPEC-168.4.2: ámbar — coherente con BodyCompositionMetric.bodyFatPct.
+  static const _accentBodyFat = Color(0xFFF59E0B);
   static const _accentFasting = AppColors.metabolicGreen;
   static const _accentNutrition = Color(0xFFFB923C);
   static const _accentHydration = Color(0xFF38BDF8);
@@ -74,6 +76,8 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
     // con valor agregado + sparkline.
     final imr = ref.watch(imrSeriesProvider);
     final weight = ref.watch(weightSeriesProvider);
+    // SPEC-168.4.2: % grasa corporal, nuevo tile en Resultados.
+    final bodyFat = ref.watch(bodyFatSeriesProvider);
     final fasting = ref.watch(fastingHabitSeriesProvider);
     final nutrition = ref.watch(nutritionHabitSeriesProvider);
     // SPEC-168.5.4: distribución pie (A vs E) además de la serie.
@@ -90,6 +94,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
     // se mantiene en su posición.
     final firstLoad = imr.value == null ||
         weight.value == null ||
+        bodyFat.value == null ||
         fasting.value == null ||
         nutrition.value == null ||
         hydration.value == null ||
@@ -117,6 +122,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                 ..._buildContent(
                   imrSeries: imr.value!,
                   weightSeries: weight.value!,
+                  bodyFatSeries: bodyFat.value!,
                   fastingSeries: fasting.value!,
                   nutritionSeries: nutrition.value!,
                   hydrationSeries: hydration.value!,
@@ -239,6 +245,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
   List<Widget> _buildContent({
     required MetricSeries imrSeries,
     required MetricSeries weightSeries,
+    required MetricSeries bodyFatSeries,
     required MetricSeries fastingSeries,
     required MetricSeries nutritionSeries,
     required MetricSeries hydrationSeries,
@@ -250,6 +257,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
   }) {
     final allEmpty = imrSeries.isEmpty &&
         weightSeries.isEmpty &&
+        bodyFatSeries.isEmpty &&
         fastingSeries.isEmpty &&
         nutritionSeries.isEmpty &&
         hydrationSeries.isEmpty &&
@@ -270,6 +278,8 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
       _imrTile(imrSeries),
       const SizedBox(height: 10),
       _weightTile(weightSeries),
+      const SizedBox(height: 10),
+      _bodyFatTile(bodyFatSeries),
       const SizedBox(height: 28),
       _sectionTitle('Hábitos'),
       const SizedBox(height: 12),
@@ -371,6 +381,19 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
       value: v == null ? '' : ChartHeroComputer.formatValue(v),
       unit: 'kg',
       accent: _accentWeight,
+      sparklineValues: s.points.map((p) => p.value).toList(),
+    );
+  }
+
+  PillarOverviewTile _bodyFatTile(MetricSeries s) {
+    final v = ChartHeroComputer.aggregateValue(s, HeroAggregation.last);
+    return PillarOverviewTile(
+      metric: ChartMetric.bodyFatPct,
+      emoji: '🔥',
+      label: '% Grasa corporal',
+      value: v == null ? '' : v.toStringAsFixed(1),
+      unit: '%',
+      accent: _accentBodyFat,
       sparklineValues: s.points.map((p) => p.value).toList(),
     );
   }

@@ -68,6 +68,8 @@ double? _goalForMetric(ChartMetric m, Map<GoalType, UserGoal> goals) {
       return _kImrOperationalTarget;
     case ChartMetric.weight:
       return find(GoalType.weightTarget)?.targetValue;
+    case ChartMetric.bodyFatPct:
+      return find(GoalType.bodyFatTarget)?.targetValue;
     case ChartMetric.fastingHours:
       // No debería llegar acá (handled arriba), defensivo.
       return null;
@@ -90,6 +92,8 @@ String _formatLabel(ChartMetric m, double value) {
       return value.toStringAsFixed(0);
     case ChartMetric.weight:
       return '${value.toStringAsFixed(1)} kg';
+    case ChartMetric.bodyFatPct:
+      return '${value.toStringAsFixed(1)} %';
     case ChartMetric.fastingHours:
       return '${value.toStringAsFixed(0)} h';
     case ChartMetric.nutritionAPct:
