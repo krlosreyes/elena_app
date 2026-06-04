@@ -12,8 +12,6 @@ import 'package:elena_app/src/features/analysis/application/analysis_series_prov
 import 'package:elena_app/src/features/analysis/application/causal_insights_provider.dart';
 // SPEC-168.0.D: helper que devuelve el target del usuario por chart.
 import 'package:elena_app/src/features/analysis/application/goal_for_chart_provider.dart';
-// SPEC-168.5: computa la comparación corto-vs-largo.
-import 'package:elena_app/src/features/analysis/application/trend_comparison_computer.dart';
 // SPEC-168.1: aggregation mode + hero aggregation enums.
 import 'package:elena_app/src/features/analysis/domain/aggregation_mode.dart';
 import 'package:elena_app/src/features/analysis/domain/analysis_range.dart';
@@ -26,7 +24,6 @@ import 'package:elena_app/src/features/analysis/presentation/widgets/bar_chart_c
 import 'package:elena_app/src/features/analysis/presentation/widgets/insight_tile.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/line_chart_card.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/segmented_range_control.dart';
-import 'package:elena_app/src/features/analysis/presentation/widgets/trend_comparison_card.dart';
 
 class AnalysisScreen extends ConsumerStatefulWidget {
   const AnalysisScreen({super.key});
@@ -224,6 +221,37 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
             ],
           ),
         ),
+        // SPEC-168.5.1: botón "Tendencias →" sutil. Apple Health home
+        // tiene un acceso similar en el header de cada métrica para
+        // entrar a la vista comparativa de promedios.
+        InkResponse(
+          radius: 28,
+          onTap: () => context.push('/analysis/trends'),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Tendencias',
+                  style: TextStyle(
+                    color: AppColors.metabolicGreen,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.1,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  color: AppColors.metabolicGreen.withValues(alpha: 0.85),
+                  size: 12,
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 6),
         GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: () => Navigator.of(context).push(
@@ -336,15 +364,9 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
         targetLabel: weightTargetLabel,
         deltaIsBetterIf: 'down',
       ),
-      // SPEC-168.5: sección "Tendencias" — comparación de promedios
-      // recientes vs históricos para Peso e IMR (las dos métricas de
-      // resultado más relevantes para el usuario MR). Los cards solo
-      // se renderizan si hay suficiente data (>= 4 buckets).
-      ..._buildTrendsSection(
-        weightSeries: weightSeries,
-        imrSeries: imrSeries,
-        aggregationMode: aggregationMode,
-      ),
+      // SPEC-168.5.1 (2026-06-03): la sección Tendencias se movió a
+      // pantalla aparte (/analysis/trends). El acceso vive en el botón
+      // "Tendencias →" del header. Apple Health hace lo mismo: opt-in.
       const SizedBox(height: 36),
       _sectionTitle('Hábitos'),
       const SizedBox(height: 14),
@@ -467,51 +489,6 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
       case AnalysisRange.all:
         return 'Desde el inicio';
     }
-  }
-
-  /// SPEC-168.5: arma la sección "Tendencias" con cards de Peso e IMR.
-  /// Retorna [] si ninguno tiene suficiente data (TrendComparisonComputer
-  /// devolvió null). Si solo uno tiene data, renderiza solo ese.
-  List<Widget> _buildTrendsSection({
-    required MetricSeries weightSeries,
-    required MetricSeries imrSeries,
-    required AggregationMode aggregationMode,
-  }) {
-    final weightTrend = TrendComparisonComputer.compute(
-      series: weightSeries,
-      mode: aggregationMode,
-      betterIf: 'down',
-    );
-    final imrTrend = TrendComparisonComputer.compute(
-      series: imrSeries,
-      mode: aggregationMode,
-      betterIf: 'up',
-    );
-    if (weightTrend == null && imrTrend == null) return const [];
-
-    return [
-      const SizedBox(height: 36),
-      _sectionTitle('Tendencias'),
-      const SizedBox(height: 14),
-      if (weightTrend != null) ...[
-        TrendComparisonCard(
-          label: 'Peso',
-          unit: 'kg',
-          accent: _accentWeight,
-          trend: weightTrend,
-          mode: aggregationMode,
-        ),
-        if (imrTrend != null) const SizedBox(height: 14),
-      ],
-      if (imrTrend != null)
-        TrendComparisonCard(
-          label: 'IMR',
-          unit: '',
-          accent: _accentImr,
-          trend: imrTrend,
-          mode: aggregationMode,
-        ),
-    ];
   }
 
   Widget _sectionTitle(String label) {
