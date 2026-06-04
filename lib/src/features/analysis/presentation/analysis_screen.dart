@@ -102,8 +102,9 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
         sleep.value == null;
 
     return Scaffold(
-      // SPEC-165: fondo negro puro.
-      backgroundColor: Colors.black,
+      // SPEC-168.4.6 (2026-06-04): mismo fondo que Hoy y Perfil para
+      // unidad visual en la app (las cards mantienen su #0C0C0E).
+      backgroundColor: AppColors.backgroundDark,
       body: SafeArea(
         child: SingleChildScrollView(
           controller: _scrollController,
@@ -140,7 +141,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
         ),
       ),
       bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: Colors.black,
+        backgroundColor: AppColors.backgroundDark,
         selectedItemColor: AppColors.metabolicGreen,
         unselectedItemColor: Colors.grey.withValues(alpha: 0.5),
         currentIndex: 1,

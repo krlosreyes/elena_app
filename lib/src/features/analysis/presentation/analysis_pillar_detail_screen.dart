@@ -81,7 +81,9 @@ class _AnalysisPillarDetailScreenState
     final aggregationMode = AggregationMode.forRange(range);
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      // SPEC-168.4.6: mismo fondo que Hoy/Perfil/Analisis (cards
+      // mantienen su #0C0C0E).
+      backgroundColor: AppColors.backgroundDark,
       body: SafeArea(
         child: SingleChildScrollView(
           controller: _scrollController,
