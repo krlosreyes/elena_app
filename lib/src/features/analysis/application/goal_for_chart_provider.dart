@@ -23,11 +23,6 @@ import 'package:elena_app/src/features/dashboard/application/fasting_notifier.da
 import 'package:elena_app/src/features/goals/application/goal_notifier.dart';
 import 'package:elena_app/src/features/goals/domain/user_goal.dart';
 
-/// Litros diarios base que define el 100 % en los charts de hidratación.
-/// Coincide con `_hydrationHabitSeriesProvider` en
-/// `analysis_series_providers.dart` (línea 215 al momento de SPEC-168.0.D).
-const double _kHydrationBaseLiters = 2.5;
-
 /// Valor operacional del IMR según SPEC-141. No es editable por el
 /// usuario — es el techo de zona OPTIMIZADO.
 const double _kImrOperationalTarget = 75.0;
@@ -78,11 +73,10 @@ double? _goalForMetric(ChartMetric m, Map<GoalType, UserGoal> goals) {
       return null;
     case ChartMetric.nutritionAPct:
       return find(GoalType.nutritionADominantPercent)?.targetValue;
-    case ChartMetric.hydrationPct:
-      // Conversión clave: goal es L/día, chart es % vs 2.5 L.
-      final goal = find(GoalType.hydrationLitersPerDay)?.targetValue;
-      if (goal == null) return null;
-      return (goal * 100 / _kHydrationBaseLiters).clamp(0.0, 200.0);
+    case ChartMetric.hydrationLiters:
+      // SPEC-168.5.3: directo, sin conversión a %. El chart muestra L
+      // y el goal del usuario está en L.
+      return find(GoalType.hydrationLitersPerDay)?.targetValue;
     case ChartMetric.exerciseMin:
       return find(GoalType.exerciseMinPerDay)?.targetValue;
     case ChartMetric.sleepHours:
@@ -100,8 +94,8 @@ String _formatLabel(ChartMetric m, double value) {
       return '${value.toStringAsFixed(0)} h';
     case ChartMetric.nutritionAPct:
       return '${value.toStringAsFixed(0)} %';
-    case ChartMetric.hydrationPct:
-      return '${value.toStringAsFixed(0)} %';
+    case ChartMetric.hydrationLiters:
+      return '${value.toStringAsFixed(1)} L';
     case ChartMetric.exerciseMin:
       return '${value.toStringAsFixed(0)} min';
     case ChartMetric.sleepHours:

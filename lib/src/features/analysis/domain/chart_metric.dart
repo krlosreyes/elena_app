@@ -16,7 +16,10 @@ enum ChartMetric {
   // no alimenta este chart.
   fastingHours,
   nutritionAPct,
-  hydrationPct,
+  // SPEC-168.5.3 (2026-06-03): Hidratación pasa a litros por día. El
+  // target es el goal del usuario hydrationLitersPerDay tal cual, sin
+  // conversion a %.
+  hydrationLiters,
   exerciseMin,
   sleepHours,
 }

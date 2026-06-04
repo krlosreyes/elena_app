@@ -197,7 +197,7 @@ final hydrationHabitSeriesProvider =
     StreamProvider.autoDispose<MetricSeries>((ref) async* {
   final account = ref.watch(authStateProvider).value;
   if (account == null) {
-    yield MetricSeries.empty(label: 'Hidratación', unit: '%');
+    yield MetricSeries.empty(label: 'Hidratación', unit: 'L');
     return;
   }
   final rangeStart = ref.watch(analysisRangeStartProvider) ?? _kEpoch;
@@ -207,25 +207,25 @@ final hydrationHabitSeriesProvider =
         rangeStart,
         until: _todayLocal().add(const Duration(days: 1)),
       )) {
-    // Sumamos litros por DÍA primero — luego agregamos al bucket.
+    // SPEC-168.5.3 (2026-06-03): el eje Y muestra LITROS por día (no %
+    // vs un target hard-coded). Lectura directa del consumo real; el
+    // target line es el goal del usuario en hydrationLitersPerDay.
     final byDay = <String, double>{};
     for (final log in logs) {
       final key = _dateIso(log.timestamp);
       byDay[key] = (byDay[key] ?? 0) + log.amountInLiters;
     }
-    const targetLiters = 2.5;
     final dayEntries = byDay.entries
         .map((e) => _DayLiters(_parseDateIso(e.key), e.value))
         .toList();
     final points = TemporalAggregator.aggregate(
       items: dayEntries,
       timestampOf: (d) => d.date,
-      valueOf: (d) =>
-          (d.liters / targetLiters * 100).clamp(0.0, 200.0).toDouble(),
+      valueOf: (d) => d.liters,
       aggregation: TemporalAggregation.avg,
       mode: mode,
     );
-    yield MetricSeries(label: 'Hidratación', unit: '%', points: points);
+    yield MetricSeries(label: 'Hidratación', unit: 'L', points: points);
   }
 });
 

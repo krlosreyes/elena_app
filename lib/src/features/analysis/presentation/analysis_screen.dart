@@ -81,9 +81,9 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
     final nutritionTargetLabel =
         ref.watch(goalLabelForChartProvider(ChartMetric.nutritionAPct));
     final hydrationTarget =
-        ref.watch(goalForChartProvider(ChartMetric.hydrationPct));
+        ref.watch(goalForChartProvider(ChartMetric.hydrationLiters));
     final hydrationTargetLabel =
-        ref.watch(goalLabelForChartProvider(ChartMetric.hydrationPct));
+        ref.watch(goalLabelForChartProvider(ChartMetric.hydrationLiters));
     final exerciseTarget =
         ref.watch(goalForChartProvider(ChartMetric.exerciseMin));
     final exerciseTargetLabel =
@@ -583,9 +583,12 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
   }
 
   String _hydrationHeadline(MetricSeries s) {
+    // SPEC-168.5.3: Hidratación se mide en litros por día. El copy
+    // refleja el consumo absoluto, no el porcentaje vs meta.
     final avg = _avg(s);
     if (avg == null) return 'Sin registros de hidratación todavía.';
-    return 'Tomaste ${avg.round()}% de tu meta hídrica en promedio.';
+    return 'Tomaste ${avg.toStringAsFixed(1)} L de agua por día en '
+        'promedio.';
   }
 
   String _exerciseHeadline(MetricSeries s) {
