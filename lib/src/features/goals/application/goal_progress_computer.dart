@@ -152,6 +152,8 @@ class GoalProgressComputer {
         return 'Casi llegás. Sumá ${_round1(gap)}h más por noche.';
       case GoalType.hydrationLitersPerDay:
         return 'Casi llegás. Sumá ${(gap * 1000).round()} ml más por día.';
+      case GoalType.nutritionADominantPercent:
+        return 'Casi llegás. Sumá ${gap.round()}% A-dominante más por semana.';
     }
   }
 

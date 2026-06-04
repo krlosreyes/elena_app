@@ -7,10 +7,16 @@
 // Layout: header (3 líneas) + área de chart con barras + eje Y
 // (3-4 ticks) + eje X (labels temporales).
 
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
+import 'package:elena_app/src/features/analysis/application/chart_hero_computer.dart';
+import 'package:elena_app/src/features/analysis/domain/aggregation_mode.dart';
+import 'package:elena_app/src/features/analysis/domain/hero_aggregation.dart';
 import 'package:elena_app/src/features/analysis/domain/metric_series.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/chart_card_header.dart';
+import 'package:elena_app/src/features/analysis/presentation/widgets/chart_hero_block.dart';
 
 class BarChartCard extends StatelessWidget {
   const BarChartCard({
@@ -19,7 +25,12 @@ class BarChartCard extends StatelessWidget {
     required this.accent,
     required this.periodLabel,
     required this.headline,
+    required this.aggregationMode,
     this.deltaIsBetterIf = 'up',
+    this.heroAggregation = HeroAggregation.avg,
+    this.heroUnit,
+    this.targetValue,
+    this.targetLabel,
   });
 
   final MetricSeries series;
@@ -30,12 +41,55 @@ class BarChartCard extends StatelessWidget {
   /// "Cumpliste 5 días de ayuno por semana en promedio."
   final String headline;
 
+  /// SPEC-168.1: agregación del bloque hero arriba del chart.
+  /// "PROMEDIO" (avg), "TOTAL" (sum), etc. Default: avg.
+  final HeroAggregation heroAggregation;
+
+  /// SPEC-168.1: unit override para el bloque hero. Cuando el `series.unit`
+  /// no coincide con la unidad de presentación deseada (ej. "d/sem" en
+  /// series pero "d" en hero para sum), el caller la pasa explícita.
+  /// Null usa `series.unit`.
+  final String? heroUnit;
+
+  /// SPEC-168.1: modo de agregación temporal (daily/weekly/monthly).
+  /// Necesario para formatear correctamente la fecha-range del hero.
+  final AggregationMode aggregationMode;
+
+  /// SPEC-168.2 (2026-06-03): valor del objetivo del usuario en la
+  /// unidad del chart. Si es null, NO se pinta línea de objetivo
+  /// (el goal correspondiente no está activo en `userGoals`).
+  final double? targetValue;
+
+  /// SPEC-168.2: label formateado del objetivo ("Objetivo 5 d/sem").
+  /// Solo se renderiza si `targetValue != null`.
+  final String? targetLabel;
+
   /// 'up' si más es mejor (ejercicio, ayuno, hidratación, etc.)
   /// 'down' si menos es mejor (caso raro en hábitos).
   final String deltaIsBetterIf;
 
   @override
   Widget build(BuildContext context) {
+    // SPEC-168.1: hero block arriba del chart. Si no hay valor (serie
+    // vacía), no renderizamos el bloque — el chart muestra "Sin datos"
+    // y eso es suficiente.
+    final heroValue =
+        ChartHeroComputer.aggregateValue(series, heroAggregation);
+    final dateRange =
+        ChartHeroComputer.formatDateRange(series, aggregationMode);
+    // SPEC-168.3: cómputo del achievement del objetivo. Solo se
+    // calcula si hay target activo; si no, queda null y el hero no
+    // pinta el indicador.
+    final achievement =
+        ChartHeroComputer.computeAchievement(series, targetValue);
+    final achievementLabel = achievement == null
+        ? null
+        : ChartHeroComputer.formatAchievementLabel(
+            achievement.achieved,
+            achievement.total,
+            aggregationMode,
+          );
+
     return Container(
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
@@ -52,7 +106,18 @@ class BarChartCard extends StatelessWidget {
             deltaUnit: series.unit,
             deltaIsBetterIf: deltaIsBetterIf,
           ),
-          const SizedBox(height: 22),
+          if (heroValue != null) ...[
+            const SizedBox(height: 18),
+            ChartHeroBlock(
+              label: labelForHeroAggregation(heroAggregation),
+              value: ChartHeroComputer.formatValue(heroValue),
+              unit: heroUnit ?? series.unit,
+              dateRange: dateRange,
+              achievementLabel: achievementLabel,
+              achievementColor: accent,
+            ),
+          ],
+          const SizedBox(height: 18),
           SizedBox(
             height: 170,
             child: _renderChart(),
@@ -71,7 +136,12 @@ class BarChartCard extends StatelessWidget {
     }
     return CustomPaint(
       size: Size.infinite,
-      painter: _BarsPainter(series: series, accent: accent),
+      painter: _BarsPainter(
+        series: series,
+        accent: accent,
+        targetValue: targetValue,
+        targetLabel: targetLabel,
+      ),
     );
   }
 
@@ -90,13 +160,29 @@ class BarChartCard extends StatelessWidget {
 }
 
 class _BarsPainter extends CustomPainter {
-  _BarsPainter({required this.series, required this.accent});
+  _BarsPainter({
+    required this.series,
+    required this.accent,
+    this.targetValue,
+    this.targetLabel,
+  });
 
   final MetricSeries series;
   final Color accent;
 
+  /// SPEC-168.2: nivel del objetivo en la unidad del chart. Null = sin
+  /// línea dashed.
+  final double? targetValue;
+
+  /// SPEC-168.2: label "Objetivo X" que aparece junto a la línea dashed.
+  final String? targetLabel;
+
   // Padding interno del área del chart.
-  static const double _yAxisWidth = 28;
+  // SPEC-168.1 (2026-06-03): eje Y movido al lado derecho del plot,
+  // siguiendo el patrón Apple Health/Fitness (la lectura LTR aterriza
+  // sobre el axis al final, así el ojo encuentra los números sin saltar).
+  // El reservado a la izquierda es 0; el de la derecha aloja los labels.
+  static const double _yAxisRightWidth = 36;
   static const double _xAxisHeight = 22;
   static const double _gridPaddingTop = 8;
   static const double _barGap = 2.5;
@@ -104,7 +190,14 @@ class _BarsPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final values = series.points.map((p) => p.value).toList();
-    final maxV = values.reduce((a, b) => a > b ? a : b);
+    final dataMaxV = values.reduce((a, b) => a > b ? a : b);
+
+    // SPEC-168.2: si el target del usuario está por encima del máximo
+    // observado, expandimos el rango del eje Y para que la línea dashed
+    // siempre quede dentro del plot con 5% de headroom visual.
+    final maxV = targetValue != null && targetValue! > dataMaxV
+        ? targetValue! * 1.05
+        : dataMaxV;
 
     // El eje Y arranca en 0 para barras (Apple Fitness lo hace para
     // métricas de conteo). Si la métrica nunca es 0, el padding inferior
@@ -112,14 +205,16 @@ class _BarsPainter extends CustomPainter {
     const yMin = 0.0;
     final yMax = _niceUpperBound(maxV);
 
-    final plotLeft = _yAxisWidth;
+    // SPEC-168.1: el plot ocupa de x=0 a x=size.width - _yAxisRightWidth.
+    // Los labels del axis se pintan a la derecha del plot.
+    final plotLeft = 0.0;
     final plotTop = _gridPaddingTop;
-    final plotRight = size.width;
+    final plotRight = size.width - _yAxisRightWidth;
     final plotBottom = size.height - _xAxisHeight;
     final plotHeight = plotBottom - plotTop;
     final plotWidth = plotRight - plotLeft;
 
-    // Grid horizontal + labels eje Y.
+    // Grid horizontal + labels eje Y (lado derecho).
     final gridPaint = Paint()
       ..color = Colors.white.withValues(alpha: 0.06)
       ..strokeWidth = 1
@@ -132,14 +227,23 @@ class _BarsPainter extends CustomPainter {
         Offset(plotRight, y),
         gridPaint,
       );
-      _drawYLabel(canvas, plotLeft - 6, y, _fmtTick(t));
+      // SPEC-168.1: label a la derecha del plot, alineado a la izquierda
+      // (los números se leen de izquierda a derecha empezando justo
+      // después del axis).
+      _drawYLabel(canvas, plotRight + 6, y, _fmtTick(t));
     }
 
     // Barras.
+    // SPEC-168.8: si hay target, las barras que NO lo alcanzan se
+    // pintan opacas (alpha 0.35); las que sí lo alcanzan se pintan
+    // brillantes (alpha 1.0). Sin target todas se pintan brillantes.
+    // Umbral exacto: value >= target. Sin medias tintas (consistente
+    // con Apple Fitness).
     final n = values.length;
     final totalGap = _barGap * (n - 1);
     final barWidth = (plotWidth - totalGap) / n;
-    final barPaint = Paint()..color = accent;
+    final brightPaint = Paint()..color = accent;
+    final dimPaint = Paint()..color = accent.withValues(alpha: 0.35);
     for (int i = 0; i < n; i++) {
       final v = values[i].clamp(0.0, yMax);
       final barHeight = (v - yMin) / (yMax - yMin) * plotHeight;
@@ -150,27 +254,104 @@ class _BarsPainter extends CustomPainter {
         topLeft: const Radius.circular(3),
         topRight: const Radius.circular(3),
       );
-      canvas.drawRRect(rect, barPaint);
+      // SPEC-168.8: usar value original (no clamp) para evaluar vs target.
+      final reachedTarget =
+          targetValue == null || values[i] >= targetValue!;
+      canvas.drawRRect(rect, reachedTarget ? brightPaint : dimPaint);
+    }
+
+    // SPEC-168.2: línea dashed del objetivo del usuario. Se pinta
+    // ENCIMA de las barras (sobrepuesta) para que el contraste sea
+    // claro: las barras que la rebasan la cruzan visualmente.
+    if (targetValue != null) {
+      _drawTargetLine(
+        canvas,
+        plotLeft: plotLeft,
+        plotRight: plotRight,
+        plotBottom: plotBottom,
+        plotHeight: plotHeight,
+        yMin: yMin,
+        yMax: yMax,
+        target: targetValue!,
+      );
     }
 
     // Eje X: labels temporales.
     _drawXLabels(canvas, plotLeft, plotBottom, plotWidth, n);
   }
 
+  /// SPEC-168.2: pinta la línea horizontal dashed del objetivo + label
+  /// "Objetivo X" a la derecha (debajo del axis Y).
+  void _drawTargetLine(
+    Canvas canvas, {
+    required double plotLeft,
+    required double plotRight,
+    required double plotBottom,
+    required double plotHeight,
+    required double yMin,
+    required double yMax,
+    required double target,
+  }) {
+    if (yMax - yMin == 0) return;
+    final yClamped = target.clamp(yMin, yMax);
+    final y = plotBottom - (yClamped - yMin) / (yMax - yMin) * plotHeight;
+
+    // Trazo dashed manual (4px on / 3px off) en color del pilar con
+    // alpha reducido — diferencia clara con barras pero sin gritar.
+    final paint = Paint()
+      ..color = accent.withValues(alpha: 0.55)
+      ..strokeWidth = 1.2
+      ..style = PaintingStyle.stroke;
+    const dash = 4.0, gap = 3.0;
+    double x = plotLeft;
+    while (x < plotRight) {
+      final end = math.min(x + dash, plotRight);
+      canvas.drawLine(Offset(x, y), Offset(end, y), paint);
+      x += dash + gap;
+    }
+
+    // Label "Objetivo X" sobre el axis derecho. Si el label es null,
+    // formateamos con el helper de ticks (consistente con axis).
+    final labelText = targetLabel != null
+        ? 'Objetivo ${targetLabel!}'
+        : 'Objetivo ${_fmtTick(target)}';
+    final tp = TextPainter(
+      text: TextSpan(
+        text: labelText,
+        style: TextStyle(
+          color: accent.withValues(alpha: 0.85),
+          fontSize: 9,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    // Plantado pegado al final del plot (ANTES del axis numérico), con
+    // background sutil para que sobresalga sobre la grid.
+    final labelX = plotRight - tp.width - 6;
+    final labelY = y - tp.height - 2; // 2px sobre la línea
+    // Si el label se sale por arriba, lo ponemos debajo de la línea.
+    final adjustedY = labelY < 0 ? y + 2 : labelY;
+    tp.paint(canvas, Offset(labelX, adjustedY));
+  }
+
   void _drawYLabel(Canvas canvas, double x, double y, String text) {
+    // SPEC-168.1: labels alineados a la izquierda y plantados justo a la
+    // derecha del axis. minWidth/maxWidth se aflojan a 32 para acomodar
+    // valores con 4 dígitos ("1.000") sin partir el texto en líneas.
     final tp = TextPainter(
       text: TextSpan(
         text: text,
         style: TextStyle(
           color: Colors.white.withValues(alpha: 0.40),
-          fontSize: 9,
+          fontSize: 10,
           fontWeight: FontWeight.w600,
         ),
       ),
       textDirection: TextDirection.ltr,
-      textAlign: TextAlign.right,
-    )..layout(minWidth: 24, maxWidth: 24);
-    tp.paint(canvas, Offset(x - tp.width, y - tp.height / 2));
+      textAlign: TextAlign.left,
+    )..layout(minWidth: 0, maxWidth: 32);
+    tp.paint(canvas, Offset(x, y - tp.height / 2));
   }
 
   void _drawXLabels(
@@ -268,19 +449,20 @@ class _BarsPainter extends CustomPainter {
     return nice * magnitude;
   }
 
+  // SPEC-167 (2026-06-03): magnitud por log10 real.
+  //
+  // La versión previa estimaba log10 con `v.toString().length` (1 dígito
+  // ≈ 1 orden de magnitud). Funcionaba para enteros, pero al introducir
+  // modos daily/weekly/monthly con divisiones como `maxV / 3`, valores
+  // como 7/3 = 2.3333333333333335 (IEEE 754) producían strings de 18
+  // chars → magnitud estimada 1e17 → clamp a 1e9 → step gigante → yMax
+  // en mil millones → barras sub-pixel invisibles.
+  //
+  // Calculamos log10 real con dart:math y devolvemos 10^floor(log10).
   double _pow10(double v) {
-    final log = v.abs() <= 0 ? 0 : (v.abs()).toString().length - 1;
-    return _power(10, log.toDouble() - 1).clamp(0.001, 1e9);
-  }
-
-  double _power(num base, double exp) {
-    if (exp == 0) return 1;
-    double r = 1;
-    final e = exp.toInt();
-    for (int i = 0; i < e.abs(); i++) {
-      r *= base;
-    }
-    return exp < 0 ? 1 / r : r;
+    if (v.abs() < 1e-12) return 1;
+    final log10 = (math.log(v.abs()) / math.ln10).floor();
+    return math.pow(10, log10).toDouble();
   }
 
   double _niceUpperBound(double v) {

@@ -25,7 +25,7 @@ class GoalSetupScreen extends ConsumerStatefulWidget {
 }
 
 class _GoalSetupScreenState extends ConsumerState<GoalSetupScreen> {
-  late Map<GoalType, _GoalDraft> _drafts;
+  late Map<GoalType, GoalDraft> _drafts;
   bool _initialized = false;
   bool _isSaving = false;
 
@@ -47,7 +47,7 @@ class _GoalSetupScreenState extends ConsumerState<GoalSetupScreen> {
       // Fallback vacío — no debería ocurrir si la ruta está protegida
       _drafts = {
         for (final t in GoalType.values)
-          t: _GoalDraft(
+          t: GoalDraft(
               type: t,
               target: 0,
               current: 0,
@@ -62,7 +62,7 @@ class _GoalSetupScreenState extends ConsumerState<GoalSetupScreen> {
 
     _drafts = {
       for (final type in GoalType.values)
-        type: _GoalDraft(
+        type: GoalDraft(
           type: type,
           target: existingGoals[type]?.targetValue ??
               suggestions[type]!.suggestedTarget,
@@ -191,7 +191,7 @@ class _GoalSetupScreenState extends ConsumerState<GoalSetupScreen> {
               children: [
                 ...GoalType.values.map((type) => Padding(
                       padding: const EdgeInsets.only(bottom: 12),
-                      child: _SuggestionCard(
+                      child: GoalSuggestionCard(
                         draft: _drafts[type]!,
                         onChanged: (updated) =>
                             setState(() => _drafts[type] = updated),
@@ -246,7 +246,7 @@ class _GoalSetupScreenState extends ConsumerState<GoalSetupScreen> {
 
 // ─── Draft local de cada tarjeta ─────────────────────────────────────────────
 
-class _GoalDraft {
+class GoalDraft {
   final GoalType type;
   final double target;
   final double current;
@@ -255,7 +255,7 @@ class _GoalDraft {
   final bool isActive;
   final double? originalSuggestion;
 
-  const _GoalDraft({
+  const GoalDraft({
     required this.type,
     required this.target,
     required this.current,
@@ -265,7 +265,7 @@ class _GoalDraft {
     this.originalSuggestion,
   });
 
-  _GoalDraft copyWith({double? target, bool? isActive}) => _GoalDraft(
+  GoalDraft copyWith({double? target, bool? isActive}) => GoalDraft(
         type: type,
         target: target ?? this.target,
         current: current,
@@ -278,16 +278,16 @@ class _GoalDraft {
 
 // ─── Tarjeta de sugerencia ────────────────────────────────────────────────────
 
-class _SuggestionCard extends StatefulWidget {
-  const _SuggestionCard({required this.draft, required this.onChanged});
-  final _GoalDraft draft;
-  final ValueChanged<_GoalDraft> onChanged;
+class GoalSuggestionCard extends StatefulWidget {
+  const GoalSuggestionCard({required this.draft, required this.onChanged});
+  final GoalDraft draft;
+  final ValueChanged<GoalDraft> onChanged;
 
   @override
-  State<_SuggestionCard> createState() => _SuggestionCardState();
+  State<GoalSuggestionCard> createState() => _GoalSuggestionCardState();
 }
 
-class _SuggestionCardState extends State<_SuggestionCard> {
+class _GoalSuggestionCardState extends State<GoalSuggestionCard> {
   bool _showRationale = false;
 
   // ── Helpers de formato ──────────────────────────────────────────────────────
@@ -306,6 +306,8 @@ class _SuggestionCardState extends State<_SuggestionCard> {
         return '${value.toStringAsFixed(1)} h/noche';
       case GoalType.hydrationLitersPerDay:
         return '${value.toStringAsFixed(2)} L/día';
+      case GoalType.nutritionADominantPercent:
+        return '${value.toStringAsFixed(0)}%';
     }
   }
 
@@ -334,6 +336,9 @@ class _SuggestionCardState extends State<_SuggestionCard> {
         return (raw * 2).round() / 2;
       case GoalType.hydrationLitersPerDay:
         return (raw * 4).round() / 4;
+      case GoalType.nutritionADominantPercent:
+        // Slider en pasos de 5%.
+        return (raw / 5).round() * 5.0;
     }
   }
 

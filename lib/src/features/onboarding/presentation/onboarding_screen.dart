@@ -25,6 +25,14 @@ import 'package:elena_app/src/features/onboarding/presentation/widgets/intro_scr
 import 'package:elena_app/src/features/health_sync/application/health_auto_sync_controller.dart';
 import 'package:elena_app/src/features/health_sync/application/health_sync_providers.dart';
 import 'package:elena_app/src/features/health_sync/presentation/onboarding_health_step.dart';
+// SPEC-168.0.A: paso final del onboarding — sugerencias de metas
+// personalizadas con narrativa coaching. Reutiliza GoalSuggestionCard
+// y GoalDraft de la pantalla standalone (`/goals/setup`).
+import 'package:elena_app/src/features/goals/application/goal_notifier.dart';
+import 'package:elena_app/src/features/goals/application/goal_suggestion_engine.dart';
+import 'package:elena_app/src/features/goals/domain/user_goal.dart';
+import 'package:elena_app/src/features/goals/presentation/goal_setup_screen.dart'
+    show GoalDraft, GoalSuggestionCard;
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -68,6 +76,26 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   // Connect". Solo aparece en cold install (newProfile) y solo en
   // iOS/Android — se inserta DESPUÉS de habits (case 3).
   static const int _kHealthSyncStepId = 200;
+
+  // SPEC-168.0.A: id del paso final "Tus objetivos". Siempre se inserta
+  // como último step — sin importar si es cold install o MR, todo
+  // usuario debe terminar el onboarding viendo y confirmando sus
+  // metas personalizadas (decisión Carlos: coaching desde día uno).
+  static const int _kGoalsStepId = 4;
+
+  // SPEC-168.0.A: borrador local del step Goals. Se inicializa lazy la
+  // primera vez que el PageView llega al paso (`_ensureGoalDrafts`)
+  // usando `GoalSuggestionEngine.suggest` sobre el UserModel construido
+  // a partir del state actual del onboarding. El usuario puede mover
+  // sliders y togglear cada goal antes de persistir en `_finalSubmit`.
+  //
+  // SPEC-168.0.A (v2 — feedback Carlos 2026-06-03 Opción B): siempre
+  // persistimos los 7 drafts respetando su `isActive`. Si el usuario
+  // no tocó nada, el engine ya marcó por shouldActivate cuáles activar
+  // (los fuera de rango) y cuáles dejar inactivos pero visibles (los
+  // que ya están en zona saludable). El Perfil los muestra todos.
+  Map<GoalType, GoalDraft> _goalDrafts = {};
+  bool _goalDraftsInitialized = false;
 
   // --- PASO 1: HARDWARE ---
   DateTime _birthDate = DateTime(1980, 1, 1);
@@ -301,6 +329,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       2,
       3,
       if (showHealthStep) _kHealthSyncStepId,
+      // SPEC-168.0.A: Tus objetivos — siempre al final.
+      _kGoalsStepId,
     ];
 
     setState(() {
@@ -397,6 +427,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             isDark: isDark,
             onContinue: _handleNext,
           );
+        case _kGoalsStepId:
+          // SPEC-168.0.A: paso final — sugerencias de objetivos
+          // personalizadas con narrativa coaching.
+          return _buildStepGoals(isDark);
         default:
           return _buildStepHabits(isDark);
       }
@@ -1055,14 +1089,132 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     );
   }
 
-  void _finalSubmit() async {
-    // SPEC-73: authState ahora es AppAccount?. uid en .uid, nombre en
-    // .displayName. Si el usuario viene de Metamorfosis Real, rawProfile
-    // tiene los campos extra que NO se deben pisar — los mezclamos al
-    // construir el UserModel final.
-    final account = ref.read(authStateProvider).value;
-    if (account == null) return;
+  // ─── SPEC-168.0.A: paso final "Tus objetivos" ─────────────────────────────
+  //
+  // Render: encabezado coaching + lista de 7 GoalSuggestionCard.
+  //
+  // El encabezado refuerza la narrativa: "Para ti, recomendamos esto y
+  // por qué". El card oculta su slider hasta que el usuario toggle
+  // "activar", y cada card tiene un expandible "¿Por qué?" que muestra
+  // el rationale personalizado del engine.
+  Widget _buildStepGoals(bool isDark) {
+    _ensureGoalDraftsInitialized();
+    final activeCount = _goalDrafts.values.where((d) => d.isActive).length;
 
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+      children: [
+        // ── Encabezado coaching ─────────────────────────────────────
+        Container(
+          padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                const Color(0xFF1ABC9C).withValues(alpha: 0.14),
+                const Color(0xFF1ABC9C).withValues(alpha: 0.05),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: const Color(0xFF1ABC9C).withValues(alpha: 0.30),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Tus objetivos personalizados',
+                style: TextStyle(
+                  fontSize: 19,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                  letterSpacing: -0.2,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Calculamos estos objetivos para ti con base en tu '
+                'peso, edad y rutina actual. Activá los que quieras '
+                'trabajar y, si lo prefieres, ajustalos con el slider.',
+                style: TextStyle(
+                  fontSize: 13,
+                  height: 1.55,
+                  color: Colors.white.withValues(alpha: 0.72),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // ── Cards de sugerencias ────────────────────────────────────
+        ...GoalType.values.map(
+          (type) => Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: GoalSuggestionCard(
+              draft: _goalDrafts[type]!,
+              onChanged: (updated) =>
+                  setState(() => _goalDrafts[type] = updated),
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 8),
+
+        // ── Indicador de cantidad activa (UX feedback) ─────────────
+        // SPEC-168.0.A v2: el botón "Omitir por ahora" se eliminó.
+        // El CTA principal (FINALIZAR) ya persiste todos los drafts
+        // respetando su isActive (las recomendaciones del engine se
+        // mantienen incluso si el usuario no tocó nada). Mostramos el
+        // contador para que el usuario entienda qué se va a guardar.
+        if (activeCount > 0)
+          Center(
+            child: Text(
+              activeCount == 1
+                  ? '$activeCount objetivo activo'
+                  : '$activeCount objetivos activos',
+              style: TextStyle(
+                fontSize: 11.5,
+                color: const Color(0xFF1ABC9C).withValues(alpha: 0.85),
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  /// Lazy-init de `_goalDrafts`: construye un UserModel parcial con el
+  /// state actual del onboarding, le pide sugerencias al engine y
+  /// arma los drafts. Idempotente — se ejecuta solo la primera vez.
+  void _ensureGoalDraftsInitialized() {
+    if (_goalDraftsInitialized) return;
+    final user = _buildUserModelFromState();
+    final suggestions = GoalSuggestionEngine.suggest(user);
+
+    _goalDrafts = {
+      for (final type in GoalType.values)
+        type: GoalDraft(
+          type: type,
+          target: suggestions[type]!.suggestedTarget,
+          current: suggestions[type]!.currentValue,
+          rationale: suggestions[type]!.rationale,
+          statusLabel: suggestions[type]!.currentStatusLabel,
+          isActive: suggestions[type]!.shouldActivate,
+          originalSuggestion: suggestions[type]!.suggestedTarget,
+        ),
+    };
+    _goalDraftsInitialized = true;
+  }
+
+  /// SPEC-168.0.A: construye el UserModel a partir del state actual del
+  /// onboarding. Extraído de `_finalSubmit` para que también pueda
+  /// alimentar a `GoalSuggestionEngine.suggest` en el paso Goals (donde
+  /// `account` todavía no necesariamente está disponible o no importa).
+  ///
+  /// Si `account` es null, los campos `id` y `name` quedan vacíos —
+  /// el engine de sugerencias no los usa.
+  UserModel _buildUserModelFromState({AppAccount? account}) {
     final age = DateTime.now().year - _birthDate.year;
 
     // SPEC-90: calcular % grasa con la fórmula US Navy desde los
@@ -1090,9 +1242,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         coherent ? calculatedBodyFat : (isMale ? 15.0 : 25.0);
     final String confidence = coherent ? 'ALTA' : 'MEDIA';
 
-    final user = UserModel(
-      id: account.uid,
-      name: account.displayName ?? 'Usuario',
+    return UserModel(
+      id: account?.uid ?? '',
+      name: account?.displayName ?? 'Usuario',
       age: age,
       gender: _gender,
       weight: _weight,
@@ -1128,11 +1280,62 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         lastMealGoal: _timeToDateTime(_lastMealGoal),
       ),
     );
+  }
+
+  /// SPEC-168.0.A v2: persiste TODOS los drafts del paso 5 del
+  /// onboarding respetando el `isActive` que cada uno trae (del engine
+  /// si el usuario no tocó, o del toggle si sí ajustó).
+  ///
+  /// Decisión Opción B (Carlos, 2026-06-03): aunque el usuario no
+  /// active ninguno explícitamente, las recomendaciones del engine se
+  /// guardan en Firestore para que el Perfil pueda mostrarlas. El
+  /// estado activo refleja el shouldActivate del engine — los goals
+  /// "fuera de rango" se activan; los "en rango" quedan como
+  /// referencia inactiva.
+  Future<void> _persistGoalDrafts() async {
+    if (_goalDrafts.isEmpty) return;
+    final goals = <GoalType, UserGoal>{};
+    for (final draft in _goalDrafts.values) {
+      goals[draft.type] = UserGoal(
+        type: draft.type,
+        targetValue: draft.target,
+        startValue: draft.current,
+        isActive: draft.isActive,
+        createdAt: DateTime.now(),
+      );
+    }
+    if (goals.isEmpty) return;
+    await ref.read(goalsProvider.notifier).saveAll(goals);
+  }
+
+  void _finalSubmit() async {
+    // SPEC-73: authState ahora es AppAccount?. uid en .uid, nombre en
+    // .displayName. Si el usuario viene de Metamorfosis Real, rawProfile
+    // tiene los campos extra que NO se deben pisar — los mezclamos al
+    // construir el UserModel final.
+    final account = ref.read(authStateProvider).value;
+    if (account == null) return;
+
+    final user = _buildUserModelFromState(account: account);
 
     try {
       await ref
           .read(onboardingControllerProvider.notifier)
           .completeOnboarding(user);
+      // SPEC-168.0.A v2: siempre persistir los drafts del paso 5
+      // (Opción B). Si el usuario no inicializó el step (caso edge),
+      // _goalDrafts está vacío y _persistGoalDrafts retorna sin hacer
+      // nada. Si lo inicializó pero no tocó nada, se guardan las
+      // recomendaciones del engine — el usuario las verá en Perfil.
+      try {
+        await _persistGoalDrafts();
+      } catch (e, stackTrace) {
+        // Fallar en goals no debe bloquear el cierre del onboarding —
+        // el dashboard puede arrancar sin goals y el usuario los
+        // configura desde Perfil.
+        AppLogger.warning('Onboarding: persistencia de goals falló: $e');
+        AppLogger.error('Goals stack', e, stackTrace);
+      }
       // SPEC-74 §RF-74-08: telemetría de cierre. Después del save —
       // antes de la navegación — para que el evento se asocie al
       // funnel del usuario que SÍ completó.

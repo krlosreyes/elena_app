@@ -14,6 +14,11 @@ enum GoalType {
   exerciseMinPerDay, // Pilar: Ejercicio — minutos diarios de actividad
   sleepHoursPerNight, // Pilar: Sueño — horas de sueño por noche
   hydrationLitersPerDay, // Pilar: Hidratación — litros diarios
+  // SPEC-168.0.C (2026-06-03): pilar Nutrición — % de comidas A-dominantes
+  // semanal objetivo. Operacional Frank Suárez (rango 50-90 %, paso 5).
+  // Antes el pilar Nutrición se evaluaba contra un threshold hard-coded
+  // (0.80). Ahora el usuario lo configura desde Onboarding / Perfil.
+  nutritionADominantPercent,
 }
 
 // ─── Modelo principal ─────────────────────────────────────────────────────────
@@ -61,6 +66,8 @@ class UserGoal {
         return 'Sueño';
       case GoalType.hydrationLitersPerDay:
         return 'Hidratación';
+      case GoalType.nutritionADominantPercent:
+        return 'Nutrición A-dominante';
     }
   }
 
@@ -78,6 +85,8 @@ class UserGoal {
         return 'h/noche';
       case GoalType.hydrationLitersPerDay:
         return 'L/día';
+      case GoalType.nutritionADominantPercent:
+        return '%';
     }
   }
 
@@ -95,6 +104,8 @@ class UserGoal {
         return '🌙';
       case GoalType.hydrationLitersPerDay:
         return '💧';
+      case GoalType.nutritionADominantPercent:
+        return '🥦';
     }
   }
 
@@ -113,6 +124,8 @@ class UserGoal {
         return 5.0;
       case GoalType.hydrationLitersPerDay:
         return 1.0;
+      case GoalType.nutritionADominantPercent:
+        return 50.0;
     }
   }
 
@@ -131,6 +144,8 @@ class UserGoal {
         return 10.0;
       case GoalType.hydrationLitersPerDay:
         return 4.0;
+      case GoalType.nutritionADominantPercent:
+        return 90.0;
     }
   }
 
@@ -148,6 +163,8 @@ class UserGoal {
         return 10; // 5–10 paso 0.5 → 5/0.5=10
       case GoalType.hydrationLitersPerDay:
         return 12; // 1–4 paso 0.25 → 3/0.25=12
+      case GoalType.nutritionADominantPercent:
+        return 8; // 50–90 paso 5 → 40/5=8
     }
   }
 
@@ -164,6 +181,8 @@ class UserGoal {
         return const Color(0xFF9B59B6);
       case GoalType.hydrationLitersPerDay:
         return const Color(0xFF27AE60);
+      case GoalType.nutritionADominantPercent:
+        return const Color(0xFFE67E22); // naranja Frank Suárez Tipo A
     }
   }
 

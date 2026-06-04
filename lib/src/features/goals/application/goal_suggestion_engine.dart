@@ -49,8 +49,16 @@ class GoalSuggestionEngine {
   const GoalSuggestionEngine._();
 
   /// Genera el mapa completo de sugerencias a partir del UserModel.
-  /// Siempre devuelve las 6 sugerencias aunque algún dato sea estimado.
-  static Map<GoalType, GoalSuggestion> suggest(UserModel user) {
+  /// Siempre devuelve las 7 sugerencias aunque algún dato sea estimado.
+  ///
+  /// `recentCocienteAPct` es opcional (SPEC-168.0.C): cuando el dashboard
+  /// tiene >= 2 semanas de historial de comidas A-dominantes, se inyecta
+  /// el promedio reciente para personalizar la sugerencia de Nutrición.
+  /// Si es null, el engine usa el baseline poblacional de 50 %.
+  static Map<GoalType, GoalSuggestion> suggest(
+    UserModel user, {
+    double? recentCocienteAPct,
+  }) {
     final bool isMale = user.gender.toLowerCase() == 'masculino' ||
         user.gender.toLowerCase() == 'male' ||
         user.gender.toLowerCase() == 'm';
@@ -62,6 +70,8 @@ class GoalSuggestionEngine {
       GoalType.exerciseMinPerDay: _exerciseSuggestion(user),
       GoalType.sleepHoursPerNight: _sleepSuggestion(user),
       GoalType.hydrationLitersPerDay: _hydrationSuggestion(user),
+      GoalType.nutritionADominantPercent:
+          _nutritionSuggestion(recentCocienteAPct),
     };
   }
 
@@ -302,6 +312,65 @@ class GoalSuggestionEngine {
     double hours = wakeDecimal - sleepDecimal;
     if (hours <= 0) hours += 24; // Cruza la medianoche
     return hours.clamp(3.0, 12.0);
+  }
+
+  // ─── Nutrición A-dominante (%) ─────────────────────────────────────────────
+  //
+  // SPEC-168.0.C: el pilar Nutrición se evalúa como % de comidas A-dominantes
+  // (Frank Suárez). Antes existía un threshold hard-coded de 0.80; ahora el
+  // usuario lo configura desde Onboarding / Perfil con sugerencia personalizada.
+  //
+  // Estrategia (escalera de 4 escalones para no desmotivar):
+  //   - < 60 %  → target 70 %  (calidad baja: subir 1 escalón)
+  //   - < 75 %  → target 80 %  (calidad media: consolidar)
+  //   - < 85 %  → target 85 %  (buena: refinar)
+  //   - ≥ 85 %  → mantener     (alta: no presionar más)
+  //
+  // Si no hay histórico (onboarding nuevo), baseline poblacional = 50 %.
+
+  static GoalSuggestion _nutritionSuggestion(double? recentCocienteAPct) {
+    final double current = (recentCocienteAPct ?? 50.0).clamp(0.0, 100.0);
+    final double target;
+    final bool outOfRange;
+
+    if (current < 60.0) {
+      target = 70.0;
+      outOfRange = true;
+    } else if (current < 75.0) {
+      target = 80.0;
+      outOfRange = true;
+    } else if (current < 85.0) {
+      target = 85.0;
+      outOfRange = false;
+    } else {
+      target = current; // ya excelente — mantener
+      outOfRange = false;
+    }
+
+    final String hadHistory = recentCocienteAPct != null
+        ? 'Hoy tus comidas son ${current.toStringAsFixed(0)}% A-dominantes.'
+        : 'Aún no tenemos historial suficiente; partimos del promedio '
+            'poblacional (50%).';
+
+    return GoalSuggestion(
+      type: GoalType.nutritionADominantPercent,
+      currentValue: current,
+      suggestedTarget: target,
+      rationale: '$hadHistory '
+          'El sistema metabólico se vuelve más eficiente cuando llegas a '
+          '${target.toStringAsFixed(0)}%: la insulina baja, el ayuno '
+          'siguiente se sostiene mejor y la flexibilidad metabólica se '
+          'consolida.',
+      shouldActivate: outOfRange,
+      currentStatusLabel: _nutritionStatusLabel(current),
+    );
+  }
+
+  static String _nutritionStatusLabel(double pct) {
+    if (pct < 50) return 'Calidad baja';
+    if (pct < 70) return 'Calidad media';
+    if (pct < 85) return 'Buena calidad';
+    return 'Calidad alta';
   }
 
   // ─── Hidratación (litros/día) ───────────────────────────────────────────────

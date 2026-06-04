@@ -5,8 +5,12 @@
 
 import 'package:flutter/material.dart';
 
+import 'package:elena_app/src/features/analysis/application/chart_hero_computer.dart';
+import 'package:elena_app/src/features/analysis/domain/aggregation_mode.dart';
+import 'package:elena_app/src/features/analysis/domain/hero_aggregation.dart';
 import 'package:elena_app/src/features/analysis/domain/metric_series.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/chart_card_header.dart';
+import 'package:elena_app/src/features/analysis/presentation/widgets/chart_hero_block.dart';
 
 class LineChartCard extends StatelessWidget {
   const LineChartCard({
@@ -15,7 +19,12 @@ class LineChartCard extends StatelessWidget {
     required this.accent,
     required this.periodLabel,
     required this.headline,
+    required this.aggregationMode,
     this.deltaIsBetterIf = 'up',
+    this.heroAggregation = HeroAggregation.avg,
+    this.heroUnit,
+    this.targetValue,
+    this.targetLabel,
   });
 
   final MetricSeries series;
@@ -24,8 +33,29 @@ class LineChartCard extends StatelessWidget {
   final String headline;
   final String deltaIsBetterIf;
 
+  /// SPEC-168.1: agregación del bloque hero arriba del chart.
+  final HeroAggregation heroAggregation;
+
+  /// SPEC-168.1: unit override (null usa `series.unit`).
+  final String? heroUnit;
+
+  /// SPEC-168.1: necesario para formatear la fecha-range del hero.
+  final AggregationMode aggregationMode;
+
+  /// SPEC-168.2 (2026-06-03): valor del objetivo del usuario en la
+  /// unidad del chart. Null = sin línea dashed.
+  final double? targetValue;
+
+  /// SPEC-168.2: label "Objetivo X".
+  final String? targetLabel;
+
   @override
   Widget build(BuildContext context) {
+    final heroValue =
+        ChartHeroComputer.aggregateValue(series, heroAggregation);
+    final dateRange =
+        ChartHeroComputer.formatDateRange(series, aggregationMode);
+
     return Container(
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
@@ -42,7 +72,16 @@ class LineChartCard extends StatelessWidget {
             deltaUnit: series.unit,
             deltaIsBetterIf: deltaIsBetterIf,
           ),
-          const SizedBox(height: 22),
+          if (heroValue != null) ...[
+            const SizedBox(height: 18),
+            ChartHeroBlock(
+              label: labelForHeroAggregation(heroAggregation),
+              value: ChartHeroComputer.formatValue(heroValue),
+              unit: heroUnit ?? series.unit,
+              dateRange: dateRange,
+            ),
+          ],
+          const SizedBox(height: 18),
           SizedBox(
             height: 170,
             child: _renderChart(),
@@ -61,7 +100,12 @@ class LineChartCard extends StatelessWidget {
     }
     return CustomPaint(
       size: Size.infinite,
-      painter: _LinePainter(series: series, accent: accent),
+      painter: _LinePainter(
+        series: series,
+        accent: accent,
+        targetValue: targetValue,
+        targetLabel: targetLabel,
+      ),
     );
   }
 
@@ -80,20 +124,41 @@ class LineChartCard extends StatelessWidget {
 }
 
 class _LinePainter extends CustomPainter {
-  _LinePainter({required this.series, required this.accent});
+  _LinePainter({
+    required this.series,
+    required this.accent,
+    this.targetValue,
+    this.targetLabel,
+  });
 
   final MetricSeries series;
   final Color accent;
 
-  static const double _yAxisWidth = 32;
+  /// SPEC-168.2: nivel del objetivo en la unidad del chart.
+  final double? targetValue;
+
+  /// SPEC-168.2: label "Objetivo X" para mostrar junto a la línea.
+  final String? targetLabel;
+
+  // SPEC-168.1 (2026-06-03): eje Y movido al lado derecho del plot
+  // (patrón Apple Health/Fitness). Coherente con BarChartCard.
+  static const double _yAxisRightWidth = 36;
   static const double _xAxisHeight = 22;
   static const double _gridPaddingTop = 12;
 
   @override
   void paint(Canvas canvas, Size size) {
     final values = series.points.map((p) => p.value).toList();
-    final minV = values.reduce((a, b) => a < b ? a : b);
-    final maxV = values.reduce((a, b) => a > b ? a : b);
+    var minV = values.reduce((a, b) => a < b ? a : b);
+    var maxV = values.reduce((a, b) => a > b ? a : b);
+
+    // SPEC-168.2: si el target del usuario está fuera del rango
+    // observado, expandimos el eje Y para que la línea dashed siempre
+    // quede dentro del plot.
+    if (targetValue != null) {
+      if (targetValue! < minV) minV = targetValue!;
+      if (targetValue! > maxV) maxV = targetValue!;
+    }
 
     // Eje Y dinámico con padding del 10% del rango.
     final range = (maxV - minV).abs();
@@ -102,14 +167,15 @@ class _LinePainter extends CustomPainter {
     final yMax = _ceilToNice(maxV + padding);
     final yRange = (yMax - yMin) == 0 ? 1.0 : (yMax - yMin);
 
-    final plotLeft = _yAxisWidth;
+    // SPEC-168.1: plot ocupa x=0 a x=width-_yAxisRightWidth.
+    final plotLeft = 0.0;
     final plotTop = _gridPaddingTop;
-    final plotRight = size.width;
+    final plotRight = size.width - _yAxisRightWidth;
     final plotBottom = size.height - _xAxisHeight;
     final plotHeight = plotBottom - plotTop;
     final plotWidth = plotRight - plotLeft;
 
-    // Grid + labels Y.
+    // Grid + labels Y (lado derecho).
     final gridPaint = Paint()
       ..color = Colors.white.withValues(alpha: 0.06)
       ..strokeWidth = 1
@@ -118,7 +184,7 @@ class _LinePainter extends CustomPainter {
     for (final t in ticks) {
       final y = plotBottom - (t - yMin) / yRange * plotHeight;
       canvas.drawLine(Offset(plotLeft, y), Offset(plotRight, y), gridPaint);
-      _drawYLabel(canvas, plotLeft - 6, y, _fmtTick(t));
+      _drawYLabel(canvas, plotRight + 6, y, _fmtTick(t));
     }
 
     // Línea + punto final.
@@ -157,24 +223,86 @@ class _LinePainter extends CustomPainter {
       Paint()..color = accent.withValues(alpha: 0.25),
     );
 
+    // SPEC-168.2: línea dashed del objetivo (encima de la grid, debajo
+    // de la línea principal sería visualmente confuso — la pintamos
+    // sobre la línea de datos a alpha bajo para que se diferencie).
+    if (targetValue != null) {
+      _drawTargetLine(
+        canvas,
+        plotLeft: plotLeft,
+        plotRight: plotRight,
+        plotBottom: plotBottom,
+        plotHeight: plotHeight,
+        yMin: yMin,
+        yRange: yRange,
+        target: targetValue!,
+      );
+    }
+
     // Eje X.
     _drawXLabels(canvas, plotLeft, plotBottom, plotWidth, values.length);
   }
 
+  /// SPEC-168.2: dashed horizontal line del objetivo + label.
+  void _drawTargetLine(
+    Canvas canvas, {
+    required double plotLeft,
+    required double plotRight,
+    required double plotBottom,
+    required double plotHeight,
+    required double yMin,
+    required double yRange,
+    required double target,
+  }) {
+    final y = plotBottom - (target - yMin) / yRange * plotHeight;
+    if (y < 0 || y > plotBottom) return; // fuera del plot, no pintamos.
+
+    final paint = Paint()
+      ..color = accent.withValues(alpha: 0.55)
+      ..strokeWidth = 1.2
+      ..style = PaintingStyle.stroke;
+    const dash = 4.0, gap = 3.0;
+    double x = plotLeft;
+    while (x < plotRight) {
+      final end = (x + dash) > plotRight ? plotRight : (x + dash);
+      canvas.drawLine(Offset(x, y), Offset(end, y), paint);
+      x += dash + gap;
+    }
+
+    final labelText = targetLabel != null
+        ? 'Objetivo ${targetLabel!}'
+        : 'Objetivo ${_fmtTick(target)}';
+    final tp = TextPainter(
+      text: TextSpan(
+        text: labelText,
+        style: TextStyle(
+          color: accent.withValues(alpha: 0.85),
+          fontSize: 9,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    final labelX = plotRight - tp.width - 6;
+    final adjustedY = (y - tp.height - 2) < 0 ? y + 2 : (y - tp.height - 2);
+    tp.paint(canvas, Offset(labelX, adjustedY));
+  }
+
   void _drawYLabel(Canvas canvas, double x, double y, String text) {
+    // SPEC-168.1: labels a la derecha del axis, alineados a la izquierda.
     final tp = TextPainter(
       text: TextSpan(
         text: text,
         style: TextStyle(
           color: Colors.white.withValues(alpha: 0.40),
-          fontSize: 9,
+          fontSize: 10,
           fontWeight: FontWeight.w600,
         ),
       ),
       textDirection: TextDirection.ltr,
-      textAlign: TextAlign.right,
-    )..layout(minWidth: 28, maxWidth: 28);
-    tp.paint(canvas, Offset(x - tp.width, y - tp.height / 2));
+      textAlign: TextAlign.left,
+    )..layout(minWidth: 0, maxWidth: 32);
+    tp.paint(canvas, Offset(x, y - tp.height / 2));
   }
 
   void _drawXLabels(

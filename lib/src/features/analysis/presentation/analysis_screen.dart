@@ -10,18 +10,32 @@ import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/analysis/application/analysis_range_provider.dart';
 import 'package:elena_app/src/features/analysis/application/analysis_series_providers.dart';
 import 'package:elena_app/src/features/analysis/application/causal_insights_provider.dart';
+// SPEC-168.0.D: helper que devuelve el target del usuario por chart.
+import 'package:elena_app/src/features/analysis/application/goal_for_chart_provider.dart';
+// SPEC-168.5: computa la comparación corto-vs-largo.
+import 'package:elena_app/src/features/analysis/application/trend_comparison_computer.dart';
+// SPEC-168.1: aggregation mode + hero aggregation enums.
+import 'package:elena_app/src/features/analysis/domain/aggregation_mode.dart';
 import 'package:elena_app/src/features/analysis/domain/analysis_range.dart';
 import 'package:elena_app/src/features/analysis/domain/causal_insight.dart';
+import 'package:elena_app/src/features/analysis/domain/chart_metric.dart';
+import 'package:elena_app/src/features/analysis/domain/hero_aggregation.dart';
 import 'package:elena_app/src/features/analysis/domain/metric_series.dart';
 import 'package:elena_app/src/features/analysis/presentation/monthly_calendar_screen.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/bar_chart_card.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/insight_tile.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/line_chart_card.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/segmented_range_control.dart';
+import 'package:elena_app/src/features/analysis/presentation/widgets/trend_comparison_card.dart';
 
-class AnalysisScreen extends ConsumerWidget {
+class AnalysisScreen extends ConsumerStatefulWidget {
   const AnalysisScreen({super.key});
 
+  @override
+  ConsumerState<AnalysisScreen> createState() => _AnalysisScreenState();
+}
+
+class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
   // Acentos por métrica (coherentes con SPEC-161).
   static const _accentImr = AppColors.metabolicGreen;
   static const _accentWeight = Color(0xFF60A5FA);
@@ -31,10 +45,56 @@ class AnalysisScreen extends ConsumerWidget {
   static const _accentExercise = Color(0xFF14B8A6);
   static const _accentSleep = Color(0xFF818CF8);
 
+  // SPEC-168.2-fix (2026-06-03): ScrollController persistente entre
+  // rebuilds. Antes, cuando un stream provider emitía (Firestore
+  // refresca constantemente), el árbol se reconstruía sin controller
+  // explícito y el SingleChildScrollView reseteaba al top. Ahora la
+  // posición se preserva porque el controller vive en el State.
+  final ScrollController _scrollController = ScrollController();
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final range = ref.watch(analysisRangeProvider);
     final periodLabel = _periodLabelFor(range);
+    // SPEC-168.1: mode temporal para que cada chart formatee la
+    // fecha-range del hero block correctamente.
+    final aggregationMode = AggregationMode.forRange(range);
+
+    // SPEC-168.2: targets del usuario por chart. Cada uno es null si el
+    // goal correspondiente no está activo en `userGoals`. La línea
+    // dashed solo se pinta cuando hay valor.
+    final imrTarget = ref.watch(goalForChartProvider(ChartMetric.imr));
+    final imrTargetLabel = ref.watch(goalLabelForChartProvider(ChartMetric.imr));
+    final weightTarget =
+        ref.watch(goalForChartProvider(ChartMetric.weight));
+    final weightTargetLabel =
+        ref.watch(goalLabelForChartProvider(ChartMetric.weight));
+    final fastingTarget =
+        ref.watch(goalForChartProvider(ChartMetric.fastingDays));
+    final fastingTargetLabel =
+        ref.watch(goalLabelForChartProvider(ChartMetric.fastingDays));
+    final nutritionTarget =
+        ref.watch(goalForChartProvider(ChartMetric.nutritionAPct));
+    final nutritionTargetLabel =
+        ref.watch(goalLabelForChartProvider(ChartMetric.nutritionAPct));
+    final hydrationTarget =
+        ref.watch(goalForChartProvider(ChartMetric.hydrationPct));
+    final hydrationTargetLabel =
+        ref.watch(goalLabelForChartProvider(ChartMetric.hydrationPct));
+    final exerciseTarget =
+        ref.watch(goalForChartProvider(ChartMetric.exerciseMin));
+    final exerciseTargetLabel =
+        ref.watch(goalLabelForChartProvider(ChartMetric.exerciseMin));
+    final sleepTarget =
+        ref.watch(goalForChartProvider(ChartMetric.sleepHours));
+    final sleepTargetLabel =
+        ref.watch(goalLabelForChartProvider(ChartMetric.sleepHours));
     final imr = ref.watch(imrSeriesProvider);
     final weight = ref.watch(weightSeriesProvider);
     final fasting = ref.watch(fastingHabitSeriesProvider);
@@ -44,21 +104,25 @@ class AnalysisScreen extends ConsumerWidget {
     final sleep = ref.watch(sleepHabitSeriesProvider);
     final insights = ref.watch(causalInsightsProvider);
 
-    final allLoading = [
-      imr,
-      weight,
-      fasting,
-      nutrition,
-      hydration,
-      exercise,
-      sleep,
-    ].any((s) => s.isLoading);
+    // SPEC-168.2-fix: solo consideramos "first load" cuando NINGÚN
+    // provider tiene .value aún (transición inicial AsyncLoading →
+    // AsyncData). Re-emisiones del stream (Firestore refresh) NO
+    // disparan loading state — el árbol queda estable y el scroll
+    // se mantiene en su posición.
+    final firstLoad = imr.value == null ||
+        weight.value == null ||
+        fasting.value == null ||
+        nutrition.value == null ||
+        hydration.value == null ||
+        exercise.value == null ||
+        sleep.value == null;
 
     return Scaffold(
       // SPEC-165: fondo negro puro.
       backgroundColor: Colors.black,
       body: SafeArea(
         child: SingleChildScrollView(
+          controller: _scrollController,
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -68,7 +132,7 @@ class AnalysisScreen extends ConsumerWidget {
               const SizedBox(height: 24),
               const SegmentedRangeControl(),
               const SizedBox(height: 28),
-              if (allLoading)
+              if (firstLoad)
                 _buildLoading()
               else
                 ..._buildContent(
@@ -81,6 +145,21 @@ class AnalysisScreen extends ConsumerWidget {
                   sleepSeries: sleep.value!,
                   insights: insights,
                   periodLabel: periodLabel,
+                  aggregationMode: aggregationMode,
+                  imrTarget: imrTarget,
+                  imrTargetLabel: imrTargetLabel,
+                  weightTarget: weightTarget,
+                  weightTargetLabel: weightTargetLabel,
+                  fastingTarget: fastingTarget,
+                  fastingTargetLabel: fastingTargetLabel,
+                  nutritionTarget: nutritionTarget,
+                  nutritionTargetLabel: nutritionTargetLabel,
+                  hydrationTarget: hydrationTarget,
+                  hydrationTargetLabel: hydrationTargetLabel,
+                  exerciseTarget: exerciseTarget,
+                  exerciseTargetLabel: exerciseTargetLabel,
+                  sleepTarget: sleepTarget,
+                  sleepTargetLabel: sleepTargetLabel,
                 ),
             ],
           ),
@@ -196,6 +275,22 @@ class AnalysisScreen extends ConsumerWidget {
     required MetricSeries sleepSeries,
     required AsyncValue<List<CausalInsight>> insights,
     required String periodLabel,
+    required AggregationMode aggregationMode,
+    // SPEC-168.2: targets por chart, opcional (null = sin línea).
+    required double? imrTarget,
+    required String? imrTargetLabel,
+    required double? weightTarget,
+    required String? weightTargetLabel,
+    required double? fastingTarget,
+    required String? fastingTargetLabel,
+    required double? nutritionTarget,
+    required String? nutritionTargetLabel,
+    required double? hydrationTarget,
+    required String? hydrationTargetLabel,
+    required double? exerciseTarget,
+    required String? exerciseTargetLabel,
+    required double? sleepTarget,
+    required String? sleepTargetLabel,
   }) {
     final allEmpty = imrSeries.isEmpty &&
         weightSeries.isEmpty &&
@@ -211,11 +306,20 @@ class AnalysisScreen extends ConsumerWidget {
     return [
       _sectionTitle('Resultados'),
       const SizedBox(height: 14),
+      // SPEC-168.1: cada chart card recibe heroAggregation explícito
+      // para que el bloque hero diga "PROMEDIO" / "TOTAL" / "ÚLTIMO"
+      // según corresponda a la métrica.
+      // SPEC-168.2: cada chart recibe targetValue/targetLabel del goal
+      // activo del usuario (null si el goal está inactivo).
       LineChartCard(
         series: imrSeries,
         accent: _accentImr,
         periodLabel: periodLabel,
         headline: _imrHeadline(imrSeries, periodLabel),
+        aggregationMode: aggregationMode,
+        heroAggregation: HeroAggregation.avg,
+        targetValue: imrTarget,
+        targetLabel: imrTargetLabel,
         deltaIsBetterIf: 'up',
       ),
       const SizedBox(height: 14),
@@ -224,7 +328,22 @@ class AnalysisScreen extends ConsumerWidget {
         accent: _accentWeight,
         periodLabel: periodLabel,
         headline: _weightHeadline(weightSeries),
+        aggregationMode: aggregationMode,
+        // El peso "actual" del rango es el último registro, no el
+        // promedio (Apple Health también muestra ÚLTIMO en Peso).
+        heroAggregation: HeroAggregation.last,
+        targetValue: weightTarget,
+        targetLabel: weightTargetLabel,
         deltaIsBetterIf: 'down',
+      ),
+      // SPEC-168.5: sección "Tendencias" — comparación de promedios
+      // recientes vs históricos para Peso e IMR (las dos métricas de
+      // resultado más relevantes para el usuario MR). Los cards solo
+      // se renderizan si hay suficiente data (>= 4 buckets).
+      ..._buildTrendsSection(
+        weightSeries: weightSeries,
+        imrSeries: imrSeries,
+        aggregationMode: aggregationMode,
       ),
       const SizedBox(height: 36),
       _sectionTitle('Hábitos'),
@@ -234,6 +353,12 @@ class AnalysisScreen extends ConsumerWidget {
         accent: _accentFasting,
         periodLabel: periodLabel,
         headline: _fastingHeadline(fastingSeries),
+        aggregationMode: aggregationMode,
+        // Ayuno se suma: total de días cumplidos en el rango.
+        heroAggregation: HeroAggregation.sum,
+        heroUnit: 'd',
+        targetValue: fastingTarget,
+        targetLabel: fastingTargetLabel,
       ),
       const SizedBox(height: 14),
       BarChartCard(
@@ -241,6 +366,10 @@ class AnalysisScreen extends ConsumerWidget {
         accent: _accentNutrition,
         periodLabel: periodLabel,
         headline: _nutritionHeadline(nutritionSeries),
+        aggregationMode: aggregationMode,
+        heroAggregation: HeroAggregation.avg,
+        targetValue: nutritionTarget,
+        targetLabel: nutritionTargetLabel,
       ),
       const SizedBox(height: 14),
       BarChartCard(
@@ -248,6 +377,10 @@ class AnalysisScreen extends ConsumerWidget {
         accent: _accentHydration,
         periodLabel: periodLabel,
         headline: _hydrationHeadline(hydrationSeries),
+        aggregationMode: aggregationMode,
+        heroAggregation: HeroAggregation.avg,
+        targetValue: hydrationTarget,
+        targetLabel: hydrationTargetLabel,
       ),
       const SizedBox(height: 14),
       BarChartCard(
@@ -255,6 +388,10 @@ class AnalysisScreen extends ConsumerWidget {
         accent: _accentExercise,
         periodLabel: periodLabel,
         headline: _exerciseHeadline(exerciseSeries),
+        aggregationMode: aggregationMode,
+        heroAggregation: HeroAggregation.avg,
+        targetValue: exerciseTarget,
+        targetLabel: exerciseTargetLabel,
       ),
       const SizedBox(height: 14),
       BarChartCard(
@@ -262,6 +399,10 @@ class AnalysisScreen extends ConsumerWidget {
         accent: _accentSleep,
         periodLabel: periodLabel,
         headline: _sleepHeadline(sleepSeries),
+        aggregationMode: aggregationMode,
+        heroAggregation: HeroAggregation.avg,
+        targetValue: sleepTarget,
+        targetLabel: sleepTargetLabel,
       ),
       const SizedBox(height: 36),
       _sectionTitle('Observaciones'),
@@ -326,6 +467,51 @@ class AnalysisScreen extends ConsumerWidget {
       case AnalysisRange.all:
         return 'Desde el inicio';
     }
+  }
+
+  /// SPEC-168.5: arma la sección "Tendencias" con cards de Peso e IMR.
+  /// Retorna [] si ninguno tiene suficiente data (TrendComparisonComputer
+  /// devolvió null). Si solo uno tiene data, renderiza solo ese.
+  List<Widget> _buildTrendsSection({
+    required MetricSeries weightSeries,
+    required MetricSeries imrSeries,
+    required AggregationMode aggregationMode,
+  }) {
+    final weightTrend = TrendComparisonComputer.compute(
+      series: weightSeries,
+      mode: aggregationMode,
+      betterIf: 'down',
+    );
+    final imrTrend = TrendComparisonComputer.compute(
+      series: imrSeries,
+      mode: aggregationMode,
+      betterIf: 'up',
+    );
+    if (weightTrend == null && imrTrend == null) return const [];
+
+    return [
+      const SizedBox(height: 36),
+      _sectionTitle('Tendencias'),
+      const SizedBox(height: 14),
+      if (weightTrend != null) ...[
+        TrendComparisonCard(
+          label: 'Peso',
+          unit: 'kg',
+          accent: _accentWeight,
+          trend: weightTrend,
+          mode: aggregationMode,
+        ),
+        if (imrTrend != null) const SizedBox(height: 14),
+      ],
+      if (imrTrend != null)
+        TrendComparisonCard(
+          label: 'IMR',
+          unit: '',
+          accent: _accentImr,
+          trend: imrTrend,
+          mode: aggregationMode,
+        ),
+    ];
   }
 
   Widget _sectionTitle(String label) {

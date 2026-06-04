@@ -620,6 +620,13 @@ class _GoalProgressSection extends ConsumerWidget {
               : 0;
         case GoalType.hydrationLitersPerDay:
           return hydrationState.currentAmountLiters;
+        case GoalType.nutritionADominantPercent:
+          // SPEC-168.0.C: currentValue del pilar Nutrición se calcula en
+          // el dashboard de goals con el cocienteA semanal real. Aquí, en
+          // el progress screen legacy, no tenemos ese provider — usamos 0
+          // como fallback seguro (el progreso se mostrará en el goals
+          // dashboard real, no acá).
+          return 0;
       }
     }
 
