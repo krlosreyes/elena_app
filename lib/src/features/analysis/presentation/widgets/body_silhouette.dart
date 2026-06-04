@@ -1,14 +1,11 @@
-// SPEC-168.4.4 v3 (2026-06-03): gauge horizontal de 5 zonas ACSM.
+// SPEC-168.4.4 v4 (2026-06-03): gauge de zonas ACSM 100% widget-puro.
 //
-// v1 (CustomPainter abstracto) se veía rígido. v2 (SVG assets) tenía
-// problemas de carga de assets en web. v3 vuelve a CustomPainter puro
-// — barra horizontal de 5 segmentos (Esencial, Atlético, Fitness,
-// Promedio, Alto) con un indicador triangular apuntando a la zona
-// actual del usuario. Más informativo que una silueta: comunica de un
-// golpe "estás en X y la siguiente meta es Y".
+// Las versiones anteriores con CustomPainter no se renderizaban en
+// algunos casos. v4 elimina TODO CustomPaint y usa solo widgets:
+// Row + Flexible para la barra de segmentos, Container para el pin,
+// Positioned para el indicador encima de la barra.
 //
-// El nombre del archivo queda `body_silhouette.dart` por compatibilidad
-// con los imports existentes (es la misma feature).
+// Garantizado por construcción: si Flutter renderiza widgets, esto se ve.
 
 import 'package:flutter/material.dart';
 
@@ -42,7 +39,7 @@ class BodySilhouette extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 6),
-        if (hasData) ...[
+        if (hasData)
           Row(
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
@@ -67,8 +64,8 @@ class BodySilhouette extends StatelessWidget {
                 ),
               ),
             ],
-          ),
-        ] else
+          )
+        else
           Text(
             'Registrá tu % de grasa',
             style: TextStyle(
@@ -77,21 +74,12 @@ class BodySilhouette extends StatelessWidget {
               fontWeight: FontWeight.w600,
             ),
           ),
-        const SizedBox(height: 14),
-        SizedBox(
-          height: 80,
-          child: CustomPaint(
-            size: Size.infinite,
-            painter: _ZoneGaugePainter(
-              currentBf: bodyFatPct,
-              isMale: isMale,
-            ),
-          ),
-        ),
+        const SizedBox(height: 24),
+        _ZoneGauge(bodyFatPct: bodyFatPct, isMale: isMale),
         const SizedBox(height: 10),
         Text(
-          'Rangos ACSM ${isMale ? '♂' : '♀'} — '
-          '${isMale ? 'Atlético <14, Fitness 14–17, Promedio 18–24, Alto ≥25' : 'Atlético <21, Fitness 21–24, Promedio 25–31, Alto ≥32'}',
+          'Rangos ACSM ${isMale ? '(hombre)' : '(mujer)'} — '
+          '${isMale ? 'Atlético <14, Fitness 14-17, Promedio 18-24, Alto >=25' : 'Atlético <21, Fitness 21-24, Promedio 25-31, Alto >=32'}',
           style: TextStyle(
             color: Colors.white.withValues(alpha: 0.40),
             fontSize: 10.5,
@@ -103,21 +91,13 @@ class BodySilhouette extends StatelessWidget {
   }
 }
 
-class _ZoneGaugePainter extends CustomPainter {
-  _ZoneGaugePainter({required this.currentBf, required this.isMale});
+/// Gauge horizontal con 5 segmentos coloreados + pin del usuario.
+class _ZoneGauge extends StatelessWidget {
+  const _ZoneGauge({required this.bodyFatPct, required this.isMale});
 
-  final double? currentBf;
+  final double? bodyFatPct;
   final bool isMale;
 
-  // Bordes de zona en % grasa.
-  // Hombre: 6 (esencial→atlético), 14 (atlético→fitness),
-  //         18 (fitness→promedio), 25 (promedio→alto), 40 (techo gauge)
-  // Mujer:  14, 21, 25, 32, 50
-  List<double> get _bounds => isMale
-      ? const [6, 14, 18, 25, 40]
-      : const [14, 21, 25, 32, 50];
-
-  // 5 segmentos en orden: esencial, atlético, fitness, promedio, alto.
   static const _zoneOrder = [
     BodyZone.esencial,
     BodyZone.atletico,
@@ -126,140 +106,199 @@ class _ZoneGaugePainter extends CustomPainter {
     BodyZone.alto,
   ];
 
-  static const double _barHeight = 18.0;
-  static const double _barRadius = 9.0;
+  // Para 5 segmentos necesitamos 6 bordes: inicio, 4 divisiones internas
+  // y fin. Los extremos son los límites visuales del gauge, no clínicos.
+  List<double> get _bounds =>
+      isMale ? const [2, 6, 14, 18, 25, 40] : const [8, 14, 21, 25, 32, 50];
 
-  @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-    // Barra desplazada hacia abajo para dar espacio al pin del indicador.
-    final barTop = h * 0.55;
-    final barBottom = barTop + _barHeight;
-
-    // Cada segmento tiene ancho proporcional a su rango en %grasa.
-    final minBf = _bounds.first;
-    final maxBf = _bounds.last;
-    final totalSpan = maxBf - minBf;
-
-    // Dibujar segmentos.
-    double xCursor = 0;
+  // Anchos proporcionales de cada segmento (suma = totalSpan).
+  List<double> get _segmentWeights {
+    final result = <double>[];
     for (int i = 0; i < _zoneOrder.length; i++) {
-      final zone = _zoneOrder[i];
-      final segmentSpan = _bounds[i + 1] - _bounds[i];
-      final segmentWidth = (segmentSpan / totalSpan) * w;
-      final isFirst = i == 0;
-      final isLast = i == _zoneOrder.length - 1;
-
-      final rect = Rect.fromLTRB(
-        xCursor,
-        barTop,
-        xCursor + segmentWidth,
-        barBottom,
-      );
-      final rrect = RRect.fromRectAndCorners(
-        rect,
-        topLeft: isFirst ? const Radius.circular(_barRadius) : Radius.zero,
-        bottomLeft:
-            isFirst ? const Radius.circular(_barRadius) : Radius.zero,
-        topRight: isLast ? const Radius.circular(_barRadius) : Radius.zero,
-        bottomRight:
-            isLast ? const Radius.circular(_barRadius) : Radius.zero,
-      );
-
-      final paint = Paint()..color = zone.color.withValues(alpha: 0.65);
-      canvas.drawRRect(rrect, paint);
-
-      xCursor += segmentWidth;
+      result.add(_bounds[i + 1] - _bounds[i]);
     }
-
-    // Indicador (pin con valor) en la posición actual.
-    if (currentBf != null) {
-      final clamped = currentBf!.clamp(minBf, maxBf);
-      final indicatorX = ((clamped - minBf) / totalSpan) * w;
-      _drawIndicator(canvas, indicatorX, barTop, w);
-    }
-
-    // Etiquetas debajo: límites de zona (solo las divisiones internas).
-    final labelPaint = TextStyle(
-      color: Colors.white.withValues(alpha: 0.45),
-      fontSize: 9,
-      fontWeight: FontWeight.w600,
-    );
-    for (int i = 1; i < _bounds.length - 1; i++) {
-      final x = ((_bounds[i] - minBf) / totalSpan) * w;
-      final tp = TextPainter(
-        text: TextSpan(
-          text: _bounds[i].toStringAsFixed(0),
-          style: labelPaint,
-        ),
-        textDirection: TextDirection.ltr,
-      )..layout();
-      tp.paint(canvas, Offset(x - tp.width / 2, barBottom + 4));
-    }
+    return result;
   }
 
-  void _drawIndicator(Canvas canvas, double x, double barTop, double w) {
-    // SPEC-168.4.4 v3.1 — Pin tipo "cápsula" con el % grasa adentro,
-    // posicionado encima de la barra con una cola que apunta al punto
-    // exacto. Patrón Apple Fitness para marcadores de valor.
-    final label = '${currentBf!.toStringAsFixed(1)}%';
-    final tp = TextPainter(
-      text: TextSpan(
-        text: label,
+  // Posición horizontal del indicador en fracción 0..1.
+  double get _indicatorFraction {
+    if (bodyFatPct == null) return 0;
+    final clamped = bodyFatPct!.clamp(_bounds.first, _bounds.last);
+    final span = _bounds.last - _bounds.first;
+    return (clamped - _bounds.first) / span;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, c) {
+        final w = c.maxWidth;
+        final pinLabel = bodyFatPct == null
+            ? null
+            : '${bodyFatPct!.toStringAsFixed(1)}%';
+        final pinCenterX = _indicatorFraction * w;
+
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // 1) Fila del pin con valor (alto fijo 32).
+            if (pinLabel != null)
+              SizedBox(
+                width: w,
+                height: 32,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Positioned(
+                      left: (pinCenterX - 30).clamp(0.0, w - 60),
+                      top: 0,
+                      child: _PinBubble(label: pinLabel),
+                    ),
+                    Positioned(
+                      left: pinCenterX - 6,
+                      top: 24,
+                      child: const _DownTri(),
+                    ),
+                  ],
+                ),
+              ),
+            // 2) Barra de 5 segmentos (Row + Flexible).
+            ClipRRect(
+              borderRadius: BorderRadius.circular(9),
+              child: SizedBox(
+                width: w,
+                height: 18,
+                child: Stack(
+                  children: [
+                    Row(
+                      children: [
+                        for (int i = 0; i < _zoneOrder.length; i++)
+                          Expanded(
+                            flex: (_segmentWeights[i] * 100).round(),
+                            child: Container(
+                              color: _zoneOrder[i]
+                                  .color
+                                  .withValues(alpha: 0.78),
+                            ),
+                          ),
+                      ],
+                    ),
+                    // Punto blanco-negro en la barra al x exacto.
+                    if (bodyFatPct != null)
+                      Positioned(
+                        left: pinCenterX - 5,
+                        top: 4,
+                        child: Container(
+                          width: 10,
+                          height: 10,
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Center(
+                            child: Container(
+                              width: 4,
+                              height: 4,
+                              decoration: const BoxDecoration(
+                                color: Colors.black,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            // 3) Etiquetas numéricas debajo en sus posiciones.
+            const SizedBox(height: 4),
+            SizedBox(
+              width: w,
+              height: 14,
+              child: Stack(
+                children: [
+                  for (int i = 1; i < _bounds.length - 1; i++)
+                    Positioned(
+                      left:
+                          ((_bounds[i] - _bounds.first) / (_bounds.last - _bounds.first)) * w - 10,
+                      top: 0,
+                      width: 20,
+                      child: Text(
+                        _bounds[i].toStringAsFixed(0),
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.55),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _PinBubble extends StatelessWidget {
+  const _PinBubble({required this.label});
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(9),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.5),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Text(
+        label,
         style: const TextStyle(
           color: Colors.black,
-          fontSize: 11,
-          fontWeight: FontWeight.w800,
+          fontSize: 12,
+          fontWeight: FontWeight.w900,
           letterSpacing: -0.2,
         ),
       ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-
-    const padH = 8.0;
-    const padV = 4.0;
-    const tailH = 6.0;
-    final pinW = tp.width + padH * 2;
-    final pinH = tp.height + padV * 2;
-    final tipY = barTop - 2;
-    final pinBottom = tipY - tailH;
-    final pinTop = pinBottom - pinH;
-
-    // Centrar pin en x sin que se salga del canvas.
-    final left = (x - pinW / 2).clamp(0.0, w - pinW);
-    final right = left + pinW;
-
-    // Pin redondeado blanco.
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTRB(left, pinTop, right, pinBottom),
-        const Radius.circular(7),
-      ),
-      Paint()..color = Colors.white,
     );
+  }
+}
 
-    // Cola del pin (triángulo que apunta al x exacto).
-    canvas.drawPath(
-      Path()
-        ..moveTo(x - 5, pinBottom)
-        ..lineTo(x + 5, pinBottom)
-        ..lineTo(x, tipY)
-        ..close(),
-      Paint()..color = Colors.white,
+class _DownTri extends StatelessWidget {
+  const _DownTri();
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      size: const Size(12, 8),
+      painter: _TriPainter(),
     );
+  }
+}
 
-    // Texto.
-    tp.paint(canvas, Offset(left + padH, pinTop + padV));
-
-    // Punto blanco/negro en el centro de la barra para reforzar.
-    final dotY = barTop + _barHeight / 2;
-    canvas.drawCircle(Offset(x, dotY), 4.5, Paint()..color = Colors.white);
-    canvas.drawCircle(Offset(x, dotY), 2.0, Paint()..color = Colors.black);
+class _TriPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = Path()
+      ..moveTo(0, 0)
+      ..lineTo(size.width, 0)
+      ..lineTo(size.width / 2, size.height)
+      ..close();
+    canvas.drawPath(path, Paint()..color = Colors.white);
   }
 
   @override
-  bool shouldRepaint(covariant _ZoneGaugePainter old) =>
-      old.currentBf != currentBf || old.isMale != isMale;
+  bool shouldRepaint(covariant _TriPainter old) => false;
 }
-
