@@ -1,17 +1,18 @@
-// SPEC-168.4.4 (2026-06-03) — v2: silueta humana como SVG asset por zona.
+// SPEC-168.4.4 v3 (2026-06-03): gauge horizontal de 5 zonas ACSM.
 //
-// La primera versión usaba un CustomPainter abstracto que se veía
-// rígido. Carlos compartió 3 SVG ilustrativos por nivel de composición
-// (saludable / promedio / alto riesgo) — esos se ven naturales y
-// comunican mejor el estado.
+// v1 (CustomPainter abstracto) se veía rígido. v2 (SVG assets) tenía
+// problemas de carga de assets en web. v3 vuelve a CustomPainter puro
+// — barra horizontal de 5 segmentos (Esencial, Atlético, Fitness,
+// Promedio, Alto) con un indicador triangular apuntando a la zona
+// actual del usuario. Más informativo que una silueta: comunica de un
+// golpe "estás en X y la siguiente meta es Y".
 //
-// Mapeo zona ACSM → asset:
-//   Esencial / Atlético / Fitness → assets/silhouettes/body_healthy.svg
-//   Promedio                      → assets/silhouettes/body_average.svg
-//   Alto                          → assets/silhouettes/body_high.svg
+// El nombre del archivo queda `body_silhouette.dart` por compatibilidad
+// con los imports existentes (es la misma feature).
+
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 import 'package:elena_app/src/features/analysis/domain/body_zone.dart';
 
@@ -22,121 +23,219 @@ class BodySilhouette extends StatelessWidget {
     required this.isMale,
   });
 
-  /// % grasa corporal actual del usuario. Null = no medido.
   final double? bodyFatPct;
-
-  /// Reservado para futuras variantes femeninas. Hoy las 3 siluetas
-  /// son neutras / masculinas y se reusan para ambos géneros.
   final bool isMale;
 
   @override
   Widget build(BuildContext context) {
     final zone = bodyZoneFor(bodyFatPct, isMale);
-    if (zone == null) {
-      return _buildPlaceholder();
-    }
+    final hasData = zone != null && bodyFatPct != null;
     return Column(
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          width: 110,
-          height: 180,
-          child: SvgPicture.asset(
-            _assetForZone(zone),
-            fit: BoxFit.contain,
-          ),
-        ),
-        const SizedBox(height: 12),
-        _ZoneBadge(zone: zone),
-        const SizedBox(height: 4),
         Text(
-          '${bodyFatPct!.toStringAsFixed(1)}% grasa · rangos ACSM '
-          '${isMale ? '♂' : '♀'}',
+          'TU ZONA',
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.45),
+            color: Colors.white.withValues(alpha: 0.50),
             fontSize: 11,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.6,
           ),
         ),
-      ],
-    );
-  }
-
-  Widget _buildPlaceholder() {
-    // Sin BF: mostramos la silueta "healthy" en gris neutral con un
-    // mensaje invitando a registrar la métrica.
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Opacity(
-          opacity: 0.35,
-          child: SizedBox(
-            width: 110,
-            height: 180,
-            child: SvgPicture.asset(
-              'assets/silhouettes/body_healthy.svg',
-              fit: BoxFit.contain,
-              colorFilter: ColorFilter.mode(
-                Colors.white.withValues(alpha: 0.55),
-                BlendMode.srcIn,
+        const SizedBox(height: 6),
+        if (hasData) ...[
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(
+                zone.label,
+                style: TextStyle(
+                  color: zone.color,
+                  fontSize: 26,
+                  fontWeight: FontWeight.w800,
+                  height: 1.0,
+                  letterSpacing: -0.5,
+                ),
               ),
+              const SizedBox(width: 10),
+              Text(
+                '${bodyFatPct!.toStringAsFixed(1)} % grasa',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.55),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ] else
+          Text(
+            'Registrá tu % de grasa',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.55),
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        const SizedBox(height: 14),
+        SizedBox(
+          height: 64,
+          child: CustomPaint(
+            size: Size.infinite,
+            painter: _ZoneGaugePainter(
+              currentBf: bodyFatPct,
+              isMale: isMale,
             ),
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         Text(
-          'Registrá tu % de grasa para ver tu zona ACSM.',
+          'Rangos ACSM ${isMale ? '♂' : '♀'} — '
+          '${isMale ? 'Atlético <14, Fitness 14–17, Promedio 18–24, Alto ≥25' : 'Atlético <21, Fitness 21–24, Promedio 25–31, Alto ≥32'}',
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.50),
-            fontSize: 12,
-            fontStyle: FontStyle.italic,
+            color: Colors.white.withValues(alpha: 0.40),
+            fontSize: 10.5,
+            height: 1.4,
           ),
-          textAlign: TextAlign.center,
         ),
       ],
     );
   }
-
-  /// Mapeo zona ACSM → archivo SVG. 5 zonas, 3 estados visuales.
-  String _assetForZone(BodyZone zone) {
-    switch (zone) {
-      case BodyZone.esencial:
-      case BodyZone.atletico:
-      case BodyZone.fitness:
-        return 'assets/silhouettes/body_healthy.svg';
-      case BodyZone.promedio:
-        return 'assets/silhouettes/body_average.svg';
-      case BodyZone.alto:
-        return 'assets/silhouettes/body_high.svg';
-    }
-  }
 }
 
-class _ZoneBadge extends StatelessWidget {
-  const _ZoneBadge({required this.zone});
-  final BodyZone zone;
+class _ZoneGaugePainter extends CustomPainter {
+  _ZoneGaugePainter({required this.currentBf, required this.isMale});
+
+  final double? currentBf;
+  final bool isMale;
+
+  // Bordes de zona en % grasa.
+  // Hombre: 6 (esencial→atlético), 14 (atlético→fitness),
+  //         18 (fitness→promedio), 25 (promedio→alto), 40 (techo gauge)
+  // Mujer:  14, 21, 25, 32, 50
+  List<double> get _bounds => isMale
+      ? const [6, 14, 18, 25, 40]
+      : const [14, 21, 25, 32, 50];
+
+  // 5 segmentos en orden: esencial, atlético, fitness, promedio, alto.
+  static const _zoneOrder = [
+    BodyZone.esencial,
+    BodyZone.atletico,
+    BodyZone.fitness,
+    BodyZone.promedio,
+    BodyZone.alto,
+  ];
+
+  static const double _barHeight = 18.0;
+  static const double _barRadius = 9.0;
+  static const double _indicatorSize = 12.0;
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: zone.color.withValues(alpha: 0.18),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: zone.color.withValues(alpha: 0.45),
-          width: 1,
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+    // Barra vertical: centrada verticalmente con espacio para indicador.
+    final barTop = h * 0.45;
+    final barBottom = barTop + _barHeight;
+
+    // Cada segmento tiene ancho proporcional a su rango en %grasa.
+    final minBf = _bounds.first;
+    final maxBf = _bounds.last;
+    final totalSpan = maxBf - minBf;
+
+    // Dibujar segmentos.
+    double xCursor = 0;
+    for (int i = 0; i < _zoneOrder.length; i++) {
+      final zone = _zoneOrder[i];
+      final segmentSpan = _bounds[i + 1] - _bounds[i];
+      final segmentWidth = (segmentSpan / totalSpan) * w;
+      final isFirst = i == 0;
+      final isLast = i == _zoneOrder.length - 1;
+
+      final rect = Rect.fromLTRB(
+        xCursor,
+        barTop,
+        xCursor + segmentWidth,
+        barBottom,
+      );
+      final rrect = RRect.fromRectAndCorners(
+        rect,
+        topLeft: isFirst ? const Radius.circular(_barRadius) : Radius.zero,
+        bottomLeft:
+            isFirst ? const Radius.circular(_barRadius) : Radius.zero,
+        topRight: isLast ? const Radius.circular(_barRadius) : Radius.zero,
+        bottomRight:
+            isLast ? const Radius.circular(_barRadius) : Radius.zero,
+      );
+
+      final paint = Paint()..color = zone.color.withValues(alpha: 0.65);
+      canvas.drawRRect(rrect, paint);
+
+      xCursor += segmentWidth;
+    }
+
+    // Indicador (triángulo apuntando hacia abajo) en la posición actual.
+    if (currentBf != null) {
+      final clamped = currentBf!.clamp(minBf, maxBf);
+      final indicatorX = ((clamped - minBf) / totalSpan) * w;
+      _drawIndicator(canvas, indicatorX, barTop);
+    }
+
+    // Etiquetas debajo: límites de zona (solo las divisiones internas).
+    final labelPaint = TextStyle(
+      color: Colors.white.withValues(alpha: 0.45),
+      fontSize: 9,
+      fontWeight: FontWeight.w600,
+    );
+    for (int i = 1; i < _bounds.length - 1; i++) {
+      final x = ((_bounds[i] - minBf) / totalSpan) * w;
+      final tp = TextPainter(
+        text: TextSpan(
+          text: _bounds[i].toStringAsFixed(0),
+          style: labelPaint,
         ),
-      ),
-      child: Text(
-        'Zona ${zone.label}',
-        style: TextStyle(
-          color: zone.color,
-          fontSize: 11.5,
-          fontWeight: FontWeight.w800,
-          letterSpacing: 0.3,
-        ),
-      ),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      tp.paint(canvas, Offset(x - tp.width / 2, barBottom + 4));
+    }
+  }
+
+  void _drawIndicator(Canvas canvas, double x, double barTop) {
+    // Triángulo apuntando hacia abajo justo encima de la barra.
+    final triHeight = _indicatorSize;
+    final triHalf = _indicatorSize * 0.7;
+    final tipY = barTop - 2;
+    final baseY = barTop - triHeight - 2;
+
+    final path = Path()
+      ..moveTo(x, tipY)
+      ..lineTo(x - triHalf, baseY)
+      ..lineTo(x + triHalf, baseY)
+      ..close();
+
+    canvas.drawPath(path, Paint()..color = Colors.white);
+
+    // Pequeño círculo blanco en la barra como reforzamiento visual.
+    final dotY = barTop + _barHeight / 2;
+    canvas.drawCircle(
+      Offset(x, dotY),
+      4.0,
+      Paint()..color = Colors.white,
+    );
+    canvas.drawCircle(
+      Offset(x, dotY),
+      2.0,
+      Paint()..color = Colors.black,
     );
   }
+
+  @override
+  bool shouldRepaint(covariant _ZoneGaugePainter old) =>
+      old.currentBf != currentBf || old.isMale != isMale;
 }
+
+// Mantener `math` imported para futuras extensiones (no usado por ahora).
+// ignore: unused_element
+double _kUnused(double v) => math.max(v, 0);
