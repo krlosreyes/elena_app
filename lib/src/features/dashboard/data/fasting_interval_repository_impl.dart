@@ -46,6 +46,24 @@ class FastingIntervalRepositoryImpl implements FastingIntervalRepository {
   }
 
   @override
+  Stream<List<FastingInterval>> watchRecentCompleted(
+    String userId, {
+    int limit = 365,
+  }) {
+    return _source.streamRecentCompleted(userId, limit: limit).map((maps) {
+      final out = <FastingInterval>[];
+      for (final map in maps) {
+        try {
+          out.add(_mapper.fromMap(map));
+        } catch (_) {
+          // Doc corrupto: lo salteamos.
+        }
+      }
+      return out;
+    });
+  }
+
+  @override
   Future<void> correctOpenIntervalStartTime({
     required String userId,
     required DateTime newStartTime,

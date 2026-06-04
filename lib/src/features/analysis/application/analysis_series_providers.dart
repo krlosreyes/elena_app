@@ -23,6 +23,9 @@ import 'package:elena_app/src/features/analysis/domain/aggregation_mode.dart';
 import 'package:elena_app/src/features/analysis/domain/metric_series.dart';
 import 'package:elena_app/src/features/analysis/domain/time_series_point.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
+import 'package:elena_app/src/features/dashboard/application/fasting_notifier.dart'
+    show fastingProvider;
+import 'package:elena_app/src/features/dashboard/data/fasting_interval_repository_impl.dart';
 import 'package:elena_app/src/features/dashboard/data/hydration_repository_impl.dart';
 import 'package:elena_app/src/features/dashboard/data/sleep_repository_impl.dart';
 import 'package:elena_app/src/features/exercise/data/exercise_repository_impl.dart';
@@ -118,28 +121,40 @@ final fastingHabitSeriesProvider =
     yield MetricSeries.empty(label: 'Ayuno', unit: 'd');
     return;
   }
+  // SPEC-162.bugfix (2026-06-02): antes leíamos daily_summary, que
+  // tiene debounce de 30s y flush a medianoche → los ayunos cerrados
+  // de HOY no aparecían en el gráfico hasta el día siguiente. Ahora
+  // leemos directamente de fasting_history (los FastingInterval
+  // cerrados aparecen en Firestore al instante).
   final rangeStart = ref.watch(analysisRangeStartProvider) ?? _kEpoch;
   final mode = _currentMode(ref);
-  final repo = ref.watch(dailySummaryRepositoryProvider);
-  // Label dinámico según el modo: días/sem, días/mes, días.
-  final label = 'Ayuno';
   final unit = _unitForDaysCount(mode);
-  await for (final docs in repo.watchRange(
-    userId: account.uid,
-    fromIncl: _dateIso(rangeStart),
-    toIncl: _dateIso(_todayLocal()),
-  )) {
+  final targetHours = ref.watch(fastingProvider).targetHours;
+  final targetSeconds = targetHours * 3600;
+  await for (final intervals in ref
+      .watch(fastingIntervalRepositoryProvider)
+      .watchRecentCompleted(account.uid, limit: 365)) {
+    final inRange = intervals
+        .where((i) => !i.startTime.isBefore(rangeStart))
+        .toList();
     final points = TemporalAggregator.aggregate(
-      items: docs,
-      timestampOf: (d) => DateTime.parse(d.date),
-      valueOf: (d) =>
-          d.fastingProgress >= _kFastingCompletedThreshold ? 1.0 : 0.0,
+      items: inRange,
+      timestampOf: (i) => i.startTime,
+      valueOf: (i) {
+        final endTime = i.endTime;
+        if (endTime == null) return 0.0;
+        final durationSec = endTime.difference(i.startTime).inSeconds;
+        return durationSec >=
+                targetSeconds * _kFastingCompletedThreshold
+            ? 1.0
+            : 0.0;
+      },
       aggregation: mode == AggregationMode.daily
           ? TemporalAggregation.max
           : TemporalAggregation.sum,
       mode: mode,
     );
-    yield MetricSeries(label: label, unit: unit, points: points);
+    yield MetricSeries(label: 'Ayuno', unit: unit, points: points);
   }
 });
 

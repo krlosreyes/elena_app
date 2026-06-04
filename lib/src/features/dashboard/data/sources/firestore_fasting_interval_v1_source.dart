@@ -111,6 +111,33 @@ class FirestoreFastingIntervalV1Source implements FastingIntervalDataSource {
   }
 
   @override
+  Stream<List<Map<String, dynamic>>> streamRecentCompleted(
+    String userId, {
+    int limit = 365,
+  }) {
+    // SPEC-162 (2026-06-02): últimos N ayunos cerrados (isFasting=true,
+    // endTime != null), ordenados por startTime desc. Reusamos el índice
+    // (userId, startTime) — el mismo que streamLatest. Filtramos
+    // client-side por isFasting y endTime para no requerir índices
+    // compuestos adicionales (consistente con streamLastCompletedFasting).
+    return _collection
+        .where('userId', isEqualTo: userId)
+        .orderBy('startTime', descending: true)
+        .limit(limit)
+        .snapshots()
+        .map((snap) {
+      final out = <Map<String, dynamic>>[];
+      for (final doc in snap.docs) {
+        final data = Map<String, dynamic>.from(doc.data());
+        if (data['isFasting'] != true) continue;
+        if (data['endTime'] == null) continue;
+        out.add(data);
+      }
+      return out;
+    });
+  }
+
+  @override
   Future<void> updateOpenIntervalStartTime({
     required String userId,
     required DateTime newStartTime,

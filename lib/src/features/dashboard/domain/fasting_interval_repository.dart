@@ -25,6 +25,15 @@ abstract class FastingIntervalRepository {
   /// completó su ayuno del día. Emite null si nunca cerró uno.
   Stream<FastingInterval?> watchLastCompletedFasting(String userId);
 
+  /// SPEC-162 (2026-06-02): stream de los últimos N ayunos cerrados
+  /// (de tipo ayuno, con `endTime` poblado), ordenados por `startTime`
+  /// descendente. Útil para análisis longitudinal sin depender de
+  /// `daily_summary` (que tiene debounce).
+  Stream<List<FastingInterval>> watchRecentCompleted(
+    String userId, {
+    int limit = 365,
+  });
+
   /// Atómicamente cierra cualquier intervalo abierto del usuario y
   /// abre uno nuevo con `isFasting`. Si `startTime` es null usa el
   /// instante actual; útil para "viaje en el tiempo" en pruebas o

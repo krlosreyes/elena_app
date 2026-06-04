@@ -26,6 +26,15 @@ abstract class FastingIntervalDataSource {
   /// Emite null cuando no hay ningún ayuno cerrado en historial.
   Stream<Map<String, dynamic>?> streamLastCompletedFasting(String userId);
 
+  /// SPEC-162 (2026-06-02): stream de los últimos N FastingInterval
+  /// cerrados y de tipo ayuno, ordenados por `startTime` descendente.
+  /// Útil para análisis longitudinal del pilar Ayuno sin depender de
+  /// `daily_summary` (que tiene debounce de 30s + flush a medianoche).
+  Stream<List<Map<String, dynamic>>> streamRecentCompleted(
+    String userId, {
+    int limit = 365,
+  });
+
   /// SPEC-97: muta el `startTime` del único intervalo abierto del
   /// usuario (`endTime == null`). NO cierra ni crea — solo edita el
   /// existente para reflejar "empecé a esta hora real".
