@@ -73,9 +73,9 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
     final weightTargetLabel =
         ref.watch(goalLabelForChartProvider(ChartMetric.weight));
     final fastingTarget =
-        ref.watch(goalForChartProvider(ChartMetric.fastingDays));
+        ref.watch(goalForChartProvider(ChartMetric.fastingHours));
     final fastingTargetLabel =
-        ref.watch(goalLabelForChartProvider(ChartMetric.fastingDays));
+        ref.watch(goalLabelForChartProvider(ChartMetric.fastingHours));
     final nutritionTarget =
         ref.watch(goalForChartProvider(ChartMetric.nutritionAPct));
     final nutritionTargetLabel =
@@ -376,9 +376,11 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
         periodLabel: periodLabel,
         headline: _fastingHeadline(fastingSeries),
         aggregationMode: aggregationMode,
-        // Ayuno se suma: total de días cumplidos en el rango.
-        heroAggregation: HeroAggregation.sum,
-        heroUnit: 'd',
+        // SPEC-168.5.2: Ayuno se muestra como promedio de HORAS por
+        // bucket (no días cumplidos). Lectura directa del esfuerzo
+        // metabólico — el target line es el protocolo activo.
+        heroAggregation: HeroAggregation.avg,
+        heroUnit: 'h',
         targetValue: fastingTarget,
         targetLabel: fastingTargetLabel,
       ),
@@ -565,20 +567,13 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
   }
 
   String _fastingHeadline(MetricSeries s) {
+    // SPEC-168.5.2: Ayuno se mide en horas promedio por bucket. El
+    // copy refleja el esfuerzo real ("16.4 h de ayuno en promedio"),
+    // no días cumplidos.
     final avg = _avg(s);
     if (avg == null) return 'Sin registros de ayuno todavía.';
-    final unit = s.unit; // '', 'd/sem', 'd/mes'
-    if (unit == 'd/sem') {
-      return 'Cumpliste ${avg.toStringAsFixed(1)} días de ayuno por '
-          'semana en promedio.';
-    }
-    if (unit == 'd/mes') {
-      return 'Cumpliste ${avg.round()} días de ayuno por mes en '
-          'promedio.';
-    }
-    // daily: 0 o 1 — promedio = % de días cumplidos.
-    final pct = (avg * 100).round();
-    return 'Cumpliste tu ayuno en $pct% de los días registrados.';
+    return 'Promediaste ${avg.toStringAsFixed(1)} h de ayuno por día '
+        'en este período.';
   }
 
   String _nutritionHeadline(MetricSeries s) {

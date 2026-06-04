@@ -118,7 +118,7 @@ final fastingHabitSeriesProvider =
     StreamProvider.autoDispose<MetricSeries>((ref) async* {
   final account = ref.watch(authStateProvider).value;
   if (account == null) {
-    yield MetricSeries.empty(label: 'Ayuno', unit: 'd');
+    yield MetricSeries.empty(label: 'Ayuno', unit: 'h');
     return;
   }
   // SPEC-162.bugfix (2026-06-02): antes leíamos daily_summary, que
@@ -126,11 +126,15 @@ final fastingHabitSeriesProvider =
   // de HOY no aparecían en el gráfico hasta el día siguiente. Ahora
   // leemos directamente de fasting_history (los FastingInterval
   // cerrados aparecen en Firestore al instante).
+  //
+  // SPEC-168.5.2 (2026-06-03): el eje Y representa HORAS DE AYUNO
+  // (no días cumplidos 0/1). Carlos: el usuario ya tiene el target
+  // visible (línea de objetivo) y la lectura de "16h promedio esta
+  // semana" comunica mucho más que "5 días cumplidos". El cómputo
+  // de achievement (SPEC-168.3) se preserva: comparar value (horas
+  // reales) vs target (horas del protocolo activo).
   final rangeStart = ref.watch(analysisRangeStartProvider) ?? _kEpoch;
   final mode = _currentMode(ref);
-  final unit = _unitForDaysCount(mode);
-  final targetHours = ref.watch(fastingProvider).targetHours;
-  final targetSeconds = targetHours * 3600;
   await for (final intervals in ref
       .watch(fastingIntervalRepositoryProvider)
       .watchRecentCompleted(account.uid, limit: 365)) {
@@ -143,18 +147,15 @@ final fastingHabitSeriesProvider =
       valueOf: (i) {
         final endTime = i.endTime;
         if (endTime == null) return 0.0;
-        final durationSec = endTime.difference(i.startTime).inSeconds;
-        return durationSec >=
-                targetSeconds * _kFastingCompletedThreshold
-            ? 1.0
-            : 0.0;
+        return endTime.difference(i.startTime).inMinutes / 60.0;
       },
-      aggregation: mode == AggregationMode.daily
-          ? TemporalAggregation.max
-          : TemporalAggregation.sum,
+      // Promedio en todos los modos: en daily da las horas del ayuno
+      // de ese día; en weekly/monthly da el promedio de horas por
+      // bucket. Lectura directa del esfuerzo metabólico real.
+      aggregation: TemporalAggregation.avg,
       mode: mode,
     );
-    yield MetricSeries(label: 'Ayuno', unit: unit, points: points);
+    yield MetricSeries(label: 'Ayuno', unit: 'h', points: points);
   }
 });
 

@@ -9,7 +9,12 @@
 enum ChartMetric {
   imr,
   weight,
-  fastingDays,
+  // SPEC-168.5.2 (2026-06-03): Ayuno ahora se mide en horas de ayuno
+  // (avg), no en días cumplidos. La línea de objetivo es el targetHours
+  // del protocolo activo (16/18/20). El goal `fastingDaysPerWeek` del
+  // usuario sigue existiendo en el sistema de goals (Perfil), pero ya
+  // no alimenta este chart.
+  fastingHours,
   nutritionAPct,
   hydrationPct,
   exerciseMin,

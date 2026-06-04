@@ -16,6 +16,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elena_app/src/features/analysis/domain/chart_metric.dart';
+// SPEC-168.5.2: el target del chart de Ayuno viene del protocolo
+// activo (fastingProvider.targetHours), no del goal del usuario.
+import 'package:elena_app/src/features/dashboard/application/fasting_notifier.dart'
+    show fastingProvider;
 import 'package:elena_app/src/features/goals/application/goal_notifier.dart';
 import 'package:elena_app/src/features/goals/domain/user_goal.dart';
 
@@ -34,6 +38,12 @@ const double _kImrOperationalTarget = 75.0;
 /// indica al chart que NO debe pintar línea de objetivo.
 final goalForChartProvider =
     Provider.family<double?, ChartMetric>((ref, metric) {
+  // SPEC-168.5.2: Ayuno necesita observar el protocolo activo, no los
+  // goals del usuario. Para el resto basta con goalsMap.
+  if (metric == ChartMetric.fastingHours) {
+    final hours = ref.watch(fastingProvider).targetHours;
+    return hours <= 0 ? null : hours.toDouble();
+  }
   final goalsMap = ref.watch(goalsProvider);
   return _goalForMetric(metric, goalsMap);
 });
@@ -63,8 +73,9 @@ double? _goalForMetric(ChartMetric m, Map<GoalType, UserGoal> goals) {
       return _kImrOperationalTarget;
     case ChartMetric.weight:
       return find(GoalType.weightTarget)?.targetValue;
-    case ChartMetric.fastingDays:
-      return find(GoalType.fastingDaysPerWeek)?.targetValue;
+    case ChartMetric.fastingHours:
+      // No debería llegar acá (handled arriba), defensivo.
+      return null;
     case ChartMetric.nutritionAPct:
       return find(GoalType.nutritionADominantPercent)?.targetValue;
     case ChartMetric.hydrationPct:
@@ -85,8 +96,8 @@ String _formatLabel(ChartMetric m, double value) {
       return value.toStringAsFixed(0);
     case ChartMetric.weight:
       return '${value.toStringAsFixed(1)} kg';
-    case ChartMetric.fastingDays:
-      return '${value.toStringAsFixed(0)} d/sem';
+    case ChartMetric.fastingHours:
+      return '${value.toStringAsFixed(0)} h';
     case ChartMetric.nutritionAPct:
       return '${value.toStringAsFixed(0)} %';
     case ChartMetric.hydrationPct:
