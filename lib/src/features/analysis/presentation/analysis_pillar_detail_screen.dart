@@ -19,13 +19,18 @@ import 'package:elena_app/src/features/analysis/application/analysis_series_prov
 import 'package:elena_app/src/features/analysis/application/chart_hero_computer.dart';
 import 'package:elena_app/src/features/analysis/application/goal_for_chart_provider.dart';
 import 'package:elena_app/src/features/analysis/application/nutrition_pie_provider.dart';
+// SPEC-168.4.1: tendencia corta vs larga, ahora vive dentro del detalle.
+import 'package:elena_app/src/features/analysis/application/trend_comparison_computer.dart';
 import 'package:elena_app/src/features/analysis/domain/aggregation_mode.dart';
 import 'package:elena_app/src/features/analysis/domain/chart_metric.dart';
 import 'package:elena_app/src/features/analysis/domain/hero_aggregation.dart';
+import 'package:elena_app/src/features/analysis/domain/metric_series.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/bar_chart_card.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/line_chart_card.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/nutrition_pie_card.dart';
+import 'package:elena_app/src/features/analysis/presentation/widgets/nutrition_trend_bar_card.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/segmented_range_control.dart';
+import 'package:elena_app/src/features/analysis/presentation/widgets/trend_comparison_card.dart';
 
 class AnalysisPillarDetailScreen extends ConsumerStatefulWidget {
   const AnalysisPillarDetailScreen({super.key, required this.metric});
@@ -66,11 +71,132 @@ class _AnalysisPillarDetailScreenState
               const SegmentedRangeControl(),
               const SizedBox(height: 24),
               _buildChart(aggregationMode),
+              // SPEC-168.4.1: debajo del chart principal aparece la
+              // tendencia corta vs larga del mismo pilar. Si no hay
+              // data suficiente, devuelve SizedBox.shrink.
+              const SizedBox(height: 24),
+              _buildTrendSection(aggregationMode),
             ],
           ),
         ),
       ),
     );
+  }
+
+  /// SPEC-168.4.1: sección "Tendencia" debajo del chart. Para
+  /// Nutrición usamos el bicolor (verde A / amarillo E). Para el
+  /// resto, TrendComparisonCard con `betterIf` según pilar.
+  Widget _buildTrendSection(AggregationMode mode) {
+    switch (widget.metric) {
+      case ChartMetric.nutritionAPct:
+        return _nutritionTrend(mode);
+      case ChartMetric.imr:
+        return _genericTrend(imrSeriesProvider, 'IMR', '',
+            AppColors.metabolicGreen, 'up', mode);
+      case ChartMetric.weight:
+        return _genericTrend(weightSeriesProvider, 'Peso', 'kg',
+            const Color(0xFF60A5FA), 'down', mode);
+      case ChartMetric.fastingHours:
+        return _genericTrend(fastingHabitSeriesProvider, 'Ayuno', 'h',
+            AppColors.metabolicGreen, 'up', mode);
+      case ChartMetric.hydrationLiters:
+        return _genericTrend(hydrationHabitSeriesProvider, 'Hidratación',
+            'L', const Color(0xFF38BDF8), 'up', mode);
+      case ChartMetric.exerciseMin:
+        return _genericTrend(exerciseHabitSeriesProvider, 'Ejercicio',
+            'min', const Color(0xFF14B8A6), 'up', mode);
+      case ChartMetric.sleepHours:
+        return _genericTrend(sleepHabitSeriesProvider, 'Sueño', 'h',
+            const Color(0xFF818CF8), 'up', mode);
+    }
+  }
+
+  Widget _genericTrend(
+    ProviderListenable<AsyncValue<MetricSeries>> provider,
+    String label,
+    String unit,
+    Color accent,
+    String betterIf,
+    AggregationMode mode,
+  ) {
+    final s = ref.watch(provider);
+    if (s.value == null) return const SizedBox.shrink();
+    final trend = TrendComparisonComputer.compute(
+      series: s.value!,
+      mode: mode,
+      betterIf: betterIf,
+    );
+    if (trend == null) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 2, bottom: 10),
+          child: Text(
+            'Tendencia',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.85),
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              height: 1.1,
+              letterSpacing: -0.2,
+            ),
+          ),
+        ),
+        TrendComparisonCard(
+          label: label,
+          unit: unit,
+          accent: accent,
+          trend: trend,
+          mode: mode,
+        ),
+      ],
+    );
+  }
+
+  Widget _nutritionTrend(AggregationMode mode) {
+    final s = ref.watch(nutritionHabitSeriesProvider);
+    if (s.value == null || s.value!.points.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 2, bottom: 10),
+          child: Text(
+            'Tendencia diaria',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.85),
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              height: 1.1,
+              letterSpacing: -0.2,
+            ),
+          ),
+        ),
+        NutritionTrendBarCard(
+          series: s.value!,
+          aggregationMode: mode,
+          headline: _nutritionTrendHeadline(s.value!),
+        ),
+      ],
+    );
+  }
+
+  String _nutritionTrendHeadline(MetricSeries s) {
+    final points = s.points.where((p) => p.sampleCount > 0).toList();
+    if (points.isEmpty) return 'Sin registros en este rango.';
+    final avg =
+        points.fold<double>(0, (a, b) => a + b.value) / points.length;
+    final pct = avg.round();
+    if (pct >= 70) {
+      return 'Tu alimentación viene sólida: $pct % A-dominante en promedio.';
+    }
+    if (pct >= 50) {
+      return 'Vas en buen camino: $pct % A-dominante en promedio.';
+    }
+    return 'Predominaron los platos E: solo $pct % A-dominante en promedio.';
   }
 
   Widget _buildHeader(BuildContext context) {

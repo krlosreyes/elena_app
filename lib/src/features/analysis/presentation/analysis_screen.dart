@@ -192,37 +192,9 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
             ],
           ),
         ),
-        // SPEC-168.5.1: botón "Tendencias →" sutil. Apple Health home
-        // tiene un acceso similar en el header de cada métrica para
-        // entrar a la vista comparativa de promedios.
-        InkResponse(
-          radius: 28,
-          onTap: () => context.push('/analysis/trends'),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Tendencias',
-                  style: TextStyle(
-                    color: AppColors.metabolicGreen,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.1,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  color: AppColors.metabolicGreen.withValues(alpha: 0.85),
-                  size: 12,
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(width: 6),
+        // SPEC-168.4.1: el botón "Tendencias →" se eliminó. Ahora cada
+        // tendencia vive dentro del detalle de su pilar (debajo del
+        // chart). El usuario ve tendencia + chart juntos en contexto.
         GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: () => Navigator.of(context).push(

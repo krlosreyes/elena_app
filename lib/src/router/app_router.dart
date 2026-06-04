@@ -21,8 +21,6 @@ import 'package:elena_app/src/features/dashboard/presentation/dashboard_screen.d
 import 'package:elena_app/src/features/nutrition/presentation/nutrition_weekly_screen.dart';
 import 'package:elena_app/src/features/auth/presentation/profile_screen.dart';
 import 'package:elena_app/src/features/analysis/presentation/analysis_screen.dart';
-// SPEC-168.5.1: pantalla aparte de Tendencias (opt-in desde Análisis).
-import 'package:elena_app/src/features/analysis/presentation/analysis_trends_screen.dart';
 // SPEC-168.4: pantalla detalle de un pilar (overview → chart completo).
 import 'package:elena_app/src/features/analysis/presentation/analysis_pillar_detail_screen.dart';
 import 'package:elena_app/src/features/analysis/domain/chart_metric.dart';
@@ -102,12 +100,6 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/analysis',
         name: 'analysis',
         builder: (context, state) => const AnalysisScreen(),
-      ),
-      // SPEC-168.5.1: Tendencias en pantalla aparte (opt-in).
-      GoRoute(
-        path: '/analysis/trends',
-        name: 'analysis-trends',
-        builder: (context, state) => const AnalysisTrendsScreen(),
       ),
       // SPEC-168.4: detalle de un pilar — desde el overview de Análisis.
       GoRoute(
