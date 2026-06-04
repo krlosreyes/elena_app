@@ -17,6 +17,7 @@ import 'package:elena_app/src/features/analysis/application/analysis_range_provi
 import 'package:elena_app/src/features/analysis/application/analysis_series_providers.dart';
 import 'package:elena_app/src/features/analysis/application/trend_comparison_computer.dart';
 import 'package:elena_app/src/features/analysis/domain/aggregation_mode.dart';
+import 'package:elena_app/src/features/analysis/domain/metric_series.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/nutrition_trend_bar_card.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/segmented_range_control.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/trend_comparison_card.dart';
@@ -136,9 +137,9 @@ class _AnalysisTrendsScreenState
   }
 
   List<Widget> _buildContent({
-    required imrSeries,
-    required weightSeries,
-    required nutritionSeries,
+    required MetricSeries imrSeries,
+    required MetricSeries weightSeries,
+    required MetricSeries nutritionSeries,
     required AggregationMode mode,
   }) {
     // Computamos los dos trends. Si ninguno tiene data, estado vacío.
@@ -192,10 +193,12 @@ class _AnalysisTrendsScreenState
 
   /// SPEC-168.5.4: headline conversacional para el bicolor card.
   /// Comunica el promedio de calidad y suaviza el threshold visual.
-  String _nutritionHeadline(dynamic series) {
-    final points = series.points.where((p) => p.sampleCount > 0).toList();
+  String _nutritionHeadline(MetricSeries series) {
+    final points =
+        series.points.where((p) => p.sampleCount > 0).toList();
     if (points.isEmpty) return 'Sin registros de comidas en este rango.';
-    final avg = points.fold<double>(0, (a, b) => a + b.value) / points.length;
+    final avg =
+        points.fold<double>(0, (a, b) => a + b.value) / points.length;
     final pct = avg.round();
     if (pct >= 70) {
       return 'Tu alimentación viene sólida: $pct % A-dominante en promedio.';
