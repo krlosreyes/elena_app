@@ -10,8 +10,6 @@
 // El nombre del archivo queda `body_silhouette.dart` por compatibilidad
 // con los imports existentes (es la misma feature).
 
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 
 import 'package:elena_app/src/features/analysis/domain/body_zone.dart';
@@ -81,7 +79,7 @@ class BodySilhouette extends StatelessWidget {
           ),
         const SizedBox(height: 14),
         SizedBox(
-          height: 64,
+          height: 80,
           child: CustomPaint(
             size: Size.infinite,
             painter: _ZoneGaugePainter(
@@ -130,14 +128,13 @@ class _ZoneGaugePainter extends CustomPainter {
 
   static const double _barHeight = 18.0;
   static const double _barRadius = 9.0;
-  static const double _indicatorSize = 12.0;
 
   @override
   void paint(Canvas canvas, Size size) {
     final w = size.width;
     final h = size.height;
-    // Barra vertical: centrada verticalmente con espacio para indicador.
-    final barTop = h * 0.45;
+    // Barra desplazada hacia abajo para dar espacio al pin del indicador.
+    final barTop = h * 0.55;
     final barBottom = barTop + _barHeight;
 
     // Cada segmento tiene ancho proporcional a su rango en %grasa.
@@ -176,11 +173,11 @@ class _ZoneGaugePainter extends CustomPainter {
       xCursor += segmentWidth;
     }
 
-    // Indicador (triángulo apuntando hacia abajo) en la posición actual.
+    // Indicador (pin con valor) en la posición actual.
     if (currentBf != null) {
       final clamped = currentBf!.clamp(minBf, maxBf);
       final indicatorX = ((clamped - minBf) / totalSpan) * w;
-      _drawIndicator(canvas, indicatorX, barTop);
+      _drawIndicator(canvas, indicatorX, barTop, w);
     }
 
     // Etiquetas debajo: límites de zona (solo las divisiones internas).
@@ -202,33 +199,63 @@ class _ZoneGaugePainter extends CustomPainter {
     }
   }
 
-  void _drawIndicator(Canvas canvas, double x, double barTop) {
-    // Triángulo apuntando hacia abajo justo encima de la barra.
-    final triHeight = _indicatorSize;
-    final triHalf = _indicatorSize * 0.7;
+  void _drawIndicator(Canvas canvas, double x, double barTop, double w) {
+    // SPEC-168.4.4 v3.1 — Pin tipo "cápsula" con el % grasa adentro,
+    // posicionado encima de la barra con una cola que apunta al punto
+    // exacto. Patrón Apple Fitness para marcadores de valor.
+    final label = '${currentBf!.toStringAsFixed(1)}%';
+    final tp = TextPainter(
+      text: TextSpan(
+        text: label,
+        style: const TextStyle(
+          color: Colors.black,
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+          letterSpacing: -0.2,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+
+    const padH = 8.0;
+    const padV = 4.0;
+    const tailH = 6.0;
+    final pinW = tp.width + padH * 2;
+    final pinH = tp.height + padV * 2;
     final tipY = barTop - 2;
-    final baseY = barTop - triHeight - 2;
+    final pinBottom = tipY - tailH;
+    final pinTop = pinBottom - pinH;
 
-    final path = Path()
-      ..moveTo(x, tipY)
-      ..lineTo(x - triHalf, baseY)
-      ..lineTo(x + triHalf, baseY)
-      ..close();
+    // Centrar pin en x sin que se salga del canvas.
+    final left = (x - pinW / 2).clamp(0.0, w - pinW);
+    final right = left + pinW;
 
-    canvas.drawPath(path, Paint()..color = Colors.white);
-
-    // Pequeño círculo blanco en la barra como reforzamiento visual.
-    final dotY = barTop + _barHeight / 2;
-    canvas.drawCircle(
-      Offset(x, dotY),
-      4.0,
+    // Pin redondeado blanco.
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTRB(left, pinTop, right, pinBottom),
+        const Radius.circular(7),
+      ),
       Paint()..color = Colors.white,
     );
-    canvas.drawCircle(
-      Offset(x, dotY),
-      2.0,
-      Paint()..color = Colors.black,
+
+    // Cola del pin (triángulo que apunta al x exacto).
+    canvas.drawPath(
+      Path()
+        ..moveTo(x - 5, pinBottom)
+        ..lineTo(x + 5, pinBottom)
+        ..lineTo(x, tipY)
+        ..close(),
+      Paint()..color = Colors.white,
     );
+
+    // Texto.
+    tp.paint(canvas, Offset(left + padH, pinTop + padV));
+
+    // Punto blanco/negro en el centro de la barra para reforzar.
+    final dotY = barTop + _barHeight / 2;
+    canvas.drawCircle(Offset(x, dotY), 4.5, Paint()..color = Colors.white);
+    canvas.drawCircle(Offset(x, dotY), 2.0, Paint()..color = Colors.black);
   }
 
   @override
@@ -236,6 +263,3 @@ class _ZoneGaugePainter extends CustomPainter {
       old.currentBf != currentBf || old.isMale != isMale;
 }
 
-// Mantener `math` imported para futuras extensiones (no usado por ahora).
-// ignore: unused_element
-double _kUnused(double v) => math.max(v, 0);
