@@ -23,6 +23,9 @@ import 'package:elena_app/src/features/auth/presentation/profile_screen.dart';
 import 'package:elena_app/src/features/analysis/presentation/analysis_screen.dart';
 // SPEC-168.5.1: pantalla aparte de Tendencias (opt-in desde Análisis).
 import 'package:elena_app/src/features/analysis/presentation/analysis_trends_screen.dart';
+// SPEC-168.4: pantalla detalle de un pilar (overview → chart completo).
+import 'package:elena_app/src/features/analysis/presentation/analysis_pillar_detail_screen.dart';
+import 'package:elena_app/src/features/analysis/domain/chart_metric.dart';
 // SPEC-12: Composición Corporal
 import 'package:elena_app/src/features/profile/presentation/body_composition_screen.dart';
 // SPEC-14: Objetivos del Usuario
@@ -105,6 +108,19 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/analysis/trends',
         name: 'analysis-trends',
         builder: (context, state) => const AnalysisTrendsScreen(),
+      ),
+      // SPEC-168.4: detalle de un pilar — desde el overview de Análisis.
+      GoRoute(
+        path: '/analysis/pillar/:metric',
+        name: 'analysis-pillar',
+        builder: (context, state) {
+          final metricName = state.pathParameters['metric'] ?? '';
+          final metric = ChartMetric.values.firstWhere(
+            (m) => m.name == metricName,
+            orElse: () => ChartMetric.imr,
+          );
+          return AnalysisPillarDetailScreen(metric: metric);
+        },
       ),
       // SPEC-137 §RF-137-12: vista semanal del pilar Nutrición.
       // Navegable desde el botón "Ver semana →" del card "Nutrición

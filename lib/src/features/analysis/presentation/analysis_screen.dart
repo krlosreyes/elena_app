@@ -12,8 +12,6 @@ import 'package:elena_app/src/features/analysis/application/analysis_series_prov
 import 'package:elena_app/src/features/analysis/application/causal_insights_provider.dart';
 // SPEC-168.1: helper para formatear el dateRange del card de Nutrición pie.
 import 'package:elena_app/src/features/analysis/application/chart_hero_computer.dart';
-// SPEC-168.0.D: helper que devuelve el target del usuario por chart.
-import 'package:elena_app/src/features/analysis/application/goal_for_chart_provider.dart';
 // SPEC-168.5.4: distribución pie A vs E.
 import 'package:elena_app/src/features/analysis/application/nutrition_pie_provider.dart';
 // SPEC-168.1: aggregation mode + hero aggregation enums.
@@ -26,11 +24,9 @@ import 'package:elena_app/src/features/analysis/domain/metric_series.dart';
 // SPEC-168.5.4: domain del pie chart de Nutrición.
 import 'package:elena_app/src/features/analysis/domain/nutrition_pie_data.dart';
 import 'package:elena_app/src/features/analysis/presentation/monthly_calendar_screen.dart';
-import 'package:elena_app/src/features/analysis/presentation/widgets/bar_chart_card.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/insight_tile.dart';
-import 'package:elena_app/src/features/analysis/presentation/widgets/line_chart_card.dart';
-// SPEC-168.5.4: pie chart de Nutrición A vs E.
-import 'package:elena_app/src/features/analysis/presentation/widgets/nutrition_pie_card.dart';
+// SPEC-168.4: tile compacto del overview con sparkline + tap a detalle.
+import 'package:elena_app/src/features/analysis/presentation/widgets/pillar_overview_tile.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/segmented_range_control.dart';
 
 class AnalysisScreen extends ConsumerStatefulWidget {
@@ -66,7 +62,6 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
   @override
   Widget build(BuildContext context) {
     final range = ref.watch(analysisRangeProvider);
-    final periodLabel = _periodLabelFor(range);
     // SPEC-168.1: mode temporal para que cada chart formatee la
     // fecha-range del hero block correctamente.
     final aggregationMode = AggregationMode.forRange(range);
@@ -74,31 +69,9 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
     // SPEC-168.2: targets del usuario por chart. Cada uno es null si el
     // goal correspondiente no está activo en `userGoals`. La línea
     // dashed solo se pinta cuando hay valor.
-    final imrTarget = ref.watch(goalForChartProvider(ChartMetric.imr));
-    final imrTargetLabel = ref.watch(goalLabelForChartProvider(ChartMetric.imr));
-    final weightTarget =
-        ref.watch(goalForChartProvider(ChartMetric.weight));
-    final weightTargetLabel =
-        ref.watch(goalLabelForChartProvider(ChartMetric.weight));
-    final fastingTarget =
-        ref.watch(goalForChartProvider(ChartMetric.fastingHours));
-    final fastingTargetLabel =
-        ref.watch(goalLabelForChartProvider(ChartMetric.fastingHours));
-    // SPEC-168.5.4: Nutrición ya no usa target line en el chart de la
-    // home (pasó a pie chart). El goal nutritionADominantPercent sigue
-    // viviendo en Perfil > Mis objetivos.
-    final hydrationTarget =
-        ref.watch(goalForChartProvider(ChartMetric.hydrationLiters));
-    final hydrationTargetLabel =
-        ref.watch(goalLabelForChartProvider(ChartMetric.hydrationLiters));
-    final exerciseTarget =
-        ref.watch(goalForChartProvider(ChartMetric.exerciseMin));
-    final exerciseTargetLabel =
-        ref.watch(goalLabelForChartProvider(ChartMetric.exerciseMin));
-    final sleepTarget =
-        ref.watch(goalForChartProvider(ChartMetric.sleepHours));
-    final sleepTargetLabel =
-        ref.watch(goalLabelForChartProvider(ChartMetric.sleepHours));
+    // SPEC-168.4: los targets del usuario se consumen ahora en la
+    // pantalla de detalle de cada pilar. La home solo muestra tiles
+    // con valor agregado + sparkline.
     final imr = ref.watch(imrSeriesProvider);
     final weight = ref.watch(weightSeriesProvider);
     final fasting = ref.watch(fastingHabitSeriesProvider);
@@ -150,24 +123,11 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                   exerciseSeries: exercise.value!,
                   sleepSeries: sleep.value!,
                   insights: insights,
-                  periodLabel: periodLabel,
                   aggregationMode: aggregationMode,
-                  imrTarget: imrTarget,
-                  imrTargetLabel: imrTargetLabel,
-                  weightTarget: weightTarget,
-                  weightTargetLabel: weightTargetLabel,
-                  fastingTarget: fastingTarget,
-                  fastingTargetLabel: fastingTargetLabel,
                   nutritionPie: nutritionPie.value ?? const NutritionPieData(
                     aDominantCount: 0,
                     eDominantCount: 0,
                   ),
-                  hydrationTarget: hydrationTarget,
-                  hydrationTargetLabel: hydrationTargetLabel,
-                  exerciseTarget: exerciseTarget,
-                  exerciseTargetLabel: exerciseTargetLabel,
-                  sleepTarget: sleepTarget,
-                  sleepTargetLabel: sleepTargetLabel,
                 ),
             ],
           ),
@@ -313,22 +273,8 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
     required MetricSeries exerciseSeries,
     required MetricSeries sleepSeries,
     required AsyncValue<List<CausalInsight>> insights,
-    required String periodLabel,
     required AggregationMode aggregationMode,
-    // SPEC-168.2: targets por chart, opcional (null = sin línea).
-    required double? imrTarget,
-    required String? imrTargetLabel,
-    required double? weightTarget,
-    required String? weightTargetLabel,
-    required double? fastingTarget,
-    required String? fastingTargetLabel,
     required NutritionPieData nutritionPie,
-    required double? hydrationTarget,
-    required String? hydrationTargetLabel,
-    required double? exerciseTarget,
-    required String? exerciseTargetLabel,
-    required double? sleepTarget,
-    required String? sleepTargetLabel,
   }) {
     final allEmpty = imrSeries.isEmpty &&
         weightSeries.isEmpty &&
@@ -341,104 +287,29 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
       return [_buildStartingState()];
     }
 
+    // SPEC-168.4 (2026-06-03): Análisis pasa a ser un overview de tiles
+    // compactos. Cada tile muestra el valor agregado del período +
+    // sparkline mini (o mini-pie en Nutrición), y al tap navega a la
+    // pantalla de detalle con el chart completo. Patrón Apple Health
+    // "Anteriores".
     return [
       _sectionTitle('Resultados'),
-      const SizedBox(height: 14),
-      // SPEC-168.1: cada chart card recibe heroAggregation explícito
-      // para que el bloque hero diga "PROMEDIO" / "TOTAL" / "ÚLTIMO"
-      // según corresponda a la métrica.
-      // SPEC-168.2: cada chart recibe targetValue/targetLabel del goal
-      // activo del usuario (null si el goal está inactivo).
-      LineChartCard(
-        series: imrSeries,
-        accent: _accentImr,
-        periodLabel: periodLabel,
-        headline: _imrHeadline(imrSeries, periodLabel),
-        aggregationMode: aggregationMode,
-        heroAggregation: HeroAggregation.avg,
-        targetValue: imrTarget,
-        targetLabel: imrTargetLabel,
-        deltaIsBetterIf: 'up',
-      ),
-      const SizedBox(height: 14),
-      LineChartCard(
-        series: weightSeries,
-        accent: _accentWeight,
-        periodLabel: periodLabel,
-        headline: _weightHeadline(weightSeries),
-        aggregationMode: aggregationMode,
-        // El peso "actual" del rango es el último registro, no el
-        // promedio (Apple Health también muestra ÚLTIMO en Peso).
-        heroAggregation: HeroAggregation.last,
-        targetValue: weightTarget,
-        targetLabel: weightTargetLabel,
-        deltaIsBetterIf: 'down',
-      ),
-      // SPEC-168.5.1 (2026-06-03): la sección Tendencias se movió a
-      // pantalla aparte (/analysis/trends). El acceso vive en el botón
-      // "Tendencias →" del header. Apple Health hace lo mismo: opt-in.
-      const SizedBox(height: 36),
+      const SizedBox(height: 12),
+      _imrTile(imrSeries),
+      const SizedBox(height: 10),
+      _weightTile(weightSeries),
+      const SizedBox(height: 28),
       _sectionTitle('Hábitos'),
-      const SizedBox(height: 14),
-      BarChartCard(
-        series: fastingSeries,
-        accent: _accentFasting,
-        periodLabel: periodLabel,
-        headline: _fastingHeadline(fastingSeries),
-        aggregationMode: aggregationMode,
-        // SPEC-168.5.2: Ayuno se muestra como promedio de HORAS por
-        // bucket (no días cumplidos). Lectura directa del esfuerzo
-        // metabólico — el target line es el protocolo activo.
-        heroAggregation: HeroAggregation.avg,
-        heroUnit: 'h',
-        targetValue: fastingTarget,
-        targetLabel: fastingTargetLabel,
-      ),
-      const SizedBox(height: 14),
-      // SPEC-168.5.4: Nutrición se muestra como pie A vs E (distribución
-      // agregada del rango), no como evolución diaria. La evolución
-      // bicolor por día vive en /analysis/trends.
-      NutritionPieCard(
-        data: nutritionPie,
-        dateRange: ChartHeroComputer.formatDateRange(
-          nutritionSeries,
-          aggregationMode,
-        ),
-        headline: _nutritionHeadline(nutritionSeries),
-      ),
-      const SizedBox(height: 14),
-      BarChartCard(
-        series: hydrationSeries,
-        accent: _accentHydration,
-        periodLabel: periodLabel,
-        headline: _hydrationHeadline(hydrationSeries),
-        aggregationMode: aggregationMode,
-        heroAggregation: HeroAggregation.avg,
-        targetValue: hydrationTarget,
-        targetLabel: hydrationTargetLabel,
-      ),
-      const SizedBox(height: 14),
-      BarChartCard(
-        series: exerciseSeries,
-        accent: _accentExercise,
-        periodLabel: periodLabel,
-        headline: _exerciseHeadline(exerciseSeries),
-        aggregationMode: aggregationMode,
-        heroAggregation: HeroAggregation.avg,
-        targetValue: exerciseTarget,
-        targetLabel: exerciseTargetLabel,
-      ),
-      const SizedBox(height: 14),
-      BarChartCard(
-        series: sleepSeries,
-        accent: _accentSleep,
-        periodLabel: periodLabel,
-        headline: _sleepHeadline(sleepSeries),
-        aggregationMode: aggregationMode,
-        heroAggregation: HeroAggregation.avg,
-        targetValue: sleepTarget,
-        targetLabel: sleepTargetLabel,
-      ),
+      const SizedBox(height: 12),
+      _fastingTile(fastingSeries),
+      const SizedBox(height: 10),
+      _nutritionTile(nutritionPie),
+      const SizedBox(height: 10),
+      _hydrationTile(hydrationSeries),
+      const SizedBox(height: 10),
+      _exerciseTile(exerciseSeries),
+      const SizedBox(height: 10),
+      _sleepTile(sleepSeries),
       const SizedBox(height: 36),
       _sectionTitle('Observaciones'),
       const SizedBox(height: 4),
@@ -502,6 +373,100 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
       case AnalysisRange.all:
         return 'Desde el inicio';
     }
+  }
+
+  // ─── SPEC-168.4: tiles del overview ─────────────────────────────────
+
+  PillarOverviewTile _imrTile(MetricSeries s) {
+    final v = ChartHeroComputer.aggregateValue(s, HeroAggregation.avg);
+    return PillarOverviewTile(
+      metric: ChartMetric.imr,
+      emoji: '🧬',
+      label: 'IMR',
+      value: v == null ? '' : ChartHeroComputer.formatValue(v),
+      unit: '',
+      accent: _accentImr,
+      sparklineValues: s.points.map((p) => p.value).toList(),
+    );
+  }
+
+  PillarOverviewTile _weightTile(MetricSeries s) {
+    final v = ChartHeroComputer.aggregateValue(s, HeroAggregation.last);
+    return PillarOverviewTile(
+      metric: ChartMetric.weight,
+      emoji: '⚖️',
+      label: 'Peso',
+      value: v == null ? '' : ChartHeroComputer.formatValue(v),
+      unit: 'kg',
+      accent: _accentWeight,
+      sparklineValues: s.points.map((p) => p.value).toList(),
+    );
+  }
+
+  PillarOverviewTile _fastingTile(MetricSeries s) {
+    final v = ChartHeroComputer.aggregateValue(s, HeroAggregation.avg);
+    return PillarOverviewTile(
+      metric: ChartMetric.fastingHours,
+      emoji: '⏱️',
+      label: 'Ayuno',
+      value: v == null ? '' : ChartHeroComputer.formatValue(v),
+      unit: 'h',
+      accent: _accentFasting,
+      sparklineValues: s.points.map((p) => p.value).toList(),
+    );
+  }
+
+  PillarOverviewTile _nutritionTile(NutritionPieData pie) {
+    final hasData = !pie.isEmpty;
+    return PillarOverviewTile(
+      metric: ChartMetric.nutritionAPct,
+      emoji: '🥦',
+      label: 'Nutrición',
+      value: hasData ? pie.aPct.toStringAsFixed(0) : '',
+      unit: hasData ? '% A' : '',
+      accent: _accentNutrition,
+      sparklineValues: const [],
+      aPctForPie: hasData ? pie.aPct : null,
+    );
+  }
+
+  PillarOverviewTile _hydrationTile(MetricSeries s) {
+    final v = ChartHeroComputer.aggregateValue(s, HeroAggregation.avg);
+    return PillarOverviewTile(
+      metric: ChartMetric.hydrationLiters,
+      emoji: '💧',
+      label: 'Hidratación',
+      value: v == null ? '' : ChartHeroComputer.formatValue(v),
+      unit: 'L',
+      accent: _accentHydration,
+      sparklineValues: s.points.map((p) => p.value).toList(),
+    );
+  }
+
+  PillarOverviewTile _exerciseTile(MetricSeries s) {
+    final v = ChartHeroComputer.aggregateValue(s, HeroAggregation.avg);
+    return PillarOverviewTile(
+      metric: ChartMetric.exerciseMin,
+      emoji: '💪',
+      label: 'Ejercicio',
+      value: v == null ? '' : ChartHeroComputer.formatValue(v),
+      unit: 'min',
+      accent: _accentExercise,
+      sparklineValues: s.points.map((p) => p.value).toList(),
+    );
+  }
+
+  PillarOverviewTile _sleepTile(MetricSeries s) {
+    final v = ChartHeroComputer.aggregateValue(s, HeroAggregation.avg);
+    return PillarOverviewTile(
+      metric: ChartMetric.sleepHours,
+      emoji: '🌙',
+      label: 'Sueño',
+      value: v == null ? '' : ChartHeroComputer.formatValue(v),
+      unit: 'h',
+      accent: _accentSleep,
+      sparklineValues: s.points.map((p) => p.value).toList(),
+    );
   }
 
   Widget _sectionTitle(String label) {
