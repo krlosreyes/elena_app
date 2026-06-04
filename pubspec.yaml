@@ -66,3 +66,5 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/
+    # SPEC-168.4.4: siluetas SVG por zona ACSM (healthy/average/high).
+    - assets/silhouettes/
