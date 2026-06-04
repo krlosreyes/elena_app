@@ -31,6 +31,7 @@ import 'package:elena_app/src/features/progress/application/biometric_backfill_p
 import 'package:elena_app/src/features/dashboard/presentation/widgets/daily_score_explainer_sheet.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_bootstrap_provider.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_evaluator_provider.dart';
+import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart';
 import 'package:elena_app/src/features/metabolic_cycle/presentation/widgets/cycle_closure_card.dart';
 import 'package:elena_app/src/features/streak/application/daily_score_provider.dart';
 // SPEC-137 E.5: regla del intervalo 3h (lastMealAt + 3h) para "Próxima En".
@@ -341,6 +342,23 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final dailyScore = ref.watch(dailyScoreProvider);
     final delta = ref.watch(dailyScoreDeltaProvider);
 
+    // SPEC-149.2.bugfix (2026-06-02): el sueño se debe anclar al ciclo
+    // metabólico. Si el último sleep log pertenece al ciclo cerrado,
+    // el ring debe estar en 0% para que el usuario empiece de cero
+    // en el nuevo ciclo.
+    final currentCycle = ref.watch(currentMetabolicCycleProvider).valueOrNull;
+    final sleepBelongsToCurrentCycle = sleep.lastLog == null
+        ? false
+        : (currentCycle == null
+            ? true // sin ciclo abierto, modo legacy
+            : !sleep.lastLog!.wokeUp.isBefore(currentCycle.startedAt));
+    final sleepProgress = (sleep.lastLog == null || !sleepBelongsToCurrentCycle)
+        ? 0.0
+        : (sleep.lastLog!.duration.inMinutes / (8 * 60)).clamp(0.0, 1.0);
+    final sleepCompleted = sleepBelongsToCurrentCycle &&
+        sleep.lastLog != null &&
+        sleep.lastLog!.duration.inHours >= 7;
+
     // SPEC-140.2: el Score del Día vive como HEADLINE dentro del card
     // de pilares. El label "PILARES HOY" se elimina (los 5 rings con
     // sus iconos son autodescriptivos). El divider separa visualmente
@@ -463,14 +481,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               PillarRing(
                 icon: Icons.nightlight_round,
                 color: const Color(0xFF818CF8),
-                progress: sleep.lastLog == null
-                    ? 0.0
-                    : (sleep.lastLog!.duration.inMinutes / (8 * 60))
-                        .clamp(0.0, 1.0),
+                progress: sleepProgress,
                 label: 'Sueño',
                 isSelected: _selectedPillar == SelectedPillar.sueno,
-                completed: sleep.lastLog != null &&
-                    sleep.lastLog!.duration.inHours >= 7,
+                completed: sleepCompleted,
                 showPercent: true,
                 onTap: () =>
                     setState(() => _selectedPillar = SelectedPillar.sueno),

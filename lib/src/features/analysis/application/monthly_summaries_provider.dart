@@ -64,13 +64,18 @@ class MonthKey {
   int get hashCode => Object.hash(year, month);
 }
 
-/// Stream de los docs persistidos del mes. Wrapper de
+/// AsyncValue de los docs persistidos del mes. Wrapper de
 /// `historicSummariesProvider` que construye el rango correcto.
+///
+/// SPEC-149.2.bugfix (2026-06-02): pasa de StreamProvider con `.stream`
+/// (deprecado en Riverpod 3.0) a Provider con AsyncValue. El consumidor
+/// (`monthly_calendar_screen.dart`) ya lo lee como AsyncValue — no
+/// cambia su API.
 final monthlySummariesProvider =
-    StreamProvider.family<List<DailySummaryDoc>, MonthKey>((ref, month) {
+    Provider.family<AsyncValue<List<DailySummaryDoc>>, MonthKey>((ref, month) {
   final range = HistoricSummariesRange(
     fromIncl: month.fromDateKey(),
     toIncl: month.toDateKey(),
   );
-  return ref.watch(historicSummariesProvider(range).stream);
+  return ref.watch(historicSummariesProvider(range));
 });
