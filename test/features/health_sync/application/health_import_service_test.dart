@@ -57,7 +57,11 @@ class _FakeExerciseRepository implements ExerciseRepository {
   /// SPEC-149.2: nuevo método del contrato. El fake no filtra por
   /// ventana — los tests de import service no validan eso.
   @override
-  Stream<List<ExerciseLog>> watchSince(String userId, DateTime since) =>
+  Stream<List<ExerciseLog>> watchSince(
+    String userId,
+    DateTime since, {
+    DateTime? until,
+  }) =>
       const Stream.empty();
 }
 

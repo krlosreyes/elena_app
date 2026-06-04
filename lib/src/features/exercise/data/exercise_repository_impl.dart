@@ -33,8 +33,12 @@ class ExerciseRepositoryImpl implements ExerciseRepository {
   }
 
   @override
-  Stream<List<ExerciseLog>> watchSince(String userId, DateTime since) {
-    final end = since.add(kCycleWindowDuration);
+  Stream<List<ExerciseLog>> watchSince(
+    String userId,
+    DateTime since, {
+    DateTime? until,
+  }) {
+    final end = until ?? since.add(kCycleWindowDuration);
     return _streamMapped(userId, since, end);
   }
 

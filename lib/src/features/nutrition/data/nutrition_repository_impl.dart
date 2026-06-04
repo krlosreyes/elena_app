@@ -38,8 +38,13 @@ class NutritionRepositoryImpl implements NutritionRepository {
   }
 
   @override
-  Stream<List<NutritionLog>> watchSinceLogs(String userId, DateTime since) {
-    return _streamMapped(userId, since, since.add(kCycleWindowDuration));
+  Stream<List<NutritionLog>> watchSinceLogs(
+    String userId,
+    DateTime since, {
+    DateTime? until,
+  }) {
+    final end = until ?? since.add(kCycleWindowDuration);
+    return _streamMapped(userId, since, end);
   }
 
   Stream<List<NutritionLog>> _streamMapped(

@@ -154,7 +154,11 @@ final nutritionHabitSeriesProvider =
   final mode = _currentMode(ref);
   await for (final logs in ref
       .watch(nutritionRepositoryProvider)
-      .watchSinceLogs(account.uid, rangeStart)) {
+      .watchSinceLogs(
+    account.uid,
+    rangeStart,
+    until: _todayLocal().add(const Duration(days: 1)),
+  )) {
     final fractionPoints = TemporalAggregator.aggregate(
       items: logs,
       timestampOf: (l) => l.timestamp,
@@ -182,9 +186,11 @@ final hydrationHabitSeriesProvider =
   }
   final rangeStart = ref.watch(analysisRangeStartProvider) ?? _kEpoch;
   final mode = _currentMode(ref);
-  await for (final logs in ref
-      .watch(hydrationRepositoryProvider)
-      .watchSince(account.uid, rangeStart)) {
+  await for (final logs in ref.watch(hydrationRepositoryProvider).watchSince(
+        account.uid,
+        rangeStart,
+        until: _todayLocal().add(const Duration(days: 1)),
+      )) {
     // Sumamos litros por DÍA primero — luego agregamos al bucket.
     final byDay = <String, double>{};
     for (final log in logs) {
@@ -216,9 +222,11 @@ final exerciseHabitSeriesProvider =
   }
   final rangeStart = ref.watch(analysisRangeStartProvider) ?? _kEpoch;
   final mode = _currentMode(ref);
-  await for (final logs in ref
-      .watch(exerciseRepositoryProvider)
-      .watchSince(account.uid, rangeStart)) {
+  await for (final logs in ref.watch(exerciseRepositoryProvider).watchSince(
+        account.uid,
+        rangeStart,
+        until: _todayLocal().add(const Duration(days: 1)),
+      )) {
     final byDay = <String, int>{};
     for (final log in logs) {
       final key = _dateIso(log.timestamp);

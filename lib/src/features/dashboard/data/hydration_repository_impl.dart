@@ -30,8 +30,13 @@ class HydrationRepositoryImpl implements HydrationRepository {
   }
 
   @override
-  Stream<List<HydrationLog>> watchSince(String userId, DateTime since) {
-    return _streamMapped(userId, since, since.add(kCycleWindowDuration));
+  Stream<List<HydrationLog>> watchSince(
+    String userId,
+    DateTime since, {
+    DateTime? until,
+  }) {
+    final end = until ?? since.add(kCycleWindowDuration);
+    return _streamMapped(userId, since, end);
   }
 
   Stream<List<HydrationLog>> _streamMapped(

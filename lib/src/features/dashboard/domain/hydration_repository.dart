@@ -21,7 +21,14 @@ abstract class HydrationRepository {
   /// SPEC-149.2: stream filtrado por ventana [since, since + 28h].
   /// Anclado al ciclo metabólico para que el conteo no se vea afectado
   /// por la medianoche calendárica.
-  Stream<List<HydrationLog>> watchSince(String userId, DateTime since);
+  ///
+  /// SPEC-149.2.bugfix (2026-06-02): si se pasa `until` se sobrescribe
+  /// el cap de 28h. Necesario para análisis histórico de rangos largos.
+  Stream<List<HydrationLog>> watchSince(
+    String userId,
+    DateTime since, {
+    DateTime? until,
+  });
 
   /// Añade un registro nuevo. No sobrescribe — cada llamada crea una
   /// entrada distinta en el storage (Firestore auto-id).

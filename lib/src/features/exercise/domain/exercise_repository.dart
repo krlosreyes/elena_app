@@ -18,7 +18,15 @@ abstract class ExerciseRepository {
   ///
   /// Usado por el notifier para anclar el conteo al Día Metabólico
   /// (cycle.startedAt) en lugar de a la medianoche calendárica.
-  Stream<List<ExerciseLog>> watchSince(String userId, DateTime since);
+  ///
+  /// SPEC-149.2.bugfix (2026-06-02): para análisis histórico (rangos
+  /// 30d+) el cap de 28h rompe los gráficos. Si se pasa `until` se
+  /// sobrescribe el cap. Default preserva semántica original.
+  Stream<List<ExerciseLog>> watchSince(
+    String userId,
+    DateTime since, {
+    DateTime? until,
+  });
 
   /// Persiste o sobrescribe un registro usando `log.id` como clave.
   Future<void> save(String userId, ExerciseLog log);
