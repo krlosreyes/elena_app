@@ -10,8 +10,12 @@ import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/analysis/application/analysis_range_provider.dart';
 import 'package:elena_app/src/features/analysis/application/analysis_series_providers.dart';
 import 'package:elena_app/src/features/analysis/application/causal_insights_provider.dart';
+// SPEC-168.1: helper para formatear el dateRange del card de Nutrición pie.
+import 'package:elena_app/src/features/analysis/application/chart_hero_computer.dart';
 // SPEC-168.0.D: helper que devuelve el target del usuario por chart.
 import 'package:elena_app/src/features/analysis/application/goal_for_chart_provider.dart';
+// SPEC-168.5.4: distribución pie A vs E.
+import 'package:elena_app/src/features/analysis/application/nutrition_pie_provider.dart';
 // SPEC-168.1: aggregation mode + hero aggregation enums.
 import 'package:elena_app/src/features/analysis/domain/aggregation_mode.dart';
 import 'package:elena_app/src/features/analysis/domain/analysis_range.dart';
@@ -19,10 +23,14 @@ import 'package:elena_app/src/features/analysis/domain/causal_insight.dart';
 import 'package:elena_app/src/features/analysis/domain/chart_metric.dart';
 import 'package:elena_app/src/features/analysis/domain/hero_aggregation.dart';
 import 'package:elena_app/src/features/analysis/domain/metric_series.dart';
+// SPEC-168.5.4: domain del pie chart de Nutrición.
+import 'package:elena_app/src/features/analysis/domain/nutrition_pie_data.dart';
 import 'package:elena_app/src/features/analysis/presentation/monthly_calendar_screen.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/bar_chart_card.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/insight_tile.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/line_chart_card.dart';
+// SPEC-168.5.4: pie chart de Nutrición A vs E.
+import 'package:elena_app/src/features/analysis/presentation/widgets/nutrition_pie_card.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/segmented_range_control.dart';
 
 class AnalysisScreen extends ConsumerStatefulWidget {
@@ -76,10 +84,9 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
         ref.watch(goalForChartProvider(ChartMetric.fastingHours));
     final fastingTargetLabel =
         ref.watch(goalLabelForChartProvider(ChartMetric.fastingHours));
-    final nutritionTarget =
-        ref.watch(goalForChartProvider(ChartMetric.nutritionAPct));
-    final nutritionTargetLabel =
-        ref.watch(goalLabelForChartProvider(ChartMetric.nutritionAPct));
+    // SPEC-168.5.4: Nutrición ya no usa target line en el chart de la
+    // home (pasó a pie chart). El goal nutritionADominantPercent sigue
+    // viviendo en Perfil > Mis objetivos.
     final hydrationTarget =
         ref.watch(goalForChartProvider(ChartMetric.hydrationLiters));
     final hydrationTargetLabel =
@@ -96,6 +103,8 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
     final weight = ref.watch(weightSeriesProvider);
     final fasting = ref.watch(fastingHabitSeriesProvider);
     final nutrition = ref.watch(nutritionHabitSeriesProvider);
+    // SPEC-168.5.4: distribución pie (A vs E) además de la serie.
+    final nutritionPie = ref.watch(nutritionPieDataProvider);
     final hydration = ref.watch(hydrationHabitSeriesProvider);
     final exercise = ref.watch(exerciseHabitSeriesProvider);
     final sleep = ref.watch(sleepHabitSeriesProvider);
@@ -149,8 +158,10 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                   weightTargetLabel: weightTargetLabel,
                   fastingTarget: fastingTarget,
                   fastingTargetLabel: fastingTargetLabel,
-                  nutritionTarget: nutritionTarget,
-                  nutritionTargetLabel: nutritionTargetLabel,
+                  nutritionPie: nutritionPie.value ?? const NutritionPieData(
+                    aDominantCount: 0,
+                    eDominantCount: 0,
+                  ),
                   hydrationTarget: hydrationTarget,
                   hydrationTargetLabel: hydrationTargetLabel,
                   exerciseTarget: exerciseTarget,
@@ -311,8 +322,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
     required String? weightTargetLabel,
     required double? fastingTarget,
     required String? fastingTargetLabel,
-    required double? nutritionTarget,
-    required String? nutritionTargetLabel,
+    required NutritionPieData nutritionPie,
     required double? hydrationTarget,
     required String? hydrationTargetLabel,
     required double? exerciseTarget,
@@ -385,15 +395,16 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
         targetLabel: fastingTargetLabel,
       ),
       const SizedBox(height: 14),
-      BarChartCard(
-        series: nutritionSeries,
-        accent: _accentNutrition,
-        periodLabel: periodLabel,
+      // SPEC-168.5.4: Nutrición se muestra como pie A vs E (distribución
+      // agregada del rango), no como evolución diaria. La evolución
+      // bicolor por día vive en /analysis/trends.
+      NutritionPieCard(
+        data: nutritionPie,
+        dateRange: ChartHeroComputer.formatDateRange(
+          nutritionSeries,
+          aggregationMode,
+        ),
         headline: _nutritionHeadline(nutritionSeries),
-        aggregationMode: aggregationMode,
-        heroAggregation: HeroAggregation.avg,
-        targetValue: nutritionTarget,
-        targetLabel: nutritionTargetLabel,
       ),
       const SizedBox(height: 14),
       BarChartCard(

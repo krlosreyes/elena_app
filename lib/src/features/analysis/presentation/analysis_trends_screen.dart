@@ -17,6 +17,7 @@ import 'package:elena_app/src/features/analysis/application/analysis_range_provi
 import 'package:elena_app/src/features/analysis/application/analysis_series_providers.dart';
 import 'package:elena_app/src/features/analysis/application/trend_comparison_computer.dart';
 import 'package:elena_app/src/features/analysis/domain/aggregation_mode.dart';
+import 'package:elena_app/src/features/analysis/presentation/widgets/nutrition_trend_bar_card.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/segmented_range_control.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/trend_comparison_card.dart';
 
@@ -47,9 +48,13 @@ class _AnalysisTrendsScreenState
     final aggregationMode = AggregationMode.forRange(range);
     final imrAsync = ref.watch(imrSeriesProvider);
     final weightAsync = ref.watch(weightSeriesProvider);
+    // SPEC-168.5.4: card de Nutrición bicolor (verde A / amarillo E)
+    // específica de Tendencias. La home muestra el pie agregado.
+    final nutritionAsync = ref.watch(nutritionHabitSeriesProvider);
 
-    final firstLoad =
-        imrAsync.value == null || weightAsync.value == null;
+    final firstLoad = imrAsync.value == null ||
+        weightAsync.value == null ||
+        nutritionAsync.value == null;
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -70,6 +75,7 @@ class _AnalysisTrendsScreenState
                 ..._buildContent(
                   imrSeries: imrAsync.value!,
                   weightSeries: weightAsync.value!,
+                  nutritionSeries: nutritionAsync.value!,
                   mode: aggregationMode,
                 ),
             ],
@@ -132,10 +138,10 @@ class _AnalysisTrendsScreenState
   List<Widget> _buildContent({
     required imrSeries,
     required weightSeries,
+    required nutritionSeries,
     required AggregationMode mode,
   }) {
-    // Computamos los dos trends. Si ambos son null no hay nada que
-    // mostrar — pintamos estado vacío.
+    // Computamos los dos trends. Si ninguno tiene data, estado vacío.
     final imrTrend = TrendComparisonComputer.compute(
       series: imrSeries,
       mode: mode,
@@ -146,8 +152,11 @@ class _AnalysisTrendsScreenState
       mode: mode,
       betterIf: 'down',
     );
+    // SPEC-168.5.4: Nutrición bicolor se renderiza si la serie tiene
+    // datos (no requiere trend; muestra barras verdes/amarillas).
+    final hasNutritionData = nutritionSeries.points.isNotEmpty;
 
-    if (imrTrend == null && weightTrend == null) {
+    if (imrTrend == null && weightTrend == null && !hasNutritionData) {
       return [_buildEmptyState()];
     }
 
@@ -162,7 +171,7 @@ class _AnalysisTrendsScreenState
         ),
         const SizedBox(height: 14),
       ],
-      if (imrTrend != null)
+      if (imrTrend != null) ...[
         TrendComparisonCard(
           label: 'IMR',
           unit: '',
@@ -170,7 +179,31 @@ class _AnalysisTrendsScreenState
           trend: imrTrend,
           mode: mode,
         ),
+        if (hasNutritionData) const SizedBox(height: 14),
+      ],
+      if (hasNutritionData)
+        NutritionTrendBarCard(
+          series: nutritionSeries,
+          aggregationMode: mode,
+          headline: _nutritionHeadline(nutritionSeries),
+        ),
     ];
+  }
+
+  /// SPEC-168.5.4: headline conversacional para el bicolor card.
+  /// Comunica el promedio de calidad y suaviza el threshold visual.
+  String _nutritionHeadline(dynamic series) {
+    final points = series.points.where((p) => p.sampleCount > 0).toList();
+    if (points.isEmpty) return 'Sin registros de comidas en este rango.';
+    final avg = points.fold<double>(0, (a, b) => a + b.value) / points.length;
+    final pct = avg.round();
+    if (pct >= 70) {
+      return 'Tu alimentación viene sólida: $pct % A-dominante en promedio.';
+    }
+    if (pct >= 50) {
+      return 'Vas en buen camino: $pct % A-dominante en promedio.';
+    }
+    return 'Predominaron los platos E: solo $pct % A-dominante en promedio.';
   }
 
   Widget _buildEmptyState() {
