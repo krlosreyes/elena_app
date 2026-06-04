@@ -342,19 +342,31 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final dailyScore = ref.watch(dailyScoreProvider);
     final delta = ref.watch(dailyScoreDeltaProvider);
 
-    // SPEC-149.2.bugfix (2026-06-02): el sueño se debe anclar al ciclo
-    // metabólico. Si el último sleep log pertenece al ciclo cerrado,
-    // el ring debe estar en 0% para que el usuario empiece de cero
-    // en el nuevo ciclo.
+    // SPEC-149.2.bugfix2 (2026-06-03): el sueño debe anclarse al ciclo
+    // metabólico pero la lógica anterior estaba INVERTIDA. El sueño
+    // termina ANTES de que se abra el ciclo (uno se despierta y luego
+    // empieza el día). El check original `!wokeUp.isBefore(startedAt)`
+    // rechazaba todos los sleeps nocturnos válidos.
+    //
+    // Corrección: el sleep "pertenece a este ciclo" si `wokeUp` está
+    // dentro de las 18 h previas al `startedAt`. Eso captura el sueño
+    // de la noche anterior y excluye sleeps de hace > 24 h (que serían
+    // del ciclo anterior). 18 h cubre con margen los protocolos de
+    // sueño tardío sin abrir tanto la ventana como para arrastrar
+    // datos viejos.
     final currentCycle = ref.watch(currentMetabolicCycleProvider).valueOrNull;
+    const sleepWindowBeforeCycle = Duration(hours: 18);
     final sleepBelongsToCurrentCycle = sleep.lastLog == null
         ? false
         : (currentCycle == null
             ? true // sin ciclo abierto, modo legacy
-            : !sleep.lastLog!.wokeUp.isBefore(currentCycle.startedAt));
-    final sleepProgress = (sleep.lastLog == null || !sleepBelongsToCurrentCycle)
-        ? 0.0
-        : (sleep.lastLog!.duration.inMinutes / (8 * 60)).clamp(0.0, 1.0);
+            : sleep.lastLog!.wokeUp.isAfter(
+                currentCycle.startedAt.subtract(sleepWindowBeforeCycle),
+              ));
+    final sleepProgress =
+        (sleep.lastLog == null || !sleepBelongsToCurrentCycle)
+            ? 0.0
+            : (sleep.lastLog!.duration.inMinutes / (8 * 60)).clamp(0.0, 1.0);
     final sleepCompleted = sleepBelongsToCurrentCycle &&
         sleep.lastLog != null &&
         sleep.lastLog!.duration.inHours >= 7;
