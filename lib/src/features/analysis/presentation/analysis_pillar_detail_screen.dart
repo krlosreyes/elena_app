@@ -15,6 +15,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/analysis/application/analysis_range_provider.dart';
+import 'package:elena_app/src/features/analysis/domain/analysis_range.dart';
 import 'package:elena_app/src/features/analysis/application/analysis_series_providers.dart';
 import 'package:elena_app/src/features/analysis/application/chart_hero_computer.dart';
 import 'package:elena_app/src/features/analysis/application/goal_for_chart_provider.dart';
@@ -51,6 +52,22 @@ class _AnalysisPillarDetailScreenState
   static const Color _accentBodyFat = Color(0xFFF59E0B);
 
   final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    // SPEC-168.4.5 (2026-06-04): el detalle del pilar siempre arranca
+    // en rango 30d. Permite al usuario ver evolución reciente sin
+    // arrastrar el rango largo del overview. Si quiere ampliar, lo
+    // hace con el SegmentedRangeControl.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final current = ref.read(analysisRangeProvider);
+      if (current != AnalysisRange.d30) {
+        ref.read(analysisRangeProvider.notifier).state = AnalysisRange.d30;
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -424,7 +441,7 @@ class _AnalysisPillarDetailScreenState
       case ChartMetric.weight:
         return 'Peso';
       case ChartMetric.bodyFatPct:
-        return '% Grasa';
+        return 'Composición corporal';
       case ChartMetric.fastingHours:
         return 'Ayuno';
       case ChartMetric.nutritionAPct:
