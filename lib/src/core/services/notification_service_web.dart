@@ -11,9 +11,13 @@ class NotificationIds {
   static const int intestinalLock30 = 104;
   static const int intestinalLockActive = 105;
   static const int sleep = 106;
+  // SPEC-169 (2026-06-04): eTRF pre-sueño.
+  static const int eTRFPreSleep = 107;
   static const int fasting12h = 200;
   static const int fasting18h = 201;
   static const int fasting24h = 202;
+  // SPEC-169 (2026-06-04): hito autofagia inicial.
+  static const int fasting16h = 203;
   // SPEC-137 E.5: 30 min antes de la próxima comida sugerida
   // (lastMealAt + 3h). One-shot, no repeatsDaily.
   static const int nextMealReady = 300;

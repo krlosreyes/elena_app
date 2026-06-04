@@ -17,8 +17,15 @@ class NotificationIds {
   static const int intestinalLock30 = 104;
   static const int intestinalLockActive = 105;
   static const int sleep = 106;
+  // SPEC-169 (2026-06-04): eTRF — 3 horas antes de dormir, cuando
+  // sleepTime - 3h cae antes del lastMealGoal. Recordatorio educativo
+  // con cita Sutton 2018.
+  static const int eTRFPreSleep = 107;
 
   static const int fasting12h = 200;
+  // SPEC-169 (2026-06-04): hito autofagia inicial (Levine 2017),
+  // intercalado entre 12h y 18h. Cancelado por cancelFasting() (rango 200-209).
+  static const int fasting16h = 203;
   static const int fasting18h = 201;
   static const int fasting24h = 202;
 

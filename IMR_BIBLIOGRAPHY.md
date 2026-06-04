@@ -684,8 +684,44 @@ SPEC-141 introducirá el IMR longitudinal con cadencia semanal y el componente `
 
 ---
 
+## §14 — Notificaciones inteligentes con cita (SPEC-169)
+
+SPEC-169 introduce el patrón "notificación con cita bibliográfica" para TODAS las notificaciones operacionales del producto (las circadianas y los hitos de ayuno), generalizando lo que SPEC-150 aplicó a hidratación. Cada body lleva un sufijo `· {autor año}` que respalda la afirmación sin alterar el tono cálido del copy (memoria `notification-tone-human-not-clinical`).
+
+### 14.1 — Tabla maestra de referencias
+
+| Cita en notif | Referencia completa | Aplicación |
+|---|---|---|
+| **Biological Dial §3** | Documento interno `docs/CIRCADIAN_BIBLIOGRAPHY.md` §3, derivado de *The Biological Dial* (versionado en `docs/references/`). | Notif Despertar — pico cognitivo 10:00. |
+| **Sutton 2018** | Sutton EF, Beyl R, Early KS, Cefalu WT, Ravussin E, Peterson CM. *Early time-restricted feeding improves insulin sensitivity, blood pressure, and oxidative stress even without weight loss in men with prediabetes.* Cell Metabolism 27(6):1212-1221. | Notif primera comida + eTRF pre-sueño. |
+| **Mattson 2017** | Mattson MP, Longo VD, Harvie M. *Impact of intermittent fasting on health and disease processes.* Ageing Research Reviews 39:46-58. | Notif 30 min para cerrar tu ventana. |
+| **Lopez-Minguez 2018** | Lopez-Minguez J, Gómez-Abellán P, Garaulet M. *Timing of breakfast, lunch, and dinner. Effects on obesity and metabolic risk.* Nutrients 11(11):2624. | Notifs bloqueo intestinal 60 + 30 min. |
+| **Xie 2013** | Xie L, Kang H, Xu Q et al. *Sleep drives metabolite clearance from the adult brain.* Science 342(6156):373-377. | Notif modo reparación activado — sistema glinfático nocturno. |
+| **Walker 2017** | Walker M. *Why We Sleep.* Cap. 5 — liberación de GH en sueño profundo, primeras 2h. | Notif hora de descansar. |
+| **Cahill 2006** | Cahill GF. *Fuel metabolism in starvation.* Annual Review of Nutrition 26:1-22. Gluconeogénesis temprana 12h+. | Hito ayuno 12h. |
+| **Levine 2017** | Levine B, Kroemer G. *Biological functions of autophagy genes: a disease perspective.* Cell 176(1-2):11-42. Autofagia comienza ~16h. | Hito ayuno 16h. |
+| **Mattson 2018** | Mattson MP, Moehl K, Ghena N, Schmaedick M, Cheng A. *Intermittent metabolic switching, neuroplasticity and brain health.* Nature Reviews Neuroscience 19(2):63-80. Cetosis nutricional 18h+. | Hito ayuno 18h. |
+| **Mizushima 2008** | Mizushima N, Komatsu M. *Autophagy: renovation of cells and tissues.* Cell 147(4):728-741. Autofagia profunda 24h+. | Hito ayuno 24h. |
+
+### 14.2 — Criterio editorial
+
+El body de la notif es **cálido en primera línea** (segunda persona, reconoce esfuerzo, sin culpa). La cita queda al final separada por ` · ` para que el ojo aterrice primero en el mensaje humano y luego encuentre el respaldo. Esto sigue el feedback de Carlos (2026-06-04) cristalizado en la memoria `notification-tone-human-not-clinical`: la audiencia de Elena son personas con historial de problemas de salud o sobrepeso — el coach habla, no el manual.
+
+### 14.3 — Anclaje al ciclo metabólico
+
+La notif "30 minutos para cerrar tu ventana" usa el cierre del ciclo metabólico abierto (`startedAt + 24h`) como hora de referencia cuando hay ciclo con protocolo conocido. Si no hay ciclo, o el protocolo es 'Ninguno', cae al fallback histórico (`profile.lastMealGoal`). El helper canónico para mapear protocolo → horas vive duplicado en `NotificationScheduler.protocolFastingHours` y `MetabolicCycleService._hoursFromProtocol` — si cambia uno, cambiar el otro.
+
+### 14.4 — Out of scope SPEC-169
+
+- Deep-link a `ExplainerSheet` con la cita completa al tap → SPEC-169.next.
+- Pool dinámico de copies para circadianas (estilo SPEC-150) → SPEC-169.2 si se justifica con telemetría.
+- Telemetría de adherencia (qué notif se abrió vs ignoró) → out of scope.
+
+---
+
 ## Changelog
 
+- **SPEC-169** (Notificaciones inteligentes): añade §14 con las 10 referencias canónicas (Biological Dial §3, Sutton 2018, Mattson 2017, Lopez-Minguez 2018, Xie 2013, Walker 2017, Cahill 2006, Levine 2017, Mattson 2018, Mizushima 2008), el criterio editorial humano-cercano y el anclaje al ciclo metabólico para el aviso de cierre. Generaliza el patrón de SPEC-150 a todas las notificaciones operacionales.
 - **SPEC-149** (Día Metabólico): añade §13 con la definición operacional del ciclo metabólico, los 6 triggers de cierre, el coaching post-cierre y la relación con SPEC-138 (calendárico) y SPEC-141 (IMR longitudinal). No modifica ningún bloque previo del IMR — solo introduce capa semántica nueva sobre los datos persistidos.
 - **SPEC-82** (canonical mirror): añade §12 con las fórmulas de las métricas canónicas (IMC, TMB Mifflin-St Jeor, ICA/WHtR, FFMI crudo, metabolicAge provisional) que el sitio web Metamorfosis Real consume vía `imr.current` en el doc `users/{uid}`. El bloque Estructura, Metabolismo y Conducta del IMR no cambian.
 - **SPEC-70.5** (recalibración clínica externa): bloqueo intestinal 22:30→21:30, peso Hidratación 20%→10%, peso Circadiano 28%→38%, threshold de sueño en racha 6.5h→7.0h, threshold de penalización de coherencia por sueño 6.5h→7.0h. Validado por **[Dr/Dra Nombre, Especialidad]**. Nuevas §10 (roadmap clínico) y §11 (contraindicaciones).
