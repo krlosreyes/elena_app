@@ -76,9 +76,14 @@ class BiometricRepository {
   /// obligaba a callsites a pasar `limit: 365` cada vez. El costo de
   /// egress es despreciable porque la UI filtra client-side a ventanas
   /// menores. Callers que quieran solo "último mes" pueden pasar `limit: 31`.
+  ///
+  /// SPEC-168.4.7 (2026-06-04): default subido a 2000. Cubre ~5 años
+  /// de uso diario y elimina el corte silencioso de data antigua que
+  /// rompía el rango "Todo" en Análisis para usuarios con histórico
+  /// largo. 2000 docs ordenados por date son < 2 MB egress.
   Stream<List<BiometricCheckIn>> watchHistory(
     String userId, {
-    int limit = 365,
+    int limit = 2000,
   }) {
     return _col(userId)
         .orderBy('date', descending: true)

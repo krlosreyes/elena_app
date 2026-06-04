@@ -168,7 +168,9 @@ final fastingHabitSeriesProvider =
   final mode = _currentMode(ref);
   await for (final intervals in ref
       .watch(fastingIntervalRepositoryProvider)
-      .watchRecentCompleted(account.uid, limit: 365)) {
+      // SPEC-168.4.7: 2000 cubre ~5 años de uso diario sin egress
+      // problemático y elimina el corte silencioso para rango "Todo".
+      .watchRecentCompleted(account.uid, limit: 2000)) {
     final inRange = intervals
         .where((i) => !i.startTime.isBefore(rangeStart))
         .toList();
@@ -307,7 +309,9 @@ final sleepHabitSeriesProvider =
   final mode = _currentMode(ref);
   await for (final logs in ref
       .watch(sleepRepositoryProvider)
-      .watchRecent(account.uid, limit: 365)) {
+      // SPEC-168.4.7: 2000 cubre ~5 años de uso diario sin egress
+      // problemático y elimina el corte silencioso para rango "Todo".
+      .watchRecent(account.uid, limit: 2000)) {
     final rangeStart = ref.read(analysisRangeStartProvider);
     final filtered = rangeStart == null
         ? logs
