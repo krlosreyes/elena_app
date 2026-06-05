@@ -21,8 +21,10 @@ Documentos hermanos: `CIRCADIAN_BIBLIOGRAPHY.md` (cronograma circadiano), `IMR_B
 | Evento | Condición | `startedAt` del ciclo |
 |--------|-----------|------------------------|
 | **Usuario inicia ayuno** | Tap consciente en UI ("Iniciar ayuno") → `startFastingManual()` con `activationSource = userInitiated` | `DateTime.now()` al momento del tap |
+| **Bootstrap retroactivo del ciclo** (SPEC-149 D.3) | One-shot al primer login con ayuno YA persistido en Firestore (`lastFastingStartTime != null`). NO crea ciclo si no hay ayuno real persistido (SPEC-185). | `lastFastingStartTime` (hora real del ayuno previo, no `now`) |
+| **Re-apertura encadenada tras cierre** | El cierre de un ciclo por `manualNextFasting` abre uno nuevo en el mismo `evaluateAndApply` | `input.newFastingStartedAt` |
 
-**ESE ES EL ÚNICO EVENTO QUE CREA CICLO.** No hay otros.
+**ESOS SON LOS ÚNICOS 3 EVENTOS QUE CREAN CICLO.** El bootstrap retroactivo y la re-apertura encadenada son derivados del tap original — no son "creaciones automáticas sin acción del usuario".
 
 ### §2.1 — Eventos que NO crean ciclo
 
@@ -127,6 +129,7 @@ Si los pilares no muestran datos del día y los logs crudos SÍ existen en Fires
 | 2026-06-04 | SPEC-174 | Evaluator a nivel root + first tick + lastMealTime real |
 | 2026-06-05 | SPEC-183 | Bootstrap NO crea ciclo — enum FastingActivationSource |
 | 2026-06-05 | SPEC-184 | Esta constitución + logger semántico |
+| 2026-06-05 | SPEC-185 | `bootstrapIfMissing` NO crea ciclo si `lastFastingStartTime == null`. Fix de race condition con listener Firestore. |
 
 ---
 

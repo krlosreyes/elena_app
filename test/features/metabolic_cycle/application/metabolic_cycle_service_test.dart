@@ -112,6 +112,46 @@ void main() {
       expect(cycle!.startedAt, DateTime(2026, 6, 2, 0, 0));
       expect(cycle.fastingProtocol, 'Ninguno');
     });
+
+    // SPEC-185 (2026-06-05): NO crear ciclo huérfano cuando llega null.
+    test('SPEC-185 — Protocolo TRE + lastFastingStartTime null → no crea ciclo',
+        () async {
+      // Caso reproducido: el caller (metabolicCycleBootstrapProvider)
+      // lee fastingProvider.startTime ANTES de que el listener al
+      // lastFastingIntervalProvider termine de cargar desde Firestore.
+      // Race condition → lastFastingStartTime llega null. ANTES del
+      // fix esto creaba ciclo con startedAt=now (bug huérfano).
+      final now = DateTime(2026, 6, 5, 16, 32);
+      final cycle = await service.bootstrapIfMissing(
+        userId: 'u1',
+        protocol: '16:8',
+        lastFastingStartTime: null,
+        now: now,
+      );
+      expect(cycle, isNull,
+          reason: 'sin ayuno persistido no debemos crear ciclo automáticamente');
+      // Y no debe haber escrito nada en Firestore.
+      final after = await repo.fetchOpenCycle('u1');
+      expect(after, isNull);
+    });
+
+    test('SPEC-185 — Protocolo TRE + lastFastingStartTime presente → SÍ crea',
+        () async {
+      // Caso legítimo: usuario tiene ayuno persistido válido. El
+      // bootstrap reconstruye el ciclo retroactivo con startedAt
+      // = hora real del ayuno, no = now.
+      final now = DateTime(2026, 6, 5, 16, 32);
+      final lastFasting = DateTime(2026, 6, 5, 8, 0);
+      final cycle = await service.bootstrapIfMissing(
+        userId: 'u1',
+        protocol: '18:6',
+        lastFastingStartTime: lastFasting,
+        now: now,
+      );
+      expect(cycle, isNotNull);
+      expect(cycle!.startedAt, lastFasting,
+          reason: 'startedAt debe ser la hora real del ayuno, no now');
+    });
   });
 
   group('SPEC-149 §8.3 — evaluateAndApply: apertura', () {
