@@ -19,6 +19,7 @@ import 'package:elena_app/src/features/dashboard/presentation/widgets/early_fast
 import 'package:elena_app/src/features/dashboard/presentation/widgets/meals_locked_dialog.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/sleep_existing_log_dialog.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/pillar_ring.dart';
+import 'package:elena_app/src/features/dashboard/presentation/widgets/dual_score_ring.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/protocol_selector_sheet.dart';
 import 'package:elena_app/src/features/exercise/application/exercise_notifier.dart';
 import 'package:elena_app/src/features/exercise/application/exercise_state.dart';
@@ -358,15 +359,24 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     // del ciclo anterior). 18 h cubre con margen los protocolos de
     // sueño tardío sin abrir tanto la ventana como para arrastrar
     // datos viejos.
+    //
+    // SPEC-149.2.bugfix3 (2026-06-04): el chequeo anterior solo cubría
+    // el límite INFERIOR (no demasiado viejo) pero no el SUPERIOR.
+    // Cuando el ciclo abrió ayer noche y el usuario durmió anoche,
+    // el sleep (wokeUp = hoy mañana) cae dentro de las 18h previas
+    // PERO es POSTERIOR al startedAt → el sleep pertenece al PRÓXIMO
+    // ciclo, no al actual. Se agrega `wokeUp.isBefore(startedAt)` para
+    // resetear el ring al cerrar/abrir ciclo del mismo día.
     final currentCycle = ref.watch(currentMetabolicCycleProvider).valueOrNull;
     const sleepWindowBeforeCycle = Duration(hours: 18);
     final sleepBelongsToCurrentCycle = sleep.lastLog == null
         ? false
         : (currentCycle == null
             ? true // sin ciclo abierto, modo legacy
-            : sleep.lastLog!.wokeUp.isAfter(
-                currentCycle.startedAt.subtract(sleepWindowBeforeCycle),
-              ));
+            : (sleep.lastLog!.wokeUp.isAfter(
+                  currentCycle.startedAt.subtract(sleepWindowBeforeCycle),
+                ) &&
+                sleep.lastLog!.wokeUp.isBefore(currentCycle.startedAt)));
     final sleepProgress =
         (sleep.lastLog == null || !sleepBelongsToCurrentCycle)
             ? 0.0
@@ -419,58 +429,29 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 6),
-          // Fila 2: número grande + /100 + delta + frase motivacional
-          // alineada a la derecha. SPEC-140.3: la frase llena el espacio
-          // vacío que dejaba el headline y aporta señal contextual al
-          // usuario sobre el estado de su día.
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                '$dailyScore',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 36,
-                  fontWeight: FontWeight.w900,
-                  fontFamily: 'monospace',
-                  height: 1.0,
-                ),
+          const SizedBox(height: 14),
+          // SPEC-170 (2026-06-04): dos rings adyacentes HOY + IMR
+          // reemplazan el número grande 36pt. Cada uno con score, label
+          // y sub-label propio. Tap en cualquiera abre el ExplainerSheet
+          // único que cubre ambos.
+          DualScoreRing(
+            dailyScore: dailyScore,
+            dailyDelta: delta,
+            imrScore: ref.watch(displayedImrProvider).score,
+            onTap: () => showDailyScoreExplainerSheet(context),
+          ),
+          const SizedBox(height: 12),
+          // Frase motivacional centrada bajo los rings (SPEC-140.3).
+          Center(
+            child: Text(
+              _dailyScoreMotivation(dailyScore),
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.70),
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                height: 1.0,
               ),
-              const SizedBox(width: 2),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 5),
-                child: Text(
-                  '/100',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.35),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    fontFamily: 'monospace',
-                  ),
-                ),
-              ),
-              if (delta != null) ...[
-                const SizedBox(width: 12),
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: _buildDailyScoreDelta(delta),
-                ),
-              ],
-              const Spacer(),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 5, left: 8),
-                child: Text(
-                  _dailyScoreMotivation(dailyScore),
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.70),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    height: 1.0,
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
           const SizedBox(height: 14),
           // Divider sutil entre headline y rings.
@@ -577,42 +558,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     return 'Vas empezando';
   }
 
-  /// SPEC-140.1: render del delta del Score del Día junto al número.
-  /// Verde con ↑ si subió, rojo con ↓ si bajó, gris con ↔ si igual.
-  /// Tamaño chico — el agregado vive en el header de PILARES HOY y
-  /// no debe competir visualmente con los anillos.
-  Widget _buildDailyScoreDelta(int delta) {
-    if (delta == 0) {
-      return Padding(
-        padding: const EdgeInsets.only(bottom: 2),
-        child: Text(
-          '↔0',
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.45),
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
-            fontFamily: 'monospace',
-          ),
-        ),
-      );
-    }
-    final isPositive = delta > 0;
-    final color =
-        isPositive ? AppColors.metabolicGreen : const Color(0xFFEF4444);
-    final arrow = isPositive ? '↑' : '↓';
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 2),
-      child: Text(
-        '$arrow${delta.abs()}',
-        style: TextStyle(
-          color: color,
-          fontSize: 11,
-          fontWeight: FontWeight.w800,
-          fontFamily: 'monospace',
-        ),
-      ),
-    );
-  }
+  // SPEC-170 (2026-06-04): _buildDailyScoreDelta retirado. El delta del
+  // Score del Día ahora vive como sub-label dentro del DualScoreRing
+  // ("↑5 vs ayer"). Si vuelve a hacer falta, recuperar de git history.
 
   // SPEC-66 v2: _pillarRing extraído a widgets/pillar_ring.dart como
   // PillarRing público para hacerlo testeable con widget tests.
