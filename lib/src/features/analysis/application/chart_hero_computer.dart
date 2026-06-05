@@ -135,6 +135,21 @@ class ChartHeroComputer {
     }
   }
 
+  /// SPEC-168.7 (2026-06-04): formato corto para el tooltip de un
+  /// bucket al hacer tap. Daily → "5 jun. de 2026", weekly → "Sem del
+  /// 5 jun.", monthly → "jun. de 2026".
+  static String formatTooltipDate(DateTime weekStart, AggregationMode mode) {
+    final ms = _monthsShort[weekStart.month - 1];
+    switch (mode) {
+      case AggregationMode.daily:
+        return '${weekStart.day} $ms. de ${weekStart.year}';
+      case AggregationMode.weekly:
+        return 'Sem del ${weekStart.day} $ms.';
+      case AggregationMode.monthly:
+        return '$ms. de ${weekStart.year}';
+    }
+  }
+
   static const _monthsShort = [
     'ene', 'feb', 'mar', 'abr', 'may', 'jun',
     'jul', 'ago', 'sep', 'oct', 'nov', 'dic',

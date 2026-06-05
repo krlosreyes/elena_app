@@ -7,6 +7,7 @@
 // Layout: header (3 líneas) + área de chart con barras + eje Y
 // (3-4 ticks) + eje X (labels temporales).
 
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -15,10 +16,12 @@ import 'package:elena_app/src/features/analysis/application/chart_hero_computer.
 import 'package:elena_app/src/features/analysis/domain/aggregation_mode.dart';
 import 'package:elena_app/src/features/analysis/domain/hero_aggregation.dart';
 import 'package:elena_app/src/features/analysis/domain/metric_series.dart';
+import 'package:elena_app/src/features/analysis/domain/time_series_point.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/chart_card_header.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/chart_hero_block.dart';
+import 'package:elena_app/src/features/analysis/presentation/widgets/chart_tooltip.dart';
 
-class BarChartCard extends StatelessWidget {
+class BarChartCard extends StatefulWidget {
   const BarChartCard({
     super.key,
     required this.series,
@@ -67,6 +70,62 @@ class BarChartCard extends StatelessWidget {
   /// 'up' si más es mejor (ejercicio, ayuno, hidratación, etc.)
   /// 'down' si menos es mejor (caso raro en hábitos).
   final String deltaIsBetterIf;
+
+  @override
+  State<BarChartCard> createState() => _BarChartCardState();
+}
+
+class _BarChartCardState extends State<BarChartCard> {
+  // SPEC-168.7 (2026-06-04): índice de la barra seleccionada por tap.
+  // Null = ninguna seleccionada. Reset a null al toque fuera del plot
+  // o tras 3 s sin nuevo tap.
+  int? _selectedIndex;
+  Timer? _dismissTimer;
+
+  @override
+  void dispose() {
+    _dismissTimer?.cancel();
+    super.dispose();
+  }
+
+  // Atajos a los campos del Widget — mantiene el resto del cuerpo legible.
+  MetricSeries get series => widget.series;
+  Color get accent => widget.accent;
+  String get periodLabel => widget.periodLabel;
+  String get headline => widget.headline;
+  HeroAggregation get heroAggregation => widget.heroAggregation;
+  String? get heroUnit => widget.heroUnit;
+  AggregationMode get aggregationMode => widget.aggregationMode;
+  double? get targetValue => widget.targetValue;
+  String? get targetLabel => widget.targetLabel;
+  String get deltaIsBetterIf => widget.deltaIsBetterIf;
+
+  void _handleTap(Offset localPos, Size chartSize) {
+    final n = series.points.length;
+    if (n < 2) return;
+    // Geometría coherente con _BarsPainter.paint.
+    const yAxisRightWidth = 36.0;
+    const xAxisHeight = 22.0;
+    final plotLeft = 0.0;
+    final plotRight = chartSize.width - yAxisRightWidth;
+    final plotBottom = chartSize.height - xAxisHeight;
+    if (localPos.dx < plotLeft ||
+        localPos.dx > plotRight ||
+        localPos.dy < 0 ||
+        localPos.dy > plotBottom) {
+      setState(() => _selectedIndex = null);
+      _dismissTimer?.cancel();
+      return;
+    }
+    final plotWidth = plotRight - plotLeft;
+    final slotWidth = plotWidth / n;
+    final idx = ((localPos.dx - plotLeft) / slotWidth).floor().clamp(0, n - 1);
+    setState(() => _selectedIndex = idx);
+    _dismissTimer?.cancel();
+    _dismissTimer = Timer(const Duration(seconds: 3), () {
+      if (mounted) setState(() => _selectedIndex = null);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -134,15 +193,69 @@ class BarChartCard extends StatelessWidget {
     if (series.points.length < 2) {
       return _emptyMessage('Necesitás 2+ semanas para ver tendencia.');
     }
-    return CustomPaint(
-      size: Size.infinite,
-      painter: _BarsPainter(
-        series: series,
-        accent: accent,
-        targetValue: targetValue,
-        targetLabel: targetLabel,
+    return LayoutBuilder(
+      builder: (context, c) {
+        final size = Size(c.maxWidth, c.maxHeight);
+        return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTapUp: (details) => _handleTap(details.localPosition, size),
+          child: Stack(
+            children: [
+              CustomPaint(
+                size: Size.infinite,
+                painter: _BarsPainter(
+                  series: series,
+                  accent: accent,
+                  targetValue: targetValue,
+                  targetLabel: targetLabel,
+                  selectedIndex: _selectedIndex,
+                ),
+              ),
+              if (_selectedIndex != null)
+                _buildTooltipLayer(size),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildTooltipLayer(Size chartSize) {
+    final idx = _selectedIndex!;
+    final point = series.points[idx];
+    // Mismo cálculo de x que el painter — centrado del slot.
+    const yAxisRightWidth = 36.0;
+    const xAxisHeight = 22.0;
+    final plotLeft = 0.0;
+    final plotRight = chartSize.width - yAxisRightWidth;
+    final plotBottom = chartSize.height - xAxisHeight;
+    final plotWidth = plotRight - plotLeft;
+    final slotWidth = plotWidth / series.points.length;
+    final barCenterX = plotLeft + (idx + 0.5) * slotWidth;
+    // plotBottom queda definido por el Positioned.fill; el delegate del
+    // tooltip planta el pin desde top:2 hacia abajo.
+    return Positioned(
+      left: 0,
+      right: 0,
+      top: 0,
+      bottom: chartSize.height - plotBottom,
+      child: IgnorePointer(
+        child: ChartTooltip(
+          anchorX: barCenterX,
+          plotRight: plotRight,
+          unit: heroUnit ?? series.unit,
+          value: _formatPointValue(point.value),
+          dateText: ChartHeroComputer.formatTooltipDate(
+              point.weekStart, aggregationMode),
+        ),
       ),
     );
+  }
+
+  String _formatPointValue(double v) {
+    if (v.abs() >= 100) return v.toStringAsFixed(0);
+    if (v == v.roundToDouble()) return v.toStringAsFixed(0);
+    return v.toStringAsFixed(1);
   }
 
   Widget _emptyMessage(String msg) {
@@ -165,6 +278,7 @@ class _BarsPainter extends CustomPainter {
     required this.accent,
     this.targetValue,
     this.targetLabel,
+    this.selectedIndex,
   });
 
   final MetricSeries series;
@@ -176,6 +290,11 @@ class _BarsPainter extends CustomPainter {
 
   /// SPEC-168.2: label "Objetivo X" que aparece junto a la línea dashed.
   final String? targetLabel;
+
+  /// SPEC-168.7 (2026-06-04): índice de la barra seleccionada por tap.
+  /// Si != null se pinta con un outline blanco encima del fill. Las
+  /// barras no seleccionadas mantienen su look (bright o dim).
+  final int? selectedIndex;
 
   // Padding interno del área del chart.
   // SPEC-168.1 (2026-06-03): eje Y movido al lado derecho del plot,
@@ -258,6 +377,15 @@ class _BarsPainter extends CustomPainter {
       final reachedTarget =
           targetValue == null || values[i] >= targetValue!;
       canvas.drawRRect(rect, reachedTarget ? brightPaint : dimPaint);
+
+      // SPEC-168.7: outline blanco sobre la barra seleccionada.
+      if (selectedIndex != null && selectedIndex == i) {
+        final outlinePaint = Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.5
+          ..color = Colors.white.withValues(alpha: 0.95);
+        canvas.drawRRect(rect.deflate(0.75), outlinePaint);
+      }
     }
 
     // SPEC-168.2: línea dashed del objetivo del usuario. Se pinta
@@ -479,5 +607,8 @@ class _BarsPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _BarsPainter old) =>
-      old.series != series || old.accent != accent;
+      old.series != series ||
+      old.accent != accent ||
+      old.selectedIndex != selectedIndex ||
+      old.targetValue != targetValue;
 }

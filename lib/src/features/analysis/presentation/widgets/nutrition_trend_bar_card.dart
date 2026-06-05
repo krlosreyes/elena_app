@@ -7,6 +7,7 @@
 // barra es específica de este pilar. Reusa el patrón visual del
 // hero block y los axis pero pinta su propio painter.
 
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -16,8 +17,9 @@ import 'package:elena_app/src/features/analysis/domain/aggregation_mode.dart';
 import 'package:elena_app/src/features/analysis/domain/hero_aggregation.dart';
 import 'package:elena_app/src/features/analysis/domain/metric_series.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/chart_hero_block.dart';
+import 'package:elena_app/src/features/analysis/presentation/widgets/chart_tooltip.dart';
 
-class NutritionTrendBarCard extends StatelessWidget {
+class NutritionTrendBarCard extends StatefulWidget {
   const NutritionTrendBarCard({
     super.key,
     required this.series,
@@ -31,6 +33,52 @@ class NutritionTrendBarCard extends StatelessWidget {
 
   static const _colorA = Color(0xFF10B981); // verde A-dominante
   static const _colorE = Color(0xFFFBBF24); // amarillo E-dominante
+
+  @override
+  State<NutritionTrendBarCard> createState() => _NutritionTrendBarCardState();
+}
+
+class _NutritionTrendBarCardState extends State<NutritionTrendBarCard> {
+  // SPEC-168.7 (2026-06-04): índice de la barra seleccionada por tap.
+  int? _selectedIndex;
+  Timer? _dismissTimer;
+
+  @override
+  void dispose() {
+    _dismissTimer?.cancel();
+    super.dispose();
+  }
+
+  MetricSeries get series => widget.series;
+  AggregationMode get aggregationMode => widget.aggregationMode;
+  String get headline => widget.headline;
+
+  static const double _yAxisRightWidth = 36;
+  static const double _xAxisHeight = 22;
+
+  void _handleTap(Offset localPos, Size chartSize) {
+    final n = series.points.length;
+    if (n < 2) return;
+    final plotLeft = 0.0;
+    final plotRight = chartSize.width - _yAxisRightWidth;
+    final plotBottom = chartSize.height - _xAxisHeight;
+    if (localPos.dx < plotLeft ||
+        localPos.dx > plotRight ||
+        localPos.dy < 0 ||
+        localPos.dy > plotBottom) {
+      setState(() => _selectedIndex = null);
+      _dismissTimer?.cancel();
+      return;
+    }
+    final plotWidth = plotRight - plotLeft;
+    final slotWidth = plotWidth / n;
+    final idx = ((localPos.dx - plotLeft) / slotWidth).floor().clamp(0, n - 1);
+    setState(() => _selectedIndex = idx);
+    _dismissTimer?.cancel();
+    _dismissTimer = Timer(const Duration(seconds: 3), () {
+      if (mounted) setState(() => _selectedIndex = null);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -85,14 +133,62 @@ class NutritionTrendBarCard extends StatelessWidget {
     if (series.points.length < 2) {
       return _emptyMessage('Necesitás 2+ semanas para ver tendencia.');
     }
-    return CustomPaint(
-      size: Size.infinite,
-      painter: _BicolorBarsPainter(
-        series: series,
-        colorA: _colorA,
-        colorE: _colorE,
+    return LayoutBuilder(
+      builder: (context, c) {
+        final size = Size(c.maxWidth, c.maxHeight);
+        return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTapUp: (details) => _handleTap(details.localPosition, size),
+          child: Stack(
+            children: [
+              CustomPaint(
+                size: Size.infinite,
+                painter: _BicolorBarsPainter(
+                  series: series,
+                  colorA: NutritionTrendBarCard._colorA,
+                  colorE: NutritionTrendBarCard._colorE,
+                  selectedIndex: _selectedIndex,
+                ),
+              ),
+              if (_selectedIndex != null) _buildTooltipLayer(size),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildTooltipLayer(Size chartSize) {
+    final idx = _selectedIndex!;
+    final point = series.points[idx];
+    final plotLeft = 0.0;
+    final plotRight = chartSize.width - _yAxisRightWidth;
+    final plotBottom = chartSize.height - _xAxisHeight;
+    final plotWidth = plotRight - plotLeft;
+    final slotWidth = plotWidth / series.points.length;
+    final barCenterX = plotLeft + (idx + 0.5) * slotWidth;
+    return Positioned(
+      left: 0,
+      right: 0,
+      top: 0,
+      bottom: chartSize.height - plotBottom,
+      child: IgnorePointer(
+        child: ChartTooltip(
+          anchorX: barCenterX,
+          plotRight: plotRight,
+          unit: '%',
+          value: _formatPointValue(point.value),
+          dateText: ChartHeroComputer.formatTooltipDate(
+              point.weekStart, aggregationMode),
+        ),
       ),
     );
+  }
+
+  String _formatPointValue(double v) {
+    if (v.abs() >= 100) return v.toStringAsFixed(0);
+    if (v == v.roundToDouble()) return v.toStringAsFixed(0);
+    return v.toStringAsFixed(1);
   }
 
   Widget _emptyMessage(String msg) {
@@ -112,9 +208,9 @@ class NutritionTrendBarCard extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        _swatch(_colorA, 'A-dominante'),
+        _swatch(NutritionTrendBarCard._colorA, 'A-dominante'),
         const SizedBox(width: 18),
-        _swatch(_colorE, 'E-dominante'),
+        _swatch(NutritionTrendBarCard._colorE, 'E-dominante'),
       ],
     );
   }
@@ -147,11 +243,15 @@ class _BicolorBarsPainter extends CustomPainter {
     required this.series,
     required this.colorA,
     required this.colorE,
+    this.selectedIndex,
   });
 
   final MetricSeries series;
   final Color colorA;
   final Color colorE;
+
+  /// SPEC-168.7: índice de la barra seleccionada por tap (outline blanco).
+  final int? selectedIndex;
 
   /// Umbral de dominancia. ≥ 50 % A → verde; < 50 % → amarillo.
   static const double _dominantThreshold = 50.0;
@@ -225,6 +325,15 @@ class _BicolorBarsPainter extends CustomPainter {
       );
       final isADominant = values[i] >= _dominantThreshold;
       canvas.drawRRect(rect, isADominant ? paintA : paintE);
+
+      // SPEC-168.7: outline blanco sobre la barra seleccionada.
+      if (selectedIndex != null && selectedIndex == i) {
+        final outlinePaint = Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.5
+          ..color = Colors.white.withValues(alpha: 0.95);
+        canvas.drawRRect(rect.deflate(0.75), outlinePaint);
+      }
     }
 
     _drawXLabels(canvas, plotLeft, plotBottom, plotWidth, n);
@@ -291,5 +400,6 @@ class _BicolorBarsPainter extends CustomPainter {
   bool shouldRepaint(covariant _BicolorBarsPainter old) =>
       old.series != series ||
       old.colorA != colorA ||
-      old.colorE != colorE;
+      old.colorE != colorE ||
+      old.selectedIndex != selectedIndex;
 }

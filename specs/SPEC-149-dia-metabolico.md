@@ -560,4 +560,6 @@ Implementación completada en 4 bloques durante la misma sesión:
 
 **Deuda técnica diferida explícita:** el `dailyScoreProvider` (SPEC-140) sigue mostrando "Score del Día calendárico" en el header de PILARES HOY. El "Score del Ciclo" aparece exclusivamente en el card de cierre. El refactor profundo del provider para anclar al ciclo va en Ola 2 cuando construyamos la pantalla de Análisis con historia. Documentado en SPEC-149 §13.7 y en la decisión arquitectural de Bloque D.
 
+> **DEUDA RESUELTA 2026-06-04 — SPEC-171** (`specs/SPEC-171-cycle-aware-daily-score.md`). Se agregó `displayDailyScoreProvider` que decide entre cíclico (CycleScoreComputer aplicado sobre magnitudes en vivo) y calendárico (fallback al legacy `dailyScoreProvider`). El callsite del header en `dashboard_screen.dart` pasó al nuevo provider. El `dailyScoreProvider` legacy se mantiene intacto porque lo consume el evaluador del ciclo y cambiarlo crearía dependencia circular. Bibliografía: SPEC-171 §1.2.
+
 **Próximo paso desbloqueado:** Ola 1 sigue con SPEC-146 (Auth hardening) y SPEC-132.next (HealthKit observers + background delivery). Ola 2 puede empezar a planificar el refactor del Score del Día sobre ciclos en lugar de días calendarios.

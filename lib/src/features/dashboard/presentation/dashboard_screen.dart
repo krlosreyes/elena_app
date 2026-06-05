@@ -339,8 +339,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     required ExerciseState exercise,
     required NutritionState nutrition,
   }) {
-    final dailyScore = ref.watch(dailyScoreProvider);
-    final delta = ref.watch(dailyScoreDeltaProvider);
+    // SPEC-171 (2026-06-04): usa los providers DISPLAY anclados al ciclo
+    // metabólico. Cuando hay ciclo abierto con protocolo conocido, el
+    // score y el delta reflejan el ciclo en vivo, no el día calendárico.
+    // Fallback al legacy cuando no hay ciclo o protocolo == 'Ninguno'.
+    final dailyScore = ref.watch(displayDailyScoreProvider);
+    final delta = ref.watch(displayDailyScoreDeltaProvider);
 
     // SPEC-149.2.bugfix2 (2026-06-03): el sueño debe anclarse al ciclo
     // metabólico pero la lógica anterior estaba INVERTIDA. El sueño

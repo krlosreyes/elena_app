@@ -3,6 +3,8 @@
 // Para OUTCOMES continuos (IMR, Peso). Línea sin gradient, grid
 // horizontal sutil, eje Y con ticks, eje X con labels temporales.
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import 'package:elena_app/src/features/analysis/application/chart_hero_computer.dart';
@@ -11,8 +13,9 @@ import 'package:elena_app/src/features/analysis/domain/hero_aggregation.dart';
 import 'package:elena_app/src/features/analysis/domain/metric_series.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/chart_card_header.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/chart_hero_block.dart';
+import 'package:elena_app/src/features/analysis/presentation/widgets/chart_tooltip.dart';
 
-class LineChartCard extends StatelessWidget {
+class LineChartCard extends StatefulWidget {
   const LineChartCard({
     super.key,
     required this.series,
@@ -48,6 +51,76 @@ class LineChartCard extends StatelessWidget {
 
   /// SPEC-168.2: label "Objetivo X".
   final String? targetLabel;
+
+  @override
+  State<LineChartCard> createState() => _LineChartCardState();
+}
+
+class _LineChartCardState extends State<LineChartCard> {
+  // SPEC-168.7 (2026-06-04): índice del punto seleccionado por tap.
+  int? _selectedIndex;
+  Timer? _dismissTimer;
+
+  @override
+  void dispose() {
+    _dismissTimer?.cancel();
+    super.dispose();
+  }
+
+  MetricSeries get series => widget.series;
+  Color get accent => widget.accent;
+  String get periodLabel => widget.periodLabel;
+  String get headline => widget.headline;
+  HeroAggregation get heroAggregation => widget.heroAggregation;
+  String? get heroUnit => widget.heroUnit;
+  AggregationMode get aggregationMode => widget.aggregationMode;
+  double? get targetValue => widget.targetValue;
+  String? get targetLabel => widget.targetLabel;
+  String get deltaIsBetterIf => widget.deltaIsBetterIf;
+
+  // Geometría duplicada del painter para mantener tap y render alineados.
+  static const double _yAxisRightWidth = 36;
+  static const double _xAxisHeight = 22;
+  static const double _gridPaddingTop = 12;
+
+  /// Devuelve la x (en pixels del chart) donde se planta el punto `i`.
+  double _xOf(int i, double plotLeft, double plotWidth) {
+    final n = series.points.length;
+    if (n == 1) return plotLeft + plotWidth / 2;
+    return plotLeft + (i / (n - 1)) * plotWidth;
+  }
+
+  void _handleTap(Offset localPos, Size chartSize) {
+    final n = series.points.length;
+    if (n < 2) return;
+    final plotLeft = 0.0;
+    final plotRight = chartSize.width - _yAxisRightWidth;
+    final plotBottom = chartSize.height - _xAxisHeight;
+    if (localPos.dx < plotLeft ||
+        localPos.dx > plotRight ||
+        localPos.dy < 0 ||
+        localPos.dy > plotBottom) {
+      setState(() => _selectedIndex = null);
+      _dismissTimer?.cancel();
+      return;
+    }
+    // Encontrar el punto más cercano por distancia en x.
+    final plotWidth = plotRight - plotLeft;
+    var bestIdx = 0;
+    var bestDist = double.infinity;
+    for (int i = 0; i < n; i++) {
+      final dx = (_xOf(i, plotLeft, plotWidth) - localPos.dx).abs();
+      if (dx < bestDist) {
+        bestDist = dx;
+        bestIdx = i;
+      }
+    }
+    setState(() => _selectedIndex = bestIdx);
+    _dismissTimer?.cancel();
+    _dismissTimer = Timer(const Duration(seconds: 3), () {
+      if (mounted) setState(() => _selectedIndex = null);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -98,15 +171,62 @@ class LineChartCard extends StatelessWidget {
     if (series.points.length < 2) {
       return _emptyMessage('Necesitás 2+ semanas para ver tendencia.');
     }
-    return CustomPaint(
-      size: Size.infinite,
-      painter: _LinePainter(
-        series: series,
-        accent: accent,
-        targetValue: targetValue,
-        targetLabel: targetLabel,
+    return LayoutBuilder(
+      builder: (context, c) {
+        final size = Size(c.maxWidth, c.maxHeight);
+        return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTapUp: (details) => _handleTap(details.localPosition, size),
+          child: Stack(
+            children: [
+              CustomPaint(
+                size: Size.infinite,
+                painter: _LinePainter(
+                  series: series,
+                  accent: accent,
+                  targetValue: targetValue,
+                  targetLabel: targetLabel,
+                  selectedIndex: _selectedIndex,
+                ),
+              ),
+              if (_selectedIndex != null) _buildTooltipLayer(size),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildTooltipLayer(Size chartSize) {
+    final idx = _selectedIndex!;
+    final point = series.points[idx];
+    final plotLeft = 0.0;
+    final plotRight = chartSize.width - _yAxisRightWidth;
+    final plotBottom = chartSize.height - _xAxisHeight;
+    final plotWidth = plotRight - plotLeft;
+    final anchorX = _xOf(idx, plotLeft, plotWidth);
+    return Positioned(
+      left: 0,
+      right: 0,
+      top: 0,
+      bottom: chartSize.height - plotBottom,
+      child: IgnorePointer(
+        child: ChartTooltip(
+          anchorX: anchorX,
+          plotRight: plotRight,
+          unit: heroUnit ?? series.unit,
+          value: _formatPointValue(point.value),
+          dateText: ChartHeroComputer.formatTooltipDate(
+              point.weekStart, aggregationMode),
+        ),
       ),
     );
+  }
+
+  String _formatPointValue(double v) {
+    if (v.abs() >= 100) return v.toStringAsFixed(0);
+    if (v == v.roundToDouble()) return v.toStringAsFixed(0);
+    return v.toStringAsFixed(1);
   }
 
   Widget _emptyMessage(String msg) {
@@ -129,6 +249,7 @@ class _LinePainter extends CustomPainter {
     required this.accent,
     this.targetValue,
     this.targetLabel,
+    this.selectedIndex,
   });
 
   final MetricSeries series;
@@ -139,6 +260,11 @@ class _LinePainter extends CustomPainter {
 
   /// SPEC-168.2: label "Objetivo X" para mostrar junto a la línea.
   final String? targetLabel;
+
+  /// SPEC-168.7 (2026-06-04): índice del punto seleccionado por tap.
+  /// Si != null, se pinta un marker grande (anillo blanco + dot accent)
+  /// sobre ese punto.
+  final int? selectedIndex;
 
   // SPEC-168.1 (2026-06-03): eje Y movido al lado derecho del plot
   // (patrón Apple Health/Fitness). Coherente con BarChartCard.
@@ -222,6 +348,24 @@ class _LinePainter extends CustomPainter {
       7.0,
       Paint()..color = accent.withValues(alpha: 0.25),
     );
+
+    // SPEC-168.7: marker del punto seleccionado por tap. Va encima del
+    // dot final si coinciden — anillo blanco para que el ojo aterrice.
+    if (selectedIndex != null &&
+        selectedIndex! >= 0 &&
+        selectedIndex! < values.length) {
+      final selX = xOf(selectedIndex!);
+      final selY = yOf(values[selectedIndex!]);
+      canvas.drawCircle(
+        Offset(selX, selY),
+        6.5,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.8
+          ..color = Colors.white.withValues(alpha: 0.95),
+      );
+      canvas.drawCircle(Offset(selX, selY), 3.0, Paint()..color = accent);
+    }
 
     // SPEC-168.2: línea dashed del objetivo (encima de la grid, debajo
     // de la línea principal sería visualmente confuso — la pintamos
@@ -412,5 +556,8 @@ class _LinePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _LinePainter old) =>
-      old.series != series || old.accent != accent;
+      old.series != series ||
+      old.accent != accent ||
+      old.selectedIndex != selectedIndex ||
+      old.targetValue != targetValue;
 }

@@ -13,9 +13,19 @@
 // La lógica matemática vive en funciones puras `_computeDailyScore` y
 // `_computeDailyScoreDelta` para testing sin Riverpod. Los providers
 // son wrappers thin que watchean `streakProvider`.
+//
+// SPEC-171 (2026-06-04): se agregan `displayDailyScoreProvider` y
+// `displayDailyScoreDeltaProvider` que anclan al ciclo metabólico
+// cuando hay uno abierto con protocolo conocido. El header del
+// Dashboard usa los `display*`; el `dailyScoreProvider` legacy se
+// mantiene intacto porque lo consume el evaluador del ciclo (sino
+// se generaría dependencia circular). Detalle: `docs/SPEC-171`.
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:elena_app/src/core/services/notification_scheduler.dart';
+import 'package:elena_app/src/features/metabolic_cycle/application/cycle_score_computer.dart';
+import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart';
 import 'package:elena_app/src/features/streak/application/streak_notifier.dart';
 import 'package:elena_app/src/features/streak/domain/streak_entry.dart';
 
@@ -49,4 +59,60 @@ final dailyScoreProvider = Provider<int>((ref) {
 final dailyScoreDeltaProvider = Provider<int?>((ref) {
   final streak = ref.watch(streakProvider);
   return computeDailyScoreDelta(streak.history);
+});
+
+// ────────────────────────────────────────────────────────────────────────
+// SPEC-171 (2026-06-04): providers de DISPLAY anclados al ciclo metabólico.
+//
+// Si hay ciclo abierto con protocolo conocido (no 'Ninguno'), el header
+// del Dashboard muestra el score del ciclo en vivo via
+// CycleScoreComputer. Sino, cae al provider legacy (calendárico).
+//
+// El delta cíclico se compara contra `lastClosedMetabolicCycleProvider`
+// (el último ciclo cerrado persistido), no contra el `StreakEntry` de
+// ayer.
+// ────────────────────────────────────────────────────────────────────────
+
+/// SPEC-171 §RF-171-02: Score del Día anclado al ciclo. Fallback al
+/// calendárico cuando no hay ciclo o el protocolo es 'Ninguno'.
+final displayDailyScoreProvider = Provider<int>((ref) {
+  final cycle = ref.watch(currentMetabolicCycleProvider).valueOrNull;
+  final cycleHours = cycle == null
+      ? null
+      : NotificationScheduler.protocolFastingHours(cycle.fastingProtocol);
+
+  if (cycle == null || cycleHours == null) {
+    return ref.watch(dailyScoreProvider);
+  }
+
+  final today = ref.watch(streakProvider).todayEntry;
+  return CycleScoreComputer.compute(
+    fastingMagnitude: today?.fastingMagnitude,
+    sleepQualityScore: today?.sleepQualityScore,
+    hydrationMagnitude: today?.hydrationMagnitude,
+    exerciseMagnitude: today?.exerciseMagnitude,
+    nutritionMagnitude: today?.nutritionMagnitude,
+  );
+});
+
+/// SPEC-171 §RF-171-03: delta vs último ciclo cerrado. `null` si no hay
+/// ciclo cerrado previo persistido. En modo legacy (sin ciclo) cae a
+/// `dailyScoreDeltaProvider`.
+final displayDailyScoreDeltaProvider = Provider<int?>((ref) {
+  final cycle = ref.watch(currentMetabolicCycleProvider).valueOrNull;
+  final cycleHours = cycle == null
+      ? null
+      : NotificationScheduler.protocolFastingHours(cycle.fastingProtocol);
+
+  if (cycle == null || cycleHours == null) {
+    return ref.watch(dailyScoreDeltaProvider);
+  }
+
+  final lastClosed =
+      ref.watch(lastClosedMetabolicCycleProvider).valueOrNull;
+  final lastScore = lastClosed?.dailyScore;
+  if (lastScore == null) return null;
+
+  final currentScore = ref.watch(displayDailyScoreProvider);
+  return currentScore - lastScore;
 });
