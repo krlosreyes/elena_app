@@ -100,15 +100,37 @@ class MetabolicCycleService {
     if (openCycle == null) {
       if (input.newFastingStartedExplicitly &&
           input.newFastingStartedAt != null) {
+        // SPEC-184 (2026-06-05): defensa contra apertura sospechosa.
+        // Si el `newFastingStartedAt` difiere significativamente de
+        // `now`, probablemente venimos del bootstrap del FastingNotifier
+        // que NO debería haber pasado por aquí (cf. SPEC-183).
+        // Loguear warning para que se vea en Crashlytics si vuelve a
+        // pasar. Decision: NO bloqueamos la apertura (preservar
+        // comportamiento legítimo de "viaje en el tiempo" via
+        // startFastingManual) pero la marcamos.
+        final deltaMinutes =
+            input.now.difference(input.newFastingStartedAt!).inMinutes.abs();
+        if (deltaMinutes > 5) {
+          AppLogger.warning(
+            '[cycle.open.suspicious] startedAt difiere de now por '
+            '${deltaMinutes}min. Posible bootstrap mal etiquetado '
+            'o viaje en el tiempo legítimo. '
+            'Ver docs/METABOLIC_DAY_CONSTITUTION.md §5.',
+          );
+        }
         final fresh = MetabolicCycleResolver.openCycle(
           startedAt: input.newFastingStartedAt!,
           fastingProtocol: input.currentProtocol,
           tzOffsetMinutes: input.tzOffsetMinutes,
         );
         await _repository.save(userId, fresh);
+        // SPEC-184: log estructurado con motivo. Permite reconstruir el
+        // historial de aperturas desde Crashlytics sin tocar Firestore.
         AppLogger.info(
-          '[metabolicCycle] Abierto nuevo ciclo ${fresh.cycleId} '
-          '(protocol ${fresh.fastingProtocol})',
+          '[cycle.open] cycleId=${fresh.cycleId} '
+          'startedAt=${fresh.startedAt.toIso8601String()} '
+          'protocol=${fresh.fastingProtocol} '
+          'source=userInitiated',
         );
         return MetabolicCycleCheckResult.opened(fresh);
       }
@@ -152,9 +174,17 @@ class MetabolicCycleService {
       feedback: feedback,
     );
     await _repository.save(userId, closed);
+    // SPEC-184: log estructurado del cierre. Incluye reason, duración
+    // del ayuno y duración de ventana para diagnóstico rápido. Ver
+    // docs/METABOLIC_DAY_CONSTITUTION.md §6.
+    final cycleDurationHours =
+        closeTime.difference(openCycle.startedAt).inMinutes / 60.0;
     AppLogger.info(
-      '[metabolicCycle] Cerrado ciclo ${closed.cycleId} '
-      'razón=${reason.value} score=${closed.dailyScore}',
+      '[cycle.close] cycleId=${closed.cycleId} '
+      'closedAt=${closeTime.toIso8601String()} '
+      'reason=${reason.value} '
+      'durationHours=${cycleDurationHours.toStringAsFixed(2)} '
+      'score=${closed.dailyScore}',
     );
 
     // Si el cierre fue por nuevo ayuno explícito, abrir el siguiente.
@@ -167,8 +197,12 @@ class MetabolicCycleService {
         tzOffsetMinutes: input.tzOffsetMinutes,
       );
       await _repository.save(userId, opened);
+      // SPEC-184: log estructurado de re-apertura encadenada.
       AppLogger.info(
-        '[metabolicCycle] Abierto siguiente ciclo ${opened.cycleId}',
+        '[cycle.open] cycleId=${opened.cycleId} '
+        'startedAt=${opened.startedAt.toIso8601String()} '
+        'protocol=${opened.fastingProtocol} '
+        'source=chainedAfterClose',
       );
     } else if (reason == ClosureReason.protocolChanged) {
       // Tras cambio de protocolo, abrir un ciclo nuevo con el nuevo
@@ -179,8 +213,12 @@ class MetabolicCycleService {
         tzOffsetMinutes: input.tzOffsetMinutes,
       );
       await _repository.save(userId, opened);
+      // SPEC-184: log estructurado de re-apertura por cambio de protocolo.
       AppLogger.info(
-        '[metabolicCycle] Abierto ciclo post-protocolChanged ${opened.cycleId}',
+        '[cycle.open] cycleId=${opened.cycleId} '
+        'startedAt=${opened.startedAt.toIso8601String()} '
+        'protocol=${opened.fastingProtocol} '
+        'source=protocolChanged',
       );
     }
 
@@ -216,9 +254,16 @@ class MetabolicCycleService {
       tzOffsetMinutes: tzOffsetMinutes,
     );
     await _repository.save(userId, cycle);
+    // SPEC-184: log estructurado del bootstrap one-shot. Este es el
+    // único caso legítimo en que el sistema crea ciclo sin tap directo
+    // del usuario — el contrato es: solo al primer login con ayuno
+    // persistido, para reconstruir el ciclo retroactivo. NO debe
+    // repetirse en bootstraps posteriores (porque `existing != null`).
     AppLogger.info(
-      '[metabolicCycle] Bootstrap creó ciclo inicial ${cycle.cycleId} '
-      '(protocol $protocol)',
+      '[cycle.open] cycleId=${cycle.cycleId} '
+      'startedAt=${cycle.startedAt.toIso8601String()} '
+      'protocol=${cycle.fastingProtocol} '
+      'source=bootstrapOneShot',
     );
     return cycle;
   }
