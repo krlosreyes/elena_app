@@ -302,22 +302,42 @@ class HealthSyncService {
   }
 
   /// Lee una métrica del plugin y la traduce a `HealthSample`.
+  ///
+  /// SPEC-173 (2026-06-04): cada tipo se pide en SU PROPIA call con
+  /// try/catch propio. Antes pedíamos los 5 tipos de sleep iOS en una
+  /// sola call → si UNO solo fallaba autorización (DEEP/REM frecuentes
+  /// en iPhones sin Apple Watch), la call entera tiraba y todo sleep
+  /// caía a cero. Ahora un tipo denegado solo pierde ese tipo.
+  /// Loguea cuántos samples entraron por tipo para diagnóstico.
   Future<List<HealthSample>> _fetchMetric(
     HealthMetric metric,
     DateTime start,
     DateTime end,
   ) async {
     final types = _typesFor(metric);
-    final points = await _plugin.getHealthDataFromTypes(
-      types: types,
-      startTime: start,
-      endTime: end,
-    );
+    final allPoints = <hp.HealthDataPoint>[];
+    for (final type in types) {
+      try {
+        final points = await _plugin.getHealthDataFromTypes(
+          types: [type],
+          startTime: start,
+          endTime: end,
+        );
+        AppLogger.info(
+          'HealthSync: ${metric.label}/${type.name} → ${points.length} samples',
+        );
+        allPoints.addAll(points);
+      } catch (e) {
+        AppLogger.warning(
+          'HealthSync: ${metric.label}/${type.name} falló: $e',
+        );
+      }
+    }
 
     // El plugin puede devolver duplicados si distintos dispositivos
     // (iPhone + Apple Watch) reportan lo mismo. Deduplica por (start,
     // value, source).
-    final deduped = _plugin.removeDuplicates(points);
+    final deduped = _plugin.removeDuplicates(allPoints);
 
     final samples = <HealthSample>[];
     for (final p in deduped) {

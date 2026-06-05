@@ -58,7 +58,14 @@ class HealthImportSummary {
 /// supera 5000 pasos en el día — el threshold científico estaba
 /// dejando todo en cero. 2000 pasos ≈ 20 min de caminata ligera, suma
 /// real pero filtra días puramente de oficina (<2000).
-const int _minStepsForExerciseLog = 2000;
+///
+/// SPEC-173 (2026-06-04): bajado de 2000 a 500. Carlos al usar la app
+/// en iPhone reportó que ejercicio nunca llegaba, ni en días que
+/// caminó. La causa principal fue el bug del fetch de tipos (corregido
+/// en health_sync_service `_fetchMetric`), pero también el threshold
+/// 2000 filtraba días de oficina sin caminata. 500 da margen para
+/// ruido del sensor y siempre deja una señal sobre la que comentar.
+const int _minStepsForExerciseLog = 500;
 
 /// Servicio de importación. Stateless — recibe las dependencias por
 /// constructor para que el AutoSyncController las inyecte.

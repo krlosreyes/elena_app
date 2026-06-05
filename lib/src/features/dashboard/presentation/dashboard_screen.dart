@@ -140,10 +140,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     // ciclo abierto al login, crea uno retroactivo. One-shot.
     ref.watch(metabolicCycleBootstrapProvider);
 
-    // SPEC-149: evaluador continuo del ciclo. En cada tick del pulse
-    // metabolic (10s) chequea si el ciclo abierto debe cerrarse según
-    // las 6 razones de §RF-149-04. Side-effect-only.
-    ref.watch(metabolicCycleEvaluatorProvider);
+    // SPEC-149: evaluador continuo del ciclo.
+    // SPEC-174 (2026-06-04): el evaluator se movió a `app.dart` (nivel
+    // root) para que evalúe aunque el usuario no esté en este tab.
+    // Antes, salir de Hoy a Análisis/Perfil podía desmontar el provider
+    // y el ciclo dejaba de evaluarse. Ya no se requiere watch aquí.
 
     return userAsync.when(
       loading: () =>

@@ -97,6 +97,19 @@ Future<void> _bootstrap() async {
   // SPEC-05: Inicializar el servicio de notificaciones (timezone + canales Android).
   await NotificationService.init();
 
+  // SPEC-172 (2026-06-04): solicitar permisos iOS post-init.
+  // En flutter_local_notifications ≥ 13 el flag `requestAlertPermission`
+  // del init NO dispara el modal nativo por sí solo en iOS reciente.
+  // Sin esta llamada explícita, iOS marca la app como "permisos denegados
+  // por default" y `zonedSchedule` se ejecuta sin error pero el sistema
+  // descarta todas las entregas. Diagnóstico en docs/PLAN_HOTFIX_2026_06_04.md §P3.
+  //
+  // Aceptamos pedir permisos en cold start (no es la mejor UX pero
+  // garantiza que cuando el listener del perfil dispare scheduleCircadianDay
+  // ya tengamos autorización). En SPEC-172.next mover a momento educativo
+  // tras onboarding.
+  await NotificationService.requestPermissions();
+
   runApp(
     ProviderScope(
       overrides: [

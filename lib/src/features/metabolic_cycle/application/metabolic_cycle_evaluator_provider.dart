@@ -23,11 +23,20 @@ import 'package:elena_app/src/features/dashboard/domain/fasting_status.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_service.dart';
 import 'package:elena_app/src/features/metabolic_cycle/domain/metabolic_cycle.dart';
+import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
 import 'package:elena_app/src/features/streak/application/daily_score_provider.dart';
 import 'package:elena_app/src/features/streak/application/streak_notifier.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 
 final metabolicCycleEvaluatorProvider = Provider<void>((ref) {
+  // SPEC-174 (2026-06-04): primer tick INMEDIATO al montar el provider.
+  // `metabolicPulseProvider` (`Stream.periodic` cada 10s) no emite valor
+  // inicial — antes el evaluator esperaba 10s tras montar para evaluar.
+  // Si el usuario abría con un ciclo cerrable pendiente y cerraba la
+  // app en <10s, no se disparaba el cierre. `Future.microtask` da tiempo
+  // a Riverpod a completar el setup antes de leer providers.
+  Future.microtask(() => _evaluate(ref, DateTime.now()));
+
   // Tick periódico cada 10s.
   ref.listen<AsyncValue<DateTime>>(
     metabolicPulseProvider,
@@ -88,11 +97,22 @@ Future<void> _evaluate(
   final dailyScore = ref.read(dailyScoreProvider);
   final eatingWindow = ref.read(eatingWindowProvider);
   final sleepState = ref.read(sleepProvider);
+  final nutritionState = ref.read(nutritionProvider);
 
   // Sleep detectado tras última comida: si sleepState tiene un log con
   // fellAsleep populado, lo marcamos como detectado. Conservador para
   // evitar disparos espurios.
   final sleepDetected = sleepState.lastLog != null;
+
+  // SPEC-174 (2026-06-04): timestamp de la última comida del usuario.
+  // Activa el trigger `fallbackSleepDetected` (resolver:75) que antes
+  // jamás disparaba porque pasábamos `lastMealTime: null` hardcoded.
+  // `todayLogs` ya viene cycle-aware post SPEC-149.2 (filtrado por
+  // ventana del ciclo abierto). El `lastOrNull?.timestamp` da el
+  // momento exacto de la última comida dentro del ciclo en curso.
+  final lastMealTime = nutritionState.todayLogs.isEmpty
+      ? null
+      : nutritionState.todayLogs.last.timestamp;
 
   final input = MetabolicCycleEvaluationInput(
     now: now,
@@ -101,7 +121,7 @@ Future<void> _evaluate(
     currentMagnitudes: magnitudes,
     currentPillarsCompleted: pillarsCompleted,
     expectedWindowCloseTime: eatingWindow?.windowEnd,
-    lastMealTime: null, // Reservado para Bloque E (lectura de nutrition).
+    lastMealTime: lastMealTime,
     sleepDetectedAfterLastMeal: sleepDetected,
     newFastingStartedExplicitly: newFastingTriggered,
     newFastingStartedAt: newFastingAt,
