@@ -457,6 +457,105 @@ Si el equipo médico (revisión clínica) considera ajustar los umbrales, todos 
 
 ---
 
+## §16 — SPEC-138 — Clasificación NOVA (ultraprocesados)
+
+**Añadido 2026-06-05** como segundo eje del pilar Nutrición, ortogonal al `qualityScore` continuo (que mide respuesta metabólica). NOVA mide grado de procesamiento industrial.
+
+### §16.1 — Marco normativo
+
+Fuente primaria: **Monteiro CA, Cannon G, Lawrence M, Costa Louzada ML, Pereira Machado P.** *Ultra-processed foods, diet quality, and health using the NOVA classification system.* FAO, Rome, 2019. Resumen operacional en **Monteiro et al., Public Health Nutrition 22(5):936-941, 2019**.
+
+Define cuatro grupos:
+
+1. **NOVA 1 — No procesados o mínimamente procesados.** Partes comestibles de plantas o animales y procesos físicos (secado, triturado, refrigeración) que no añaden sustancias.
+2. **NOVA 2 — Ingredientes culinarios procesados.** Sustancias derivadas de NOVA 1 por prensado, refinado o molienda usadas en cocina.
+3. **NOVA 3 — Alimentos procesados.** Combinación NOVA 1 + NOVA 2 con sal, azúcar, fermentación o ahumado tradicional. Reconocibles.
+4. **NOVA 4 — Ultraprocesados (UPF).** Formulaciones industriales con ingredientes no culinarios (proteína hidrolizada, dextrosa, suero modificado), aditivos cosméticos (saborizantes, colorantes, emulsionantes, espumantes) y técnicas industriales (extrusión, hidrogenación, moldeado).
+
+### §16.2 — Evidencia clínica de impacto sobre salud metabólica
+
+- **Hall KD et al., 2019.** *Ultra-Processed Diets Cause Excess Calorie Intake and Weight Gain.* Cell Metabolism 30(1):67-77. RCT cruzado n=20, NIH Clinical Center, 4 semanas. Dieta UPF iguales en macros/fibra → consumo +508 kcal/día y peso +0.9 kg en 14 días. Reversible al volver a NOVA 1.
+- **Srour B et al., 2019.** *Ultra-Processed Food Consumption and Risk of Mortality Among Middle-aged Adults in France.* JAMA Internal Medicine 179(4):490-498. NutriNet-Santé n=44,551, mediana 7.1 años. **+14% mortalidad por cada 10% más de UPF en la dieta** (HR 1.14, IC 95% 1.04-1.27).
+- **Rico-Campà A et al., 2019.** *Association between consumption of ultra-processed foods and all-cause mortality.* BMJ 365:l1949. Cohorte SUN n=19,899, mediterránea. Patrón consistente con Srour: HR 1.18 para alto consumo.
+- **Chassaing B et al., 2015.** *Dietary emulsifiers impact the mouse gut microbiota promoting colitis and metabolic syndrome.* Nature 519:92-96. Mecanismo: emulsionantes (polisorbato-80, CMC) alteran microbioma → inflamación crónica de bajo grado.
+- **Monteiro CA, 2018.** *Ultra-processed foods: international consensus on definition.* BMJ Editorial. Consenso para política pública usando NOVA.
+
+### §16.3 — Coherencia con marco metabólico de ElenaApp
+
+UPF impactan el IMR por **tres vías independientes**:
+
+1. **Insulínica.** Picos repetidos por densidad calórica + ausencia de matriz. Ya cubierta parcialmente por `qualityScore`.
+2. **Microbiota.** Emulsionantes y conservantes alteran flora (Chassaing 2015). NO cubierta por `qualityScore`.
+3. **Palatabilidad hiperestimulante.** Sobreconsumo crónico (Hall 2019). NO cubierta por `qualityScore`.
+
+Por eso `qualityScore` y NOVA son **ortogonales**: leche entera tiene `qualityScore=50` y `NOVA=1`; margarina tiene `qualityScore=30` y `NOVA=4`. Ambas "media" en respuesta insulínica, pero NOVA discrimina el riesgo metabólico estructural.
+
+### §16.4 — Aplicación en código
+
+| Capa | Artefacto | Función |
+|------|-----------|---------|
+| Catálogo | `Food.nova: NovaGroup` | Metadato por alimento (default NOVA 1) |
+| Plato | `PlateBuilder.upfSharePercent` | % de slots NOVA 4 en plato actual |
+| Persistencia | `NutritionLog.upfSlots / totalSlots` | Almacena para agregación posterior |
+| Diario | `dailyUpfShareProvider` | Agrega por ciclo metabólico (cycle-aware, SPEC-149) |
+| Semanal | `weeklyUpfShareProvider` | Agrega últimos 7 días |
+| Coaching | `upfCoachingPool` | Insight en `CycleFeedback` cuando `weekly > 40%` |
+| Tendencia | `TransformationSnapshot.upfShareDelta` | Delta 30d en `TransformationCard` (SPEC-148) |
+
+### §16.5 — Umbral de alerta y su justificación
+
+**40% UPF semanal** activa insight de coaching. Razón científica: Hall 2019 documentó +508 kcal/día con dieta ~60% UPF; 40% es un punto razonable **antes** de aproximarse al rango de exceso calórico documentado. Buffer protector, no umbral arbitrario.
+
+**25% UPF semanal** activa visualización permanente en Hoy. Razón: por debajo de 25% el patrón es ocasional (cheat day-like) y no amerita panel persistente que sature UI.
+
+Estos umbrales viven en `lib/src/features/nutrition/application/upf_thresholds.dart` para revisión clínica unitaria.
+
+### §16.6 — Clasificación de los alimentos del catálogo
+
+Asignación 2026-06-05. Cada NOVA 3 y NOVA 4 está documentado en el catálogo (`food_catalog.dart`) con comentario inline citando esta sección. NOVA 1 es default implícito.
+
+**NOVA 4 (ultraprocesados, 13 items):** galletas, galletas_dulces, galletas_saladas, cereal, gaseosa, cocacola, margarina, mayonesa, salchicha, chocolate_caliente, pizza, hamburguesa, salchipapa, sandwich, empanada.
+
+**NOVA 3 (procesados, 13 items):** jamon, queso_campesino, yogur_griego, suero_costeno, aceite_vegetal, queso_amarillo, queso_crema, crema_de_leche, tocino, chicharron, chorizo, pan, pan_integral, chocolate.
+
+**NOVA 2 (ingredientes culinarios, 7 items):** mantequilla, manteca, azucar, panela, miel.
+
+**NOVA 1 (el resto, ~52 items):** todas las carnes/pescados/huevo frescos, verduras, frutas, legumbres, frutos secos, semillas, leche pasteurizada, café, jugos caseros.
+
+### §16.7 — Decisiones de criterio (no triviales)
+
+- **Pizza, hamburguesa, sandwich, salchipapa, empanada = NOVA 4** (decisión estricta, Carlos 2026-06-05). Monteiro 2019 §Tabla 1 lista "pizzas, burgers, hot-dogs" como ejemplos canon. Versión casera con ingredientes propios del catálogo registra los componentes individuales (queso+pan+tomate) y la clasificación cae naturalmente.
+- **Pan blanco/integral = NOVA 3.** Sin emulsionantes ni dextrosa industrial reconocibles. Si el pan tiene mejorantes (pan de molde industrial) sería NOVA 4 pero el catálogo no discrimina marcas — interpretación benigna conservadora.
+- **Leche pasteurizada = NOVA 1.** Monteiro 2019 explícito sobre pasteurización como proceso NOVA 1.
+- **Chocolate = NOVA 3.** Chocolate amargo en barra. Versiones con leche y azúcar industrial entrarían en NOVA 4 pero el catálogo no discrimina; conservador NOVA 3.
+- **Salchicha = NOVA 4, chorizo artesanal = NOVA 3.** Monteiro 2019 cita "sausages" en UPF cuando son reconstituidas con emulsionantes; chorizo tradicional curado entra en NOVA 3.
+
+### §16.8 — UPF NO entra al IMR
+
+Decisión explícita 2026-06-05: el UPF% **no** alimenta la fórmula del IMR (semanal ni diario). Solo se usa para:
+
+1. Insight en `CycleFeedback` cuando supera umbral.
+2. Delta narrado en `TransformationCard` 30d.
+3. Chip silencioso en `PlateRatioSheet`.
+
+Razones:
+
+- Evita doble penalización (qualityScore ya refleja el impacto insulínico).
+- Mantiene `IMR_BIBLIOGRAPHY.md` estable — la fórmula del IMR sigue siendo defendible sin renegociar pesos.
+- Distancia UPF de cualquier carga moral sobre el score.
+
+### §16.9 — Tono de los copies (no estigmatizar)
+
+Aplicar memoria interna `notification-tone-human-not-clinical`. Copies validados:
+
+- "Tu cuerpo lo agradece cuando le das menos comida industrial."
+- "Está bien tener tu día con algo de eso. El patrón importa más que el plato puntual."
+- "Notamos menos ultraprocesado esta semana. Eso se nota en cómo te sentís."
+
+Pool definitivo en `lib/src/features/nutrition/application/upf_coaching_pool.dart`. Toda cita usa formato corto "· Monteiro 2019 · Hall 2019" al pie del copy.
+
+---
+
 ## §14 — Cómo usar este documento
 
 1. Al redactar SPEC nueva de nutrición: citar la sección aplicable de §1-§10. Si el caso no está cubierto, abrir issue para extender este doc primero.

@@ -4,20 +4,11 @@
 <dict>
 	<key>com.apple.developer.healthkit</key>
 	<true/>
-	<!--
-		SPEC-173 (2026-06-04): healthkit.background-delivery removido
-		temporalmente. La capability NO está aprobada en Apple Developer
-		Portal (SPEC-132.next BLOCKED externo). Declararla en un release
-		firmado provoca rechazo silencioso de tipos clínicos (los 5 tipos
-		de sleep iOS). Cuando Apple apruebe la capability, devolver:
-
-		<key>com.apple.developer.healthkit.background-delivery</key>
-		<true/>
-
-		Sin esta key seguimos teniendo sync manual al abrir la app y al
-		AppLifecycleState.resumed (SPEC-173). Solo perdemos el observer
-		que dispara sin abrir la app — pieza de SPEC-132.next que sigue
-		BLOCKED por Apple, no por nuestro código.
-	-->
+	<key>com.apple.developer.healthkit.access</key>
+	<array>
+		<string>health-records</string>
+	</array>
+	<key>com.apple.developer.healthkit.background-delivery</key>
+	<true/>
 </dict>
 </plist>

@@ -24,6 +24,8 @@ import 'package:elena_app/src/features/onboarding/presentation/widgets/intro_scr
 // SPEC-132 Bloque E: paso opcional para conectar HealthKit / Health Connect.
 import 'package:elena_app/src/features/health_sync/application/health_auto_sync_controller.dart';
 import 'package:elena_app/src/features/health_sync/application/health_sync_providers.dart';
+import 'package:elena_app/src/core/providers/shared_preferences_provider.dart';
+import 'package:elena_app/src/core/services/notification_service.dart';
 import 'package:elena_app/src/features/health_sync/presentation/onboarding_health_step.dart';
 // SPEC-168.0.A: paso final del onboarding — sugerencias de metas
 // personalizadas con narrativa coaching. Reutiliza GoalSuggestionCard
@@ -70,7 +72,16 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   //   102 = Por qué pedimos estos datos
   List<int> _activeSteps = const [0, 1, 2, 3];
 
-  static const List<int> _kIntroStepIds = [100, 101, 102];
+  // SPEC-182 (2026-06-05): se agregan 103 (Día Metabólico) al bloque
+  // intro y 104 (Notificaciones con respaldo) como paso post-hábitos.
+  static const int _kIntroMetabolicDayId = 103;
+  static const int _kIntroNotificationsId = 104;
+  static const List<int> _kIntroStepIds = [
+    100,
+    101,
+    102,
+    _kIntroMetabolicDayId,
+  ];
 
   // SPEC-132 Bloque E: id del paso "Conectar Apple Health / Health
   // Connect". Solo aparece en cold install (newProfile) y solo en
@@ -328,6 +339,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       if (!biometryComplete) 1,
       2,
       3,
+      // SPEC-182 §RF-182-05: pantalla educativa de notificaciones con
+      // CTA "Activar coaching" — solo para cold installs, después de
+      // capturar hábitos y antes de Health Sync.
+      if (isColdInstall) _kIntroNotificationsId,
       if (showHealthStep) _kHealthSyncStepId,
       // SPEC-168.0.A: Tus objetivos — siempre al final.
       _kGoalsStepId,
@@ -411,6 +426,18 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           return IntroImrStep(isDark: isDark);
         case 102:
           return IntroDataStep(isDark: isDark);
+        case 103:
+          // SPEC-182 §RF-182-04: Día Metabólico.
+          return IntroMetabolicDayStep(isDark: isDark);
+        case 104:
+          // SPEC-182 §RF-182-05: Notificaciones con respaldo. Dos CTAs
+          // — activar dispara requestPermissions, "más tarde" avanza
+          // sin pedirlos.
+          return IntroNotificationsStep(
+            isDark: isDark,
+            onActivate: _activateNotifications,
+            onSkip: _handleNext,
+          );
         case 0:
           return _buildStepDisclaimer(isDark);
         case 1:
@@ -1340,6 +1367,19 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       // antes de la navegación — para que el evento se asocie al
       // funnel del usuario que SÍ completó.
       ref.read(authTelemetryProvider).onboardingCompleted();
+
+      // SPEC-182 §RF-182-06 (2026-06-05): flag local que `main.dart`
+      // consulta para decidir si pide permisos de notifs en cold start.
+      // Usuarios que pasaron por SPEC-182 (paso 104) NO necesitan el
+      // prompt ciego — ya respondieron en momento educativo. Usuarios
+      // pre-SPEC-182 que ya tenían cuenta lo seteen acá también al
+      // recargar el flow alguna vez.
+      try {
+        final prefs = ref.read(sharedPreferencesProvider);
+        await prefs.setBool('onboardingCompleted', true);
+      } catch (_) {
+        // Si la pref falla no rompemos el cierre del onboarding.
+      }
       await Future.delayed(const Duration(milliseconds: 800));
       if (!mounted) return;
       context.go('/dashboard');
@@ -1527,6 +1567,21 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         ],
       ),
     );
+  }
+
+  /// SPEC-182 §RF-182-05 (2026-06-05): handler del CTA "Activar coaching
+  /// por notificaciones" en el paso 104. Dispara el modal nativo iOS de
+  /// permisos. Si el usuario rechaza, igual avanza — podrá habilitarlo
+  /// luego desde Settings → ElenaApp → Notificaciones.
+  Future<void> _activateNotifications() async {
+    try {
+      await NotificationService.requestPermissions();
+    } catch (_) {
+      // Si el plugin de notifs falla por una razón inesperada, no
+      // bloqueamos el onboarding — el usuario podrá activarlas
+      // después.
+    }
+    _handleNext();
   }
 
   void _handleNext() async {

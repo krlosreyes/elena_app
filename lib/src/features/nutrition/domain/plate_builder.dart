@@ -182,6 +182,33 @@ class PlateBuilder {
     return 'el';
   }
 
+  // ── SPEC-138: ultra-procesados (NOVA 4) ────────────────────────────
+
+  /// Slots ocupados por alimentos NOVA 4 (ultraprocesados).
+  ///
+  /// Referencia: Monteiro et al. 2019, Public Health Nutrition
+  /// 22(5):936-941. Ver docs/NUTRITION_BIBLIOGRAPHY.md §16 para la
+  /// clasificación por alimento.
+  int get upfSlots => _items
+      .where((f) => f.isUltraProcessed)
+      .fold(0, (sum, f) => sum + f.category.slots);
+
+  /// Porcentaje del plato ocupado por alimentos NOVA 4 (0-100).
+  ///
+  /// 0 si el plato está vacío. Útil para:
+  /// - Mostrar chip "ultraprocesado en tu plato" cuando > 0.
+  /// - Persistir `upfSlots/totalSlots` en el NutritionLog para
+  ///   agregación diaria/semanal posterior.
+  ///
+  /// NO se usa para calcular el qualityScore — son ejes ortogonales.
+  int get upfSharePercent {
+    if (totalSlots == 0) return 0;
+    return ((upfSlots / totalSlots) * 100).round();
+  }
+
+  /// True si el plato contiene al menos un alimento NOVA 4.
+  bool get hasUltraProcessed => _items.any((f) => f.isUltraProcessed);
+
   // ── persistencia: derivar MealRatio ────────────────────────────────
 
   /// Mapea la composición actual al [MealRatio] que persiste el

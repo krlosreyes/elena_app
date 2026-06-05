@@ -29,8 +29,24 @@ import 'package:elena_app/src/features/dashboard/data/fasting_interval_repositor
 import 'package:elena_app/src/features/dashboard/data/hydration_repository_impl.dart';
 import 'package:elena_app/src/features/dashboard/data/sleep_repository_impl.dart';
 import 'package:elena_app/src/features/exercise/data/exercise_repository_impl.dart';
+import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart';
 import 'package:elena_app/src/features/nutrition/data/nutrition_repository_impl.dart';
 import 'package:elena_app/src/features/progress/data/biometric_repository.dart';
+
+/// SPEC-177 (2026-06-04): bump que cambia cada vez que se cierra un
+/// nuevo ciclo metabólico. Las series del Análisis lo watch como
+/// dependencia → cuando cambia, los providers se re-evalúan, se
+/// re-suscriben a sus streams Firestore y emiten el día recién cerrado
+/// (que entró a `daily_summary/{YYYYMMDD}` vía SPEC-111 persistence).
+///
+/// Sin esto, las gráficas Apple-Fitness style del Análisis se quedaban
+/// con los datos cacheados — el usuario cerraba el ciclo, veía la
+/// CycleClosureCard, pero los charts no reflejaban el cierre hasta el
+/// próximo cold start o nuevo log.
+final cycleClosureBumpProvider = Provider<String?>((ref) {
+  final lastClosed = ref.watch(lastClosedMetabolicCycleProvider).valueOrNull;
+  return lastClosed?.cycleId;
+});
 
 /// Umbral para considerar un día de ayuno "cumplido" (≥95% del target).
 const double _kFastingCompletedThreshold = 0.95;
@@ -60,6 +76,8 @@ AggregationMode _currentMode(Ref ref) {
 
 final imrSeriesProvider =
     StreamProvider.autoDispose<MetricSeries>((ref) async* {
+  // SPEC-177 (2026-06-04): watch del bump para refrescar al cierre del ciclo.
+  ref.watch(cycleClosureBumpProvider);
   final account = ref.watch(authStateProvider).value;
   if (account == null) {
     yield MetricSeries.empty(label: 'IMR', unit: '');
@@ -89,6 +107,8 @@ final imrSeriesProvider =
 // y filtra los check-ins que NO tienen bodyFatPercentage.
 final bodyFatSeriesProvider =
     StreamProvider.autoDispose<MetricSeries>((ref) async* {
+  // SPEC-177 (2026-06-04): watch del bump para refrescar al cierre del ciclo.
+  ref.watch(cycleClosureBumpProvider);
   final account = ref.watch(authStateProvider).value;
   if (account == null) {
     yield MetricSeries.empty(label: 'Grasa corporal', unit: '%');
@@ -117,6 +137,8 @@ final bodyFatSeriesProvider =
 
 final weightSeriesProvider =
     StreamProvider.autoDispose<MetricSeries>((ref) async* {
+  // SPEC-177 (2026-06-04): watch del bump para refrescar al cierre del ciclo.
+  ref.watch(cycleClosureBumpProvider);
   final account = ref.watch(authStateProvider).value;
   if (account == null) {
     yield MetricSeries.empty(label: 'Peso', unit: 'kg');
@@ -147,6 +169,8 @@ final weightSeriesProvider =
 
 final fastingHabitSeriesProvider =
     StreamProvider.autoDispose<MetricSeries>((ref) async* {
+  // SPEC-177 (2026-06-04): watch del bump para refrescar al cierre del ciclo.
+  ref.watch(cycleClosureBumpProvider);
   final account = ref.watch(authStateProvider).value;
   if (account == null) {
     yield MetricSeries.empty(label: 'Ayuno', unit: 'h');
@@ -194,6 +218,8 @@ final fastingHabitSeriesProvider =
 
 final nutritionHabitSeriesProvider =
     StreamProvider.autoDispose<MetricSeries>((ref) async* {
+  // SPEC-177 (2026-06-04): watch del bump para refrescar al cierre del ciclo.
+  ref.watch(cycleClosureBumpProvider);
   final account = ref.watch(authStateProvider).value;
   if (account == null) {
     yield MetricSeries.empty(label: 'Nutrición A', unit: '%');
@@ -228,6 +254,8 @@ final nutritionHabitSeriesProvider =
 
 final hydrationHabitSeriesProvider =
     StreamProvider.autoDispose<MetricSeries>((ref) async* {
+  // SPEC-177 (2026-06-04): watch del bump para refrescar al cierre del ciclo.
+  ref.watch(cycleClosureBumpProvider);
   final account = ref.watch(authStateProvider).value;
   if (account == null) {
     yield MetricSeries.empty(label: 'Hidratación', unit: 'L');
@@ -264,6 +292,8 @@ final hydrationHabitSeriesProvider =
 
 final exerciseHabitSeriesProvider =
     StreamProvider.autoDispose<MetricSeries>((ref) async* {
+  // SPEC-177 (2026-06-04): watch del bump para refrescar al cierre del ciclo.
+  ref.watch(cycleClosureBumpProvider);
   final account = ref.watch(authStateProvider).value;
   if (account == null) {
     yield MetricSeries.empty(label: 'Ejercicio', unit: 'min');
@@ -301,6 +331,8 @@ final exerciseHabitSeriesProvider =
 
 final sleepHabitSeriesProvider =
     StreamProvider.autoDispose<MetricSeries>((ref) async* {
+  // SPEC-177 (2026-06-04): watch del bump para refrescar al cierre del ciclo.
+  ref.watch(cycleClosureBumpProvider);
   final account = ref.watch(authStateProvider).value;
   if (account == null) {
     yield MetricSeries.empty(label: 'Sueño', unit: 'h');

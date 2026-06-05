@@ -56,4 +56,29 @@ abstract class UserProfileRepository {
   /// Útil para que el Dashboard muestre el valor persistido (puede
   /// venir del sitio web) cuando el cálculo local solo tiene baseline.
   Stream<Map<String, dynamic>?> watchCurrentImr(String userId);
+
+  /// SPEC-141 §RF-141-12 (2026-06-05): escribe un snapshot semanal del
+  /// IMR longitudinal en `users/{userId}/imr_history/{weekISO}`.
+  ///
+  /// `weekISO` tiene formato `YYYY-WNN` (ej. `2026-W23`). El doc id es
+  /// idempotente — re-snapshots dentro de la misma semana ISO
+  /// sobreescriben el anterior. Esto evita duplicados cuando el
+  /// usuario hace múltiples check-ins biométricos en una semana.
+  ///
+  /// El payload usa el mismo shape de `imrToCanonicalMap` con campos
+  /// adicionales: `weekISO`, `computedAt`, `trigger`.
+  Future<void> writeImrHistorySnapshot({
+    required String userId,
+    required String weekISO,
+    required Map<String, dynamic> snapshot,
+  });
+
+  /// SPEC-148 §RF-148-04 (2026-06-05): stream de últimos N snapshots
+  /// semanales del IMR longitudinal. Ordenados por `computedAt` desc.
+  /// Default 12 semanas (~3 meses) — suficiente para encontrar el doc
+  /// de hace 30 días con margen para la `TransformationCard`.
+  Stream<List<Map<String, dynamic>>> watchImrHistory(
+    String userId, {
+    int limit = 12,
+  });
 }

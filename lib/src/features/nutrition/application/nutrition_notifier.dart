@@ -131,7 +131,12 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
       (previous, next) {
         next.whenData((cycle) {
           final newSince = cycle?.startedAt;
-          if (newSince != _currentCycleStartedAt) {
+          // SPEC-178.bugfix2 (2026-06-05): si el primer fire emite con
+          // cycle == null, newSince == _currentCycleStartedAt (ambos null)
+          // y la igualdad bloqueaba la suscripción inicial. Subscribe
+          // siempre que no haya subscription activa.
+          if (_logsSub == null ||
+              newSince != _currentCycleStartedAt) {
             _currentCycleStartedAt = newSince;
             _subscribeFor(newSince);
           }
@@ -193,6 +198,12 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
     // registra igual. NO ignora el bloqueo (<2h). UI debe pasarlo en
     // true solo después de que el usuario acepte el dialog de warning.
     bool forceLog = false,
+    // SPEC-138: slots NOVA 4 del plato (numerador del % UPF).
+    // Null si el caller no usa PlateBuilder (tests, código legacy).
+    int? upfSlots,
+    // SPEC-138: total de slots del plato (denominador).
+    // Null si el caller no usa PlateBuilder.
+    int? totalSlots,
   }) async {
     final userId = _activeUserId;
     if (userId == null) return;
@@ -248,6 +259,10 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
       source: source,
       ratio: ratio,
       isCheatDay: isCheatDay,
+      // SPEC-138: solo persistir si ambos vienen y son coherentes.
+      // La validación dura está en el constructor de NutritionLog.
+      upfSlots: upfSlots,
+      totalSlots: totalSlots,
     );
 
     if (mounted) state = state.copyWith(isSaving: true);

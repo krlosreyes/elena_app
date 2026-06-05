@@ -81,6 +81,25 @@ class NutritionLog {
   /// `weeklyAdherence`.
   final bool isCheatDay;
 
+  // ── SPEC-138: ultra-procesados (NOVA 4) ─────────────────────────────
+
+  /// Slots del plato ocupados por alimentos NOVA 4 (ultraprocesados).
+  ///
+  /// `null` para logs pre-SPEC-138 que no traen el dato. Combinado con
+  /// [totalSlots] permite calcular `% UPF` diario/semanal sin recalcular
+  /// desde la composición del plato (que no se persiste a nivel de
+  /// item, solo se persiste el `ratio` derivado).
+  ///
+  /// Referencia: Monteiro et al. 2019. Ver `docs/NUTRITION_BIBLIOGRAPHY.md §16`.
+  final int? upfSlots;
+
+  /// Total de slots del plato (suma de `FoodCategory.slots` por item).
+  ///
+  /// `null` para logs pre-SPEC-138. Denominador del `upfSharePercent`
+  /// del log. Se persiste explícitamente porque la "intensidad" del
+  /// plato (número de items) no es derivable del `MealRatio`.
+  final int? totalSlots;
+
   NutritionLog({
     required this.id,
     required this.timestamp,
@@ -95,6 +114,8 @@ class NutritionLog {
     this.source = NutritionLogSource.userInput,
     this.ratio = MealRatio.a2e1,
     this.isCheatDay = false,
+    this.upfSlots,
+    this.totalSlots,
   }) {
     _validateNonNegative('calories', calories);
     _validateNonNegative('protein', protein);
@@ -111,6 +132,14 @@ class NutritionLog {
         );
       }
     }
+    // SPEC-138 (hotfix 2026-06-05): las invariantes de upfSlots/totalSlots
+    // se NORMALIZAN en el mapper (`fromMap` descarta ambos si están
+    // inconsistentes) en lugar de THROW desde el constructor. Razón
+    // crítica: el stream del nutrition_notifier tiene `onError` que
+    // silencia excepciones — un solo log corrupto detenía el stream
+    // entero y dejaba TODOS los pilares en 0 sin error visible.
+    // Política: dominio tolerante en lectura, estricto en validación
+    // de UI antes de escribir.
   }
 
   /// True si el log tiene macronutrientes registrados (al menos calorías).
@@ -131,6 +160,8 @@ class NutritionLog {
     NutritionLogSource? source,
     MealRatio? ratio,
     bool? isCheatDay,
+    int? upfSlots,
+    int? totalSlots,
   }) {
     return NutritionLog(
       id: id ?? this.id,
@@ -147,6 +178,8 @@ class NutritionLog {
       source: source ?? this.source,
       ratio: ratio ?? this.ratio,
       isCheatDay: isCheatDay ?? this.isCheatDay,
+      upfSlots: upfSlots ?? this.upfSlots,
+      totalSlots: totalSlots ?? this.totalSlots,
     );
   }
 

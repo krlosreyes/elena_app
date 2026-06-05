@@ -139,8 +139,22 @@ Map<String, dynamic> userToCanonicalMirror(UserModel user) {
 
 /// Convierte un IMRv2Result al shape canónico que el sitio web lee en
 /// `users/{uid}.imr.current`.
+///
+/// SPEC-141 (2026-06-05): si el resultado tiene `longitudinalScore`
+/// poblado (proveniente de `calculateLongitudinalIMR`), el shape pasa
+/// a schemaVersion 2 con:
+///   - `imrScore`  → el longitudinal (lo que el sitio renderiza)
+///   - `legacyDailyScore` → el diario, ventana de transición 30d
+///   - `subscores` → desglose del longitudinal (estructura, behavior,
+///     adherence, coherence)
+///   - `meta.schemaVersion = 2` y `scoreVariant = 'longitudinal'`
+///
+/// Si NO hay `longitudinalScore` (call desde `calculateIMR` legacy o
+/// `calculateBaseline`), se mantiene schemaVersion 1 — el sitio sigue
+/// recibiendo el shape antiguo sin breaking change durante la
+/// transición.
 Map<String, dynamic> imrToCanonicalMap(IMRv2Result imr) {
-  return <String, dynamic>{
+  final base = <String, dynamic>{
     'imrScore': imr.totalScore,
     'label': imr.zone,
     'blocks': <String, double>{
@@ -155,6 +169,28 @@ Map<String, dynamic> imrToCanonicalMap(IMRv2Result imr) {
     'ffmi': imr.ffmi,
     'whtr': imr.whtr,
   };
+
+  // SPEC-141: si hay snapshot longitudinal, sobreescribir `imrScore`
+  // con el longitudinal y exponer el diario como `legacyDailyScore`.
+  // El sitio Astro Metamorfosis Real renderiza `imrScore` directamente.
+  final longScore = imr.longitudinalScore;
+  if (longScore != null) {
+    base['imrScore'] = longScore;
+    base['legacyDailyScore'] = imr.totalScore;
+    base['scoreVariant'] = 'longitudinal';
+    base['schemaVersion'] = 2;
+    base['subscores'] = <String, double>{
+      'structure': imr.structureScore,
+      'behaviorTrend': imr.subscoreBehaviorTrend ?? 0.0,
+      'adherence': imr.subscoreAdherence ?? 0.0,
+      'coherence': imr.subscoreCoherence ?? 0.0,
+    };
+  } else {
+    base['schemaVersion'] = 1;
+    base['scoreVariant'] = 'daily';
+  }
+
+  return base;
 }
 
 /// Convierte `'Ninguno' | '16:8' | '18:6' | '20:4'` a horas de ayuno.

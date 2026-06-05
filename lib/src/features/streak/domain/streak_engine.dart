@@ -206,6 +206,90 @@ class StreakEngine {
     return (sum / lastWeek.length).clamp(0.0, 1.0);
   }
 
+  /// SPEC-141 §RF-141-03: promedio del dailyQualityScore en ventana de
+  /// 30 días. Espejo de [computeWeeklyQualityScore] con ventana extendida
+  /// — es el input primario del IMR longitudinal (peso 35%).
+  ///
+  /// Casos (mismos que la versión semanal):
+  /// - Historial vacío o sin entradas en ventana → 0.0.
+  /// - Menos de 30 entries → promedio sobre las disponibles (no divide
+  ///   por 30 — un usuario con 5 días en la app obtiene el promedio de
+  ///   esos 5).
+  /// - Entradas legacy sin magnitudes → fallback `pillarsCompleted/5`.
+  ///
+  /// Bibliografía: Petersen-Shulman 2018 (Physiol Rev) — turnover de
+  /// marcadores metabólicos (HOMA-IR, triglicéridos) se mueve en
+  /// escala 2-4 semanas; 30d cubre el límite superior conservador.
+  static double computeMonthlyQualityScore(List<StreakEntry> history) {
+    final now = DateTime.now();
+    final cutoff = DayBoundaryResolver.startOfDay(now)
+        .subtract(const Duration(days: 29));
+
+    final lastMonth = history.where((e) {
+      final eDate = DateTime.tryParse(e.date);
+      return eDate != null && !eDate.isBefore(cutoff);
+    }).toList();
+
+    if (lastMonth.isEmpty) return 0.0;
+
+    final sum = lastMonth.fold<double>(
+      0.0,
+      (acc, e) => acc + e.dailyQualityScore,
+    );
+    return (sum / lastMonth.length).clamp(0.0, 1.0);
+  }
+
+  /// SPEC-141 §RF-141-03: cuenta días con `qualifiesForStreak == true`
+  /// en los últimos 90 días. Es el denominador de la "presencia
+  /// sostenida" del usuario, input de [computeAdherenceTrend].
+  ///
+  /// Casos:
+  /// - Historial vacío → 0.
+  /// - Entradas fuera de la ventana → ignoradas.
+  /// - Días duplicados (mismo `date`) → contados una sola vez.
+  static int computeActiveDaysLast90(List<StreakEntry> history) {
+    if (history.isEmpty) return 0;
+    final now = DateTime.now();
+    final cutoff = DayBoundaryResolver.startOfDay(now)
+        .subtract(const Duration(days: 89));
+    final daysInWindow = <String>{};
+    for (final e in history) {
+      if (!e.qualifiesForStreak) continue;
+      final eDate = DateTime.tryParse(e.date);
+      if (eDate == null || eDate.isBefore(cutoff)) continue;
+      daysInWindow.add(e.date);
+    }
+    return daysInWindow.length;
+  }
+
+  /// SPEC-141 §RF-141-03: tendencia de adherencia 0..1 combinando racha
+  /// actual y presencia en los últimos 90 días. Sin literatura directa
+  /// pero refleja Dansinger 2005 JAMA: la adherencia sostenida domina
+  /// sobre la elección puntual de intervención.
+  ///
+  /// Fórmula (juicio de ingeniería, calibrada para que un usuario
+  /// "altamente consistente" cruce 0.80):
+  ///   streakNormalized   = min(currentStreak / 14, 1.0)   // 14 días = streak alta
+  ///   activeDaysFraction = activeDaysLast90 / 90          // 0..1
+  ///   adherenceTrend     = 0.55 * streakNormalized + 0.45 * activeDaysFraction
+  ///
+  /// Casos:
+  /// - Historial vacío → 0.0.
+  /// - Usuario nuevo con streak=1, 1 día activo en 90 → ~0.044 (bajo).
+  /// - Usuario perfecto streak=14+, 90/90 días activos → 1.0.
+  ///
+  /// Reusa los helpers existentes [computeCurrentStreak] y
+  /// [computeActiveDaysLast90].
+  static double computeAdherenceTrend(List<StreakEntry> history) {
+    if (history.isEmpty) return 0.0;
+    final currentStreak = computeCurrentStreak(history);
+    final activeDays90 = computeActiveDaysLast90(history);
+    final streakNorm = (currentStreak / 14.0).clamp(0.0, 1.0);
+    final activeFrac = (activeDays90 / 90.0).clamp(0.0, 1.0);
+    final raw = 0.55 * streakNorm + 0.45 * activeFrac;
+    return raw.clamp(0.0, 1.0);
+  }
+
   // ─────────────────────────────────────────────────────────────────────────
   // Helpers privados
   // ─────────────────────────────────────────────────────────────────────────

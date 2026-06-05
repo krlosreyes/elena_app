@@ -264,24 +264,51 @@ class HealthImportService {
       'HealthImport[steps]: ${samples.length} samples recibidas',
     );
 
-    // Agregar por día.
-    final byDay = <String, double>{};
+    // SPEC-178.bugfix1 (2026-06-04): Apple Watch + iPhone reportan los
+    // mismos pasos como sources distintos. El dedup del plugin compara
+    // por uuid → no los unifica (uuids distintos). Antes acumulábamos
+    // todos los samples con `+= s.value` y eso DUPLICABA los pasos en
+    // usuarios con Apple Watch.
+    //
+    // Fix: agrupar por (día, source) sumando dentro de cada source,
+    // después tomar el MÁXIMO entre sources del mismo día. HealthKit
+    // internamente prefiere Apple Watch sobre iPhone — replicamos esa
+    // decisión tomando el mayor (en práctica el Apple Watch siempre
+    // reporta más o igual que el iPhone porque está más cerca del
+    // movimiento).
+    final byDayBySource = <String, Map<String, double>>{};
     final dayStart = <String, DateTime>{};
     for (final s in samples) {
       final key = _dateKey(s.start);
-      byDay[key] = (byDay[key] ?? 0) + s.value;
+      final source = s.sourceName.isNotEmpty ? s.sourceName : 'unknown';
+      byDayBySource.putIfAbsent(key, () => <String, double>{});
+      byDayBySource[key]![source] =
+          (byDayBySource[key]![source] ?? 0) + s.value;
       final existing = dayStart[key];
       if (existing == null || s.start.isBefore(existing)) {
         dayStart[key] = s.start;
       }
     }
 
-    // Loguear el breakdown por día para diagnóstico.
-    final breakdown = byDay.entries
-        .map((e) => '${e.key}=${e.value.round()}')
-        .join(', ');
+    final byDay = <String, double>{};
+    byDayBySource.forEach((day, perSource) {
+      double best = 0;
+      for (final v in perSource.values) {
+        if (v > best) best = v;
+      }
+      byDay[day] = best;
+    });
+
+    // Loguear el breakdown por día para diagnóstico — incluye sources
+    // por día para que Carlos pueda ver iPhone vs Apple Watch.
+    final breakdown = byDay.entries.map((e) {
+      final sources = byDayBySource[e.key]!.entries
+          .map((s) => '${s.key.split('.').last}=${s.value.round()}')
+          .join('|');
+      return '${e.key}=${e.value.round()}($sources)';
+    }).join(', ');
     AppLogger.info(
-      'HealthImport[steps]: total por día → $breakdown '
+      'HealthImport[steps]: max por día → $breakdown '
       '(threshold = $_minStepsForExerciseLog)',
     );
 

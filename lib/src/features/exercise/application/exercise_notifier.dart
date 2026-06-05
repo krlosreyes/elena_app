@@ -8,47 +8,70 @@ import 'package:elena_app/src/features/exercise/domain/exercise_repository.dart'
 import 'package:elena_app/src/features/exercise/application/exercise_state.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart';
 import 'package:elena_app/src/features/metabolic_cycle/domain/metabolic_cycle.dart';
+import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 
+// SPEC-180 (2026-06-05): factory simple sin ref.watch del usuario.
+// Antes hacíamos `ref.watch(currentUserStreamProvider)` dentro de la
+// factory, lo cual destruía el ExerciseNotifier cada vez que el stream
+// del usuario emitía (token refresh, cambio de perfil, etc.) y
+// re-inicializaba todo el state desde cero — perdiendo subscripción
+// al ciclo metabólico y dejando ejercicio en 0 hasta el próximo
+// cambio de ciclo.
+//
+// Patrón nuevo (alineado con HydrationNotifier y NutritionNotifier):
+// el notifier es singleton durante la sesión; usa `_ref.listen` para
+// reaccionar a cambios de usuario sin reconstruirse.
 final exerciseProvider =
     StateNotifierProvider<ExerciseNotifier, ExerciseState>((ref) {
-  final userAsync = ref.watch(currentUserStreamProvider);
-  // SPEC-50.2: ExerciseRepository (no UserRepository).
-  final repo = ref.watch(exerciseRepositoryProvider);
-
-  return ExerciseNotifier(
-    userId: userAsync.valueOrNull?.id,
-    repository: repo,
-    ref: ref,
-  );
+  return ExerciseNotifier(ref: ref);
 });
 
 class ExerciseNotifier extends StateNotifier<ExerciseState> {
-  final String? userId;
-  final ExerciseRepository repository;
   final Ref ref;
+  String? _activeUserId;
   StreamSubscription? _subscription;
   DateTime? _currentCycleStartedAt;
 
-  ExerciseNotifier({
-    required this.userId,
-    required this.repository,
-    required this.ref,
-  }) : super(const ExerciseState()) {
-    _initCycleListener();
+  ExerciseNotifier({required this.ref}) : super(const ExerciseState()) {
+    _init();
   }
 
-  /// SPEC-149.2: escucha el ciclo metabólico y re-suscribe el stream
-  /// con `watchSince(cycle.startedAt)` cuando cambia. Si no hay ciclo
-  /// abierto, fallback a `startOfDay` (comportamiento previo).
-  void _initCycleListener() {
-    if (userId == null) return;
+  void _init() {
+    // Listener del usuario activo. Cambia userId interno sin destruir
+    // el notifier. Al cambiar, re-suscribe al stream con la nueva uid.
+    ref.listen<AsyncValue<UserModel?>>(
+      currentUserStreamProvider,
+      (previous, next) {
+        next.whenData((user) {
+          if (user != null && user.id.isNotEmpty) {
+            if (_activeUserId != user.id) {
+              _activeUserId = user.id;
+              _subscribeFor(_currentCycleStartedAt);
+            }
+          } else {
+            // Logout: cancelar y limpiar estado.
+            _subscription?.cancel();
+            _subscription = null;
+            _activeUserId = null;
+            if (mounted) state = const ExerciseState();
+          }
+        });
+      },
+      fireImmediately: true,
+    );
+
+    // SPEC-149.2 + SPEC-178.bugfix2: re-suscribir cuando cambia el
+    // ciclo metabólico. La condición `_subscription == null` cubre el
+    // caso inicial donde el primer fire trae cycle=null y la igualdad
+    // null==null bloquearía la suscripción.
     ref.listen<AsyncValue<MetabolicCycle?>>(
       currentMetabolicCycleProvider,
       (previous, next) {
         next.whenData((cycle) {
           final newSince = cycle?.startedAt;
-          if (newSince != _currentCycleStartedAt) {
+          if (_subscription == null ||
+              newSince != _currentCycleStartedAt) {
             _currentCycleStartedAt = newSince;
             _subscribeFor(newSince);
           }
@@ -59,11 +82,13 @@ class ExerciseNotifier extends StateNotifier<ExerciseState> {
   }
 
   void _subscribeFor(DateTime? cycleStartedAt) {
-    if (userId == null) return;
+    final userId = _activeUserId;
+    if (userId == null || userId.isEmpty) return;
     _subscription?.cancel();
     final since =
         cycleStartedAt ?? DayBoundaryResolver.startOfDay(DateTime.now());
-    _subscription = repository.watchSince(userId!, since).listen(
+    final repo = ref.read(exerciseRepositoryProvider);
+    _subscription = repo.watchSince(userId, since).listen(
       (logs) {
         if (mounted) {
           final totalMinutes = logs.fold<int>(
@@ -93,7 +118,8 @@ class ExerciseNotifier extends StateNotifier<ExerciseState> {
     int? rpe,
     int? heartRateAvg,
   }) async {
-    if (userId == null) {
+    final userId = _activeUserId;
+    if (userId == null || userId.isEmpty) {
       state = state.copyWith(error: "No hay sesión activa");
       return;
     }
@@ -118,7 +144,7 @@ class ExerciseNotifier extends StateNotifier<ExerciseState> {
     try {
       final log = ExerciseLog(
         id: const Uuid().v4(),
-        userId: userId!,
+        userId: userId,
         durationMinutes: minutes,
         activityType: activityType,
         timestamp: timestamp,
@@ -128,7 +154,8 @@ class ExerciseNotifier extends StateNotifier<ExerciseState> {
         heartRateAvg: heartRateAvg,
       );
 
-      await repository.save(userId!, log);
+      final repo = ref.read(exerciseRepositoryProvider);
+      await repo.save(userId, log);
       state = state.copyWith(isSaving: false, error: null);
     } catch (e) {
       state = state.copyWith(isSaving: false, error: "Fallo al guardar: $e");

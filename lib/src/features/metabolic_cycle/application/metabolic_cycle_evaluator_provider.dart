@@ -45,12 +45,23 @@ final metabolicCycleEvaluatorProvider = Provider<void>((ref) {
     },
   );
 
-  // Transición isActive false→true del ayuno: el usuario explícitamente
-  // inició un nuevo ciclo. Disparamos evaluación con flag.
+  // Transición isActive false→true del ayuno.
+  //
+  // SPEC-183 (2026-06-05): la transición SOLO debe crear ciclo
+  // metabólico nuevo si fue causada por acción consciente del usuario
+  // (`activationSource == userInitiated`). El bootstrap del
+  // FastingNotifier al arrancar la app también dispara una transición
+  // false→true al restaurar state desde Firestore, pero esa NO debe
+  // crear ciclo automático (causa el bug del ciclo huérfano con
+  // `startedAt = horaDeBoot`).
   ref.listen<FastingState>(
     fastingProvider,
     (previous, next) {
-      if (previous != null && !previous.isActive && next.isActive) {
+      final transitioned =
+          previous != null && !previous.isActive && next.isActive;
+      final isUserInitiated =
+          next.activationSource == FastingActivationSource.userInitiated;
+      if (transitioned && isUserInitiated) {
         _evaluate(
           ref,
           DateTime.now(),

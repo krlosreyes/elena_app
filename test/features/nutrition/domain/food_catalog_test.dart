@@ -329,4 +329,156 @@ void main() {
       expect(FoodCategory.carb.label, 'Carbos');
     });
   });
+
+  // ── SPEC-138: clasificación NOVA ──────────────────────────────────────
+  // Referencia: Monteiro et al. 2019, Public Health Nutrition
+  // 22(5):936-941. Justificación de cada NOVA 4 en
+  // docs/NUTRITION_BIBLIOGRAPHY.md §6.
+
+  group('SPEC-138 — NovaGroup mapping', () {
+    test('number devuelve 1..4 según grupo', () {
+      expect(NovaGroup.unprocessed.number, 1);
+      expect(NovaGroup.culinaryIngredient.number, 2);
+      expect(NovaGroup.processed.number, 3);
+      expect(NovaGroup.ultraProcessed.number, 4);
+    });
+
+    test('fromNumber reconstruye el grupo correcto', () {
+      expect(NovaGroup.fromNumber(1), NovaGroup.unprocessed);
+      expect(NovaGroup.fromNumber(2), NovaGroup.culinaryIngredient);
+      expect(NovaGroup.fromNumber(3), NovaGroup.processed);
+      expect(NovaGroup.fromNumber(4), NovaGroup.ultraProcessed);
+    });
+
+    test('fromNumber default a NOVA 1 con clave invalida o null', () {
+      expect(NovaGroup.fromNumber(null), NovaGroup.unprocessed);
+      expect(NovaGroup.fromNumber(0), NovaGroup.unprocessed);
+      expect(NovaGroup.fromNumber(99), NovaGroup.unprocessed);
+    });
+
+    test('isUltraProcessed solo true para NOVA 4', () {
+      expect(NovaGroup.unprocessed.isUltraProcessed, isFalse);
+      expect(NovaGroup.culinaryIngredient.isUltraProcessed, isFalse);
+      expect(NovaGroup.processed.isUltraProcessed, isFalse);
+      expect(NovaGroup.ultraProcessed.isUltraProcessed, isTrue);
+    });
+  });
+
+  group('SPEC-138 — catálogo NOVA 4 (ultraprocesados canon Monteiro)', () {
+    test('galletas comerciales son NOVA 4', () {
+      expect(FoodCatalog.byId('galletas')?.nova, NovaGroup.ultraProcessed);
+      expect(FoodCatalog.byId('galletas_dulces')?.nova,
+          NovaGroup.ultraProcessed);
+      expect(FoodCatalog.byId('galletas_saladas')?.nova,
+          NovaGroup.ultraProcessed);
+    });
+
+    test('cereal de caja es NOVA 4 (Monteiro 2019 ejemplo canon)', () {
+      expect(FoodCatalog.byId('cereal')?.nova, NovaGroup.ultraProcessed);
+    });
+
+    test('gaseosas son NOVA 4', () {
+      expect(FoodCatalog.byId('gaseosa')?.nova, NovaGroup.ultraProcessed);
+      expect(FoodCatalog.byId('cocacola')?.nova, NovaGroup.ultraProcessed);
+    });
+
+    test('margarina y mayonesa industrial son NOVA 4', () {
+      expect(FoodCatalog.byId('margarina')?.nova, NovaGroup.ultraProcessed);
+      expect(FoodCatalog.byId('mayonesa')?.nova, NovaGroup.ultraProcessed);
+    });
+
+    test('salchicha y embutidos hiperprocesados son NOVA 4', () {
+      expect(FoodCatalog.byId('salchicha')?.nova, NovaGroup.ultraProcessed);
+    });
+
+    test('comidas rápidas industriales son NOVA 4 (decisión estricta)', () {
+      // Monteiro 2019 §Tabla 1: "pizzas, burgers, hot-dogs, packaged
+      // snacks" listados como UPF. Decisión 2026-06-05.
+      expect(FoodCatalog.byId('pizza')?.nova, NovaGroup.ultraProcessed);
+      expect(FoodCatalog.byId('hamburguesa')?.nova, NovaGroup.ultraProcessed);
+      expect(FoodCatalog.byId('salchipapa')?.nova, NovaGroup.ultraProcessed);
+      expect(FoodCatalog.byId('sandwich')?.nova, NovaGroup.ultraProcessed);
+      expect(FoodCatalog.byId('empanada')?.nova, NovaGroup.ultraProcessed);
+    });
+
+    test('bebidas reconstituidas en polvo son NOVA 4', () {
+      expect(FoodCatalog.byId('chocolate_caliente')?.nova,
+          NovaGroup.ultraProcessed);
+    });
+  });
+
+  group('SPEC-138 — catálogo NOVA 1 (mínimamente procesados)', () {
+    test('carnes y huevos son NOVA 1', () {
+      // Carne fresca, pollo, pescado, huevo: ejemplos canon Monteiro 2019.
+      expect(FoodCatalog.byId('pollo')?.nova, NovaGroup.unprocessed);
+      expect(FoodCatalog.byId('huevo')?.nova, NovaGroup.unprocessed);
+      expect(FoodCatalog.byId('pescado')?.nova, NovaGroup.unprocessed);
+      expect(FoodCatalog.byId('carne_res')?.nova, NovaGroup.unprocessed);
+    });
+
+    test('verduras y frutas frescas son NOVA 1', () {
+      expect(FoodCatalog.byId('brocoli')?.nova, NovaGroup.unprocessed);
+      expect(FoodCatalog.byId('espinaca')?.nova, NovaGroup.unprocessed);
+      expect(FoodCatalog.byId('manzana')?.nova, NovaGroup.unprocessed);
+      expect(FoodCatalog.byId('aguacate')?.nova, NovaGroup.unprocessed);
+    });
+
+    test('leche pasteurizada es NOVA 1 (no NOVA 4)', () {
+      // Important: leche tiene qualityScore=40 (medio), pero NOVA es 1.
+      // Demuestra ortogonalidad de los dos ejes.
+      expect(FoodCatalog.byId('leche')?.nova, NovaGroup.unprocessed);
+      expect(FoodCatalog.byId('leche_entera')?.nova, NovaGroup.unprocessed);
+    });
+  });
+
+  group('SPEC-138 — catálogo NOVA 2 (ingredientes culinarios)', () {
+    test('azúcar, panela y miel son NOVA 2', () {
+      expect(FoodCatalog.byId('azucar')?.nova, NovaGroup.culinaryIngredient);
+      expect(FoodCatalog.byId('panela')?.nova, NovaGroup.culinaryIngredient);
+      expect(FoodCatalog.byId('miel')?.nova, NovaGroup.culinaryIngredient);
+    });
+
+    test('mantequilla y manteca son NOVA 2', () {
+      expect(FoodCatalog.byId('mantequilla')?.nova,
+          NovaGroup.culinaryIngredient);
+      expect(FoodCatalog.byId('manteca')?.nova, NovaGroup.culinaryIngredient);
+    });
+  });
+
+  group('SPEC-138 — catálogo NOVA 3 (procesados artesanales)', () {
+    test('quesos y embutidos artesanales son NOVA 3', () {
+      expect(FoodCatalog.byId('queso_campesino')?.nova, NovaGroup.processed);
+      expect(FoodCatalog.byId('jamon')?.nova, NovaGroup.processed);
+      expect(FoodCatalog.byId('tocino')?.nova, NovaGroup.processed);
+    });
+
+    test('pan blanco/integral comercial es NOVA 3', () {
+      expect(FoodCatalog.byId('pan')?.nova, NovaGroup.processed);
+      expect(FoodCatalog.byId('pan_integral')?.nova, NovaGroup.processed);
+    });
+  });
+
+  group('SPEC-138 — invariantes del catálogo', () {
+    test('todos los alimentos tienen NOVA 1-4 valido', () {
+      for (final f in FoodCatalog.all) {
+        expect(f.nova.number, inInclusiveRange(1, 4),
+            reason: '${f.id} tiene NOVA fuera de [1,4]');
+      }
+    });
+
+    test('isUltraProcessed coincide con nova == NOVA 4', () {
+      for (final f in FoodCatalog.all) {
+        expect(f.isUltraProcessed, f.nova == NovaGroup.ultraProcessed,
+            reason: '${f.id} inconsistencia entre isUltraProcessed y nova');
+      }
+    });
+
+    test('al menos 8 NOVA 4 en el catálogo (cobertura mínima)', () {
+      final upfCount =
+          FoodCatalog.all.where((f) => f.isUltraProcessed).length;
+      expect(upfCount, greaterThanOrEqualTo(8),
+          reason: 'Debe haber al menos 8 alimentos UPF para que el '
+              'pilar Nutrición pueda registrar patrones de consumo.');
+    });
+  });
 }

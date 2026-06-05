@@ -10,6 +10,11 @@
 // Logs antiguos pre-SPEC-137 caen al default a2e1 — documentado en
 // `MealRatio.fromPersistenceKey(null)` y en NUTRITION_BIBLIOGRAPHY.md
 // §13.
+//
+// SPEC-138: persiste `upfSlots` y `totalSlots` (int? ambos) cuando el
+// plato fue armado con PlateBuilder (UI nueva). Logs pre-SPEC-138 los
+// leen como null — `% UPF` se ignora hasta que haya histórico nuevo.
+// Marco normativo en NUTRITION_BIBLIOGRAPHY.md §16.
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -51,6 +56,11 @@ class NutritionLogMapper {
     // de manera incremental sin necesidad de un script de backfill.
     map['ratio'] = log.ratio.persistenceKey;
     map['isCheatDay'] = log.isCheatDay;
+    // SPEC-138: solo persistir si el log trae los campos. Logs antiguos
+    // o registros heurísticos sin composición de plato no escriben estos
+    // campos, preservando la semántica null = "sin datos NOVA".
+    if (log.upfSlots != null) map['upfSlots'] = log.upfSlots;
+    if (log.totalSlots != null) map['totalSlots'] = log.totalSlots;
     return map;
   }
 
@@ -80,6 +90,24 @@ class NutritionLogMapper {
     final ratio = MealRatio.fromPersistenceKey(map['ratio'] as String?);
     final isCheatDay = map['isCheatDay'] as bool? ?? false;
 
+    // SPEC-138: campos NOVA del plato (null si log pre-138 o sin
+    // composición conocida). Defensa contra payload corrupto: si
+    // upfSlots > totalSlots, descartamos ambos (caen a null).
+    int? upfSlots = _toInt(map['upfSlots']);
+    int? totalSlots = _toInt(map['totalSlots']);
+    if (upfSlots != null && totalSlots == null) {
+      upfSlots = null;
+    } else if (upfSlots != null &&
+        totalSlots != null &&
+        upfSlots > totalSlots) {
+      upfSlots = null;
+      totalSlots = null;
+    }
+    if (upfSlots != null && upfSlots < 0) {
+      upfSlots = null;
+      totalSlots = null;
+    }
+
     final log = NutritionLog(
       id: id,
       timestamp: timestamp,
@@ -94,6 +122,8 @@ class NutritionLogMapper {
       source: source,
       ratio: ratio,
       isCheatDay: isCheatDay,
+      upfSlots: upfSlots,
+      totalSlots: totalSlots,
     );
     _validate(log);
     return log;

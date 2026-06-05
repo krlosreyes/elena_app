@@ -1,7 +1,29 @@
 # SPEC-141 — IMR de Perfil: refactor a métrica longitudinal compuesta
 
-**Estado:** APPROVED-DESIGN (Carlos aprobó diseño 2026-06-01; pendiente validación clínica externa antes de IN_PROGRESS)
-**Versión:** 1.1
+**Estado:** CLOSED-PENDING-CLINICAL 2026-06-05 (código entregado tras feature flag; validación clínica externa sigue pendiente para flippear)
+**Versión:** 1.2
+
+---
+
+## 0. Estado actual (2026-06-05)
+
+Bloques A-E entregados:
+
+- **A** — `StreakEngine.computeMonthlyQualityScore` + `computeActiveDaysLast90` + `computeAdherenceTrend`. `ScoreEngine.calculateLongitudinalIMR` con fórmula 40/35/15/10 y renormalización si `history < 7` magnitudes. `IMRv2Result` extendido con `longitudinalScore`, `subscoreBehaviorTrend`, `subscoreAdherence`, `subscoreCoherence` (nullable, no rompe legacy).
+- **B** — `longitudinalImrProvider` (live, sin red). `WeeklyImrSnapshotService` con triggers A (check-in) y C (staleness 7d) conectados. Gatillo B (HealthKit) deferred a SPEC-141.2. Helper `buildWeekISO`.
+- **C** — `imrToCanonicalMap` detecta `longitudinalScore` y emite shape `schemaVersion=2` con `legacyDailyScore` + `subscores`. `UserProfileRepository.writeImrHistorySnapshot` escribe a `users/{uid}/imr_history/{weekISO}` idempotente. Firestore rules ya cubrían la colección (SPEC-143).
+- **D** — `kEnableLongitudinalImr = false` por default en `lib/src/core/config/feature_flags.dart`. Cuando flag ON, `profile_screen.dart` lee `longitudinalImrProvider`, sustituye el score del badge y agrega banner ámbar "Validación clínica pendiente".
+- **E** — bibliografía actualizada (§14 con Dansinger 2005 + Petersen-Shulman 2018), memoria persistida, este cierre formal.
+
+**Para activar en producción:**
+1. Especialista clínico firma validación de pesos macro (§11).
+2. Sitio Astro Metamorfosis Real actualizado para leer `schemaVersion=2` (Carlos coordina).
+3. Cambiar `kEnableLongitudinalImr` a `true` en `feature_flags.dart` (1 línea).
+4. Telemetría in-app confirma estabilidad: scores 50-75 en perfiles activos, sin saltos >15 puntos por snapshot.
+
+---
+
+**Versión histórica:** 1.1
 **Fecha:** 2026-06-01 (v1.0) · refinada 2026-06-01 (v1.1, cadencia semanal + dependencia explícita con SPEC-143) · diseño aprobado 2026-06-01
 **Tipo:** Refactor de motor central — redefinición del IMR como métrica longitudinal con cadencia de cómputo semanal
 **Líder:** Carlos

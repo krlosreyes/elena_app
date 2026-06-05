@@ -140,6 +140,34 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     // ciclo abierto al login, crea uno retroactivo. One-shot.
     ref.watch(metabolicCycleBootstrapProvider);
 
+    // SPEC-179 (2026-06-05): escuchar errores de persistencia del
+    // hydrationProvider y mostrar SnackBar visible al usuario. Antes
+    // los errores quedaban en un catch silencioso → el usuario veía
+    // el +250ml en pantalla pero el log no llegaba a Firestore.
+    ref.listen<HydrationState>(hydrationProvider, (previous, next) {
+      final err = next.lastWriteError;
+      if (err != null && err != previous?.lastWriteError) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(err),
+            duration: const Duration(seconds: 4),
+            action: SnackBarAction(
+              label: 'OK',
+              onPressed: () {
+                ref.read(hydrationProvider.notifier).clearWriteError();
+              },
+            ),
+          ),
+        );
+        // Auto-clear tras mostrar para no repetir.
+        Future.delayed(const Duration(milliseconds: 100), () {
+          if (context.mounted) {
+            ref.read(hydrationProvider.notifier).clearWriteError();
+          }
+        });
+      }
+    });
+
     // SPEC-149: evaluador continuo del ciclo.
     // SPEC-174 (2026-06-04): el evaluator se movió a `app.dart` (nivel
     // root) para que evalúe aunque el usuario no esté en este tab.
@@ -348,43 +376,20 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final dailyScore = ref.watch(displayDailyScoreProvider);
     final delta = ref.watch(displayDailyScoreDeltaProvider);
 
-    // SPEC-149.2.bugfix2 (2026-06-03): el sueño debe anclarse al ciclo
-    // metabólico pero la lógica anterior estaba INVERTIDA. El sueño
-    // termina ANTES de que se abra el ciclo (uno se despierta y luego
-    // empieza el día). El check original `!wokeUp.isBefore(startedAt)`
-    // rechazaba todos los sleeps nocturnos válidos.
-    //
-    // Corrección: el sleep "pertenece a este ciclo" si `wokeUp` está
-    // dentro de las 18 h previas al `startedAt`. Eso captura el sueño
-    // de la noche anterior y excluye sleeps de hace > 24 h (que serían
-    // del ciclo anterior). 18 h cubre con margen los protocolos de
-    // sueño tardío sin abrir tanto la ventana como para arrastrar
-    // datos viejos.
-    //
-    // SPEC-149.2.bugfix3 (2026-06-04): el chequeo anterior solo cubría
-    // el límite INFERIOR (no demasiado viejo) pero no el SUPERIOR.
-    // Cuando el ciclo abrió ayer noche y el usuario durmió anoche,
-    // el sleep (wokeUp = hoy mañana) cae dentro de las 18h previas
-    // PERO es POSTERIOR al startedAt → el sleep pertenece al PRÓXIMO
-    // ciclo, no al actual. Se agrega `wokeUp.isBefore(startedAt)` para
-    // resetear el ring al cerrar/abrir ciclo del mismo día.
-    final currentCycle = ref.watch(currentMetabolicCycleProvider).valueOrNull;
-    const sleepWindowBeforeCycle = Duration(hours: 18);
-    final sleepBelongsToCurrentCycle = sleep.lastLog == null
-        ? false
-        : (currentCycle == null
-            ? true // sin ciclo abierto, modo legacy
-            : (sleep.lastLog!.wokeUp.isAfter(
-                  currentCycle.startedAt.subtract(sleepWindowBeforeCycle),
-                ) &&
-                sleep.lastLog!.wokeUp.isBefore(currentCycle.startedAt)));
-    final sleepProgress =
-        (sleep.lastLog == null || !sleepBelongsToCurrentCycle)
-            ? 0.0
-            : (sleep.lastLog!.duration.inMinutes / (8 * 60)).clamp(0.0, 1.0);
-    final sleepCompleted = sleepBelongsToCurrentCycle &&
-        sleep.lastLog != null &&
-        sleep.lastLog!.duration.inHours >= 7;
+    // SPEC-175 (2026-06-04): la regla "el sleep pertenece al ciclo"
+    // vive en `currentCycleSleepProvider`. Si no pertenece, devuelve
+    // null y el ring queda en 0. La regla canónica es:
+    //   wokeUp ∈ [startedAt - 18h, startedAt)
+    // Histórico: SPEC-149.2.bugfix2 introdujo la ventana 18h previas;
+    // SPEC-149.2.bugfix3 agregó el límite superior `< startedAt` para
+    // que el sleep post-startedAt no contara al ciclo recién abierto;
+    // SPEC-175 movió la lógica a un provider derivado limpio.
+    final cycleSleep = ref.watch(currentCycleSleepProvider);
+    final sleepProgress = cycleSleep == null
+        ? 0.0
+        : (cycleSleep.duration.inMinutes / (8 * 60)).clamp(0.0, 1.0);
+    final sleepCompleted =
+        cycleSleep != null && cycleSleep.duration.inHours >= 7;
 
     // SPEC-140.2: el Score del Día vive como HEADLINE dentro del card
     // de pilares. El label "PILARES HOY" se elimina (los 5 rings con

@@ -7,7 +7,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
+import 'package:elena_app/src/core/engine/longitudinal_imr_provider.dart';
 import 'package:elena_app/src/core/engine/metabolic_state_provider.dart';
+import 'package:elena_app/src/core/engine/weekly_imr_snapshot_service.dart';
 import 'package:elena_app/src/features/progress/application/biometric_history_service.dart';
 import 'package:elena_app/src/features/progress/domain/biometric_checkin.dart';
 
@@ -108,6 +110,17 @@ class _BiometricCheckInSheetState extends ConsumerState<BiometricCheckInSheet> {
     await ref.read(biometricHistoryServiceProvider).updateFromCheckInSheet(
           currentUser: user,
           checkInData: checkIn,
+        );
+
+    // SPEC-141 §RF-141-12.A (2026-06-05): gatillo A — recompute
+    // forzado del IMR longitudinal tras check-in biométrico manual.
+    // El usuario acaba de entregar data nueva → recalculamos sin
+    // chequear staleness y persistimos al cache `imr.current`.
+    final longitudinal = ref.read(longitudinalImrProvider);
+    await ref.read(weeklyImrSnapshotServiceProvider).recomputeAndPersist(
+          userId: user.id,
+          longitudinal: longitudinal,
+          trigger: WeeklyImrTrigger.biometricCheckin,
         );
 
     if (mounted) {

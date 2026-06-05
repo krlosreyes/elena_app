@@ -152,6 +152,13 @@ class _PlateRatioSheetState extends ConsumerState<PlateRatioSheet> {
               ),
               const SizedBox(height: 18),
               _QualityBadge(quality: quality, tip: tip),
+              // SPEC-138 §16.4: chip silencioso cuando el plato contiene
+              // al menos un alimento NOVA 4. Sin tono de culpa — informa
+              // sin estigmatizar (memoria notification-tone-human-not-clinical).
+              if (_builder.hasUltraProcessed) ...[
+                const SizedBox(height: 10),
+                const _UpfChip(),
+              ],
               const SizedBox(height: 14),
               if (_builder.isNotEmpty) ...[
                 _SelectedChips(
@@ -278,6 +285,11 @@ class _PlateRatioSheetState extends ConsumerState<PlateRatioSheet> {
             ratio: _builder.derivedMealRatio,
             isCheatDay: isCheatDay,
             forceLog: forceLog,
+            // SPEC-138: trazabilidad NOVA del plato. Solo persistimos si
+            // el plato tiene contenido (totalSlots > 0).
+            upfSlots: _builder.totalSlots > 0 ? _builder.upfSlots : null,
+            totalSlots:
+                _builder.totalSlots > 0 ? _builder.totalSlots : null,
           );
       if (mounted) Navigator.of(context).pop();
     } on MealTooSoonException catch (e) {
@@ -946,6 +958,75 @@ class _CheatDayToggle extends StatelessWidget {
                 onDeactivate();
               }
             },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// SPEC-138 §16.9 — chip silencioso que aparece cuando el plato actual
+/// contiene al menos un alimento NOVA 4 (ultraprocesado).
+///
+/// Copy validado contra memoria notification-tone-human-not-clinical:
+/// informa sin culpa, sin números crudos, con cita corta al pie.
+class _UpfChip extends StatelessWidget {
+  const _UpfChip();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.statusWarn.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: AppColors.statusWarn.withValues(alpha: 0.32),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.info_outline_rounded,
+            color: AppColors.statusWarn,
+            size: 18,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Hay ultraprocesado en tu plato',
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                const Text(
+                  'Tu cuerpo lo procesa distinto. Está OK puntualmente.',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                    height: 1.35,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '· Monteiro 2019',
+                  style: TextStyle(
+                    color: AppColors.textMuted,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.2,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),

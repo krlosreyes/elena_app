@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
 // IMPORTANTE: Esta es la ruta al archivo que creamos para centralizar el usuario
+import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/core/services/day_boundary_resolver.dart';
 import 'package:elena_app/src/features/dashboard/data/hydration_repository_impl.dart';
 import 'package:elena_app/src/features/dashboard/domain/hydration_log.dart';
@@ -16,12 +17,19 @@ class HydrationState {
   final bool isSaving;
   final bool isGoalReached;
 
+  /// SPEC-179 (2026-06-05): mensaje del último error de persistencia,
+  /// null cuando no hay error pendiente. La UI lo lee para mostrar
+  /// SnackBar con "Reintentar". Se limpia al siguiente write exitoso
+  /// o al consumirse explícitamente vía `clearError()`.
+  final String? lastWriteError;
+
   HydrationState({
     this.dailyGoalLiters = 2.5,
     this.currentAmountLiters = 0.0,
     this.history = const [],
     this.isSaving = false,
     this.isGoalReached = false,
+    this.lastWriteError,
   });
 
   double get progressPercentage =>
@@ -36,6 +44,7 @@ class HydrationState {
     List<HydrationLog>? history,
     bool? isSaving,
     bool? isGoalReached,
+    Object? lastWriteError = _kSentinel,
   }) {
     return HydrationState(
       dailyGoalLiters: dailyGoalLiters ?? this.dailyGoalLiters,
@@ -43,9 +52,16 @@ class HydrationState {
       history: history ?? this.history,
       isSaving: isSaving ?? this.isSaving,
       isGoalReached: isGoalReached ?? this.isGoalReached,
+      // Sentinel para permitir setear explícitamente a null.
+      lastWriteError: identical(lastWriteError, _kSentinel)
+          ? this.lastWriteError
+          : lastWriteError as String?,
     );
   }
 }
+
+// SPEC-179: sentinel para distinguir "no se pasó" de "se pasó null".
+const Object _kSentinel = Object();
 
 class HydrationNotifier extends StateNotifier<HydrationState> {
   final Ref _ref;
@@ -93,7 +109,12 @@ class HydrationNotifier extends StateNotifier<HydrationState> {
       (previous, next) {
         next.whenData((cycle) {
           final newSince = cycle?.startedAt;
-          if (newSince != _currentCycleStartedAt) {
+          // SPEC-178.bugfix2 (2026-06-05): si el primer fire emite con
+          // cycle == null, newSince == _currentCycleStartedAt (ambos null)
+          // y la igualdad bloqueaba la suscripción inicial. Subscribe
+          // siempre que no haya subscription activa.
+          if (_hydrationSubscription == null ||
+              newSince != _currentCycleStartedAt) {
             _currentCycleStartedAt = newSince;
             _subscribeFor(newSince);
           }
@@ -175,10 +196,35 @@ class HydrationNotifier extends StateNotifier<HydrationState> {
       // SPEC-50.1: HydrationRepository.add (no UserRepository.saveHydrationLog).
       final repo = _ref.read(hydrationRepositoryProvider);
       await repo.add(user.id, newLog);
+      // SPEC-179: write exitoso → limpiar error pendiente si lo había.
+      state = state.copyWith(isSaving: false, lastWriteError: null);
     } catch (e) {
-      // Log de error técnico
-    } finally {
-      state = state.copyWith(isSaving: false);
+      // SPEC-179 (2026-06-05): antes había un catch vacío silencioso.
+      // El log se acumulaba localmente en state.history pero si Firestore
+      // fallaba (sin red, permisos), el dato no se persistía y el usuario
+      // creía que sí. Ahora el error queda en `state.lastWriteError` y la
+      // UI lo lee para mostrar SnackBar de reintento.
+      AppLogger.error('HydrationNotifier.addWater falló', e);
+      // Rollback optimista: descontar lo que sumamos al state.
+      state = state.copyWith(
+        currentAmountLiters: state.currentAmountLiters - amount,
+        history: state.history
+            .where((l) => l.timestamp != newLog.timestamp)
+            .toList(),
+        isSaving: false,
+        isGoalReached:
+            (state.currentAmountLiters - amount) >= state.dailyGoalLiters,
+        lastWriteError:
+            'No pudimos guardar tu hidratación. Revisá tu conexión.',
+      );
+    }
+  }
+
+  /// SPEC-179: la UI llama esto cuando muestra el SnackBar de error
+  /// para que no se repita en el próximo build.
+  void clearWriteError() {
+    if (state.lastWriteError != null) {
+      state = state.copyWith(lastWriteError: null);
     }
   }
 }

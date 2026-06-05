@@ -9,6 +9,7 @@ import 'package:elena_app/src/core/services/daily_reset_service.dart';
 import 'package:elena_app/src/features/analysis/application/daily_summary_persistence_service.dart';
 import 'package:elena_app/src/features/health_sync/application/health_auto_sync_controller.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_evaluator_provider.dart';
+import 'package:elena_app/src/core/engine/weekly_imr_staleness_trigger.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 
@@ -42,18 +43,23 @@ class _ElenaAppState extends ConsumerState<ElenaApp>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // SPEC-173: cuando el usuario trae la app de background (típico al
-    // volver de Apple Health/HealthKit), re-disparar el auto-sync con
-    // debounce. Sin esto, datos nuevos en HealthKit no entran hasta el
-    // próximo cold start o emisión del stream de usuario.
+    // volver de Apple Health/HealthKit), re-disparar el auto-sync.
+    // SPEC-173.bugfix2 (2026-06-04): pasamos de `runIfDue` (debounce 15m)
+    // a `runNow` para garantizar que cada resume traiga datos frescos.
+    // Carlos reportó ejercicio en 0 — probable que el debounce evitara
+    // el sync. `runNow` ignora el debounce; el flag `state.isRunning`
+    // sigue previniendo runs concurrentes.
     if (state == AppLifecycleState.resumed) {
       final user = ref.read(currentUserStreamProvider).valueOrNull;
       if (user == null || user.id.isEmpty) return;
-      AppLogger.info(
-        '[ElenaApp] resume — disparando HealthAutoSync.runIfDue',
-      );
+      // `print` directo (no AppLogger) para que aparezca en Console.app
+      // del iPhone en release. AppLogger del paquete `logger` puede
+      // estar siendo strippeado en release builds optimizados.
+      // ignore: avoid_print
+      print('[ElenaApp] resume — forzando HealthAutoSync.runNow');
       ref
           .read(healthAutoSyncControllerProvider.notifier)
-          .runIfDue(userId: user.id);
+          .runNow(userId: user.id);
     }
   }
 
@@ -80,6 +86,12 @@ class _ElenaAppState extends ConsumerState<ElenaApp>
     // salía a Análisis/Perfil, el provider se desmontaba y el ciclo
     // dejaba de evaluarse. Acá vive durante toda la sesión.
     ref.watch(metabolicCycleEvaluatorProvider);
+
+    // SPEC-141 §RF-141-12.C (2026-06-05): gatillo de staleness para
+    // re-snapshot del IMR longitudinal. Al primer login (o cambio de
+    // usuario), si pasaron >7 días desde el último snapshot, recalcula
+    // y persiste. One-shot por sesión por usuario.
+    ref.watch(weeklyImrStalenessTriggerProvider);
 
     // SPEC-132 Bloque C: bootstrap del auto-sync con HealthKit /
     // Health Connect. Escucha el stream del usuario y dispara

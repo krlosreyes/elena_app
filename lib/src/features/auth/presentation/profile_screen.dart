@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
+import 'package:elena_app/src/core/config/feature_flags.dart';
 import 'package:elena_app/src/core/engine/imr_persistence_provider.dart';
+import 'package:elena_app/src/core/engine/longitudinal_imr_provider.dart';
 import 'package:elena_app/src/features/auth/application/profile_controller.dart';
 import 'package:elena_app/src/features/auth/presentation/widgets/data_group_card.dart';
 import 'package:elena_app/src/features/auth/presentation/widgets/edit_biometry_value_sheet.dart';
@@ -445,6 +447,25 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
     // el persistido cuando el cálculo local solo tiene baseline.
     final displayedImr = ref.watch(displayedImrProvider);
 
+    // SPEC-141 §RF-141-13 (2026-06-05): si `kEnableLongitudinalImr` está
+    // ON, el badge pasa a mostrar el IMR longitudinal (40/35/15/10) y
+    // se renderiza un disclaimer "Validación clínica pendiente" debajo.
+    // Default: false → el badge sigue mostrando el legacy diario sin
+    // tocar nada.
+    DisplayedImr badgeImr = displayedImr;
+    bool showLongitudinalDisclaimer = false;
+    if (kEnableLongitudinalImr) {
+      final longitudinal = ref.watch(longitudinalImrProvider);
+      if (longitudinal.longitudinalScore != null) {
+        badgeImr = DisplayedImr(
+          score: longitudinal.longitudinalScore!,
+          zone: longitudinal.zone,
+          localFull: null,
+        );
+        showLongitudinalDisclaimer = true;
+      }
+    }
+
     // SPEC-116: rediseño del Perfil — premium, simple, jerárquico.
     // Reemplaza el "muro de tarjetas" por grupos con divisores internos
     // (patrón iOS Settings / Oura / Apple Health). Misma información,
@@ -453,7 +474,11 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
       children: [
         // ── Identidad + IMR ─────────────────────────────────────────
-        _buildIdentityCard(displayedImr),
+        _buildIdentityCard(badgeImr),
+        if (showLongitudinalDisclaimer) ...[
+          const SizedBox(height: 8),
+          _buildLongitudinalDisclaimer(),
+        ],
         const SizedBox(height: 24),
 
         // ── Composición corporal (SPEC-88) ──────────────────────────
@@ -810,6 +835,45 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
                 ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// SPEC-141 §RF-141-13 (2026-06-05): banner visible cuando el badge
+  /// está mostrando el IMR longitudinal (feature flag ON). Sin firma
+  /// clínica todavía → mostrar disclaimer transparente.
+  Widget _buildLongitudinalDisclaimer() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF59E0B).withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: const Color(0xFFF59E0B).withValues(alpha: 0.30),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.science_outlined,
+            color: Color(0xFFF59E0B),
+            size: 16,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'IMR longitudinal en validación clínica — '
+              'tu número refleja tendencia, no diagnóstico.',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.80),
+                fontSize: 11,
+                height: 1.4,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ),
         ],
       ),

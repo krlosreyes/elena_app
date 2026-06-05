@@ -262,4 +262,101 @@ void main() {
       expect(PlateQuality.cheatDay.label, 'Día de permitidos');
     });
   });
+
+  // ── SPEC-138: UPF (NOVA 4) en el plato ────────────────────────────────
+
+  group('SPEC-138 — PlateBuilder.upfSlots', () {
+    test('plato vacio: upfSlots 0', () {
+      expect(PlateBuilder().upfSlots, 0);
+    });
+
+    test('solo NOVA 1: upfSlots 0', () {
+      final b = PlateBuilder()
+        ..add(_food('pollo'))
+        ..add(_food('brocoli'))
+        ..add(_food('aguacate'));
+      expect(b.upfSlots, 0);
+      expect(b.hasUltraProcessed, isFalse);
+    });
+
+    test('1 galleta (NOVA 4, categoría carb=2 slots) cuenta 2', () {
+      final b = PlateBuilder()..add(_food('galletas'));
+      expect(b.upfSlots, 2);
+      expect(b.hasUltraProcessed, isTrue);
+    });
+
+    test('1 margarina (NOVA 4, categoría fat=1 slot) cuenta 1', () {
+      final b = PlateBuilder()..add(_food('margarina'));
+      expect(b.upfSlots, 1);
+    });
+
+    test('mix: pollo (NOVA 1, 2) + gaseosa (NOVA 4, 2) = upfSlots 2', () {
+      final b = PlateBuilder()
+        ..add(_food('pollo'))
+        ..add(_food('gaseosa'));
+      expect(b.totalSlots, 4);
+      expect(b.upfSlots, 2);
+      expect(b.hasUltraProcessed, isTrue);
+    });
+  });
+
+  group('SPEC-138 — PlateBuilder.upfSharePercent', () {
+    test('plato vacío: 0% (sin división por cero)', () {
+      expect(PlateBuilder().upfSharePercent, 0);
+    });
+
+    test('100% UPF: solo galletas', () {
+      final b = PlateBuilder()..add(_food('galletas'));
+      expect(b.upfSharePercent, 100);
+    });
+
+    test('50% UPF: pollo + gaseosa (2 slots cada uno)', () {
+      final b = PlateBuilder()
+        ..add(_food('pollo'))
+        ..add(_food('gaseosa'));
+      expect(b.upfSharePercent, 50);
+    });
+
+    test('0% UPF: plato 100% natural', () {
+      final b = PlateBuilder()
+        ..add(_food('pollo'))
+        ..add(_food('aguacate'))
+        ..add(_food('brocoli'));
+      expect(b.upfSharePercent, 0);
+    });
+
+    test('redondeo a entero: 1 margarina + 1 pollo = 20%', () {
+      // pollo 2 slots, margarina 1 slot → 1/5 = 20%
+      final b = PlateBuilder()
+        ..add(_food('pollo'))
+        ..add(_food('brocoli'))
+        ..add(_food('margarina'));
+      expect(b.totalSlots, 5);
+      expect(b.upfSlots, 1);
+      expect(b.upfSharePercent, 20);
+    });
+  });
+
+  group('SPEC-138 — ortogonalidad con qualityScore', () {
+    test('plato puede tener qualityPercent alto y UPF presente', () {
+      // Margarina tiene qualityScore=30 pero NOVA 4. Pollo+aguacate
+      // sostienen el plato por encima del 60% pero el UPF% no es 0.
+      final b = PlateBuilder()
+        ..add(_food('pollo'))      // q95, slots 2
+        ..add(_food('aguacate'))   // q100, slots 1
+        ..add(_food('margarina')); // q30, slots 1
+      // q = (95*2 + 100*1 + 30*1) / 4 = 320/4 = 80
+      expect(b.qualityPercent, 80);
+      // upf% = 1/4 = 25
+      expect(b.upfSharePercent, 25);
+    });
+
+    test('leche entera: NOVA 1 pero qualityScore medio (50)', () {
+      // Demuestra que NOVA y qualityScore son independientes.
+      final f = _food('leche_entera');
+      expect(f.nova, NovaGroup.unprocessed);
+      expect(f.qualityScore, lessThanOrEqualTo(50));
+      expect(f.isUltraProcessed, isFalse);
+    });
+  });
 }

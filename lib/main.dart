@@ -104,11 +104,16 @@ Future<void> _bootstrap() async {
   // por default" y `zonedSchedule` se ejecuta sin error pero el sistema
   // descarta todas las entregas. Diagnóstico en docs/PLAN_HOTFIX_2026_06_04.md §P3.
   //
-  // Aceptamos pedir permisos en cold start (no es la mejor UX pero
-  // garantiza que cuando el listener del perfil dispare scheduleCircadianDay
-  // ya tengamos autorización). En SPEC-172.next mover a momento educativo
-  // tras onboarding.
-  await NotificationService.requestPermissions();
+  // SPEC-182 §RF-182-06 (2026-06-05): para usuarios NUEVOS, el prompt
+  // pasa al paso 104 del onboarding (momento educativo con 3 ejemplos
+  // de notificación y respaldo bibliográfico). Usuarios EXISTENTES
+  // (`onboardingCompleted == true`) siguen recibiendo el prompt acá en
+  // cold start — no podemos retroceder en su flujo.
+  final onboardingCompleted =
+      sharedPreferences.getBool('onboardingCompleted') ?? false;
+  if (onboardingCompleted) {
+    await NotificationService.requestPermissions();
+  }
 
   runApp(
     ProviderScope(

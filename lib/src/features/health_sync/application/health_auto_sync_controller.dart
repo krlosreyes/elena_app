@@ -153,6 +153,11 @@ class HealthAutoSyncController extends StateNotifier<HealthAutoSyncState> {
   // ─── Implementación ──────────────────────────────────────────────
 
   Future<void> _runNow({required String userId}) async {
+    // SPEC-173.bugfix2: prints directos con marcador único 🩺 para que
+    // aparezcan en Console.app del iPhone aunque AppLogger esté
+    // strippeado en release builds optimizados.
+    // ignore: avoid_print
+    print('🩺 SYNC START userId=$userId');
     state = state.copyWith(isRunning: true);
     _ref.read(isHealthSyncingProvider.notifier).state = true;
 
@@ -161,12 +166,16 @@ class HealthAutoSyncController extends StateNotifier<HealthAutoSyncState> {
       final perm = await _syncService.checkPermissions();
       state = state.copyWith(permissionStatus: perm);
       _ref.read(healthPermissionStatusProvider.notifier).state = perm;
+      // ignore: avoid_print
+      print('🩺 SYNC permisos=${perm.runtimeType}');
 
       if (perm is! HealthPermissionGranted) {
         AppLogger.debug(
           'HealthAutoSync: sin permisos (${perm.runtimeType}), '
           'no se sincroniza',
         );
+        // ignore: avoid_print
+        print('🩺 SYNC ABORT — sin permisos');
         return;
       }
 
@@ -175,17 +184,27 @@ class HealthAutoSyncController extends StateNotifier<HealthAutoSyncState> {
       state = state.copyWith(lastResult: result);
       _ref.read(lastHealthSyncResultProvider.notifier).state = result;
       AppLogger.info('HealthAutoSync: sync ok — $result');
+      // ignore: avoid_print
+      print('🩺 SYNC RESULT $result');
 
       // 3. Import (solo si hubo datos).
       if (!result.isEmpty) {
         final summary = await _importService.importResult(userId, result);
         state = state.copyWith(lastImport: summary);
         AppLogger.info('HealthAutoSync: import ok — $summary');
+        // ignore: avoid_print
+        print('🩺 SYNC IMPORTED $summary');
       } else {
         AppLogger.info('HealthAutoSync: nada que importar');
+        // ignore: avoid_print
+        print('🩺 SYNC EMPTY — nada que importar');
       }
     } catch (e, st) {
       AppLogger.error('HealthAutoSync: ciclo falló', e, st);
+      // ignore: avoid_print
+      print('🩺 SYNC ERROR $e');
+      // ignore: avoid_print
+      print(st);
     } finally {
       state = state.copyWith(
         isRunning: false,

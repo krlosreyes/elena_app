@@ -38,7 +38,12 @@ class ExerciseRepositoryImpl implements ExerciseRepository {
     DateTime since, {
     DateTime? until,
   }) {
-    final end = until ?? since.add(kCycleWindowDuration);
+    // SPEC-178 (2026-06-04): sin cap fijo de 28h. El cap original
+    // (`since.add(kCycleWindowDuration)`) hacía que ciclos largos
+    // (protocolo "Ninguno" > 28h, o ayuno OMAD prolongado) cortaran
+    // logs FUTUROS dentro del propio ciclo abierto. Ahora el upper
+    // bound es siempre `now` cuando until no se especifica.
+    final end = until ?? DateTime.now();
     return _streamMapped(userId, since, end);
   }
 

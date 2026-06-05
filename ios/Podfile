@@ -40,6 +40,18 @@ post_install do |installer|
     flutter_additional_ios_build_settings(target)
     target.build_configurations.each do |config|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+      # SPEC-181.bugfix (2026-06-05): Xcode 16+ activó por default el
+      # treat-warning-as-error para "double-quoted include in framework
+      # header". FirebaseAuth tiene includes legacy con comillas dobles
+      # que rompen el build modular en release. Las 3 flags juntas
+      # garantizan que Firebase no escale a error en ningún target.
+      config.build_settings['CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER'] = 'NO'
+      config.build_settings['GCC_TREAT_WARNINGS_AS_ERRORS'] = 'NO'
+      config.build_settings['SWIFT_TREAT_WARNINGS_AS_ERRORS'] = 'NO'
+      # Algunos targets de Firebase requieren modular_headers = false
+      # implícito para que sus umbrella headers con quotes pasen el
+      # verify-module step en release.
+      config.build_settings['DEFINES_MODULE'] = 'YES'
     end
   end
 end

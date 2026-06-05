@@ -259,4 +259,190 @@ void main() {
       expect(recovered.source, original.source);
     });
   });
+
+  // ── SPEC-138: persistencia de upfSlots/totalSlots ─────────────────────
+
+  group('SPEC-138 — toMap NOVA', () {
+    test('plato sin UPF: persiste upfSlots=0 y totalSlots>0', () {
+      final log = NutritionLog(
+        id: 'spec138-no-upf',
+        timestamp: DateTime(2026, 6, 5, 13),
+        label: 'Almuerzo',
+        withinCircadianWindow: true,
+        upfSlots: 0,
+        totalSlots: 5,
+      );
+      final map = mapper.toMap(log);
+      expect(map['upfSlots'], 0);
+      expect(map['totalSlots'], 5);
+    });
+
+    test('plato con UPF: persiste ambos campos', () {
+      final log = NutritionLog(
+        id: 'spec138-upf',
+        timestamp: DateTime(2026, 6, 5, 13),
+        label: 'Cena',
+        withinCircadianWindow: true,
+        upfSlots: 2,
+        totalSlots: 5,
+      );
+      final map = mapper.toMap(log);
+      expect(map['upfSlots'], 2);
+      expect(map['totalSlots'], 5);
+    });
+
+    test('log sin campos NOVA NO incluye las keys (semántica null)', () {
+      final log = _log();
+      final map = mapper.toMap(log);
+      expect(map.containsKey('upfSlots'), isFalse,
+          reason: 'No persistir upfSlots cuando es null');
+      expect(map.containsKey('totalSlots'), isFalse,
+          reason: 'No persistir totalSlots cuando es null');
+    });
+  });
+
+  group('SPEC-138 — fromMap NOVA', () {
+    test('logs pre-138 (sin keys) caen a null (retrocompat)', () {
+      final map = <String, dynamic>{
+        'id': 'old-log',
+        'timestamp': Timestamp.fromDate(DateTime(2026, 5, 1)),
+        'label': 'Almuerzo',
+        'withinCircadianWindow': true,
+        'source': 'userInput',
+        'ratio': 'a2e1',
+        'isCheatDay': false,
+      };
+      final log = mapper.fromMap(map, docId: 'old-log');
+      expect(log.upfSlots, isNull);
+      expect(log.totalSlots, isNull);
+    });
+
+    test('roundtrip preserva upfSlots y totalSlots', () {
+      final original = NutritionLog(
+        id: 'roundtrip',
+        timestamp: DateTime(2026, 6, 5, 13),
+        label: 'Almuerzo',
+        withinCircadianWindow: true,
+        upfSlots: 1,
+        totalSlots: 4,
+      );
+      final map = mapper.toMap(original);
+      final recovered = mapper.fromMap(map, docId: 'roundtrip');
+      expect(recovered.upfSlots, 1);
+      expect(recovered.totalSlots, 4);
+    });
+
+    test('defensa: upfSlots > totalSlots → ambos descartados', () {
+      final map = <String, dynamic>{
+        'id': 'corrupt',
+        'timestamp': Timestamp.fromDate(DateTime(2026, 6, 5)),
+        'label': 'Almuerzo',
+        'withinCircadianWindow': true,
+        'source': 'userInput',
+        'ratio': 'a2e1',
+        'isCheatDay': false,
+        'upfSlots': 8,
+        'totalSlots': 5,
+      };
+      final log = mapper.fromMap(map, docId: 'corrupt');
+      expect(log.upfSlots, isNull);
+      expect(log.totalSlots, isNull);
+    });
+
+    test('defensa: totalSlots ausente con upfSlots presente → null', () {
+      final map = <String, dynamic>{
+        'id': 'partial',
+        'timestamp': Timestamp.fromDate(DateTime(2026, 6, 5)),
+        'label': 'Almuerzo',
+        'withinCircadianWindow': true,
+        'source': 'userInput',
+        'ratio': 'a2e1',
+        'isCheatDay': false,
+        'upfSlots': 3,
+      };
+      final log = mapper.fromMap(map, docId: 'partial');
+      expect(log.upfSlots, isNull);
+      expect(log.totalSlots, isNull);
+    });
+  });
+
+  group('SPEC-138 — constructor tolerante + mapper normaliza', () {
+    // HOTFIX 2026-06-05: el constructor de NutritionLog NO valida
+    // upfSlots/totalSlots porque las excepciones se silenciaban en el
+    // onError del stream del nutrition_notifier, dejando todos los
+    // pilares en 0. La validación vive en el mapper (fromMap descarta
+    // ambos campos si están inconsistentes).
+
+    test('upfSlots presente sin totalSlots: constructor tolerante', () {
+      // No throw — el dato se queda en memoria. La invariancia se hace
+      // en el mapper antes de leer/escribir.
+      expect(
+        () => NutritionLog(
+          id: 'tolerant',
+          timestamp: DateTime(2026, 6, 5),
+          label: 'Almuerzo',
+          withinCircadianWindow: true,
+          upfSlots: 2,
+          totalSlots: null,
+        ),
+        returnsNormally,
+      );
+    });
+
+    test('upfSlots > totalSlots: constructor tolerante', () {
+      expect(
+        () => NutritionLog(
+          id: 'tolerant',
+          timestamp: DateTime(2026, 6, 5),
+          label: 'Almuerzo',
+          withinCircadianWindow: true,
+          upfSlots: 6,
+          totalSlots: 4,
+        ),
+        returnsNormally,
+      );
+    });
+
+    test('upfSlots negativo: constructor tolerante', () {
+      expect(
+        () => NutritionLog(
+          id: 'tolerant',
+          timestamp: DateTime(2026, 6, 5),
+          label: 'Almuerzo',
+          withinCircadianWindow: true,
+          upfSlots: -1,
+          totalSlots: 4,
+        ),
+        returnsNormally,
+      );
+    });
+
+    test('upfSlots = totalSlots (100% UPF) es válido', () {
+      expect(
+        () => NutritionLog(
+          id: 'all-upf',
+          timestamp: DateTime(2026, 6, 5),
+          label: 'Almuerzo',
+          withinCircadianWindow: true,
+          upfSlots: 4,
+          totalSlots: 4,
+        ),
+        returnsNormally,
+      );
+    });
+
+    test('upfSlots = 0 con totalSlots > 0 es válido (plato sin UPF)', () {
+      expect(
+        () => NutritionLog(
+          id: 'no-upf',
+          timestamp: DateTime(2026, 6, 5),
+          label: 'Almuerzo',
+          withinCircadianWindow: true,
+          upfSlots: 0,
+          totalSlots: 5,
+        ),
+        returnsNormally,
+      );
+    });
+  });
 }

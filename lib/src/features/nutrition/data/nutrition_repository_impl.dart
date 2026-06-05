@@ -43,7 +43,9 @@ class NutritionRepositoryImpl implements NutritionRepository {
     DateTime since, {
     DateTime? until,
   }) {
-    final end = until ?? since.add(kCycleWindowDuration);
+    // SPEC-178 (2026-06-04): sin cap fijo de 28h. Ver
+    // exercise_repository_impl.watchSince para el rationale completo.
+    final end = until ?? DateTime.now();
     return _streamMapped(userId, since, end);
   }
 

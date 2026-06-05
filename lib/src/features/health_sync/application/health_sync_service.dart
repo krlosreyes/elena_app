@@ -31,10 +31,17 @@ import 'package:elena_app/src/features/health_sync/domain/health_sync_result.dar
 /// plataforma para sueño:
 ///   - Android (Health Connect): `SLEEP_SESSION` agrupa toda la noche.
 ///   - iOS (HealthKit): `SLEEP_SESSION` NO existe. El Apple Watch
-///     escribe sueño en MÚLTIPLES categorías: SLEEP_IN_BED + las
-///     etapas (DEEP, REM, LIGHT) o el genérico ASLEEP cuando el
-///     dispositivo no diferencia. Pedimos los 5 tipos y consolidamos
-///     por noche en `_fetchMetric`.
+///     escribe sueño en MÚLTIPLES categorías:
+///       - SLEEP_IN_BED = tiempo en cama (incluye despertarse a mitad)
+///       - SLEEP_ASLEEP = tiempo dormido (sin etapas)
+///       - SLEEP_DEEP / LIGHT / REM = etapas específicas cuando hay Watch
+///     SPEC-173.bugfix1 (2026-06-04): SLEEP_IN_BED EXCLUIDO porque
+///     producía sleep reportado ~7h cuando el ASLEEP real era ~5h
+///     (Carlos validó en iPhone). La consolidación por noche usa
+///     `min(start) → max(end)` y el IN_BED dominaba siempre los
+///     bordes. Pedimos solo las 4 categorías de sueño "activo":
+///     ASLEEP (genérico) + DEEP + LIGHT + REM. Si solo hay ASLEEP
+///     (iPhone sin Watch) seguimos cubiertos.
 List<hp.HealthDataType> _typesFor(HealthMetric metric) {
   switch (metric) {
     case HealthMetric.weight:
@@ -42,7 +49,6 @@ List<hp.HealthDataType> _typesFor(HealthMetric metric) {
     case HealthMetric.sleepSession:
       if (!kIsWeb && Platform.isIOS) {
         return [
-          hp.HealthDataType.SLEEP_IN_BED,
           hp.HealthDataType.SLEEP_ASLEEP,
           hp.HealthDataType.SLEEP_DEEP,
           hp.HealthDataType.SLEEP_LIGHT,

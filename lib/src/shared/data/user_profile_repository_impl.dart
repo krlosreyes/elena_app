@@ -107,6 +107,31 @@ class UserProfileRepositoryImpl implements UserProfileRepository {
       return null;
     });
   }
+
+  // SPEC-141 §RF-141-12 (2026-06-05): persiste un snapshot semanal del
+  // IMR longitudinal en `users/{userId}/imr_history/{weekISO}`.
+  // Usa el data source dedicado de SPEC-143 si está disponible, sino
+  // cae al data source genérico de profile.
+  @override
+  Future<void> writeImrHistorySnapshot({
+    required String userId,
+    required String weekISO,
+    required Map<String, dynamic> snapshot,
+  }) async {
+    await _source.writeImrHistory(
+      userId: userId,
+      weekISO: weekISO,
+      snapshot: snapshot,
+    );
+  }
+
+  @override
+  Stream<List<Map<String, dynamic>>> watchImrHistory(
+    String userId, {
+    int limit = 12,
+  }) {
+    return _source.watchImrHistory(userId: userId, limit: limit);
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────

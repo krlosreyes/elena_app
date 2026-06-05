@@ -8,6 +8,30 @@ enum FastingPhase {
   survival // 48h+: Conservación profunda
 }
 
+/// SPEC-183 (2026-06-05): origen de la activación del ayuno.
+///
+/// Permite al `metabolicCycleEvaluatorProvider` distinguir entre una
+/// transición `isActive: false → true` causada por bootstrap (Firestore
+/// restaurando state) versus una causada por acción consciente del
+/// usuario (`startFastingManual`).
+///
+/// Solo las transiciones con `userInitiated` deben disparar la creación
+/// de un ciclo metabólico nuevo. Las de `bootstrap` son continuaciones
+/// de un estado previo y no deben crear ciclos automáticos.
+///
+/// El campo NO se persiste en Firestore — vive en memoria por sesión.
+enum FastingActivationSource {
+  /// Estado inicial — `isActive: false`. Sin transición todavía.
+  none,
+
+  /// El listener restauró el state desde Firestore al boot de la app.
+  /// El usuario NO presionó nada en esta sesión.
+  bootstrap,
+
+  /// El usuario presionó "iniciar ayuno" en la UI (tap consciente).
+  userInitiated,
+}
+
 class FastingState {
   final DateTime? startTime;
   final Duration duration;
@@ -36,6 +60,11 @@ class FastingState {
   /// como `false` en el getter.
   final bool? completedToday;
 
+  /// SPEC-183: origen de la activación del ayuno. Default `none`.
+  /// Ver `FastingActivationSource` para detalles. Solo el evaluator
+  /// del ciclo metabólico consume este campo — la UI lo ignora.
+  final FastingActivationSource activationSource;
+
   FastingState({
     this.startTime,
     this.duration = Duration.zero,
@@ -49,6 +78,7 @@ class FastingState {
     this.isWaitingForFeedingEnd = false,
     this.isSaving = false,
     this.completedToday,
+    this.activationSource = FastingActivationSource.none,
   });
 
   factory FastingState.initial() => FastingState();
@@ -146,6 +176,7 @@ class FastingState {
     bool? isWaitingForFeedingEnd,
     bool? isSaving,
     bool? completedToday,
+    FastingActivationSource? activationSource,
   }) {
     return FastingState(
       startTime: startTime ?? this.startTime,
@@ -162,6 +193,7 @@ class FastingState {
           isWaitingForFeedingEnd ?? this.isWaitingForFeedingEnd,
       isSaving: isSaving ?? this.isSaving,
       completedToday: completedToday ?? this.completedToday,
+      activationSource: activationSource ?? this.activationSource,
     );
   }
 }

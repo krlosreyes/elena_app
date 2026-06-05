@@ -6,6 +6,7 @@ import 'package:elena_app/src/core/services/day_boundary_resolver.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
 import 'package:elena_app/src/features/dashboard/application/fasting_notifier.dart';
 import 'package:elena_app/src/features/dashboard/data/sleep_repository_impl.dart';
+import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart';
 import '../domain/sleep_log.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
@@ -311,4 +312,42 @@ class SleepNotifier extends StateNotifier<SleepState> {
 
 final sleepProvider = StateNotifierProvider<SleepNotifier, SleepState>((ref) {
   return SleepNotifier(ref);
+});
+
+// ────────────────────────────────────────────────────────────────────────
+// SPEC-175 (2026-06-04): provider derivado cycle-aware del sueño.
+//
+// Sleep es un dato ÚNICO por noche, no múltiple como exercise/hydration/
+// nutrition (donde los notifiers se re-suscriben a `watchSince(cycle.startedAt)`).
+// El `SleepNotifier` mantiene `state.lastLog` como el último sleep
+// histórico (necesario para detectar duplicados en `confirmManualWakeUp`),
+// y este provider derivado expone el `SleepLog?` que pertenece al ciclo
+// abierto — null cuando el sleep es de un ciclo anterior.
+//
+// Regla de pertenencia (post SPEC-149.2.bugfix3):
+//   wokeUp ∈ [startedAt - 18h, startedAt)
+// (despertarse precede al ciclo, dentro de las 18h previas).
+//
+// Reemplaza la lógica inline `sleepBelongsToCurrentCycle` que vivía en
+// dashboard_screen.dart:362-386. Los consumidores ahora obtienen el
+// sleep del ciclo en una sola lectura limpia.
+// ────────────────────────────────────────────────────────────────────────
+
+const Duration _kSleepWindowBeforeCycle = Duration(hours: 18);
+
+/// SPEC-175 §RF-175-01: SleepLog del ciclo metabólico abierto. Null si
+/// no hay sleep o el sleep no pertenece al ciclo abierto. En modo
+/// legacy (sin ciclo), devuelve `lastLog` directamente.
+final currentCycleSleepProvider = Provider<SleepLog?>((ref) {
+  final sleep = ref.watch(sleepProvider);
+  if (sleep.lastLog == null) return null;
+
+  final cycle = ref.watch(currentMetabolicCycleProvider).valueOrNull;
+  if (cycle == null) return sleep.lastLog; // sin ciclo → modo legacy
+
+  final wokeUp = sleep.lastLog!.wokeUp;
+  final belongs =
+      wokeUp.isAfter(cycle.startedAt.subtract(_kSleepWindowBeforeCycle)) &&
+          wokeUp.isBefore(cycle.startedAt);
+  return belongs ? sleep.lastLog : null;
 });

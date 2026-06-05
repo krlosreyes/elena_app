@@ -59,11 +59,18 @@ class FastingNotifier extends StateNotifier<FastingState> {
               isActive: false,
               duration: Duration.zero,
               phase: FastingPhase.none,
+              activationSource: FastingActivationSource.none,
             );
           } else {
             final now = DateTime.now();
             final duration = now.difference(interval.startTime);
 
+            // SPEC-183 (2026-06-05): la restauración del state desde
+            // Firestore al boot NO es un inicio explícito del usuario.
+            // Marcamos `bootstrap` para que el evaluator del ciclo
+            // metabólico ignore esta transición — sino crea un ciclo
+            // huérfano con `startedAt = now` (bug crítico que cortaba
+            // todos los pilares al arrancar la app).
             state = state.copyWith(
               startTime: interval.startTime,
               isActive: interval.isFasting,
@@ -71,6 +78,9 @@ class FastingNotifier extends StateNotifier<FastingState> {
               phase: interval.isFasting
                   ? FastingState.determinePhase(duration)
                   : FastingPhase.none,
+              activationSource: interval.isFasting
+                  ? FastingActivationSource.bootstrap
+                  : FastingActivationSource.none,
             );
           }
         },
@@ -150,6 +160,10 @@ class FastingNotifier extends StateNotifier<FastingState> {
         isActive: true,
         duration: duration,
         phase: FastingState.determinePhase(duration),
+        // SPEC-183: marca explícita de "inicio por el usuario". Solo
+        // las transiciones false→true con este source disparan creación
+        // de ciclo metabólico en el evaluator.
+        activationSource: FastingActivationSource.userInitiated,
       );
 
       // SPEC-05: Programar hitos de ayuno (12h, 18h, 24h) desde el inicio real.

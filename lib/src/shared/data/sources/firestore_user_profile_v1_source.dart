@@ -64,4 +64,36 @@ class FirestoreUserProfileV1Source implements UserProfileDataSource {
       'timestamp': FieldValue.serverTimestamp(),
     });
   }
+
+  // SPEC-141 §RF-141-12: snapshot semanal del IMR longitudinal.
+  // Doc id = weekISO ('2026-W23') → idempotente. SetOptions sin merge
+  // porque cada snapshot reemplaza al anterior de la misma semana.
+  @override
+  Future<void> writeImrHistory({
+    required String userId,
+    required String weekISO,
+    required Map<String, dynamic> snapshot,
+  }) async {
+    await _users.doc(userId).collection('imr_history').doc(weekISO).set({
+      ...snapshot,
+      'writtenAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  // SPEC-148 §RF-148-04: stream de últimos N snapshots ordenados por
+  // computedAt desc. Idéntico patrón a watchHistory de biometría.
+  @override
+  Stream<List<Map<String, dynamic>>> watchImrHistory({
+    required String userId,
+    int limit = 12,
+  }) {
+    return _users
+        .doc(userId)
+        .collection('imr_history')
+        .orderBy('computedAt', descending: true)
+        .limit(limit)
+        .snapshots()
+        .map((snap) =>
+            snap.docs.map((doc) => doc.data()).toList(growable: false));
+  }
 }

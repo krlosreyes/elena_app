@@ -19,6 +19,10 @@ import 'dart:math' as math;
 
 import 'package:elena_app/src/core/engine/metabolic_state.dart';
 import 'package:elena_app/src/core/rules/circadian_rules.dart';
+// SPEC-141 (2026-06-05): import del dominio de streak para
+// calculateLongitudinalIMR.
+import 'package:elena_app/src/features/streak/domain/streak_engine.dart';
+import 'package:elena_app/src/features/streak/domain/streak_entry.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -42,6 +46,23 @@ class IMRv2Result {
   final double ffmi;
   final double whtr;
 
+  // SPEC-141 (2026-06-05): campos opcionales del IMR longitudinal.
+  // Solo se pueblan cuando el resultado proviene de
+  // `calculateLongitudinalIMR`. `calculateIMR` (diario) y
+  // `calculateBaseline` (onboarding) los dejan null para no romper
+  // consumidores legacy.
+  //
+  // - `longitudinalScore`: 0..100, agregado 40/35/15/10.
+  // - `subscoreBehaviorTrend`: 0..1, promedio dailyQualityScore 30d.
+  // - `subscoreAdherence`: 0..1, racha + active days 90.
+  // - `subscoreCoherence`: 0..1, state.metabolicCoherence.
+  // `subscoreStructure` no agregado — el campo existente
+  // `structureScore` lo cubre.
+  final int? longitudinalScore;
+  final double? subscoreBehaviorTrend;
+  final double? subscoreAdherence;
+  final double? subscoreCoherence;
+
   const IMRv2Result({
     required this.totalScore,
     required this.structureScore,
@@ -56,6 +77,10 @@ class IMRv2Result {
     required this.ica,
     required this.ffmi,
     required this.whtr,
+    this.longitudinalScore,
+    this.subscoreBehaviorTrend,
+    this.subscoreAdherence,
+    this.subscoreCoherence,
   });
 
   /// Resultado vacío para cuando no hay datos suficientes (estado inicial,
@@ -305,6 +330,99 @@ class ScoreEngine {
       ica: ica,
       ffmi: ffmi,
       whtr: ica,
+    );
+  }
+
+  /// SPEC-141 §RF-141-01 (2026-06-05): IMR longitudinal compuesto.
+  ///
+  /// Combina composición corporal (40% — bloque Estructura existente)
+  /// con adherencia sostenida (35% — `dailyQualityScore` promedio 30d),
+  /// consistencia (15% — racha + presencia 90d) y coherencia metabólica
+  /// (10% — `state.metabolicCoherence`).
+  ///
+  /// Reemplaza el rol identitario del IMR diario en el badge de Perfil
+  /// cuando `kEnableLongitudinalImr = true` (SPEC-141 D, feature flag).
+  /// El IMR diario (`calculateIMR`) se preserva sin cambios para la
+  /// pantalla Análisis.
+  ///
+  /// Casos:
+  /// - `history.length < 7` → renormalización: los pesos de los
+  ///   componentes longitudinales se transfieren proporcionalmente a
+  ///   Estructura. Un usuario que acaba de terminar onboarding obtiene
+  ///   `score ≈ structureBlock × 100` (mismo techo que
+  ///   `calculateBaseline`, no peor).
+  /// - Si `state.lastMealTime` es null → retorna `IMRv2Result.empty()`
+  ///   con `longitudinalScore: null` (mismo trato que `calculateIMR`).
+  ///
+  /// Validación clínica: SPEC-141 v1.1 APPROVED-DESIGN. Antes de habilitar
+  /// el feature flag, el especialista que firmó SPEC-70.5 debe validar
+  /// los 4 pesos macro.
+  IMRv2Result calculateLongitudinalIMR(
+    UserModel user,
+    MetabolicState state,
+    List<StreakEntry> history,
+  ) {
+    // Reusamos el cálculo completo del IMR diario para obtener
+    // structureScore, imc, tmb, etc. — son los mismos derivados que el
+    // sitio web Metamorfosis Real espera.
+    final daily = calculateIMR(user, state);
+    if (daily.totalScore == 0 && daily.zone == 'N/A') {
+      // Sin lastMealTime → empty(). Mismo comportamiento que el legacy.
+      return daily;
+    }
+
+    final structure = daily.structureScore.clamp(0.0, 1.0);
+    final behaviorTrend = StreakEngine.computeMonthlyQualityScore(history);
+    final adherenceTrend = StreakEngine.computeAdherenceTrend(history);
+    final coherence = state.metabolicCoherence.clamp(0.0, 1.0);
+
+    // SPEC-141 §RF-141-05: renormalización para usuarios con historial
+    // corto. Los 60% de los pesos no-estructurales se transfieren a
+    // Estructura cuando hay menos de 7 entradas calificadas.
+    //
+    // Conteo de "entradas válidas": entradas con magnitudes (no legacy
+    // sin magnitudes). Esto es proxy de "días que ya generaron señal
+    // suficiente para el promedio mensual".
+    final qualifiedHistory =
+        history.where((e) => e.hasMagnitudes).toList();
+    final hasEnoughHistory = qualifiedHistory.length >= 7;
+
+    final double raw;
+    if (hasEnoughHistory) {
+      raw = 0.40 * structure +
+          0.35 * behaviorTrend +
+          0.15 * adherenceTrend +
+          0.10 * coherence;
+    } else {
+      // Renormalización: transfiere los 60% no-Estructura a Estructura.
+      // Esto preserva el techo y semánticamente dice "aún no tengo señal
+      // longitudinal suficiente, te puntúo solo por composición".
+      raw = structure;
+    }
+
+    final longScore = (raw.clamp(0.0, 1.0) * 100).round().clamp(0, 100);
+
+    return IMRv2Result(
+      totalScore: daily.totalScore, // legacy daily preservado
+      structureScore: daily.structureScore,
+      metabolicScore: daily.metabolicScore,
+      behaviorScore: daily.behaviorScore,
+      circadianAlignment: daily.circadianAlignment,
+      zone: _getZone(longScore),
+      description: hasEnoughHistory
+          ? _getDescription(longScore, daily.circadianAlignment)
+          : 'Perfil estructural — sigue registrando para ver tendencia.',
+      imc: daily.imc,
+      tmb: daily.tmb,
+      metabolicAge: daily.metabolicAge,
+      ica: daily.ica,
+      ffmi: daily.ffmi,
+      whtr: daily.whtr,
+      // SPEC-141: campos longitudinales poblados.
+      longitudinalScore: longScore,
+      subscoreBehaviorTrend: behaviorTrend,
+      subscoreAdherence: adherenceTrend,
+      subscoreCoherence: coherence,
     );
   }
 
