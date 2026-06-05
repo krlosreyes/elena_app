@@ -65,12 +65,18 @@ class FastingNotifier extends StateNotifier<FastingState> {
             final now = DateTime.now();
             final duration = now.difference(interval.startTime);
 
-            // SPEC-183 (2026-06-05): la restauración del state desde
-            // Firestore al boot NO es un inicio explícito del usuario.
-            // Marcamos `bootstrap` para que el evaluator del ciclo
-            // metabólico ignore esta transición — sino crea un ciclo
-            // huérfano con `startedAt = now` (bug crítico que cortaba
-            // todos los pilares al arrancar la app).
+            // SPEC-183: marcar bootstrap al restaurar desde Firestore.
+            //
+            // SPEC-187 (2026-06-05): PERO si el state YA tiene
+            // `userInitiated` (porque `startFastingManual` hizo el
+            // update optimista hace milisegundos), respetar esa marca.
+            // Sin este guard, el listener sobreescribía `userInitiated`
+            // con `bootstrap` durante el await del Firestore write,
+            // bloqueando el cierre del ciclo previo cuando el usuario
+            // iniciaba un nuevo ayuno.
+            final isUserInitiatedAlreadySet = interval.isFasting &&
+                state.activationSource ==
+                    FastingActivationSource.userInitiated;
             state = state.copyWith(
               startTime: interval.startTime,
               isActive: interval.isFasting,
@@ -78,9 +84,11 @@ class FastingNotifier extends StateNotifier<FastingState> {
               phase: interval.isFasting
                   ? FastingState.determinePhase(duration)
                   : FastingPhase.none,
-              activationSource: interval.isFasting
-                  ? FastingActivationSource.bootstrap
-                  : FastingActivationSource.none,
+              activationSource: isUserInitiatedAlreadySet
+                  ? FastingActivationSource.userInitiated
+                  : (interval.isFasting
+                      ? FastingActivationSource.bootstrap
+                      : FastingActivationSource.none),
             );
           }
         },
@@ -138,7 +146,32 @@ class FastingNotifier extends StateNotifier<FastingState> {
     final uid = _ref.read(authStateProvider).value?.uid;
     if (uid == null) return;
 
-    state = state.copyWith(isSaving: true);
+    // SPEC-187 (2026-06-05): UPDATE OPTIMISTA ANTES de transitionTo.
+    //
+    // El listener al `lastFastingIntervalProvider` recibe el snapshot
+    // de Firestore DURANTE el `await` y, si el state aún tiene
+    // `isActive: false`, marca la transición como `bootstrap`,
+    // bloqueando el cierre del ciclo previo (bug observado 2026-06-05).
+    //
+    // Al setear `isActive: true` + `activationSource: userInitiated`
+    // ANTES de tocar Firestore, ocurren dos cosas:
+    //   1. El evaluator detecta la transición false→true CON
+    //      `userInitiated` → dispara cierre del ciclo previo + apertura
+    //      del nuevo + reset de pilares + CycleFeedback. ✓
+    //   2. Cuando el listener emite (con el state ya en isActive=true),
+    //      NO hay transición nueva y preserva `userInitiated` gracias
+    //      al guard del listener (SPEC-187 segunda parte).
+    final now = DateTime.now();
+    final duration = now.difference(startTime);
+    state = state.copyWith(
+      isSaving: true,
+      startTime: startTime,
+      isActive: true,
+      duration: duration,
+      phase: FastingState.determinePhase(duration),
+      activationSource: FastingActivationSource.userInitiated,
+    );
+
     // SPEC-50.4: FastingIntervalRepository (no UserRepository).
     final repo = _ref.read(fastingIntervalRepositoryProvider);
 
@@ -150,21 +183,7 @@ class FastingNotifier extends StateNotifier<FastingState> {
       );
       _fastingEndConfirmedToday = false;
 
-      // Actualización optimista inmediata para reflejar el viaje en el tiempo
-      final now = DateTime.now();
-      final duration = now.difference(startTime);
-
-      state = state.copyWith(
-        isSaving: false,
-        startTime: startTime,
-        isActive: true,
-        duration: duration,
-        phase: FastingState.determinePhase(duration),
-        // SPEC-183: marca explícita de "inicio por el usuario". Solo
-        // las transiciones false→true con este source disparan creación
-        // de ciclo metabólico en el evaluator.
-        activationSource: FastingActivationSource.userInitiated,
-      );
+      state = state.copyWith(isSaving: false);
 
       // SPEC-05: Programar hitos de ayuno (12h, 18h, 24h) desde el inicio real.
       await NotificationScheduler.scheduleFastingMilestones(startTime);
@@ -174,7 +193,16 @@ class FastingNotifier extends StateNotifier<FastingState> {
         '(Duración inicial: ${duration.inHours}h)',
       );
     } catch (e) {
-      state = state.copyWith(isSaving: false);
+      // SPEC-187: rollback del update optimista si Firestore falla.
+      state = state.copyWith(
+        isSaving: false,
+        isActive: false,
+        startTime: null,
+        duration: Duration.zero,
+        phase: FastingPhase.none,
+        activationSource: FastingActivationSource.none,
+      );
+      AppLogger.warning('startFastingManual falló, rollback aplicado: $e', e);
     }
   }
 

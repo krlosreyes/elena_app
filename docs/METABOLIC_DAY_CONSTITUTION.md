@@ -8,11 +8,22 @@
 
 ## §1 — Principio fundacional
 
-**El día metabólico es un ciclo definido por EVENTOS CONSCIENTES DEL USUARIO, no por el reloj calendárico.**
+**El día metabólico es un ciclo definido EXCLUSIVAMENTE por eventos del usuario. CERO referencia al reloj del calendario.**
 
-El ciclo refleja el ritmo biológico real del usuario (ayuno → ventana de comida → cierre), no la rotación de la Tierra. Un usuario que cena a las 21:00 y rompe ayuno al día siguiente a las 13:00 tiene UN ciclo metabólico que **cruza** la medianoche calendárica. El reloj no parte el ciclo.
+Toda regla del producto que mencione horas, ventanas de tiempo, medianoche, `startOfDay`, `wakeUpTime`, `sleepTime`, "gracia de N minutos" o cualquier construcción temporal arbitraria está **prohibida**. La aplicación se adapta al usuario, no al reloj.
 
-Documentos hermanos: `CIRCADIAN_BIBLIOGRAPHY.md` (cronograma circadiano), `IMR_BIBLIOGRAPHY.md` (pesos del score), `specs/SPEC-149-*.md` (implementación), `specs/SPEC-183-*.md` (fix bootstrap).
+**Los dos únicos eventos que marcan la frontera del día metabólico:**
+
+| Evento | Significado |
+|--------|-------------|
+| **Inicio del día metabólico** | Tap "Iniciar ayuno" → `startFastingManual` → ciclo nuevo con `startedAt = ahora` |
+| **Fin del día metabólico** | Fin de ventana de alimentación → dispara automáticamente nuevo ayuno → cierra ciclo actual + abre el siguiente |
+
+**Implicación operacional:** la pertenencia de cualquier evento (sleep, exercise, hydration, meal) al día metabólico actual se rige por el rango **`[cycle.startedAt, cycle.closedAt ?? now]`**. Punto. Nada se mide en horas previas o gracias.
+
+**Implicación crítica:** si no hay ciclo abierto, el día metabólico no ha empezado todavía y los pilares muestran **nada** (no `startOfDay`). El primer tap "Iniciar ayuno" arranca el día.
+
+Documentos hermanos: `CIRCADIAN_BIBLIOGRAPHY.md` (cronograma circadiano, informativo solo), `IMR_BIBLIOGRAPHY.md` (pesos del score), `specs/SPEC-149-*.md` (implementación), `specs/SPEC-183-*.md` (fix bootstrap).
 
 ---
 
@@ -21,7 +32,7 @@ Documentos hermanos: `CIRCADIAN_BIBLIOGRAPHY.md` (cronograma circadiano), `IMR_B
 | Evento | Condición | `startedAt` del ciclo |
 |--------|-----------|------------------------|
 | **Usuario inicia ayuno** | Tap consciente en UI ("Iniciar ayuno") → `startFastingManual()` con `activationSource = userInitiated` | `DateTime.now()` al momento del tap |
-| **Bootstrap retroactivo del ciclo** (SPEC-149 D.3) | One-shot al primer login con ayuno YA persistido en Firestore (`lastFastingStartTime != null`). NO crea ciclo si no hay ayuno real persistido (SPEC-185). | `lastFastingStartTime` (hora real del ayuno previo, no `now`) |
+| **Bootstrap retroactivo del ciclo** (SPEC-149 D.3) | One-shot al primer login con ayuno YA persistido en Firestore (`lastFastingStartTime != null`). NO crea ciclo si no hay ayuno real persistido (SPEC-185). **Solo se ejecuta UNA vez por usuario por dispositivo** — el flag persiste en SharedPreferences (SPEC-186). Hot reload, restart o logout/login NO lo re-disparan. | `lastFastingStartTime` (hora real del ayuno previo, no `now`) |
 | **Re-apertura encadenada tras cierre** | El cierre de un ciclo por `manualNextFasting` abre uno nuevo en el mismo `evaluateAndApply` | `input.newFastingStartedAt` |
 
 **ESOS SON LOS ÚNICOS 3 EVENTOS QUE CREAN CICLO.** El bootstrap retroactivo y la re-apertura encadenada son derivados del tap original — no son "creaciones automáticas sin acción del usuario".
@@ -130,6 +141,9 @@ Si los pilares no muestran datos del día y los logs crudos SÍ existen en Fires
 | 2026-06-05 | SPEC-183 | Bootstrap NO crea ciclo — enum FastingActivationSource |
 | 2026-06-05 | SPEC-184 | Esta constitución + logger semántico |
 | 2026-06-05 | SPEC-185 | `bootstrapIfMissing` NO crea ciclo si `lastFastingStartTime == null`. Fix de race condition con listener Firestore. |
+| 2026-06-05 | SPEC-186 | Flag de bootstrap persistido en SharedPreferences por userId. Hot reload, restart y logout/login NO re-disparan el bootstrap. |
+| 2026-06-05 | SPEC-187 | Fix race en SPEC-183: `startFastingManual` hace optimistic update + listener preserva `userInitiated`. |
+| 2026-06-05 | SPEC-188 v2 | **Constitución reescrita en §1: cero reloj.** `currentCycleSleepProvider` usa regla pura `wokeUp >= cycle.startedAt`. Sin gracia. Sin fallback al `startOfDay`. |
 
 ---
 

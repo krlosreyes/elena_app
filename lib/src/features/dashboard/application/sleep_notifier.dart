@@ -324,30 +324,39 @@ final sleepProvider = StateNotifierProvider<SleepNotifier, SleepState>((ref) {
 // y este provider derivado expone el `SleepLog?` que pertenece al ciclo
 // abierto — null cuando el sleep es de un ciclo anterior.
 //
-// Regla de pertenencia (post SPEC-149.2.bugfix3):
-//   wokeUp ∈ [startedAt - 18h, startedAt)
-// (despertarse precede al ciclo, dentro de las 18h previas).
+// SPEC-188 v2 (2026-06-05, Carlos): el día metabólico es 100% event-
+// driven. CERO referencia al reloj. El sleep pertenece al ciclo
+// metabólico si y solo si `wokeUp >= cycle.startedAt`.
 //
-// Reemplaza la lógica inline `sleepBelongsToCurrentCycle` que vivía en
-// dashboard_screen.dart:362-386. Los consumidores ahora obtienen el
-// sleep del ciclo en una sola lectura limpia.
+// Sin gracia previa, sin ventana de 18h, sin reloj. El sleep que
+// ocurrió ANTES del inicio del ciclo pertenece al ciclo previo (ya
+// cerrado) — el feedback de ese ciclo cerrado lo refleja. El ciclo
+// nuevo arranca limpio.
+//
+// Modelo canon (METABOLIC_DAY_CONSTITUTION.md §1):
+//   - Inicio del día metabólico = tap "iniciar ayuno" (startFastingManual)
+//   - Fin del día metabólico = fin de ventana de alimentación → inicia
+//     nuevo ayuno → nuevo día
+//   - Nada más. Ni medianoche, ni startOfDay, ni wakeUpTime, ni gracia.
 // ────────────────────────────────────────────────────────────────────────
 
-const Duration _kSleepWindowBeforeCycle = Duration(hours: 18);
-
 /// SPEC-175 §RF-175-01: SleepLog del ciclo metabólico abierto. Null si
-/// no hay sleep o el sleep no pertenece al ciclo abierto. En modo
-/// legacy (sin ciclo), devuelve `lastLog` directamente.
+/// no hay sleep o el sleep no pertenece al ciclo abierto.
+///
+/// SPEC-188 v2: regla canónica pura — `wokeUp >= cycle.startedAt`.
+/// Sin gracia, sin tolerancia, sin reloj.
+///
+/// Si no hay ciclo abierto, el día metabólico no ha empezado todavía
+/// y el sleep no tiene a qué pertenecer → null (sin fallback al
+/// reloj).
 final currentCycleSleepProvider = Provider<SleepLog?>((ref) {
   final sleep = ref.watch(sleepProvider);
   if (sleep.lastLog == null) return null;
 
   final cycle = ref.watch(currentMetabolicCycleProvider).valueOrNull;
-  if (cycle == null) return sleep.lastLog; // sin ciclo → modo legacy
+  if (cycle == null) return null; // SPEC-188 v2: sin ciclo, sin día.
 
   final wokeUp = sleep.lastLog!.wokeUp;
-  final belongs =
-      wokeUp.isAfter(cycle.startedAt.subtract(_kSleepWindowBeforeCycle)) &&
-          wokeUp.isBefore(cycle.startedAt);
+  final belongs = !wokeUp.isBefore(cycle.startedAt);
   return belongs ? sleep.lastLog : null;
 });
