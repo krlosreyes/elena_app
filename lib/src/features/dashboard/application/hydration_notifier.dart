@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
 // IMPORTANTE: Esta es la ruta al archivo que creamos para centralizar el usuario
 import 'package:elena_app/src/core/services/app_logger.dart';
-import 'package:elena_app/src/core/services/day_boundary_resolver.dart';
+// SPEC-189: day_boundary_resolver removido — sin fallback al startOfDay.
 import 'package:elena_app/src/features/dashboard/data/hydration_repository_impl.dart';
 import 'package:elena_app/src/features/dashboard/domain/hydration_log.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart';
@@ -124,17 +124,31 @@ class HydrationNotifier extends StateNotifier<HydrationState> {
     );
   }
 
-  /// SPEC-149.2: suscripción al stream filtrado por la ventana del
-  /// ciclo metabólico. Fallback a startOfDay si no hay ciclo abierto.
+  /// SPEC-149.2 + SPEC-189 (2026-06-05): suscripción al stream filtrado
+  /// por la ventana del ciclo metabólico.
+  ///
+  /// Sin ciclo abierto = sin día metabólico = sin suscripción
+  /// (METABOLIC_DAY_CONSTITUTION.md §1). El state queda vacío hasta
+  /// que el usuario inicie su primer ayuno.
   void _subscribeFor(DateTime? cycleStartedAt) {
     final userId = _activeUserId;
     if (userId == null) return;
     _hydrationSubscription?.cancel();
-    final since =
-        cycleStartedAt ?? DayBoundaryResolver.startOfDay(DateTime.now());
+    _hydrationSubscription = null;
+    if (cycleStartedAt == null) {
+      // SPEC-189: sin ciclo, no hay día → reseteamos el contador.
+      if (mounted) {
+        state = state.copyWith(
+          currentAmountLiters: 0,
+          history: const [],
+          isGoalReached: false,
+        );
+      }
+      return;
+    }
     _hydrationSubscription = _ref
         .read(hydrationRepositoryProvider)
-        .watchSince(userId, since)
+        .watchSince(userId, cycleStartedAt)
         .listen((logs) {
       if (mounted) {
         final total = logs.fold<double>(

@@ -1,10 +1,11 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
-import 'package:elena_app/src/core/services/day_boundary_resolver.dart';
+// SPEC-189: day_boundary_resolver removido — sin fallback al startOfDay.
 import 'package:elena_app/src/features/exercise/data/exercise_repository_impl.dart';
 import 'package:elena_app/src/features/exercise/domain/exercise_log.dart';
-import 'package:elena_app/src/features/exercise/domain/exercise_repository.dart';
+// SPEC-189: el import del repositorio abstracto era unused (pre-existente).
+// import 'package:elena_app/src/features/exercise/domain/exercise_repository.dart';
 import 'package:elena_app/src/features/exercise/application/exercise_state.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart';
 import 'package:elena_app/src/features/metabolic_cycle/domain/metabolic_cycle.dart';
@@ -81,14 +82,23 @@ class ExerciseNotifier extends StateNotifier<ExerciseState> {
     );
   }
 
+  /// SPEC-149.2 + SPEC-189 (2026-06-05): suscripción cycle-aware.
+  /// Sin ciclo abierto = sin día metabólico = sin suscripción
+  /// (METABOLIC_DAY_CONSTITUTION.md §1).
   void _subscribeFor(DateTime? cycleStartedAt) {
     final userId = _activeUserId;
     if (userId == null || userId.isEmpty) return;
     _subscription?.cancel();
-    final since =
-        cycleStartedAt ?? DayBoundaryResolver.startOfDay(DateTime.now());
+    _subscription = null;
+    if (cycleStartedAt == null) {
+      // SPEC-189: sin ciclo, reseteamos a 0 minutos.
+      if (mounted) {
+        state = state.copyWith(todayMinutes: 0, error: null);
+      }
+      return;
+    }
     final repo = ref.read(exerciseRepositoryProvider);
-    _subscription = repo.watchSince(userId, since).listen(
+    _subscription = repo.watchSince(userId, cycleStartedAt).listen(
       (logs) {
         if (mounted) {
           final totalMinutes = logs.fold<int>(

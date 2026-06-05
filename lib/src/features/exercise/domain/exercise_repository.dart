@@ -10,6 +10,14 @@ import 'package:elena_app/src/features/exercise/domain/exercise_log.dart';
 
 abstract class ExerciseRepository {
   /// Stream de los registros del día actual (medianoche local → ahora).
+  ///
+  /// SPEC-189 (2026-06-05): DEPRECADO. La "medianoche local" es reloj
+  /// y viola §1 de METABOLIC_DAY_CONSTITUTION.md (cero reloj). Usar
+  /// `watchSince(userId, cycle.startedAt)` del ciclo metabólico abierto.
+  @Deprecated(
+    'SPEC-189: usar watchSince(userId, cycle.startedAt). '
+    'Ver METABOLIC_DAY_CONSTITUTION.md §1.',
+  )
   Stream<List<ExerciseLog>> watchToday(String userId);
 
   /// SPEC-149.2: stream filtrado por ventana [since, since + 28h].

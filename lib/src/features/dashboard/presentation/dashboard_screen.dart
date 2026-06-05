@@ -369,6 +369,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     required ExerciseState exercise,
     required NutritionState nutrition,
   }) {
+    // SPEC-189 (2026-06-05): si no hay ciclo metabólico abierto, no
+    // hay día metabólico (METABOLIC_DAY_CONSTITUTION.md §1). Mostrar
+    // placeholder en lugar de rings en 0.
+    final cycleAsync = ref.watch(currentMetabolicCycleProvider);
+    final hasCycle = cycleAsync.valueOrNull != null;
+    if (!hasCycle) {
+      return _buildNoCyclePlaceholder(context);
+    }
+
     // SPEC-171 (2026-06-04): usa los providers DISPLAY anclados al ciclo
     // metabólico. Cuando hay ciclo abierto con protocolo conocido, el
     // score y el delta reflejan el ciclo en vivo, no el día calendárico.
@@ -570,6 +579,67 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   // SPEC-66 v2: _pillarRing extraído a widgets/pillar_ring.dart como
   // PillarRing público para hacerlo testeable con widget tests.
+
+  /// SPEC-189 (2026-06-05): placeholder que reemplaza la fila de pilares
+  /// cuando no hay ciclo metabólico abierto. Cumple §1 de la Constitución
+  /// (cero reloj): si el usuario no ha iniciado su primer ayuno, no hay
+  /// día metabólico que mostrar.
+  ///
+  /// Copy alineado con notification-tone-human-not-clinical: invita sin
+  /// imponer ni explicar de más.
+  Widget _buildNoCyclePlaceholder(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(18, 28, 18, 28),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E293B),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: AppColors.metabolicGreen.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.flag_outlined,
+                  color: AppColors.metabolicGreen,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  'Tu día metabólico aún no empezó',
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'Iniciá tu primer ayuno para arrancarlo. '
+            'Los pilares se llenarán con lo que registres a partir de ese momento.',
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 13,
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   /// Tarjeta extendida de control de Ayuno con beneficios y 2 CTAs.
   /// Reemplaza la antigua "VENTANA NUTRICIONAL" + IMRScoreCard.

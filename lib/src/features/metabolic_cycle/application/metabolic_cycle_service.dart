@@ -241,39 +241,28 @@ class MetabolicCycleService {
     final existing = await _repository.fetchOpenCycle(userId);
     if (existing != null) return existing;
 
-    // SPEC-185 (2026-06-05): NO crear ciclo sin ayuno persistido.
-    //
-    // Cumple §2 de la Constitución del Día Metabólico
+    // SPEC-185 + SPEC-189 (2026-06-05): NO crear ciclo sin ayuno
+    // persistido. Cumple §1 + §2 de la Constitución del Día Metabólico
     // (docs/METABOLIC_DAY_CONSTITUTION.md): el ÚNICO evento que crea
     // ciclo es el tap consciente del usuario en "Iniciar ayuno".
     //
-    // Histórico del bug: el caller (`metabolicCycleBootstrapProvider`)
-    // lee `fastingProvider.startTime` con `ref.read` en el primer
-    // emit del user stream. Hay race condition con el listener al
-    // `lastFastingIntervalProvider`, que en ese momento aún no terminó
-    // de cargar desde Firestore. Resultado: `lastFastingStartTime`
-    // llega null y la línea `startedAt = lastFastingStartTime ?? now`
-    // creaba un ciclo huérfano con la hora del boot.
+    // SPEC-189: eliminado el branch `useCalendarFallback` que creaba
+    // ciclo con `DateTime(now.year, now.month, now.day)` (medianoche
+    // calendárica). Ese branch contaminaba el modelo con el reloj.
     //
     // Política: si no hay ayuno real persistido, NO inventar uno.
     // El primer tap legítimo del usuario lo creará en el evaluator
     // (SPEC-183 garantiza `source=userInitiated`).
-    if (!MetabolicCycleResolver.useCalendarFallback(protocol) &&
-        lastFastingStartTime == null) {
+    if (lastFastingStartTime == null) {
       AppLogger.info(
         '[cycle.bootstrap.skip] no hay lastFastingStartTime '
         'persistido → no creamos ciclo. El próximo tap "Iniciar ayuno" '
-        'lo creará legítimamente. Ver §2 METABOLIC_DAY_CONSTITUTION.md',
+        'lo creará legítimamente. Ver §1+§2 METABOLIC_DAY_CONSTITUTION.md',
       );
       return null;
     }
 
-    DateTime startedAt;
-    if (MetabolicCycleResolver.useCalendarFallback(protocol)) {
-      startedAt = DateTime(now.year, now.month, now.day);
-    } else {
-      startedAt = lastFastingStartTime!;
-    }
+    final startedAt = lastFastingStartTime;
 
     final cycle = MetabolicCycleResolver.openCycle(
       startedAt: startedAt,

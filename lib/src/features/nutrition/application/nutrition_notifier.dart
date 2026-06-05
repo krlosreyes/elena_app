@@ -13,7 +13,8 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
-import 'package:elena_app/src/core/services/day_boundary_resolver.dart';
+// SPEC-189: import day_boundary_resolver removido — el provider ya no
+// cae al fallback startOfDay. METABOLIC_DAY_CONSTITUTION.md §1.
 import 'package:elena_app/src/core/services/notification_scheduler.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart';
 import 'package:elena_app/src/features/metabolic_cycle/domain/metabolic_cycle.dart';
@@ -146,16 +147,28 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
     );
   }
 
-  /// SPEC-149.2: suscripción al stream filtrado por la ventana del
-  /// ciclo metabólico. Fallback a startOfDay si no hay ciclo abierto.
+  /// SPEC-149.2 + SPEC-189 (2026-06-05): suscripción al stream filtrado
+  /// por la ventana del ciclo metabólico.
+  ///
+  /// Sin ciclo abierto = sin día metabólico = sin suscripción
+  /// (METABOLIC_DAY_CONSTITUTION.md §1). El state queda con la lista
+  /// vacía hasta que el usuario inicie su primer ayuno.
   void _subscribeFor(DateTime? cycleStartedAt) {
     final userId = _activeUserId;
     if (userId == null) return;
     _logsSub?.cancel();
-    final since =
-        cycleStartedAt ?? DayBoundaryResolver.startOfDay(DateTime.now());
+    _logsSub = null;
+    if (cycleStartedAt == null) {
+      // SPEC-189: sin ciclo, no hay día → state vacío. NO fallback al
+      // startOfDay calendárico. El primer tap "iniciar ayuno" abrirá
+      // ciclo y disparará una nueva suscripción.
+      if (mounted) {
+        state = _recalculate(const [], state.targetMeals);
+      }
+      return;
+    }
     final repo = _ref.read(nutritionRepositoryProvider);
-    _logsSub = repo.watchSinceLogs(userId, since).listen(
+    _logsSub = repo.watchSinceLogs(userId, cycleStartedAt).listen(
       (logs) {
         if (!mounted) return;
         state = _recalculate(logs, state.targetMeals);

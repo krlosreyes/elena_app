@@ -15,6 +15,17 @@ abstract class NutritionRepository {
   /// Stream de los logs del día actual para `userId`.
   /// Re-emite cuando se añaden o eliminan registros. Devuelve lista vacía
   /// si el usuario aún no ha registrado nada hoy.
+  ///
+  /// SPEC-189 (2026-06-05): DEPRECADO. La definición de "día actual"
+  /// vivía atada al `DayBoundaryResolver` calendárico y viola §1 de
+  /// METABOLIC_DAY_CONSTITUTION.md (cero reloj). Usar `watchSinceLogs`
+  /// con `cycle.startedAt` del ciclo metabólico abierto. Si no hay
+  /// ciclo, el caller debe devolver lista vacía — no inventar un "día"
+  /// con el reloj.
+  @Deprecated(
+    'SPEC-189: usar watchSinceLogs(userId, cycle.startedAt). '
+    'Ver METABOLIC_DAY_CONSTITUTION.md §1.',
+  )
   Stream<List<NutritionLog>> watchTodayLogs(String userId);
 
   /// SPEC-149.2: stream de logs filtrado por ventana [since, since + 28h].

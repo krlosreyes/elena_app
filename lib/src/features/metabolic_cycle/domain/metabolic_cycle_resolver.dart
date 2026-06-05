@@ -89,14 +89,16 @@ class MetabolicCycleResolver {
   /// Decide si el ciclo abierto debe cerrarse dado el estado actual.
   /// Retorna la razón aplicable o null si debe seguir abierto.
   ///
-  /// La función evalúa los 6 triggers documentados en §RF-149-04 en
+  /// La función evalúa los triggers documentados en §RF-149-04 en
   /// orden de prioridad:
   ///   1. protocolChanged
   ///   2. manualNextFasting
   ///   3. fallbackSleepDetected
   ///   4. fallback3hAfterWindow
   ///   5. fallbackAbsolute
-  ///   6. fallbackCalendar
+  ///
+  /// SPEC-189 eliminó el trigger 6 `fallbackCalendar` (cierre por
+  /// medianoche). Ver METABOLIC_DAY_CONSTITUTION.md §1.
   ///
   /// El caller (MetabolicCycleService) es responsable de ejecutar el
   /// cierre con la razón devuelta y construir el ciclo cerrado.
@@ -145,18 +147,12 @@ class MetabolicCycleResolver {
       return ClosureReason.fallbackAbsolute;
     }
 
-    // 6. fallbackCalendar: solo para usuarios "Ninguno". Cierre a 23:59
-    //    del día local.
-    if (useCalendarFallback(openCycle.fastingProtocol)) {
-      final calendarClose = calendarFallbackCloseAt(now);
-      if (!now.isBefore(calendarClose) ||
-          (now.year != openCycle.startedAt.year ||
-              now.month != openCycle.startedAt.month ||
-              now.day != openCycle.startedAt.day)) {
-        // El día calendárico del startedAt ya terminó.
-        return ClosureReason.fallbackCalendar;
-      }
-    }
+    // SPEC-189 (2026-06-05): trigger 6 `fallbackCalendar` ELIMINADO.
+    // El cierre por cambio de día calendárico viola §1 de
+    // METABOLIC_DAY_CONSTITUTION.md (cero reloj). Si el usuario está en
+    // protocolo "Ninguno" y queda con ciclo abierto cruzando medianoche,
+    // los triggers 3/4/5 (fallbackSleepDetected, fallback3hAfterWindow,
+    // fallbackAbsolute) se encargan de cerrarlo cuando corresponda.
 
     return null;
   }
