@@ -5,15 +5,22 @@
 // juntos). Splitea client-side. Pasa de 2 streams Firestore por
 // pantalla → 1.
 //
-// ⚠️ SPEC-190 (2026-06-05) PARCIAL: este provider sigue consumiendo
-// `DailySummaryDoc[]` por día calendárico (viola §1 de
-// METABOLIC_DAY_CONSTITUTION.md). Migrar a "últimos N ciclos cerrados
-// vs los N anteriores" requiere arquitectura nueva (collection
-// `cycle_summary` o re-agrupación al vuelo de `metabolic_cycles`).
+// ⚠️ SPEC-192 (2026-06-05) — EXCEPCIÓN DOCUMENTADA al §1 de la
+// constitución. Este provider permanece intencionalmente calendárico
+// porque alimenta charts retrospectivos del Analysis tab (heatmap,
+// strip, trend chart) que muestran "tu mes de junio" en el eje X.
+// Migrar a ciclos rompería la semántica visual ("ciclos del último
+// mes" puede ser 15-60 días reales según ritmo del usuario).
 //
-// TODO(SPEC-192): refactorizar para que consuma
-// `last14ClosedCyclesProvider` y splittee 7+7. AnalysisPeriod week/
-// month/quarter pasaría a "7/30/90 ciclos cerrados". Ver SPEC-190 §3.5.
+// La comparativa CYCLE-AWARE para coaching la ofrece
+// `cycleComparisonProvider` (SPEC-192.3a), que consume el
+// `WeeklyCoachingCard`. Esta separación es CONSCIENTE:
+//   - period_comparison: vista retrospectiva calendárica (charts)
+//   - cycleComparison:    coaching cycle-aware (insights)
+//
+// El refactor completo a SchemaCycle queda como SPEC-192.4 + 192.5
+// post-MVP, donde decidirá si Analysis tab también migra a vista
+// cíclica o mantiene esta dualidad.
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

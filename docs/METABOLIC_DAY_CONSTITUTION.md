@@ -147,6 +147,7 @@ Si los pilares no muestran datos del día y los logs crudos SÍ existen en Fires
 | 2026-06-05 | SPEC-189 | Tier 1 — Notifiers, resolver y service operan sin fallback al reloj. Dashboard muestra placeholder "tu día aún no empezó" sin ciclo. |
 | 2026-06-05 | SPEC-190 | Tier 2 — Analítica semanal de pilares (`lastWeekMealsRatioProvider`, `lastWeekHydration/Exercise`) usa "últimos 7 ciclos cerrados" en vez de "7 días". `last7ClosedCyclesProvider` + `last14ClosedCyclesProvider` reusables. `weekly_coaching_provider` y `period_comparison_provider` quedan parciales (TODO SPEC-192 por requerir refactor de `DailySummaryDoc`). |
 | 2026-06-05 | SPEC-191 | Tier 3 — `sleepTime`/`wakeUpTime` aislados a rol "metadato informativo del usuario". Auditoría confirmó que ninguno define el día metabólico actualmente. Documentado con 5 comentarios inline + nueva §9 con test ácido para PRs futuros. |
+| 2026-06-05 | SPEC-192.1 + SPEC-192.3 (light) | Cierre del TODO de SPEC-190 §3.4. `CycleSummaryDoc` + `CycleSummaryComputer` (in-memory, derivados de `cycle.feedback.magnitudes`). `CycleComparison` + `cycleComparisonProvider` (7+7 ciclos cerrados). `weekly_coaching_provider` ahora cycle-aware via `WeeklyCoachingComputer.fromCycleComparison`. `period_comparison_provider` queda calendárico como **EXCEPCIÓN CONSCIENTE** para charts retrospectivos (heatmap/strip/trend chart) — coexistencia documentada. SPEC-192.2/.4/.5 (refactor del schema completo + widgets analytics + cleanup) diferidos a post-MVP. |
 
 ---
 

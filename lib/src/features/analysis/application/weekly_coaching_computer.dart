@@ -4,9 +4,15 @@
 // inmediatamente anterior, computa promedios por pilar + deltas +
 // pilar débil.
 //
+// SPEC-192.3b (2026-06-05): agregado `fromCycleComparison` para que
+// el widget consuma la versión cycle-aware sin cambiar su firma.
+// La función `compute(current, previous, ...)` queda como ruta legacy
+// para retrocompatibilidad con consumidores que aún usen daily_summary.
+//
 // Pure Dart — sin Flutter ni Riverpod. Testeable 100%.
 
 import 'package:elena_app/src/features/analysis/data/daily_summary_doc.dart';
+import 'package:elena_app/src/features/analysis/domain/cycle_comparison.dart';
 import 'package:elena_app/src/features/analysis/domain/weekly_coaching_insight.dart';
 
 class WeeklyCoachingComputer {
@@ -166,5 +172,78 @@ class WeeklyCoachingComputer {
       sum += selector(d).clamp(0.0, 1.0);
     }
     return sum / docs.length;
+  }
+
+  /// SPEC-192.3b: construye el insight semanal desde una
+  /// `CycleComparison` cycle-aware. Mapea los pilares uno a uno y
+  /// reutiliza `pickWeakPillar` para mantener el algoritmo idéntico.
+  ///
+  /// Mapeo:
+  ///   - `fastingMagnitude.current`  → fastingAvg
+  ///   - `fastingMagnitude.delta`    → fastingDelta (null si no hay
+  ///                                   ciclos en la ventana previa)
+  ///   - idem para sleep/hydration/exercise/nutrition (→ meals).
+  ///
+  /// `daysWithData` se mapea a `currentCount` (cantidad de ciclos
+  /// cerrados en la ventana actual) — el widget muestra "N ciclos"
+  /// en lugar de "N días" como copy. El campo conserva el nombre
+  /// por retrocompatibilidad con el widget.
+  static WeeklyCoachingInsight fromCycleComparison(
+      CycleComparison comparison) {
+    if (comparison.currentCount == 0) {
+      return WeeklyCoachingInsight.empty(
+        rangeStart: comparison.currentRangeStart ?? DateTime.now(),
+        rangeEnd: comparison.currentRangeEnd ?? DateTime.now(),
+      );
+    }
+
+    final hasPrevious = comparison.previousCount > 0;
+    final fastingAvg = comparison.fastingMagnitude.current;
+    final sleepAvg = comparison.sleepQualityScore.current;
+    final hydrationAvg = comparison.hydrationMagnitude.current;
+    final exerciseAvg = comparison.exerciseMagnitude.current;
+    final mealsAvg = comparison.nutritionMagnitude.current;
+
+    final fastingDelta =
+        hasPrevious ? comparison.fastingMagnitude.delta : null;
+    final sleepDelta =
+        hasPrevious ? comparison.sleepQualityScore.delta : null;
+    final hydrationDelta =
+        hasPrevious ? comparison.hydrationMagnitude.delta : null;
+    final exerciseDelta =
+        hasPrevious ? comparison.exerciseMagnitude.delta : null;
+    final mealsDelta =
+        hasPrevious ? comparison.nutritionMagnitude.delta : null;
+
+    final weakest = pickWeakPillar(
+      fastingAvg: fastingAvg,
+      sleepAvg: sleepAvg,
+      hydrationAvg: hydrationAvg,
+      exerciseAvg: exerciseAvg,
+      mealsAvg: mealsAvg,
+      fastingDelta: fastingDelta,
+      sleepDelta: sleepDelta,
+      hydrationDelta: hydrationDelta,
+      exerciseDelta: exerciseDelta,
+      mealsDelta: mealsDelta,
+    );
+
+    return WeeklyCoachingInsight(
+      fastingAvg: fastingAvg,
+      sleepAvg: sleepAvg,
+      hydrationAvg: hydrationAvg,
+      exerciseAvg: exerciseAvg,
+      mealsAvg: mealsAvg,
+      fastingDelta: fastingDelta,
+      sleepDelta: sleepDelta,
+      hydrationDelta: hydrationDelta,
+      exerciseDelta: exerciseDelta,
+      mealsDelta: mealsDelta,
+      weakest: weakest,
+      // SPEC-192.3b: `daysWithData` ahora cuenta CICLOS, no días.
+      daysWithData: comparison.currentCount,
+      rangeStart: comparison.currentRangeStart ?? DateTime.now(),
+      rangeEnd: comparison.currentRangeEnd ?? DateTime.now(),
+    );
   }
 }
