@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:elena_app/src/core/providers/shared_preferences_provider.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/core/services/day_boundary_resolver.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
@@ -42,11 +43,35 @@ class SleepState {
 
 class SleepNotifier extends StateNotifier<SleepState> {
   final Ref _ref;
-  bool _manualWakeUpConfirmedToday = false;
+  // SPEC-194 (2026-06-06): la confirmación del overlay "¿Ya despertaste?"
+  // se persiste en SharedPreferences por (userId, díaCalendárico). Antes
+  // era una variable de instancia que se reseteaba a `false` en cada
+  // cold start, causando que el overlay reapareciera cada vez que Carlos
+  // abría la app. El overlay es UI legítima (SPEC-191 §9), pero debe
+  // mostrarse UNA sola vez por día.
   StreamSubscription? _sleepSubscription;
 
   SleepNotifier(this._ref) : super(SleepState()) {
     _init();
+  }
+
+  /// Clave por usuario y día calendárico (usa wakeTime o now). El overlay
+  /// matutino vive en la dimensión "hoy desperté", no en la del ciclo
+  /// metabólico — está explícitamente fuera del scope cycle-aware
+  /// (METABOLIC_DAY_CONSTITUTION.md §9, SPEC-191).
+  String _wakeUpFlagKey(String userId, DateTime dayAnchor) {
+    final key = DayBoundaryResolver.dayKeyIso(dayAnchor);
+    return 'wake_up_confirmed_${userId}_$key';
+  }
+
+  bool _isWakeUpConfirmedFor(String userId, DateTime dayAnchor) {
+    final prefs = _ref.read(sharedPreferencesProvider);
+    return prefs.getBool(_wakeUpFlagKey(userId, dayAnchor)) ?? false;
+  }
+
+  Future<void> _markWakeUpConfirmed(String userId, DateTime dayAnchor) async {
+    final prefs = _ref.read(sharedPreferencesProvider);
+    await prefs.setBool(_wakeUpFlagKey(userId, dayAnchor), true);
   }
 
   void _init() {
@@ -60,7 +85,6 @@ class SleepNotifier extends StateNotifier<SleepState> {
           // limpiar el estado para que el próximo usuario vea datos en blanco.
           _sleepSubscription?.cancel();
           _sleepSubscription = null;
-          _manualWakeUpConfirmedToday = false;
           if (mounted) state = SleepState();
         }
       });
@@ -85,15 +109,16 @@ class SleepNotifier extends StateNotifier<SleepState> {
     super.dispose();
   }
 
-  /// SPEC-58: Reset diario idempotente.
+  /// SPEC-58 + SPEC-194: Reset diario idempotente.
   ///
-  /// Limpia los flags efímeros del ciclo wake-up (`_manualWakeUpConfirmedToday`,
-  /// `isWaitingForWakeUp`, `isSleepMode`). Conserva `lastLog` porque proviene
-  /// de Firestore y representa el último sueño real registrado, sin importar
-  /// el día actual.
+  /// Limpia los flags efímeros del ciclo wake-up (`isWaitingForWakeUp`,
+  /// `isSleepMode`). Conserva `lastLog` porque proviene de Firestore y
+  /// representa el último sueño real registrado, sin importar el día
+  /// actual. La flag persistida `wake_up_confirmed_<userId>_<dia>` NO se
+  /// borra acá: la clave incluye el día, así que el día nuevo ya tiene
+  /// su propia ranura.
   void resetDaily() {
     if (!mounted) return;
-    _manualWakeUpConfirmedToday = false;
     state = state.copyWith(
       isSleepMode: false,
       isWaitingForWakeUp: false,
@@ -119,13 +144,17 @@ class SleepNotifier extends StateNotifier<SleepState> {
       final wakeTime = DateTime(now.year, now.month, now.day,
           user.profile.wakeUpTime.hour, user.profile.wakeUpTime.minute);
 
-      // Reset de bandera a mediodía para el ciclo siguiente
-      if (now.hour == 12) _manualWakeUpConfirmedToday = false;
+      // SPEC-194: la confirmación del overlay se lee desde
+      // SharedPreferences. El día calendárico de `now` es la dimensión
+      // correcta: el overlay matutino pertenece a "hoy desperté", no al
+      // ciclo metabólico (cf. METABOLIC_DAY_CONSTITUTION §9).
+      final wakeAlreadyConfirmed =
+          _isWakeUpConfirmedFor(user.id, now);
 
-      // Solo mostramos el overlay si está en rango Y NO ha confirmado manualmente
+      // Solo mostramos el overlay si está en rango Y NO ha confirmado.
       final bool inWakeUpWindow = now.isAfter(wakeTime) &&
           now.isBefore(wakeTime.add(const Duration(hours: 4))) &&
-          !_manualWakeUpConfirmedToday;
+          !wakeAlreadyConfirmed;
 
       final isNight = now.isAfter(sleepTime) || now.isBefore(wakeTime);
 
@@ -179,7 +208,8 @@ class SleepNotifier extends StateNotifier<SleepState> {
       // SPEC-108/138: si ya hay un registro para este MISMO día de atribución,
       // no sobreescribimos con defaults calculados; solo bajamos el overlay.
       if (state.lastLog?.id == docId) {
-        _manualWakeUpConfirmedToday = true;
+        // SPEC-194: persistir la confirmación por (user, día calendárico).
+        await _markWakeUpConfirmed(user.id, now);
         state = state.copyWith(
           isWaitingForWakeUp: false,
           isSleepMode: false,
@@ -203,7 +233,8 @@ class SleepNotifier extends StateNotifier<SleepState> {
 
       try {
         await repo.save(user.id, realLog);
-        _manualWakeUpConfirmedToday = true;
+        // SPEC-194: persistir confirmación por (user, día calendárico).
+        await _markWakeUpConfirmed(user.id, now);
 
         state = state.copyWith(
           lastLog: realLog,
@@ -267,6 +298,8 @@ class SleepNotifier extends StateNotifier<SleepState> {
       );
 
       await repo.save(user.id, realLog);
+      // SPEC-194: registrar sueño manualmente también baja el overlay.
+      await _markWakeUpConfirmed(user.id, now);
 
       state = state.copyWith(
         lastLog: realLog,
@@ -354,20 +387,25 @@ final sleepProvider = StateNotifierProvider<SleepNotifier, SleepState>((ref) {
 /// SPEC-175 §RF-175-01: SleepLog del ciclo metabólico abierto. Null si
 /// no hay sleep o el sleep no pertenece al ciclo abierto.
 ///
-/// SPEC-188 v2: regla canónica pura — `wokeUp >= cycle.startedAt`.
-/// Sin gracia, sin tolerancia, sin reloj.
+/// SPEC-188 v2 + SPEC-194.1 (2026-06-06): regla canónica
+/// `wokeUp >= cycle.startedAt` cuando HAY ciclo abierto. Cuando NO hay
+/// ciclo, fallback al sleep cuyo `wokeUp >= startOfDay(now)` para que
+/// el ring no quede en 0 con un registro real del día.
 ///
-/// Si no hay ciclo abierto, el día metabólico no ha empezado todavía
-/// y el sleep no tiene a qué pertenecer → null (sin fallback al
-/// reloj).
+/// El fallback se activa SOLO en el caso edge "sin ciclo abierto"
+/// (primer uso, post-cierre antes del siguiente ayuno, desync). Cuando
+/// el usuario abre su próximo ayuno, el provider re-evalúa con la
+/// ventana del ciclo nuevo automáticamente y el sleep volverá a 0 si
+/// no pertenece al nuevo ciclo (comportamiento canónico).
 final currentCycleSleepProvider = Provider<SleepLog?>((ref) {
   final sleep = ref.watch(sleepProvider);
   if (sleep.lastLog == null) return null;
 
   final cycle = ref.watch(currentMetabolicCycleProvider).valueOrNull;
-  if (cycle == null) return null; // SPEC-188 v2: sin ciclo, sin día.
+  final anchor = cycle?.startedAt ??
+      DayBoundaryResolver.startOfDay(DateTime.now());
 
   final wokeUp = sleep.lastLog!.wokeUp;
-  final belongs = !wokeUp.isBefore(cycle.startedAt);
+  final belongs = !wokeUp.isBefore(anchor);
   return belongs ? sleep.lastLog : null;
 });

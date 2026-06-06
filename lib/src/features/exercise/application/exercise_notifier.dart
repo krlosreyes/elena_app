@@ -1,7 +1,10 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
-// SPEC-189: day_boundary_resolver removido — sin fallback al startOfDay.
+// SPEC-194.1 (2026-06-06): day_boundary_resolver reintroducido como
+// fallback exclusivo para el caso "sin ciclo abierto". Cuando hay
+// ciclo, sigue cycle-aware estricto (Constitución §1).
+import 'package:elena_app/src/core/services/day_boundary_resolver.dart';
 import 'package:elena_app/src/features/exercise/data/exercise_repository_impl.dart';
 import 'package:elena_app/src/features/exercise/domain/exercise_log.dart';
 // SPEC-189: el import del repositorio abstracto era unused (pre-existente).
@@ -82,23 +85,21 @@ class ExerciseNotifier extends StateNotifier<ExerciseState> {
     );
   }
 
-  /// SPEC-149.2 + SPEC-189 (2026-06-05): suscripción cycle-aware.
-  /// Sin ciclo abierto = sin día metabólico = sin suscripción
-  /// (METABOLIC_DAY_CONSTITUTION.md §1).
+  /// SPEC-149.2 + SPEC-189 + SPEC-194.1 (2026-06-06): suscripción
+  /// cycle-aware con FALLBACK `startOfDay(now)` cuando no hay ciclo
+  /// abierto. Con ciclo activo, ventana desde `cycle.startedAt`
+  /// (Constitución §1). Sin ciclo, ventana desde startOfDay para que
+  /// los registros del día sean visibles. Cuando se abra el ciclo, el
+  /// listener re-suscribe automáticamente con la ventana cycle-aware.
   void _subscribeFor(DateTime? cycleStartedAt) {
     final userId = _activeUserId;
     if (userId == null || userId.isEmpty) return;
     _subscription?.cancel();
     _subscription = null;
-    if (cycleStartedAt == null) {
-      // SPEC-189: sin ciclo, reseteamos a 0 minutos.
-      if (mounted) {
-        state = state.copyWith(todayMinutes: 0, error: null);
-      }
-      return;
-    }
+    final since = cycleStartedAt ??
+        DayBoundaryResolver.startOfDay(DateTime.now());
     final repo = ref.read(exerciseRepositoryProvider);
-    _subscription = repo.watchSince(userId, cycleStartedAt).listen(
+    _subscription = repo.watchSince(userId, since).listen(
       (logs) {
         if (mounted) {
           final totalMinutes = logs.fold<int>(

@@ -2,7 +2,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
 // IMPORTANTE: Esta es la ruta al archivo que creamos para centralizar el usuario
 import 'package:elena_app/src/core/services/app_logger.dart';
-// SPEC-189: day_boundary_resolver removido — sin fallback al startOfDay.
+// SPEC-194 (2026-06-06): day_boundary_resolver reintroducido como
+// FALLBACK cuando no hay ciclo abierto. Cuando hay ciclo, el comportamiento
+// sigue cycle-aware estricto (Constitución §1). Sin ciclo, ventana
+// startOfDay(now) para que los logs del día sean visibles.
+import 'package:elena_app/src/core/services/day_boundary_resolver.dart';
 import 'package:elena_app/src/features/dashboard/data/hydration_repository_impl.dart';
 import 'package:elena_app/src/features/dashboard/domain/hydration_log.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart';
@@ -124,31 +128,30 @@ class HydrationNotifier extends StateNotifier<HydrationState> {
     );
   }
 
-  /// SPEC-149.2 + SPEC-189 (2026-06-05): suscripción al stream filtrado
-  /// por la ventana del ciclo metabólico.
+  /// SPEC-149.2 + SPEC-189 + SPEC-194.1 (2026-06-06): suscripción al
+  /// stream filtrado por la ventana del ciclo metabólico, con FALLBACK
+  /// a `startOfDay(now)` cuando no hay ciclo abierto.
   ///
-  /// Sin ciclo abierto = sin día metabólico = sin suscripción
-  /// (METABOLIC_DAY_CONSTITUTION.md §1). El state queda vacío hasta
-  /// que el usuario inicie su primer ayuno.
+  /// Cycle-aware (Constitución §1) cuando hay ciclo: ventana desde
+  /// `cycle.startedAt`. SIN ciclo (primer uso, post-cierre antes del
+  /// siguiente ayuno, desync), usamos `startOfDay(now)` como ventana
+  /// para que los logs registrados hoy sean visibles en los rings.
+  ///
+  /// Sin este fallback, el ring quedaba en 0% aunque el usuario hubiese
+  /// registrado litros — bug post-SPEC-194 al quitar el placeholder.
+  /// Cuando el usuario inicie su próximo ayuno, el listener al
+  /// `currentMetabolicCycleProvider` re-suscribe con la ventana del
+  /// ciclo nuevo automáticamente.
   void _subscribeFor(DateTime? cycleStartedAt) {
     final userId = _activeUserId;
     if (userId == null) return;
     _hydrationSubscription?.cancel();
     _hydrationSubscription = null;
-    if (cycleStartedAt == null) {
-      // SPEC-189: sin ciclo, no hay día → reseteamos el contador.
-      if (mounted) {
-        state = state.copyWith(
-          currentAmountLiters: 0,
-          history: const [],
-          isGoalReached: false,
-        );
-      }
-      return;
-    }
+    final since = cycleStartedAt ??
+        DayBoundaryResolver.startOfDay(DateTime.now());
     _hydrationSubscription = _ref
         .read(hydrationRepositoryProvider)
-        .watchSince(userId, cycleStartedAt)
+        .watchSince(userId, since)
         .listen((logs) {
       if (mounted) {
         final total = logs.fold<double>(

@@ -13,8 +13,11 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
-// SPEC-189: import day_boundary_resolver removido — el provider ya no
-// cae al fallback startOfDay. METABOLIC_DAY_CONSTITUTION.md §1.
+// SPEC-194.1 (2026-06-06): day_boundary_resolver reintroducido como
+// fallback exclusivo para el caso "sin ciclo abierto". Con ciclo, sigue
+// cycle-aware (Constitución §1). Sin ciclo, ventana startOfDay para
+// que los logs del día sean visibles en el ring.
+import 'package:elena_app/src/core/services/day_boundary_resolver.dart';
 import 'package:elena_app/src/core/services/notification_scheduler.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart';
 import 'package:elena_app/src/features/metabolic_cycle/domain/metabolic_cycle.dart';
@@ -147,28 +150,27 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
     );
   }
 
-  /// SPEC-149.2 + SPEC-189 (2026-06-05): suscripción al stream filtrado
-  /// por la ventana del ciclo metabólico.
+  /// SPEC-149.2 + SPEC-189 + SPEC-194.1 (2026-06-06): suscripción al
+  /// stream filtrado por la ventana del ciclo metabólico, con FALLBACK
+  /// `startOfDay(now)` cuando no hay ciclo abierto.
   ///
-  /// Sin ciclo abierto = sin día metabólico = sin suscripción
-  /// (METABOLIC_DAY_CONSTITUTION.md §1). El state queda con la lista
-  /// vacía hasta que el usuario inicie su primer ayuno.
+  /// Cycle-aware (Constitución §1) con ciclo activo: ventana desde
+  /// `cycle.startedAt`. SIN ciclo (primer uso, post-cierre antes del
+  /// próximo ayuno, desync), ventana desde `startOfDay(now)` para que
+  /// las comidas registradas hoy sean visibles en el ring. Antes el
+  /// state quedaba con lista vacía y el ring en 0% aunque hubiese
+  /// nutrition_logs en Firestore — bug post-SPEC-194 al quitar el
+  /// placeholder. Cuando el usuario inicie el próximo ayuno, el
+  /// listener al cycle re-suscribe automáticamente con la nueva ventana.
   void _subscribeFor(DateTime? cycleStartedAt) {
     final userId = _activeUserId;
     if (userId == null) return;
     _logsSub?.cancel();
     _logsSub = null;
-    if (cycleStartedAt == null) {
-      // SPEC-189: sin ciclo, no hay día → state vacío. NO fallback al
-      // startOfDay calendárico. El primer tap "iniciar ayuno" abrirá
-      // ciclo y disparará una nueva suscripción.
-      if (mounted) {
-        state = _recalculate(const [], state.targetMeals);
-      }
-      return;
-    }
+    final since = cycleStartedAt ??
+        DayBoundaryResolver.startOfDay(DateTime.now());
     final repo = _ref.read(nutritionRepositoryProvider);
-    _logsSub = repo.watchSinceLogs(userId, cycleStartedAt).listen(
+    _logsSub = repo.watchSinceLogs(userId, since).listen(
       (logs) {
         if (!mounted) return;
         state = _recalculate(logs, state.targetMeals);
