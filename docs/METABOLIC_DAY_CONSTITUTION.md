@@ -144,6 +144,8 @@ Si los pilares no muestran datos del día y los logs crudos SÍ existen en Fires
 | 2026-06-05 | SPEC-186 | Flag de bootstrap persistido en SharedPreferences por userId. Hot reload, restart y logout/login NO re-disparan el bootstrap. |
 | 2026-06-05 | SPEC-187 | Fix race en SPEC-183: `startFastingManual` hace optimistic update + listener preserva `userInitiated`. |
 | 2026-06-05 | SPEC-188 v2 | **Constitución reescrita en §1: cero reloj.** `currentCycleSleepProvider` usa regla pura `wokeUp >= cycle.startedAt`. Sin gracia. Sin fallback al `startOfDay`. |
+| 2026-06-05 | SPEC-189 | Tier 1 — Notifiers, resolver y service operan sin fallback al reloj. Dashboard muestra placeholder "tu día aún no empezó" sin ciclo. |
+| 2026-06-05 | SPEC-190 | Tier 2 — Analítica semanal de pilares (`lastWeekMealsRatioProvider`, `lastWeekHydration/Exercise`) usa "últimos 7 ciclos cerrados" en vez de "7 días". `last7ClosedCyclesProvider` + `last14ClosedCyclesProvider` reusables. `weekly_coaching_provider` y `period_comparison_provider` quedan parciales (TODO SPEC-192 por requerir refactor de `DailySummaryDoc`). |
 
 ---
 

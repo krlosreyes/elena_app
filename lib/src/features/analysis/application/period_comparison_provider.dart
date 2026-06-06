@@ -4,6 +4,16 @@
 // sola suscripción Firestore al rango doble (período actual + previo
 // juntos). Splitea client-side. Pasa de 2 streams Firestore por
 // pantalla → 1.
+//
+// ⚠️ SPEC-190 (2026-06-05) PARCIAL: este provider sigue consumiendo
+// `DailySummaryDoc[]` por día calendárico (viola §1 de
+// METABOLIC_DAY_CONSTITUTION.md). Migrar a "últimos N ciclos cerrados
+// vs los N anteriores" requiere arquitectura nueva (collection
+// `cycle_summary` o re-agrupación al vuelo de `metabolic_cycles`).
+//
+// TODO(SPEC-192): refactorizar para que consuma
+// `last14ClosedCyclesProvider` y splittee 7+7. AnalysisPeriod week/
+// month/quarter pasaría a "7/30/90 ciclos cerrados". Ver SPEC-190 §3.5.
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

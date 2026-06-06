@@ -1,19 +1,20 @@
-// SPEC-161: provider que alimenta el ExerciseWeeklyCard.
-//
-// Combina watchSince(uid, 7d) del ExerciseRepository + el target del
-// usuario (exerciseGoalMinutes). Delega cómputo al
-// ExerciseWeeklyComputer.
+// SPEC-161 + SPEC-190 (2026-06-05): provider que alimenta el
+// ExerciseWeeklyCard. Migrado a "últimos 7 ciclos cerrados" en lugar
+// de "últimos 7 días" para cumplir METABOLIC_DAY_CONSTITUTION.md §1.
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:elena_app/src/core/services/day_boundary_resolver.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
 import 'package:elena_app/src/features/exercise/application/exercise_weekly_computer.dart';
 import 'package:elena_app/src/features/exercise/data/exercise_repository_impl.dart';
+import 'package:elena_app/src/features/exercise/domain/exercise_log.dart';
 import 'package:elena_app/src/features/exercise/domain/exercise_weekly_insight.dart';
+import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart';
+import 'package:elena_app/src/features/metabolic_cycle/domain/metabolic_cycle.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 
-const int kExerciseCardWindowDays = 7;
+/// SPEC-190: ventana = 7 ciclos cerrados.
+const int kExerciseCardWindowCycles = 7;
 
 /// Target diario del usuario en minutos. Fallback razonable si no hay.
 int _targetFor(int? exerciseGoalMinutes) {
@@ -26,29 +27,54 @@ final lastWeekExerciseProvider =
   final account = ref.watch(authStateProvider).value;
   final user = ref.watch(currentUserStreamProvider).valueOrNull;
   final target = _targetFor(user?.exerciseGoalMinutes);
+  final cyclesAsync = ref.watch(last7ClosedCyclesProvider);
+  final cycles = cyclesAsync.valueOrNull ?? const <MetabolicCycle>[];
 
-  final today = DateTime.now();
-  final rangeEnd = DayBoundaryResolver.startOfDay(today);
-  final rangeStart =
-      rangeEnd.subtract(const Duration(days: kExerciseCardWindowDays - 1));
-
-  if (account == null) {
+  if (account == null || cycles.isEmpty) {
+    final now = DateTime.now();
     return Stream.value(
       ExerciseWeeklyBreakdown.empty(
         targetMinutesPerDay: target,
-        rangeStart: rangeStart,
-        rangeEnd: rangeEnd,
+        rangeStart: now,
+        rangeEnd: now,
       ),
     );
   }
 
+  final newest = cycles.first;
+  final oldest = cycles.last;
+  final rangeStart = oldest.startedAt;
+  final rangeEnd = newest.closedAt ?? DateTime.now();
+
   return ref
       .watch(exerciseRepositoryProvider)
-      .watchSince(account.uid, rangeStart)
-      .map((logs) => ExerciseWeeklyComputer.compute(
-            logs: logs,
-            targetMinutesPerDay: target,
-            rangeStart: rangeStart,
-            rangeEnd: rangeEnd,
-          ));
+      .watchSince(account.uid, rangeStart, until: rangeEnd)
+      .map((logs) {
+    final cycleAwareLogs = _filterByCycles(logs, cycles);
+    return ExerciseWeeklyComputer.compute(
+      logs: cycleAwareLogs,
+      targetMinutesPerDay: target,
+      rangeStart: rangeStart,
+      rangeEnd: rangeEnd,
+    );
+  });
 });
+
+/// SPEC-190: filtra logs por pertenencia a algún ciclo cerrado de la
+/// lista. Descarta logs huérfanos entre ciclos.
+List<ExerciseLog> _filterByCycles(
+  List<ExerciseLog> logs,
+  List<MetabolicCycle> cycles,
+) {
+  return logs.where((log) {
+    for (final c in cycles) {
+      final closedAt = c.closedAt;
+      if (closedAt == null) continue;
+      if (!log.timestamp.isBefore(c.startedAt) &&
+          !log.timestamp.isAfter(closedAt)) {
+        return true;
+      }
+    }
+    return false;
+  }).toList();
+}

@@ -52,6 +52,30 @@ final metabolicCyclesHistoryProvider =
       .watchRecentClosed(account.uid);
 });
 
+/// SPEC-190 (2026-06-05): últimos 7 ciclos cerrados para la analítica
+/// semanal (last_week_meals_ratio, last_week_hydration, last_week_exercise,
+/// weekly_coaching). Sin reloj: la "semana" no es 7 días sino 7 ciclos
+/// cerrados consecutivos. Ver METABOLIC_DAY_CONSTITUTION.md §1.
+final last7ClosedCyclesProvider =
+    StreamProvider<List<MetabolicCycle>>((ref) {
+  final account = ref.watch(authStateProvider).value;
+  if (account == null) return Stream.value(const []);
+  return ref
+      .watch(metabolicCycleRepositoryProvider)
+      .watchRecentClosed(account.uid, limit: 7);
+});
+
+/// SPEC-190: últimos 14 ciclos cerrados para period_comparison_provider
+/// ("últimos 7 vs los 7 anteriores").
+final last14ClosedCyclesProvider =
+    StreamProvider<List<MetabolicCycle>>((ref) {
+  final account = ref.watch(authStateProvider).value;
+  if (account == null) return Stream.value(const []);
+  return ref
+      .watch(metabolicCycleRepositoryProvider)
+      .watchRecentClosed(account.uid, limit: 14);
+});
+
 /// Key de SharedPreferences para marcar el último ciclo cerrado como
 /// "visto" por el usuario (descartado del card en Dashboard).
 const String _kLastCycleClosureDismissedKey =
