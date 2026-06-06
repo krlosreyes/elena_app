@@ -108,6 +108,11 @@ class SleepNotifier extends StateNotifier<SleepState> {
 
       final now = DateTime.now();
 
+      // SPEC-191: USO LEGÍTIMO — overlay informativo. `sleepTime` y
+      // `wakeUpTime` se usan SOLO para decidir si mostrar el overlay
+      // "buenos días / hora de dormir" según la configuración del
+      // usuario. NO definen el día metabólico (eso lo hace el ciclo).
+      // Ver METABOLIC_DAY_CONSTITUTION.md §9 — Test ácido.
       final sleepTime = DateTime(now.year, now.month, now.day,
           user.profile.sleepTime.hour, user.profile.sleepTime.minute);
 
@@ -156,6 +161,12 @@ class SleepNotifier extends StateNotifier<SleepState> {
       // antes de `now`. Si la construida para hoy cae en el futuro respecto a
       // `now`, fue el día anterior. Regla determinista que reemplaza la
       // heurística frágil `now.hour < 12 && sleepTime.hour > 12`.
+      //
+      // SPEC-191: USO LEGÍTIMO — fallback heurístico para inferir
+      // `fellAsleep` cuando el usuario hace "manual wake up" sin haber
+      // registrado su hora de dormida real. NO define el día metabólico;
+      // solo arma el SleepLog con la mejor estimación posible.
+      // Ver METABOLIC_DAY_CONSTITUTION.md §9 — Test ácido.
       DateTime sleepTimeThisCycle = DateTime(now.year, now.month, now.day,
           user.profile.sleepTime.hour, user.profile.sleepTime.minute);
       if (sleepTimeThisCycle.isAfter(now)) {

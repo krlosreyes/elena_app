@@ -392,6 +392,12 @@ class FastingNotifier extends StateNotifier<FastingState> {
     final user = _ref.read(currentUserStreamProvider).value;
 
     // 1. Alerta Pre-Sueño
+    //
+    // SPEC-191: USO LEGÍTIMO — alerta UI informativa. Usa `sleepTime`
+    // del perfil para avisar "cerrá tu ventana de comida ya" en las
+    // 3h previas a la hora que el usuario eligió como hora de dormir.
+    // NO define el día metabólico (eso lo hace el ciclo).
+    // Ver METABOLIC_DAY_CONSTITUTION.md §9 — Test ácido.
     bool shouldShowPreSleepWarning = false;
     if (user != null && !state.isActive) {
       final sleepToday = DateTime(now.year, now.month, now.day,

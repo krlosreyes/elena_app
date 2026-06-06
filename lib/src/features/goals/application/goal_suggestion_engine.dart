@@ -304,7 +304,11 @@ class GoalSuggestionEngine {
   }
 
   static double _estimateSleepHours(CircadianProfile profile) {
-    // Extraemos solo hora:minuto para evitar problemas de fecha
+    // SPEC-191: USO LEGÍTIMO — estimación heurística de horas de sueño
+    // a partir de la configuración del usuario. Sirve para sugerir
+    // un goal personalizado. NO define el día metabólico ni se usa
+    // para evaluar cumplimiento — eso lo hace el SleepLog real.
+    // Ver METABOLIC_DAY_CONSTITUTION.md §9 — Test ácido.
     final double wakeDecimal =
         profile.wakeUpTime.hour + profile.wakeUpTime.minute / 60.0;
     final double sleepDecimal =

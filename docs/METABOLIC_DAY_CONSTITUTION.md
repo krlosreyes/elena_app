@@ -146,6 +146,35 @@ Si los pilares no muestran datos del día y los logs crudos SÍ existen en Fires
 | 2026-06-05 | SPEC-188 v2 | **Constitución reescrita en §1: cero reloj.** `currentCycleSleepProvider` usa regla pura `wokeUp >= cycle.startedAt`. Sin gracia. Sin fallback al `startOfDay`. |
 | 2026-06-05 | SPEC-189 | Tier 1 — Notifiers, resolver y service operan sin fallback al reloj. Dashboard muestra placeholder "tu día aún no empezó" sin ciclo. |
 | 2026-06-05 | SPEC-190 | Tier 2 — Analítica semanal de pilares (`lastWeekMealsRatioProvider`, `lastWeekHydration/Exercise`) usa "últimos 7 ciclos cerrados" en vez de "7 días". `last7ClosedCyclesProvider` + `last14ClosedCyclesProvider` reusables. `weekly_coaching_provider` y `period_comparison_provider` quedan parciales (TODO SPEC-192 por requerir refactor de `DailySummaryDoc`). |
+| 2026-06-05 | SPEC-191 | Tier 3 — `sleepTime`/`wakeUpTime` aislados a rol "metadato informativo del usuario". Auditoría confirmó que ninguno define el día metabólico actualmente. Documentado con 5 comentarios inline + nueva §9 con test ácido para PRs futuros. |
+
+---
+
+## §9 — Test ácido para `sleepTime`/`wakeUpTime` (SPEC-191)
+
+Los campos `UserProfile.sleepTime` y `UserProfile.wakeUpTime` viven en el modelo y son útiles para personalizar la experiencia. **Pero no deben definir el día metabólico.**
+
+**Test ácido a aplicar a cualquier código que los use:**
+
+> ¿Este código está definiendo "cuándo empieza o termina el día metabólico" basándose en estos campos?
+>
+> - **Sí** → viola §1. Refactor obligatorio. Usar `cycle.startedAt` / `cycle.closedAt` en su lugar.
+> - **No** → uso legítimo. Documentar con comentario inline `// SPEC-191: USO LEGÍTIMO — <razón>` citando esta sección.
+
+**Categorías de uso legítimo identificadas en SPEC-191:**
+
+1. **Overlay UI informativo** — mostrar "buenos días" o "cerrá ventana de comida" en una ventana de tiempo configurada por el usuario.
+2. **Notificaciones programadas** — agendar push del SO a las horas que el usuario eligió.
+3. **Estimación heurística** — sugerir un goal personalizado (ej. horas de sueño objetivo).
+4. **UI de edición** — pantallas de onboarding y perfil donde el usuario configura sus horas.
+5. **Fallback de inferencia** — armar un `SleepLog` con `fellAsleep` estimado cuando el usuario hace "manual wake up" sin haber registrado la hora real.
+
+**Categorías prohibidas:**
+
+- ❌ Anclar el inicio del ciclo metabólico a `wakeUpTime`.
+- ❌ Cerrar el ciclo metabólico a `sleepTime`.
+- ❌ Cualquier reset de pilares disparado por estas horas.
+- ❌ Cualquier ventana de validación de pilares anclada a estos campos.
 
 ---
 

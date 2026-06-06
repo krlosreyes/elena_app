@@ -41,6 +41,12 @@ class NotificationScheduler {
 
       final profile = user.profile;
 
+      // SPEC-191 (2026-06-05): USO LEGÍTIMO de `wakeUpTime` y `sleepTime`
+      // en este archivo. Las notificaciones circadianas se agendan a las
+      // horas que el USUARIO eligió en su perfil. NO definen el día
+      // metabólico — solo dicen al sistema operativo "mandá este push
+      // a esta hora del reloj". Ver METABOLIC_DAY_CONSTITUTION.md §9.
+
       // ── 1. Despertar ─────────────────────────────────────────────────────
       // SPEC-169 v1.1 (2026-06-04): tono humano-cercano + cita.
       await _scheduleCircadian(
