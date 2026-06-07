@@ -8,12 +8,18 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elena_app/src/core/engine/circadian_engine.dart';
+import 'package:elena_app/src/core/orchestrator/biological_phases.dart';
 import 'package:elena_app/src/core/orchestrator/orchestrator_provider.dart';
 import 'package:elena_app/src/features/adaptive/application/adaptive_engine.dart';
 import 'package:elena_app/src/features/analysis/application/weekly_coaching_provider.dart';
+import 'package:elena_app/src/features/analysis/domain/weekly_coaching_insight.dart';
 import 'package:elena_app/src/features/coaching/application/adaptive_generator.dart';
 import 'package:elena_app/src/features/coaching/application/circadian_generator.dart';
+import 'package:elena_app/src/features/coaching/application/coaching_completion_service.dart';
+import 'package:elena_app/src/features/coaching/application/coaching_feedback_generator.dart';
 import 'package:elena_app/src/features/coaching/application/orchestrator_generator.dart';
+import 'package:elena_app/src/features/coaching/domain/coaching_feedback.dart';
+import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart';
 import 'package:elena_app/src/features/coaching/application/coaching_snapshot_builder.dart';
 import 'package:elena_app/src/features/coaching/application/weak_pillar_generator.dart';
 import 'package:elena_app/src/features/coaching/domain/coaching_action.dart';
@@ -65,3 +71,32 @@ final coachingSelectionProvider =
   final candidates = ref.watch(coachingCandidatesProvider);
   return CoachingScorer.select(candidates, snapshot);
 });
+
+/// SPEC-194 RF-194-05 — feedback de cierre. Null si no hay cierre sin leer o
+/// si no había una recomendación activa que reflejar. `improved` se deriva del
+/// delta cycle-over-cycle del pilar recomendado (weekly cycle-aware).
+final coachingClosureFeedbackProvider =
+    Provider.autoDispose<CoachingFeedback?>((ref) {
+  if (!ref.watch(hasUnreadCycleClosureProvider)) return null;
+
+  final action = ref.read(coachingCompletionProvider).activeAction;
+  if (action == null) return null;
+
+  final completed = ref.read(coachingCompletionProvider).isCompleted(action.id);
+  final weekly = ref.watch(weeklyCoachingProvider).valueOrNull;
+  final delta = weekly == null ? null : _deltaForPillar(weekly, action.pillar);
+
+  return CoachingFeedbackGenerator.generate(
+    recommendedPillar: action.pillar,
+    completed: completed,
+    improved: delta == null ? null : delta > 0,
+  );
+});
+
+double? _deltaForPillar(WeeklyCoachingInsight w, Pillar p) => switch (p) {
+      Pillar.fasting => w.fastingDelta,
+      Pillar.sleep => w.sleepDelta,
+      Pillar.hydration => w.hydrationDelta,
+      Pillar.exercise => w.exerciseDelta,
+      Pillar.nutrition => w.mealsDelta,
+    };

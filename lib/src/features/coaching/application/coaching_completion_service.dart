@@ -24,6 +24,12 @@ class CoachingCompletionService {
     _activePrimary = primary;
   }
 
+  /// Acción recomendada activa (para el feedback de cierre RF-194-05).
+  CoachingAction? get activeAction => _activePrimary;
+
+  /// ¿Se contó como completada la acción con este id?
+  bool isCompleted(String id) => _completed.contains(id);
+
   /// Un notifier de pilar llama esto tras un registro exitoso. Si el pilar
   /// coincide con la acción recomendada activa y no se contó antes, dispara
   /// `coaching_action_completed`. Devuelve true si se contó (para tests).
