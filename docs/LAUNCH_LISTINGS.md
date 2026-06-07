@@ -415,3 +415,25 @@ Ver `docs/DEEP_LINKS_SETUP.md` para el contenido exacto de los `.well-known/`.
 - Revisar primeras 10 reviews de cada tienda para detectar bugs o confusiones de UX no anticipadas.
 - Monitorear el panel App Check en Firebase Console: si los Verified counts no suben, hay problema con reCAPTCHA en web o con Play Integrity / App Attest en mobile.
 - Si Apple o Google piden cambios en review, redactar respuesta dentro de las primeras 24 horas (los reviewers cierran tickets viejos sin respuesta).
+
+---
+
+## 7. Trazabilidad de datos recolectados por Analytics (SPEC-193 / SPEC-193.1)
+
+Fuente única del dato recolectado: `lib/src/core/analytics/analytics_events.dart`. Esta tabla respalda el llenado del **Data Safety form (Google)** y del **App Privacy questionnaire (Apple)**. Todo es mobile-only (Analytics se omite en web).
+
+**Garantías (verificables en código):**
+
+- **Sin PII en parámetros:** ningún evento envía email, nombre, ni datos de salud crudos. Los valores continuos se reportan en *buckets*/categorías (`imr_bucket`, `quality_bucket`, `hours`, `protocol`, `pillar`, `from_mr`).
+- **Identificador pseudónimo:** `setUserId` usa el uid de Firebase Auth, no el email.
+- **Sin tracking cross-app / sin IDFA / sin compartir con terceros para publicidad** → en Apple, **Tracking = No** en todas las categorías.
+
+| Categoría de tienda | Mapea a | Eventos / parámetros | Propósito |
+|---|---|---|---|
+| Identifiers → User ID (Apple) · User IDs (Google) | uid pseudónimo de Firebase | `setUserId(uid)` | Analytics, App functionality |
+| Usage Data → Product Interaction (Apple) · App interactions (Google) | uso de la app | `app_open`, `login`, `signup_complete`, `onboarding_complete`, `pillar_logged`, `fasting_started/completed`, `meal_logged`, `imr_calculated`, (futuro) `paywall_shown`, `trial_started`, `subscription_*`, `coaching_*` | Analytics |
+| Diagnostics → Crash Data (Apple) · Crash logs (Google) | Crashlytics (SPEC-80) | — | App functionality, Analytics |
+
+**Parámetros y por qué no son PII:** `platform` (ios/android), `method` (email), `from_mr` (bool), `protocol` (ej. 16:8), `hours` (int), `quality_bucket` (categoría A:E), `imr_bucket` (rango de 20), `pillar` (nombre del pilar), `trigger`/`plan`/`action_id`/`source`/`phase`/`outcome` (categorías).
+
+**Acción pendiente de consola (Carlos):** confirmar estas categorías en ambos formularios, marcar cifrado en tránsito y borrado de datos disponible (borrado de cuenta in-app ya existe), y verificar que la política de privacidad publicada mencione analytics de producto. Ver `specs/SPEC-193.1-privacy-label-alignment.md`.
