@@ -88,5 +88,7 @@ Disparar cada evento en su punto: auth (`signup_complete`/`login`), onboarding (
 - [x] Fundación: catálogo + `AnalyticsService` + init + `app_open`.
 - [x] Wiring tope de embudo: `login`, `signup_complete` (auth), `onboarding_complete` con `from_mr` (onboarding), `setUserId` reactivo (app.dart).
 - [x] Wiring pilares acción-directa: `pillar_logged` hidratación/ejercicio, `meal_logged` con `quality_bucket` (nutrición).
-- [ ] Wiring pilares stream-driven: `fasting_started/completed`, `pillar_logged` sueño + engine `imr_calculated` (incremento 3).
+- [x] Wiring pilares stream-driven: `fasting_started` (transición false→true) + `fasting_completed` (cierre con target, solo en confirmManualFastingEnd) + `pillar_logged` sueño (ambos caminos, dedup por guard) + engine `imr_calculated` con `imr_bucket` (en `_persistNow`, debounced).
 - [ ] SPEC-193.1 Privacy Label · SPEC-193.2 Dashboard.
+
+**Eventos de negocio: COMPLETO.** Faltan solo monetización (se cablean en Ola C) y coaching (SPEC-194).

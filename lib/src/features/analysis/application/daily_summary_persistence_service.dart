@@ -15,6 +15,8 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:elena_app/src/core/analytics/analytics_events.dart';
+import 'package:elena_app/src/core/services/analytics_service.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/core/services/firestore_errors.dart';
 import 'package:elena_app/src/features/analysis/application/daily_summary_provider.dart';
@@ -99,6 +101,12 @@ class DailySummaryPersistenceService {
       await repo.save(uid, doc);
       _lastPersistedDocId = DailySummaryMapper.docIdFor(now);
       _lastSummary = summary;
+      // SPEC-193: snapshot de IMR persistido. imr_bucket en rangos de 20
+      // (no se expone el valor exacto). Punto único y debounced.
+      AnalyticsService.logEvent(
+        AnalyticsEvents.imrCalculated,
+        params: {AnalyticsParams.imrBucket: '${(doc.imrScore ~/ 20) * 20}'},
+      );
       AppLogger.debug(
         '[DailySummaryPersistence] Snapshot guardado (${doc.date}, IMR ${doc.imrScore})',
       );

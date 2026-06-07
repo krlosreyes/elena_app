@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:elena_app/src/core/analytics/analytics_events.dart';
 import 'package:elena_app/src/core/providers/ticker_providers.dart';
 import 'package:elena_app/src/core/rules/circadian_rules.dart';
+import 'package:elena_app/src/core/services/analytics_service.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/core/services/firestore_errors.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
@@ -185,6 +187,13 @@ class FastingNotifier extends StateNotifier<FastingState> {
 
       state = state.copyWith(isSaving: false);
 
+      // SPEC-193: ayuno iniciado (transición false→true exitosa, acción
+      // explícita del usuario). NO se dispara desde el listener de restore.
+      AnalyticsService.logEvent(
+        AnalyticsEvents.fastingStarted,
+        params: {AnalyticsParams.protocol: state.fastingProtocol},
+      );
+
       // SPEC-05: Programar hitos de ayuno (12h, 18h, 24h) desde el inicio real.
       await NotificationScheduler.scheduleFastingMilestones(startTime);
 
@@ -326,6 +335,16 @@ class FastingNotifier extends StateNotifier<FastingState> {
       duration: DateTime.now().difference(manualTime),
       completedToday: reachedTarget ? true : state.completedToday,
     );
+
+    // SPEC-193: ayuno completado con target alcanzado (cierre explícito).
+    // Solo aquí; el listener de restore y continueFastingPastTarget NO
+    // disparan, para no duplicar el conteo.
+    if (reachedTarget) {
+      AnalyticsService.logEvent(
+        AnalyticsEvents.fastingCompleted,
+        params: {AnalyticsParams.hours: fastingDuration.inHours},
+      );
+    }
   }
 
   Future<void> stopFasting() async {

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:elena_app/src/core/analytics/analytics_events.dart';
 import 'package:elena_app/src/core/providers/shared_preferences_provider.dart';
+import 'package:elena_app/src/core/services/analytics_service.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/core/services/day_boundary_resolver.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
@@ -233,6 +235,12 @@ class SleepNotifier extends StateNotifier<SleepState> {
 
       try {
         await repo.save(user.id, realLog);
+        // SPEC-193: pilar sueño registrado (vía wake-up manual). El guard
+        // `lastLog.id == docId` de arriba evita el doble conteo si ya existía.
+        AnalyticsService.logEvent(
+          AnalyticsEvents.pillarLogged,
+          params: const {AnalyticsParams.pillar: 'sleep'},
+        );
         // SPEC-194: persistir confirmación por (user, día calendárico).
         await _markWakeUpConfirmed(user.id, now);
 
@@ -298,6 +306,11 @@ class SleepNotifier extends StateNotifier<SleepState> {
       );
 
       await repo.save(user.id, realLog);
+      // SPEC-193: pilar sueño registrado (vía registro manual de sueño).
+      AnalyticsService.logEvent(
+        AnalyticsEvents.pillarLogged,
+        params: const {AnalyticsParams.pillar: 'sleep'},
+      );
       // SPEC-194: registrar sueño manualmente también baja el overlay.
       await _markWakeUpConfirmed(user.id, now);
 
