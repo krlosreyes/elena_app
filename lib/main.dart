@@ -12,6 +12,7 @@ import 'src/app.dart';
 import 'src/core/config/recaptcha_config.dart';
 import 'src/core/providers/shared_preferences_provider.dart';
 import 'src/core/services/app_logger.dart';
+import 'src/core/services/analytics_service.dart';
 import 'src/core/services/crashlytics_service.dart';
 import 'src/core/services/notification_service.dart';
 
@@ -49,6 +50,12 @@ Future<void> _bootstrap() async {
   // tras inicializar Firebase. Crashlytics solo reporta en release
   // mode mobile (web queda no soportado; debug solo loguea).
   await CrashlyticsService.init();
+
+  // SPEC-193: analytics de negocio. Init tras Crashlytics; nunca bloquea
+  // el arranque (el servicio absorbe sus propios errores). app_open es el
+  // primer evento del embudo.
+  await AnalyticsService.init();
+  await AnalyticsService.logAppOpen();
 
   // SPEC-73.1 (housekeeping): AppCheck se omite en web debug porque la
   // clave reCAPTCHA v3 placeholder produce errores ruidosos en consola

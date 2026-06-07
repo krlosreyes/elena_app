@@ -27,6 +27,7 @@ dependencies:
   cloud_firestore: ^6.0.0
   firebase_app_check: ^0.4.1+5
   firebase_crashlytics: ^5.0.0 # SPEC-80: observabilidad de crashes (mobile only)
+  firebase_analytics: ^12.0.0 # SPEC-193: analytics de negocio + eventos de conducta (mobile)
 
   # Utilities
   intl: ^0.20.2
