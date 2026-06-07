@@ -27,6 +27,8 @@ import 'package:elena_app/src/features/health_sync/application/health_sync_servi
 import 'package:elena_app/src/features/health_sync/domain/health_permission_status.dart';
 import 'package:elena_app/src/features/health_sync/domain/health_sync_result.dart';
 import 'package:elena_app/src/features/progress/data/biometric_repository.dart';
+import 'package:elena_app/src/shared/data/user_profile_repository_impl.dart';
+import 'package:elena_app/src/shared/providers/user_provider.dart';
 
 /// Snapshot público del estado del controller. La UI lo consume para
 /// mostrar badges ("Sincronizando", "Última sync", "Permisos
@@ -194,6 +196,14 @@ class HealthAutoSyncController extends StateNotifier<HealthAutoSyncState> {
         AppLogger.info('HealthAutoSync: import ok — $summary');
         // ignore: avoid_print
         print('🩺 SYNC IMPORTED $summary');
+
+        // BUGFIX coherencia (2026-06-07): _importWeights escribe el peso en
+        // biometric_history (gráfica de Análisis) pero NO en users/{uid}.weight,
+        // que es lo que lee la card de Perfil. Propagamos el peso más reciente
+        // al doc canónico para que ambas vistas coincidan.
+        if (summary.weightsImported > 0) {
+          await _syncCanonicalWeight(userId);
+        }
       } else {
         AppLogger.info('HealthAutoSync: nada que importar');
         // ignore: avoid_print
@@ -211,6 +221,28 @@ class HealthAutoSyncController extends StateNotifier<HealthAutoSyncState> {
         lastRunAt: DateTime.now(),
       );
       _ref.read(isHealthSyncingProvider.notifier).state = false;
+    }
+  }
+
+  /// Propaga el peso más reciente de `biometric_history` al doc canónico
+  /// `users/{uid}.weight` (que lee la card de Perfil). Nunca rompe el sync:
+  /// cualquier fallo se loguea y se ignora.
+  Future<void> _syncCanonicalWeight(String userId) async {
+    try {
+      final latest =
+          await _ref.read(biometricRepositoryProvider).fetchLatest(userId);
+      final user = _ref.read(currentUserStreamProvider).valueOrNull;
+      final w = latest?.weight;
+      if (latest == null || user == null || w == null) return;
+      if (user.weight == w) return; // ya coincide
+      await _ref
+          .read(userProfileRepositoryProvider)
+          .saveProfile(user.copyWith(weight: w));
+      AppLogger.info('HealthAutoSync: peso canónico actualizado a $w kg');
+    } catch (e) {
+      AppLogger.warning(
+        'HealthAutoSync: no se pudo sincronizar el peso canónico: $e',
+      );
     }
   }
 }
