@@ -12,6 +12,10 @@ UserModel _user({int exGoal = 20, double weight = 80}) => UserModel(
       weight: weight,
       height: 175,
       exerciseGoalMinutes: exGoal,
+      profile: CircadianProfile(
+        wakeUpTime: DateTime(2026, 1, 1, 6),
+        sleepTime: DateTime(2026, 1, 1, 22),
+      ),
     );
 
 UserGoal _goal(GoalType t, double v, {bool active = true}) => UserGoal(
