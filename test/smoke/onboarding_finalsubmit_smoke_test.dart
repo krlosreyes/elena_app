@@ -189,4 +189,18 @@ class _RecordingRepo implements UserProfileRepository {
   @override
   Stream<Map<String, dynamic>?> watchCurrentImr(String userId) =>
       Stream.value(null);
+
+  @override
+  Future<void> writeImrHistorySnapshot({
+    required String userId,
+    required String weekISO,
+    required Map<String, dynamic> snapshot,
+  }) async {}
+
+  @override
+  Stream<List<Map<String, dynamic>>> watchImrHistory(
+    String userId, {
+    int limit = 12,
+  }) =>
+      Stream.value(const []);
 }

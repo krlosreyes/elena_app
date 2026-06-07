@@ -212,4 +212,18 @@ class _RepoWithPersistedImr implements UserProfileRepository {
     String userId,
     Map<String, dynamic> imrCurrent,
   ) async {}
+
+  @override
+  Future<void> writeImrHistorySnapshot({
+    required String userId,
+    required String weekISO,
+    required Map<String, dynamic> snapshot,
+  }) async {}
+
+  @override
+  Stream<List<Map<String, dynamic>>> watchImrHistory(
+    String userId, {
+    int limit = 12,
+  }) =>
+      Stream.value(const []);
 }
