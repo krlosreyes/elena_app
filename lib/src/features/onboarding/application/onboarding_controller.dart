@@ -17,7 +17,9 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:elena_app/src/core/analytics/analytics_events.dart';
 import 'package:elena_app/src/core/engine/score_engine.dart';
+import 'package:elena_app/src/core/services/analytics_service.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
 import 'package:elena_app/src/features/progress/application/biometric_history_service.dart';
@@ -36,6 +38,14 @@ class OnboardingController extends StateNotifier<AsyncValue<void>> {
 
   Future<void> completeOnboarding(UserModel user) async {
     state = const AsyncValue.loading();
+
+    // SPEC-193: capturar antes de escribir si el usuario ya traía un IMR
+    // del sitio MR (señal "from_mr"). Tras persistir el baseline, imr.current
+    // existiría para todos, así que se evalúa aquí, antes de saveProfile.
+    final preAccount = _ref.read(authStateProvider).value;
+    final fromMr = preAccount?.rawProfile?['imr'] is Map &&
+        (preAccount!.rawProfile!['imr'] as Map)['current'] is Map;
+
     try {
       // SPEC-73 §RF-73-07: la preservación de campos MR pre-existentes
       // (subscription_active, purchases, programs, etc.) está
@@ -108,6 +118,12 @@ class OnboardingController extends StateNotifier<AsyncValue<void>> {
       // cuando la pantalla llame `context.go('/dashboard')`, el
       // redirect del router ya vea profileStatus == COMPLETE.
       await _ref.read(authStateProvider.future);
+
+      // SPEC-193: evento de cierre de embudo de onboarding.
+      AnalyticsService.logEvent(
+        AnalyticsEvents.onboardingComplete,
+        params: {AnalyticsParams.fromMr: fromMr},
+      );
 
       state = const AsyncValue.data(null);
     } catch (e, st) {

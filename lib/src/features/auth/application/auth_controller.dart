@@ -7,6 +7,8 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:elena_app/src/core/analytics/analytics_events.dart';
+import 'package:elena_app/src/core/services/analytics_service.dart';
 import 'package:elena_app/src/features/auth/domain/auth_repository.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
 // SPEC-11: providers a invalidar en logout para garantizar estado limpio
@@ -31,6 +33,13 @@ class AuthController extends StateNotifier<AsyncValue<void>> {
     state = const AsyncLoading();
     state = await AsyncValue.guard(
         () => repository.signInWithEmail(email: email, password: password));
+    // SPEC-193: evento de embudo. Solo en éxito; logEvent nunca lanza.
+    if (!state.hasError) {
+      AnalyticsService.logEvent(
+        AnalyticsEvents.login,
+        params: const {AnalyticsParams.method: 'email'},
+      );
+    }
   }
 
   Future<void> signUp(String email, String password, String name) async {
@@ -40,6 +49,13 @@ class AuthController extends StateNotifier<AsyncValue<void>> {
           password: password,
           name: name,
         ));
+    // SPEC-193: evento de embudo. Solo en éxito; logEvent nunca lanza.
+    if (!state.hasError) {
+      AnalyticsService.logEvent(
+        AnalyticsEvents.signupComplete,
+        params: const {AnalyticsParams.method: 'email'},
+      );
+    }
   }
 
   /// SPEC-73 §RF-73-09: dispara magic link para usuarios MR sin pwd.

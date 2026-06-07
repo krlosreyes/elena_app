@@ -3,8 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:elena_app/src/router/app_router.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
+import 'package:elena_app/src/core/analytics/analytics_events.dart';
 import 'package:elena_app/src/core/providers/notification_provider.dart';
+import 'package:elena_app/src/core/services/analytics_service.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
+import 'package:elena_app/src/features/auth/domain/app_account.dart';
+import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
 import 'package:elena_app/src/core/services/daily_reset_service.dart';
 import 'package:elena_app/src/features/analysis/application/daily_summary_persistence_service.dart';
 import 'package:elena_app/src/features/health_sync/application/health_auto_sync_controller.dart';
@@ -105,6 +109,12 @@ class _ElenaAppState extends ConsumerState<ElenaApp>
       ref
           .read(healthAutoSyncControllerProvider.notifier)
           .runIfDue(userId: user.id);
+    });
+
+    // SPEC-193: asociar el uid pseudónimo a Analytics (null en logout).
+    // Sin PII — solo el identificador de Firebase.
+    ref.listen<AsyncValue<AppAccount?>>(authStateProvider, (prev, next) {
+      AnalyticsService.setUserId(next.value?.uid);
     });
 
     return ScreenUtilInit(
