@@ -14,3 +14,8 @@ final effectiveExerciseGoalProvider = Provider<int>((ref) {
   if (user == null) return 20;
   return PillarGoalResolver.exerciseMinutes(ref.watch(goalsProvider), user);
 });
+
+/// Meta efectiva de sueño (horas/noche): goal activo > default 8h.
+final effectiveSleepGoalProvider = Provider<double>((ref) {
+  return PillarGoalResolver.sleepHours(ref.watch(goalsProvider));
+});

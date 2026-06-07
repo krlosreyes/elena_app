@@ -20,6 +20,16 @@ class PillarGoalResolver {
     return user.exerciseGoalMinutes;
   }
 
+  /// Horas de sueño objetivo. Goal activo > default 8h (no hay campo en
+  /// UserModel para sueño).
+  static double sleepHours(GoalsMap goals) {
+    final g = goals[GoalType.sleepHoursPerNight];
+    if (g != null && g.isActive && g.targetValue > 0) {
+      return g.targetValue;
+    }
+    return 8.0;
+  }
+
   /// Litros de hidratación diarios. Goal activo > fórmula por peso (35 ml/kg).
   static double hydrationLiters(GoalsMap goals, UserModel user) {
     final g = goals[GoalType.hydrationLitersPerDay];

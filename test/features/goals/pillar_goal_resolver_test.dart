@@ -44,6 +44,27 @@ void main() {
     });
   });
 
+  group('PillarGoalResolver.sleepHours', () {
+    test('goal activo manda', () {
+      final goals = <GoalType, UserGoal>{
+        GoalType.sleepHoursPerNight: _goal(GoalType.sleepHoursPerNight, 7.0),
+      };
+      expect(PillarGoalResolver.sleepHours(goals), 7.0);
+    });
+
+    test('sin goal → default 8h', () {
+      expect(PillarGoalResolver.sleepHours(const {}), 8.0);
+    });
+
+    test('goal inactivo se ignora', () {
+      final goals = <GoalType, UserGoal>{
+        GoalType.sleepHoursPerNight:
+            _goal(GoalType.sleepHoursPerNight, 6.0, active: false),
+      };
+      expect(PillarGoalResolver.sleepHours(goals), 8.0);
+    });
+  });
+
   group('PillarGoalResolver.hydrationLiters', () {
     test('goal activo manda', () {
       final goals = <GoalType, UserGoal>{
