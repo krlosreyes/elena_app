@@ -8,7 +8,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elena_app/src/core/engine/circadian_engine.dart';
+import 'package:elena_app/src/features/adaptive/application/adaptive_engine.dart';
 import 'package:elena_app/src/features/analysis/application/weekly_coaching_provider.dart';
+import 'package:elena_app/src/features/coaching/application/adaptive_generator.dart';
 import 'package:elena_app/src/features/coaching/application/circadian_generator.dart';
 import 'package:elena_app/src/features/coaching/application/coaching_snapshot_builder.dart';
 import 'package:elena_app/src/features/coaching/application/weak_pillar_generator.dart';
@@ -47,6 +49,7 @@ final coachingCandidatesProvider =
   return [
     if (weekly != null) ...WeakPillarGenerator.generate(weekly),
     ...CircadianGenerator.generate(phase, minutesToIntestinalLock: minutesToLock),
+    ...AdaptiveGenerator.generate(ref.watch(adaptiveProvider)),
   ];
 });
 
