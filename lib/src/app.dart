@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:elena_app/src/router/app_router.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
-import 'package:elena_app/src/core/analytics/analytics_events.dart';
 import 'package:elena_app/src/core/providers/notification_provider.dart';
 import 'package:elena_app/src/core/services/analytics_service.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
