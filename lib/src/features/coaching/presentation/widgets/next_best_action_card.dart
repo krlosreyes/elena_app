@@ -1,23 +1,52 @@
 // SPEC-194 inc3 — card "Tu siguiente paso": la acción de coaching priorizada
 // por el motor de decisión. Se oculta sola en período de gracia o si no hay
 // candidato (CoachingSelection.primary == null).
+//
+// SPEC-194 + SPEC-193: telemetría de conducta. `coaching_action_shown` se
+// dispara una vez por acción distinta (dedup por id, post-frame para no
+// contar rebuilds); `coaching_action_followed` al tocar "Saber más".
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:elena_app/src/core/analytics/analytics_events.dart';
 import 'package:elena_app/src/core/orchestrator/biological_phases.dart';
+import 'package:elena_app/src/core/services/analytics_service.dart';
 import 'package:elena_app/src/features/coaching/application/coaching_providers.dart';
 import 'package:elena_app/src/features/coaching/domain/coaching_action.dart';
 import 'package:elena_app/src/features/coaching/presentation/widgets/action_explainer_sheet.dart';
 
-class NextBestActionCard extends ConsumerWidget {
+class NextBestActionCard extends ConsumerStatefulWidget {
   const NextBestActionCard({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<NextBestActionCard> createState() => _NextBestActionCardState();
+}
+
+class _NextBestActionCardState extends ConsumerState<NextBestActionCard> {
+  String? _lastShownId;
+
+  @override
+  Widget build(BuildContext context) {
     final selection = ref.watch(coachingSelectionProvider);
     final primary = selection.primary;
     if (primary == null) return const SizedBox.shrink();
+
+    // SPEC-193: una sola vez por acción distinta. addPostFrameCallback evita
+    // contar rebuilds; el id evita re-disparar la misma acción.
+    if (_lastShownId != primary.id) {
+      _lastShownId = primary.id;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        AnalyticsService.logEvent(
+          AnalyticsEvents.coachingActionShown,
+          params: {
+            AnalyticsParams.actionId: primary.id,
+            AnalyticsParams.source: primary.source.name,
+            AnalyticsParams.pillar: primary.pillar.name,
+          },
+        );
+      });
+    }
 
     final theme = Theme.of(context);
     final secondary = selection.secondary;
@@ -60,7 +89,16 @@ class NextBestActionCard extends ConsumerWidget {
             Align(
               alignment: Alignment.centerRight,
               child: TextButton(
-                onPressed: () => ActionExplainerSheet.show(context, primary),
+                onPressed: () {
+                  AnalyticsService.logEvent(
+                    AnalyticsEvents.coachingActionFollowed,
+                    params: {
+                      AnalyticsParams.actionId: primary.id,
+                      AnalyticsParams.source: primary.source.name,
+                    },
+                  );
+                  ActionExplainerSheet.show(context, primary);
+                },
                 child: const Text('Saber más'),
               ),
             ),
@@ -69,15 +107,15 @@ class NextBestActionCard extends ConsumerWidget {
       ),
     );
   }
-
-  static String _pillarLabel(Pillar p) => switch (p) {
-        Pillar.fasting => 'Ayuno',
-        Pillar.nutrition => 'Nutrición',
-        Pillar.hydration => 'Hidratación',
-        Pillar.sleep => 'Sueño',
-        Pillar.exercise => 'Ejercicio',
-      };
 }
+
+String _pillarLabel(Pillar p) => switch (p) {
+      Pillar.fasting => 'Ayuno',
+      Pillar.nutrition => 'Nutrición',
+      Pillar.hydration => 'Hidratación',
+      Pillar.sleep => 'Sueño',
+      Pillar.exercise => 'Ejercicio',
+    };
 
 class _PillarChip extends StatelessWidget {
   const _PillarChip({required this.label});
