@@ -1,6 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/core/analytics/analytics_events.dart';
-import 'package:elena_app/src/core/orchestrator/biological_phases.dart';
+// SPEC-194: solo `Pillar` — `biological_phases` también define `FastingPhase`,
+// que aquí viene de `fasting_status` (evita ambiguous_import).
+import 'package:elena_app/src/core/orchestrator/biological_phases.dart'
+    show Pillar;
 import 'package:elena_app/src/core/providers/ticker_providers.dart';
 import 'package:elena_app/src/core/rules/circadian_rules.dart';
 import 'package:elena_app/src/core/services/analytics_service.dart';
