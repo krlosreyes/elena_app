@@ -254,12 +254,14 @@ void main() {
   });
 
   group('pasos', () {
-    test('día con < 2000 pasos NO genera ExerciseLog', () async {
+    // SPEC-173 (2026-06-04): umbral bajado de 2000 a 500 pasos. 1500 ahora
+    // SÍ genera log; un día por debajo de 500 (oficina pura) no.
+    test('día con < 500 pasos NO genera ExerciseLog', () async {
       final summary = await service.importResult(
         userId,
         _resultWith({
           HealthMetric.steps: [
-            _stepsSample(at: DateTime(2026, 5, 26, 12), count: 1500),
+            _stepsSample(at: DateTime(2026, 5, 26, 12), count: 300),
           ],
         }),
       );

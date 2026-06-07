@@ -91,7 +91,8 @@ void main() {
       );
     });
 
-    test('ciclo abierto válido pero sin último cerrado → delta null', () {
+    test('ciclo abierto válido pero sin último cerrado → delta null',
+        () async {
       final container = ProviderContainer(overrides: [
         currentMetabolicCycleProvider.overrideWith(
           (ref) =>
@@ -104,10 +105,13 @@ void main() {
       ]);
       addTearDown(container.dispose);
 
-      expectLater(
-        Future(() => container.read(displayDailyScoreDeltaProvider)),
-        completion(isNull),
-      );
+      // Forzar la emisión de ambos streams antes de leer el provider
+      // derivado. Si se lee en estado loading, valueOrNull es null y el
+      // provider cae al fallback legacy (-3) en vez de la lógica de ciclo.
+      await container.read(currentMetabolicCycleProvider.future);
+      await container.read(lastClosedMetabolicCycleProvider.future);
+
+      expect(container.read(displayDailyScoreDeltaProvider), isNull);
     });
   });
 }

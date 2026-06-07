@@ -85,6 +85,12 @@ void main() {
     });
 
     testWidgets('tap "Activar coaching" dispara onActivate', (tester) async {
+      // El paso es scrollable (ListView): con el viewport chico de test los
+      // botones del fondo no se construyen. Agrandamos el viewport para que
+      // se rendericen y sean tappables (triage 2026-06-07).
+      tester.view.physicalSize = const Size(1080, 2600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
       var activated = false;
       await tester.pumpWidget(
         _wrap(IntroNotificationsStep(
@@ -93,15 +99,15 @@ void main() {
           onSkip: () {},
         )),
       );
-      await tester.ensureVisible(
-        find.text('Activar coaching por notificaciones'),
-      );
       await tester.tap(find.text('Activar coaching por notificaciones'));
       await tester.pump();
       expect(activated, isTrue);
     });
 
     testWidgets('tap "Más tarde" dispara onSkip', (tester) async {
+      tester.view.physicalSize = const Size(1080, 2600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
       var skipped = false;
       await tester.pumpWidget(
         _wrap(IntroNotificationsStep(
@@ -110,7 +116,6 @@ void main() {
           onSkip: () => skipped = true,
         )),
       );
-      await tester.ensureVisible(find.text('Más tarde'));
       await tester.tap(find.text('Más tarde'));
       await tester.pump();
       expect(skipped, isTrue);

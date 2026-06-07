@@ -68,6 +68,8 @@ class TransformationComputer {
         label: '% Grasa',
         unit: '%',
         extract: (c) => c.bodyFatPercentage,
+        // %grasa estricto: null si no hay medición en los últimos 7 días.
+        requireRecentCurrent: true,
       ),
       sleepHoursAvg: _sleepDelta(streakHistory, now),
       fastingDaysOf7: _fastingDelta(streakHistory, now),
@@ -161,17 +163,27 @@ class TransformationComputer {
     required String label,
     required String unit,
     required double? Function(BiometricCheckIn) extract,
+    // SPEC-148 §146: "current" debe estar dentro de [now-7d, now]. El peso
+    // usa modo permisivo (§200: arrastra el último con "hace X días") porque
+    // se mide a diario; para %grasa exigimos medición reciente — mostrar un
+    // valor de hace semanas como "actual" es engañoso (triage 2026-06-07).
+    bool requireRecentCurrent = false,
   }) {
     if (history.isEmpty) {
       return TransformationDelta.empty(label: label, unit: unit);
     }
 
-    // "Current" — última medición dentro de los últimos 7 días con valor
-    // no-null para el campo. Si no hay nada en 7 días, usar el último
-    // disponible (modo permisivo).
+    // "Current" — última medición con valor no-null para el campo. Si
+    // `requireRecentCurrent`, solo se acepta dentro de los últimos 7 días;
+    // si no, modo permisivo (usa el último disponible aunque sea viejo).
     BiometricCheckIn? current;
+    final currentFrom = now.subtract(const Duration(days: 7));
     for (final c in history) {
       if (extract(c) == null) continue;
+      if (requireRecentCurrent) {
+        final at = c.recordedAt;
+        if (at == null || at.isBefore(currentFrom)) continue;
+      }
       current = c;
       break;
     }

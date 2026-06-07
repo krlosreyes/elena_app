@@ -261,7 +261,10 @@ void main() {
       expect(result, ClosureReason.fallbackAbsolute);
     });
 
-    test('fallbackCalendar dispara para "Ninguno" al pasar el día', () {
+    // SPEC-189 (2026-06-05): trigger `fallbackCalendar` ELIMINADO. Cruzar
+    // medianoche con protocolo "Ninguno" ya NO cierra el ciclo — el día
+    // metabólico es event-driven, sin referencia al reloj. shouldClose → null.
+    test('"Ninguno" cruzando medianoche NO cierra (SPEC-189: sin reloj)', () {
       final cycle = _openCycle(
         startedAt: DateTime(2026, 6, 1, 6, 0),
         protocol: 'Ninguno',
@@ -276,7 +279,7 @@ void main() {
         newFastingStartedExplicitly: false,
         newFastingStartedAt: null,
       );
-      expect(result, ClosureReason.fallbackCalendar);
+      expect(result, isNull);
     });
 
     test('fallbackCalendar NO dispara mientras sigue el mismo día calendario',

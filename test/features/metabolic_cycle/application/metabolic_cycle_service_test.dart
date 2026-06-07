@@ -100,7 +100,11 @@ void main() {
       expect(result!.startedAt, DateTime(2026, 6, 1, 21, 0));
     });
 
-    test('Protocolo "Ninguno" → ciclo calendárico empieza al inicio del día',
+    // SPEC-189 (2026-06-05): "Ninguno" ya NO crea ciclo calendárico anclado
+    // a medianoche (eliminado el reloj). SPEC-185: sin ayuno persistido
+    // (lastFastingStartTime null) NO se crea ciclo huérfano. El próximo tap
+    // "Iniciar ayuno" lo creará legítimamente.
+    test('Protocolo "Ninguno" + sin ayuno persistido → NO crea ciclo',
         () async {
       final now = DateTime(2026, 6, 2, 14, 30);
       final cycle = await service.bootstrapIfMissing(
@@ -109,8 +113,7 @@ void main() {
         lastFastingStartTime: null,
         now: now,
       );
-      expect(cycle!.startedAt, DateTime(2026, 6, 2, 0, 0));
-      expect(cycle.fastingProtocol, 'Ninguno');
+      expect(cycle, isNull);
     });
 
     // SPEC-185 (2026-06-05): NO crear ciclo huérfano cuando llega null.
