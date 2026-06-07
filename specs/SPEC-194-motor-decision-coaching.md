@@ -1,6 +1,6 @@
 # SPEC-194 — Motor de Decisión de Coaching (MVP)
 
-**Estado:** APPROVED-DESIGN — pendiente de implementación (Ola B).
+**Estado:** IN-PROGRESS — MVP implementado: inc1 (dominio + scorer puro), inc2 (application: mappers, generadores weak-pillar/circadiano, snapshot builder, providers), inc3 (UI: card "Tu siguiente paso" + ActionExplainerSheet en Home). **Pendiente:** feedback loop de cierre (RF-194-05), generadores orchestrator/adaptive, persistencia de fatiga, telemetría coaching (eventos SPEC-193 ya definidos).
 **Versión:** 0.1 (draft)
 **Tipo:** Active coaching — núcleo del pivot. Convierte la app de registro en coach: lee estado → recomienda → da feedback, personalizado por usuario.
 **Líder:** Carlos

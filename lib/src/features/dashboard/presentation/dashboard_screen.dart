@@ -26,6 +26,7 @@ import 'package:elena_app/src/features/exercise/application/exercise_state.dart'
 import 'package:elena_app/src/features/exercise/presentation/exercise_input_sheet.dart';
 import 'package:elena_app/src/features/engagement/presentation/widgets/engagement_banner.dart';
 import 'package:elena_app/src/features/adaptive/presentation/widgets/adaptive_suggestion_card.dart';
+import 'package:elena_app/src/features/coaching/presentation/widgets/next_best_action_card.dart';
 import 'package:elena_app/src/features/nutrition/application/cociente_a_service.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
 import 'package:elena_app/src/features/progress/application/biometric_backfill_provider.dart';
@@ -203,6 +204,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   // BANNER DE ENGAGEMENT (SPEC-07 + SPEC-72.2 dismiss por sesión)
                   const EngagementBanner(),
                   const SizedBox(height: 16),
+
+                  // SPEC-194: "Tu siguiente paso" — acción de coaching
+                  // priorizada por el motor de decisión. Se oculta sola en
+                  // período de gracia o si no hay candidato.
+                  const NextBestActionCard(),
 
                   // SPEC-149: card de cierre del Día Metabólico. Aparece
                   // cuando hay un ciclo cerrado reciente que el usuario
