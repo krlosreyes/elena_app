@@ -48,6 +48,14 @@ post_install do |installer|
       config.build_settings['CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER'] = 'NO'
       config.build_settings['GCC_TREAT_WARNINGS_AS_ERRORS'] = 'NO'
       config.build_settings['SWIFT_TREAT_WARNINGS_AS_ERRORS'] = 'NO'
+      # SPEC-193.bugfix (2026-06-07): Xcode 16 corre un "module verifier" en
+      # una fase separada (VerifyModule) que construye un framework sintético
+      # ("Test") y NO hereda CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER.
+      # Los umbrella headers de FirebaseAuth con includes en comillas vuelven
+      # a romper ahí (y en cascada: "module FirebaseAuthInterop not found").
+      # Desactivar el verifier en los pods es el fix estándar para Firebase
+      # + Xcode 16. No afecta el binario final, solo el chequeo de módulo.
+      config.build_settings['ENABLE_MODULE_VERIFIER'] = 'NO'
       # Algunos targets de Firebase requieren modular_headers = false
       # implícito para que sus umbrella headers con quotes pasen el
       # verify-module step en release.
