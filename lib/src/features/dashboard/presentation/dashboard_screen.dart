@@ -27,8 +27,6 @@ import 'package:elena_app/src/features/exercise/presentation/exercise_input_shee
 import 'package:elena_app/src/features/engagement/presentation/widgets/engagement_banner.dart';
 import 'package:elena_app/src/features/adaptive/presentation/widgets/adaptive_suggestion_card.dart';
 import 'package:elena_app/src/features/coaching/presentation/widgets/next_best_action_card.dart';
-import 'package:elena_app/src/features/coaching/presentation/widgets/cycle_coaching_feedback_card.dart';
-import 'package:elena_app/src/features/goals/application/pillar_goal_providers.dart';
 import 'package:elena_app/src/features/nutrition/application/cociente_a_service.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
 import 'package:elena_app/src/features/progress/application/biometric_backfill_provider.dart';
@@ -233,11 +231,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           },
                   ),
 
-                  // SPEC-194 RF-05: feedback del coach sobre el ciclo que
-                  // cerró ("ayer priorizaste X…"). Se oculta solo si no hay
-                  // cierre sin leer o no había recomendación activa.
-                  const CycleCoachingFeedbackCard(),
-
                   // SPEC-137 E.5: banner "próxima comida en X min" cuando
                   // estamos dentro de los 30 min previos al horario
                   // sugerido (última comida + 3h). Se auto-oculta si no
@@ -405,15 +398,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     // que el sleep post-startedAt no contara al ciclo recién abierto;
     // SPEC-175 movió la lógica a un provider derivado limpio.
     final cycleSleep = ref.watch(currentCycleSleepProvider);
-    // BUGFIX objetivos: meta de sueño desde "Mis objetivos" (SoT) con
-    // fallback a 8h. Antes el progreso usaba 8h y el completado 7h hardcoded;
-    // ahora ambos siguen el objetivo del usuario.
-    final sleepTargetH = ref.watch(effectiveSleepGoalProvider);
     final sleepProgress = cycleSleep == null
         ? 0.0
-        : (cycleSleep.duration.inMinutes / (sleepTargetH * 60)).clamp(0.0, 1.0);
+        : (cycleSleep.duration.inMinutes / (8 * 60)).clamp(0.0, 1.0);
     final sleepCompleted =
-        cycleSleep != null && cycleSleep.duration.inHours >= sleepTargetH;
+        cycleSleep != null && cycleSleep.duration.inHours >= 7;
 
     // SPEC-140.2: el Score del Día vive como HEADLINE dentro del card
     // de pilares. El label "PILARES HOY" se elimina (los 5 rings con
@@ -533,10 +522,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 // dividía por 60 y el "completed" se gatillaba en 30
                 // — ambos hardcoded y desalineados con el objetivo
                 // real sugerido al usuario.
-                // BUGFIX objetivos: meta desde "Mis objetivos" (SoT) con
-                // fallback a UserModel/default.
-                final goal =
-                    ref.watch(effectiveExerciseGoalProvider).clamp(1, 240);
+                final user = ref.watch(currentUserStreamProvider).value;
+                final goal = (user?.exerciseGoalMinutes ?? 20).clamp(1, 240);
                 final progress =
                     (exercise.todayMinutes / goal.toDouble()).clamp(0.0, 1.0);
                 return PillarRing(
@@ -1239,8 +1226,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   Widget _buildEjercicioCard(
       BuildContext context, WidgetRef ref, ExerciseState state, dynamic user) {
     const accent = Color(0xFF2DD4BF);
-    // BUGFIX objetivos: meta desde "Mis objetivos" (SoT) con fallback.
-    final goal = ref.watch(effectiveExerciseGoalProvider);
+    final goal = (user?.exerciseGoalMinutes ?? 30) as int;
     final minutes = state.todayMinutes;
     final progress = goal > 0 ? (minutes / goal).clamp(0.0, 1.0) : 0.0;
     final pct = (progress * 100).round();

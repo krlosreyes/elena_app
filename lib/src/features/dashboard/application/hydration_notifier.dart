@@ -17,8 +17,6 @@ import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cyc
 import 'package:elena_app/src/features/metabolic_cycle/domain/metabolic_cycle.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
-import 'package:elena_app/src/features/goals/application/goal_notifier.dart';
-import 'package:elena_app/src/features/goals/application/pillar_goal_resolver.dart';
 
 class HydrationState {
   final double dailyGoalLiters;
@@ -88,12 +86,8 @@ class HydrationNotifier extends StateNotifier<HydrationState> {
         (previous, next) {
       next.whenData((user) {
         if (user != null) {
-          // BUGFIX objetivos: meta desde "Mis objetivos" (SoT) con fallback
-          // a la fórmula por peso (35 ml/kg).
-          final calculatedGoal = PillarGoalResolver.hydrationLiters(
-            _ref.read(goalsProvider),
-            user,
-          );
+          final double weight = user.weight > 0 ? user.weight : 75.0;
+          final calculatedGoal = (weight * 0.035);
 
           state = state.copyWith(
             dailyGoalLiters: calculatedGoal,
@@ -136,18 +130,6 @@ class HydrationNotifier extends StateNotifier<HydrationState> {
       },
       fireImmediately: true,
     );
-
-    // BUGFIX objetivos: recomputar la meta cuando el usuario edita sus
-    // objetivos en "Mis objetivos" (la card es la fuente de verdad).
-    _ref.listen<GoalsMap>(goalsProvider, (previous, next) {
-      final user = _ref.read(currentUserStreamProvider).valueOrNull;
-      if (user == null || !mounted) return;
-      final goal = PillarGoalResolver.hydrationLiters(next, user);
-      state = state.copyWith(
-        dailyGoalLiters: goal,
-        isGoalReached: state.currentAmountLiters >= goal,
-      );
-    });
   }
 
   /// SPEC-149.2 + SPEC-189 + SPEC-194.1 (2026-06-06): suscripción al
