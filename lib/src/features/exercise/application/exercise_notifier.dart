@@ -6,7 +6,9 @@ import 'package:uuid/uuid.dart';
 // ciclo, sigue cycle-aware estricto (Constitución §1).
 import 'package:elena_app/src/core/services/day_boundary_resolver.dart';
 import 'package:elena_app/src/core/analytics/analytics_events.dart';
+import 'package:elena_app/src/core/orchestrator/biological_phases.dart';
 import 'package:elena_app/src/core/services/analytics_service.dart';
+import 'package:elena_app/src/features/coaching/application/coaching_completion_service.dart';
 import 'package:elena_app/src/features/exercise/data/exercise_repository_impl.dart';
 import 'package:elena_app/src/features/exercise/domain/exercise_log.dart';
 // SPEC-189: el import del repositorio abstracto era unused (pre-existente).
@@ -175,6 +177,8 @@ class ExerciseNotifier extends StateNotifier<ExerciseState> {
         AnalyticsEvents.pillarLogged,
         params: const {AnalyticsParams.pillar: 'exercise'},
       );
+      // SPEC-194: correlación con la acción recomendada.
+      ref.read(coachingCompletionProvider).onPillarActivity(Pillar.exercise);
     } catch (e) {
       state = state.copyWith(isSaving: false, error: "Fallo al guardar: $e");
       throw Exception(state.error);

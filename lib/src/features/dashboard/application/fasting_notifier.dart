@@ -1,9 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/core/analytics/analytics_events.dart';
+import 'package:elena_app/src/core/orchestrator/biological_phases.dart';
 import 'package:elena_app/src/core/providers/ticker_providers.dart';
 import 'package:elena_app/src/core/rules/circadian_rules.dart';
 import 'package:elena_app/src/core/services/analytics_service.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
+import 'package:elena_app/src/features/coaching/application/coaching_completion_service.dart';
 import 'package:elena_app/src/core/services/firestore_errors.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
 import 'package:elena_app/src/features/dashboard/data/fasting_interval_repository_impl.dart';
@@ -193,6 +195,8 @@ class FastingNotifier extends StateNotifier<FastingState> {
         AnalyticsEvents.fastingStarted,
         params: {AnalyticsParams.protocol: state.fastingProtocol},
       );
+      // SPEC-194: correlación con la acción recomendada (iniciar ayuno).
+      _ref.read(coachingCompletionProvider).onPillarActivity(Pillar.fasting);
 
       // SPEC-05: Programar hitos de ayuno (12h, 18h, 24h) desde el inicio real.
       await NotificationScheduler.scheduleFastingMilestones(startTime);

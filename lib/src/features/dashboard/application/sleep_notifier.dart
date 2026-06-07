@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/core/analytics/analytics_events.dart';
+import 'package:elena_app/src/core/orchestrator/biological_phases.dart';
 import 'package:elena_app/src/core/providers/shared_preferences_provider.dart';
 import 'package:elena_app/src/core/services/analytics_service.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
+import 'package:elena_app/src/features/coaching/application/coaching_completion_service.dart';
 import 'package:elena_app/src/core/services/day_boundary_resolver.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
 import 'package:elena_app/src/features/dashboard/application/fasting_notifier.dart';
@@ -241,6 +243,8 @@ class SleepNotifier extends StateNotifier<SleepState> {
           AnalyticsEvents.pillarLogged,
           params: const {AnalyticsParams.pillar: 'sleep'},
         );
+        // SPEC-194: correlación con la acción recomendada.
+        _ref.read(coachingCompletionProvider).onPillarActivity(Pillar.sleep);
         // SPEC-194: persistir confirmación por (user, día calendárico).
         await _markWakeUpConfirmed(user.id, now);
 
@@ -311,6 +315,8 @@ class SleepNotifier extends StateNotifier<SleepState> {
         AnalyticsEvents.pillarLogged,
         params: const {AnalyticsParams.pillar: 'sleep'},
       );
+      // SPEC-194: correlación con la acción recomendada.
+      _ref.read(coachingCompletionProvider).onPillarActivity(Pillar.sleep);
       // SPEC-194: registrar sueño manualmente también baja el overlay.
       await _markWakeUpConfirmed(user.id, now);
 

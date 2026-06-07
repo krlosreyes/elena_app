@@ -12,6 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/core/analytics/analytics_events.dart';
 import 'package:elena_app/src/core/orchestrator/biological_phases.dart';
 import 'package:elena_app/src/core/services/analytics_service.dart';
+import 'package:elena_app/src/features/coaching/application/coaching_completion_service.dart';
 import 'package:elena_app/src/features/coaching/application/coaching_providers.dart';
 import 'package:elena_app/src/features/coaching/domain/coaching_action.dart';
 import 'package:elena_app/src/features/coaching/presentation/widgets/action_explainer_sheet.dart';
@@ -30,6 +31,9 @@ class _NextBestActionCardState extends ConsumerState<NextBestActionCard> {
   Widget build(BuildContext context) {
     final selection = ref.watch(coachingSelectionProvider);
     final primary = selection.primary;
+    // SPEC-194: cachear la acción activa para correlacionar con el registro
+    // del pilar (coaching_action_completed). null cuando no hay acción.
+    ref.read(coachingCompletionProvider).setActive(primary);
     if (primary == null) return const SizedBox.shrink();
 
     // SPEC-193: una sola vez por acción distinta. addPostFrameCallback evita

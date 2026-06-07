@@ -2,8 +2,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
 // IMPORTANTE: Esta es la ruta al archivo que creamos para centralizar el usuario
 import 'package:elena_app/src/core/analytics/analytics_events.dart';
+import 'package:elena_app/src/core/orchestrator/biological_phases.dart';
 import 'package:elena_app/src/core/services/analytics_service.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
+import 'package:elena_app/src/features/coaching/application/coaching_completion_service.dart';
 // SPEC-194 (2026-06-06): day_boundary_resolver reintroducido como
 // FALLBACK cuando no hay ciclo abierto. Cuando hay ciclo, el comportamiento
 // sigue cycle-aware estricto (Constitución §1). Sin ciclo, ventana
@@ -222,6 +224,8 @@ class HydrationNotifier extends StateNotifier<HydrationState> {
         AnalyticsEvents.pillarLogged,
         params: const {AnalyticsParams.pillar: 'hydration'},
       );
+      // SPEC-194: ¿el usuario hizo lo que el coach recomendó?
+      _ref.read(coachingCompletionProvider).onPillarActivity(Pillar.hydration);
     } catch (e) {
       // SPEC-179 (2026-06-05): antes había un catch vacío silencioso.
       // El log se acumulaba localmente en state.history pero si Firestore

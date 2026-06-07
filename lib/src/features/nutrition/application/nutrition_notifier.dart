@@ -18,8 +18,10 @@ import 'package:uuid/uuid.dart';
 // cycle-aware (Constitución §1). Sin ciclo, ventana startOfDay para
 // que los logs del día sean visibles en el ring.
 import 'package:elena_app/src/core/analytics/analytics_events.dart';
+import 'package:elena_app/src/core/orchestrator/biological_phases.dart';
 import 'package:elena_app/src/core/services/analytics_service.dart';
 import 'package:elena_app/src/core/services/day_boundary_resolver.dart';
+import 'package:elena_app/src/features/coaching/application/coaching_completion_service.dart';
 import 'package:elena_app/src/core/services/notification_scheduler.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart';
 import 'package:elena_app/src/features/metabolic_cycle/domain/metabolic_cycle.dart';
@@ -292,6 +294,8 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
         AnalyticsEvents.mealLogged,
         params: {AnalyticsParams.qualityBucket: ratio.name},
       );
+      // SPEC-194: correlación con la acción recomendada.
+      _ref.read(coachingCompletionProvider).onPillarActivity(Pillar.nutrition);
       // El stream emitirá la nueva lista; no hay que mutar todayLogs aquí.
 
       // SPEC-137 E.5: agendar push del SO 30 min antes de la próxima
