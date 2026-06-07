@@ -28,6 +28,7 @@ import 'package:elena_app/src/features/engagement/presentation/widgets/engagemen
 import 'package:elena_app/src/features/adaptive/presentation/widgets/adaptive_suggestion_card.dart';
 import 'package:elena_app/src/features/coaching/presentation/widgets/next_best_action_card.dart';
 import 'package:elena_app/src/features/coaching/presentation/widgets/cycle_coaching_feedback_card.dart';
+import 'package:elena_app/src/features/goals/application/pillar_goal_providers.dart';
 import 'package:elena_app/src/features/nutrition/application/cociente_a_service.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
 import 'package:elena_app/src/features/progress/application/biometric_backfill_provider.dart';
@@ -528,8 +529,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 // dividía por 60 y el "completed" se gatillaba en 30
                 // — ambos hardcoded y desalineados con el objetivo
                 // real sugerido al usuario.
-                final user = ref.watch(currentUserStreamProvider).value;
-                final goal = (user?.exerciseGoalMinutes ?? 20).clamp(1, 240);
+                // BUGFIX objetivos: meta desde "Mis objetivos" (SoT) con
+                // fallback a UserModel/default.
+                final goal =
+                    ref.watch(effectiveExerciseGoalProvider).clamp(1, 240);
                 final progress =
                     (exercise.todayMinutes / goal.toDouble()).clamp(0.0, 1.0);
                 return PillarRing(
@@ -1232,7 +1235,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   Widget _buildEjercicioCard(
       BuildContext context, WidgetRef ref, ExerciseState state, dynamic user) {
     const accent = Color(0xFF2DD4BF);
-    final goal = (user?.exerciseGoalMinutes ?? 30) as int;
+    // BUGFIX objetivos: meta desde "Mis objetivos" (SoT) con fallback.
+    final goal = ref.watch(effectiveExerciseGoalProvider);
     final minutes = state.todayMinutes;
     final progress = goal > 0 ? (minutes / goal).clamp(0.0, 1.0) : 0.0;
     final pct = (progress * 100).round();

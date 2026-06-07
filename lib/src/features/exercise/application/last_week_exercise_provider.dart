@@ -11,22 +11,15 @@ import 'package:elena_app/src/features/exercise/domain/exercise_log.dart';
 import 'package:elena_app/src/features/exercise/domain/exercise_weekly_insight.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart';
 import 'package:elena_app/src/features/metabolic_cycle/domain/metabolic_cycle.dart';
-import 'package:elena_app/src/shared/providers/user_provider.dart';
+import 'package:elena_app/src/features/goals/application/pillar_goal_providers.dart';
 
 /// SPEC-190: ventana = 7 ciclos cerrados.
 const int kExerciseCardWindowCycles = 7;
 
-/// Target diario del usuario en minutos. Fallback razonable si no hay.
-int _targetFor(int? exerciseGoalMinutes) {
-  if (exerciseGoalMinutes == null || exerciseGoalMinutes <= 0) return 30;
-  return exerciseGoalMinutes;
-}
-
 final lastWeekExerciseProvider =
     StreamProvider.autoDispose<ExerciseWeeklyBreakdown>((ref) {
   final account = ref.watch(authStateProvider).value;
-  final user = ref.watch(currentUserStreamProvider).valueOrNull;
-  final target = _targetFor(user?.exerciseGoalMinutes);
+  final target = ref.watch(effectiveExerciseGoalProvider);
   final cyclesAsync = ref.watch(last7ClosedCyclesProvider);
   final cycles = cyclesAsync.valueOrNull ?? const <MetabolicCycle>[];
 
