@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
 // IMPORTANTE: Esta es la ruta al archivo que creamos para centralizar el usuario
+import 'package:elena_app/src/core/analytics/analytics_events.dart';
+import 'package:elena_app/src/core/services/analytics_service.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
 // SPEC-194 (2026-06-06): day_boundary_resolver reintroducido como
 // FALLBACK cuando no hay ciclo abierto. Cuando hay ciclo, el comportamiento
@@ -215,6 +217,11 @@ class HydrationNotifier extends StateNotifier<HydrationState> {
       await repo.add(user.id, newLog);
       // SPEC-179: write exitoso → limpiar error pendiente si lo había.
       state = state.copyWith(isSaving: false, lastWriteError: null);
+      // SPEC-193: pilar registrado (solo en write exitoso).
+      AnalyticsService.logEvent(
+        AnalyticsEvents.pillarLogged,
+        params: const {AnalyticsParams.pillar: 'hydration'},
+      );
     } catch (e) {
       // SPEC-179 (2026-06-05): antes había un catch vacío silencioso.
       // El log se acumulaba localmente en state.history pero si Firestore

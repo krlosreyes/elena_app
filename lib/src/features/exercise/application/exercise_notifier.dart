@@ -5,6 +5,8 @@ import 'package:uuid/uuid.dart';
 // fallback exclusivo para el caso "sin ciclo abierto". Cuando hay
 // ciclo, sigue cycle-aware estricto (Constitución §1).
 import 'package:elena_app/src/core/services/day_boundary_resolver.dart';
+import 'package:elena_app/src/core/analytics/analytics_events.dart';
+import 'package:elena_app/src/core/services/analytics_service.dart';
 import 'package:elena_app/src/features/exercise/data/exercise_repository_impl.dart';
 import 'package:elena_app/src/features/exercise/domain/exercise_log.dart';
 // SPEC-189: el import del repositorio abstracto era unused (pre-existente).
@@ -168,6 +170,11 @@ class ExerciseNotifier extends StateNotifier<ExerciseState> {
       final repo = ref.read(exerciseRepositoryProvider);
       await repo.save(userId, log);
       state = state.copyWith(isSaving: false, error: null);
+      // SPEC-193: pilar registrado (solo en write exitoso).
+      AnalyticsService.logEvent(
+        AnalyticsEvents.pillarLogged,
+        params: const {AnalyticsParams.pillar: 'exercise'},
+      );
     } catch (e) {
       state = state.copyWith(isSaving: false, error: "Fallo al guardar: $e");
       throw Exception(state.error);

@@ -17,6 +17,8 @@ import 'package:uuid/uuid.dart';
 // fallback exclusivo para el caso "sin ciclo abierto". Con ciclo, sigue
 // cycle-aware (Constitución §1). Sin ciclo, ventana startOfDay para
 // que los logs del día sean visibles en el ring.
+import 'package:elena_app/src/core/analytics/analytics_events.dart';
+import 'package:elena_app/src/core/services/analytics_service.dart';
 import 'package:elena_app/src/core/services/day_boundary_resolver.dart';
 import 'package:elena_app/src/core/services/notification_scheduler.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart';
@@ -284,6 +286,12 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
     try {
       final repo = _ref.read(nutritionRepositoryProvider);
       await repo.saveMeal(userId, log);
+      // SPEC-193: comida registrada. quality_bucket = ratio A:E (categoría,
+      // sin PII). Solo en write exitoso.
+      AnalyticsService.logEvent(
+        AnalyticsEvents.mealLogged,
+        params: {AnalyticsParams.qualityBucket: ratio.name},
+      );
       // El stream emitirá la nueva lista; no hay que mutar todayLogs aquí.
 
       // SPEC-137 E.5: agendar push del SO 30 min antes de la próxima

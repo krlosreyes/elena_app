@@ -87,5 +87,6 @@ Disparar cada evento en su punto: auth (`signup_complete`/`login`), onboarding (
 ## 8. Estado de implementación
 - [x] Fundación: catálogo + `AnalyticsService` + init + `app_open`.
 - [x] Wiring tope de embudo: `login`, `signup_complete` (auth), `onboarding_complete` con `from_mr` (onboarding), `setUserId` reactivo (app.dart).
-- [ ] Wiring pilares (`pillar_logged`, `fasting_*`, `meal_logged`) + engine (`imr_calculated`).
+- [x] Wiring pilares acción-directa: `pillar_logged` hidratación/ejercicio, `meal_logged` con `quality_bucket` (nutrición).
+- [ ] Wiring pilares stream-driven: `fasting_started/completed`, `pillar_logged` sueño + engine `imr_calculated` (incremento 3).
 - [ ] SPEC-193.1 Privacy Label · SPEC-193.2 Dashboard.
