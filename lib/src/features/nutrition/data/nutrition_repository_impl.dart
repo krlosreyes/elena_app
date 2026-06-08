@@ -45,14 +45,19 @@ class NutritionRepositoryImpl implements NutritionRepository {
   }) {
     // SPEC-178 (2026-06-04): sin cap fijo de 28h. Ver
     // exercise_repository_impl.watchSince para el rationale completo.
-    final end = until ?? DateTime.now();
+    // BUGFIX (2026-06-08): NO fijar el tope en `DateTime.now()` del momento
+    // de suscripción — capturaba el "ahora" como tope superior y los logs
+    // registrados después (en vivo) caían fuera de la ventana hasta reabrir.
+    // Con `end = null` el source usa fin-de-día (o sin tope) y los registros
+    // nuevos aparecen en tiempo real.
+    final DateTime? end = until;
     return _streamMapped(userId, since, end);
   }
 
   Stream<List<NutritionLog>> _streamMapped(
     String userId,
     DateTime start,
-    DateTime end,
+    DateTime? end,
   ) {
     return _source
         .watchTodayLogs(userId, startOfDay: start, endOfDay: end)

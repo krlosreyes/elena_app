@@ -37,14 +37,17 @@ class HydrationRepositoryImpl implements HydrationRepository {
   }) {
     // SPEC-178 (2026-06-04): sin cap fijo de 28h. Ver
     // exercise_repository_impl.watchSince para el rationale completo.
-    final end = until ?? DateTime.now();
+    // BUGFIX (2026-06-08): NO fijar el tope en `DateTime.now()` del momento de
+    // suscripción (capturaba el "ahora" como tope y excluía registros nuevos
+    // en vivo). `end = null` → stream abierto.
+    final DateTime? end = until;
     return _streamMapped(userId, since, end);
   }
 
   Stream<List<HydrationLog>> _streamMapped(
     String userId,
     DateTime start,
-    DateTime end,
+    DateTime? end,
   ) {
     return _source
         .streamSince(userId: userId, startOfDay: start, endOfDay: end)

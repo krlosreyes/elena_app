@@ -43,14 +43,19 @@ class ExerciseRepositoryImpl implements ExerciseRepository {
     // (protocolo "Ninguno" > 28h, o ayuno OMAD prolongado) cortaran
     // logs FUTUROS dentro del propio ciclo abierto. Ahora el upper
     // bound es siempre `now` cuando until no se especifica.
-    final end = until ?? DateTime.now();
+    // BUGFIX (2026-06-08): cuando `until` es null NO fijar el tope en
+    // `DateTime.now()`. Antes capturaba el "ahora" del momento de suscripción
+    // como tope superior; los logs registrados DESPUÉS (en vivo) caían fuera
+    // de [since, end] y no aparecían hasta reabrir. Con `end = null` el source
+    // omite el filtro superior → stream abierto → registros nuevos en vivo.
+    final DateTime? end = until;
     return _streamMapped(userId, since, end);
   }
 
   Stream<List<ExerciseLog>> _streamMapped(
     String userId,
     DateTime start,
-    DateTime end,
+    DateTime? end,
   ) {
     return _source
         .streamSince(userId: userId, startOfDay: start, endOfDay: end)
