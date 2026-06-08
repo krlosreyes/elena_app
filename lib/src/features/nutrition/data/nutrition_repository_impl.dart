@@ -9,8 +9,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elena_app/src/core/services/day_boundary_resolver.dart';
-import 'package:elena_app/src/features/exercise/data/exercise_repository_impl.dart'
-    show kCycleWindowDuration;
 import 'package:elena_app/src/features/nutrition/data/mappers/nutrition_log_mapper.dart';
 import 'package:elena_app/src/features/nutrition/data/sources/firestore_nutrition_v1_source.dart';
 import 'package:elena_app/src/features/nutrition/data/sources/nutrition_data_source.dart';
