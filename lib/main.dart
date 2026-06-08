@@ -78,7 +78,15 @@ Future<void> _bootstrap() async {
     );
   }
 
-  final shouldActivateAppCheck = !(kIsWeb && !kReleaseMode);
+  // SPEC fix (2026-06-08): App Check SOLO en release. En debug, el provider
+  // `AppleProvider.debug`/`AndroidProvider.debug` exige un token registrado;
+  // si no está (o el token rota al reinstalar), `exchangeDebugToken` devuelve
+  // 403 en bucle, FirebaseAuth pierde la credencial a media sesión
+  // (`Credential Changed. Current user:` vacío) → Firestore `permission-denied`
+  // → la app lo trata como logout y resetea pilares / aborta escrituras.
+  // Omitir App Check en debug elimina ese churn. Release sigue usando
+  // AppAttest / PlayIntegrity / reCAPTCHA sin cambios.
+  final shouldActivateAppCheck = kReleaseMode;
   if (shouldActivateAppCheck) {
     try {
       await FirebaseAppCheck.instance.activate(
