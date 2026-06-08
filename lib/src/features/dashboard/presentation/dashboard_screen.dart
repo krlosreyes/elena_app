@@ -27,6 +27,7 @@ import 'package:elena_app/src/features/exercise/presentation/exercise_input_shee
 import 'package:elena_app/src/features/engagement/presentation/widgets/engagement_banner.dart';
 import 'package:elena_app/src/features/adaptive/presentation/widgets/adaptive_suggestion_card.dart';
 import 'package:elena_app/src/features/coaching/presentation/widgets/next_best_action_card.dart';
+import 'package:elena_app/src/features/coaching/presentation/widgets/cycle_coaching_feedback_card.dart';
 import 'package:elena_app/src/features/goals/application/pillar_goal_providers.dart';
 import 'package:elena_app/src/features/nutrition/application/cociente_a_service.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
@@ -231,6 +232,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                 .startFasting();
                           },
                   ),
+
+                  // SPEC-194 RF-05: feedback del coach sobre el ciclo que
+                  // cerró ("ayer priorizaste X…"). Se oculta solo si no hay
+                  // cierre sin leer o no había recomendación activa.
+                  const CycleCoachingFeedbackCard(),
 
                   // SPEC-137 E.5: banner "próxima comida en X min" cuando
                   // estamos dentro de los 30 min previos al horario
