@@ -8,6 +8,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elena_app/src/features/billing/application/billing_service.dart';
+import 'package:elena_app/src/features/billing/application/feature_gate.dart';
 import 'package:elena_app/src/features/billing/application/free_billing_service.dart';
 import 'package:elena_app/src/features/billing/domain/entitlement_status.dart';
 
@@ -30,4 +31,11 @@ final isPremiumProvider = Provider<bool>((ref) {
         data: (s) => s.isPremium,
         orElse: () => false,
       );
+});
+
+/// SPEC-197: gate de features. Los callsites lo watchean para decidir qué
+/// mostrar o bloquear. Reacciona en vivo a cambios de entitlement
+/// (free→premium desbloquea sin reiniciar).
+final featureGateProvider = Provider<FeatureGate>((ref) {
+  return FeatureGate(isPremium: ref.watch(isPremiumProvider));
 });

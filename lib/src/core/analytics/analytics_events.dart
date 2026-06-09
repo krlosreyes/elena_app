@@ -31,6 +31,9 @@ class AnalyticsEvents {
   static const String subscriptionStarted = 'subscription_started';
   static const String subscriptionCancelled = 'subscription_cancelled';
 
+  // SPEC-197: un usuario Free topó con un muro de gating (insumo de conversión).
+  static const String featureGateBlocked = 'feature_gate_blocked';
+
   // ── Conducta de coaching (se disparan al implementar SPEC-194) ───────────
   static const String coachingActionShown = 'coaching_action_shown';
   static const String coachingActionFollowed = 'coaching_action_followed';
@@ -52,6 +55,7 @@ class AnalyticsEvents {
     trialStarted,
     subscriptionStarted,
     subscriptionCancelled,
+    featureGateBlocked,
     coachingActionShown,
     coachingActionFollowed,
     coachingActionCompleted,
@@ -78,4 +82,8 @@ class AnalyticsParams {
   static const String source = 'source';
   static const String phase = 'phase';
   static const String outcome = 'outcome';
+
+  /// SPEC-197: qué feature gateada topó el usuario Free (coaching, analytics,
+  /// auto_sync, cycle_feedback).
+  static const String feature = 'feature';
 }
