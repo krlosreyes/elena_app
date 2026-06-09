@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elena_app/src/core/analytics/analytics_events.dart';
 import 'package:elena_app/src/core/services/analytics_service.dart';
+import 'package:elena_app/src/features/billing/application/billing_providers.dart';
 import 'package:elena_app/src/features/coaching/application/coaching_providers.dart';
 
 class CycleCoachingFeedbackCard extends ConsumerStatefulWidget {
@@ -23,6 +24,10 @@ class _CycleCoachingFeedbackCardState
 
   @override
   Widget build(BuildContext context) {
+    // SPEC-197: el feedback de cierre de ciclo es Premium.
+    if (!ref.watch(featureGateProvider).cycleFeedbackAllowed) {
+      return const SizedBox.shrink();
+    }
     final feedback = ref.watch(coachingClosureFeedbackProvider);
     if (feedback == null) return const SizedBox.shrink();
 

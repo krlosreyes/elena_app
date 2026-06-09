@@ -11,6 +11,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elena_app/src/core/theme/app_theme.dart';
+import 'package:elena_app/src/features/billing/application/billing_providers.dart';
+import 'package:elena_app/src/features/billing/presentation/paywall_launcher.dart';
+import 'package:elena_app/src/features/billing/presentation/premium_lock.dart';
 import 'package:elena_app/src/features/analysis/application/daily_summary_provider.dart';
 import 'package:elena_app/src/features/analysis/application/merge_with_live.dart';
 import 'package:elena_app/src/features/analysis/application/period_comparison_provider.dart';
@@ -36,6 +39,24 @@ class _AnalysisTrendTabState extends ConsumerState<AnalysisTrendTab>
   @override
   Widget build(BuildContext context) {
     super.build(context);
+
+    // SPEC-197: la tendencia longitudinal/histórica es Premium. Free ve la
+    // tab atenuada con CTA; el día actual sigue disponible en otras tabs.
+    final gate = ref.watch(featureGateProvider);
+
+    return PremiumLock(
+      isLocked: !gate.analyticsHistoryAllowed,
+      label: 'Tendencia Premium',
+      onUpgrade: () => openPaywall(
+        context,
+        ref,
+        feature: GatedFeature.analyticsHistory,
+      ),
+      child: _buildContent(),
+    );
+  }
+
+  Widget _buildContent() {
     final dataAsync = ref.watch(periodDataProvider(_period));
     final liveToday = ref.watch(dailySummaryProvider);
 

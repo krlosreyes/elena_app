@@ -56,6 +56,8 @@ class _ElenaAppState extends ConsumerState<ElenaApp>
     if (state == AppLifecycleState.resumed) {
       final user = ref.read(currentUserStreamProvider).valueOrNull;
       if (user == null || user.id.isEmpty) return;
+      // SPEC-197: el auto-sync de wearables es Premium. Free registra manual.
+      if (!ref.read(featureGateProvider).autoSyncAllowed) return;
       // `print` directo (no AppLogger) para que aparezca en Console.app
       // del iPhone en release. AppLogger del paquete `logger` puede
       // estar siendo strippeado en release builds optimizados.
@@ -106,6 +108,8 @@ class _ElenaAppState extends ConsumerState<ElenaApp>
         (prev, next) {
       final user = next.value;
       if (user == null || user.id.isEmpty) return;
+      // SPEC-197: el auto-sync de wearables es Premium. Free registra manual.
+      if (!ref.read(featureGateProvider).autoSyncAllowed) return;
       ref
           .read(healthAutoSyncControllerProvider.notifier)
           .runIfDue(userId: user.id);
