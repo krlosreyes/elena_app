@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:elena_app/src/features/billing/application/billing_providers.dart';
+import 'package:elena_app/src/features/billing/application/feature_gate.dart';
 import 'package:elena_app/src/features/coaching/application/coaching_providers.dart';
 import 'package:elena_app/src/features/coaching/domain/coaching_feedback.dart';
 import 'package:elena_app/src/features/coaching/presentation/widgets/cycle_coaching_feedback_card.dart';
@@ -12,6 +14,8 @@ Widget _wrap(CoachingFeedback? feedback) {
   return ProviderScope(
     overrides: [
       coachingClosureFeedbackProvider.overrideWith((ref) => feedback),
+      // SPEC-197: el feedback de cierre es Premium; el test corre como premium.
+      featureGateProvider.overrideWithValue(const FeatureGate(isPremium: true)),
     ],
     child: const MaterialApp(
       home: Scaffold(body: CycleCoachingFeedbackCard()),

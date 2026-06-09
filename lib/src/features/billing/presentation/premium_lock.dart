@@ -10,8 +10,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:elena_app/src/features/billing/application/billing_providers.dart';
-
 class PremiumLock extends StatelessWidget {
   const PremiumLock({
     super.key,
