@@ -32,6 +32,9 @@ class _NextBestActionCardState extends ConsumerState<NextBestActionCard> {
   Widget build(BuildContext context) {
     final selection = ref.watch(coachingSelectionProvider);
     final primary = selection.primary;
+    // SPEC-194 RF-06: fase circadiana activa, para segmentar la telemetría
+    // (tasa de acciones completadas por fase → recalibración SPEC-193/195).
+    final phaseName = ref.watch(coachingSnapshotProvider).currentPhase.name;
     // SPEC-194: cachear la acción activa para correlacionar con el registro
     // del pilar (coaching_action_completed). null cuando no hay acción.
     ref.read(coachingCompletionProvider).setActive(primary);
@@ -49,6 +52,7 @@ class _NextBestActionCardState extends ConsumerState<NextBestActionCard> {
             AnalyticsParams.actionId: shownId,
             AnalyticsParams.source: primary.source.name,
             AnalyticsParams.pillar: primary.pillar.name,
+            AnalyticsParams.phase: phaseName,
           },
         );
         // RF-2.5: registrar la exhibición en el store anti-fatiga (persistente).
@@ -109,6 +113,7 @@ class _NextBestActionCardState extends ConsumerState<NextBestActionCard> {
                     params: {
                       AnalyticsParams.actionId: primary.id,
                       AnalyticsParams.source: primary.source.name,
+                      AnalyticsParams.phase: phaseName,
                     },
                   );
                   ActionExplainerSheet.show(context, primary);
