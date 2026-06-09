@@ -7,6 +7,7 @@
 // usando en `_buildFastingEndOverlay` (que permanece en la pantalla). La
 // función solo depende de fastingProvider + diálogos de Flutter.
 
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -270,7 +271,14 @@ class FastingConsciousnessCard extends ConsumerWidget {
           // cuando hay ayuno activo. Antes aparecía siempre y al
           // tocarlo en estado "En espera" iniciaba ventana de comida
           // por error (confirmManualFastingEnd con isFeeding=false).
-          if (isActive) ...[
+          //
+          // SPEC-119 / Auditoría F3 (2026-06-08): gateado a kDebugMode.
+          // `correctFastingStartTime` permite back-datar el inicio hasta
+          // 24h atrás, lo que puede dejar un ayuno activo ya por encima
+          // del target (origen del "ayuno 100% al iniciar"). Es una
+          // herramienta de pruebas ("viaje en el tiempo"); un usuario real
+          // no debe poder crear ese estado. En release queda oculto.
+          if (isActive && kDebugMode) ...[
             const SizedBox(height: 10),
             SizedBox(
               width: double.infinity,
