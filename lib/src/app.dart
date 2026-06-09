@@ -8,6 +8,7 @@ import 'package:elena_app/src/core/services/analytics_service.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/features/auth/domain/app_account.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
+import 'package:elena_app/src/features/billing/application/billing_providers.dart';
 import 'package:elena_app/src/core/services/daily_reset_service.dart';
 import 'package:elena_app/src/features/analysis/application/daily_summary_persistence_service.dart';
 import 'package:elena_app/src/features/health_sync/application/health_auto_sync_controller.dart';
@@ -112,8 +113,18 @@ class _ElenaAppState extends ConsumerState<ElenaApp>
 
     // SPEC-193: asociar el uid pseudónimo a Analytics (null en logout).
     // Sin PII — solo el identificador de Firebase.
+    // SPEC-196: además, ligar las compras al usuario (App User ID = Firebase
+    // UID) para que el entitlement siga al usuario entre devices; logout lo
+    // desasocia (vuelve a Free).
     ref.listen<AsyncValue<AppAccount?>>(authStateProvider, (prev, next) {
-      AnalyticsService.setUserId(next.value?.uid);
+      final uid = next.value?.uid;
+      AnalyticsService.setUserId(uid);
+      final billing = ref.read(billingServiceProvider);
+      if (uid != null && uid.isNotEmpty) {
+        billing.login(uid);
+      } else {
+        billing.logout();
+      }
     });
 
     return ScreenUtilInit(

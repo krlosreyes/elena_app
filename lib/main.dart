@@ -11,6 +11,8 @@ import 'firebase_options.dart';
 import 'src/app.dart';
 import 'src/core/config/recaptcha_config.dart';
 import 'src/core/providers/shared_preferences_provider.dart';
+import 'src/features/billing/application/billing_providers.dart';
+import 'src/features/billing/data/revenuecat_billing_service.dart';
 import 'src/core/services/app_logger.dart';
 import 'src/core/services/analytics_service.dart';
 import 'src/core/services/crashlytics_service.dart';
@@ -130,12 +132,40 @@ Future<void> _bootstrap() async {
     await NotificationService.requestPermissions();
   }
 
+  // SPEC-196: infra de cobro (RevenueCat). La key pública por plataforma se
+  // inyecta vía --dart-define (RC_IOS_KEY / RC_ANDROID_KEY); NO se hardcodea.
+  // Si no hay key (cobro aún no habilitado) o es web, se mantiene el default
+  // FreeBillingService (todos Free) — la app funciona igual.
+  final billingOverride = await _initBilling();
+
   runApp(
     ProviderScope(
       overrides: [
         sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+        if (billingOverride != null) billingOverride,
       ],
       child: const ElenaApp(),
     ),
   );
+}
+
+/// SPEC-196: inicializa RevenueCat si hay key configurada para la plataforma.
+/// Devuelve el override del `billingServiceProvider`, o null para quedarse en
+/// FreeBillingService.
+Future<Override?> _initBilling() async {
+  if (kIsWeb) return null;
+  const iosKey = String.fromEnvironment('RC_IOS_KEY');
+  const androidKey = String.fromEnvironment('RC_ANDROID_KEY');
+  final key =
+      defaultTargetPlatform == TargetPlatform.iOS ? iosKey : androidKey;
+  if (key.isEmpty) {
+    AppLogger.info(
+      'SPEC-196: sin RC key para esta plataforma → cobro deshabilitado '
+      '(FreeBillingService). Ver docs/SETUP_BILLING.md.',
+    );
+    return null;
+  }
+  final service = RevenueCatBillingService(apiKey: key, debugLogging: kDebugMode);
+  await service.initialize();
+  return billingServiceProvider.overrideWithValue(service);
 }

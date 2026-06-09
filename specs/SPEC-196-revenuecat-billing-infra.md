@@ -1,6 +1,6 @@
 # SPEC-196 — Integración RevenueCat (infra de cobro)
 
-**Estado:** APPROVED-DESIGN — pendiente de implementación (Ola C).
+**Estado:** IN-PROGRESS (2026-06-09) — inc1 (capa pura: `BillingService` + `EntitlementStatus` + `FreeBillingService` + providers + `FakeBillingService` + tests) y inc2 (dep `purchases_flutter`, `RevenueCatBillingService`, init en `main.dart` vía `--dart-define`, login/logout en `app.dart`) implementados. **Pendiente:** validación de compra/restauración en sandbox (requiere keys + productos de tienda de Carlos, ver `docs/SETUP_BILLING.md`).
 **Versión:** 0.1 (draft)
 **Tipo:** Monetización — infraestructura. Habilita cobro; NO define tiers (SPEC-197) ni trial/pricing (SPEC-198).
 **Líder:** Carlos
