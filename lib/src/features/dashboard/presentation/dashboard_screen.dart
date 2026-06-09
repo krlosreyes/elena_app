@@ -945,7 +945,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       return '$h:$m';
     }
 
-    return _pillarCardShell(
+    return PillarCardUi.shell(
       title: 'Soporte Metabólico',
       badge: 'Sueño',
       accent: accent,
@@ -1155,7 +1155,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final progress = state.progressPercentage;
     final pct = (progress * 100).round();
 
-    return _pillarCardShell(
+    return PillarCardUi.shell(
       title: 'Soporte Metabólico',
       badge: 'Hidratación',
       accent: accent,
@@ -1245,7 +1245,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final pct = (progress * 100).round();
     final achieved = minutes >= goal;
 
-    return _pillarCardShell(
+    return PillarCardUi.shell(
       title: 'Sarcopenia & Resistencia',
       badge: achieved ? 'ACTIVO' : 'Ejercicio',
       accent: accent,
@@ -1334,7 +1334,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final cocientePct = (cocienteA * 100).round();
     final aDominantCount = cocienteService.aDominantCount(state.todayLogs);
 
-    final card = _pillarCardShell(
+    final card = PillarCardUi.shell(
       title: 'Nutrición Científica',
       badge: '${state.mealsLoggedToday}/${state.targetMeals} comidas',
       accent: accent,
@@ -1507,60 +1507,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     return '${diff.inMinutes}m';
   }
 
-  // ─── Helpers visuales reutilizables ───────────────────────────────────
-  Widget _pillarCardShell({
-    required String title,
-    required String badge,
-    required Color accent,
-    required List<Widget> children,
-  }) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: accent.withValues(alpha: 0.6)),
-                ),
-                child: Text(
-                  badge,
-                  style: TextStyle(
-                    color: accent,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          ...children,
-        ],
-      ),
-    );
-  }
+  // SPEC-119: `_pillarCardShell` → `PillarCardUi.shell` (widgets/pillar_card_ui.dart).
 
   // SPEC-119: helpers de presentación puros extraídos a
   // `widgets/pillar_card_ui.dart` (PillarCardUi.*).
