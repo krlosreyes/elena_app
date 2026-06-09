@@ -16,7 +16,6 @@ import 'package:elena_app/src/features/dashboard/application/fasting_history_pro
 import 'package:elena_app/src/features/dashboard/domain/relative_day_label.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/circadian_clock.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/early_fasting_end_dialog.dart';
-import 'package:elena_app/src/features/dashboard/presentation/widgets/meals_locked_dialog.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/pillar_ring.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/dual_score_ring.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/protocol_selector_sheet.dart';
@@ -31,18 +30,13 @@ import 'package:elena_app/src/features/dashboard/presentation/widgets/pillar_car
 import 'package:elena_app/src/features/dashboard/presentation/widgets/exercise_pillar_card.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/hydration_pillar_card.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/sleep_pillar_card.dart';
-import 'package:elena_app/src/features/nutrition/application/cociente_a_service.dart';
+import 'package:elena_app/src/features/dashboard/presentation/widgets/comidas_pillar_card.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
 import 'package:elena_app/src/features/progress/application/biometric_backfill_provider.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/daily_score_explainer_sheet.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_bootstrap_provider.dart';
 import 'package:elena_app/src/features/metabolic_cycle/presentation/widgets/cycle_closure_card.dart';
 import 'package:elena_app/src/features/streak/application/daily_score_provider.dart';
-// SPEC-137 E.5: regla del intervalo 3h (lastMealAt + 3h) para "Próxima En".
-import 'package:elena_app/src/features/nutrition/domain/meal_interval_rules.dart';
-// SPEC-137 E.4: registro unificado con TimePicker. AddPastMealSheet
-// eliminado — el PlateRatioSheet ahora cubre comida actual y pasada.
-import 'package:elena_app/src/features/nutrition/presentation/plate_ratio_sheet.dart';
 // SPEC-137 E.5: banner countdown 30 min antes de la próxima comida.
 import 'package:elena_app/src/features/nutrition/presentation/widgets/next_meal_banner.dart';
 
@@ -915,11 +909,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       SelectedPillar.sueno => SleepPillarCard(state: sleep),
       SelectedPillar.hidratacion => HydrationPillarCard(state: hydration),
       SelectedPillar.ejercicio => ExercisePillarCard(state: exercise),
-      SelectedPillar.comidas => _buildComidasCard(
-          context,
-          ref,
-          nutrition,
+      SelectedPillar.comidas => ComidasPillarCard(
+          state: nutrition,
           isFastingActive: fastingState.isActive,
+          onGoToFasting: () {
+            if (mounted) {
+              setState(() => _selectedPillar = SelectedPillar.ayuno);
+            }
+          },
         ),
     };
   }
@@ -939,196 +936,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   // SPEC-105: cuando hay ayuno activo, la card se renderea en estado
   // bloqueado: banner visible arriba, contenido con opacity 0.5,
   // botones disabled, y tap en cualquier parte abre diálogo educativo.
-  Widget _buildComidasCard(
-    BuildContext context,
-    WidgetRef ref,
-    NutritionState state, {
-    required bool isFastingActive,
-  }) {
-    const accent = Color(0xFFFB923C);
-    final progress = state.progressPercentage;
-    final pct = (progress * 100).round();
-    // SPEC-137: el mini-stat "Score nutricional" pasa a ser el
-    // Cociente A — porcentaje de platos A-dominantes registrados hoy.
-    // Es la métrica que el usuario MR entiende sin tutorial (Frank
-    // Suárez Tipo A/E). Ver NUTRITION_BIBLIOGRAPHY.md §1.
-    const cocienteService = CocienteAService();
-    final cocienteA = cocienteService.calculate(state.todayLogs);
-    final cocientePct = (cocienteA * 100).round();
-    final aDominantCount = cocienteService.aDominantCount(state.todayLogs);
+  // SPEC-119: card de Comidas → ComidasPillarCard (widgets/comidas_pillar_card.dart).
 
-    final card = PillarCardUi.shell(
-      title: 'Nutrición Científica',
-      badge: '${state.mealsLoggedToday}/${state.targetMeals} comidas',
-      accent: accent,
-      children: [
-        if (isFastingActive) ...[
-          _buildMealsLockedBanner(),
-          const SizedBox(height: 14),
-        ],
-        Opacity(
-          opacity: isFastingActive ? 0.45 : 1.0,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              PillarCardUi.progressBar(progress, accent),
-              const SizedBox(height: 6),
-              PillarCardUi.completionLabel(pct),
-              const SizedBox(height: 14),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  PillarCardUi.miniStat('Próxima', state.nextMealLabel, accent, big: true),
-                  PillarCardUi.miniStat('En', _estimateNextMealIn(state), accent,
-                      big: true),
-                  // SPEC-137: Cociente A reemplaza el "Score nutricional"
-                  // numérico (que no era accionable).
-                  PillarCardUi.miniStat('Cociente A', '$cocientePct%',
-                      _cocienteAColor(cocienteA),
-                      big: true),
-                ],
-              ),
-              const SizedBox(height: 16),
-              PillarCardUi.benefitChip(
-                accent: accent,
-                text: state.windowAdherence >= 0.5
-                    ? '✓ Comidas dentro de ventana circadiana — alineación con ritmo metabólico óptima'
-                    : 'Mantén tus comidas dentro de la ventana circadiana para alinear tu ritmo metabólico.',
-              ),
-              const SizedBox(height: 18),
-              // SPEC-137: el botón principal abre `PlateRatioSheet` —
-              // el usuario clasifica el plato por proporción A:E y
-              // confirma. Reemplaza el `logMeal()` directo que dejaba
-              // el plato sin clasificación (default a2e1).
-              PillarCardUi.primaryButton(
-                label: 'Registrar ${state.nextMealLabel}',
-                icon: Icons.restaurant_rounded,
-                color: accent,
-                onPressed: isFastingActive || state.isSaving
-                    ? null
-                    : () => PlateRatioSheet.show(context),
-              ),
-              const SizedBox(height: 10),
-              // SPEC-137 E.4: el botón "Registrar comida pasada" se
-              // eliminó. El TimePicker del PlateRatioSheet permite
-              // ajustar la hora del plato actual o pasado en el mismo
-              // flujo, sin segundo sheet.
-              PillarCardUi.secondaryButton(
-                label: 'Deshacer última comida registrada',
-                icon: Icons.undo_rounded,
-                onPressed: isFastingActive || state.todayLogs.isEmpty
-                    ? null
-                    : () =>
-                        ref.read(nutritionProvider.notifier).removeLastMeal(),
-              ),
-              const SizedBox(height: 10),
-              // SPEC-137 §RF-137-12: link a la vista semanal del pilar.
-              PillarCardUi.secondaryButton(
-                label: aDominantCount == 0
-                    ? 'Ver semana →'
-                    : 'Ver semana → · $aDominantCount A-dominantes hoy',
-                icon: Icons.calendar_view_week_rounded,
-                onPressed: () => context.push('/nutrition/weekly'),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-
-    // Cuando hay ayuno activo, envolver con GestureDetector que
-    // captura el tap (los botones internos están `onPressed: null` y
-    // no consumen el evento) y dispara el diálogo educativo. Si el
-    // usuario confirma "Ir a Ayuno", cambiamos el pilar seleccionado.
-    if (!isFastingActive) return card;
-
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () async {
-        final goToFasting = await MealsLockedDuringFastingDialog.show(context);
-        if (goToFasting == true && mounted) {
-          setState(() => _selectedPillar = SelectedPillar.ayuno);
-        }
-      },
-      child: card,
-    );
-  }
-
-  /// SPEC-105: banner siempre opaco encima de la card de Comidas
-  /// cuando hay ayuno activo. Comunica el motivo del bloqueo sin
-  /// requerir tap.
-  Widget _buildMealsLockedBanner() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: AppColors.metabolicGreen.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: AppColors.metabolicGreen.withValues(alpha: 0.30),
-        ),
-      ),
-      child: Row(
-        children: [
-          const Icon(
-            Icons.lock_clock_rounded,
-            color: AppColors.metabolicGreen,
-            size: 18,
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              'Pausado durante ayuno activo — termina tu ayuno '
-              'para registrar comidas.',
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.85),
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                height: 1.4,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ─── Estimador simple para "Próxima comida en X" ──────────────────────
-  // Solo UI: usa horarios estándar (Desayuno 8:00, Almuerzo 13:00, Cena
-  // 19:00, Snack 16:00) y devuelve la diferencia hasta now. Es un placeholder
-  // hasta que SPEC-64 introduzca la lógica de ventana real.
-  /// SPEC-137: color del Cociente A para el mini-stat de Hoy.
-  /// Sigue los mismos thresholds de la pantalla semanal.
-  Color _cocienteAColor(double cociente) {
-    if (cociente >= 0.75) return AppColors.statusGood;
-    if (cociente >= 0.50) return AppColors.accent;
-    if (cociente >= 0.25) return AppColors.statusWarn;
-    return AppColors.statusBad;
-  }
-
-  /// SPEC-137 E.5: tiempo hasta la próxima comida sugerida.
-  ///
-  /// Antes calculaba contra horarios fijos del día (Desayuno=8h,
-  /// Almuerzo=13h, etc.), lo cual chocaba con la regla del intervalo
-  /// 3h documentada en NUTRITION_BIBLIOGRAPHY §15. Ahora usa el mismo
-  /// sistema: `lastMealAt + 3h`.
-  ///
-  /// Devuelve:
-  /// - "—" si no hay comidas hoy o se llegó al target.
-  /// - "Ahora" si ya pasó el momento sugerido.
-  /// - "Xh Ym" o "Xm" según corresponda.
-  String _estimateNextMealIn(NutritionState state) {
-    if (state.mealsLoggedToday >= state.targetMeals) return '—';
-    final lastMealAt = MealIntervalRules.lastMealOf(state.todayLogs);
-    final nextAt = MealIntervalRules.nextSuggestedAt(lastMealAt);
-    if (nextAt == null) return '—';
-    final diff = nextAt.difference(DateTime.now());
-    if (diff.isNegative) return 'Ahora';
-    if (diff.inHours >= 1) {
-      return '${diff.inHours}h ${diff.inMinutes.remainder(60)}m';
-    }
-    return '${diff.inMinutes}m';
-  }
+  // SPEC-119: banner de bloqueo + helpers de comidas (_cocienteAColor,
+  // _estimateNextMealIn) → ComidasPillarCard (widgets/comidas_pillar_card.dart).
 
   // SPEC-119: `_pillarCardShell` → `PillarCardUi.shell` (widgets/pillar_card_ui.dart).
 
