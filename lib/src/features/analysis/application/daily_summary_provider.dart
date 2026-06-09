@@ -58,10 +58,16 @@ final dailySummaryProvider = Provider<DailySummary>((ref) {
   // Nueva regla, en orden de precedencia:
   //   1. Si BD o memoria reportan "completado HOY" → 1.0 (preserva el
   //      día del cierre con 100% incluso después del cierre).
-  //   2. Si hay ayuno activo → `progressPercentage` real (el usuario
-  //      ve sus horas de ayuno reflejadas EN VIVO, sin importar dónde
-  //      cierre el ayuno).
-  //   3. Sin ayuno activo ni completedToday → 0.
+  //   2. En otro caso → `progressPercentage`, que ya cubre:
+  //      - ayuno activo → % en vivo,
+  //      - ayuno cerrado HOY (incl. cierre TEMPRANO) → % logrado
+  //        (`closedProgressToday`), coherente con el anillo del pilar,
+  //      - sin ayuno hoy → 0.
+  //
+  // Fix anillo (2026-06-09): antes el caso "sin ayuno activo" forzaba 0,
+  // lo que dejaba el score del día en 0 tras un cierre temprano aunque
+  // el anillo (que lee `progressPercentage`) mostrara el % real. Ahora
+  // ambos usan la misma fuente → sin incoherencia.
   //
   // Si el ayuno cruza medianoche, el doc del día anterior queda con
   // el % parcial al momento del cambio de día (que es información
@@ -70,10 +76,8 @@ final dailySummaryProvider = Provider<DailySummary>((ref) {
   double fastingProgressFinal;
   if (completedFromBd || fasting.completedToday == true) {
     fastingProgressFinal = 1.0;
-  } else if (fasting.isActive) {
-    fastingProgressFinal = fasting.progressPercentage;
   } else {
-    fastingProgressFinal = 0.0;
+    fastingProgressFinal = fasting.progressPercentage;
   }
 
   // Sueño: combinamos duración objetivo 8h (70%) + calidad 1-5 (30%).

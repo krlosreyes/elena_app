@@ -65,6 +65,18 @@ class FastingState {
   /// del ciclo metabólico consume este campo — la UI lo ignora.
   final FastingActivationSource activationSource;
 
+  /// Fix anillo de ayuno (2026-06-09): fracción [0..1] del target que
+  /// el usuario alcanzó en el ayuno que cerró HOY, incluido el cierre
+  /// TEMPRANO (antes del target). Sin esto, cerrar un ayuno 2h antes
+  /// dejaba el anillo en 0% (porque `isActive` pasa a false y
+  /// `completedToday` solo se marca cuando se alcanza el target).
+  /// Con esto, el anillo muestra el % real logrado.
+  ///
+  /// Nullable y tratado como 0.0 en el getter por la misma razón que
+  /// `completedToday`: sobrevivir hot-reload de un state previo sin el
+  /// campo sin crashear con `Null is not a subtype of double`.
+  final double? closedProgressToday;
+
   FastingState({
     this.startTime,
     this.duration = Duration.zero,
@@ -79,6 +91,7 @@ class FastingState {
     this.isSaving = false,
     this.completedToday,
     this.activationSource = FastingActivationSource.none,
+    this.closedProgressToday,
   });
 
   factory FastingState.initial() => FastingState();
@@ -97,7 +110,12 @@ class FastingState {
     // activo en curso. `== true` es null-safe contra hot-reload de
     // un state viejo que no tenía el campo.
     if (completedToday == true) return 1.0;
-    if (!isActive || targetHours == 0) return 0.0;
+    // Fix anillo (2026-06-09): si NO hay ayuno activo pero el usuario
+    // cerró uno HOY (incl. cierre temprano), preservar el % logrado en
+    // vez de caer a 0. Si no cerró nada hoy, `closedProgressToday` es
+    // null/0 → 0.0 (anillo vacío), como antes.
+    if (!isActive) return (closedProgressToday ?? 0.0).clamp(0.0, 1.0);
+    if (targetHours == 0) return 0.0;
     final double percent = duration.inSeconds / (targetHours * 3600);
     return percent.clamp(0.0, 1.0);
   }
@@ -177,6 +195,7 @@ class FastingState {
     bool? isSaving,
     bool? completedToday,
     FastingActivationSource? activationSource,
+    double? closedProgressToday,
   }) {
     return FastingState(
       startTime: startTime ?? this.startTime,
@@ -194,6 +213,7 @@ class FastingState {
       isSaving: isSaving ?? this.isSaving,
       completedToday: completedToday ?? this.completedToday,
       activationSource: activationSource ?? this.activationSource,
+      closedProgressToday: closedProgressToday ?? this.closedProgressToday,
     );
   }
 }

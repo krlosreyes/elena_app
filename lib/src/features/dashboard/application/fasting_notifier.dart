@@ -145,6 +145,17 @@ class FastingNotifier extends StateNotifier<FastingState> {
       if (reachedTarget && state.completedToday != true) {
         state = state.copyWith(completedToday: true);
       }
+      // Fix anillo (2026-06-09): restaurar el % logrado de un ayuno
+      // cerrado HOY (incl. cierre temprano) para que el anillo no
+      // vuelva a 0 al reabrir la app. Solo aplica si no hay ayuno
+      // activo en curso (no pisar el progreso en vivo).
+      if (!state.isActive && state.targetHours > 0) {
+        final achieved =
+            (durationSec / (state.targetHours * 3600)).clamp(0.0, 1.0);
+        if (state.closedProgressToday != achieved) {
+          state = state.copyWith(closedProgressToday: achieved);
+        }
+      }
     }, fireImmediately: true);
   }
 
@@ -334,6 +345,12 @@ class FastingNotifier extends StateNotifier<FastingState> {
         ? manualTime.difference(fastingStartTime)
         : Duration.zero;
     final reachedTarget = fastingDuration.inSeconds >= state.targetHours * 3600;
+    // Fix anillo (2026-06-09): fracción lograda del target al cerrar,
+    // incluido cierre TEMPRANO. Conserva el % en el anillo en vez de 0.
+    final achievedFraction = state.targetHours > 0
+        ? (fastingDuration.inSeconds / (state.targetHours * 3600))
+            .clamp(0.0, 1.0)
+        : 0.0;
     state = state.copyWith(
       isSaving: false,
       isWaitingForFastingEnd: false,
@@ -341,6 +358,7 @@ class FastingNotifier extends StateNotifier<FastingState> {
       startTime: manualTime,
       duration: DateTime.now().difference(manualTime),
       completedToday: reachedTarget ? true : state.completedToday,
+      closedProgressToday: achievedFraction,
     );
 
     // SPEC-193: ayuno completado con target alcanzado (cierre explícito).
@@ -481,7 +499,9 @@ class FastingNotifier extends StateNotifier<FastingState> {
     if (!mounted) return;
     _fastingEndConfirmedToday = false;
     // SPEC-113.bugfix: el día nuevo arranca sin "completedToday".
-    state = state.copyWith(completedToday: false);
+    // Fix anillo (2026-06-09): y sin progreso de cierre del día previo
+    // (0.0 = anillo vacío al empezar el día).
+    state = state.copyWith(completedToday: false, closedProgressToday: 0.0);
   }
 
   // SPEC-61: ya no hay Timer interno. Riverpod libera la suscripción a
