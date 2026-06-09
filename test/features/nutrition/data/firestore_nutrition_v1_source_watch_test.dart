@@ -50,7 +50,7 @@ void main() {
           .first;
 
       final ids = logs.map((e) => e.docId).toSet();
-      expect(ids, containsAll<String>(['m_evening', 'm_post_midnight']),
+      expect(ids, containsAll(['m_evening', 'm_post_midnight']),
           reason: 'sin tope superior, ambas comidas deben aparecer');
     });
 
