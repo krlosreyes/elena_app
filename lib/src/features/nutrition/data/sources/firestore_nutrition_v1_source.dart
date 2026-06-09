@@ -29,17 +29,24 @@ class FirestoreNutritionV1Source implements NutritionDataSource {
   }) {
     final now = DateTime.now();
     final start = startOfDay ?? DayBoundaryResolver.startOfDay(now);
-    final end = endOfDay ?? DayBoundaryResolver.endOfDay(now);
 
-    return _col(userId)
-        .where(
-          'timestamp',
-          isGreaterThanOrEqualTo: Timestamp.fromDate(start),
-        )
-        .where(
-          'timestamp',
-          isLessThan: Timestamp.fromDate(end),
-        )
+    Query<Map<String, dynamic>> query = _col(userId).where(
+      'timestamp',
+      isGreaterThanOrEqualTo: Timestamp.fromDate(start),
+    );
+    // BUGFIX (auditoría 2026-06-08 · P2): el tope superior solo se aplica
+    // cuando `endOfDay` es explícito. Antes `endOfDay ?? endOfDay(now)`
+    // cortaba las comidas tras medianoche en ciclos que cruzan el día,
+    // a diferencia de exercise/hydration (abiertos). Con endOfDay=null el
+    // stream queda abierto y coherente con los otros pilares.
+    if (endOfDay != null) {
+      query = query.where(
+        'timestamp',
+        isLessThan: Timestamp.fromDate(endOfDay),
+      );
+    }
+
+    return query
         .orderBy('timestamp')
         .snapshots()
         // Fix Web: doc.data() puede retornar LegacyJavaScriptObject;
