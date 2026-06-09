@@ -78,9 +78,16 @@ class EngagementService {
 
 final engagementProvider = Provider<EngagementState>((ref) {
   final streak = ref.watch(streakProvider);
-  // Pasar la cantidad de días con historial para activar el período de gracia
+  // BUGFIX C (2026-06-07): el período de gracia debe contar días con
+  // ACTIVIDAD REAL (≥1 pilar registrado), no filas de historial vacías.
+  // Antes, abrir la app varios días sin registrar nada acumulaba entradas
+  // de adherencia ~0 y sacaba al usuario de gracia → banner "crítico" +
+  // AdaptiveSuggestion "simplificar" en cada apertura. Ahora se mantiene en
+  // "Calibrando" hasta tener 3 días con actividad real.
+  final daysWithActivity =
+      streak.history.where((e) => e.pillarsCompleted >= 1).length;
   return EngagementService.calculateEngagement(
     streak.weeklyAdherence,
-    historyDays: streak.history.length,
+    historyDays: daysWithActivity,
   );
 });
