@@ -20,6 +20,8 @@ import 'package:elena_app/src/features/coaching/application/coaching_feedback_ge
 import 'package:elena_app/src/features/coaching/application/orchestrator_generator.dart';
 import 'package:elena_app/src/features/coaching/domain/coaching_feedback.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart';
+import 'package:elena_app/src/features/metabolic_cycle/domain/metabolic_cycle.dart';
+import 'package:elena_app/src/features/metabolic_cycle/domain/closure_reason.dart';
 import 'package:elena_app/src/features/coaching/application/coaching_snapshot_builder.dart';
 import 'package:elena_app/src/features/coaching/application/weak_pillar_generator.dart';
 import 'package:elena_app/src/features/coaching/domain/coaching_action.dart';
@@ -86,12 +88,30 @@ final coachingClosureFeedbackProvider =
   final weekly = ref.watch(weeklyCoachingProvider).valueOrNull;
   final delta = weekly == null ? null : _deltaForPillar(weekly, action.pillar);
 
+  // Adenda §7: lectura circadiana del cierre.
+  final closed = ref.watch(lastClosedMetabolicCycleProvider).valueOrNull;
+
   return CoachingFeedbackGenerator.generate(
     recommendedPillar: action.pillar,
     completed: completed,
     improved: delta == null ? null : delta > 0,
+    circadianClosedBeforeLock: _closedBeforeLock(closed),
   );
 });
+
+/// Adenda §7: ¿la ventana de comida cerró ANTES del bloqueo intestinal (21:30)?
+/// Solo es señal fiable cuando el cierre fue por inicio explícito del siguiente
+/// ayuno (`manualNextFasting`) — ahí `closedAt` ≈ el cierre real de la ventana.
+/// Para cierres automáticos (fallbacks) o ciclo abierto → null (sin lectura).
+bool? _closedBeforeLock(MetabolicCycle? c) {
+  final closedAt = c?.closedAt;
+  if (c == null || closedAt == null) return null;
+  if (c.closureReason != ClosureReason.manualNextFasting) return null;
+  final local = closedAt.toUtc().add(Duration(minutes: c.tzOffsetMinutes));
+  final minutesOfDay = local.hour * 60 + local.minute;
+  const lockMinutes = 21 * 60 + 30; // 21:30
+  return minutesOfDay < lockMinutes;
+}
 
 double? _deltaForPillar(WeeklyCoachingInsight w, Pillar p) => switch (p) {
       Pillar.fasting => w.fastingDelta,

@@ -53,4 +53,56 @@ void main() {
       expect(g().message, g().message);
     });
   });
+
+  group('Lectura circadiana del cierre (Adenda §7)', () {
+    test('sin dato circadiano (null) → NO agrega lectura', () {
+      final f = CoachingFeedbackGenerator.generate(
+        recommendedPillar: Pillar.sleep,
+        completed: true,
+        improved: true,
+      );
+      expect(f.message, isNot(contains('circadiano')));
+    });
+
+    test('cerró antes de 21:30 → factor se mantuvo en 1.0', () {
+      final f = CoachingFeedbackGenerator.generate(
+        recommendedPillar: Pillar.nutrition,
+        completed: true,
+        improved: true,
+        circadianClosedBeforeLock: true,
+      );
+      expect(f.message, contains('antes de las 21:30'));
+      expect(f.message, contains('1.0'));
+      // No cambia el outcome base; solo enriquece el mensaje.
+      expect(f.outcome, CoachingOutcome.completedImproved);
+    });
+
+    test('cerró después de 21:30 → correctivo, sin culpa, cuantificado', () {
+      final f = CoachingFeedbackGenerator.generate(
+        recommendedPillar: Pillar.nutrition,
+        completed: false,
+        circadianClosedBeforeLock: false,
+      );
+      expect(f.message, contains('después de las 21:30'));
+      expect(f.message, contains('0.5'));
+      expect(f.message, contains('38%'));
+      expect(f.outcome, CoachingOutcome.notCompleted);
+    });
+
+    test('la lectura circadiana es additiva: conserva el mensaje base', () {
+      final base = CoachingFeedbackGenerator.generate(
+        recommendedPillar: Pillar.sleep,
+        completed: true,
+        improved: true,
+      );
+      final withNote = CoachingFeedbackGenerator.generate(
+        recommendedPillar: Pillar.sleep,
+        completed: true,
+        improved: true,
+        circadianClosedBeforeLock: true,
+      );
+      expect(withNote.message, startsWith(base.message));
+      expect(withNote.message.length, greaterThan(base.message.length));
+    });
+  });
 }
