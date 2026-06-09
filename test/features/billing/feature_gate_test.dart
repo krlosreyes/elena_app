@@ -72,11 +72,13 @@ void main() {
       var tapped = false;
       await tester.pumpWidget(MaterialApp(
         home: Scaffold(
+          // PremiumLock superpone su overlay sobre contenido premium de
+          // tamaño real (un gráfico/sección); le damos espacio en el test.
           body: PremiumLock(
             isLocked: true,
             onUpgrade: () => tapped = true,
             label: 'Histórico Premium',
-            child: const Text('contenido'),
+            child: const SizedBox(width: 300, height: 220, child: Text('contenido')),
           ),
         ),
       ));
