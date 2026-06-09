@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elena_app/src/core/analytics/analytics_events.dart';
+import 'package:elena_app/src/core/engine/circadian_engine.dart';
 import 'package:elena_app/src/core/orchestrator/biological_phases.dart';
 import 'package:elena_app/src/core/services/analytics_service.dart';
 import 'package:elena_app/src/features/coaching/application/coaching_completion_service.dart';
@@ -34,7 +35,9 @@ class _NextBestActionCardState extends ConsumerState<NextBestActionCard> {
     final primary = selection.primary;
     // SPEC-194 RF-06: fase circadiana activa, para segmentar la telemetría
     // (tasa de acciones completadas por fase → recalibración SPEC-193/195).
-    final phaseName = ref.watch(coachingSnapshotProvider).currentPhase.name;
+    // Se calcula directo de CircadianEngine (cero dependencias de providers)
+    // para no arrastrar el grafo de coachingSnapshotProvider al card.
+    final phaseName = CircadianEngine.currentPhase(DateTime.now()).name;
     // SPEC-194: cachear la acción activa para correlacionar con el registro
     // del pilar (coaching_action_completed). null cuando no hay acción.
     ref.read(coachingCompletionProvider).setActive(primary);
