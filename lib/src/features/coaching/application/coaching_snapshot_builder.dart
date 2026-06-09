@@ -18,6 +18,8 @@ class CoachingSnapshotBuilder {
     required Iterable<GoalType> activeGoalTypes,
     required EngagementLevel engagement,
     int? minutesToIntestinalLock,
+    int? minutesToSleepOnset,
+    double? liveCircadianScore,
     Map<String, int> ignoredStreakByActionId = const {},
     Set<String> shownTodayActionIds = const {},
   }) {
@@ -30,6 +32,8 @@ class CoachingSnapshotBuilder {
       secondWeakestPillar: _secondWeakest(weekly, weakest),
       goalPillars: CoachingMappers.goalPillars(activeGoalTypes),
       minutesToIntestinalLock: minutesToIntestinalLock,
+      minutesToSleepOnset: minutesToSleepOnset,
+      liveCircadianScore: liveCircadianScore,
       ignoredStreakByActionId: ignoredStreakByActionId,
       shownTodayActionIds: shownTodayActionIds,
       // Período de gracia: engagement neutro (<3 días de datos).

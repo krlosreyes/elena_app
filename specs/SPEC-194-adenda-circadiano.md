@@ -1,8 +1,40 @@
 # SPEC-194 · Adenda — Conciencia circadiana del coach (prioritario)
 
-**Estado:** APPROVED-DESIGN — pendiente de implementación (Ola B).
+**Estado:** IMPLEMENTED (2026-06-09, Ola B).
 **Relación:** revisa el §1 del Anexo de scoring (los pesos macro) e introduce un componente nuevo. Sustituye la fórmula previa.
 **Anclaje en código:** `CircadianEngine` (fuente única de fases), `score_engine.dart` (bloque de conducta), `IMR_BIBLIOGRAPHY §4.6`, `CIRCADIAN_BIBLIOGRAPHY`.
+
+---
+
+## Estado de implementación (2026-06-09)
+
+Todo el adenda está en producción. Mapa §→código:
+
+| § | Qué | Dónde | Estado |
+|---|---|---|---|
+| §2 | Fórmula v1.1 (5 pesos) | `domain/scoring/scoring_weights.dart`, `domain/scoring/coaching_scorer.dart` | ✅ |
+| §3/§8 | `circadianImpact` por situación (constantes) | `scoring_weights.dart` (`kCirc*`), aplicadas en `application/circadian_generator.dart` | ✅ |
+| §4 | Menú fase→acción | `application/circadian_generator.dart` (`_phaseOpportunity`) | ✅ |
+| §5 | Override 21:30 | `circadian_generator.dart` (`kLockOverrideMin = 60`) | ✅ |
+| §6 | Explicabilidad IMR en el copy | `reason` de cada acción + `presentation/widgets/action_explainer_sheet.dart` | ✅ |
+| §7 | Feedback de cierre circadiano | `application/coaching_feedback_generator.dart` (`_circadianNote`) + `coaching_providers.dart` (`circadianClosedBeforeLock`) → `cycle_coaching_feedback_card.dart` | ✅ |
+| §8 | Campos circadianos del snapshot | `domain/coaching_snapshot.dart` + `coaching_snapshot_builder.dart` + `coaching_providers.dart` | ✅ |
+
+### Deltas vs. el diseño original
+
+- **`circadianImpact` es table-driven, no derivado de `liveCircadianScore` en runtime.** §3 lo describe como "tabla fase × tipo-de-acción" — eso es exactamente lo implementado (literales-constante por acción). `liveCircadianScore` se expone en el snapshot para explicabilidad/feedback ("lo que recomiendo = lo que mido"), no para recalcular el impacto.
+- **Naming:** el diseño nombra `CircadianCandidateGenerator`; el código lo implementa como `CircadianGenerator` (mismo rol).
+- **Protección de inicio de sueño:** se modela vía la fase CREATIVIDAD (`kCircProtectSleep = 0.80`); `minutesToSleepOnset` ya está cableado en el snapshot para refinamientos futuros (p. ej. escalar urgencia al acercarse a 22:30).
+- **Constantes `circadianImpact` alineadas al spec (2026-06-09):** se corrigieron dos valores que divergían (hidratación matutina 0.4→`kCircNeutral` 0.30; comida principal 0.7→`kCircEarlyMealBonus` 0.85).
+
+### Tests
+
+- `test/features/coaching/circadian_generator_test.dart` — override 21:30 (límites 60/−5/null), menú fase→acción e impactos alineados a constantes.
+- `test/features/coaching/coaching_scorer_test.dart`, `coaching_feedback_generator_test.dart` — fórmula v1.1 y §7.
+
+### Recalibración pendiente (no bloqueante)
+
+Los 5 pesos macro y los `kCirc*` siguen siendo ENGINEERING JUDGMENT; se recalibran con la tasa de acciones completadas por fase (SPEC-193).
 
 ---
 

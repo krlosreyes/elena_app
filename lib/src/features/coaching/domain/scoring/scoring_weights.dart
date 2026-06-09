@@ -15,6 +15,16 @@ const double kWCircadian = 0.30;
 const double kWConfidence = 0.15;
 const double kWFatigue = 0.12;
 
+// ── circadianImpact por situación (Adenda §3 + §8) ──────────────────────────
+// Tabla fase × tipo-de-acción que cada candidato circadiano hereda como su
+// `circadianImpact` [0,1]. Citas en CIRCADIAN_BIBLIOGRAPHY.
+const double kCircProtectBoundary = 1.00; // proteger 21:30 (mayor daño evitable)
+const double kCircEarlyMealBonus = 0.85; // capturar bonus de comer temprano
+const double kCircProtectSleep = 0.80; // proteger inicio de sueño
+const double kCircPhaseAlignedActivity = 0.75; // actividad en su fase óptima
+const double kCircNeutral = 0.30; // acción neutra respecto a la fase
+const double kCircCounterPhase = 0.00; // contra-fase (no se genera como positiva)
+
 // ── Bases de urgencia por tipo (Anexo §2.1) ─────────────────────────────────
 const double kUrgencyDeadline = 0.80;
 const double kUrgencyPhase = 0.55;

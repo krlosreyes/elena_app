@@ -11,6 +11,8 @@ class CoachingSnapshot {
     this.secondWeakestPillar,
     this.goalPillars = const {},
     this.minutesToIntestinalLock,
+    this.minutesToSleepOnset,
+    this.liveCircadianScore,
     this.ignoredStreakByActionId = const {},
     this.shownTodayActionIds = const {},
     this.isGracePeriod = false,
@@ -31,6 +33,17 @@ class CoachingSnapshot {
 
   /// Minutos al bloqueo intestinal (21:30). Null si ya pasó o no aplica.
   final int? minutesToIntestinalLock;
+
+  /// SPEC-194 Adenda §8: minutos al inicio de la fase de SUEÑO (22:30).
+  /// Alimenta la priorización de "proteger el inicio de sueño". Null si
+  /// no aplica.
+  final int? minutesToSleepOnset;
+
+  /// SPEC-194 Adenda §8: factor circadiano en vivo [0,1] que entra al IMR
+  /// (`MetabolicState.circadianAlignment`). Es el mismo valor que mide el
+  /// IMR, expuesto al coach para explicabilidad ("lo que recomiendo = lo
+  /// que mido"). Null si aún no se ha resuelto el estado metabólico.
+  final double? liveCircadianScore;
 
   /// Veces consecutivas que cada acción (por id) se mostró y NO se siguió.
   /// De telemetría SPEC-193. Alimenta la penalización por fatiga.

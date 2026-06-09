@@ -138,6 +138,27 @@ class CircadianEngine {
     return lock.difference(now);
   }
 
+  /// Inicio de la fase de SUEÑO (22:30), derivado de `allPhases`
+  /// (startHour 22.5). Constantes para comparaciones lineales.
+  static const int sleepOnsetHour = 22;
+  static const int sleepOnsetMinute = 30;
+
+  /// Tiempo restante hasta el inicio de la fase de SUEÑO (22:30).
+  /// Mismo patrón que `timeUntilLock`: si ya pasó hoy, apunta a mañana.
+  /// SPEC-194 Adenda §8: alimenta `minutesToSleepOnset` del coaching para
+  /// priorizar la protección del inicio de sueño.
+  static Duration timeUntilSleepOnset(DateTime now) {
+    DateTime onset = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      sleepOnsetHour,
+      sleepOnsetMinute,
+    );
+    if (now.isAfter(onset)) onset = onset.add(const Duration(days: 1));
+    return onset.difference(now);
+  }
+
   /// True si en este instante el bloqueo intestinal está activo
   /// (entre 21:30 y 06:00 del día siguiente, desde SPEC-70.5).
   ///

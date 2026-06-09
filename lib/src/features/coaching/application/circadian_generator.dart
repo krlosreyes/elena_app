@@ -6,6 +6,7 @@ import 'package:elena_app/src/core/orchestrator/biological_phases.dart';
 import 'package:elena_app/src/features/coaching/domain/action_source.dart';
 import 'package:elena_app/src/features/coaching/domain/coaching_action.dart';
 import 'package:elena_app/src/features/coaching/domain/confidence_level.dart';
+import 'package:elena_app/src/features/coaching/domain/scoring/scoring_weights.dart';
 
 class CircadianGenerator {
   const CircadianGenerator._();
@@ -37,7 +38,7 @@ class CircadianGenerator {
         citation: '· Lopez-Minguez 2018',
         source: ActionSource.circadian,
         urgencyKind: ActionUrgencyKind.deadlineHard,
-        circadianImpact: 1.0,
+        circadianImpact: kCircProtectBoundary,
         minutesToDeadline: m,
       ));
     }
@@ -64,7 +65,7 @@ class CircadianGenerator {
           citation: '· Biological Dial',
           source: ActionSource.circadian,
           urgencyKind: ActionUrgencyKind.phaseOpportunity,
-          circadianImpact: 0.4,
+          circadianImpact: kCircNeutral,
         );
       case CircadianPhase.receso:
         return const CoachingAction(
@@ -79,7 +80,7 @@ class CircadianGenerator {
           citation: '· Lopez-Minguez 2018',
           source: ActionSource.circadian,
           urgencyKind: ActionUrgencyKind.phaseOpportunity,
-          circadianImpact: 0.7,
+          circadianImpact: kCircEarlyMealBonus,
         );
       case CircadianPhase.motorFuerza:
         return const CoachingAction(
@@ -93,7 +94,7 @@ class CircadianGenerator {
           citation: '· Facer-Childs 2018',
           source: ActionSource.circadian,
           urgencyKind: ActionUrgencyKind.phaseOpportunity,
-          circadianImpact: 0.75,
+          circadianImpact: kCircPhaseAlignedActivity,
         );
       case CircadianPhase.creatividad:
         return const CoachingAction(
@@ -107,7 +108,7 @@ class CircadianGenerator {
           citation: '· Walker 2017',
           source: ActionSource.circadian,
           urgencyKind: ActionUrgencyKind.phaseOpportunity,
-          circadianImpact: 0.8,
+          circadianImpact: kCircProtectSleep,
         );
       case CircadianPhase.sueno:
       case CircadianPhase.cognitivo:

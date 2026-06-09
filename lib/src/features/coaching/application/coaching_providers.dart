@@ -8,6 +8,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elena_app/src/core/engine/circadian_engine.dart';
+import 'package:elena_app/src/core/engine/metabolic_state_provider.dart';
 import 'package:elena_app/src/core/orchestrator/biological_phases.dart';
 import 'package:elena_app/src/core/orchestrator/orchestrator_provider.dart';
 import 'package:elena_app/src/features/adaptive/application/adaptive_engine.dart';
@@ -37,6 +38,9 @@ final coachingSnapshotProvider = Provider.autoDispose<CoachingSnapshot>((ref) {
   final activeGoalTypes =
       ref.watch(goalsProvider).values.where((g) => g.isActive).map((g) => g.type);
   final engagement = ref.watch(engagementProvider).level;
+  // Adenda §8: factor circadiano en vivo (el mismo que entra al IMR).
+  final liveCircadianScore =
+      ref.watch(metabolicStateProvider).circadianAlignment;
 
   return CoachingSnapshotBuilder.build(
     currentPhase: CircadianEngine.currentPhase(now),
@@ -44,6 +48,8 @@ final coachingSnapshotProvider = Provider.autoDispose<CoachingSnapshot>((ref) {
     activeGoalTypes: activeGoalTypes,
     engagement: engagement,
     minutesToIntestinalLock: CircadianEngine.timeUntilLock(now).inMinutes,
+    minutesToSleepOnset: CircadianEngine.timeUntilSleepOnset(now).inMinutes,
+    liveCircadianScore: liveCircadianScore,
   );
 });
 
