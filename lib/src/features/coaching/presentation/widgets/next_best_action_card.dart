@@ -13,6 +13,7 @@ import 'package:elena_app/src/core/analytics/analytics_events.dart';
 import 'package:elena_app/src/core/orchestrator/biological_phases.dart';
 import 'package:elena_app/src/core/services/analytics_service.dart';
 import 'package:elena_app/src/features/coaching/application/coaching_completion_service.dart';
+import 'package:elena_app/src/features/coaching/application/coaching_fatigue_notifier.dart';
 import 'package:elena_app/src/features/coaching/application/coaching_providers.dart';
 import 'package:elena_app/src/features/coaching/domain/coaching_action.dart';
 import 'package:elena_app/src/features/coaching/presentation/widgets/action_explainer_sheet.dart';
@@ -40,15 +41,24 @@ class _NextBestActionCardState extends ConsumerState<NextBestActionCard> {
     // contar rebuilds; el id evita re-disparar la misma acción.
     if (_lastShownId != primary.id) {
       _lastShownId = primary.id;
+      final shownId = primary.id;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         AnalyticsService.logEvent(
           AnalyticsEvents.coachingActionShown,
           params: {
-            AnalyticsParams.actionId: primary.id,
+            AnalyticsParams.actionId: shownId,
             AnalyticsParams.source: primary.source.name,
             AnalyticsParams.pillar: primary.pillar.name,
           },
         );
+        // RF-2.5: registrar la exhibición en el store anti-fatiga (persistente).
+        // POST-FRAME a propósito: mutar el store en build dispararía un
+        // rebuild del propio card (lo observa vía snapshot→selección). Tras
+        // el frame, la acción ya se mostró al menos una vez; el anti-fatiga
+        // la despriorizará en la próxima sesión/apertura.
+        if (mounted) {
+          ref.read(coachingFatigueProvider.notifier).recordShown(shownId);
+        }
       });
     }
 

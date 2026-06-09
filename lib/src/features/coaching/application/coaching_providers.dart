@@ -17,6 +17,7 @@ import 'package:elena_app/src/features/analysis/domain/weekly_coaching_insight.d
 import 'package:elena_app/src/features/coaching/application/adaptive_generator.dart';
 import 'package:elena_app/src/features/coaching/application/circadian_generator.dart';
 import 'package:elena_app/src/features/coaching/application/coaching_completion_service.dart';
+import 'package:elena_app/src/features/coaching/application/coaching_fatigue_notifier.dart';
 import 'package:elena_app/src/features/coaching/application/coaching_feedback_generator.dart';
 import 'package:elena_app/src/features/coaching/application/orchestrator_generator.dart';
 import 'package:elena_app/src/features/coaching/domain/coaching_feedback.dart';
@@ -41,6 +42,9 @@ final coachingSnapshotProvider = Provider.autoDispose<CoachingSnapshot>((ref) {
   // Adenda §8: factor circadiano en vivo (el mismo que entra al IMR).
   final liveCircadianScore =
       ref.watch(metabolicStateProvider).circadianAlignment;
+  // RF-2.5: inputs anti-fatiga desde el store persistente (antes vacíos →
+  // el motor nunca suprimía acciones ignoradas para un usuario real).
+  final fatigue = ref.watch(coachingFatigueProvider);
 
   return CoachingSnapshotBuilder.build(
     currentPhase: CircadianEngine.currentPhase(now),
@@ -50,6 +54,8 @@ final coachingSnapshotProvider = Provider.autoDispose<CoachingSnapshot>((ref) {
     minutesToIntestinalLock: CircadianEngine.timeUntilLock(now).inMinutes,
     minutesToSleepOnset: CircadianEngine.timeUntilSleepOnset(now).inMinutes,
     liveCircadianScore: liveCircadianScore,
+    ignoredStreakByActionId: fatigue.ignoredStreakByActionId,
+    shownTodayActionIds: fatigue.shownTodayActionIds,
   );
 });
 

@@ -11,10 +11,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/core/analytics/analytics_events.dart';
 import 'package:elena_app/src/core/orchestrator/biological_phases.dart';
 import 'package:elena_app/src/core/services/analytics_service.dart';
+import 'package:elena_app/src/features/coaching/application/coaching_fatigue_notifier.dart';
 import 'package:elena_app/src/features/coaching/domain/coaching_action.dart';
 
 class CoachingCompletionService {
-  CoachingCompletionService();
+  CoachingCompletionService({this.onCompleted});
+
+  /// Callback opcional invocado cuando una acción se cuenta como completada.
+  /// Lo usa el provider para resetear la racha de ignorada (RF-2.5). Default
+  /// no-op → mantiene el servicio test-safe y desacoplado.
+  final void Function(String actionId)? onCompleted;
 
   CoachingAction? _activePrimary;
   final Set<String> _completed = <String>{};
@@ -44,10 +50,15 @@ class CoachingCompletionService {
         AnalyticsParams.pillar: pillar.name,
       },
     );
+    // RF-2.5: completar resetea la racha de "ignorada" de esta acción.
+    onCompleted?.call(primary.id);
     return true;
   }
 }
 
 final coachingCompletionProvider = Provider<CoachingCompletionService>(
-  (ref) => CoachingCompletionService(),
+  (ref) => CoachingCompletionService(
+    onCompleted: (id) =>
+        ref.read(coachingFatigueProvider.notifier).recordCompleted(id),
+  ),
 );
