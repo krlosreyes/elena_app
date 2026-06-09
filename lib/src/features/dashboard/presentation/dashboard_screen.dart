@@ -29,6 +29,7 @@ import 'package:elena_app/src/features/adaptive/presentation/widgets/adaptive_su
 import 'package:elena_app/src/features/coaching/presentation/widgets/next_best_action_card.dart';
 import 'package:elena_app/src/features/coaching/presentation/widgets/cycle_coaching_feedback_card.dart';
 import 'package:elena_app/src/features/goals/application/pillar_goal_providers.dart';
+import 'package:elena_app/src/features/dashboard/presentation/widgets/pillar_card_ui.dart';
 import 'package:elena_app/src/features/nutrition/application/cociente_a_service.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
 import 'package:elena_app/src/features/progress/application/biometric_backfill_provider.dart';
@@ -954,11 +955,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            _miniStat(
+            PillarCardUi.miniStat(
                 'Dormiste', hasLog ? '${hours}h ${minutes}m' : '—', accent,
                 big: true),
-            _miniStat('Acostado', fmt(log?.fellAsleep), Colors.white),
-            _miniStat('Despertaste', fmt(log?.wokeUp), Colors.white),
+            PillarCardUi.miniStat('Acostado', fmt(log?.fellAsleep), Colors.white),
+            PillarCardUi.miniStat('Despertaste', fmt(log?.wokeUp), Colors.white),
           ],
         ),
         const SizedBox(height: 14),
@@ -977,11 +978,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ],
         ),
         const SizedBox(height: 10),
-        _progressBar(progress, accent),
+        PillarCardUi.progressBar(progress, accent),
         const SizedBox(height: 6),
-        _completionLabel(pct),
+        PillarCardUi.completionLabel(pct),
         const SizedBox(height: 16),
-        _benefitChip(
+        PillarCardUi.benefitChip(
           accent: accent,
           text: hasLog && hours >= 7
               ? '✓ Sueño reparador — GH pulsátil activa durante ciclos REM'
@@ -992,7 +993,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         // existe. Si ya hay registro de HOY, primero pasa por un
         // diálogo donde el usuario elige editar o eliminar y
         // recrear. Si no hay log, abre sheet limpio directo.
-        _primaryButton(
+        PillarCardUi.primaryButton(
           label: hasLog ? 'Actualizar Registro' : 'Registrar Sueño',
           icon: Icons.nightlight_round,
           color: accent,
@@ -1002,7 +1003,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         // SPEC-106: eliminar registro existente. Solo aparece si hay
         // un log para borrar; abre diálogo de confirmación.
         if (hasLog)
-          _secondaryButton(
+          PillarCardUi.secondaryButton(
             label: 'Eliminar registro y volver a registrar',
             icon: Icons.delete_outline_rounded,
             onPressed: state.isSaving
@@ -1187,11 +1188,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ],
         ),
         const SizedBox(height: 10),
-        _progressBar(progress, accent),
+        PillarCardUi.progressBar(progress, accent),
         const SizedBox(height: 6),
-        _completionLabel(pct),
+        PillarCardUi.completionLabel(pct),
         const SizedBox(height: 16),
-        _benefitChip(
+        PillarCardUi.benefitChip(
           accent: accent,
           text:
               'Cada 250ml mejora el flujo linfático y la eliminación de metabolitos',
@@ -1200,7 +1201,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         Row(
           children: [
             Expanded(
-              child: _outlinedActionButton(
+              child: PillarCardUi.outlinedActionButton(
                 label: '+250 ml',
                 accent: accent,
                 onPressed: state.isSaving
@@ -1211,7 +1212,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _outlinedActionButton(
+              child: PillarCardUi.outlinedActionButton(
                 label: '+500 ml',
                 accent: accent,
                 onPressed: state.isSaving
@@ -1223,7 +1224,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ],
         ),
         const SizedBox(height: 10),
-        _secondaryButton(
+        PillarCardUi.secondaryButton(
           label: 'Descontar último vaso (-250 ml)',
           icon: Icons.remove_circle_outline_rounded,
           onPressed: () => _showPendingFeatureSnack(
@@ -1277,18 +1278,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ],
         ),
         const SizedBox(height: 10),
-        _progressBar(progress, accent),
+        PillarCardUi.progressBar(progress, accent),
         const SizedBox(height: 6),
-        _completionLabel(pct),
+        PillarCardUi.completionLabel(pct),
         const SizedBox(height: 16),
-        _benefitChip(
+        PillarCardUi.benefitChip(
           accent: accent,
           text: achieved
               ? '✓ Meta cumplida — síntesis proteica muscular activa 24-48h post sesión'
               : 'Acumula minutos para activar la síntesis proteica muscular post-ejercicio.',
         ),
         const SizedBox(height: 18),
-        _primaryButton(
+        PillarCardUi.primaryButton(
           label: 'Agregar Sesión',
           icon: Icons.fitness_center_rounded,
           color: accent,
@@ -1300,7 +1301,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
         ),
         const SizedBox(height: 10),
-        _secondaryButton(
+        PillarCardUi.secondaryButton(
           label: 'Eliminar última sesión',
           icon: Icons.delete_outline_rounded,
           onPressed: () => _showPendingFeatureSnack(
@@ -1349,25 +1350,25 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _progressBar(progress, accent),
+              PillarCardUi.progressBar(progress, accent),
               const SizedBox(height: 6),
-              _completionLabel(pct),
+              PillarCardUi.completionLabel(pct),
               const SizedBox(height: 14),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _miniStat('Próxima', state.nextMealLabel, accent, big: true),
-                  _miniStat('En', _estimateNextMealIn(state), accent,
+                  PillarCardUi.miniStat('Próxima', state.nextMealLabel, accent, big: true),
+                  PillarCardUi.miniStat('En', _estimateNextMealIn(state), accent,
                       big: true),
                   // SPEC-137: Cociente A reemplaza el "Score nutricional"
                   // numérico (que no era accionable).
-                  _miniStat('Cociente A', '$cocientePct%',
+                  PillarCardUi.miniStat('Cociente A', '$cocientePct%',
                       _cocienteAColor(cocienteA),
                       big: true),
                 ],
               ),
               const SizedBox(height: 16),
-              _benefitChip(
+              PillarCardUi.benefitChip(
                 accent: accent,
                 text: state.windowAdherence >= 0.5
                     ? '✓ Comidas dentro de ventana circadiana — alineación con ritmo metabólico óptima'
@@ -1378,7 +1379,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               // el usuario clasifica el plato por proporción A:E y
               // confirma. Reemplaza el `logMeal()` directo que dejaba
               // el plato sin clasificación (default a2e1).
-              _primaryButton(
+              PillarCardUi.primaryButton(
                 label: 'Registrar ${state.nextMealLabel}',
                 icon: Icons.restaurant_rounded,
                 color: accent,
@@ -1391,7 +1392,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               // eliminó. El TimePicker del PlateRatioSheet permite
               // ajustar la hora del plato actual o pasado en el mismo
               // flujo, sin segundo sheet.
-              _secondaryButton(
+              PillarCardUi.secondaryButton(
                 label: 'Deshacer última comida registrada',
                 icon: Icons.undo_rounded,
                 onPressed: isFastingActive || state.todayLogs.isEmpty
@@ -1401,7 +1402,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ),
               const SizedBox(height: 10),
               // SPEC-137 §RF-137-12: link a la vista semanal del pilar.
-              _secondaryButton(
+              PillarCardUi.secondaryButton(
                 label: aDominantCount == 0
                     ? 'Ver semana →'
                     : 'Ver semana → · $aDominantCount A-dominantes hoy',
@@ -1563,166 +1564,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _miniStat(String label, String value, Color valueColor,
-      {bool big = false}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.5),
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: TextStyle(
-            color: valueColor,
-            fontSize: big ? 22 : 16,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _progressBar(double progress, Color accent) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(4),
-      child: LinearProgressIndicator(
-        value: progress.clamp(0.0, 1.0),
-        minHeight: 6,
-        backgroundColor: Colors.white.withValues(alpha: 0.08),
-        valueColor: AlwaysStoppedAnimation<Color>(accent),
-      ),
-    );
-  }
-
-  Widget _completionLabel(int pct) {
-    return Text(
-      '$pct% completado',
-      style: TextStyle(
-        color: Colors.white.withValues(alpha: 0.5),
-        fontSize: 11,
-        fontWeight: FontWeight.w600,
-      ),
-    );
-  }
-
-  Widget _benefitChip({required Color accent, required String text}) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: accent.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Text(
-        text,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 12.5,
-          fontWeight: FontWeight.w500,
-          height: 1.4,
-        ),
-      ),
-    );
-  }
-
-  Widget _primaryButton({
-    required String label,
-    required IconData icon,
-    required Color color,
-    required VoidCallback? onPressed,
-  }) {
-    return SizedBox(
-      width: double.infinity,
-      height: 48,
-      child: ElevatedButton.icon(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: color,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-          elevation: 0,
-        ),
-        icon: Icon(icon, color: Colors.white, size: 20),
-        label: Text(
-          label,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w800,
-            fontSize: 14,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _secondaryButton({
-    required String label,
-    required IconData icon,
-    required VoidCallback? onPressed,
-  }) {
-    return SizedBox(
-      width: double.infinity,
-      height: 44,
-      child: OutlinedButton.icon(
-        onPressed: onPressed,
-        style: OutlinedButton.styleFrom(
-          side: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-        ),
-        icon: Icon(
-          icon,
-          color: Colors.white.withValues(alpha: 0.7),
-          size: 18,
-        ),
-        label: Text(
-          label,
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.8),
-            fontWeight: FontWeight.w600,
-            fontSize: 13,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _outlinedActionButton({
-    required String label,
-    required Color accent,
-    required VoidCallback? onPressed,
-  }) {
-    return SizedBox(
-      height: 48,
-      child: OutlinedButton(
-        onPressed: onPressed,
-        style: OutlinedButton.styleFrom(
-          side: BorderSide(color: accent.withValues(alpha: 0.6), width: 1.5),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-          backgroundColor: accent.withValues(alpha: 0.08),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: accent,
-            fontWeight: FontWeight.w800,
-            fontSize: 14,
-          ),
-        ),
-      ),
-    );
-  }
+  // SPEC-119: helpers de presentación puros extraídos a
+  // `widgets/pillar_card_ui.dart` (PillarCardUi.*).
 
   void _showPendingFeatureSnack(BuildContext context, String featureName) {
     ScaffoldMessenger.of(context).showSnackBar(
