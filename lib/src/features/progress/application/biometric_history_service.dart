@@ -178,6 +178,33 @@ class BiometricHistoryService {
     await _biometricRepo.saveCheckIn(snapshot);
   }
 
+  /// Auditoría P3/C1 (2026-06-08): propaga el peso más reciente del
+  /// historial al doc raíz `users/{uid}.weight` que lee la card de
+  /// Perfil. Reemplaza el band-aid `saveProfile(user.copyWith(weight))`
+  /// del HealthAutoSyncController, centralizando TODA escritura
+  /// biométrica en este servicio.
+  ///
+  /// A diferencia de los otros gatillos, NO crea una entrada nueva de
+  /// historial: el ImportService ya escribió el check-in del día. Aquí
+  /// solo reescribimos esa misma entrada con merge (idempotente) dentro
+  /// del mismo batch que actualiza el doc raíz, garantizando que Perfil
+  /// y Análisis queden coherentes atómicamente.
+  ///
+  /// No-op si el peso ya coincide o la entrada no trae peso.
+  Future<void> syncCanonicalWeightFromHistory({
+    required UserModel currentUser,
+    required BiometricCheckIn latestHistoryEntry,
+  }) async {
+    final w = latestHistoryEntry.weight;
+    if (w == null) return;
+    if (currentUser.weight == w) return;
+    await _biometricRepo.applyBiometricUpdate(
+      userId: currentUser.id,
+      historySnapshot: latestHistoryEntry,
+      userDocUpdates: {'weight': w},
+    );
+  }
+
   // ─── Lógica interna ──────────────────────────────────────────────────────
 
   /// Escribe atómicamente el doc raíz del usuario + snapshot histórico.

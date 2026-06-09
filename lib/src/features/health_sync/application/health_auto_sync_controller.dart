@@ -26,8 +26,8 @@ import 'package:elena_app/src/features/health_sync/application/health_sync_provi
 import 'package:elena_app/src/features/health_sync/application/health_sync_service.dart';
 import 'package:elena_app/src/features/health_sync/domain/health_permission_status.dart';
 import 'package:elena_app/src/features/health_sync/domain/health_sync_result.dart';
+import 'package:elena_app/src/features/progress/application/biometric_history_service.dart';
 import 'package:elena_app/src/features/progress/data/biometric_repository.dart';
-import 'package:elena_app/src/shared/data/user_profile_repository_impl.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 
 /// Snapshot público del estado del controller. La UI lo consume para
@@ -232,13 +232,17 @@ class HealthAutoSyncController extends StateNotifier<HealthAutoSyncState> {
       final latest =
           await _ref.read(biometricRepositoryProvider).fetchLatest(userId);
       final user = _ref.read(currentUserStreamProvider).valueOrNull;
-      final w = latest?.weight;
-      if (latest == null || user == null || w == null) return;
-      if (user.weight == w) return; // ya coincide
+      if (latest == null || user == null || latest.weight == null) return;
+      // Auditoría P3/C1: ruta canónica (servicio único de biometría),
+      // no `saveProfile` suelto. Escribe doc raíz + historia atómicamente.
       await _ref
-          .read(userProfileRepositoryProvider)
-          .saveProfile(user.copyWith(weight: w));
-      AppLogger.info('HealthAutoSync: peso canónico actualizado a $w kg');
+          .read(biometricHistoryServiceProvider)
+          .syncCanonicalWeightFromHistory(
+            currentUser: user,
+            latestHistoryEntry: latest,
+          );
+      AppLogger.info(
+          'HealthAutoSync: peso canónico actualizado a ${latest.weight} kg');
     } catch (e) {
       AppLogger.warning(
         'HealthAutoSync: no se pudo sincronizar el peso canónico: $e',
