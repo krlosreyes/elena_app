@@ -35,8 +35,6 @@ import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.
 import 'package:elena_app/src/features/progress/application/biometric_backfill_provider.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/daily_score_explainer_sheet.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_bootstrap_provider.dart';
-import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_evaluator_provider.dart';
-import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart';
 import 'package:elena_app/src/features/metabolic_cycle/presentation/widgets/cycle_closure_card.dart';
 import 'package:elena_app/src/features/streak/application/daily_score_provider.dart';
 // SPEC-137 E.5: regla del intervalo 3h (lastMealAt + 3h) para "Próxima En".

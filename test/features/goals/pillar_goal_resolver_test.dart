@@ -1,7 +1,6 @@
 // BUGFIX objetivos — tests del PillarGoalResolver (goals SoT + fallback).
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:elena_app/src/features/goals/application/goal_notifier.dart';
 import 'package:elena_app/src/features/goals/application/pillar_goal_resolver.dart';
 import 'package:elena_app/src/features/goals/domain/user_goal.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';

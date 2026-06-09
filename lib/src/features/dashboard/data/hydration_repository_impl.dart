@@ -8,8 +8,6 @@ import 'package:elena_app/src/features/dashboard/data/sources/firestore_hydratio
 import 'package:elena_app/src/features/dashboard/data/sources/hydration_data_source.dart';
 import 'package:elena_app/src/features/dashboard/domain/hydration_log.dart';
 import 'package:elena_app/src/features/dashboard/domain/hydration_repository.dart';
-import 'package:elena_app/src/features/exercise/data/exercise_repository_impl.dart'
-    show kCycleWindowDuration;
 
 class HydrationRepositoryImpl implements HydrationRepository {
   final HydrationDataSource _source;
