@@ -190,13 +190,12 @@ class BiometricHistoryService {
   /// del mismo batch que actualiza el doc raíz, garantizando que Perfil
   /// y Análisis queden coherentes atómicamente.
   ///
-  /// No-op si el peso ya coincide o la entrada no trae peso.
+  /// No-op si el peso del doc raíz ya coincide con el de la entrada.
   Future<void> syncCanonicalWeightFromHistory({
     required UserModel currentUser,
     required BiometricCheckIn latestHistoryEntry,
   }) async {
     final w = latestHistoryEntry.weight;
-    if (w == null) return;
     if (currentUser.weight == w) return;
     await _biometricRepo.applyBiometricUpdate(
       userId: currentUser.id,

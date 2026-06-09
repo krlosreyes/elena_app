@@ -232,7 +232,7 @@ class HealthAutoSyncController extends StateNotifier<HealthAutoSyncState> {
       final latest =
           await _ref.read(biometricRepositoryProvider).fetchLatest(userId);
       final user = _ref.read(currentUserStreamProvider).valueOrNull;
-      if (latest == null || user == null || latest.weight == null) return;
+      if (latest == null || user == null) return;
       // Auditoría P3/C1: ruta canónica (servicio único de biometría),
       // no `saveProfile` suelto. Escribe doc raíz + historia atómicamente.
       await _ref
