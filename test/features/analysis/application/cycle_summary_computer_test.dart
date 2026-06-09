@@ -1,7 +1,6 @@
 // SPEC-192.1: tests del CycleSummaryComputer.
 
 import 'package:elena_app/src/features/analysis/application/cycle_summary_computer.dart';
-import 'package:elena_app/src/features/metabolic_cycle/domain/cycle_feedback.dart';
 import 'package:elena_app/src/features/metabolic_cycle/domain/metabolic_cycle.dart';
 import 'package:flutter_test/flutter_test.dart';
 
