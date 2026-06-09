@@ -331,5 +331,170 @@ void main() {
       expect(result, ClosureReason.manualNextFasting);
     });
   });
+
+  group('Auditoría 2026-06-08 — bordes exactos, precedencias y no-cierre espurio',
+      () {
+    // ── Bordes exactos (donde se esconden los bugs) ──────────────────────────
+    test('manualNextFasting en EXACTAMENTE 30 min → cierra (límite inclusivo)',
+        () {
+      final cycle = _openCycle(startedAt: DateTime(2026, 6, 1, 21, 0));
+      final result = MetabolicCycleResolver.shouldClose(
+        openCycle: cycle,
+        now: DateTime(2026, 6, 1, 21, 30),
+        currentProtocol: '16:8',
+        expectedWindowCloseTime: null,
+        lastMealTime: null,
+        sleepDetectedAfterLastMeal: false,
+        newFastingStartedExplicitly: true,
+        newFastingStartedAt: DateTime(2026, 6, 1, 21, 30),
+      );
+      expect(result, ClosureReason.manualNextFasting);
+    });
+
+    test('fallbackSleepDetected en EXACTAMENTE 2h desde lastMeal → cierra', () {
+      final cycle = _openCycle(startedAt: DateTime(2026, 6, 1, 21, 0));
+      final result = MetabolicCycleResolver.shouldClose(
+        openCycle: cycle,
+        now: DateTime(2026, 6, 2, 22, 0),
+        currentProtocol: '16:8',
+        expectedWindowCloseTime: null,
+        lastMealTime: DateTime(2026, 6, 2, 20, 0),
+        sleepDetectedAfterLastMeal: true,
+        newFastingStartedExplicitly: false,
+        newFastingStartedAt: null,
+      );
+      expect(result, ClosureReason.fallbackSleepDetected);
+    });
+
+    test('fallbackAbsolute en EXACTAMENTE 28h → cierra', () {
+      final cycle = _openCycle(startedAt: DateTime(2026, 6, 1, 21, 0));
+      final result = MetabolicCycleResolver.shouldClose(
+        openCycle: cycle,
+        now: DateTime(2026, 6, 3, 1, 0), // 28h exactas
+        currentProtocol: '16:8',
+        expectedWindowCloseTime: null,
+        lastMealTime: null,
+        sleepDetectedAfterLastMeal: false,
+        newFastingStartedExplicitly: false,
+        newFastingStartedAt: null,
+      );
+      expect(result, ClosureReason.fallbackAbsolute);
+    });
+
+    test('fallbackAbsolute en 27h59m → todavía NO cierra', () {
+      final cycle = _openCycle(startedAt: DateTime(2026, 6, 1, 21, 0));
+      final result = MetabolicCycleResolver.shouldClose(
+        openCycle: cycle,
+        now: DateTime(2026, 6, 3, 0, 59),
+        currentProtocol: '16:8',
+        expectedWindowCloseTime: null,
+        lastMealTime: null,
+        sleepDetectedAfterLastMeal: false,
+        newFastingStartedExplicitly: false,
+        newFastingStartedAt: null,
+      );
+      expect(result, isNull);
+    });
+
+    // ── Precedencias faltantes ───────────────────────────────────────────────
+    test('Prioridad: fallbackSleepDetected gana sobre fallback3hAfterWindow', () {
+      final cycle = _openCycle(startedAt: DateTime(2026, 6, 1, 21, 0));
+      final result = MetabolicCycleResolver.shouldClose(
+        openCycle: cycle,
+        now: DateTime(2026, 6, 2, 23, 0),
+        currentProtocol: '16:8',
+        expectedWindowCloseTime: DateTime(2026, 6, 2, 19, 0), // >3h pasados
+        lastMealTime: DateTime(2026, 6, 2, 20, 0), // >2h
+        sleepDetectedAfterLastMeal: true,
+        newFastingStartedExplicitly: false,
+        newFastingStartedAt: null,
+      );
+      expect(result, ClosureReason.fallbackSleepDetected);
+    });
+
+    test('Prioridad: fallback3hAfterWindow gana sobre fallbackAbsolute', () {
+      // Ciclo de >28h Y >3h post-ventana: gana el de la ventana (orden 4<5).
+      final cycle = _openCycle(startedAt: DateTime(2026, 6, 1, 21, 0));
+      final result = MetabolicCycleResolver.shouldClose(
+        openCycle: cycle,
+        now: DateTime(2026, 6, 3, 2, 0), // 29h desde start
+        currentProtocol: '16:8',
+        expectedWindowCloseTime: DateTime(2026, 6, 2, 19, 0), // >3h pasados
+        lastMealTime: null,
+        sleepDetectedAfterLastMeal: false,
+        newFastingStartedExplicitly: false,
+        newFastingStartedAt: null,
+      );
+      expect(result, ClosureReason.fallback3hAfterWindow);
+    });
+
+    // ── No-cierre espurio (regresión del incidente de hoy) ───────────────────
+    test(
+        'ciclo largo (23h) SIN ningún trigger → NO cierra (no churn espurio)',
+        () {
+      // Reproduce el caso del "ayuno corregido a ayer": ciclo abierto de 23h,
+      // mismo protocolo, sin sueño, sin ventana pasada, sin nuevo ayuno, <28h.
+      final cycle = _openCycle(startedAt: DateTime(2026, 6, 1, 12, 0));
+      final result = MetabolicCycleResolver.shouldClose(
+        openCycle: cycle,
+        now: DateTime(2026, 6, 2, 11, 0), // 23h
+        currentProtocol: '16:8',
+        expectedWindowCloseTime: null,
+        lastMealTime: null,
+        sleepDetectedAfterLastMeal: false,
+        newFastingStartedExplicitly: false,
+        newFastingStartedAt: null,
+      );
+      expect(result, isNull,
+          reason: 'sin trigger real, un ciclo abierto NO debe cerrarse solo');
+    });
+
+    test('arranque limpio (5 min, sin señales) → NO cierra', () {
+      final cycle = _openCycle(startedAt: DateTime(2026, 6, 1, 21, 0));
+      final result = MetabolicCycleResolver.shouldClose(
+        openCycle: cycle,
+        now: DateTime(2026, 6, 1, 21, 5),
+        currentProtocol: '16:8',
+        expectedWindowCloseTime: null,
+        lastMealTime: null,
+        sleepDetectedAfterLastMeal: false,
+        newFastingStartedExplicitly: false,
+        newFastingStartedAt: null,
+      );
+      expect(result, isNull);
+    });
+
+    // ── Ventana TRE cruzando medianoche (sin manejo calendárico especial) ────
+    test('ventana TRE cerró 21:00; a las 00:30 (3.5h, cruzó medianoche) → cierra',
+        () {
+      final cycle = _openCycle(startedAt: DateTime(2026, 6, 1, 12, 0));
+      final result = MetabolicCycleResolver.shouldClose(
+        openCycle: cycle,
+        now: DateTime(2026, 6, 2, 0, 30), // 3.5h tras ventana, ya cruzó medianoche
+        currentProtocol: '16:8',
+        expectedWindowCloseTime: DateTime(2026, 6, 1, 21, 0),
+        lastMealTime: DateTime(2026, 6, 1, 20, 30),
+        sleepDetectedAfterLastMeal: false,
+        newFastingStartedExplicitly: false,
+        newFastingStartedAt: null,
+      );
+      expect(result, ClosureReason.fallback3hAfterWindow);
+    });
+
+    test('ventana TRE cerró 21:00; a las 22:30 (1.5h) → NO cierra aún', () {
+      final cycle = _openCycle(startedAt: DateTime(2026, 6, 1, 12, 0));
+      final result = MetabolicCycleResolver.shouldClose(
+        openCycle: cycle,
+        now: DateTime(2026, 6, 1, 22, 30),
+        currentProtocol: '16:8',
+        expectedWindowCloseTime: DateTime(2026, 6, 1, 21, 0),
+        lastMealTime: DateTime(2026, 6, 1, 20, 30),
+        sleepDetectedAfterLastMeal: false,
+        newFastingStartedExplicitly: false,
+        newFastingStartedAt: null,
+      );
+      expect(result, isNull);
+    });
+  });
 }
 
