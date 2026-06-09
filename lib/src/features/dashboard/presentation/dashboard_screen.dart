@@ -30,6 +30,7 @@ import 'package:elena_app/src/features/coaching/presentation/widgets/cycle_coach
 import 'package:elena_app/src/features/goals/application/pillar_goal_providers.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/pillar_card_ui.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/exercise_pillar_card.dart';
+import 'package:elena_app/src/features/dashboard/presentation/widgets/hydration_pillar_card.dart';
 import 'package:elena_app/src/features/nutrition/application/cociente_a_service.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
 import 'package:elena_app/src/features/progress/application/biometric_backfill_provider.dart';
@@ -913,8 +914,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       SelectedPillar.ayuno =>
         _buildFastingConsciousnessCard(context, ref, fastingState),
       SelectedPillar.sueno => _buildSuenoCard(context, ref, sleep),
-      SelectedPillar.hidratacion =>
-        _buildHidratacionCard(context, ref, hydration),
+      SelectedPillar.hidratacion => HydrationPillarCard(state: hydration),
       SelectedPillar.ejercicio => ExercisePillarCard(state: exercise),
       SelectedPillar.comidas => _buildComidasCard(
           context,
@@ -1148,90 +1148,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   // ─── HIDRATACIÓN: "Soporte Metabólico" ────────────────────────────────
-  Widget _buildHidratacionCard(
-      BuildContext context, WidgetRef ref, HydrationState state) {
-    const accent = Color(0xFF38BDF8);
-    final progress = state.progressPercentage;
-    final pct = (progress * 100).round();
-
-    return PillarCardUi.shell(
-      title: 'Soporte Metabólico',
-      badge: 'Hidratación',
-      accent: accent,
-      children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(
-              '${state.currentFormatted} L',
-              style: TextStyle(
-                color: accent,
-                fontSize: 32,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 6),
-              child: Text(
-                '/ ${state.goalFormatted} L',
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.5),
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        PillarCardUi.progressBar(progress, accent),
-        const SizedBox(height: 6),
-        PillarCardUi.completionLabel(pct),
-        const SizedBox(height: 16),
-        PillarCardUi.benefitChip(
-          accent: accent,
-          text:
-              'Cada 250ml mejora el flujo linfático y la eliminación de metabolitos',
-        ),
-        const SizedBox(height: 18),
-        Row(
-          children: [
-            Expanded(
-              child: PillarCardUi.outlinedActionButton(
-                label: '+250 ml',
-                accent: accent,
-                onPressed: state.isSaving
-                    ? null
-                    : () =>
-                        ref.read(hydrationProvider.notifier).addWater(0.250),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: PillarCardUi.outlinedActionButton(
-                label: '+500 ml',
-                accent: accent,
-                onPressed: state.isSaving
-                    ? null
-                    : () =>
-                        ref.read(hydrationProvider.notifier).addWater(0.500),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        PillarCardUi.secondaryButton(
-          label: 'Descontar último vaso (-250 ml)',
-          icon: Icons.remove_circle_outline_rounded,
-          onPressed: () => _showPendingFeatureSnack(
-            context,
-            'Descontar último vaso',
-          ),
-        ),
-      ],
-    );
-  }
+  // SPEC-119: card de Hidratación → HydrationPillarCard (widgets/hydration_pillar_card.dart).
 
   // ─── EJERCICIO: "Sarcopenia & Resistencia" ────────────────────────────
   // SPEC-119: card de Ejercicio → ExercisePillarCard (widgets/exercise_pillar_card.dart).
