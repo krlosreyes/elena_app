@@ -21,7 +21,6 @@ import 'package:elena_app/src/features/adaptive/presentation/widgets/adaptive_su
 import 'package:elena_app/src/features/coaching/presentation/widgets/next_best_action_card.dart';
 import 'package:elena_app/src/features/coaching/presentation/widgets/cycle_coaching_feedback_card.dart';
 import 'package:elena_app/src/features/goals/application/pillar_goal_providers.dart';
-import 'package:elena_app/src/features/dashboard/presentation/widgets/pillar_card_ui.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/exercise_pillar_card.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/hydration_pillar_card.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/sleep_pillar_card.dart';
@@ -653,19 +652,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   // _estimateNextMealIn) → ComidasPillarCard (widgets/comidas_pillar_card.dart).
 
   // SPEC-119: `_pillarCardShell` → `PillarCardUi.shell` (widgets/pillar_card_ui.dart).
-
-  // SPEC-119: helpers de presentación puros extraídos a
-  // `widgets/pillar_card_ui.dart` (PillarCardUi.*).
-
-  void _showPendingFeatureSnack(BuildContext context, String featureName) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$featureName: función disponible próximamente'),
-        duration: const Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
+  // SPEC-119: helpers de presentación puros extraídos a `PillarCardUi.*`.
+  // SPEC-119: `_showPendingFeatureSnack` se movió con las cards (cada
+  // *PillarCard tiene su propio `_pendingSnack`).
 
   // _buildProgressCTA eliminado en SPEC-88 fix. El acceso al Road Map
   // queda disponible vía la ruta `/progress` (futuro entry point en
