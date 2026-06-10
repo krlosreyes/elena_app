@@ -4,25 +4,14 @@
 
 import 'package:flutter/material.dart';
 
+import 'package:elena_app/src/core/theme/app_theme.dart';
+
 // ─── Colores de zona (fuente única de verdad) ─────────────────────────────────
 
 class IMRZoneColors {
-  static Color forZone(String zone) {
-    switch (zone) {
-      case 'OPTIMIZADO':
-        return const Color(0xFF1ABC9C); // teal
-      case 'EFICIENTE':
-        return const Color(0xFF27AE60); // green
-      case 'FUNCIONAL':
-        return const Color(0xFFF39C12); // amber
-      case 'INESTABLE':
-        return const Color(0xFFE67E22); // orange
-      case 'DETERIORADO':
-        return const Color(0xFFC0392B); // red
-      default:
-        return const Color(0xFF64748B); // grey
-    }
-  }
+  /// UI #2: delega en la rampa teal calma de AppColors (sin rojo de alarma).
+  /// Fuente única de color del IMR para toda la app.
+  static Color forZone(String zone) => AppColors.imrZoneColor(zone);
 
   static String emojiForZone(String zone) {
     switch (zone) {

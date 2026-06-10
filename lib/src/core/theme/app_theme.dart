@@ -61,6 +61,36 @@ class AppColors {
   /// Error, IMR zona "DETERIORADO", borrar/eliminar.
   static const Color statusBad = Color(0xFFEF4444);
 
+  // ─────────────────────── Paleta de pilares (UI #1, canónica) ──────────
+  // Un color por pilar, igual al de su card. Análisis, Progreso, gráficas y
+  // chips DEBEN leer de aquí → mismo pilar = mismo color e ícono en toda la app.
+  static const Color pillarAyuno = accent; // teal (hero)
+  static const Color pillarSueno = Color(0xFF818CF8); // índigo
+  static const Color pillarHidratacion = Color(0xFF38BDF8); // azul
+  static const Color pillarEjercicio = Color(0xFF2DD4BF); // menta
+  static const Color pillarNutricion = Color(0xFFFB923C); // ámbar
+
+  // ─────────────────────── IMR — rampa calma por zona ───────────────────
+  // Decisión de marca (UI #2): el IMR usa UNA escala teal calma, NUNCA rojo
+  // de alarma sobre el número del usuario. La dirección la comunican la
+  // etiqueta y el llenado del anillo, no un color de emergencia.
+  static Color imrZoneColor(String zone) {
+    switch (zone) {
+      case 'OPTIMIZADO':
+        return const Color(0xFF5DE0BC); // teal brillante
+      case 'EFICIENTE':
+        return accent; // teal marca
+      case 'FUNCIONAL':
+        return const Color(0xFF2DD4BF); // menta
+      case 'INESTABLE':
+        return const Color(0xFF38BDF8); // azul (en progreso, no alarma)
+      case 'DETERIORADO':
+        return textSecondary; // slate neutro ("tu base", sin alarma)
+      default:
+        return textMuted;
+    }
+  }
+
   // ─────────────────────── Bordes (opacidades de blanco) ────────────────
   /// Divisor entre filas de tabla. ~4% blanco.
   static const Color borderSubtle = Color(0x0AFFFFFF);

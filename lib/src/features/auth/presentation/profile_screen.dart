@@ -1193,20 +1193,8 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
     );
   }
 
-  Color _zoneColor(String zone) {
-    switch (zone) {
-      case 'OPTIMIZADO':
-        return const Color(0xFF10B981);
-      case 'EFICIENTE':
-        return const Color(0xFF22BB33);
-      case 'FUNCIONAL':
-        return const Color(0xFFFFD700);
-      case 'INESTABLE':
-        return const Color(0xFFFF8C00);
-      default:
-        return const Color(0xFFFF4444);
-    }
-  }
+  // UI #2: color del IMR desde la rampa calma única (sin rojo de alarma).
+  Color _zoneColor(String zone) => AppColors.imrZoneColor(zone);
 
   /// SPEC-168.0.B + SPEC-168.0.A v2 (Opción B, Carlos 2026-06-03):
   /// card de "Mis objetivos" que lista **todos** los goals del usuario

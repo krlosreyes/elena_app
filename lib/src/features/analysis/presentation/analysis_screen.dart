@@ -39,16 +39,17 @@ class AnalysisScreen extends ConsumerStatefulWidget {
 }
 
 class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
-  // Acentos por métrica (coherentes con SPEC-161).
-  static const _accentImr = AppColors.metabolicGreen;
+  // Acentos por métrica. UI #2: los 5 pilares leen los tokens canónicos de
+  // AppColors (mismo color que su card e ícono). IMR usa el accent teal.
+  static const _accentImr = AppColors.accent;
   static const _accentWeight = Color(0xFF60A5FA);
   // SPEC-168.4.2: ámbar — coherente con BodyCompositionMetric.bodyFatPct.
   static const _accentBodyFat = Color(0xFFF59E0B);
-  static const _accentFasting = AppColors.metabolicGreen;
-  static const _accentNutrition = Color(0xFFFB923C);
-  static const _accentHydration = Color(0xFF38BDF8);
-  static const _accentExercise = Color(0xFF14B8A6);
-  static const _accentSleep = Color(0xFF818CF8);
+  static const _accentFasting = AppColors.pillarAyuno;
+  static const _accentNutrition = AppColors.pillarNutricion;
+  static const _accentHydration = AppColors.pillarHidratacion;
+  static const _accentExercise = AppColors.pillarEjercicio;
+  static const _accentSleep = AppColors.pillarSueno;
 
   // SPEC-168.2-fix (2026-06-03): ScrollController persistente entre
   // rebuilds. Antes, cuando un stream provider emitía (Firestore
