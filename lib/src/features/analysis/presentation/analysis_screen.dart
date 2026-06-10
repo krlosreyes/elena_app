@@ -27,6 +27,7 @@ import 'package:elena_app/src/features/analysis/domain/nutrition_pie_data.dart';
 import 'package:elena_app/src/features/analysis/presentation/monthly_calendar_screen.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/insight_tile.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/transformation_card.dart';
+import 'package:elena_app/src/features/analysis/presentation/widgets/daily_score_trend_section.dart';
 // SPEC-168.4: tile compacto del overview con sparkline + tap a detalle.
 import 'package:elena_app/src/features/analysis/presentation/widgets/pillar_overview_tile.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/segmented_range_control.dart';
@@ -285,6 +286,11 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
       const SizedBox(height: 20),
       _sectionTitle('Resultados'),
       const SizedBox(height: 12),
+      // SPEC-200: seguimiento del Score del Día (HOY, llega a 100) — distinto
+      // del IMR longitudinal. Va primero porque es el número que el usuario
+      // mueve cada día.
+      const DailyScoreTrendSection(),
+      const SizedBox(height: 20),
       _imrTile(imrSeries),
       const SizedBox(height: 10),
       _weightTile(weightSeries),

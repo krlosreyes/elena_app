@@ -28,7 +28,7 @@ void main() {
   group('ImrTrendChart funcional', () {
     testWidgets('sin datos muestra estado vacío', (tester) async {
       await tester.pumpWidget(_wrap(
-        const ImrTrendChart(docs: [], daysInPeriod: 7),
+        ImrTrendChart(docs: const [], daysInPeriod: 7),
       ));
       expect(find.text('IMR DÍA A DÍA'), findsOneWidget);
       // El header chip de promedio NO debe aparecer (no hay data).

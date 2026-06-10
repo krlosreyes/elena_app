@@ -1,17 +1,20 @@
-// SPEC-113 + SPEC-118: tendencia del IMR día a día. CustomPaint puro
-// para máximo control estético.
+// SPEC-113 + SPEC-118: tendencia de un puntaje 0-100 día a día. CustomPaint
+// puro para máximo control estético.
+//
+// SPEC-200: generalizado. Originalmente solo IMR (consumía DailySummaryDoc);
+// ahora trabaja con `ScoreTrendPoint` (date + value 0-100) y un `title`, así
+// el mismo chart sirve para el IMR longitudinal y para el Score del Día (HOY).
+// El constructor `ImrTrendChart(docs: ...)` se conserva para los callsites de
+// IMR; `ImrTrendChart.fromPoints(...)` alimenta cualquier serie genérica.
 //
 // Diseño premium (post-SPEC-118):
 //   - 4 bandas de zona horizontales (deteriorado/inestable/funcional/
 //     óptimo) en el fondo, alpha bajísimo → contexto sin ruido.
 //   - Línea promedio horizontal punteada → ancla mental.
-//   - Path con curva Bezier suave entre puntos (no líneas rectas
-//     dentadas).
+//   - Path con curva Bezier suave entre puntos.
 //   - Área gradiente bajo la línea → masa visual.
-//   - Dots regulares + dot grande con halo para mejor/peor del
-//     período. Hoy se distingue con ring outline.
-//   - Eje Y con labels 0/25/50/75/100 a la izquierda.
-//   - Eje X con 3-5 fechas distribuidas.
+//   - Dots regulares + dot grande con halo para mejor/peor del período.
+//   - Eje Y con labels 0/25/50/75/100. Eje X con 3-5 fechas.
 //   - Footer compacto: chips Mejor/Peor con fecha.
 
 import 'dart:math' as math;
@@ -20,27 +23,45 @@ import 'package:flutter/material.dart';
 
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/analysis/data/daily_summary_doc.dart';
+import 'package:elena_app/src/features/analysis/domain/score_trend_point.dart';
 
 class ImrTrendChart extends StatelessWidget {
-  final List<DailySummaryDoc> docs;
+  final List<ScoreTrendPoint> points;
   final int daysInPeriod;
 
-  /// SPEC-117.bugfix: instante "ahora" inyectable para tests
-  /// deterministas. En producción es `null` y el painter usa
-  /// `DateTime.now()`. En golden tests, pasarlo fijo evita que el
-  /// render dependa del día de la corrida.
+  /// Título del header (ej. 'IMR DÍA A DÍA' o 'SCORE DEL DÍA').
+  final String title;
+
+  /// SPEC-117.bugfix: instante "ahora" inyectable para tests deterministas.
   final DateTime? now;
 
-  const ImrTrendChart({
+  const ImrTrendChart.fromPoints({
     super.key,
-    required this.docs,
+    required this.points,
     required this.daysInPeriod,
+    this.title = 'DÍA A DÍA',
     this.now,
   });
 
+  /// Constructor legacy de IMR: mapea `DailySummaryDoc.imrScore` a puntos.
+  factory ImrTrendChart({
+    Key? key,
+    required List<DailySummaryDoc> docs,
+    required int daysInPeriod,
+    DateTime? now,
+    String title = 'IMR DÍA A DÍA',
+  }) =>
+      ImrTrendChart.fromPoints(
+        key: key,
+        points: docs.map((d) => (date: d.date, value: d.imrScore)).toList(),
+        daysInPeriod: daysInPeriod,
+        now: now,
+        title: title,
+      );
+
   @override
   Widget build(BuildContext context) {
-    final stats = _ChartStats.compute(docs);
+    final stats = _ChartStats.compute(points);
 
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
@@ -56,7 +77,7 @@ class ImrTrendChart extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text(
-                'IMR DÍA A DÍA',
+                title,
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.55),
                   fontSize: 10,
@@ -91,7 +112,7 @@ class ImrTrendChart extends StatelessWidget {
             width: double.infinity,
             child: CustomPaint(
               painter: _ImrTrendPainter(
-                docs: docs,
+                points: points,
                 daysInPeriod: daysInPeriod,
                 stats: stats,
                 now: now ?? DateTime.now(),
@@ -105,14 +126,14 @@ class ImrTrendChart extends StatelessWidget {
               children: [
                 _LegendChip(
                   label: 'Mejor',
-                  value: stats.best!.imrScore,
+                  value: stats.best!.value,
                   date: _humanDate(_parseDate(stats.best!.date)),
                   color: AppColors.metabolicGreen,
                 ),
                 const SizedBox(width: 10),
                 _LegendChip(
                   label: 'Peor',
-                  value: stats.worst!.imrScore,
+                  value: stats.worst!.value,
                   date: _humanDate(_parseDate(stats.worst!.date)),
                   color: const Color(0xFFFB923C),
                 ),
@@ -158,8 +179,8 @@ class ImrTrendChart extends StatelessWidget {
 
 class _ChartStats {
   final int average;
-  final DailySummaryDoc? best;
-  final DailySummaryDoc? worst;
+  final ScoreTrendPoint? best;
+  final ScoreTrendPoint? worst;
   final bool hasData;
 
   const _ChartStats._({
@@ -169,8 +190,8 @@ class _ChartStats {
     required this.hasData,
   });
 
-  static _ChartStats compute(List<DailySummaryDoc> docs) {
-    if (docs.isEmpty) {
+  static _ChartStats compute(List<ScoreTrendPoint> points) {
+    if (points.isEmpty) {
       return const _ChartStats._(
         average: 0,
         best: null,
@@ -179,17 +200,16 @@ class _ChartStats {
       );
     }
     int sum = 0;
-    DailySummaryDoc best = docs.first;
-    DailySummaryDoc worst = docs.first;
-    for (final d in docs) {
-      sum += d.imrScore;
-      if (d.imrScore > best.imrScore) best = d;
-      if (d.imrScore < worst.imrScore) worst = d;
+    ScoreTrendPoint best = points.first;
+    ScoreTrendPoint worst = points.first;
+    for (final p in points) {
+      sum += p.value;
+      if (p.value > best.value) best = p;
+      if (p.value < worst.value) worst = p;
     }
-    final avg = (sum / docs.length).round();
-    // Si solo hay 1 día con data, no tiene sentido mostrar "mejor/peor"
-    // (sería el mismo doc). Reportamos null para que el footer se oculte.
-    final isSingleton = docs.length == 1 || best.date == worst.date;
+    final avg = (sum / points.length).round();
+    // Si solo hay 1 día con data, no tiene sentido mostrar "mejor/peor".
+    final isSingleton = points.length == 1 || best.date == worst.date;
     return _ChartStats._(
       average: avg,
       best: isSingleton ? null : best,
@@ -274,13 +294,13 @@ class _LegendChip extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _ImrTrendPainter extends CustomPainter {
-  final List<DailySummaryDoc> docs;
+  final List<ScoreTrendPoint> points;
   final int daysInPeriod;
   final _ChartStats stats;
   final DateTime now;
 
   _ImrTrendPainter({
-    required this.docs,
+    required this.points,
     required this.daysInPeriod,
     required this.stats,
     required this.now,
@@ -325,23 +345,19 @@ class _ImrTrendPainter extends CustomPainter {
     final today = DateTime(now.year, now.month, now.day);
     final rangeStart = today.subtract(Duration(days: daysInPeriod - 1));
 
-    // Map de doc → punto en pantalla.
-    final points = <_PlotPoint>[];
-    for (final d in docs) {
-      final date = _parseDate(d.date);
+    // Map de punto → posición en pantalla.
+    final plot = <_PlotPoint>[];
+    for (final p in points) {
+      final date = _parseDate(p.date);
       final daysFromStart = date.difference(rangeStart).inDays;
       if (daysFromStart < 0 || daysFromStart >= daysInPeriod) continue;
       final denom = (daysInPeriod - 1).clamp(1, 1000);
       final x = padLeft + plotW * (daysFromStart / denom);
-      final y = padTop + plotH - plotH * (d.imrScore.clamp(0, 100) / 100);
+      final y = padTop + plotH - plotH * (p.value.clamp(0, 100) / 100);
       final isToday = date.year == today.year &&
           date.month == today.month &&
           date.day == today.day;
-      points.add(_PlotPoint(
-        doc: d,
-        offset: Offset(x, y),
-        isToday: isToday,
-      ));
+      plot.add(_PlotPoint(pt: p, offset: Offset(x, y), isToday: isToday));
     }
 
     // ── Capa 3: línea promedio horizontal punteada ─────────────────────
@@ -354,17 +370,17 @@ class _ImrTrendPainter extends CustomPainter {
     );
 
     // ── Capa 4: área gradiente bajo la línea ───────────────────────────
-    if (points.length >= 2) {
-      _drawAreaGradient(canvas, plotRect, points);
+    if (plot.length >= 2) {
+      _drawAreaGradient(canvas, plotRect, plot);
     }
 
     // ── Capa 5: línea con curva suave ──────────────────────────────────
-    if (points.length >= 2) {
-      _drawSmoothLine(canvas, points);
+    if (plot.length >= 2) {
+      _drawSmoothLine(canvas, plot);
     }
 
     // ── Capa 6: dots ──────────────────────────────────────────────────
-    _drawDots(canvas, points);
+    _drawDots(canvas, plot);
 
     // ── Capa 7: eje X con fechas distribuidas ──────────────────────────
     _drawXAxis(canvas, plotRect, rangeStart, today);
@@ -373,25 +389,20 @@ class _ImrTrendPainter extends CustomPainter {
   // ── Helpers de dibujo ─────────────────────────────────────────────────
 
   void _drawZoneBands(Canvas canvas, Rect plot) {
-    // Mapear umbrales (40, 60, 75) a Y. Y=0 está arriba.
     double yAt(int pct) => plot.top + plot.height - plot.height * (pct / 100);
 
-    // Banda óptima 75-100 (verde) en el TOP.
     canvas.drawRect(
       Rect.fromLTRB(plot.left, yAt(100), plot.right, yAt(75)),
       Paint()..color = _zoneGreen.withValues(alpha: 0.06),
     );
-    // Banda funcional 60-75 (ámbar).
     canvas.drawRect(
       Rect.fromLTRB(plot.left, yAt(75), plot.right, yAt(60)),
       Paint()..color = _zoneYellow.withValues(alpha: 0.04),
     );
-    // Banda inestable 40-60 (naranja).
     canvas.drawRect(
       Rect.fromLTRB(plot.left, yAt(60), plot.right, yAt(40)),
       Paint()..color = _zoneOrange.withValues(alpha: 0.04),
     );
-    // Banda deteriorado 0-40 (rojo) en el BOTTOM.
     canvas.drawRect(
       Rect.fromLTRB(plot.left, yAt(40), plot.right, yAt(0)),
       Paint()..color = _zoneRed.withValues(alpha: 0.05),
@@ -411,15 +422,8 @@ class _ImrTrendPainter extends CustomPainter {
     const ticks = [0, 25, 50, 75, 100];
     for (final t in ticks) {
       final y = plot.top + plot.height - plot.height * (t / 100);
-      // Línea de grid horizontal.
       canvas.drawLine(Offset(plot.left, y), Offset(plot.right, y), gridPaint);
-      // Label numérico a la izquierda del plot.
-      _drawText(
-        canvas,
-        '$t',
-        Offset(plot.left - 22, y - 5),
-        labelStyle,
-      );
+      _drawText(canvas, '$t', Offset(plot.left - 22, y - 5), labelStyle);
     }
   }
 
@@ -440,21 +444,20 @@ class _ImrTrendPainter extends CustomPainter {
     }
   }
 
-  void _drawAreaGradient(Canvas canvas, Rect plot, List<_PlotPoint> points) {
+  void _drawAreaGradient(Canvas canvas, Rect plot, List<_PlotPoint> pts) {
     final path = Path();
-    path.moveTo(points.first.offset.dx, plot.bottom);
-    for (int i = 0; i < points.length; i++) {
-      final p = points[i].offset;
+    path.moveTo(pts.first.offset.dx, plot.bottom);
+    for (int i = 0; i < pts.length; i++) {
+      final p = pts[i].offset;
       if (i == 0) {
         path.lineTo(p.dx, p.dy);
       } else {
-        // Curva suave estilo Bezier (control points en el midpoint).
-        final prev = points[i - 1].offset;
+        final prev = pts[i - 1].offset;
         final midX = (prev.dx + p.dx) / 2;
         path.cubicTo(midX, prev.dy, midX, p.dy, p.dx, p.dy);
       }
     }
-    path.lineTo(points.last.offset.dx, plot.bottom);
+    path.lineTo(pts.last.offset.dx, plot.bottom);
     path.close();
 
     final gradient = LinearGradient(
@@ -465,13 +468,10 @@ class _ImrTrendPainter extends CustomPainter {
         AppColors.metabolicGreen.withValues(alpha: 0.02),
       ],
     );
-    canvas.drawPath(
-      path,
-      Paint()..shader = gradient.createShader(plot),
-    );
+    canvas.drawPath(path, Paint()..shader = gradient.createShader(plot));
   }
 
-  void _drawSmoothLine(Canvas canvas, List<_PlotPoint> points) {
+  void _drawSmoothLine(Canvas canvas, List<_PlotPoint> pts) {
     final paint = Paint()
       ..color = AppColors.metabolicGreen
       ..strokeWidth = 2.5
@@ -480,30 +480,28 @@ class _ImrTrendPainter extends CustomPainter {
       ..strokeJoin = StrokeJoin.round;
 
     final path = Path();
-    path.moveTo(points.first.offset.dx, points.first.offset.dy);
-    for (int i = 1; i < points.length; i++) {
-      final prev = points[i - 1].offset;
-      final p = points[i].offset;
+    path.moveTo(pts.first.offset.dx, pts.first.offset.dy);
+    for (int i = 1; i < pts.length; i++) {
+      final prev = pts[i - 1].offset;
+      final p = pts[i].offset;
       final midX = (prev.dx + p.dx) / 2;
-      // Bezier cúbico con control en midpoints — curva suave.
       path.cubicTo(midX, prev.dy, midX, p.dy, p.dx, p.dy);
     }
     canvas.drawPath(path, paint);
   }
 
-  void _drawDots(Canvas canvas, List<_PlotPoint> points) {
+  void _drawDots(Canvas canvas, List<_PlotPoint> pts) {
     final regularFill = Paint()..color = AppColors.metabolicGreen;
     final bestDate = stats.best?.date;
     final worstDate = stats.worst?.date;
 
-    for (final p in points) {
-      final date = p.doc.date;
+    for (final p in pts) {
+      final date = p.pt.date;
       final isBest = bestDate != null && date == bestDate;
       final isWorst = worstDate != null && date == worstDate;
       final isToday = p.isToday;
 
       if (isBest) {
-        // Halo verde grande.
         canvas.drawCircle(
           p.offset,
           7,
@@ -511,7 +509,6 @@ class _ImrTrendPainter extends CustomPainter {
         );
         canvas.drawCircle(p.offset, 4.5, regularFill);
       } else if (isWorst) {
-        // Halo naranja grande.
         canvas.drawCircle(
           p.offset,
           7,
@@ -523,7 +520,6 @@ class _ImrTrendPainter extends CustomPainter {
           Paint()..color = const Color(0xFFFB923C),
         );
       } else if (isToday) {
-        // Ring outline para hoy.
         canvas.drawCircle(
             p.offset, 5, Paint()..color = const Color(0xFF1E293B));
         canvas.drawCircle(
@@ -548,7 +544,6 @@ class _ImrTrendPainter extends CustomPainter {
       fontWeight: FontWeight.w700,
     );
 
-    // Cantidad de ticks según largo del período.
     final int ticksCount = daysInPeriod <= 7 ? 4 : (daysInPeriod <= 30 ? 5 : 5);
     for (int i = 0; i < ticksCount; i++) {
       final ratio = i / (ticksCount - 1);
@@ -557,12 +552,8 @@ class _ImrTrendPainter extends CustomPainter {
       final date = rangeStart.add(Duration(days: daysOffset));
       final x = plot.left +
           plot.width * (daysOffset / (daysInPeriod - 1).clamp(1, 1000));
-      _drawText(
-        canvas,
-        _shortDate(date),
-        Offset(x - 16, plot.bottom + 6),
-        style,
-      );
+      _drawText(canvas, _shortDate(date), Offset(x - 16, plot.bottom + 6),
+          style);
     }
   }
 
@@ -608,18 +599,18 @@ class _ImrTrendPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _ImrTrendPainter old) =>
-      old.docs != docs ||
+      old.points != points ||
       old.daysInPeriod != daysInPeriod ||
       old.stats.average != stats.average;
 }
 
-// Punto en el plot (doc + posición en pantalla + flag de hoy).
+// Punto en el plot (dato + posición en pantalla + flag de hoy).
 class _PlotPoint {
-  final DailySummaryDoc doc;
+  final ScoreTrendPoint pt;
   final Offset offset;
   final bool isToday;
   _PlotPoint({
-    required this.doc,
+    required this.pt,
     required this.offset,
     required this.isToday,
   });
