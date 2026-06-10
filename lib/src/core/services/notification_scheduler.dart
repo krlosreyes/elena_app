@@ -272,6 +272,7 @@ class NotificationScheduler {
     required int minute,
     required String title,
     required String body,
+    bool actionableHydration = false,
   }) async {
     final tz.TZDateTime now = tz.TZDateTime.now(tz.local);
     tz.TZDateTime scheduled = tz.TZDateTime(
@@ -295,6 +296,7 @@ class NotificationScheduler {
       body: body,
       scheduledTime: scheduled.toLocal(),
       repeatsDaily: true,
+      actionableHydration: actionableHydration,
     );
   }
 
@@ -429,6 +431,9 @@ class NotificationScheduler {
           minute: current.minute,
           title: message.title,
           body: '${message.body} · ${message.citation}',
+          // SPEC-199 Fase A: cada recordatorio de hidratación es accionable
+          // (botones "Sí, lo registro" / "Aún no").
+          actionableHydration: true,
         );
         current = current.add(kHydrationCadence);
         slotIndex++;

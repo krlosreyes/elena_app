@@ -1,9 +1,45 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'app_logger.dart';
+import 'pending_action_queue.dart';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SPEC-199 Fase A — Handlers de respuesta a notificaciones accionables
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// Cuando el usuario toca un botón de acción (p. ej. "Sí, lo registro" en la
+// notificación de hidratación), estos handlers ENCOLAN la intención en
+// `PendingActionQueue`. NO escriben Firestore acá (el contexto no tiene
+// Riverpod). La app vacía la cola en foreground (`CoachingActionRouter.flush`).
+//
+// `notificationBackgroundResponseHandler` corre en un isolate de background:
+// requiere el plugin registrant nativo para que SharedPreferences exista ahí
+// (ver ios/Runner/AppDelegate). Por eso, en Fase A las acciones son
+// `foreground` (abren la app), garantizando que el handler de foreground
+// aplique el registro de forma confiable; el background queda como mejor
+// esfuerzo / camino para una futura Fase 1b (registrar sin abrir la app).
+
+@pragma('vm:entry-point')
+void notificationBackgroundResponseHandler(NotificationResponse response) {
+  unawaited(
+    PendingActionQueue.handleNotificationAction(response.actionId, response.id),
+  );
+}
+
+void _notificationForegroundResponseHandler(NotificationResponse response) {
+  AppLogger.debug(
+    '[NotificationService] response: action=${response.actionId} '
+    'id=${response.id}',
+  );
+  unawaited(
+    PendingActionQueue.handleNotificationAction(response.actionId, response.id),
+  );
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // IDs de notificaciones
@@ -37,6 +73,11 @@ class NotificationIds {
   // cancelHydration() cancela todo el rango.
   static const int hydrationStart = 400;
   static const int hydrationEnd = 419;
+
+  // SPEC-199 Fase A: re-recordatorio one-shot del "Aún no" del prompt de
+  // hidratación (+15 min). Fuera del rango 400-419 para no chocar con los
+  // slots diarios ni ser cancelado por cancelHydration().
+  static const int hydrationSnooze = 420;
 
   // SPEC-198: nudges de conversión de trial (día 5 y día 12).
   static const int paywallNudgeDay5 = 500;
@@ -107,6 +148,41 @@ class NotificationService {
     ),
   );
 
+  // SPEC-199 Fase A: notificación de hidratación ACCIONABLE — botones
+  // "Sí, lo registro" / "Aún no". En iOS los botones cuelgan de la categoría
+  // `kHydrationCategoryId` (registrada en init); en Android van inline en
+  // `actions`. `showsUserInterface`/`foreground` = abre la app para aplicar
+  // el registro de forma confiable (ver nota de los handlers).
+  static final NotificationDetails _hydrationActionableDetails =
+      NotificationDetails(
+    android: AndroidNotificationDetails(
+      'elena_circadian',
+      'Ritmos Circadianos',
+      channelDescription: 'Alertas basadas en tu biología circadiana',
+      importance: Importance.high,
+      priority: Priority.high,
+      icon: '@mipmap/ic_launcher',
+      actions: <AndroidNotificationAction>[
+        AndroidNotificationAction(
+          kHydrationYesActionId,
+          'Sí, lo registro',
+          showsUserInterface: true,
+        ),
+        AndroidNotificationAction(
+          kHydrationNoActionId,
+          'Aún no',
+          showsUserInterface: true,
+        ),
+      ],
+    ),
+    iOS: DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: false,
+      presentSound: true,
+      categoryIdentifier: kHydrationCategoryId,
+    ),
+  );
+
   // ── Inicialización ──────────────────────────────────────────────────────────
 
   static Future<void> init() async {
@@ -136,25 +212,52 @@ class NotificationService {
       const AndroidInitializationSettings androidSettings =
           AndroidInitializationSettings('@mipmap/ic_launcher');
 
-      const DarwinInitializationSettings iosSettings =
+      // SPEC-199 Fase A: categoría accionable de hidratación (iOS). Los
+      // botones aparecen al expandir / mantener presionada la notificación.
+      final DarwinNotificationCategory hydrationCategory =
+          DarwinNotificationCategory(
+        kHydrationCategoryId,
+        actions: <DarwinNotificationAction>[
+          DarwinNotificationAction.plain(
+            kHydrationYesActionId,
+            'Sí, lo registro',
+            options: <DarwinNotificationActionOption>{
+              DarwinNotificationActionOption.foreground,
+            },
+          ),
+          DarwinNotificationAction.plain(
+            kHydrationNoActionId,
+            'Aún no',
+            options: <DarwinNotificationActionOption>{
+              DarwinNotificationActionOption.foreground,
+            },
+          ),
+        ],
+        options: <DarwinNotificationCategoryOption>{
+          DarwinNotificationCategoryOption.hiddenPreviewShowTitle,
+        },
+      );
+
+      final DarwinInitializationSettings iosSettings =
           DarwinInitializationSettings(
         requestAlertPermission: true,
         requestBadgePermission: false,
         requestSoundPermission: true,
+        notificationCategories: <DarwinNotificationCategory>[
+          hydrationCategory,
+        ],
       );
 
-      const InitializationSettings initSettings = InitializationSettings(
+      final InitializationSettings initSettings = InitializationSettings(
         android: androidSettings,
         iOS: iosSettings,
       );
 
       await _plugin.initialize(
         settings: initSettings,
-        onDidReceiveNotificationResponse: (NotificationResponse response) {
-          AppLogger.debug(
-            '[NotificationService] Notification tapped: ${response.payload}',
-          );
-        },
+        onDidReceiveNotificationResponse: _notificationForegroundResponseHandler,
+        onDidReceiveBackgroundNotificationResponse:
+            notificationBackgroundResponseHandler,
       );
 
       // 3. Android channels
@@ -240,6 +343,7 @@ class NotificationService {
     required DateTime scheduledTime,
     bool repeatsDaily = true,
     bool isFasting = false,
+    bool actionableHydration = false,
   }) async {
     if (kIsWeb || !_initialized) return;
 
@@ -253,12 +357,16 @@ class NotificationService {
         return;
       }
 
+      final NotificationDetails details = actionableHydration
+          ? _hydrationActionableDetails
+          : (isFasting ? _fastingDetails : _circadianDetails);
+
       await _plugin.zonedSchedule(
         id: id,
         title: title,
         body: body,
         scheduledDate: tzScheduled,
-        notificationDetails: isFasting ? _fastingDetails : _circadianDetails,
+        notificationDetails: details,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
         matchDateTimeComponents: repeatsDaily ? DateTimeComponents.time : null,
       );

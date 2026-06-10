@@ -9,6 +9,7 @@ import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/features/auth/domain/app_account.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
 import 'package:elena_app/src/features/billing/application/billing_providers.dart';
+import 'package:elena_app/src/features/coaching/application/coaching_action_router.dart';
 import 'package:elena_app/src/core/services/daily_reset_service.dart';
 import 'package:elena_app/src/features/analysis/application/daily_summary_persistence_service.dart';
 import 'package:elena_app/src/features/health_sync/application/health_auto_sync_controller.dart';
@@ -54,6 +55,11 @@ class _ElenaAppState extends ConsumerState<ElenaApp>
     // el sync. `runNow` ignora el debounce; el flag `state.isRunning`
     // sigue previniendo runs concurrentes.
     if (state == AppLifecycleState.resumed) {
+      // SPEC-199 Fase A: aplicar acciones pendientes encoladas desde prompts
+      // accionables (p. ej. "Sí, lo registro" del agua). Idempotente; las
+      // acciones que requieren usuario se conservan si aún no hay sesión.
+      CoachingActionRouter.flush(ref);
+
       final user = ref.read(currentUserStreamProvider).valueOrNull;
       if (user == null || user.id.isEmpty) return;
       // SPEC-197: el auto-sync de wearables es Premium. Free registra manual.
@@ -108,6 +114,9 @@ class _ElenaAppState extends ConsumerState<ElenaApp>
         (prev, next) {
       final user = next.value;
       if (user == null || user.id.isEmpty) return;
+      // SPEC-199 Fase A: en cold start, las acciones encoladas (agua) se
+      // aplican apenas hay usuario disponible.
+      CoachingActionRouter.flush(ref);
       // SPEC-197: el auto-sync de wearables es Premium. Free registra manual.
       if (!ref.read(featureGateProvider).autoSyncAllowed) return;
       ref
