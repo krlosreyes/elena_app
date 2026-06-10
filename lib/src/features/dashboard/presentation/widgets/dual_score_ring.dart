@@ -11,7 +11,6 @@
 import 'package:flutter/material.dart';
 
 import 'package:elena_app/src/core/theme/app_theme.dart';
-import 'package:elena_app/src/features/analysis/domain/imr_explanation.dart';
 
 class DualScoreRing extends StatelessWidget {
   const DualScoreRing({
