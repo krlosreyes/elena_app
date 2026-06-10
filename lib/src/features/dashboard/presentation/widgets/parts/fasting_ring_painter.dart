@@ -7,11 +7,16 @@ class FastingRingPainter extends CustomPainter {
   final Color phaseColor; // Color de la fase biológica actual
   final Color indicatorColor; // Color de contraste (azul Elena)
 
+  /// UI #3 (motion A): 0..1 que hace "respirar" el glow de la punta viva.
+  /// 0 = glow base estático (reduce-motion); oscila 0..1 cuando hay motion.
+  final double pulse;
+
   FastingRingPainter({
     required this.startTime,
     required this.duration,
     required this.phaseColor,
     required this.indicatorColor,
+    this.pulse = 0,
   });
 
   @override
@@ -136,12 +141,15 @@ class FastingRingPainter extends CustomPainter {
     final pos = Offset(center.dx + orbitRadius * math.cos(angle),
         center.dy + orbitRadius * math.sin(angle));
 
+    // UI #3 (motion A): el halo "respira" con `pulse` — radio y opacidad
+    // oscilan suavemente para dar sensación de vivo en tiempo real.
     canvas.drawCircle(
         pos,
-        pointRadius + 3,
+        pointRadius + 3 + pulse * 4,
         Paint()
-          ..color = const Color(0xFF60A5FA).withValues(alpha: 0.2)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4));
+          ..color =
+              const Color(0xFF60A5FA).withValues(alpha: 0.16 + pulse * 0.18)
+          ..maskFilter = MaskFilter.blur(BlurStyle.normal, 4 + pulse * 3));
 
     canvas.drawCircle(
         pos,
@@ -159,6 +167,9 @@ class FastingRingPainter extends CustomPainter {
           ..style = PaintingStyle.fill);
   }
 
+  // Siempre repinta: el indicador "vivo" depende de DateTime.now() y del
+  // `pulse`. El costo es bajo (un solo painter pequeño) y el AnimatedBuilder
+  // controla la frecuencia de repaint.
   @override
   bool shouldRepaint(FastingRingPainter oldDelegate) => true;
 }

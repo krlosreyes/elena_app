@@ -8,7 +8,7 @@ import 'parts/biological_cycles_painter.dart';
 import 'parts/fasting_ring_painter.dart';
 import 'parts/eating_window_painter.dart';
 
-class CircadianClock extends StatelessWidget {
+class CircadianClock extends StatefulWidget {
   final UserModel user;
   final FastingState fastingState;
 
@@ -34,10 +34,63 @@ class CircadianClock extends StatelessWidget {
   });
 
   @override
+  State<CircadianClock> createState() => _CircadianClockState();
+}
+
+class _CircadianClockState extends State<CircadianClock>
+    with SingleTickerProviderStateMixin {
+  // UI #3 (motion A): late "respira" la punta viva del arco mientras hay
+  // ayuno activo. Gateado a reduce-motion (accesibilidad).
+  late final AnimationController _pulse;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulse = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2200),
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _syncPulse();
+  }
+
+  @override
+  void didUpdateWidget(covariant CircadianClock oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.fastingState.isActive != widget.fastingState.isActive) {
+      _syncPulse();
+    }
+  }
+
+  void _syncPulse() {
+    final reduceMotion = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    final shouldAnimate = widget.fastingState.isActive && !reduceMotion;
+    if (shouldAnimate) {
+      if (!_pulse.isAnimating) _pulse.repeat(reverse: true);
+    } else {
+      _pulse.stop();
+      _pulse.value = 0;
+    }
+  }
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     // SPEC-72.10: `onBackground` deprecated en Material 3 → migrado a `onSurface`.
     final colorDeTexto = Theme.of(context).colorScheme.onSurface;
     final now = DateTime.now();
+    final fastingState = widget.fastingState;
+    final user = widget.user;
+    final eatingWindow = widget.eatingWindow;
     // `colorDeTexto` se conserva para los painters que sí lo consumen;
     // el centro vive ahora dentro de FastingHeroDisplay.
 
@@ -70,29 +123,34 @@ class CircadianClock extends StatelessWidget {
             SizedBox(
               height: size,
               width: size,
-              child: CustomPaint(
-                painter: fastingState.isActive
-                    ? FastingRingPainter(
-                        startTime: fastingState.startTime ?? now,
-                        duration: fastingState.duration,
-                        // SPEC-103: color fijo verde durante ayuno —
-                        // ya no usamos `phaseColor` que confundía la
-                        // fase `transition` (naranja) con la ventana
-                        // de alimentación. La fase se comunica por
-                        // hitos y texto, no por color del arco.
-                        phaseColor: AppColors.metabolicGreen,
-                        indicatorColor: colorDeTexto,
-                      )
-                    : (eatingWindow != null
-                        ? EatingWindowPainter(
-                            windowStart: eatingWindow!.windowStart,
-                            windowEnd: eatingWindow!.windowEnd,
+              child: fastingState.isActive
+                  // UI #3 (motion A): el arco repinta con el pulso para que la
+                  // punta viva "respire". AnimatedBuilder solo se monta con
+                  // ayuno activo; el controller no late en reduce-motion.
+                  ? AnimatedBuilder(
+                      animation: _pulse,
+                      builder: (context, _) => CustomPaint(
+                        painter: FastingRingPainter(
+                          startTime: fastingState.startTime ?? now,
+                          duration: fastingState.duration,
+                          // SPEC-103: color fijo verde durante ayuno.
+                          phaseColor: AppColors.metabolicGreen,
+                          indicatorColor: colorDeTexto,
+                          pulse: Curves.easeInOut.transform(_pulse.value),
+                        ),
+                      ),
+                    )
+                  : (eatingWindow != null
+                      ? CustomPaint(
+                          painter: EatingWindowPainter(
+                            windowStart: eatingWindow.windowStart,
+                            windowEnd: eatingWindow.windowEnd,
                             now: now,
                             indicatorColor: colorDeTexto,
                             mealsCount: user.mealsPerDay,
-                          )
-                        : null),
-              ),
+                          ),
+                        )
+                      : const SizedBox.shrink()),
             ),
 
             // CAPA 3: SPEC-115 — Hero del ayuno (cronómetro, countdown
