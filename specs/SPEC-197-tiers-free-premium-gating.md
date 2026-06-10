@@ -1,6 +1,6 @@
 # SPEC-197 — Tiers Free / Premium + gating
 
-**Estado:** APPROVED-DESIGN — pendiente de implementación (Ola C).
+**Estado:** IN-PROGRESS (2026-06-09) — inc1 (`FeatureGate` + `featureGateProvider` + `PremiumLock` + evento `feature_gate_blocked` + tests) e inc2 (gating cableado: auto-sync, feedback de cierre, tendencia de Análisis, coaching 1/día + secundaria, `paywall_launcher`) implementados y verdes. Criterio de tiers §2 confirmado por Carlos. **Pendiente:** el `onUpgrade`/`openPaywall` es placeholder hasta SPEC-198 (paywall real).
 **Versión:** 0.1 (draft)
 **Tipo:** Monetización — gating de features por entitlement.
 **Líder:** Carlos

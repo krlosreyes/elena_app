@@ -13,6 +13,8 @@ import 'package:elena_app/src/core/analytics/analytics_events.dart';
 import 'package:elena_app/src/core/engine/circadian_engine.dart';
 import 'package:elena_app/src/core/orchestrator/biological_phases.dart';
 import 'package:elena_app/src/core/services/analytics_service.dart';
+import 'package:elena_app/src/features/billing/application/billing_providers.dart';
+import 'package:elena_app/src/features/billing/presentation/paywall_launcher.dart';
 import 'package:elena_app/src/features/coaching/application/coaching_completion_service.dart';
 import 'package:elena_app/src/features/coaching/application/coaching_fatigue_notifier.dart';
 import 'package:elena_app/src/features/coaching/application/coaching_providers.dart';
@@ -38,10 +40,28 @@ class _NextBestActionCardState extends ConsumerState<NextBestActionCard> {
     // Se calcula directo de CircadianEngine (cero dependencias de providers)
     // para no arrastrar el grafo de coachingSnapshotProvider al card.
     final phaseName = CircadianEngine.currentPhase(DateTime.now()).name;
+    if (primary == null) {
+      ref.read(coachingCompletionProvider).setActive(null);
+      return const SizedBox.shrink();
+    }
+
+    // SPEC-197: gating de coaching. Free = 1 acción/día. Si ya mostró una
+    // acción DISTINTA hoy, la nueva queda tras el paywall (no es la misma que
+    // ya vio — esa se mantiene). Premium: ilimitado.
+    final gate = ref.watch(featureGateProvider);
+    final shownToday = ref.read(coachingFatigueProvider).shownTodayActionIds;
+    final blockedByDailyLimit = !gate.isPremium &&
+        shownToday.isNotEmpty &&
+        !shownToday.contains(primary.id);
+    if (blockedByDailyLimit) {
+      // No atribuir compleción a una acción que el usuario no puede ver.
+      ref.read(coachingCompletionProvider).setActive(null);
+      return _buildUpgradeCard(context, Theme.of(context));
+    }
+
     // SPEC-194: cachear la acción activa para correlacionar con el registro
-    // del pilar (coaching_action_completed). null cuando no hay acción.
+    // del pilar (coaching_action_completed).
     ref.read(coachingCompletionProvider).setActive(primary);
-    if (primary == null) return const SizedBox.shrink();
 
     // SPEC-193: una sola vez por acción distinta. addPostFrameCallback evita
     // contar rebuilds; el id evita re-disparar la misma acción.
@@ -70,7 +90,9 @@ class _NextBestActionCardState extends ConsumerState<NextBestActionCard> {
     }
 
     final theme = Theme.of(context);
-    final secondary = selection.secondary;
+    // SPEC-197: la acción secundaria es Premium.
+    final secondary =
+        gate.coachingSecondaryAllowed ? selection.secondary : null;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
@@ -122,6 +144,50 @@ class _NextBestActionCardState extends ConsumerState<NextBestActionCard> {
                   ActionExplainerSheet.show(context, primary);
                 },
                 child: const Text('Saber más'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// SPEC-197: tarjeta de upgrade que reemplaza la 2ª+ acción del día en Free.
+  Widget _buildUpgradeCard(BuildContext context, ThemeData theme) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: theme.colorScheme.primary),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Desbloquea coaching ilimitado',
+              style: theme.textTheme.titleMedium
+                  ?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Ya viste tu acción de hoy. Con Premium recibes guía continua '
+              'durante todo el día, no solo una vez.',
+              style: theme.textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: FilledButton(
+                onPressed: () => openPaywall(
+                  context,
+                  ref,
+                  feature: GatedFeature.coaching,
+                ),
+                child: const Text('Desbloquear'),
               ),
             ),
           ],

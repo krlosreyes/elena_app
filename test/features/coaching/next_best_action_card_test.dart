@@ -1,4 +1,6 @@
-// SPEC-194 inc3 — widget test del card "Tu siguiente paso".
+// SPEC-194 inc3 + SPEC-197 — widget test del card "Tu siguiente paso".
+
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +9,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:elena_app/src/core/orchestrator/biological_phases.dart';
 import 'package:elena_app/src/core/providers/shared_preferences_provider.dart';
+import 'package:elena_app/src/features/billing/application/billing_providers.dart';
+import 'package:elena_app/src/features/billing/application/feature_gate.dart';
 import 'package:elena_app/src/features/coaching/application/coaching_providers.dart';
 import 'package:elena_app/src/features/coaching/domain/action_source.dart';
 import 'package:elena_app/src/features/coaching/domain/coaching_action.dart';
@@ -27,13 +31,36 @@ CoachingAction _action() => const CoachingAction(
       circadianImpact: 0.8,
     );
 
-Widget _wrap(CoachingSelection selection, SharedPreferences prefs) {
+CoachingAction _secondary() => const CoachingAction(
+      id: 'circadian_morning_hydrate',
+      title: 'Secundaria',
+      actionText: 'Toma agua al despertar.',
+      reason: 'Hidratación matutina.',
+      pillar: Pillar.hydration,
+      confidence: ConfidenceLevel.low,
+      citation: '· Biological Dial',
+      source: ActionSource.circadian,
+      urgencyKind: ActionUrgencyKind.phaseOpportunity,
+      circadianImpact: 0.3,
+    );
+
+String _todayKey() {
+  final n = DateTime.now();
+  return '${n.year.toString().padLeft(4, '0')}-'
+      '${n.month.toString().padLeft(2, '0')}-'
+      '${n.day.toString().padLeft(2, '0')}';
+}
+
+Widget _wrap(
+  CoachingSelection selection,
+  SharedPreferences prefs, {
+  bool premium = false,
+}) {
   return ProviderScope(
     overrides: [
       coachingSelectionProvider.overrideWith((ref) => selection),
-      // RF-2.5: el card usa el store anti-fatiga (SharedPreferences) en
-      // recordShown; en tests inyectamos un prefs mockeado.
       sharedPreferencesProvider.overrideWithValue(prefs),
+      featureGateProvider.overrideWithValue(FeatureGate(isPremium: premium)),
     ],
     child: const MaterialApp(home: Scaffold(body: NextBestActionCard())),
   );
@@ -68,5 +95,68 @@ void main() {
     await tester.pumpWidget(_wrap(const CoachingSelection(), prefs));
     expect(find.text('Tu siguiente paso'), findsNothing);
     expect(find.byType(NextBestActionCard), findsOneWidget); // existe pero vacío
+  });
+
+  group('SPEC-197 gating', () {
+    testWidgets('Free oculta la acción secundaria', (tester) async {
+      await tester.pumpWidget(_wrap(
+        CoachingSelection(primary: _action(), secondary: _secondary()),
+        prefs,
+      ));
+      expect(find.text('Tu siguiente paso'), findsOneWidget); // primaria visible
+      expect(find.textContaining('También:'), findsNothing); // secundaria oculta
+    });
+
+    testWidgets('Premium muestra la acción secundaria', (tester) async {
+      await tester.pumpWidget(_wrap(
+        CoachingSelection(primary: _action(), secondary: _secondary()),
+        prefs,
+        premium: true,
+      ));
+      expect(find.textContaining('También:'), findsOneWidget);
+    });
+
+    testWidgets('Free + acción distinta ya vista hoy → card de upgrade',
+        (tester) async {
+      // Sembrar el store anti-fatiga: ya se mostró OTRA acción hoy.
+      SharedPreferences.setMockInitialValues({
+        'coaching.fatigue.v1': jsonEncode({
+          'lastDate': _todayKey(),
+          'shown': ['otra_accion_distinta'],
+          'completed': <String>[],
+          'ignored': <String, int>{},
+        }),
+      });
+      final seeded = await SharedPreferences.getInstance();
+
+      await tester.pumpWidget(
+        _wrap(CoachingSelection(primary: _action()), seeded),
+      );
+
+      expect(find.text('Desbloquea coaching ilimitado'), findsOneWidget);
+      expect(find.text('Desbloquear'), findsOneWidget);
+      // La acción real NO se muestra.
+      expect(find.text('Apaga pantallas 1h antes de dormir.'), findsNothing);
+    });
+
+    testWidgets('Premium + acción distinta ya vista hoy → SÍ muestra la acción',
+        (tester) async {
+      SharedPreferences.setMockInitialValues({
+        'coaching.fatigue.v1': jsonEncode({
+          'lastDate': _todayKey(),
+          'shown': ['otra_accion_distinta'],
+          'completed': <String>[],
+          'ignored': <String, int>{},
+        }),
+      });
+      final seeded = await SharedPreferences.getInstance();
+
+      await tester.pumpWidget(
+        _wrap(CoachingSelection(primary: _action()), seeded, premium: true),
+      );
+
+      expect(find.text('Apaga pantallas 1h antes de dormir.'), findsOneWidget);
+      expect(find.text('Desbloquea coaching ilimitado'), findsNothing);
+    });
   });
 }
