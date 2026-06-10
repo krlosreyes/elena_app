@@ -21,6 +21,7 @@ import 'package:elena_app/src/features/adaptive/presentation/widgets/adaptive_su
 import 'package:elena_app/src/features/billing/presentation/paywall_auto_trigger.dart';
 import 'package:elena_app/src/features/coaching/presentation/widgets/next_best_action_card.dart';
 import 'package:elena_app/src/features/coaching/presentation/widgets/cycle_coaching_feedback_card.dart';
+import 'package:elena_app/src/features/dashboard/presentation/widgets/interactive_coaching_card.dart';
 import 'package:elena_app/src/features/goals/application/pillar_goal_providers.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/exercise_pillar_card.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/hydration_pillar_card.dart';
@@ -239,6 +240,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
                   // MOTOR ADAPTATIVO (SPEC-08)
                   const AdaptiveSuggestionCard(),
+
+                  // SPEC-199 Fase A: coach INTERACTIVO de hidratación. Pregunta
+                  // accionable (registrar vaso de un toque) decidida por el
+                  // motor predictivo según contexto. Se oculta sola si no aplica.
+                  const InteractiveCoachingCard(),
                   const SizedBox(height: 16),
 
                   Stack(
