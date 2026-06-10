@@ -10,7 +10,7 @@ import 'package:elena_app/src/core/theme/app_icons.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/analysis/application/analysis_range_provider.dart';
 import 'package:elena_app/src/features/analysis/application/analysis_series_providers.dart';
-import 'package:elena_app/src/features/analysis/application/causal_insights_provider.dart';
+import 'package:elena_app/src/features/analysis/application/observations_provider.dart';
 // SPEC-168.1: helper para formatear el dateRange del card de Nutrición pie.
 import 'package:elena_app/src/features/analysis/application/chart_hero_computer.dart';
 // SPEC-168.5.4: distribución pie A vs E.
@@ -18,14 +18,14 @@ import 'package:elena_app/src/features/analysis/application/nutrition_pie_provid
 // SPEC-168.1: aggregation mode + hero aggregation enums.
 import 'package:elena_app/src/features/analysis/domain/aggregation_mode.dart';
 import 'package:elena_app/src/features/analysis/domain/analysis_range.dart';
-import 'package:elena_app/src/features/analysis/domain/causal_insight.dart';
+import 'package:elena_app/src/features/analysis/domain/observation.dart';
 import 'package:elena_app/src/features/analysis/domain/chart_metric.dart';
 import 'package:elena_app/src/features/analysis/domain/hero_aggregation.dart';
 import 'package:elena_app/src/features/analysis/domain/metric_series.dart';
 // SPEC-168.5.4: domain del pie chart de Nutrición.
 import 'package:elena_app/src/features/analysis/domain/nutrition_pie_data.dart';
 import 'package:elena_app/src/features/analysis/presentation/monthly_calendar_screen.dart';
-import 'package:elena_app/src/features/analysis/presentation/widgets/insight_tile.dart';
+import 'package:elena_app/src/features/analysis/presentation/widgets/observation_tile.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/transformation_card.dart';
 import 'package:elena_app/src/features/streak/application/daily_score_provider.dart';
 // SPEC-168.4: tile compacto del overview con sparkline + tap a detalle.
@@ -89,7 +89,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
     final hydration = ref.watch(hydrationHabitSeriesProvider);
     final exercise = ref.watch(exerciseHabitSeriesProvider);
     final sleep = ref.watch(sleepHabitSeriesProvider);
-    final insights = ref.watch(causalInsightsProvider);
+    final observations = ref.watch(observationsProvider);
 
     // SPEC-168.2-fix: solo consideramos "first load" cuando NINGÚN
     // provider tiene .value aún (transición inicial AsyncLoading →
@@ -133,7 +133,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                   hydrationSeries: hydration.value!,
                   exerciseSeries: exercise.value!,
                   sleepSeries: sleep.value!,
-                  insights: insights,
+                  observations: observations,
                   aggregationMode: aggregationMode,
                   nutritionPie: nutritionPie.value ?? const NutritionPieData(
                     aDominantCount: 0,
@@ -256,7 +256,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
     required MetricSeries hydrationSeries,
     required MetricSeries exerciseSeries,
     required MetricSeries sleepSeries,
-    required AsyncValue<List<CausalInsight>> insights,
+    required AsyncValue<List<Observation>> observations,
     required AggregationMode aggregationMode,
     required NutritionPieData nutritionPie,
   }) {
@@ -311,7 +311,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
       const SizedBox(height: 36),
       _sectionTitle('Observaciones'),
       const SizedBox(height: 4),
-      insights.when(
+      observations.when(
         loading: () => const Padding(
           padding: EdgeInsets.symmetric(vertical: 16),
           child: SizedBox(
@@ -338,8 +338,9 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
             return Padding(
               padding: const EdgeInsets.symmetric(vertical: 12),
               child: Text(
-                'Seguí registrando — Elena necesita más patrones '
-                'para devolverte conclusiones causa-efecto.',
+                'Seguí registrando unos días más — en cuanto tengas un '
+                'patrón, acá te muestro observaciones útiles sobre tu '
+                'semana.',
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.55),
                   fontSize: 13,
@@ -351,7 +352,8 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
           }
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: list.map((i) => InsightTile(insight: i)).toList(),
+            children:
+                list.map((o) => ObservationTile(observation: o)).toList(),
           );
         },
       ),
