@@ -18,6 +18,7 @@ import 'package:elena_app/src/features/exercise/application/exercise_notifier.da
 import 'package:elena_app/src/features/exercise/application/exercise_state.dart';
 import 'package:elena_app/src/features/engagement/presentation/widgets/engagement_banner.dart';
 import 'package:elena_app/src/features/adaptive/presentation/widgets/adaptive_suggestion_card.dart';
+import 'package:elena_app/src/features/billing/presentation/paywall_auto_trigger.dart';
 import 'package:elena_app/src/features/coaching/presentation/widgets/next_best_action_card.dart';
 import 'package:elena_app/src/features/coaching/presentation/widgets/cycle_coaching_feedback_card.dart';
 import 'package:elena_app/src/features/goals/application/pillar_goal_providers.dart';
@@ -194,6 +195,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   // BANNER DE ENGAGEMENT (SPEC-07 + SPEC-72.2 dismiss por sesión)
                   const EngagementBanner(),
                   const SizedBox(height: 16),
+
+                  // SPEC-198: orquestador invisible del paywall proactivo +
+                  // nudges día 5/12. No dibuja nada.
+                  const PaywallAutoTrigger(),
 
                   // SPEC-194: "Tu siguiente paso" — acción de coaching
                   // priorizada por el motor de decisión. Se oculta sola en

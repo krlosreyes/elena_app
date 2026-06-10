@@ -1,6 +1,6 @@
 # SPEC-198 — Trial 14 días + conversión + pricing LatAm/US
 
-**Estado:** IN-PROGRESS (2026-06-09) — inc1 (`PaywallTrigger` puro + `PaywallScreen` con precios localizados del SDK + restaurar + telemetría de conversión; `openPaywall` ahora abre el paywall real) implementado y testeado con `FakeBillingService`. **Pendiente (inc2):** nudges día 5/12 + auto-disparo del paywall vía `PaywallTrigger` (requiere fecha de registro + conteo de ayunos). Trial 14d e intro offer se configuran en tienda (Carlos, `docs/SETUP_BILLING.md`).
+**Estado:** IMPLEMENTED (2026-06-09) — inc1 (`PaywallTrigger` + `PaywallScreen` con precios localizados del SDK + restaurar + telemetría; `openPaywall` abre el paywall real) e inc2 (`PaywallNudges` día 5/12, `PaywallPromptStore`, `PaywallAutoTrigger` invisible en el Home: auto-ofrece tras valor y programa/cancela nudges según premium). Todo testeado con `FakeBillingService` + tests puros. **Pendiente de tienda (Carlos):** trial 14d e intro offer en App Store Connect / Play Console (`docs/SETUP_BILLING.md`); validación de conversión real → Ola G.
 **Versión:** 0.1 (draft)
 **Tipo:** Monetización — paywall, trial, nudges de conversión, pricing regional.
 **Líder:** Carlos

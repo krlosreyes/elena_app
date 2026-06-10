@@ -24,6 +24,9 @@ class NotificationIds {
   // SPEC-150: hidratación. Rango 400-419 (hasta 20 slots/día).
   static const int hydrationStart = 400;
   static const int hydrationEnd = 419;
+  // SPEC-198: nudges de conversión de trial (día 5 y día 12).
+  static const int paywallNudgeDay5 = 500;
+  static const int paywallNudgeDay12 = 501;
 }
 
 class NotificationService {

@@ -37,6 +37,10 @@ class NotificationIds {
   // cancelHydration() cancela todo el rango.
   static const int hydrationStart = 400;
   static const int hydrationEnd = 419;
+
+  // SPEC-198: nudges de conversión de trial (día 5 y día 12).
+  static const int paywallNudgeDay5 = 500;
+  static const int paywallNudgeDay12 = 501;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
