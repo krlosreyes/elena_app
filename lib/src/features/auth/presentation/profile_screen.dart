@@ -9,6 +9,7 @@ import 'package:elena_app/src/features/auth/application/profile_controller.dart'
 import 'package:elena_app/src/features/auth/presentation/widgets/data_group_card.dart';
 import 'package:elena_app/src/features/auth/presentation/widgets/edit_biometry_value_sheet.dart';
 import 'package:elena_app/src/features/dashboard/domain/optimal_schedule.dart';
+import 'package:elena_app/src/features/analysis/domain/imr_explanation.dart';
 import 'package:elena_app/src/features/goals/application/goal_notifier.dart';
 import 'package:elena_app/src/features/goals/domain/user_goal.dart';
 import 'package:elena_app/src/features/goals/presentation/goal_icons.dart';
