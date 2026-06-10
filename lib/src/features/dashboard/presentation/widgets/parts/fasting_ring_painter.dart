@@ -11,12 +11,22 @@ class FastingRingPainter extends CustomPainter {
   /// 0 = glow base estático (reduce-motion); oscila 0..1 cuando hay motion.
   final double pulse;
 
+  /// UI #3 (motion B): hora del hito que se está celebrando (12/18/24 o el
+  /// target del usuario). `null` = sin celebración en curso.
+  final int? celebrateHour;
+
+  /// UI #3 (motion B): 0..1 del burst de celebración. 0 = sin destello,
+  /// 1 = pico. La animación one-shot lo lleva 0→1→0 (fade out).
+  final double celebrateT;
+
   FastingRingPainter({
     required this.startTime,
     required this.duration,
     required this.phaseColor,
     required this.indicatorColor,
     this.pulse = 0,
+    this.celebrateHour,
+    this.celebrateT = 0,
   });
 
   @override
@@ -81,8 +91,50 @@ class FastingRingPainter extends CustomPainter {
       );
     }
 
+    // 3.5 CELEBRACIÓN DE HITO (motion B): burst one-shot cuando el usuario
+    // cruza 12h/18h/24h o su target. Se dibuja sobre el arco, en el ángulo
+    // del hito alcanzado.
+    if (celebrateHour != null && celebrateT > 0) {
+      _drawMilestoneCelebration(canvas, center, radiusFasting, startAngle,
+          celebrateHour!, strokeWidthFasting);
+    }
+
     // 4. Punto Indicador de Tiempo Real (Ubicación actual en el reloj de 24h)
     _drawLiveIndicator(canvas, center, orbitRadius, indicatorPointRadius);
+  }
+
+  void _drawMilestoneCelebration(Canvas canvas, Offset center, double radius,
+      double startAngle, int milestoneHour, double strokeWidthFasting) {
+    final double angle = startAngle + (milestoneHour * (math.pi / 12));
+    final pos = Offset(center.dx + radius * math.cos(angle),
+        center.dy + radius * math.sin(angle));
+
+    // Anillo expansivo que crece y se desvanece (0→1).
+    final double ringRadius = strokeWidthFasting + (strokeWidthFasting * 2.2 * celebrateT);
+    canvas.drawCircle(
+        pos,
+        ringRadius,
+        Paint()
+          ..color = phaseColor.withValues(alpha: (1 - celebrateT) * 0.55)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2.5);
+
+    // Halo suave que pulsa en el pico y se apaga.
+    final double glowAlpha = math.sin(celebrateT * math.pi) * 0.4;
+    canvas.drawCircle(
+        pos,
+        strokeWidthFasting * 1.3,
+        Paint()
+          ..color = phaseColor.withValues(alpha: glowAlpha)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6));
+
+    // Núcleo brillante en el punto exacto del hito.
+    canvas.drawCircle(
+        pos,
+        strokeWidthFasting * 0.45,
+        Paint()
+          ..color = Colors.white.withValues(alpha: (1 - celebrateT) * 0.9)
+          ..style = PaintingStyle.fill);
   }
 
   void _drawFastingMilestones(Canvas canvas, Offset center, double radius,

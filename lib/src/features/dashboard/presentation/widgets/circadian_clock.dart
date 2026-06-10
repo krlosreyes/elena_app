@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import '../../domain/eating_window_state.dart';
@@ -38,10 +39,20 @@ class CircadianClock extends StatefulWidget {
 }
 
 class _CircadianClockState extends State<CircadianClock>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   // UI #3 (motion A): late "respira" la punta viva del arco mientras hay
   // ayuno activo. Gateado a reduce-motion (accesibilidad).
   late final AnimationController _pulse;
+
+  // UI #3 (motion B): burst one-shot al cruzar un hito (12/18/24h o target).
+  late final AnimationController _celebrate;
+
+  /// Hito que se está celebrando ahora (12/18/24 o target). `null` = ninguno.
+  int? _celebratingHour;
+
+  /// Hitos ya celebrados en el ayuno ACTUAL — evita repetir el destello en
+  /// cada tick. Se limpia al iniciar un ayuno nuevo o al cerrarlo.
+  final Set<int> _celebratedHours = {};
 
   @override
   void initState() {
@@ -49,6 +60,10 @@ class _CircadianClockState extends State<CircadianClock>
     _pulse = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2200),
+    );
+    _celebrate = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
     );
   }
 
@@ -61,8 +76,22 @@ class _CircadianClockState extends State<CircadianClock>
   @override
   void didUpdateWidget(covariant CircadianClock oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.fastingState.isActive != widget.fastingState.isActive) {
+
+    final old = oldWidget.fastingState;
+    final now = widget.fastingState;
+
+    // Reset del registro de hitos al iniciar un ayuno nuevo o al cerrarlo,
+    // para que la próxima sesión vuelva a poder celebrar.
+    if (!now.isActive || now.startTime != old.startTime) {
+      _celebratedHours.clear();
+    }
+
+    if (old.isActive != now.isActive) {
       _syncPulse();
+    }
+
+    if (now.isActive) {
+      _maybeCelebrate(old.duration, now.duration);
     }
   }
 
@@ -77,9 +106,40 @@ class _CircadianClockState extends State<CircadianClock>
     }
   }
 
+  /// Detecta el cruce de un hito entre la duración previa y la actual.
+  /// Sólo dispara hacia adelante (oldDur < hito ≤ newDur) y una vez por hito.
+  /// No dispara en el mount inicial (no hay `oldWidget`), por lo que reabrir
+  /// la app a mitad de ayuno NO repite celebraciones ya pasadas.
+  void _maybeCelebrate(Duration oldDur, Duration newDur) {
+    if (newDur <= oldDur) return;
+    final oldSecs = oldDur.inSeconds;
+    final newSecs = newDur.inSeconds;
+    final target = widget.fastingState.targetHours;
+    final milestones = <int>{12, 18, 24, if (target > 0) target};
+
+    for (final h in milestones) {
+      final threshold = h * 3600;
+      final crossed = oldSecs < threshold && newSecs >= threshold;
+      if (crossed && !_celebratedHours.contains(h)) {
+        _celebratedHours.add(h);
+        HapticFeedback.mediumImpact();
+        final reduceMotion =
+            MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+        if (!reduceMotion) {
+          setState(() => _celebratingHour = h);
+          _celebrate.forward(from: 0).whenComplete(() {
+            if (mounted) setState(() => _celebratingHour = null);
+          });
+        }
+        break; // una celebración a la vez
+      }
+    }
+  }
+
   @override
   void dispose() {
     _pulse.dispose();
+    _celebrate.dispose();
     super.dispose();
   }
 
@@ -128,7 +188,7 @@ class _CircadianClockState extends State<CircadianClock>
                   // punta viva "respire". AnimatedBuilder solo se monta con
                   // ayuno activo; el controller no late en reduce-motion.
                   ? AnimatedBuilder(
-                      animation: _pulse,
+                      animation: Listenable.merge([_pulse, _celebrate]),
                       builder: (context, _) => CustomPaint(
                         painter: FastingRingPainter(
                           startTime: fastingState.startTime ?? now,
@@ -137,6 +197,9 @@ class _CircadianClockState extends State<CircadianClock>
                           phaseColor: AppColors.metabolicGreen,
                           indicatorColor: colorDeTexto,
                           pulse: Curves.easeInOut.transform(_pulse.value),
+                          celebrateHour: _celebratingHour,
+                          celebrateT:
+                              Curves.easeOut.transform(_celebrate.value),
                         ),
                       ),
                     )
