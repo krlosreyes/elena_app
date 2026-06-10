@@ -13,8 +13,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
+import 'package:elena_app/src/core/theme/app_icons.dart';
 import 'package:elena_app/src/features/goals/domain/user_goal.dart';
 import 'package:elena_app/src/features/goals/application/goal_notifier.dart';
+import 'package:elena_app/src/features/goals/presentation/goal_icons.dart';
 import 'package:elena_app/src/features/goals/application/goal_suggestion_engine.dart';
 
 class GoalSetupScreen extends ConsumerStatefulWidget {
@@ -151,7 +153,7 @@ class _GoalSetupScreenState extends ConsumerState<GoalSetupScreen> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('🧬', style: TextStyle(fontSize: 22)),
+                  const Icon(AppIcons.imr, size: 22, color: Colors.white),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -382,8 +384,8 @@ class _GoalSuggestionCardState extends State<GoalSuggestionCard> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Emoji
-                Text(meta.emoji, style: const TextStyle(fontSize: 22)),
+                Icon(goalIcon(meta.type),
+                    size: 22, color: Colors.white.withValues(alpha: 0.85)),
                 const SizedBox(width: 10),
 
                 // Info central

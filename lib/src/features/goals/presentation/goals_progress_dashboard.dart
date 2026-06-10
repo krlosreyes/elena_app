@@ -9,7 +9,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:elena_app/src/core/theme/app_icons.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
+import 'package:elena_app/src/features/goals/presentation/goal_icons.dart';
 import 'package:elena_app/src/features/goals/application/goals_progress_provider.dart';
 import 'package:elena_app/src/features/goals/domain/goal_progress_snapshot.dart';
 import 'package:elena_app/src/features/goals/presentation/goal_setup_screen.dart';
@@ -154,10 +156,8 @@ class GoalsProgressDashboard extends ConsumerWidget {
         // Línea 1: emoji + label a la izquierda, % a la derecha.
         Row(
           children: [
-            Text(
-              goal.emoji,
-              style: const TextStyle(fontSize: 18),
-            ),
+            Icon(goalIcon(goal.type),
+                size: 18, color: Colors.white.withValues(alpha: 0.85)),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
@@ -265,7 +265,7 @@ class GoalsProgressDashboard extends ConsumerWidget {
             children: [
               const Row(
                 children: [
-                  Text('🎯', style: TextStyle(fontSize: 22)),
+                  Icon(AppIcons.objetivos, size: 22, color: Colors.white),
                   SizedBox(width: 10),
                   Text(
                     'Definí tu plan',

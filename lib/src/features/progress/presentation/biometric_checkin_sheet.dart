@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 import 'package:elena_app/src/core/engine/longitudinal_imr_provider.dart';
 import 'package:elena_app/src/core/engine/metabolic_state_provider.dart';
+import 'package:elena_app/src/core/theme/app_icons.dart';
 import 'package:elena_app/src/core/engine/weekly_imr_snapshot_service.dart';
 import 'package:elena_app/src/features/progress/application/biometric_history_service.dart';
 import 'package:elena_app/src/features/progress/domain/biometric_checkin.dart';
@@ -176,7 +177,8 @@ class _BiometricCheckInSheetState extends ConsumerState<BiometricCheckInSheet> {
                         color: const Color(0xFF1ABC9C).withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Text('📏', style: TextStyle(fontSize: 20)),
+                      child: const Icon(AppIcons.cinturaEstatura,
+                          size: 20, color: Color(0xFF1ABC9C)),
                     ),
                     const SizedBox(width: 12),
                     Column(

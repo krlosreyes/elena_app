@@ -90,25 +90,6 @@ class UserGoal {
     }
   }
 
-  String get emoji {
-    switch (type) {
-      case GoalType.weightTarget:
-        return '⚖️';
-      case GoalType.bodyFatTarget:
-        return '🔥';
-      case GoalType.fastingDaysPerWeek:
-        return '⏱️';
-      case GoalType.exerciseMinPerDay:
-        return '💪';
-      case GoalType.sleepHoursPerNight:
-        return '🌙';
-      case GoalType.hydrationLitersPerDay:
-        return '💧';
-      case GoalType.nutritionADominantPercent:
-        return '🥦';
-    }
-  }
-
   /// Rango deslizable mínimo para el slider de setup.
   double get sliderMin {
     switch (type) {

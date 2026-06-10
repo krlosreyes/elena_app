@@ -11,6 +11,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 import 'package:elena_app/src/core/engine/metabolic_state_provider.dart';
+import 'package:elena_app/src/core/theme/app_icons.dart';
+import 'package:elena_app/src/features/goals/presentation/goal_icons.dart';
 import 'package:elena_app/src/features/progress/application/progress_notifier.dart';
 import 'package:elena_app/src/features/progress/domain/biometric_checkin.dart';
 import 'package:elena_app/src/features/progress/presentation/biometric_checkin_sheet.dart';
@@ -382,28 +384,28 @@ class _LastCheckInCard extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           _MetricChip(
-            emoji: '⚖️',
+            icon: AppIcons.peso,
             label: 'Peso',
             value: '${latest.weight.toStringAsFixed(1)} kg',
             color: const Color(0xFF3498DB),
           ),
           if (latest.bodyFatPercentage != null)
             _MetricChip(
-              emoji: '🔥',
+              icon: AppIcons.grasa,
               label: '%Grasa',
               value: '${latest.bodyFatPercentage!.toStringAsFixed(0)}%',
               color: const Color(0xFFF39C12),
             ),
           if (latest.waistCircumference != null)
             _MetricChip(
-              emoji: '📐',
+              icon: AppIcons.cinturaEstatura,
               label: 'Cintura',
               value: '${latest.waistCircumference!.toStringAsFixed(0)} cm',
               color: const Color(0xFF9B59B6),
             ),
           if (latest.imrScore != null)
             _MetricChip(
-              emoji: '📊',
+              icon: AppIcons.imr,
               label: 'IMR',
               value: '${latest.imrScore}',
               color: const Color(0xFF1ABC9C),
@@ -416,12 +418,12 @@ class _LastCheckInCard extends StatelessWidget {
 
 class _MetricChip extends StatelessWidget {
   const _MetricChip({
-    required this.emoji,
+    required this.icon,
     required this.label,
     required this.value,
     required this.color,
   });
-  final String emoji;
+  final IconData icon;
   final String label;
   final String value;
   final Color color;
@@ -430,7 +432,7 @@ class _MetricChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(emoji, style: const TextStyle(fontSize: 18)),
+        Icon(icon, size: 18, color: color),
         const SizedBox(height: 4),
         Text(
           value,
@@ -551,7 +553,8 @@ class _EmptyBiometric extends StatelessWidget {
         ),
         child: Row(
           children: [
-            const Text('📏', style: TextStyle(fontSize: 22)),
+            Icon(AppIcons.cinturaEstatura,
+                size: 22, color: Colors.white.withValues(alpha: 0.85)),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -650,7 +653,8 @@ class _GoalProgressSection extends ConsumerWidget {
               children: [
                 Row(
                   children: [
-                    Text(goal.emoji, style: const TextStyle(fontSize: 16)),
+                    Icon(goalIcon(goal.type),
+                        size: 16, color: Colors.white.withValues(alpha: 0.85)),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -760,7 +764,8 @@ class _CheckInCTA extends StatelessWidget {
                 color: const Color(0xFF1ABC9C).withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Text('📏', style: TextStyle(fontSize: 20)),
+              child: Icon(AppIcons.cinturaEstatura,
+                  size: 20, color: Colors.white.withValues(alpha: 0.85)),
             ),
             const SizedBox(width: 14),
             const Expanded(
@@ -843,7 +848,8 @@ class _UnlockCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Text('🔒', style: TextStyle(fontSize: 18)),
+              Icon(AppIcons.bloqueado,
+                  size: 18, color: Colors.white.withValues(alpha: 0.7)),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(

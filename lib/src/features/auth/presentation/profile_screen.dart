@@ -11,6 +11,7 @@ import 'package:elena_app/src/features/auth/presentation/widgets/edit_biometry_v
 import 'package:elena_app/src/features/dashboard/domain/optimal_schedule.dart';
 import 'package:elena_app/src/features/goals/application/goal_notifier.dart';
 import 'package:elena_app/src/features/goals/domain/user_goal.dart';
+import 'package:elena_app/src/features/goals/presentation/goal_icons.dart';
 import 'package:elena_app/src/features/health_sync/presentation/health_sync_card.dart';
 import 'package:elena_app/src/features/profile/domain/biometry_recalc.dart';
 import 'package:elena_app/src/features/profile/presentation/widgets/body_composition_card.dart';
@@ -1361,10 +1362,8 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
             Expanded(
               child: Row(
                 children: [
-                  Text(
-                    goal.emoji,
-                    style: const TextStyle(fontSize: 16),
-                  ),
+                  Icon(goalIcon(goal.type),
+                      size: 16, color: Colors.white.withValues(alpha: 0.85)),
                   const SizedBox(width: 10),
                   Flexible(
                     child: Text(
