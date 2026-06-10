@@ -15,6 +15,8 @@ import 'package:go_router/go_router.dart';
 
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/analysis/application/analysis_range_provider.dart';
+import 'package:elena_app/src/features/analysis/application/historic_summaries_provider.dart';
+import 'package:elena_app/src/features/analysis/data/daily_summary_doc.dart';
 import 'package:elena_app/src/features/analysis/domain/analysis_range.dart';
 import 'package:elena_app/src/features/analysis/application/analysis_series_providers.dart';
 import 'package:elena_app/src/features/analysis/application/chart_hero_computer.dart';
@@ -30,6 +32,7 @@ import 'package:elena_app/src/features/analysis/presentation/widgets/bar_chart_c
 // SPEC-168.4.3: widget completo de composición corporal con tabs.
 import 'package:elena_app/src/features/analysis/presentation/widgets/body_composition_trend_chart.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/line_chart_card.dart';
+import 'package:elena_app/src/features/analysis/presentation/widgets/imr_trend_chart.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/nutrition_pie_card.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/nutrition_trend_bar_card.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/segmented_range_control.dart';
@@ -299,23 +302,51 @@ class _AnalysisPillarDetailScreenState
 
   // ─── Cards por pilar ────────────────────────────────────────────
 
+  /// Detalle del IMR: gráfico DÍA A DÍA con línea de promedio + mejor/peor
+  /// día + bandas de zona (ImrTrendChart). Alimentado por los docs crudos del
+  /// rango (`daily_summaries`), no por la serie agregada — así muestra el
+  /// puntaje real de cada día tal como lo pidió el usuario.
   Widget _imrCard(AggregationMode mode, String periodLabel) {
-    final s = ref.watch(imrSeriesProvider);
-    if (s.value == null) return _loadingBox();
-    final target = ref.watch(goalForChartProvider(ChartMetric.imr));
-    final targetLabel =
-        ref.watch(goalLabelForChartProvider(ChartMetric.imr));
-    return LineChartCard(
-      series: s.value!,
-      accent: AppColors.metabolicGreen,
-      periodLabel: periodLabel,
-      headline: 'Tu IMR en este período.',
-      aggregationMode: mode,
-      heroAggregation: HeroAggregation.avg,
-      targetValue: target,
-      targetLabel: targetLabel,
-      deltaIsBetterIf: 'up',
+    final range = ref.watch(analysisRangeProvider);
+    final start = ref.watch(analysisRangeStartProvider);
+    final today = DateTime.now();
+    final docsAsync = ref.watch(
+      historicSummariesProvider(
+        HistoricSummariesRange(
+          fromIncl: _isoDate(start ?? DateTime(2000, 1, 1)),
+          toIncl: _isoDate(today),
+        ),
+      ),
     );
+    final docs = docsAsync.value;
+    if (docs == null) return _loadingBox();
+    final daysInPeriod = range.daysFromToday ?? _spanDaysInclusive(docs, today);
+    return ImrTrendChart(docs: docs, daysInPeriod: daysInPeriod);
+  }
+
+  static String _isoDate(DateTime d) =>
+      '${d.year.toString().padLeft(4, '0')}-'
+      '${d.month.toString().padLeft(2, '0')}-'
+      '${d.day.toString().padLeft(2, '0')}';
+
+  /// Días desde el doc más antiguo hasta hoy (inclusive). Fallback para el
+  /// rango "Todo" (sin `daysFromToday`). Mínimo 1.
+  static int _spanDaysInclusive(List<DailySummaryDoc> docs, DateTime today) {
+    if (docs.isEmpty) return 30;
+    DateTime? earliest;
+    for (final d in docs) {
+      final parts = d.date.split('-');
+      if (parts.length != 3) continue;
+      final dt = DateTime(
+        int.tryParse(parts[0]) ?? today.year,
+        int.tryParse(parts[1]) ?? 1,
+        int.tryParse(parts[2]) ?? 1,
+      );
+      if (earliest == null || dt.isBefore(earliest)) earliest = dt;
+    }
+    if (earliest == null) return 30;
+    final t = DateTime(today.year, today.month, today.day);
+    return (t.difference(earliest).inDays + 1).clamp(1, 100000);
   }
 
   Widget _bodyFatCard(AggregationMode mode, String periodLabel) {
