@@ -309,7 +309,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
       const SizedBox(height: 10),
       _sleepTile(sleepSeries),
       const SizedBox(height: 36),
-      _sectionTitle('Observaciones'),
+      _sectionTitle('Tus tendencias'),
       const SizedBox(height: 4),
       observations.when(
         loading: () => const Padding(
