@@ -461,6 +461,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             dailyScore: dailyScore,
             dailyDelta: delta,
             imrScore: ref.watch(displayedImrProvider).score,
+            imrZone: ref.watch(displayedImrProvider).zone,
             onTap: () => showDailyScoreExplainerSheet(context),
           ),
           const SizedBox(height: 12),

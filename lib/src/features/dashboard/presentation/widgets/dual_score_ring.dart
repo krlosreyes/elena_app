@@ -11,12 +11,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:elena_app/src/core/theme/app_theme.dart';
-
-/// Color del ring IMR. Cyan complementario al teal del accent (HOY).
-/// Sin alias en AppColors por ahora — si tras validación visual Carlos
-/// lo aprueba, se promueve a token canónico. Inspiración: Tailwind
-/// cyan-500 con leve desaturación para encajar con el dark theme.
-const Color _kImrColor = Color(0xFF22D3EE);
+import 'package:elena_app/src/features/analysis/domain/imr_explanation.dart';
 
 class DualScoreRing extends StatelessWidget {
   const DualScoreRing({
@@ -25,6 +20,7 @@ class DualScoreRing extends StatelessWidget {
     required this.dailyDelta,
     required this.imrScore,
     required this.onTap,
+    this.imrZone = '',
   });
 
   /// Score del Día 0-100 (display anclado al ciclo metabólico — SPEC-171).
@@ -36,36 +32,42 @@ class DualScoreRing extends StatelessWidget {
   /// IMR longitudinal 0-100 (displayedImrProvider).
   final int imrScore;
 
+  /// Zona del IMR (para color calmo + etiqueta). UI #2/#4.
+  final String imrZone;
+
   /// Abre el ExplainerSheet único que cubre ambos.
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    // UI #4: jerarquía por tamaño. HOY es el HÉROE (el número que el usuario
+    // mueve hoy); el IMR es la REFERENCIA quieta (más chico, color calmo).
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          // SPEC-170 §R-02: rings más chicos en pantallas estrechas
-          // (iPhone SE 320px). Default 72px, fallback 60px <360.
-          final double ringSize = constraints.maxWidth < 360 ? 60 : 72;
+          final bool narrow = constraints.maxWidth < 360;
+          final double heroSize = narrow ? 84 : 100;
+          final double refSize = narrow ? 48 : 56;
           return Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               _BigScoreRing(
                 score: dailyScore,
                 color: AppColors.metabolicGreen,
                 label: 'HOY',
                 sublabel: _dailyDeltaLabel(dailyDelta),
-                size: ringSize,
+                size: heroSize,
               ),
+              SizedBox(width: narrow ? 24 : 40),
               _BigScoreRing(
                 score: imrScore,
-                color: _kImrColor,
+                color: AppColors.imrZoneColor(imrZone),
                 label: 'IMR',
                 sublabel: 'tu base',
-                size: ringSize,
+                size: refSize,
               ),
             ],
           );
