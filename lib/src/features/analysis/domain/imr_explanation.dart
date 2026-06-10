@@ -30,6 +30,26 @@ class IMRZoneColors {
     }
   }
 
+  /// UI #2: etiqueta amigable y direccional para MOSTRAR al usuario. Las keys
+  /// internas (OPTIMIZADO…DETERIORADO) NO cambian; solo el texto visible. Sin
+  /// veredictos de alarma ("DETERIORADO") sobre la persona.
+  static String displayLabel(String zone) {
+    switch (zone) {
+      case 'OPTIMIZADO':
+        return 'Óptimo';
+      case 'EFICIENTE':
+        return 'Vas muy bien';
+      case 'FUNCIONAL':
+        return 'En buen camino';
+      case 'INESTABLE':
+        return 'En progreso';
+      case 'DETERIORADO':
+        return 'Tu punto de partida';
+      default:
+        return 'Calculando';
+    }
+  }
+
   static String summaryForZone(String zone, int score) {
     switch (zone) {
       case 'OPTIMIZADO':
@@ -42,11 +62,11 @@ class IMRZoneColors {
         return 'Tu metabolismo funciona bien pero tiene margen de mejora. '
             'Un ajuste en el pilar más débil puede elevar tu IMR significativamente.';
       case 'INESTABLE':
-        return 'Tu metabolismo envía señales de alerta. '
-            'Prioriza el pilar indicado para estabilizar el sistema.';
+        return 'Tu metabolismo está encontrando su ritmo. '
+            'Enfócate en el pilar indicado para ganar estabilidad.';
       case 'DETERIORADO':
-        return 'Tu sistema metabólico necesita atención urgente. '
-            'Comenzar con el ayuno consciente es el primer paso más impactante.';
+        return 'Este es tu punto de partida — desde acá solo se mejora. '
+            'El paso más impactante para empezar es el ayuno consciente.';
       default:
         return 'Registra tus pilares para que Elena pueda calcular tu IMR.';
     }

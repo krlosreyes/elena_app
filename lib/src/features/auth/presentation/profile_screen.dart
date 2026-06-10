@@ -827,12 +827,13 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
               ),
               const SizedBox(height: 5),
               Text(
-                imrResult.zone,
+                IMRZoneColors.displayLabel(imrResult.zone),
+                textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 8.5,
                   fontWeight: FontWeight.w800,
                   color: zoneColor,
-                  letterSpacing: 0.6,
+                  letterSpacing: 0.4,
                 ),
               ),
             ],
