@@ -1,6 +1,6 @@
 # SPEC-199 — Coach Interactivo y Predictivo
 
-**Estado:** APPROVED-DESIGN (2026-06-10) — diseño aprobado por Carlos. Sin implementar. Dos fases: **Fase A — Coach interactivo por notificación** (objetivo lanzamiento ~10-ago) y **Fase B — Superficies ambientales** (Isla Dinámica / widgets / Live Updates, post-lanzamiento).
+**Estado:** Fase A IMPLEMENTED (2026-06-10) — RF-01 a 05 en `mvp-core-clean`. A1 (`PendingActionQueue` + `CoachingActionRouter` + notificación de hidratación accionable Sí/No + flush al reanudar/cold-start). A2 (`PredictiveTriggerEngine` puro + `InteractiveCoachingCard` in-app, suprime si meta/sueño/vaso reciente). **Pendiente Fase A1b (validar en device):** quitar `foreground` de las acciones iOS para registrar sin abrir la app — requiere plugin registrant en `ios/Runner/AppDelegate`. **Fase B** (Isla Dinámica / widgets / Live Updates) sigue APPROVED-DESIGN, post-lanzamiento.
 **Versión:** 0.1 (draft)
 **Tipo:** Coaching — interacción de bucle cerrado + capa predictiva contextual.
 **Líder:** Carlos
