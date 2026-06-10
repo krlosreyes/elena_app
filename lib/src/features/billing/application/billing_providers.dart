@@ -18,6 +18,12 @@ final billingServiceProvider = Provider<BillingService>(
   (ref) => const FreeBillingService(),
 );
 
+/// SPEC-197: ¿está el cobro habilitado (RevenueCat configurado con keys)?
+/// Default `false`. main.dart lo sobreescribe a `true` cuando inicializa
+/// RevenueCat. Mientras es `false`, el gating queda INERTE (todos se tratan
+/// como premium) para que la app funcione completa antes de lanzar el cobro.
+final billingEnabledProvider = Provider<bool>((ref) => false);
+
 /// Estado de entitlement en vivo. Default `free()` mientras carga o si el
 /// stream falla (degradación segura: nunca regala premium por un error).
 final entitlementProvider = StreamProvider<EntitlementStatus>((ref) {
@@ -26,7 +32,10 @@ final entitlementProvider = StreamProvider<EntitlementStatus>((ref) {
 });
 
 /// Helper booleano síncrono para gating rápido (SPEC-197). Free mientras carga.
+/// Si el cobro NO está habilitado, devuelve `true` (gating inerte) para no
+/// bloquear features antes de lanzar la monetización.
 final isPremiumProvider = Provider<bool>((ref) {
+  if (!ref.watch(billingEnabledProvider)) return true;
   return ref.watch(entitlementProvider).maybeWhen(
         data: (s) => s.isPremium,
         orElse: () => false,

@@ -100,7 +100,10 @@ void main() {
     test('default Free, premium tras compra simulada', () async {
       final fake = FakeBillingService();
       final container = ProviderContainer(
-        overrides: [billingServiceProvider.overrideWithValue(fake)],
+        overrides: [
+          billingServiceProvider.overrideWithValue(fake),
+          billingEnabledProvider.overrideWithValue(true),
+        ],
       );
       addTearDown(container.dispose);
       addTearDown(fake.dispose);

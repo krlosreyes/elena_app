@@ -31,11 +31,24 @@ void main() {
     });
   });
 
+  group('gating inerte cuando el cobro no está habilitado', () {
+    test('billingEnabled=false → todos premium (no se gatea nada)', () {
+      final container = ProviderContainer(); // sin overrides → enabled=false
+      addTearDown(container.dispose);
+      expect(container.read(isPremiumProvider), true);
+      expect(container.read(featureGateProvider).analyticsHistoryAllowed, true);
+      expect(container.read(featureGateProvider).autoSyncAllowed, true);
+    });
+  });
+
   group('featureGateProvider (reactivo)', () {
     test('free→premium desbloquea en vivo', () async {
       final fake = FakeBillingService();
       final container = ProviderContainer(
-        overrides: [billingServiceProvider.overrideWithValue(fake)],
+        overrides: [
+          billingServiceProvider.overrideWithValue(fake),
+          billingEnabledProvider.overrideWithValue(true),
+        ],
       );
       addTearDown(container.dispose);
       addTearDown(fake.dispose);

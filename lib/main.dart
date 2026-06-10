@@ -135,14 +135,14 @@ Future<void> _bootstrap() async {
   // SPEC-196: infra de cobro (RevenueCat). La key pública por plataforma se
   // inyecta vía --dart-define (RC_IOS_KEY / RC_ANDROID_KEY); NO se hardcodea.
   // Si no hay key (cobro aún no habilitado) o es web, se mantiene el default
-  // FreeBillingService (todos Free) — la app funciona igual.
-  final billingOverride = await _initBilling();
+  // FreeBillingService + gating inerte (la app funciona completa).
+  final billingOverrides = await _initBilling();
 
   runApp(
     ProviderScope(
       overrides: [
         sharedPreferencesProvider.overrideWithValue(sharedPreferences),
-        if (billingOverride != null) billingOverride,
+        ...billingOverrides,
       ],
       child: const ElenaApp(),
     ),
@@ -150,10 +150,10 @@ Future<void> _bootstrap() async {
 }
 
 /// SPEC-196: inicializa RevenueCat si hay key configurada para la plataforma.
-/// Devuelve el override del `billingServiceProvider`, o null para quedarse en
-/// FreeBillingService.
-Future<Override?> _initBilling() async {
-  if (kIsWeb) return null;
+/// Devuelve los overrides (servicio real + `billingEnabled=true`), o vacío
+/// para quedarse en FreeBillingService con el gating inerte.
+Future<List<Override>> _initBilling() async {
+  if (kIsWeb) return const [];
   const iosKey = String.fromEnvironment('RC_IOS_KEY');
   const androidKey = String.fromEnvironment('RC_ANDROID_KEY');
   final key =
@@ -161,11 +161,14 @@ Future<Override?> _initBilling() async {
   if (key.isEmpty) {
     AppLogger.info(
       'SPEC-196: sin RC key para esta plataforma → cobro deshabilitado '
-      '(FreeBillingService). Ver docs/SETUP_BILLING.md.',
+      '(gating inerte, app completa). Ver docs/SETUP_BILLING.md.',
     );
-    return null;
+    return const [];
   }
   final service = RevenueCatBillingService(apiKey: key, debugLogging: kDebugMode);
   await service.initialize();
-  return billingServiceProvider.overrideWithValue(service);
+  return [
+    billingServiceProvider.overrideWithValue(service),
+    billingEnabledProvider.overrideWithValue(true),
+  ];
 }
