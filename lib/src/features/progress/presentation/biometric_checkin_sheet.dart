@@ -13,6 +13,7 @@ import 'package:elena_app/src/core/theme/app_icons.dart';
 import 'package:elena_app/src/core/engine/weekly_imr_snapshot_service.dart';
 import 'package:elena_app/src/features/progress/application/biometric_history_service.dart';
 import 'package:elena_app/src/features/progress/domain/biometric_checkin.dart';
+import 'package:elena_app/src/features/profile/domain/body_fat_calculator.dart';
 
 // ─── Entry point ─────────────────────────────────────────────────────────────
 
@@ -87,16 +88,43 @@ class _BiometricCheckInSheetState extends ConsumerState<BiometricCheckInSheet> {
         '${today.month.toString().padLeft(2, '0')}-'
         '${today.day.toString().padLeft(2, '0')}';
 
+    final double? enteredWaist = _waistCtrl.text.isNotEmpty
+        ? double.tryParse(_waistCtrl.text.replaceAll(',', '.'))
+        : null;
+    final double? manualBodyFat = _bfCtrl.text.isNotEmpty
+        ? double.tryParse(_bfCtrl.text.replaceAll(',', '.'))
+        : null;
+
+    // FIX composición corporal (2026-06-10): el % de grasa se RECALCULA con
+    // la cintura que el usuario acaba de ingresar (fórmula US Navy:
+    // cintura + cuello + altura del perfil). Antes se guardaba el valor
+    // manual pre-rellenado del perfil, así que la serie de Análisis no se
+    // movía aunque cambiaran las medidas → se veía "hardcodeada". El intent
+    // documentado es "el usuario NUNCA ingresa % grasa, siempre se calcula"
+    // (BodyFatCalculator §1). Fallback al valor manual si no hay cuello/altura.
+    double? bodyFat = manualBodyFat;
+    final double? neck = user.neckCircumference;
+    if (enteredWaist != null &&
+        enteredWaist > 0 &&
+        neck != null &&
+        neck > 0 &&
+        user.height > 0) {
+      final computed = BodyFatCalculator.calculateBodyFatPercentage(
+        waistCm: enteredWaist,
+        neckCm: neck,
+        heightCm: user.height,
+        isMale: user.gender.toUpperCase() == 'M',
+      );
+      if (computed > 0) bodyFat = computed;
+    }
+
     final checkIn = BiometricCheckIn(
       date: dateKey,
       userId: user.id,
       weight: double.parse(_weightCtrl.text.replaceAll(',', '.')),
-      bodyFatPercentage: _bfCtrl.text.isNotEmpty
-          ? double.tryParse(_bfCtrl.text.replaceAll(',', '.'))
-          : null,
-      waistCircumference: _waistCtrl.text.isNotEmpty
-          ? double.tryParse(_waistCtrl.text.replaceAll(',', '.'))
-          : null,
+      bodyFatPercentage: bodyFat,
+      waistCircumference: enteredWaist,
+      neckCircumference: neck,
       imrScore: imrResult.totalScore,
       notes: _noteCtrl.text.isNotEmpty ? _noteCtrl.text.trim() : null,
       createdAt: today,
