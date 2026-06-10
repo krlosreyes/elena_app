@@ -27,7 +27,7 @@ import 'package:elena_app/src/features/analysis/domain/nutrition_pie_data.dart';
 import 'package:elena_app/src/features/analysis/presentation/monthly_calendar_screen.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/insight_tile.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/transformation_card.dart';
-import 'package:elena_app/src/features/analysis/presentation/widgets/daily_score_trend_section.dart';
+import 'package:elena_app/src/features/streak/application/daily_score_provider.dart';
 // SPEC-168.4: tile compacto del overview con sparkline + tap a detalle.
 import 'package:elena_app/src/features/analysis/presentation/widgets/pillar_overview_tile.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/segmented_range_control.dart';
@@ -286,11 +286,11 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
       const SizedBox(height: 20),
       _sectionTitle('Resultados'),
       const SizedBox(height: 12),
-      // SPEC-200: seguimiento del Score del Día (HOY, llega a 100) — distinto
-      // del IMR longitudinal. Va primero porque es el número que el usuario
-      // mueve cada día.
-      const DailyScoreTrendSection(),
-      const SizedBox(height: 20),
+      // SPEC-200: tile del Score del Día (HOY, llega a 100) — coherente con
+      // los demás tiles (valor + sparkline → tap despliega el detalle). Va
+      // primero porque es el número que el usuario mueve cada día.
+      _dailyScoreTile(),
+      const SizedBox(height: 10),
       _imrTile(imrSeries),
       const SizedBox(height: 10),
       _weightTile(weightSeries),
@@ -374,6 +374,31 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
   }
 
   // ─── SPEC-168.4: tiles del overview ─────────────────────────────────
+
+  /// SPEC-200: tile del Score del Día (HOY). Valor = promedio del historial;
+  /// sparkline = puntaje diario. Navega a su detalle dedicado vía
+  /// `routeOverride` (no es un ChartMetric, para no tocar los switch del enum).
+  PillarOverviewTile _dailyScoreTile() {
+    final points = ref.watch(dailyScoreTrendProvider);
+    String value = '';
+    List<double> spark = const [];
+    if (points.isNotEmpty) {
+      final sum = points.fold<int>(0, (a, p) => a + p.value);
+      value = '${(sum / points.length).round()}';
+      spark = points.map((p) => p.value.toDouble()).toList();
+    }
+    return PillarOverviewTile(
+      // `metric` se ignora porque pasamos `routeOverride`.
+      metric: ChartMetric.imr,
+      routeOverride: '/analysis/daily-score',
+      icon: Icons.today_rounded,
+      label: 'Score del día',
+      value: value,
+      unit: '',
+      accent: AppColors.metabolicGreen,
+      sparklineValues: spark,
+    );
+  }
 
   PillarOverviewTile _imrTile(MetricSeries s) {
     final v = ChartHeroComputer.aggregateValue(s, HeroAggregation.avg);

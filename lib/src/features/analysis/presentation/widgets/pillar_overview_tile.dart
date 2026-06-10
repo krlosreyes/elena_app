@@ -23,10 +23,17 @@ class PillarOverviewTile extends StatelessWidget {
     required this.accent,
     required this.sparklineValues,
     this.aPctForPie,
+    this.routeOverride,
   });
 
   /// ID estable para el routing al detalle.
   final ChartMetric metric;
+
+  /// SPEC-200: ruta de detalle alternativa. Si se provee, el tap navega
+  /// acá en vez de `/analysis/pillar/<metric>`. Permite tiles que no
+  /// corresponden a un `ChartMetric` (ej. "Score del día") sin reventar
+  /// los switch exhaustivos del enum.
+  final String? routeOverride;
 
   /// Ícono del pilar/métrica (AppIcons — set unificado, sin emojis).
   final IconData icon;
@@ -59,7 +66,8 @@ class PillarOverviewTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasData = value.isNotEmpty;
     return InkWell(
-      onTap: () => context.push('/analysis/pillar/${metric.name}'),
+      onTap: () =>
+          context.push(routeOverride ?? '/analysis/pillar/${metric.name}'),
       borderRadius: BorderRadius.circular(14),
       child: Container(
         padding: const EdgeInsets.fromLTRB(16, 14, 14, 14),

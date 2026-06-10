@@ -23,6 +23,7 @@ import 'package:elena_app/src/features/auth/presentation/profile_screen.dart';
 import 'package:elena_app/src/features/analysis/presentation/analysis_screen.dart';
 // SPEC-168.4: pantalla detalle de un pilar (overview → chart completo).
 import 'package:elena_app/src/features/analysis/presentation/analysis_pillar_detail_screen.dart';
+import 'package:elena_app/src/features/analysis/presentation/daily_score_detail_screen.dart';
 import 'package:elena_app/src/features/analysis/domain/chart_metric.dart';
 // SPEC-12: Composición Corporal
 import 'package:elena_app/src/features/profile/presentation/body_composition_screen.dart';
@@ -113,6 +114,12 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           );
           return AnalysisPillarDetailScreen(metric: metric);
         },
+      ),
+      // SPEC-200: detalle del Score del Día (HOY) — tile propio en Resultados.
+      GoRoute(
+        path: '/analysis/daily-score',
+        name: 'analysis-daily-score',
+        builder: (context, state) => const DailyScoreDetailScreen(),
       ),
       // SPEC-137 §RF-137-12: vista semanal del pilar Nutrición.
       // Navegable desde el botón "Ver semana →" del card "Nutrición
