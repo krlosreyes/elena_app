@@ -16,7 +16,7 @@ class PillarOverviewTile extends StatelessWidget {
   const PillarOverviewTile({
     super.key,
     required this.metric,
-    required this.emoji,
+    required this.icon,
     required this.label,
     required this.value,
     required this.unit,
@@ -28,8 +28,8 @@ class PillarOverviewTile extends StatelessWidget {
   /// ID estable para el routing al detalle.
   final ChartMetric metric;
 
-  /// Emoji o icono visual del pilar.
-  final String emoji;
+  /// Ícono del pilar/métrica (AppIcons — set unificado, sin emojis).
+  final IconData icon;
 
   /// Nombre del pilar ("Ayuno", "Peso", "Nutrición").
   final String label;
@@ -69,14 +69,11 @@ class PillarOverviewTile extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // Emoji
+            // Ícono del pilar, teñido con su acento (set unificado AppIcons).
             SizedBox(
               width: 32,
               child: Center(
-                child: Text(
-                  emoji,
-                  style: const TextStyle(fontSize: 22),
-                ),
+                child: Icon(icon, size: 22, color: accent),
               ),
             ),
             const SizedBox(width: 12),

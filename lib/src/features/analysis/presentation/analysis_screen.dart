@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:elena_app/src/core/theme/app_icons.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/analysis/application/analysis_range_provider.dart';
 import 'package:elena_app/src/features/analysis/application/analysis_series_providers.dart';
@@ -371,7 +372,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
     final v = ChartHeroComputer.aggregateValue(s, HeroAggregation.avg);
     return PillarOverviewTile(
       metric: ChartMetric.imr,
-      emoji: '🧬',
+      icon: AppIcons.imr,
       label: 'IMR',
       value: v == null ? '' : ChartHeroComputer.formatValue(v),
       unit: '',
@@ -384,7 +385,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
     final v = ChartHeroComputer.aggregateValue(s, HeroAggregation.last);
     return PillarOverviewTile(
       metric: ChartMetric.weight,
-      emoji: '⚖️',
+      icon: AppIcons.peso,
       label: 'Peso',
       value: v == null ? '' : ChartHeroComputer.formatValue(v),
       unit: 'kg',
@@ -402,7 +403,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
     final v = ChartHeroComputer.aggregateValue(s, HeroAggregation.last);
     return PillarOverviewTile(
       metric: ChartMetric.bodyFatPct,
-      emoji: '🧍',
+      icon: AppIcons.composicion,
       label: 'Composición corporal',
       value: v == null ? '' : v.toStringAsFixed(1),
       unit: '% grasa',
@@ -415,7 +416,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
     final v = ChartHeroComputer.aggregateValue(s, HeroAggregation.avg);
     return PillarOverviewTile(
       metric: ChartMetric.fastingHours,
-      emoji: '⏱️',
+      icon: AppIcons.ayuno,
       label: 'Ayuno',
       value: v == null ? '' : ChartHeroComputer.formatValue(v),
       unit: 'h',
@@ -428,7 +429,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
     final hasData = !pie.isEmpty;
     return PillarOverviewTile(
       metric: ChartMetric.nutritionAPct,
-      emoji: '🥦',
+      icon: AppIcons.nutricion,
       label: 'Nutrición',
       value: hasData ? pie.aPct.toStringAsFixed(0) : '',
       unit: hasData ? '% A' : '',
@@ -442,7 +443,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
     final v = ChartHeroComputer.aggregateValue(s, HeroAggregation.avg);
     return PillarOverviewTile(
       metric: ChartMetric.hydrationLiters,
-      emoji: '💧',
+      icon: AppIcons.hidratacion,
       label: 'Hidratación',
       value: v == null ? '' : ChartHeroComputer.formatValue(v),
       unit: 'L',
@@ -455,7 +456,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
     final v = ChartHeroComputer.aggregateValue(s, HeroAggregation.avg);
     return PillarOverviewTile(
       metric: ChartMetric.exerciseMin,
-      emoji: '💪',
+      icon: AppIcons.ejercicio,
       label: 'Ejercicio',
       value: v == null ? '' : ChartHeroComputer.formatValue(v),
       unit: 'min',
@@ -468,7 +469,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
     final v = ChartHeroComputer.aggregateValue(s, HeroAggregation.avg);
     return PillarOverviewTile(
       metric: ChartMetric.sleepHours,
-      emoji: '🌙',
+      icon: AppIcons.sueno,
       label: 'Sueño',
       value: v == null ? '' : ChartHeroComputer.formatValue(v),
       unit: 'h',
@@ -499,7 +500,8 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('📊', style: TextStyle(fontSize: 32)),
+          Icon(AppIcons.analisis,
+              size: 32, color: Colors.white.withValues(alpha: 0.85)),
           const SizedBox(height: 14),
           const Text(
             'Tu trazabilidad arranca acá.',
