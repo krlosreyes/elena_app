@@ -124,10 +124,56 @@ class _FastingHeroDisplayState extends State<FastingHeroDisplay> {
       _Mode.idle => _buildIdle(colorBase),
     };
 
-    return SizedBox(
-      width: maxWidth,
-      child: content,
+    // A11y (#5): el centro del reloj es CustomPaint + textos sueltos; para
+    // VoiceOver lo colapsamos en una sola frase hablada con contexto
+    // (estado + tiempo + próximo hito) y excluimos los fragmentos visuales.
+    return Semantics(
+      label: _semanticLabel,
+      excludeSemantics: true,
+      child: SizedBox(
+        width: maxWidth,
+        child: content,
+      ),
     );
+  }
+
+  /// Frase hablada del estado actual del ayuno para lectores de pantalla.
+  /// Usa horas/minutos (no segundos) para no re-anunciar cada tick.
+  String get _semanticLabel {
+    final s = widget.fastingState;
+    switch (_mode) {
+      case _Mode.activeFasting:
+        final elapsed = _now.difference(s.startTime ?? _now);
+        final remaining = s.timeRemainingForNextMilestone;
+        final next = remaining == Duration.zero
+            ? s.metabolicMilestone
+            : '${_friendlyMilestone(s.phase)} en ${_spokenHm(remaining)}';
+        return 'Ayuno en curso: ${_spokenHm(elapsed)}. Próximo: $next';
+      case _Mode.completedToday:
+        final w = widget.eatingWindow;
+        final next = w != null
+            ? 'Próximo ayuno a las ${_fmtClock(w.windowEnd)}'
+            : 'Próximo ayuno mañana';
+        return 'Ayuno completado: ${s.targetHours} horas. $next';
+      case _Mode.eatingWindow:
+        final w = widget.eatingWindow!;
+        final remaining = w.windowEnd.difference(_now);
+        final safe = remaining.isNegative ? Duration.zero : remaining;
+        return 'Próximo ayuno en ${_spokenHm(safe)}. '
+            'Cierra ventana a las ${_fmtClock(w.windowEnd)}';
+      case _Mode.idle:
+        return 'Ayuno sin iniciar. Toca para iniciar';
+    }
+  }
+
+  /// "3 horas 18 minutos" / "42 minutos" — formato hablado, sin segundos.
+  String _spokenHm(Duration d) {
+    final h = d.inHours;
+    final m = d.inMinutes.remainder(60);
+    final hp = h == 1 ? '1 hora' : '$h horas';
+    final mp = m == 1 ? '1 minuto' : '$m minutos';
+    if (h == 0) return mp;
+    return '$hp $mp';
   }
 
   // ─────────────────────────────────────────────────────────────────

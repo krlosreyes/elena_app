@@ -11,6 +11,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:elena_app/src/core/theme/app_theme.dart';
+import 'package:elena_app/src/features/analysis/domain/imr_explanation.dart';
 
 class DualScoreRing extends StatelessWidget {
   const DualScoreRing({
@@ -41,36 +42,47 @@ class DualScoreRing extends StatelessWidget {
   Widget build(BuildContext context) {
     // UI #4: jerarquía por tamaño. HOY es el HÉROE (el número que el usuario
     // mueve hoy); el IMR es la REFERENCIA quieta (más chico, color calmo).
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final bool narrow = constraints.maxWidth < 360;
-          final double heroSize = narrow ? 84 : 100;
-          final double refSize = narrow ? 48 : 56;
-          return Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              _BigScoreRing(
-                score: dailyScore,
-                color: AppColors.metabolicGreen,
-                label: 'HOY',
-                sublabel: _dailyDeltaLabel(dailyDelta),
-                size: heroSize,
-              ),
-              SizedBox(width: narrow ? 24 : 40),
-              _BigScoreRing(
-                score: imrScore,
-                color: AppColors.imrZoneColor(imrZone),
-                label: 'IMR',
-                sublabel: 'tu base',
-                size: refSize,
-              ),
-            ],
-          );
-        },
+    // A11y (#5): el conjunto es un único botón para VoiceOver — anuncia
+    // ambos scores compuestos y la acción de abrir el detalle. Excluimos la
+    // semántica de los hijos (números sueltos sin contexto) y la sustituimos
+    // por etiquetas habladas claras.
+    return Semantics(
+      button: true,
+      label: '${_dailySemanticLabel(dailyScore, dailyDelta)}. '
+          '${_imrSemanticLabel(imrScore, imrZone)}',
+      hint: 'Toca para ver el detalle de tus puntajes',
+      excludeSemantics: true,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final bool narrow = constraints.maxWidth < 360;
+            final double heroSize = narrow ? 84 : 100;
+            final double refSize = narrow ? 48 : 56;
+            return Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                _BigScoreRing(
+                  score: dailyScore,
+                  color: AppColors.metabolicGreen,
+                  label: 'HOY',
+                  sublabel: _dailyDeltaLabel(dailyDelta),
+                  size: heroSize,
+                ),
+                SizedBox(width: narrow ? 24 : 40),
+                _BigScoreRing(
+                  score: imrScore,
+                  color: AppColors.imrZoneColor(imrZone),
+                  label: 'IMR',
+                  sublabel: 'tu base',
+                  size: refSize,
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -84,6 +96,23 @@ class DualScoreRing extends StatelessWidget {
     if (delta == 0) return 'igual que ayer';
     final arrow = delta > 0 ? '↑' : '↓';
     return '$arrow${delta.abs()} vs ayer';
+  }
+
+  /// A11y: el HOY hablado, sin flechas (que VoiceOver lee raro).
+  static String _dailySemanticLabel(int score, int? delta) {
+    final base = 'Puntaje de hoy: $score de 100';
+    if (delta == null) return base;
+    if (delta == 0) return '$base, igual que ayer';
+    if (delta > 0) return '$base, subió $delta respecto a ayer';
+    return '$base, bajó ${delta.abs()} respecto a ayer';
+  }
+
+  /// A11y: el IMR hablado, con su zona en lenguaje amigable (no la key
+  /// interna). El color por sí solo no comunica — la etiqueta sí.
+  static String _imrSemanticLabel(int score, String zone) {
+    final base = 'IMR: $score de 100';
+    final z = zone.isEmpty ? '' : ', ${IMRZoneColors.displayLabel(zone)}';
+    return '$base$z, tu base';
   }
 }
 
