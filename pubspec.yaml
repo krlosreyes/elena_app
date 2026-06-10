@@ -42,7 +42,7 @@ dependencies:
   logger: ^2.4.0
   shared_preferences: ^2.5.4
   flutter_local_notifications: ^21.0.0
-  purchases_flutter: ^8.0.0 # SPEC-196: infra de cobro (RevenueCat)
+  purchases_flutter: ^10.2.2 # SPEC-196: infra de cobro (RevenueCat)
   flutter_svg: ^2.2.4
   timezone: ^0.11.0
   flutter_timezone: ^5.0.2
@@ -52,6 +52,7 @@ dependencies:
   # SPEC-132: Apple HealthKit (iOS) + Google Health Connect (Android).
   # carp.dk maintainer, MIT, plugin más estable del ecosistema.
   health: ^13.3.1
+  purchases_ui_flutter: ^10.2.2
 
 dev_dependencies:
   flutter_test:

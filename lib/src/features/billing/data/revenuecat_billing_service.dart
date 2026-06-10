@@ -10,7 +10,8 @@
 import 'dart:async';
 
 import 'package:flutter/services.dart' show PlatformException;
-import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:purchases_flutter/purchases_flutter.dart'
+    hide PurchaseResult;
 
 import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/features/billing/application/billing_service.dart';
@@ -106,8 +107,8 @@ class RevenueCatBillingService implements BillingService {
       if (rcPkg == null) {
         return PurchaseResult.error('Paquete no disponible.');
       }
-      final info = await Purchases.purchasePackage(rcPkg);
-      final status = _mapCustomerInfo(info);
+      final result = await Purchases.purchasePackage(rcPkg);
+      final status = _mapCustomerInfo(result.customerInfo);
       _last = status;
       _controller.add(status);
       return PurchaseResult.success(status);
