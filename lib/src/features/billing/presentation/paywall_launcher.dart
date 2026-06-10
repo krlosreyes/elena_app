@@ -1,13 +1,12 @@
-// SPEC-197 — punto único para "abrir el paywall" desde cualquier muro de
-// gating. Hoy es un placeholder: registra la telemetría de conversión y
-// muestra un aviso. SPEC-198 reemplazará el cuerpo para abrir PaywallScreen,
-// sin tocar los callsites (todos llaman `openPaywall`).
+// SPEC-197/198 — punto único para "abrir el paywall" desde cualquier muro de
+// gating. Registra la telemetría de qué muro convirtió y abre PaywallScreen.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elena_app/src/core/analytics/analytics_events.dart';
 import 'package:elena_app/src/core/services/analytics_service.dart';
+import 'package:elena_app/src/features/billing/presentation/paywall_screen.dart';
 
 /// Identificadores de feature para la telemetría `feature_gate_blocked`.
 class GatedFeature {
@@ -29,13 +28,5 @@ void openPaywall(
     AnalyticsEvents.featureGateBlocked,
     params: {AnalyticsParams.feature: feature},
   );
-
-  // Placeholder hasta SPEC-198 (paywall real).
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(
-      content: Text('Función Premium — el paywall llega en SPEC-198.'),
-      duration: Duration(seconds: 2),
-      behavior: SnackBarBehavior.floating,
-    ),
-  );
+  PaywallScreen.show(context, trigger: feature);
 }

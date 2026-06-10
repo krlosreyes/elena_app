@@ -27,9 +27,14 @@ class AnalyticsEvents {
 
   // ── Monetización (se disparan al implementar Ola C) ──────────────────────
   static const String paywallShown = 'paywall_shown';
+  static const String paywallDismissed = 'paywall_dismissed';
   static const String trialStarted = 'trial_started';
   static const String subscriptionStarted = 'subscription_started';
   static const String subscriptionCancelled = 'subscription_cancelled';
+  // SPEC-198: resultado de la compra/restauración desde el paywall.
+  static const String purchaseCompleted = 'purchase_completed';
+  static const String purchaseRestored = 'purchase_restored';
+  static const String purchaseFailed = 'purchase_failed';
 
   // SPEC-197: un usuario Free topó con un muro de gating (insumo de conversión).
   static const String featureGateBlocked = 'feature_gate_blocked';
@@ -52,9 +57,13 @@ class AnalyticsEvents {
     mealLogged,
     imrCalculated,
     paywallShown,
+    paywallDismissed,
     trialStarted,
     subscriptionStarted,
     subscriptionCancelled,
+    purchaseCompleted,
+    purchaseRestored,
+    purchaseFailed,
     featureGateBlocked,
     coachingActionShown,
     coachingActionFollowed,

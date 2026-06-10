@@ -1,6 +1,6 @@
 # SPEC-198 — Trial 14 días + conversión + pricing LatAm/US
 
-**Estado:** APPROVED-DESIGN — pendiente de implementación (Ola C).
+**Estado:** IN-PROGRESS (2026-06-09) — inc1 (`PaywallTrigger` puro + `PaywallScreen` con precios localizados del SDK + restaurar + telemetría de conversión; `openPaywall` ahora abre el paywall real) implementado y testeado con `FakeBillingService`. **Pendiente (inc2):** nudges día 5/12 + auto-disparo del paywall vía `PaywallTrigger` (requiere fecha de registro + conteo de ayunos). Trial 14d e intro offer se configuran en tienda (Carlos, `docs/SETUP_BILLING.md`).
 **Versión:** 0.1 (draft)
 **Tipo:** Monetización — paywall, trial, nudges de conversión, pricing regional.
 **Líder:** Carlos
