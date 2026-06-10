@@ -7,7 +7,6 @@
 // usando en `_buildFastingEndOverlay` (que permanece en la pantalla). La
 // función solo depende de fastingProvider + diálogos de Flutter.
 
-import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -272,13 +271,10 @@ class FastingConsciousnessCard extends ConsumerWidget {
           // tocarlo en estado "En espera" iniciaba ventana de comida
           // por error (confirmManualFastingEnd con isFeeding=false).
           //
-          // SPEC-119 / Auditoría F3 (2026-06-08): gateado a kDebugMode.
-          // `correctFastingStartTime` permite back-datar el inicio hasta
-          // 24h atrás, lo que puede dejar un ayuno activo ya por encima
-          // del target (origen del "ayuno 100% al iniciar"). Es una
-          // herramienta de pruebas ("viaje en el tiempo"); un usuario real
-          // no debe poder crear ese estado. En release queda oculto.
-          if (isActive && kDebugMode) ...[
+          // Auditoría F3 (2026-06-08) → reabierto (2026-06-09): visible para
+          // todos, pero `_showCorrectStartTimePicker` CLAMPEA la corrección
+          // para que nunca deje el ayuno ≥100% (evita el "100% al iniciar").
+          if (isActive) ...[
             const SizedBox(height: 10),
             SizedBox(
               width: double.infinity,
@@ -627,7 +623,17 @@ class FastingConsciousnessCard extends ConsumerWidget {
   ) async {
     final DateTime now = DateTime.now();
     final DateTime currentStart = state.startTime ?? now;
-    final DateTime earliest = now.subtract(const Duration(hours: 24));
+    // Clamp (F3): el inicio no puede quedar tan atrás que el ayuno llegue a
+    // ≥100% al corregir. `maxBack` = duración del target; con 1 min de margen
+    // el progreso queda estrictamente por debajo del 100%.
+    final int targetHours = state.targetHours > 0 ? state.targetHours : 24;
+    final Duration maxBack = Duration(hours: targetHours);
+    final DateTime targetEarliest =
+        now.subtract(maxBack).add(const Duration(minutes: 1));
+    final DateTime hardEarliest = now.subtract(const Duration(hours: 24));
+    // El más RECIENTE de ambos límites (el más restrictivo).
+    final DateTime earliest =
+        targetEarliest.isAfter(hardEarliest) ? targetEarliest : hardEarliest;
 
     final DateTime? pickedDate = await showDatePicker(
       context: context,
@@ -689,6 +695,20 @@ class FastingConsciousnessCard extends ConsumerWidget {
         const SnackBar(
           content: Text(
             'La corrección no puede ser más de 24h atrás.',
+          ),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+    // Clamp F3: no dejar el ayuno ≥100% al corregir.
+    if (now.difference(finalDateTime) >= maxBack) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Esa hora dejaría tu ayuno ya completo. Elige una hora más '
+            'reciente.',
           ),
           backgroundColor: Colors.redAccent,
         ),

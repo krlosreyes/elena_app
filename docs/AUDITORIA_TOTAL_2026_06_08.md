@@ -86,7 +86,7 @@ Severidades: **ALTA** (afecta datos/percepción de solidez ya), **MEDIA** (deuda
 
 ### F3 · BAJA — herramienta "viaje en el tiempo" expuesta en producción
 - `correctFastingStartTime` (picker de corregir hora) puede dejar un ayuno activo con inicio de ayer (hoy generó el "ayuno 100% al iniciar"). **Fix:** gatear esa herramienta a `kDebugMode` para que un usuario real no cree estados raros.
-- ✅ **CERRADO (2026-06-09).** El botón "Corregir hora de inicio del ayuno" en `FastingConsciousnessCard` ahora está bajo `if (isActive && kDebugMode)`. En release queda oculto (dead-code-eliminated); los flujos normales (iniciar ahora, finalizar con picker en overlays) intactos. **Nota de producto:** si más adelante un usuario real necesita corregir un inicio olvidado, la alternativa a re-exponerlo es mantener el botón pero clampear la corrección para que nunca empuje el ayuno por encima del target.
+- ✅ **CERRADO (2026-06-09) → REABIERTO con clamp (2026-06-09).** Primero se gateó a `kDebugMode` (oculto en release). Decisión de producto de Carlos: el botón es útil ("corregir un inicio olvidado"), así que se **reabrió para todos** quitando el gate, pero `_showCorrectStartTimePicker` ahora **clampea** la corrección — el `firstDate`/`initialDate` y un guard final impiden que el inicio quede tan atrás que el ayuno llegue a ≥100% (`now - start ≥ targetHours` → rechazado con aviso). Así es útil sin reintroducir el "100% al iniciar".
 
 ---
 
