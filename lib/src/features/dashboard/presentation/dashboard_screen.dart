@@ -28,6 +28,7 @@ import 'package:elena_app/src/features/dashboard/presentation/widgets/hydration_
 import 'package:elena_app/src/features/dashboard/presentation/widgets/sleep_pillar_card.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/comidas_pillar_card.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/fasting_consciousness_card.dart';
+import 'package:elena_app/src/features/dashboard/presentation/widgets/clock_explainer_sheet.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
 import 'package:elena_app/src/features/progress/application/biometric_backfill_provider.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/daily_score_explainer_sheet.dart';
@@ -255,14 +256,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           width: MediaQuery.of(context).size.width * 0.78,
                           child: AspectRatio(
                             aspectRatio: 1.0,
-                            child: CircadianClock(
-                              user: user,
-                              fastingState: fastingState,
-                              // SPEC-115: ya no pasamos `score` (IMR).
-                              // El centro lo ocupa FastingHeroDisplay con
-                              // estado del ayuno + próximo hito. El IMR
-                              // sigue en Análisis.
-                              eatingWindow: ref.watch(eatingWindowProvider),
+                            // SPEC-202: tocar el reloj abre el explainer con la
+                            // leyenda de cada elemento (qué es el punto azul,
+                            // el arco, el anillo de fase, los hitos).
+                            child: GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () => showClockExplainerSheet(context),
+                              child: CircadianClock(
+                                user: user,
+                                fastingState: fastingState,
+                                // SPEC-115: ya no pasamos `score` (IMR).
+                                // El centro lo ocupa FastingHeroDisplay con
+                                // estado del ayuno + próximo hito. El IMR
+                                // sigue en Análisis.
+                                eatingWindow: ref.watch(eatingWindowProvider),
+                              ),
                             ),
                           ),
                         ),
@@ -276,7 +284,33 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     ],
                   ),
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 6),
+
+                  // SPEC-202: pista de descubrimiento — invita a tocar el reloj
+                  // para entenderlo. Centrada y discreta, fuera del círculo
+                  // (no se solapa con ningún elemento del reloj).
+                  Center(
+                    child: TextButton.icon(
+                      onPressed: () => showClockExplainerSheet(context),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.white.withValues(alpha: 0.55),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 4),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      icon: const Icon(Icons.help_outline_rounded, size: 15),
+                      label: const Text(
+                        '¿Qué significan los anillos?',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 10),
 
                   if (fastingState.metabolicAlert != null) ...[
                     _buildMetabolicAlertBanner(fastingState.metabolicAlert!),
