@@ -21,11 +21,11 @@ class NotificationIds {
   // SPEC-137 E.5: 30 min antes de la próxima comida sugerida
   // (lastMealAt + 3h). One-shot, no repeatsDaily.
   static const int nextMealReady = 300;
-  // SPEC-150: hidratación. Rango 400-419 (hasta 20 slots/día).
+  // Hidratación. Cadencia 30 min → rango 400-439.
   static const int hydrationStart = 400;
-  static const int hydrationEnd = 419;
+  static const int hydrationEnd = 439;
   // SPEC-199 Fase A: re-recordatorio del "Aún no" (+15 min).
-  static const int hydrationSnooze = 420;
+  static const int hydrationSnooze = 450;
   // SPEC-198: nudges de conversión de trial (día 5 y día 12).
   static const int paywallNudgeDay5 = 500;
   static const int paywallNudgeDay12 = 501;

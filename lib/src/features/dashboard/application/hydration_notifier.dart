@@ -5,6 +5,8 @@ import 'package:elena_app/src/core/analytics/analytics_events.dart';
 import 'package:elena_app/src/core/orchestrator/biological_phases.dart';
 import 'package:elena_app/src/core/services/analytics_service.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
+import 'package:elena_app/src/core/services/notification_service.dart';
+import 'package:elena_app/src/core/services/notification_scheduler.dart';
 import 'package:elena_app/src/features/coaching/application/coaching_completion_service.dart';
 // SPEC-194 (2026-06-06): day_boundary_resolver reintroducido como
 // FALLBACK cuando no hay ciclo abierto. Cuando hay ciclo, el comportamiento
@@ -209,6 +211,14 @@ class HydrationNotifier extends StateNotifier<HydrationState> {
       dailyGoalLiters: state.dailyGoalLiters,
     );
     _subscribeFor(_currentCycleStartedAt);
+
+    // Audit notif (2026-06-10): re-armar los recordatorios de hidratación del
+    // día nuevo. Si ayer se cumplió la meta los cancelamos; el reset los
+    // vuelve a programar para que hoy arranquen de nuevo (cada 30 min).
+    final user = _ref.read(currentUserStreamProvider).value;
+    if (user != null) {
+      unawaited(NotificationScheduler.scheduleHydrationReminders(user));
+    }
   }
 
   Future<void> addWater(double amount) async {
@@ -216,6 +226,7 @@ class HydrationNotifier extends StateNotifier<HydrationState> {
     final user = _ref.read(currentUserStreamProvider).value;
     if (user == null) return;
 
+    final bool wasReached = state.isGoalReached;
     final newAmount = state.currentAmountLiters + amount;
     final bool reached = newAmount >= state.dailyGoalLiters;
 
@@ -244,6 +255,22 @@ class HydrationNotifier extends StateNotifier<HydrationState> {
       );
       // SPEC-194: ¿el usuario hizo lo que el coach recomendó?
       _ref.read(coachingCompletionProvider).onPillarActivity(Pillar.hydration);
+
+      // Audit notif (2026-06-10): "agua cada 30 min HASTA cumplir la meta".
+      // Al alcanzar el objetivo del día, cancelamos los recordatorios
+      // restantes (incluido el snooze). El reset diario los re-arma mañana.
+      // En su propio try: un fallo cancelando notifs NO debe revertir el
+      // log de agua ya persistido.
+      if (reached && !wasReached) {
+        try {
+          await NotificationService.cancelHydration();
+          await NotificationService.cancel(NotificationIds.hydrationSnooze);
+          AppLogger.info(
+              '[Hydration] meta alcanzada → recordatorios de hoy cancelados');
+        } catch (e) {
+          AppLogger.warning('[Hydration] no se pudieron cancelar notifs: $e');
+        }
+      }
     } catch (e) {
       // SPEC-179 (2026-06-05): antes había un catch vacío silencioso.
       // El log se acumulaba localmente en state.history pero si Firestore

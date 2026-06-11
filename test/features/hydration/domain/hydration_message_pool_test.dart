@@ -33,10 +33,13 @@ void main() {
       }
     });
 
-    test('Todos los mensajes tienen citation no vacía', () {
+    test('Audit notif: ningún mensaje muestra fuentes (citation vacía)', () {
+      // El tono pasó a humano/simple sin datos científicos ni fuentes en el
+      // cuerpo. El campo `citation` se conserva en el modelo pero queda vacío
+      // y el scheduler ya no lo anexa.
       for (final period in DayPeriod.values) {
         for (final m in HydrationMessagePool.messagesFor(period)) {
-          expect(m.citation, isNotEmpty);
+          expect(m.citation, isEmpty);
         }
       }
     });

@@ -54,9 +54,8 @@ class NotificationScheduler {
         hour: profile.wakeUpTime.hour,
         minute: profile.wakeUpTime.minute,
         title: '☀️ Buenos días',
-        body:
-            'Tu cuerpo se despertó con la energía justa. Aprovéchala para '
-            'algo que te importe hoy. · Biological Dial §3',
+        body: 'Despertaste con energía nueva. Aprovéchala en algo que te '
+            'importe hoy.',
       );
 
       // ── 2. Apertura de ventana de alimentación ───────────────────────────
@@ -67,9 +66,8 @@ class NotificationScheduler {
           hour: firstMeal.hour,
           minute: firstMeal.minute,
           title: '🍽️ Tu ventana abrió',
-          body:
-              'Si tienes hambre, este es el momento. Tu cuerpo está listo '
-              'para recibir. · Sutton 2018',
+          body: 'Si tienes hambre, este es buen momento para comer. Tu '
+              'cuerpo ya está listo.',
         );
       }
 
@@ -106,9 +104,8 @@ class NotificationScheduler {
           hour: warningTime.hour,
           minute: warningTime.minute,
           title: '⏰ 30 minutos para cerrar tu ventana',
-          body:
-              'Si te falta algo, ahora es buen momento — sin culpa. '
-              '· Mattson 2017',
+          body: 'Si te falta algo por comer, ahora es buen momento. Sin '
+              'culpa.',
         );
       }
 
@@ -119,9 +116,8 @@ class NotificationScheduler {
         hour: 20,
         minute: 30,
         title: '🌙 Una hora para soltar el día',
-        body:
-            'En una hora tu cuerpo entra en modo reparación. Si vas a cenar, '
-            'hagamos que sea ya. · Lopez-Minguez 2018',
+        body: 'En una hora tu cuerpo empieza a descansar. Si vas a cenar, '
+            'mejor ya.',
       );
 
       // ── 5. Alerta bloqueo intestinal: 30 min antes (21:00) ───────────────
@@ -130,9 +126,8 @@ class NotificationScheduler {
         hour: 21,
         minute: 0,
         title: '🌙 30 minutos para soltar',
-        body:
-            'Tu cuerpo está a media hora de concentrarse en repararse. '
-            'Si comiste antes, lo estás haciendo bien. · Lopez-Minguez 2018',
+        body: 'Falta media hora para que tu cuerpo se enfoque en descansar. '
+            'Vas bien.',
       );
 
       // ── 6. Bloqueo intestinal activo (21:30) ─────────────────────────────
@@ -141,9 +136,8 @@ class NotificationScheduler {
         hour: 21,
         minute: 30,
         title: '🌙 Modo reparación activado',
-        body:
-            'Tu cuerpo empieza a hacer lo suyo: limpiar y reparar. '
-            'Esto pasa mientras descansas. · Xie 2013',
+        body: 'Tu cuerpo empieza a hacer lo suyo mientras descansás. Buen '
+            'momento para soltar el día.',
       );
 
       // ── 7. Recordatorio de sueño ─────────────────────────────────────────
@@ -152,9 +146,8 @@ class NotificationScheduler {
         hour: profile.sleepTime.hour,
         minute: profile.sleepTime.minute,
         title: '🌙 Hora de descansar',
-        body:
-            'Las primeras dos horas son las que más reparan. '
-            'Mereces ese descanso. · Walker 2017',
+        body: 'Hora de descansar. Las primeras horas de sueño son las que '
+            'más te reparan.',
       );
 
       // ── 8. SPEC-169 (2026-06-04): eTRF pre-sueño ─────────────────────────
@@ -177,9 +170,8 @@ class NotificationScheduler {
           hour: eTRFCutoff.hour,
           minute: eTRFCutoff.minute,
           title: '🌙 3 horas antes de dormir',
-          body:
-              'Si cierras la ventana ahora, tu descanso te lo va a '
-              'agradecer. · Sutton 2018',
+          body: 'Si cerrás la cocina ahora, tu descanso de esta noche te lo '
+              'va a agradecer.',
         );
       }
 
@@ -211,9 +203,8 @@ class NotificationScheduler {
       await NotificationService.scheduleAt(
         id: NotificationIds.fasting12h,
         title: '⚡ 12 horas',
-        body:
-            'Tu cuerpo ya cambió de marcha — y tú llegaste hasta acá. '
-            '· Cahill 2006',
+        body: 'Tu cuerpo ya cambió de marcha, y vos llegaste hasta acá. '
+            'Bien ahí.',
         scheduledTime: m12h,
         repeatsDaily: false,
         isFasting: true,
@@ -222,9 +213,8 @@ class NotificationScheduler {
       await NotificationService.scheduleAt(
         id: NotificationIds.fasting16h,
         title: '✨ 16 horas — Limpieza profunda',
-        body:
-            'Tu cuerpo empezó una limpieza profunda gracias a lo que estás '
-            'haciendo hoy. · Levine 2017',
+        body: 'Tu cuerpo entró en limpieza profunda gracias a lo de hoy. '
+            'Seguís fuerte.',
         scheduledTime: m16h,
         repeatsDaily: false,
         isFasting: true,
@@ -233,9 +223,8 @@ class NotificationScheduler {
       await NotificationService.scheduleAt(
         id: NotificationIds.fasting18h,
         title: '🔥 18 horas — Cabeza clara',
-        body:
-            'Tu cuerpo encontró otro combustible. Tu cabeza lo va a notar '
-            'pronto. · Mattson 2018',
+        body: 'Tu cuerpo encontró otro combustible. Vas a notar la cabeza '
+            'más clara. Lo estás logrando.',
         scheduledTime: m18h,
         repeatsDaily: false,
         isFasting: true,
@@ -244,9 +233,8 @@ class NotificationScheduler {
       await NotificationService.scheduleAt(
         id: NotificationIds.fasting24h,
         title: '✨ 24 horas — Reparación profunda',
-        body:
-            'La limpieza llegó a su punto más alto. Esto es trabajo profundo '
-            'del que pocas veces te das cuenta. · Mizushima 2008',
+        body: 'La limpieza llegó a su punto más alto. Trabajo profundo del '
+            'que pocas veces te das cuenta. Enorme.',
         scheduledTime: m24h,
         repeatsDaily: false,
         isFasting: true,
@@ -374,7 +362,7 @@ class NotificationScheduler {
   /// SPEC-150 §1.3 — 90 min se eligió sobre los 30 min pedidos por
   /// Carlos basándose en Maughan 2003 + Adan 2012 + comparativa con
   /// apps comerciales (WaterMinder, Hydro Coach).
-  static const Duration kHydrationCadence = Duration(minutes: 90);
+  static const Duration kHydrationCadence = Duration(minutes: 30);
 
   /// Hora máxima a la que programamos hidratación. Coincide con la
   /// alerta de bloqueo intestinal 30 min de SPEC-70.5 — durante la
@@ -430,7 +418,7 @@ class NotificationScheduler {
           hour: current.hour,
           minute: current.minute,
           title: message.title,
-          body: '${message.body} · ${message.citation}',
+          body: message.body,
           // SPEC-199 Fase A: cada recordatorio de hidratación es accionable
           // (botones "Sí, lo registro" / "Aún no").
           actionableHydration: true,

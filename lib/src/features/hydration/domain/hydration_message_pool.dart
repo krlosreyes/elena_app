@@ -1,10 +1,12 @@
-// SPEC-150 §RF-150-02 + §RF-150-03: pool curado de mensajes de
-// hidratación con citas bibliográficas reales del proyecto.
+// SPEC-150 §RF-150-02 + §RF-150-03: pool curado de mensajes de hidratación.
 //
-// El pool tiene exactamente 3 mensajes por DayPeriod (12 total).
-// El selector es determinístico — mismo slot en el mismo día rinde
-// el mismo mensaje, pero rota por día del año para evitar repetición
-// día a día.
+// Tono (audit notif 2026-06-10): humano, cálido y simple — sin datos
+// científicos ni fuentes en el cuerpo del mensaje. La ciencia vive en la app,
+// no en la notificación. El campo `citation` se conserva en el modelo pero ya
+// NO se muestra (el scheduler dejó de anexarlo).
+//
+// 3 mensajes por DayPeriod (12 total). El selector es determinístico y rota
+// por día del año para evitar repetición día a día.
 
 import 'package:elena_app/src/features/hydration/domain/hydration_message.dart';
 
@@ -13,119 +15,117 @@ class HydrationMessagePool {
 
   /// Los 12 mensajes curados, indexados por período.
   static const Map<DayPeriod, List<HydrationMessage>> _pool = {
-    // ─── MORNING (5-11h) ──────────────────────────────────────────────────
+    // ─── MORNING ──────────────────────────────────────────────────────────
     DayPeriod.morning: [
       HydrationMessage(
         id: 'hyd-morning-00',
         period: DayPeriod.morning,
-        title: 'Rehidratá tu cerebro',
-        body: 'Perdiste ~1% de agua durante la noche. Empezá hidratado.',
-        citation: 'Popkin 2010',
+        title: '💧 Un vaso para arrancar',
+        body: 'Tu cuerpo pasó la noche sin agua. Un vaso ahora y arrancás '
+            'mejor.',
+        citation: '',
       ),
       HydrationMessage(
         id: 'hyd-morning-01',
         period: DayPeriod.morning,
-        title: 'Cortisol peak: hora ideal',
-        body: 'Hidratar durante el pico de cortisol mejora claridad mental.',
-        citation: 'Adan 2012',
+        title: '💧 Hidratate apenas despiertes',
+        body: 'Tomar agua temprano te despeja y te pone en marcha.',
+        citation: '',
       ),
       HydrationMessage(
         id: 'hyd-morning-02',
         period: DayPeriod.morning,
-        title: 'Despertá tu metabolismo',
-        body: '200-300ml ahora activan termorregulación y digestión.',
-        citation: 'EFSA 2010',
+        title: '💧 Despertá tu cuerpo',
+        body: 'Un vaso de agua ahora ayuda a poner todo en movimiento.',
+        citation: '',
       ),
     ],
 
-    // ─── MIDDAY (11-14h) ──────────────────────────────────────────────────
+    // ─── MIDDAY ───────────────────────────────────────────────────────────
     DayPeriod.midday: [
       HydrationMessage(
         id: 'hyd-midday-00',
         period: DayPeriod.midday,
-        title: 'Tu rendimiento depende del agua',
-        body: '1.4% de deshidratación = 12% de caída en atención.',
-        citation: 'Adan 2012',
+        title: '💧 Una pausa para tomar agua',
+        body: 'Un vaso a media mañana te mantiene con energía.',
+        citation: '',
       ),
       HydrationMessage(
         id: 'hyd-midday-01',
         period: DayPeriod.midday,
-        title: 'Sorbé en lugar de tragar',
-        body: 'Hidratación uniforme maximiza absorción intestinal.',
-        citation: 'Maughan 2003',
+        title: '💧 De a sorbos, sin apuro',
+        body: 'Tomá de a poco a lo largo del día; te sienta mejor.',
+        citation: '',
       ),
       HydrationMessage(
         id: 'hyd-midday-02',
         period: DayPeriod.midday,
-        title: 'Pre-comida: agua antes que sed',
-        body: '200ml antes de almorzar reducen el pico glucémico.',
-        citation: 'Davy 2008',
+        title: '💧 Agua antes de comer',
+        body: 'Un vaso antes del almuerzo te cae bien y te deja liviano.',
+        citation: '',
       ),
     ],
 
-    // ─── AFTERNOON (14-18h) ───────────────────────────────────────────────
+    // ─── AFTERNOON ────────────────────────────────────────────────────────
     DayPeriod.afternoon: [
       HydrationMessage(
         id: 'hyd-afternoon-00',
         period: DayPeriod.afternoon,
-        title: 'Energía sin cafeína',
-        body:
-            'Mucha fatiga vespertina es deshidratación leve, no sueño faltante.',
-        citation: 'Popkin 2010',
+        title: '💧 Energía sin café',
+        body: 'Mucho cansancio de la tarde es solo falta de agua. Probá un '
+            'vaso.',
+        citation: '',
       ),
       HydrationMessage(
         id: 'hyd-afternoon-01',
         period: DayPeriod.afternoon,
-        title: 'Tu agua regula 100+ procesos',
-        body: 'Metabolismo, presión arterial, transporte de nutrientes.',
-        citation: 'EFSA 2010',
+        title: '💧 Tu cuerpo te lo agradece',
+        body: 'Un vaso ahora y seguís bien el resto de la tarde.',
+        citation: '',
       ),
       HydrationMessage(
         id: 'hyd-afternoon-02',
         period: DayPeriod.afternoon,
-        title: 'La sed llega tarde',
-        body: 'Cuando sentís sed, ya hay 1-2% de deshidratación.',
-        citation: 'Maughan 2003',
+        title: '💧 No esperes a tener sed',
+        body: 'Cuando llega la sed ya vas tarde. Adelantate con un vaso.',
+        citation: '',
       ),
     ],
 
-    // ─── EVENING (18-21h) ─────────────────────────────────────────────────
+    // ─── EVENING ──────────────────────────────────────────────────────────
     DayPeriod.evening: [
       HydrationMessage(
         id: 'hyd-evening-00',
         period: DayPeriod.evening,
-        title: 'Hidratación sin sobrecargar',
-        body: 'Moderá el volumen ahora para no fragmentar el sueño.',
-        citation: 'AASM clinical guidance',
+        title: '💧 Hidratate, con calma',
+        body: 'Un poco de agua ahora, sin exagerar para no cortar el sueño.',
+        citation: '',
       ),
       HydrationMessage(
         id: 'hyd-evening-01',
         period: DayPeriod.evening,
-        title: 'Agua reduce hambre nocturna',
-        body: 'La deshidratación leve eleva grelina y dispara antojos.',
-        citation: 'Stookey 2008',
+        title: '💧 Agua para los antojos',
+        body: 'A veces el antojo de la noche es sed disfrazada. Probá un '
+            'vaso.',
+        citation: '',
       ),
       HydrationMessage(
         id: 'hyd-evening-02',
         period: DayPeriod.evening,
-        title: 'Última ventana antes del bloqueo',
-        body:
-            'Hidratá antes de las 21:00 para respetar el ciclo de reparación.',
-        citation: 'Lopez-Minguez 2018',
+        title: '💧 Tu último vaso del día',
+        body: 'Buen momento para tomar agua antes de cerrar el día.',
+        citation: '',
       ),
     ],
   };
 
   /// Resuelve a qué DayPeriod corresponde una hora del día.
   /// Reglas: 5-11 morning, 11-14 midday, 14-18 afternoon, 18-21 evening.
-  /// Para horas fuera de esos rangos (3-5 madrugada, 21-3 noche) cae al
-  /// período más cercano — evening si ya pasó el bloqueo intestinal.
   static DayPeriod periodFor(int hour) {
     if (hour >= 5 && hour < 11) return DayPeriod.morning;
     if (hour >= 11 && hour < 14) return DayPeriod.midday;
     if (hour >= 14 && hour < 18) return DayPeriod.afternoon;
     if (hour >= 18 && hour < 21) return DayPeriod.evening;
-    // Fuera de la ventana activa — caer a evening por defecto.
     return DayPeriod.evening;
   }
 
@@ -136,12 +136,6 @@ class HydrationMessagePool {
 
   /// Selecciona un mensaje del pool de manera determinística para un
   /// momento dado + un slot dentro del día.
-  ///
-  /// La fórmula `(day_of_year + slot_index) % 3` garantiza que:
-  /// - el mismo slot en el mismo día siempre rinde el mismo mensaje
-  ///   (útil para tests y para que el usuario no vea sorpresas);
-  /// - día a día el mismo slot rinde mensajes distintos (rotación,
-  ///   evita la repetición).
   static HydrationMessage selectFor({
     required DateTime scheduledTime,
     required int slotIndex,

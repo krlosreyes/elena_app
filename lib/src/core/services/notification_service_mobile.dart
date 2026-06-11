@@ -71,13 +71,15 @@ class NotificationIds {
 
   // SPEC-150: hidratación. Rango 400-419 reservado (hasta 20 slots/día).
   // cancelHydration() cancela todo el rango.
+  // Cadencia 30 min (audit notif 2026-06-10): la ventana activa (~14h) cabe
+  // en ~28 slots → rango ampliado a 400-439.
   static const int hydrationStart = 400;
-  static const int hydrationEnd = 419;
+  static const int hydrationEnd = 439;
 
   // SPEC-199 Fase A: re-recordatorio one-shot del "Aún no" del prompt de
-  // hidratación (+15 min). Fuera del rango 400-419 para no chocar con los
+  // hidratación (+15 min). Fuera del rango 400-439 para no chocar con los
   // slots diarios ni ser cancelado por cancelHydration().
-  static const int hydrationSnooze = 420;
+  static const int hydrationSnooze = 450;
 
   // SPEC-198: nudges de conversión de trial (día 5 y día 12).
   static const int paywallNudgeDay5 = 500;

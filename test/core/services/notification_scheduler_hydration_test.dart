@@ -54,7 +54,7 @@ void main() {
       expect(slots.last.hour, lessThanOrEqualTo(19));
     });
 
-    test('Cadencia exacta de 90 min entre slots consecutivos', () {
+    test('Cadencia exacta de 30 min entre slots consecutivos', () {
       final slots = computeHydrationSlots(
         wakeHour: 7,
         wakeMinute: 0,
@@ -64,21 +64,21 @@ void main() {
         final diff = slots[i].difference(slots[i - 1]);
         expect(
           diff,
-          const Duration(minutes: 90),
-          reason: 'cadencia entre slot $i y $i-1 debería ser 90 min',
+          const Duration(minutes: 30),
+          reason: 'cadencia entre slot $i y $i-1 debería ser 30 min',
         );
       }
     });
 
-    test('Wake 7:00 sleep 23:00 → ~9-10 slots (matemáticamente esperado)', () {
-      // De 7:30 a 21:00 son 13.5h. Con cadencia 90 min: 13.5 / 1.5 = 9.
-      // Más el slot inicial = 10 si encaja exacto, 9 si redondeamos abajo.
+    test('Wake 7:00 sleep 23:00 → ~28 slots (cadencia 30 min)', () {
+      // De 7:30 a 21:00 son 13.5h. Con cadencia 30 min: 810/30 + 1 = 28 slots
+      // (cabe holgado en los 40 IDs reservados).
       final slots = computeHydrationSlots(
         wakeHour: 7,
         wakeMinute: 0,
         sleepHour: 23,
       );
-      expect(slots.length, anyOf(9, 10));
+      expect(slots.length, anyOf(27, 28));
     });
 
     test('Wake 7:00 sleep 23:00 → todos los slots dentro de [7:30, 21:00]', () {
@@ -108,12 +108,12 @@ void main() {
       expect(slots, isEmpty);
     });
 
-    test('IDs reservados son 400-419 (20 slots)', () {
+    test('IDs reservados son 400-439 (40 slots — cadencia 30 min)', () {
       expect(NotificationIds.hydrationStart, 400);
-      expect(NotificationIds.hydrationEnd, 419);
+      expect(NotificationIds.hydrationEnd, 439);
       expect(
         NotificationIds.hydrationEnd - NotificationIds.hydrationStart + 1,
-        20,
+        40,
       );
     });
   });
