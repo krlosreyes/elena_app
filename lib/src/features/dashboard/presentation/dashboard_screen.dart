@@ -34,6 +34,9 @@ import 'package:elena_app/src/features/progress/application/biometric_backfill_p
 import 'package:elena_app/src/features/dashboard/presentation/widgets/daily_score_explainer_sheet.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_bootstrap_provider.dart';
 import 'package:elena_app/src/features/metabolic_cycle/presentation/widgets/cycle_closure_card.dart';
+import 'package:elena_app/src/features/metabolic_cycle/presentation/widgets/cycle_detail_sheet.dart';
+import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart';
+import 'package:elena_app/src/features/metabolic_cycle/domain/metabolic_cycle.dart';
 import 'package:elena_app/src/features/streak/application/daily_score_provider.dart';
 // SPEC-137 E.5: banner countdown 30 min antes de la próxima comida.
 import 'package:elena_app/src/features/nutrition/presentation/widgets/next_meal_banner.dart';
@@ -129,6 +132,22 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     // una escritura inicial con los valores actuales. One-shot por sesión.
     // Mismo patrón side-effect-only que imrPersistenceProvider.
     ref.watch(biometricBackfillProvider);
+
+    // SPEC-202.2: el "momento" de cierre del día. Cuando inicias tu próximo
+    // ayuno y eso cierra el ciclo anterior, presentamos su feedback de
+    // inmediato como sheet (ligado al gesto), y descartamos el cierre para
+    // que la tarjeta pasiva no lo repita después.
+    ref.listen<MetabolicCycle?>(cycleClosureMomentProvider, (prev, next) {
+      if (next == null) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        CycleDetailSheet.show(context, next);
+        ref.read(cycleClosureMomentProvider.notifier).state = null;
+        ref
+            .read(cycleClosureDismissalProvider.notifier)
+            .dismiss(next.cycleId);
+      });
+    });
 
     // SPEC-149: bootstrap del Día Metabólico. Si el usuario no tiene
     // ciclo abierto al login, crea uno retroactivo. One-shot.

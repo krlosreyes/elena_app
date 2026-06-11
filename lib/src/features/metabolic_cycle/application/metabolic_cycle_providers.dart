@@ -112,20 +112,40 @@ final cycleClosureDismissalProvider =
   return CycleClosureDismissalNotifier(prefs);
 });
 
+/// SPEC-202.2: el "momento" de cierre — un ciclo recién cerrado por acción
+/// consciente (iniciar el próximo ayuno) que el Dashboard debe presentar como
+/// un sheet inmediato ("arrancaste tu ayuno, así cerró tu día anterior") en
+/// vez de dejar una tarjeta pasiva que aparece desconectada en la mañana.
+/// El evaluador lo setea; el Dashboard lo consume y lo limpia.
+final cycleClosureMomentProvider = StateProvider<MetabolicCycle?>((ref) => null);
+
+/// SPEC-202.2: ventana de frescura. Si el cierre ocurrió hace más de esto, la
+/// tarjeta pasiva NO se muestra — evita el pop desconectado de la mañana
+/// cuando el ciclo cerró por un fallback mientras la app estuvo cerrada.
+const Duration kCycleClosureFreshness = Duration(hours: 6);
+
 /// True si hay un ciclo cerrado reciente que aún NO fue descartado por
 /// el usuario. Drive el render del CycleClosureCard en Dashboard.
 ///
-/// SPEC-149.1: ahora watchea `cycleClosureDismissalProvider` (reactivo)
-/// en lugar de leer prefs directamente.
+/// SPEC-149.1: watchea `cycleClosureDismissalProvider` (reactivo).
+/// SPEC-202.2: además exige que el cierre sea FRESCO — un cierre viejo (la app
+/// estuvo cerrada y el ciclo cerró por fallback en la madrugada) ya no salta
+/// como tarjeta desconectada.
 final hasUnreadCycleClosureProvider = Provider<bool>((ref) {
   final last = ref.watch(lastClosedMetabolicCycleProvider).valueOrNull;
   if (last == null) return false;
 
   final dismissedCycleId = ref.watch(cycleClosureDismissalProvider);
+  if (dismissedCycleId == last.cycleId) return false;
 
-  // Hay cierre no leído si el último cierre tiene un cycleId distinto
-  // al último que el usuario descartó.
-  return dismissedCycleId != last.cycleId;
+  // SPEC-202.2: gating de frescura. Sin closedAt, lo tratamos como fresco
+  // (no rompemos el caso legacy). Con closedAt viejo → no mostrar pasivo.
+  final closedAt = last.closedAt;
+  if (closedAt != null &&
+      DateTime.now().difference(closedAt) > kCycleClosureFreshness) {
+    return false;
+  }
+  return true;
 });
 
 /// Helper legacy mantenido por compat. Internamente delega al notifier

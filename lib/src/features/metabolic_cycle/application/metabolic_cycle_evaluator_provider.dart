@@ -22,6 +22,7 @@ import 'package:elena_app/src/features/dashboard/application/sleep_notifier.dart
 import 'package:elena_app/src/features/dashboard/domain/fasting_status.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_service.dart';
+import 'package:elena_app/src/features/metabolic_cycle/domain/closure_reason.dart';
 import 'package:elena_app/src/features/metabolic_cycle/domain/metabolic_cycle.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
 import 'package:elena_app/src/features/streak/application/daily_score_provider.dart';
@@ -162,6 +163,17 @@ Future<void> _evaluate(
       await ref
           .read(dailyResetProvider.notifier)
           .triggerDailyReset(flushClosingDay: false);
+    }
+
+    // SPEC-202.2: si el cierre fue por iniciar el próximo ayuno (acción
+    // consciente), exponerlo como "momento" para que el Dashboard lo presente
+    // de inmediato — el feedback del día anterior ligado al gesto, no como
+    // tarjeta pasiva que aparece desconectada en la mañana.
+    final closed = result.closed;
+    if (closed != null &&
+        closed.closureReason == ClosureReason.manualNextFasting &&
+        closed.feedback != null) {
+      ref.read(cycleClosureMomentProvider.notifier).state = closed;
     }
   } catch (e) {
     AppLogger.warning('[metabolicCycleEvaluator] eval falló: $e', e);
