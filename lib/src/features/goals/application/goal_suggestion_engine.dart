@@ -160,17 +160,20 @@ class GoalSuggestionEngine {
     );
   }
 
+  /// SPEC-203.1 (auditoría onboarding): solo se sugiere BAJAR de zona cuando
+  /// el objetivo se activa (Promedio/Alto). Antes, a un usuario en zona
+  /// Fitness (no activado: umbral 18% H / 25% M) se le sugería igual bajar al
+  /// techo Atlético → mensaje mixto ("ya estás bien" + "baja a 13%"). Ahora
+  /// Fitness/Atlético = mantener, coherente con la no-activación.
   static double _nextFatZoneTarget(double bf, bool isMale) {
     if (isMale) {
-      if (bf >= 25) return 20.0; // Alto  → techo Promedio
+      if (bf >= 25) return 20.0; // Alto → techo Promedio
       if (bf >= 18) return 17.0; // Promedio → techo Fitness
-      if (bf >= 14) return 13.0; // Fitness → techo Atlético
-      return bf; // Ya atlético — mantener
+      return bf; // Fitness/Atlético/Esencial — mantener
     } else {
-      if (bf >= 32) return 28.0; // Alto  → techo Promedio
+      if (bf >= 32) return 28.0; // Alto → techo Promedio
       if (bf >= 25) return 24.0; // Promedio → techo Fitness
-      if (bf >= 21) return 20.0; // Fitness → techo Atlético
-      return bf; // Ya atlético — mantener
+      return bf; // Fitness/Atlético/Esencial — mantener
     }
   }
 
@@ -198,7 +201,10 @@ class GoalSuggestionEngine {
   static GoalSuggestion _fastingDaysSuggestion(UserModel user) {
     final double currentDays = (user.weeklyAdherence * 7).clamp(0.0, 7.0);
     final int roundedDays = currentDays.round();
-    final int targetDays = roundedDays >= 5 ? 5 : (roundedDays + 1).clamp(2, 6);
+    // SPEC-203.1 (auditoría onboarding): piso de 3 días/sem. Antes el
+    // principiante (0 días) recibía una meta de solo 2 — poco ambiciosa para
+    // instalar el hábito. 3 es la dosis mínima que genera adaptación visible.
+    final int targetDays = roundedDays >= 5 ? 5 : (roundedDays + 1).clamp(3, 6);
 
     final bool outOfRange = roundedDays < 4;
 
