@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elena_app/src/features/dashboard/application/sleep_notifier.dart';
+import 'package:elena_app/src/features/dashboard/domain/sleep_log.dart';
 import 'package:elena_app/src/features/dashboard/presentation/sleep_input_sheet.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/pillar_card_ui.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/sleep_existing_log_dialog.dart';
@@ -18,12 +19,20 @@ class SleepPillarCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     const accent = Color(0xFF818CF8);
-    final log = state.lastLog;
-    final hasLog = log != null;
-    final hours = hasLog ? log.duration.inHours : 0;
-    final minutes = hasLog ? log.duration.inMinutes.remainder(60) : 0;
+
+    // Coherencia con el satélite (2026-06-11): el sueño se ancla al CICLO
+    // metabólico, no al reloj. `currentCycleSleepProvider` (SPEC-188 v2) es la
+    // regla canónica: devuelve el SleepLog del ciclo abierto, o null si el log
+    // pertenece al ciclo anterior (ya cerrado). Cuando es null mostramos un
+    // estado evocativo "esperando el descanso" en vez de arrastrar el dato de
+    // anoche — igual que el satélite, que ya quedó en 0%.
+    final log = ref.watch(currentCycleSleepProvider);
+    final showLog = log != null;
+
+    final hours = showLog ? log.duration.inHours : 0;
+    final minutes = showLog ? log.duration.inMinutes.remainder(60) : 0;
     final progress =
-        hasLog ? (log.duration.inMinutes / (8 * 60)).clamp(0.0, 1.0) : 0.0;
+        showLog ? (log.duration.inMinutes / (8 * 60)).clamp(0.0, 1.0) : 0.0;
     final pct = (progress * 100).round();
 
     String fmt(DateTime? dt) {
@@ -37,63 +46,161 @@ class SleepPillarCard extends ConsumerWidget {
       title: 'Soporte Metabólico',
       badge: 'Sueño',
       accent: accent,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            PillarCardUi.miniStat(
-                'Dormiste', hasLog ? '${hours}h ${minutes}m' : '—', accent,
-                big: true),
-            PillarCardUi.miniStat('Acostado', fmt(log?.fellAsleep), Colors.white),
-            PillarCardUi.miniStat('Despertaste', fmt(log?.wokeUp), Colors.white),
-          ],
-        ),
-        const SizedBox(height: 14),
-        Row(
-          children: [
-            const Text('🚩', style: TextStyle(fontSize: 14)),
-            const SizedBox(width: 6),
-            Text(
-              'Meta: 7-9 horas',
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.7),
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
+      children: showLog
+          ? _loggedChildren(
+              context: context,
+              ref: ref,
+              accent: accent,
+              log: log,
+              hours: hours,
+              minutes: minutes,
+              progress: progress,
+              pct: pct,
+              fmt: fmt,
+            )
+          : _waitingChildren(context: context, accent: accent),
+    );
+  }
+
+  /// Estado normal: hay un sueño registrado dentro del ciclo actual.
+  List<Widget> _loggedChildren({
+    required BuildContext context,
+    required WidgetRef ref,
+    required Color accent,
+    required SleepLog log,
+    required int hours,
+    required int minutes,
+    required double progress,
+    required int pct,
+    required String Function(DateTime?) fmt,
+  }) {
+    return [
+      Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          PillarCardUi.miniStat('Dormiste', '${hours}h ${minutes}m', accent,
+              big: true),
+          PillarCardUi.miniStat('Acostado', fmt(log.fellAsleep), Colors.white),
+          PillarCardUi.miniStat('Despertaste', fmt(log.wokeUp), Colors.white),
+        ],
+      ),
+      const SizedBox(height: 14),
+      Row(
+        children: [
+          const Text('🚩', style: TextStyle(fontSize: 14)),
+          const SizedBox(width: 6),
+          Text(
+            'Meta: 7-9 horas',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.7),
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
             ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        PillarCardUi.progressBar(progress, accent),
-        const SizedBox(height: 6),
-        PillarCardUi.completionLabel(pct),
-        const SizedBox(height: 16),
-        PillarCardUi.benefitChip(
-          accent: accent,
-          text: hasLog && hours >= 7
-              ? '✓ Sueño reparador — GH pulsátil activa durante ciclos REM'
-              : 'Buscas sueño reparador: 7-9h activan la GH pulsátil que repara músculo y reduce inflamación.',
-        ),
-        const SizedBox(height: 18),
-        // SPEC-106 / SPEC-108: el sheet precarga el último log si existe. Si ya
-        // hay registro de HOY, primero pasa por un diálogo donde el usuario
-        // elige editar o eliminar y recrear. Si no hay log, abre sheet limpio.
-        PillarCardUi.primaryButton(
-          label: hasLog ? 'Actualizar Registro' : 'Registrar Sueño',
-          icon: Icons.nightlight_round,
-          color: accent,
-          onPressed: () => _onTapUpdateSleep(context, ref, state),
-        ),
-        const SizedBox(height: 10),
-        if (hasLog)
-          PillarCardUi.secondaryButton(
-            label: 'Eliminar registro y volver a registrar',
-            icon: Icons.delete_outline_rounded,
-            onPressed: state.isSaving
-                ? null
-                : () => _confirmDeleteSleepLog(context, ref),
           ),
-      ],
+        ],
+      ),
+      const SizedBox(height: 10),
+      PillarCardUi.progressBar(progress, accent),
+      const SizedBox(height: 6),
+      PillarCardUi.completionLabel(pct),
+      const SizedBox(height: 16),
+      PillarCardUi.benefitChip(
+        accent: accent,
+        text: hours >= 7
+            ? '✓ Sueño reparador — GH pulsátil activa durante ciclos REM'
+            : 'Buscas sueño reparador: 7-9h activan la GH pulsátil que repara músculo y reduce inflamación.',
+      ),
+      const SizedBox(height: 18),
+      // SPEC-106 / SPEC-108: el sheet precarga el último log si existe. Si ya
+      // hay registro de HOY, primero pasa por un diálogo donde el usuario
+      // elige editar o eliminar y recrear. Si no hay log, abre sheet limpio.
+      PillarCardUi.primaryButton(
+        label: 'Actualizar Registro',
+        icon: Icons.nightlight_round,
+        color: accent,
+        onPressed: () => _onTapUpdateSleep(context, ref, state),
+      ),
+      const SizedBox(height: 10),
+      PillarCardUi.secondaryButton(
+        label: 'Eliminar registro y volver a registrar',
+        icon: Icons.delete_outline_rounded,
+        onPressed:
+            state.isSaving ? null : () => _confirmDeleteSleepLog(context, ref),
+      ),
+    ];
+  }
+
+  /// Estado evocativo: el ciclo se reinició y aún no hay sueño de HOY. En
+  /// vez de arrastrar el dato de la noche anterior, acompañamos al usuario
+  /// hacia su descanso con un mensaje cálido sobre las fases del sueño.
+  List<Widget> _waitingChildren({
+    required BuildContext context,
+    required Color accent,
+  }) {
+    return [
+      Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.bedtime_rounded, color: accent, size: 24),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Tu descanso aún no empieza',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Nuevo día metabólico. El de anoche ya cerró.',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.6),
+                    fontSize: 12.5,
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+      const SizedBox(height: 16),
+      PillarCardUi.benefitChip(
+        accent: accent,
+        text: 'Mientras descansás, tu cuerpo recorre sus fases: sueño ligero, '
+            'profundo y REM. En el profundo repara músculo; en REM ordena '
+            'memoria y hormonas.',
+      ),
+      const SizedBox(height: 18),
+      PillarCardUi.primaryButton(
+        label: 'Registrar Sueño',
+        icon: Icons.nightlight_round,
+        color: accent,
+        onPressed: () => _onTapRegisterFresh(context),
+      ),
+    ];
+  }
+
+  /// Abre el sheet de sueño en limpio (sin precargar la noche anterior, que
+  /// pertenece a un ciclo ya cerrado).
+  Future<void> _onTapRegisterFresh(BuildContext context) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const SleepInputSheet(),
     );
   }
 
