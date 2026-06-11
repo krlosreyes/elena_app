@@ -32,6 +32,8 @@ import 'package:elena_app/src/features/exercise/data/exercise_repository_impl.da
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart';
 import 'package:elena_app/src/features/nutrition/data/nutrition_repository_impl.dart';
 import 'package:elena_app/src/features/progress/data/biometric_repository.dart';
+import 'package:elena_app/src/features/streak/application/streak_notifier.dart';
+import 'package:elena_app/src/features/streak/domain/streak_entry.dart';
 
 /// SPEC-177 (2026-06-04): bump que cambia cada vez que se cierra un
 /// nuevo ciclo metabólico. Las series del Análisis lo watch como
@@ -71,6 +73,28 @@ AggregationMode _currentMode(Ref ref) {
   final range = ref.watch(analysisRangeProvider);
   return AggregationMode.forRange(range);
 }
+
+/// SPEC-200.1: serie del Score del Día (HOY, 0-100) como MetricSeries, para
+/// renderizarla con el MISMO `BarChartCard` + `TrendComparisonCard` que el
+/// detalle de Ayuno (coherencia visual). Fuente: historial de streak (30 días),
+/// agregado con el mismo `TemporalAggregator` que los pilares.
+final dailyScoreSeriesProvider = Provider.autoDispose<MetricSeries>((ref) {
+  final rangeStart = ref.watch(analysisRangeStartProvider) ?? _kEpoch;
+  final mode = _currentMode(ref);
+  final history = ref.watch(streakProvider).history;
+  final inRange = history.where((StreakEntry e) {
+    final d = DateTime.tryParse(e.date);
+    return d != null && !d.isBefore(rangeStart);
+  }).toList();
+  final points = TemporalAggregator.aggregate<StreakEntry>(
+    items: inRange,
+    timestampOf: (e) => DateTime.parse(e.date),
+    valueOf: (e) => (e.dailyQualityScore * 100).clamp(0.0, 100.0),
+    aggregation: TemporalAggregation.avg,
+    mode: mode,
+  );
+  return MetricSeries(label: 'Score del día', unit: '', points: points);
+});
 
 // ─── Resultados ────────────────────────────────────────────────────────
 

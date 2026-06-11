@@ -27,7 +27,6 @@ import 'package:elena_app/src/features/analysis/domain/nutrition_pie_data.dart';
 import 'package:elena_app/src/features/analysis/presentation/monthly_calendar_screen.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/observation_tile.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/transformation_card.dart';
-import 'package:elena_app/src/features/streak/application/daily_score_provider.dart';
 // SPEC-168.4: tile compacto del overview con sparkline + tap a detalle.
 import 'package:elena_app/src/features/analysis/presentation/widgets/pillar_overview_tile.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/segmented_range_control.dart';
@@ -381,24 +380,18 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
   /// sparkline = puntaje diario. Navega a su detalle dedicado vía
   /// `routeOverride` (no es un ChartMetric, para no tocar los switch del enum).
   PillarOverviewTile _dailyScoreTile() {
-    final points = ref.watch(dailyScoreTrendProvider);
-    String value = '';
-    List<double> spark = const [];
-    if (points.isNotEmpty) {
-      final sum = points.fold<int>(0, (a, p) => a + p.value);
-      value = '${(sum / points.length).round()}';
-      spark = points.map((p) => p.value.toDouble()).toList();
-    }
+    final s = ref.watch(dailyScoreSeriesProvider);
+    final v = ChartHeroComputer.aggregateValue(s, HeroAggregation.avg);
     return PillarOverviewTile(
       // `metric` se ignora porque pasamos `routeOverride`.
       metric: ChartMetric.imr,
       routeOverride: '/analysis/daily-score',
       icon: Icons.today_rounded,
       label: 'Score del día',
-      value: value,
+      value: v == null ? '' : ChartHeroComputer.formatValue(v),
       unit: '',
       accent: AppColors.metabolicGreen,
-      sparklineValues: spark,
+      sparklineValues: s.points.map((p) => p.value).toList(),
     );
   }
 

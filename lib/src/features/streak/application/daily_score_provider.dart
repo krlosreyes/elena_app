@@ -24,7 +24,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elena_app/src/core/services/notification_scheduler.dart';
-import 'package:elena_app/src/features/analysis/domain/score_trend_point.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/cycle_score_computer.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart';
 import 'package:elena_app/src/features/streak/application/streak_notifier.dart';
@@ -60,24 +59,6 @@ final dailyScoreProvider = Provider<int>((ref) {
 final dailyScoreDeltaProvider = Provider<int?>((ref) {
   final streak = ref.watch(streakProvider);
   return computeDailyScoreDelta(streak.history);
-});
-
-/// SPEC-200: serie día a día del Score del Día (HOY) — el puntaje 0-100 de
-/// cada día, para graficar seguimiento + promedio + tendencia en Análisis.
-/// Sale del historial de streak (hasta 30 días), ordenado cronológicamente.
-/// Distinto del IMR longitudinal: este es el puntaje diario que llega a 100.
-final dailyScoreTrendProvider = Provider<List<ScoreTrendPoint>>((ref) {
-  final history = ref.watch(streakProvider).history;
-  final points = history
-      .where((e) => e.date.isNotEmpty)
-      .map<ScoreTrendPoint>((e) => (
-            date: e.date,
-            value: (e.dailyQualityScore * 100).round().clamp(0, 100),
-          ))
-      .toList()
-    // 'yyyy-MM-dd' lexicográfico == cronológico.
-    ..sort((a, b) => a.date.compareTo(b.date));
-  return points;
 });
 
 // ────────────────────────────────────────────────────────────────────────
