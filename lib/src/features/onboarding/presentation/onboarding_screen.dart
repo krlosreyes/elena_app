@@ -1234,6 +1234,18 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     _goalDraftsInitialized = true;
   }
 
+  /// Edad real a partir de la fecha de nacimiento: resta los años y descuenta
+  /// 1 si el cumpleaños aún no ocurrió este año. Antes se usaba solo
+  /// `now.year - birth.year`, que daba ±1 de error según el mes/día.
+  static int _ageFromBirthDate(DateTime birth, {DateTime? now}) {
+    final today = now ?? DateTime.now();
+    int age = today.year - birth.year;
+    final hadBirthdayThisYear = today.month > birth.month ||
+        (today.month == birth.month && today.day >= birth.day);
+    if (!hadBirthdayThisYear) age--;
+    return age < 0 ? 0 : age;
+  }
+
   /// SPEC-168.0.A: construye el UserModel a partir del state actual del
   /// onboarding. Extraído de `_finalSubmit` para que también pueda
   /// alimentar a `GoalSuggestionEngine.suggest` en el paso Goals (donde
@@ -1242,7 +1254,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   /// Si `account` es null, los campos `id` y `name` quedan vacíos —
   /// el engine de sugerencias no los usa.
   UserModel _buildUserModelFromState({AppAccount? account}) {
-    final age = DateTime.now().year - _birthDate.year;
+    final age = _ageFromBirthDate(_birthDate);
 
     // SPEC-90: calcular % grasa con la fórmula US Navy desde los
     // inputs que el onboarding ya capturó (cintura, cuello, altura,
