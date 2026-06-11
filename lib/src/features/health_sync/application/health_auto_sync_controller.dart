@@ -18,6 +18,7 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:elena_app/src/core/providers/shared_preferences_provider.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/features/dashboard/data/sleep_repository_impl.dart';
 import 'package:elena_app/src/features/exercise/data/exercise_repository_impl.dart';
@@ -85,6 +86,11 @@ const Duration _kMinSyncInterval = Duration(minutes: 15);
 /// un usuario que estuvo offline una semana sin saturar el plugin.
 const Duration _kDefaultSyncWindow = Duration(days: 7);
 
+/// SPEC-132.next: key de SharedPreferences para persistir `lastRunAt`. Sin
+/// esto, cuando iOS despierta la app en background el controller se
+/// reconstruye con `lastRunAt = null` → el debounce no aplicaría.
+const String _kLastRunAtKey = 'health.lastRunAt';
+
 class HealthAutoSyncController extends StateNotifier<HealthAutoSyncState> {
   final HealthSyncService _syncService;
   final HealthImportService _importService;
@@ -97,7 +103,24 @@ class HealthAutoSyncController extends StateNotifier<HealthAutoSyncState> {
   })  : _syncService = syncService,
         _importService = importService,
         _ref = ref,
-        super(const HealthAutoSyncState());
+        super(const HealthAutoSyncState()) {
+    _hydrateLastRunAt();
+  }
+
+  /// SPEC-132.next: rehidrata `lastRunAt` desde SharedPreferences para que el
+  /// debounce de 15 min sobreviva un cold start / despertar en background.
+  void _hydrateLastRunAt() {
+    try {
+      final millis = _ref.read(sharedPreferencesProvider).getInt(_kLastRunAtKey);
+      if (millis != null) {
+        state = state.copyWith(
+          lastRunAt: DateTime.fromMillisecondsSinceEpoch(millis),
+        );
+      }
+    } catch (_) {
+      // SharedPreferences no disponible (tests sin override) — ignorar.
+    }
+  }
 
   // ─── API pública ─────────────────────────────────────────────────
 
@@ -216,10 +239,15 @@ class HealthAutoSyncController extends StateNotifier<HealthAutoSyncState> {
       // ignore: avoid_print
       print(st);
     } finally {
-      state = state.copyWith(
-        isRunning: false,
-        lastRunAt: DateTime.now(),
-      );
+      final now = DateTime.now();
+      state = state.copyWith(isRunning: false, lastRunAt: now);
+      // SPEC-132.next: persistir para que el debounce sobreviva al despertar
+      // en background.
+      try {
+        await _ref
+            .read(sharedPreferencesProvider)
+            .setInt(_kLastRunAtKey, now.millisecondsSinceEpoch);
+      } catch (_) {}
       _ref.read(isHealthSyncingProvider.notifier).state = false;
     }
   }

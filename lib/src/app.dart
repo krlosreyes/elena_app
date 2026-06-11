@@ -13,6 +13,7 @@ import 'package:elena_app/src/features/coaching/application/coaching_action_rout
 import 'package:elena_app/src/core/services/daily_reset_service.dart';
 import 'package:elena_app/src/features/analysis/application/daily_summary_persistence_service.dart';
 import 'package:elena_app/src/features/health_sync/application/health_auto_sync_controller.dart';
+import 'package:elena_app/src/features/health_sync/application/health_observer_provider.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_evaluator_provider.dart';
 import 'package:elena_app/src/core/engine/weekly_imr_staleness_trigger.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
@@ -104,6 +105,12 @@ class _ElenaAppState extends ConsumerState<ElenaApp>
     // usuario), si pasaron >7 días desde el último snapshot, recalcula
     // y persiste. One-shot por sesión por usuario.
     ref.watch(weeklyImrStalenessTriggerProvider);
+
+    // SPEC-132.next (2026-06-10): observers de HealthKit con background
+    // delivery. Arranca el side-effect que escucha los eventos nativos de
+    // Apple Health y dispara el sync cuando hay data fresca (peso, pasos,
+    // sueño) — sin esperar a que el usuario reabra la app.
+    ref.watch(healthObserverSideEffectProvider);
 
     // SPEC-132 Bloque C: bootstrap del auto-sync con HealthKit /
     // Health Connect. Escucha el stream del usuario y dispara

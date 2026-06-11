@@ -4,6 +4,10 @@ import UserNotifications
 
 @main
 @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
+  // SPEC-132.next: observer de HealthKit (background delivery). Se conserva
+  // como propiedad para que ARC no lo libere.
+  private var healthObserver: HealthKitObserver?
+
   override func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
@@ -15,7 +19,34 @@ import UserNotifications
     if #available(iOS 10.0, *) {
       UNUserNotificationCenter.current().delegate = self
     }
-    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+
+    let result = super.application(
+      application, didFinishLaunchingWithOptions: launchOptions)
+
+    // SPEC-132.next: MethodChannel para arrancar/parar los observers de
+    // HealthKit desde Dart y recibir los eventos de cambio.
+    if let controller = window?.rootViewController as? FlutterViewController {
+      let channel = FlutterMethodChannel(
+        name: "com.metamorfosis.elena/healthkit_observer",
+        binaryMessenger: controller.binaryMessenger
+      )
+      let observer = HealthKitObserver(channel: channel)
+      self.healthObserver = observer
+      channel.setMethodCallHandler { call, resultCb in
+        switch call.method {
+        case "startObserving":
+          observer.startObserving()
+          resultCb(nil)
+        case "stopObserving":
+          observer.stopObserving()
+          resultCb(nil)
+        default:
+          resultCb(FlutterMethodNotImplemented)
+        }
+      }
+    }
+
+    return result
   }
 
   // SPEC-172: forzar presentación de banner + sonido cuando la app está
