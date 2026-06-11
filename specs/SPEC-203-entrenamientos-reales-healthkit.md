@@ -1,6 +1,6 @@
 # SPEC-203 — Entrenamientos reales desde HealthKit (workouts)
 
-**Estado:** APPROVED-DESIGN (2026-06-10) — para revisión de Carlos. Sin implementar.
+**Estado:** IMPLEMENTED (2026-06-10) — workouts tipados al sync + observer `.immediate` + regla pasos-vs-workout + tests. Decisión §2 adoptada (workouts ganan; pasos solo en días sin workout). Pendiente: validación en device (registrar un workout en Apple Health → ver el log tipado).
 **Versión:** 0.1 (draft)
 **Tipo:** Health sync — el pilar de Ejercicio pasa de "pasos" a entrenamientos reales (caminata, trote, fuerza, HIIT, movilidad).
 **Líder:** Carlos

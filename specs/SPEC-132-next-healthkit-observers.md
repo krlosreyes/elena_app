@@ -1,6 +1,6 @@
 # SPEC-132.next — HealthKit observers + background delivery (iOS)
 
-**Estado:** BLOCKED — esperando habilitación de capability "HealthKit Background Delivery" en Apple Developer Portal (ver §6 Rollout)
+**Estado:** IMPLEMENTED (2026-06-10) — capability habilitada (Carlos tiene membresía Apple Developer). Observers (peso `.immediate`, sueño/pasos `.hourly`, +SPEC-203 workout `.immediate`) + MethodChannel + cliente Dart + side-effect provider + `lastRunAt` persistido. `HealthKitObserver.swift` agregado al target Runner (project.pbxproj). **Fix 2026-06-10:** revertida la persistencia de `lastRunAt` (§2.4) — causaba que en cold start `runIfDue` saltara el sync si el último corrió <15 min (sin evento `resumed` que lo forzara) → "el sync deja de traer datos al reabrir". El observer ya usa `runNow` (ignora debounce), así que la persistencia no aportaba y solo regresaba. `lastRunAt` vuelve a memoria. Pendiente: validación en device.
 **Versión:** 1.0
 **Fecha:** 2026-06-02
 **Tipo:** Extensión nativa de SPEC-132 (Bloque F)
