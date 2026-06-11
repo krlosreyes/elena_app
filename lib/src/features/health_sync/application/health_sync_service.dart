@@ -58,6 +58,9 @@ List<hp.HealthDataType> _typesFor(HealthMetric metric) {
       return [hp.HealthDataType.SLEEP_SESSION];
     case HealthMetric.steps:
       return [hp.HealthDataType.STEPS];
+    case HealthMetric.workout:
+      // SPEC-203: entrenamientos reales (HKWorkout / ExerciseSessionRecord).
+      return [hp.HealthDataType.WORKOUT];
   }
 }
 
@@ -71,6 +74,8 @@ class HealthSyncService {
     HealthMetric.weight,
     HealthMetric.sleepSession,
     HealthMetric.steps,
+    // SPEC-203: entrenamientos reales (workouts).
+    HealthMetric.workout,
   };
 
   bool _configured = false;
@@ -417,6 +422,28 @@ class HealthSyncService {
   /// Traduce un `HealthDataPoint` del plugin a `HealthSample` neutral.
   /// Retorna null si el dato es inválido (valor no numérico, etc.).
   HealthSample? _toSample(HealthMetric metric, hp.HealthDataPoint p) {
+    // SPEC-203: workout — el value es WorkoutHealthValue (no numérico). El
+    // "valor" del sample son los MINUTOS reales (dateTo - dateFrom) y el
+    // tipo de actividad nativo se conserva para mapear a ExerciseType.
+    if (metric == HealthMetric.workout) {
+      final minutes = p.dateTo.difference(p.dateFrom).inMinutes.toDouble();
+      if (minutes <= 0) return null;
+      String? activity;
+      final v = p.value;
+      if (v is hp.WorkoutHealthValue) {
+        activity = v.workoutActivityType.name;
+      }
+      return HealthSample(
+        metric: metric,
+        value: minutes,
+        start: p.dateFrom,
+        end: p.dateTo,
+        sourceName: p.sourceName,
+        uuid: p.uuid,
+        workoutActivityType: activity,
+      );
+    }
+
     final value = p.value;
     double numeric;
 
@@ -446,6 +473,9 @@ class HealthSyncService {
         break;
       case HealthMetric.steps:
         // count — sin conversión.
+        break;
+      case HealthMetric.workout:
+        // Inalcanzable: workout retorna temprano arriba.
         break;
     }
 

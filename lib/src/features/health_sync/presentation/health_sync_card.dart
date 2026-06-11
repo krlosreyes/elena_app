@@ -374,6 +374,9 @@ class _HealthSyncCardState extends ConsumerState<HealthSyncCard> {
     if (s.sleepSessionsImported > 0) {
       parts.add('${s.sleepSessionsImported} sueño(s)');
     }
+    if (s.workoutsImported > 0) {
+      parts.add('${s.workoutsImported} entrenamiento(s)');
+    }
     if (s.stepsActivitiesImported > 0) {
       parts.add('${s.stepsActivitiesImported} actividad(es)');
     }

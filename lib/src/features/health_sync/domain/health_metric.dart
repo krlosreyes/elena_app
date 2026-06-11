@@ -18,6 +18,11 @@ enum HealthMetric {
   /// Pasos diarios acumulados (count). Mapea a `ExerciseLog` cuando
   /// se considere "actividad equivalente" (>5k pasos = LISS implícito).
   steps,
+
+  /// SPEC-203: entrenamiento real (HKWorkout) — caminata, trote, fuerza,
+  /// HIIT, movilidad. Mapea a `ExerciseLog` tipado con su duración real.
+  /// `value` = minutos. Tiene prioridad sobre `steps` el mismo día.
+  workout,
 }
 
 extension HealthMetricX on HealthMetric {
@@ -31,6 +36,8 @@ extension HealthMetricX on HealthMetric {
         return 'minutes';
       case HealthMetric.steps:
         return 'count';
+      case HealthMetric.workout:
+        return 'minutes';
     }
   }
 
@@ -43,6 +50,8 @@ extension HealthMetricX on HealthMetric {
         return 'Sueño';
       case HealthMetric.steps:
         return 'Pasos';
+      case HealthMetric.workout:
+        return 'Entrenamiento';
     }
   }
 }

@@ -38,6 +38,9 @@ final class HealthKitObserver {
     if let sleep = HKObjectType.categoryType(forIdentifier: .sleepAnalysis) {
       out.append(Watched(type: sleep, key: "sleep", frequency: .hourly))
     }
+    // SPEC-203: entrenamientos — evento discreto, Apple lo entrega inmediato.
+    out.append(Watched(type: HKObjectType.workoutType(), key: "workout",
+                       frequency: .immediate))
     return out
   }
 

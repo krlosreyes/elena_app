@@ -110,6 +110,22 @@ HealthSample _stepsSample({
       sourceName: 'iPhone',
     );
 
+HealthSample _workoutSample({
+  required DateTime start,
+  required int minutes,
+  required String activityType,
+  String? uuid,
+}) =>
+    HealthSample(
+      metric: HealthMetric.workout,
+      value: minutes.toDouble(),
+      start: start,
+      end: start.add(Duration(minutes: minutes)),
+      sourceName: 'Apple Watch',
+      uuid: uuid,
+      workoutActivityType: activityType,
+    );
+
 HealthSyncResult _resultWith(Map<HealthMetric, List<HealthSample>> samples) {
   return HealthSyncResult(
     windowStart: DateTime(2026, 5, 20),
@@ -321,6 +337,106 @@ void main() {
       );
       // 30000/100 = 300 → clamp a 120
       expect(exerciseRepo.saved.first.durationMinutes, 120);
+    });
+  });
+
+  group('workouts (SPEC-203)', () {
+    test('fuerza → ExerciseLog type strength con minutos reales', () async {
+      final summary = await service.importResult(
+        userId,
+        _resultWith({
+          HealthMetric.workout: [
+            _workoutSample(
+              start: DateTime(2026, 5, 26, 18),
+              minutes: 45,
+              activityType: 'TRADITIONAL_STRENGTH_TRAINING',
+              uuid: 'w1',
+            ),
+          ],
+        }),
+      );
+      expect(summary.workoutsImported, 1);
+      expect(exerciseRepo.saved.single.type, ExerciseType.strength);
+      expect(exerciseRepo.saved.single.durationMinutes, 45);
+      expect(exerciseRepo.saved.single.id, 'hk_workout_w1');
+    });
+
+    test('caminata → liss', () async {
+      await service.importResult(
+        userId,
+        _resultWith({
+          HealthMetric.workout: [
+            _workoutSample(
+              start: DateTime(2026, 5, 26, 7),
+              minutes: 30,
+              activityType: 'WALKING',
+              uuid: 'w2',
+            ),
+          ],
+        }),
+      );
+      expect(exerciseRepo.saved.single.type, ExerciseType.liss);
+    });
+
+    test('un día con workout NO importa los pasos de ese día', () async {
+      final summary = await service.importResult(
+        userId,
+        _resultWith({
+          HealthMetric.workout: [
+            _workoutSample(
+              start: DateTime(2026, 5, 26, 18),
+              minutes: 40,
+              activityType: 'RUNNING',
+              uuid: 'w3',
+            ),
+          ],
+          HealthMetric.steps: [
+            _stepsSample(at: DateTime(2026, 5, 26, 12), count: 9000),
+          ],
+        }),
+      );
+      expect(summary.workoutsImported, 1);
+      expect(summary.stepsActivitiesImported, 0); // pasos desplazados
+      expect(exerciseRepo.saved.length, 1);
+      expect(exerciseRepo.saved.single.id, 'hk_workout_w3');
+    });
+
+    test('día SIN workout → los pasos siguen contando', () async {
+      final summary = await service.importResult(
+        userId,
+        _resultWith({
+          HealthMetric.workout: [
+            _workoutSample(
+              start: DateTime(2026, 5, 25, 18),
+              minutes: 40,
+              activityType: 'RUNNING',
+              uuid: 'w4',
+            ),
+          ],
+          HealthMetric.steps: [
+            _stepsSample(at: DateTime(2026, 5, 26, 12), count: 9000),
+          ],
+        }),
+      );
+      expect(summary.workoutsImported, 1);
+      expect(summary.stepsActivitiesImported, 1); // 26 no tuvo workout
+    });
+
+    test('workout < 5 min se descarta como ruido', () async {
+      final summary = await service.importResult(
+        userId,
+        _resultWith({
+          HealthMetric.workout: [
+            _workoutSample(
+              start: DateTime(2026, 5, 26, 18),
+              minutes: 3,
+              activityType: 'WALKING',
+            ),
+          ],
+        }),
+      );
+      expect(summary.workoutsImported, 0);
+      expect(exerciseRepo.saved, isEmpty);
     });
   });
 

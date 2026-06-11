@@ -41,6 +41,11 @@ class HealthSample {
   /// se sincroniza dos veces en la misma ventana).
   final String? uuid;
 
+  /// SPEC-203: solo para `HealthMetric.workout` — el tipo de actividad
+  /// nativo (ej. 'RUNNING', 'TRADITIONAL_STRENGTH_TRAINING'). Se mapea a
+  /// `ExerciseType` en el import. `null` para las demás métricas.
+  final String? workoutActivityType;
+
   const HealthSample({
     required this.metric,
     required this.value,
@@ -48,6 +53,7 @@ class HealthSample {
     required this.end,
     required this.sourceName,
     this.uuid,
+    this.workoutActivityType,
   });
 
   /// Duración del rango (útil sobre todo para sueño).

@@ -29,17 +29,24 @@ class HealthImportSummary {
   final int weightsImported;
   final int sleepSessionsImported;
   final int stepsActivitiesImported;
+
+  /// SPEC-203: entrenamientos reales importados (HKWorkout → ExerciseLog).
+  final int workoutsImported;
   final List<String> errors;
 
   const HealthImportSummary({
     this.weightsImported = 0,
     this.sleepSessionsImported = 0,
     this.stepsActivitiesImported = 0,
+    this.workoutsImported = 0,
     this.errors = const [],
   });
 
   int get totalImported =>
-      weightsImported + sleepSessionsImported + stepsActivitiesImported;
+      weightsImported +
+      sleepSessionsImported +
+      stepsActivitiesImported +
+      workoutsImported;
 
   bool get isEmpty => totalImported == 0;
   bool get hasErrors => errors.isNotEmpty;
@@ -48,7 +55,8 @@ class HealthImportSummary {
   String toString() =>
       'HealthImportSummary(weights=$weightsImported, '
       'sleep=$sleepSessionsImported, '
-      'steps=$stepsActivitiesImported, errors=${errors.length})';
+      'steps=$stepsActivitiesImported, '
+      'workouts=$workoutsImported, errors=${errors.length})';
 }
 
 /// Umbral mínimo de pasos diarios para convertir en un `ExerciseLog`
@@ -95,7 +103,13 @@ class HealthImportService {
     int weights = 0;
     int sleepSessions = 0;
     int stepsActivities = 0;
+    int workouts = 0;
     final errors = <String>[];
+
+    // SPEC-203: días con entrenamiento real → los pasos de esos días NO
+    // cuentan como ejercicio (evita doble-conteo trote = pasos + workout).
+    final workoutSamples = result.samplesFor(HealthMetric.workout);
+    final workoutDays = workoutSamples.map((s) => _dateKey(s.start)).toSet();
 
     // ── Peso ────────────────────────────────────────────────────────
     final weightSamples = result.samplesFor(HealthMetric.weight);
@@ -119,11 +133,22 @@ class HealthImportService {
       }
     }
 
-    // ── Pasos → ejercicio implícito ─────────────────────────────────
+    // ── Entrenamientos reales (SPEC-203) ────────────────────────────
+    if (workoutSamples.isNotEmpty) {
+      try {
+        workouts = await _importWorkouts(userId, workoutSamples);
+      } catch (e, st) {
+        AppLogger.error('HealthImport: workouts falló', e, st);
+        errors.add('Entrenamientos: $e');
+      }
+    }
+
+    // ── Pasos → ejercicio implícito (solo días SIN workout) ─────────
     final stepsSamples = result.samplesFor(HealthMetric.steps);
     if (stepsSamples.isNotEmpty) {
       try {
-        stepsActivities = await _importSteps(userId, stepsSamples);
+        stepsActivities =
+            await _importSteps(userId, stepsSamples, skipDays: workoutDays);
       } catch (e, st) {
         AppLogger.error('HealthImport: steps falló', e, st);
         errors.add('Pasos: $e');
@@ -134,6 +159,7 @@ class HealthImportService {
       weightsImported: weights,
       sleepSessionsImported: sleepSessions,
       stepsActivitiesImported: stepsActivities,
+      workoutsImported: workouts,
       errors: errors,
     );
   }
@@ -258,8 +284,9 @@ class HealthImportService {
   /// caminata moderada (literatura ACSM).
   Future<int> _importSteps(
     String userId,
-    List<HealthSample> samples,
-  ) async {
+    List<HealthSample> samples, {
+    Set<String> skipDays = const {},
+  }) async {
     AppLogger.info(
       'HealthImport[steps]: ${samples.length} samples recibidas',
     );
@@ -314,14 +341,21 @@ class HealthImportService {
 
     int imported = 0;
     int skippedThreshold = 0;
+    int skippedWorkoutDay = 0;
     for (final entry in byDay.entries) {
+      final dayKey = entry.key;
+      // SPEC-203: si ese día hubo un entrenamiento real, los pasos NO
+      // cuentan como ejercicio (el workout ya es la verdad del día).
+      if (skipDays.contains(dayKey)) {
+        skippedWorkoutDay++;
+        continue;
+      }
       final stepsCount = entry.value.round();
       if (stepsCount < _minStepsForExerciseLog) {
         skippedThreshold++;
         continue;
       }
 
-      final dayKey = entry.key;
       final minutes = (stepsCount / 100).round().clamp(10, 120);
       final id = 'hk_steps_$dayKey';
 
@@ -344,9 +378,121 @@ class HealthImportService {
     }
     AppLogger.info(
       'HealthImport[steps]: importados $imported, '
-      'saltados $skippedThreshold día(s) bajo threshold',
+      'saltados $skippedThreshold bajo threshold, '
+      '$skippedWorkoutDay día(s) con workout (SPEC-203)',
     );
     return imported;
+  }
+
+  // ─── Entrenamientos reales (SPEC-203) ────────────────────────────
+
+  /// Importa cada `HKWorkout` como un `ExerciseLog` tipado con su duración
+  /// real. Idempotente por `uuid` del workout. Mapea el tipo de actividad
+  /// nativo a `ExerciseType`.
+  Future<int> _importWorkouts(
+    String userId,
+    List<HealthSample> samples,
+  ) async {
+    AppLogger.info(
+      'HealthImport[workout]: ${samples.length} samples recibidas',
+    );
+
+    int imported = 0;
+    int skippedShort = 0;
+    for (final s in samples) {
+      final minutes = s.value.round();
+      // Ignorar sesiones absurdamente cortas (ruido / toques accidentales).
+      if (minutes < 5) {
+        skippedShort++;
+        continue;
+      }
+
+      final type = _exerciseTypeForWorkout(s.workoutActivityType);
+      final label = _workoutLabel(s.workoutActivityType, type);
+      final id = (s.uuid != null && s.uuid!.isNotEmpty)
+          ? 'hk_workout_${s.uuid}'
+          : 'hk_workout_${s.start.toIso8601String()}';
+
+      try {
+        final log = ExerciseLog(
+          id: id,
+          userId: userId,
+          durationMinutes: minutes,
+          activityType: label,
+          timestamp: s.start,
+          type: type,
+          intensity: _intensityForType(type),
+        );
+        await _exerciseRepo.save(userId, log);
+        imported++;
+      } catch (e, st) {
+        AppLogger.warning('ExerciseLog de workout inválido: $e');
+        AppLogger.debug('Sample: $s', e, st);
+      }
+    }
+    AppLogger.info(
+      'HealthImport[workout]: importados $imported, '
+      'saltados $skippedShort cortos (<5min)',
+    );
+    return imported;
+  }
+
+  /// SPEC-203: mapeo del tipo de actividad nativo (HKWorkoutActivityType) a
+  /// `ExerciseType`. Match por substring para ser robusto entre versiones
+  /// del plugin / plataformas. Default `liss` (neutral) para desconocidos.
+  static ExerciseType _exerciseTypeForWorkout(String? activityType) {
+    final a = (activityType ?? '').toUpperCase();
+    if (a.contains('STRENGTH')) return ExerciseType.strength;
+    if (a.contains('HIGH_INTENSITY') ||
+        a.contains('INTERVAL') ||
+        a.contains('CROSS_TRAINING') ||
+        a.contains('JUMP')) {
+      return ExerciseType.hiit;
+    }
+    if (a.contains('YOGA') ||
+        a.contains('FLEXIBILITY') ||
+        a.contains('MIND_AND_BODY') ||
+        a.contains('PILATES') ||
+        a.contains('COOLDOWN') ||
+        a.contains('MOBILITY')) {
+      return ExerciseType.mobility;
+    }
+    // walking / running / cycling / hiking / elliptical / rowing / swimming…
+    return ExerciseType.liss;
+  }
+
+  /// Etiqueta legible en español para el `activityType` del ExerciseLog.
+  static String _workoutLabel(String? activityType, ExerciseType type) {
+    final a = (activityType ?? '').toUpperCase();
+    if (a.contains('WALK')) return 'Caminata';
+    if (a.contains('RUN')) return 'Trote';
+    if (a.contains('HIK')) return 'Senderismo';
+    if (a.contains('CYCL') || a.contains('BIK')) return 'Ciclismo';
+    if (a.contains('SWIM')) return 'Natación';
+    if (a.contains('STRENGTH')) return 'Fuerza';
+    if (a.contains('YOGA')) return 'Yoga';
+    switch (type) {
+      case ExerciseType.strength:
+        return 'Fuerza';
+      case ExerciseType.hiit:
+        return 'Alta intensidad';
+      case ExerciseType.mobility:
+        return 'Movilidad';
+      case ExerciseType.liss:
+        return 'Entrenamiento';
+    }
+  }
+
+  static ExerciseIntensity _intensityForType(ExerciseType type) {
+    switch (type) {
+      case ExerciseType.hiit:
+        return ExerciseIntensity.high;
+      case ExerciseType.strength:
+        return ExerciseIntensity.moderate;
+      case ExerciseType.liss:
+      case ExerciseType.mobility:
+        return ExerciseIntensity.low;
+    }
   }
 
   // ─── Helpers ─────────────────────────────────────────────────────
