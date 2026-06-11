@@ -18,6 +18,7 @@ import 'package:elena_app/src/features/goals/domain/user_goal.dart';
 import 'package:elena_app/src/features/goals/application/goal_notifier.dart';
 import 'package:elena_app/src/features/goals/presentation/goal_icons.dart';
 import 'package:elena_app/src/features/goals/application/goal_suggestion_engine.dart';
+import 'package:elena_app/src/features/exercise/application/last_week_exercise_provider.dart';
 
 class GoalSetupScreen extends ConsumerStatefulWidget {
   const GoalSetupScreen({super.key});
@@ -60,7 +61,15 @@ class _GoalSetupScreenState extends ConsumerState<GoalSetupScreen> {
       return;
     }
 
-    final suggestions = GoalSuggestionEngine.suggest(user);
+    // SPEC-203.2: actividad real reciente (logs/HealthKit) para personalizar
+    // la sugerencia de ejercicio en vez del placeholder. `null` mientras carga
+    // o si no hay historial → el motor cae al valor estimado.
+    final recentExercise =
+        ref.read(lastWeekExerciseProvider).valueOrNull?.minutesAvg;
+    final suggestions = GoalSuggestionEngine.suggest(
+      user,
+      recentExerciseMinPerDay: recentExercise,
+    );
 
     _drafts = {
       for (final type in GoalType.values)

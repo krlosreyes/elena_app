@@ -55,9 +55,15 @@ class GoalSuggestionEngine {
   /// tiene >= 2 semanas de historial de comidas A-dominantes, se inyecta
   /// el promedio reciente para personalizar la sugerencia de Nutrición.
   /// Si es null, el engine usa el baseline poblacional de 50 %.
+  /// SPEC-203.2 (auditoría onboarding): `recentExerciseMinPerDay` permite
+  /// inyectar el promedio REAL de ejercicio (de los logs / HealthKit) como
+  /// "actual", en vez del placeholder `exerciseGoalMinutes` (que es un goal,
+  /// no actividad medida). Si es null (onboarding nuevo, sin historial), cae
+  /// al comportamiento estimado.
   static Map<GoalType, GoalSuggestion> suggest(
     UserModel user, {
     double? recentCocienteAPct,
+    double? recentExerciseMinPerDay,
   }) {
     final bool isMale = user.gender.toLowerCase() == 'masculino' ||
         user.gender.toLowerCase() == 'male' ||
@@ -67,7 +73,8 @@ class GoalSuggestionEngine {
       GoalType.weightTarget: _weightSuggestion(user, isMale),
       GoalType.bodyFatTarget: _bodyFatSuggestion(user, isMale),
       GoalType.fastingDaysPerWeek: _fastingDaysSuggestion(user),
-      GoalType.exerciseMinPerDay: _exerciseSuggestion(user),
+      GoalType.exerciseMinPerDay:
+          _exerciseSuggestion(user, recentExerciseMinPerDay),
       GoalType.sleepHoursPerNight: _sleepSuggestion(user),
       GoalType.hydrationLitersPerDay: _hydrationSuggestion(user),
       GoalType.nutritionADominantPercent:
@@ -236,8 +243,18 @@ class GoalSuggestionEngine {
   // OMS: 150 min/semana de intensidad moderada = 22 min/día.
   // Sugerimos max(30, min(ejercicio_actual + 10, 60)), redondeado a 5 min.
 
-  static GoalSuggestion _exerciseSuggestion(UserModel user) {
-    final double current = user.exerciseGoalMinutes.clamp(0, 120).toDouble();
+  static GoalSuggestion _exerciseSuggestion(
+    UserModel user,
+    double? recentMinPerDay,
+  ) {
+    // SPEC-203.2: si hay actividad REAL reciente (logs/HealthKit), úsala como
+    // "actual"; si no, cae al goal configurado (estimado, sin historial).
+    final bool hasReal = recentMinPerDay != null;
+    final double current = (hasReal
+            ? recentMinPerDay
+            : user.exerciseGoalMinutes.toDouble())
+        .clamp(0, 120)
+        .toDouble();
     double rawTarget = (current + 10).clamp(30, 60);
     // Redondear a múltiplo de 5
     final double target = (rawTarget / 5).round() * 5.0;
@@ -245,7 +262,10 @@ class GoalSuggestionEngine {
     final bool outOfRange = current < 30;
 
     String statusLabel;
-    if (current < 15) {
+    if (!hasReal) {
+      // Honestidad: sin actividad real registrada, no afirmamos un nivel.
+      statusLabel = 'Sin actividad registrada (estimado)';
+    } else if (current < 15) {
       statusLabel = 'Sin actividad registrada';
     } else if (current < 30)
       statusLabel = 'Por debajo de recomendación OMS';

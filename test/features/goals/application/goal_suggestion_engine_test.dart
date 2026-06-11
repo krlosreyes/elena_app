@@ -47,6 +47,26 @@ void main() {
     });
   });
 
+  group('Ejercicio — actividad real (SPEC-203.2)', () {
+    GoalSuggestion ex(UserModel u, {double? recent}) =>
+        GoalSuggestionEngine.suggest(u, recentExerciseMinPerDay: recent)[
+            GoalType.exerciseMinPerDay]!;
+
+    test('sin actividad real → "estimado" (cae al goal)', () {
+      final s = ex(_user());
+      expect(s.currentValue, 20); // exerciseGoalMinutes default del helper
+      expect(s.currentStatusLabel, contains('estimado'));
+    });
+
+    test('con actividad real reciente → usa ese valor como actual', () {
+      final s = ex(_user(), recent: 42);
+      expect(s.currentValue, 42);
+      expect(s.currentStatusLabel, isNot(contains('estimado')));
+      // target = (42+10) acotado 30–60 = 52 → redondeo 5 = 50
+      expect(s.suggestedTarget, 50);
+    });
+  });
+
   group('Grasa corporal — coherencia activación/objetivo (SPEC-203.1)', () {
     test('hombre Fitness (16%) → mantener (no baja) y NO se activa', () {
       final s = bodyFat('M', 16);
