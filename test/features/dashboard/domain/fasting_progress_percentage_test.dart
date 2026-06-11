@@ -64,5 +64,29 @@ void main() {
       );
       expect(s.progressPercentage, closeTo(0.25, 1e-9));
     });
+
+    test('blindaje: ayuno activo IGNORA completedToday del ayuno previo', () {
+      // Bug 2026-06-11: tras completar un ayuno (completedToday=true) e iniciar
+      // uno NUEVO el mismo día, el anillo quedaba pegado en 100%. Ahora el
+      // ayuno activo manda y muestra su progreso en vivo desde 0.
+      final s = FastingState(
+        fastingProtocol: '16:8',
+        isActive: true,
+        duration: const Duration(minutes: 5), // recién iniciado ≈ 0.5%
+        completedToday: true, // flag del ayuno ANTERIOR, no reseteado
+        closedProgressToday: 1.0,
+      );
+      expect(s.progressPercentage, lessThan(0.05));
+    });
+
+    test('blindaje: ayuno recién iniciado (duración 0) → 0%', () {
+      final s = FastingState(
+        fastingProtocol: '16:8',
+        isActive: true,
+        duration: Duration.zero,
+        completedToday: true,
+      );
+      expect(s.progressPercentage, 0.0);
+    });
   });
 }

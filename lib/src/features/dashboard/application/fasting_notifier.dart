@@ -188,6 +188,11 @@ class FastingNotifier extends StateNotifier<FastingState> {
       duration: duration,
       phase: FastingState.determinePhase(duration),
       activationSource: FastingActivationSource.userInitiated,
+      // Bugfix 2026-06-11: un ayuno NUEVO arranca con progreso limpio. Sin
+      // esto, los flags del ayuno anterior (`completedToday`/`closedProgressToday`)
+      // dejaban el anillo del pilar pegado en 100% al iniciar el siguiente.
+      completedToday: false,
+      closedProgressToday: 0.0,
     );
 
     // SPEC-50.4: FastingIntervalRepository (no UserRepository).

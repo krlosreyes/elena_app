@@ -105,19 +105,25 @@ class FastingState {
   }
 
   double get progressPercentage {
-    // SPEC-113.bugfix: si el usuario ya cerró un ayuno completo hoy,
-    // el satélite debe quedar en 100% aunque ya no haya intervalo
-    // activo en curso. `== true` es null-safe contra hot-reload de
-    // un state viejo que no tenía el campo.
+    // Blindaje (2026-06-11): un ayuno ACTIVO siempre refleja su progreso EN
+    // VIVO. `completedToday`/`closedProgressToday` pertenecen al ayuno ANTERIOR
+    // ya cerrado; si el usuario inicia uno nuevo el mismo día, esos flags NO
+    // deben pisar el progreso del ayuno en curso (bug: anillo pegado en 100%
+    // al iniciar el siguiente ayuno). El orden de precedencia es deliberado:
+    //   1. Ayuno activo → % en vivo (manda sobre cualquier flag de cierre).
+    //   2. Cerrado HOY al 100% → 1.0.
+    //   3. Cerrado HOY (incl. cierre temprano) → % logrado.
+    //   4. Sin ayuno hoy → 0.
+    if (isActive) {
+      if (targetHours == 0) return 0.0;
+      final double percent = duration.inSeconds / (targetHours * 3600);
+      return percent.clamp(0.0, 1.0);
+    }
+    // SPEC-113.bugfix: ayuno cerrado completo HOY queda en 100% aunque ya no
+    // haya intervalo activo. `== true` es null-safe contra hot-reload.
     if (completedToday == true) return 1.0;
-    // Fix anillo (2026-06-09): si NO hay ayuno activo pero el usuario
-    // cerró uno HOY (incl. cierre temprano), preservar el % logrado en
-    // vez de caer a 0. Si no cerró nada hoy, `closedProgressToday` es
-    // null/0 → 0.0 (anillo vacío), como antes.
-    if (!isActive) return (closedProgressToday ?? 0.0).clamp(0.0, 1.0);
-    if (targetHours == 0) return 0.0;
-    final double percent = duration.inSeconds / (targetHours * 3600);
-    return percent.clamp(0.0, 1.0);
+    // Fix anillo (2026-06-09): cierre TEMPRANO preserva el % logrado.
+    return (closedProgressToday ?? 0.0).clamp(0.0, 1.0);
   }
 
   static FastingPhase determinePhase(Duration duration) {

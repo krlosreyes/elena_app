@@ -73,8 +73,14 @@ final dailySummaryProvider = Provider<DailySummary>((ref) {
   // el % parcial al momento del cambio de día (que es información
   // correcta: ayer ayunaste X horas sin cerrar). El doc de HOY recibe
   // 100% cuando el ayuno se cierra (vía caso 1).
+  //
+  // Blindaje (2026-06-11): el override a 1.0 SOLO aplica si NO hay ayuno
+  // activo. Si el usuario inició un ayuno nuevo (isActive), el satélite debe
+  // mostrar su progreso en vivo, no el 100% del ayuno anterior ya cerrado.
+  // `progressPercentage` ya prioriza el ayuno activo internamente.
   double fastingProgressFinal;
-  if (completedFromBd || fasting.completedToday == true) {
+  if (!fasting.isActive &&
+      (completedFromBd || fasting.completedToday == true)) {
     fastingProgressFinal = 1.0;
   } else {
     fastingProgressFinal = fasting.progressPercentage;
