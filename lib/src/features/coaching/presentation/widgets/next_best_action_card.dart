@@ -90,10 +90,10 @@ class _NextBestActionCardState extends ConsumerState<NextBestActionCard> {
     }
 
     final theme = Theme.of(context);
-    // SPEC-197: la acción secundaria es Premium.
-    final secondary =
-        gate.coachingSecondaryAllowed ? selection.secondary : null;
 
+    // SPEC-202.1: tarjeta minimalista para no quitarle protagonismo al reloj.
+    // Solo título + chip del pilar + "Saber más". El detalle (qué hacer y por
+    // qué) vive en el ActionExplainerSheet que se abre al tocar "Saber más".
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Container(
@@ -104,47 +104,36 @@ class _NextBestActionCardState extends ConsumerState<NextBestActionCard> {
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: theme.colorScheme.primary),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    primary.title,
-                    style: theme.textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w700),
-                  ),
-                ),
-                _PillarChip(label: _pillarLabel(primary.pillar)),
-              ],
+            Expanded(
+              child: Text(
+                primary.title,
+                style: theme.textTheme.titleMedium
+                    ?.copyWith(fontWeight: FontWeight.w700),
+              ),
             ),
-            const SizedBox(height: 8),
-            Text(primary.actionText, style: theme.textTheme.bodyMedium),
-            if (secondary != null) ...[
-              const SizedBox(height: 6),
-              Text(
-                'También: ${secondary.actionText}',
-                style: theme.textTheme.bodySmall,
+            const SizedBox(width: 12),
+            _PillarChip(label: _pillarLabel(primary.pillar)),
+            const SizedBox(width: 8),
+            TextButton(
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
-            ],
-            const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
-                onPressed: () {
-                  AnalyticsService.logEvent(
-                    AnalyticsEvents.coachingActionFollowed,
-                    params: {
-                      AnalyticsParams.actionId: primary.id,
-                      AnalyticsParams.source: primary.source.name,
-                      AnalyticsParams.phase: phaseName,
-                    },
-                  );
-                  ActionExplainerSheet.show(context, primary);
-                },
-                child: const Text('Saber más'),
-              ),
+              onPressed: () {
+                AnalyticsService.logEvent(
+                  AnalyticsEvents.coachingActionFollowed,
+                  params: {
+                    AnalyticsParams.actionId: primary.id,
+                    AnalyticsParams.source: primary.source.name,
+                    AnalyticsParams.phase: phaseName,
+                  },
+                );
+                ActionExplainerSheet.show(context, primary);
+              },
+              child: const Text('Saber más'),
             ),
           ],
         ),

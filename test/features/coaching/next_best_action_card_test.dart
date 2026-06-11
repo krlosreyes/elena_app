@@ -78,9 +78,11 @@ void main() {
       (tester) async {
     await tester.pumpWidget(_wrap(CoachingSelection(primary: _action()), prefs));
     expect(find.text('Tu siguiente paso'), findsOneWidget);
-    expect(find.text('Apaga pantallas 1h antes de dormir.'), findsOneWidget);
     expect(find.text('Sueño'), findsOneWidget); // chip de pilar
     expect(find.text('Saber más'), findsOneWidget);
+    // SPEC-202.1: el detalle ya NO se muestra en la cara del card — vive en el
+    // explainer que se abre con "Saber más".
+    expect(find.text('Apaga pantallas 1h antes de dormir.'), findsNothing);
   });
 
   testWidgets('tap "Saber más" abre el explainer con la cita', (tester) async {
@@ -98,22 +100,16 @@ void main() {
   });
 
   group('SPEC-197 gating', () {
-    testWidgets('Free oculta la acción secundaria', (tester) async {
-      await tester.pumpWidget(_wrap(
-        CoachingSelection(primary: _action(), secondary: _secondary()),
-        prefs,
-      ));
-      expect(find.text('Tu siguiente paso'), findsOneWidget); // primaria visible
-      expect(find.textContaining('También:'), findsNothing); // secundaria oculta
-    });
-
-    testWidgets('Premium muestra la acción secundaria', (tester) async {
+    // SPEC-202.1: el card minimalista ya no muestra la acción secundaria en su
+    // cara (ni primaria ni "También:"). El detalle vive en el explainer.
+    testWidgets('no muestra "También:" en la cara del card', (tester) async {
       await tester.pumpWidget(_wrap(
         CoachingSelection(primary: _action(), secondary: _secondary()),
         prefs,
         premium: true,
       ));
-      expect(find.textContaining('También:'), findsOneWidget);
+      expect(find.text('Tu siguiente paso'), findsOneWidget); // primaria visible
+      expect(find.textContaining('También:'), findsNothing);
     });
 
     testWidgets('Free + acción distinta ya vista hoy → card de upgrade',
@@ -155,7 +151,9 @@ void main() {
         _wrap(CoachingSelection(primary: _action()), seeded, premium: true),
       );
 
-      expect(find.text('Apaga pantallas 1h antes de dormir.'), findsOneWidget);
+      // SPEC-202.1: el card real muestra el título (no el detalle); Premium
+      // saltea el límite diario y NO cae en la card de upgrade.
+      expect(find.text('Tu siguiente paso'), findsOneWidget);
       expect(find.text('Desbloquea coaching ilimitado'), findsNothing);
     });
   });
