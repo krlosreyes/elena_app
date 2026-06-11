@@ -284,7 +284,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     ],
                   ),
 
-                  const SizedBox(height: 6),
+                  // SPEC-202: separación amplia para que el "12" del borde
+                  // inferior del reloj no quede pegado a la pista de abajo.
+                  const SizedBox(height: 28),
 
                   // SPEC-202: pista de descubrimiento — invita a tocar el reloj
                   // para entenderlo. Centrada y discreta, fuera del círculo
