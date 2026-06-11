@@ -425,14 +425,18 @@ class FastingConsciousnessCard extends ConsumerWidget {
     required bool isActive,
     required Color accent,
   }) {
+    // Bugfix 2026-06-11: completar un ayuno YA NO bloquea iniciar el siguiente.
+    // El producto se ancla al usuario, no al reloj: en ayuno intermitente real
+    // (16:8 diario) la ventana cruza la noche y se inicia un nuevo ayuno el
+    // mismo día. La completación queda como confirmación visual ("Iniciar
+    // nuevo ayuno"), no como candado. El provider hasCompletedFastingToday
+    // sigue vivo para resumen diario / paywall; aquí solo informa el label.
     final bool completedToday =
         !isActive && ref.watch(hasCompletedFastingTodayProvider);
-    final bool disabled = state.isSaving || (completedToday && !isActive);
+    final bool disabled = state.isSaving;
 
     final Color bgColor;
-    if (disabled && !isActive) {
-      bgColor = Colors.white.withValues(alpha: 0.08);
-    } else if (isActive) {
+    if (isActive) {
       bgColor = Colors.redAccent;
     } else {
       bgColor = accent;
@@ -443,22 +447,7 @@ class FastingConsciousnessCard extends ConsumerWidget {
       height: 48,
       child: ElevatedButton.icon(
         onPressed: disabled
-            ? () {
-                // En estado deshabilitado por completedToday queremos
-                // explicar por qué no se puede tocar.
-                if (completedToday && !isActive) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'Ya completaste tu ayuno de hoy. '
-                        'Vuelve mañana para iniciar el siguiente.',
-                      ),
-                      backgroundColor: Colors.orange,
-                      duration: Duration(seconds: 4),
-                    ),
-                  );
-                }
-              }
+            ? null
             : () => _handleFastingPrimaryTap(context, ref, state, isActive),
         style: ElevatedButton.styleFrom(
           backgroundColor: bgColor,
@@ -479,20 +468,16 @@ class FastingConsciousnessCard extends ConsumerWidget {
             : Icon(
                 isActive
                     ? Icons.stop_circle_outlined
-                    : (completedToday
-                        ? Icons.check_circle_outline
-                        : Icons.play_circle_outline),
-                color: Colors.white
-                    .withValues(alpha: (disabled && !isActive) ? 0.5 : 1.0),
+                    : Icons.play_circle_outline,
+                color: Colors.white,
                 size: 22,
               ),
         label: Text(
           isActive
               ? 'Finalizar Ayuno'
-              : (completedToday ? 'Ayuno de hoy completado' : 'Iniciar Ayuno'),
-          style: TextStyle(
-            color: Colors.white
-                .withValues(alpha: (disabled && !isActive) ? 0.5 : 1.0),
+              : (completedToday ? 'Iniciar nuevo ayuno' : 'Iniciar Ayuno'),
+          style: const TextStyle(
+            color: Colors.white,
             fontWeight: FontWeight.w800,
             fontSize: 14,
           ),
