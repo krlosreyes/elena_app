@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
@@ -47,6 +48,19 @@ Future<void> _bootstrap() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  // SPEC-206 (offline-first): persistencia local explícita. En móvil ya viene
+  // ON por defecto, pero la fijamos para no depender del default y con caché
+  // ILIMITADA — una app de salud no debe desalojar el historial del usuario.
+  // Debe configurarse ANTES de cualquier uso de Firestore. En web la
+  // persistencia tiene su propio manejo (IndexedDB, single-tab), así que se
+  // omite para evitar warnings multipestaña.
+  if (!kIsWeb) {
+    FirebaseFirestore.instance.settings = const Settings(
+      persistenceEnabled: true,
+      cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+    );
+  }
 
   // SPEC-80: enganchar handlers de error globales lo antes posible
   // tras inicializar Firebase. Crashlytics solo reporta en release
@@ -92,11 +106,14 @@ Future<void> _bootstrap() async {
   if (shouldActivateAppCheck) {
     try {
       await FirebaseAppCheck.instance.activate(
+        // ignore: deprecated_member_use
         androidProvider: kReleaseMode
             ? AndroidProvider.playIntegrity
             : AndroidProvider.debug,
+        // ignore: deprecated_member_use
         appleProvider:
             kReleaseMode ? AppleProvider.appAttest : AppleProvider.debug,
+        // ignore: deprecated_member_use
         webProvider: ReCaptchaV3Provider(kRecaptchaSiteKey),
       );
     } catch (e) {

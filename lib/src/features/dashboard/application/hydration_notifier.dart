@@ -227,69 +227,66 @@ class HydrationNotifier extends StateNotifier<HydrationState> {
     if (user == null) return;
 
     final bool wasReached = state.isGoalReached;
-    final newAmount = state.currentAmountLiters + amount;
-    final bool reached = newAmount >= state.dailyGoalLiters;
+    final bool reached =
+        (state.currentAmountLiters + amount) >= state.dailyGoalLiters;
 
     final newLog = HydrationLog(
       amountInLiters: amount,
       timestamp: DateTime.now(),
     );
 
-    state = state.copyWith(
-      currentAmountLiters: newAmount,
-      history: [...state.history, newLog],
-      isSaving: true,
-      isGoalReached: reached,
+    // SPEC-206 (offline-first): NO bloqueamos la UI esperando el ack del
+    // servidor. `repo.add` escribe en la caché local de Firestore al instante;
+    // el listener `watchSince` (.snapshots) refleja el nuevo total enseguida
+    // —incluso SIN red— porque la caché emite con hasPendingWrites. El Future
+    // del write solo resuelve al reconectar: hacerle `await` (como antes)
+    // dejaba `isSaving` colgado offline y la app parecía "no funcionar sin
+    // internet". Ahora el dato se ve al toque y se sincroniza solo al volver
+    // la conexión.
+
+    // Efecto LOCAL (no requiere red): meta alcanzada → cancelar recordatorios.
+    if (reached && !wasReached) {
+      unawaited(_cancelHydrationRemindersOnGoal());
+    }
+
+    final repo = _ref.read(hydrationRepositoryProvider);
+    unawaited(
+      repo.add(user.id, newLog).then((_) {
+        if (!mounted) return;
+        // Ack del servidor (online): limpiar error + efectos que requieren red.
+        state = state.copyWith(lastWriteError: null);
+        AnalyticsService.logEvent(
+          AnalyticsEvents.pillarLogged,
+          params: const {AnalyticsParams.pillar: 'hydration'},
+        );
+        _ref
+            .read(coachingCompletionProvider)
+            .onPillarActivity(Pillar.hydration);
+      }).catchError((Object e) {
+        // Error REAL (permisos/validación), NO el simple offline —que queda
+        // pendiente sin emitir—. Firestore revierte la mutación local fallida
+        // y el listener corrige el total; acá solo avisamos a la UI.
+        if (!mounted) return;
+        AppLogger.error('HydrationNotifier.addWater falló', e);
+        state = state.copyWith(
+          lastWriteError:
+              'No pudimos guardar tu hidratación. Revisá tu conexión.',
+        );
+      }),
     );
+  }
 
+  /// Cancela los recordatorios de hidratación del día al alcanzar la meta.
+  /// Es local (flutter_local_notifications) → corre con o sin red. Un fallo
+  /// acá NO afecta el registro de agua ya encolado en Firestore.
+  Future<void> _cancelHydrationRemindersOnGoal() async {
     try {
-      // SPEC-50.1: HydrationRepository.add (no UserRepository.saveHydrationLog).
-      final repo = _ref.read(hydrationRepositoryProvider);
-      await repo.add(user.id, newLog);
-      // SPEC-179: write exitoso → limpiar error pendiente si lo había.
-      state = state.copyWith(isSaving: false, lastWriteError: null);
-      // SPEC-193: pilar registrado (solo en write exitoso).
-      AnalyticsService.logEvent(
-        AnalyticsEvents.pillarLogged,
-        params: const {AnalyticsParams.pillar: 'hydration'},
-      );
-      // SPEC-194: ¿el usuario hizo lo que el coach recomendó?
-      _ref.read(coachingCompletionProvider).onPillarActivity(Pillar.hydration);
-
-      // Audit notif (2026-06-10): "agua cada 30 min HASTA cumplir la meta".
-      // Al alcanzar el objetivo del día, cancelamos los recordatorios
-      // restantes (incluido el snooze). El reset diario los re-arma mañana.
-      // En su propio try: un fallo cancelando notifs NO debe revertir el
-      // log de agua ya persistido.
-      if (reached && !wasReached) {
-        try {
-          await NotificationService.cancelHydration();
-          await NotificationService.cancel(NotificationIds.hydrationSnooze);
-          AppLogger.info(
-              '[Hydration] meta alcanzada → recordatorios de hoy cancelados');
-        } catch (e) {
-          AppLogger.warning('[Hydration] no se pudieron cancelar notifs: $e');
-        }
-      }
+      await NotificationService.cancelHydration();
+      await NotificationService.cancel(NotificationIds.hydrationSnooze);
+      AppLogger.info(
+          '[Hydration] meta alcanzada → recordatorios de hoy cancelados');
     } catch (e) {
-      // SPEC-179 (2026-06-05): antes había un catch vacío silencioso.
-      // El log se acumulaba localmente en state.history pero si Firestore
-      // fallaba (sin red, permisos), el dato no se persistía y el usuario
-      // creía que sí. Ahora el error queda en `state.lastWriteError` y la
-      // UI lo lee para mostrar SnackBar de reintento.
-      AppLogger.error('HydrationNotifier.addWater falló', e);
-      // Rollback optimista: descontar lo que sumamos al state.
-      state = state.copyWith(
-        currentAmountLiters: state.currentAmountLiters - amount,
-        history: state.history
-            .where((l) => l.timestamp != newLog.timestamp)
-            .toList(),
-        isSaving: false,
-        isGoalReached:
-            (state.currentAmountLiters - amount) >= state.dailyGoalLiters,
-        lastWriteError:
-            'No pudimos guardar tu hidratación. Revisá tu conexión.',
-      );
+      AppLogger.warning('[Hydration] no se pudieron cancelar notifs: $e');
     }
   }
 

@@ -14,6 +14,8 @@
 // - Nuevos métodos para magic link (RF-73-09): `sendSignInLinkToEmail`,
 //   `signInWithEmailLink`, `setPassword`.
 
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -218,15 +220,35 @@ class FirebaseAuthRepository implements AuthRepository {
     final uid = firebaseUser.uid;
     final createdAt = firebaseUser.metadata.creationTime;
 
+    // SPEC-206: `authStateChanges` hace asyncMap sobre `_buildAccount`. Si este
+    // `.get()` se CUELGA (puede pasar tras la secuencia offline→reconexión→
+    // logout→login), el stream nunca emite, `authState` queda en loading y el
+    // router atrapa al usuario en /splash ("no permite el ingreso a la app").
+    // El try/catch previo solo atrapaba errores, no un cuelgue. Blindaje:
+    //   1. timeout sobre la lectura de servidor,
+    //   2. fallback a SOLO caché local (un usuario existente tiene su doc en
+    //      caché → se clasifica bien aunque el servidor no responda).
     Map<String, dynamic>? rawProfile;
     try {
-      final snap = await _firestore.collection('users').doc(uid).get();
+      final snap = await _firestore
+          .collection('users')
+          .doc(uid)
+          .get()
+          .timeout(const Duration(seconds: 6));
       rawProfile = snap.exists ? snap.data() : null;
     } catch (_) {
-      // Pérdida momentánea de red: tratamos como ausente. El router
-      // mandará a /onboarding; al recuperar red el authStateChanges
-      // re-emite y re-clasifica.
-      rawProfile = null;
+      try {
+        final cached = await _firestore
+            .collection('users')
+            .doc(uid)
+            .get(const GetOptions(source: Source.cache));
+        rawProfile = cached.exists ? cached.data() : null;
+      } catch (_) {
+        // Sin servidor ni caché: tratamos como ausente. El router manda a
+        // /onboarding; al recuperar red el authStateChanges re-emite y
+        // re-clasifica.
+        rawProfile = null;
+      }
     }
 
     final AppProfileStatus status;
