@@ -4,12 +4,44 @@
 // Verifica orquestación: bootstrap, apertura, cierre con feedback,
 // idempotencia, transición protocolChanged.
 
+import 'dart:async';
+
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_service.dart';
 import 'package:elena_app/src/features/metabolic_cycle/data/metabolic_cycle_repository_impl.dart';
 import 'package:elena_app/src/features/metabolic_cycle/domain/closure_reason.dart';
 import 'package:elena_app/src/features/metabolic_cycle/domain/metabolic_cycle.dart';
+import 'package:elena_app/src/features/metabolic_cycle/domain/metabolic_cycle_repository.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+/// SPEC-206: repo cuyo `save` NUNCA resuelve (simula un write Firestore offline,
+/// que se queda pendiente hasta reconectar). `fetchOpenCycle` sí resuelve para
+/// que el service pueda leer el ciclo abierto. Registra los ciclos que se
+/// intentó persistir para poder verificar que cierre Y apertura se emitieron.
+class _HangingSaveRepo implements MetabolicCycleRepository {
+  _HangingSaveRepo(this._open);
+  final MetabolicCycle? _open;
+  final List<MetabolicCycle> saved = [];
+
+  @override
+  Future<void> save(String userId, MetabolicCycle cycle) {
+    saved.add(cycle);
+    return Completer<void>().future; // nunca completa
+  }
+
+  @override
+  Future<MetabolicCycle?> fetchOpenCycle(String userId) async => _open;
+
+  @override
+  Stream<MetabolicCycle?> watchOpenCycle(String userId) => Stream.value(_open);
+
+  @override
+  Stream<MetabolicCycle?> watchLastClosed(String userId) => Stream.value(null);
+
+  @override
+  Stream<List<MetabolicCycle>> watchRecentClosed(String userId, {int limit = 90}) =>
+      Stream.value(const []);
+}
 
 CycleMagnitudes _mag(double q) => CycleMagnitudes(
       fastingMagnitude: q,
@@ -299,6 +331,70 @@ void main() {
           .collection('metabolic_cycles')
           .get();
       expect(snap.docs.length, 1, reason: 'cycleId estable → no duplicación');
+    });
+  });
+
+  group('SPEC-206 — transición offline-first (writes no bloqueantes)', () {
+    test('save colgado (offline) → igual CIERRA y ABRE, sin colgarse el método',
+        () async {
+      // Ciclo abierto de ayer. Al iniciar el ayuno nuevo debe cerrarse y
+      // abrirse el siguiente. Con el repo cuyo save nunca resuelve simulamos
+      // estar offline: antes del fix, el `await save(closed)` colgaba y la
+      // apertura jamás corría → el método se quedaba pendiente (timeout).
+      final openCycle = MetabolicCycle.open(
+        startedAt: DateTime(2026, 6, 1, 21, 0),
+        fastingProtocol: '16:8',
+        tzOffsetMinutes: 0,
+      );
+      final repo = _HangingSaveRepo(openCycle);
+      final svc = MetabolicCycleService(repository: repo);
+
+      final nextFasting = DateTime(2026, 6, 2, 21, 0);
+      final result = await svc
+          .evaluateAndApply(
+            userId: 'u1',
+            input: _input(
+              now: nextFasting,
+              newFasting: true,
+              newFastingAt: nextFasting,
+              mag: 0.9,
+              score: 87,
+            ),
+          )
+          .timeout(const Duration(seconds: 2));
+
+      // El método retornó (no se colgó) con cierre + apertura.
+      expect(result.hasClosure, isTrue);
+      expect(result.hasOpening, isTrue);
+      expect(result.opened!.startedAt, nextFasting);
+      // Ambos writes se emitieron a la caché aunque el ack del server no llegue.
+      expect(repo.saved.length, 2);
+      expect(
+        repo.saved.any((c) => c.isOpen && c.startedAt == nextFasting),
+        isTrue,
+        reason: 'la apertura del ciclo nuevo debe emitirse aunque save cuelgue',
+      );
+    });
+
+    test('apertura simple con save colgado → abre sin bloquear', () async {
+      final repo = _HangingSaveRepo(null);
+      final svc = MetabolicCycleService(repository: repo);
+      final fastingAt = DateTime(2026, 6, 1, 21, 0);
+
+      final result = await svc
+          .evaluateAndApply(
+            userId: 'u1',
+            input: _input(
+              now: fastingAt,
+              newFasting: true,
+              newFastingAt: fastingAt,
+            ),
+          )
+          .timeout(const Duration(seconds: 2));
+
+      expect(result.hasOpening, isTrue);
+      expect(result.opened!.startedAt, fastingAt);
+      expect(repo.saved.length, 1);
     });
   });
 
