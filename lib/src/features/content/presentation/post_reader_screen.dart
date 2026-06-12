@@ -7,11 +7,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
+import 'package:elena_app/src/features/content/application/post_providers.dart';
 import 'package:elena_app/src/features/content/domain/post.dart';
 import 'package:elena_app/src/features/content/presentation/markdown_lite.dart';
+import 'package:elena_app/src/features/content/presentation/post_quiz_view.dart';
 import 'package:elena_app/src/features/content/presentation/post_ui.dart';
 
-class PostReaderScreen extends ConsumerWidget {
+class PostReaderScreen extends ConsumerStatefulWidget {
   const PostReaderScreen({super.key, required this.post});
   final Post post;
 
@@ -19,7 +22,28 @@ class PostReaderScreen extends ConsumerWidget {
       MaterialPageRoute(builder: (_) => PostReaderScreen(post: post));
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PostReaderScreen> createState() => _PostReaderScreenState();
+}
+
+class _PostReaderScreenState extends ConsumerState<PostReaderScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // inc4: al abrir registramos vista + lectura (best-effort, fuera del build).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final repo = ref.read(postRepositoryProvider);
+      final post = widget.post;
+      repo.registerView(post.id);
+      final uid = ref.read(authStateProvider).value?.uid;
+      if (uid != null) {
+        repo.markRead(userId: uid, postId: post.id);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final post = widget.post;
     final color = PostUi.pillarColor(post.pillar);
     final muted = Colors.white.withValues(alpha: 0.55);
 
@@ -81,6 +105,10 @@ class PostReaderScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 20),
             MarkdownLite(post.contentMarkdown),
+            if (post.hasQuiz) ...[
+              const SizedBox(height: 28),
+              PostQuizView(questions: post.quiz, accent: color),
+            ],
             if (post.references.isNotEmpty) ...[
               const SizedBox(height: 24),
               Divider(color: Colors.white.withValues(alpha: 0.1)),

@@ -33,4 +33,33 @@ class FirestorePostSource implements PostDataSource {
       return data;
     }).toList();
   }
+
+  CollectionReference<Map<String, dynamic>> _reads(String userId) => _firestore
+      .collection('users')
+      .doc(userId)
+      .collection('post_reads');
+
+  @override
+  Future<void> incrementViews(String postId) async {
+    await _firestore.collection(kCollection).doc(postId).update({
+      'analytics.views': FieldValue.increment(1),
+    });
+  }
+
+  @override
+  Future<void> markRead({
+    required String userId,
+    required String postId,
+  }) async {
+    await _reads(userId).doc(postId).set({
+      'readAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  @override
+  Stream<Set<String>> watchReadIds(String userId) {
+    return _reads(userId)
+        .snapshots()
+        .map((snap) => snap.docs.map((d) => d.id).toSet());
+  }
 }

@@ -1,6 +1,6 @@
 # SPEC-205 — Feed de artículos personalizado ("Para ti")
 
-**Estado:** APPROVED-DESIGN (2026-06-11) — alcance v1 aprobado por Carlos: feed + lector in-app + quiz. Pendiente: implementación.
+**Estado:** IMPLEMENTED (2026-06-11) — inc1 datos + inc2 matching + inc3 UI/lector + inc4 quiz/engagement (vistas + lecturas). Render con `MarkdownLite` propio (sin dependencia `flutter_markdown`; tablas en texto plano). Pendiente: validación en device + desplegar índice Firestore.
 **Versión:** 0.1 (draft)
 **Tipo:** Engagement / contenido — reemplaza el valor débil de "Tus tendencias" (SPEC-201) por contenido educativo emparejado al estado del usuario.
 **Líder:** Carlos

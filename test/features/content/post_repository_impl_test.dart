@@ -11,12 +11,34 @@ class _FakeSource implements PostDataSource {
   final bool throwError;
   int calls = 0;
 
+  final List<String> readMarks = [];
+  final List<String> viewMarks = [];
+
   @override
   Future<List<Map<String, dynamic>>> fetchPublishedRaw({int limit = 30}) async {
     calls++;
     if (throwError) throw Exception('offline');
     return _docs;
   }
+
+  @override
+  Future<void> incrementViews(String postId) async {
+    if (throwError) throw Exception('offline');
+    viewMarks.add(postId);
+  }
+
+  @override
+  Future<void> markRead({
+    required String userId,
+    required String postId,
+  }) async {
+    if (throwError) throw Exception('offline');
+    readMarks.add('$userId/$postId');
+  }
+
+  @override
+  Stream<Set<String>> watchReadIds(String userId) =>
+      Stream.value(const <String>{});
 }
 
 Map<String, dynamic> _doc(String id, String pillar) => {
@@ -84,6 +106,23 @@ void main() {
     );
     final posts = await repo.fetchPublished();
     expect(posts, isEmpty);
+  });
+
+  test('registerView/markRead delegan al source', () async {
+    final source = _FakeSource([_doc('a', 'nutricion')]);
+    final repo = PostRepositoryImpl(source: source, prefs: await prefs());
+    await repo.registerView('a');
+    await repo.markRead(userId: 'u1', postId: 'a');
+    expect(source.viewMarks, ['a']);
+    expect(source.readMarks, ['u1/a']);
+  });
+
+  test('registerView no propaga errores (best-effort)', () async {
+    final source = _FakeSource(const [], throwError: true);
+    final repo = PostRepositoryImpl(source: source, prefs: await prefs());
+    // No debe lanzar aunque el source falle.
+    await repo.registerView('a');
+    await repo.markRead(userId: 'u1', postId: 'a');
   });
 
   test('la caché sobrevive a roundtrip JSON con quiz y referencias', () async {

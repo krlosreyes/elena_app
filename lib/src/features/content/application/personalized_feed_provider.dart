@@ -9,19 +9,25 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elena_app/src/features/analysis/application/observations_provider.dart';
 import 'package:elena_app/src/features/analysis/domain/observation.dart';
+import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
 import 'package:elena_app/src/features/content/application/feed_matcher.dart';
 import 'package:elena_app/src/features/content/application/post_providers.dart';
 import 'package:elena_app/src/features/content/domain/personalized_feed.dart';
 
-/// Ids de posts ya leídos por el usuario. inc4 lo respaldará con
-/// `users/{uid}/post_reads`. Por ahora no hay lecturas registradas.
-final readPostIdsProvider = Provider<Set<String>>((ref) => const <String>{});
+/// Ids de posts ya leídos por el usuario (vivo desde `users/{uid}/post_reads`).
+/// Sin sesión → vacío.
+final readPostIdsProvider = StreamProvider.autoDispose<Set<String>>((ref) {
+  final uid = ref.watch(authStateProvider).value?.uid;
+  if (uid == null) return Stream.value(const <String>{});
+  return ref.watch(postRepositoryProvider).watchReadIds(uid);
+});
 
 final personalizedFeedProvider =
     Provider.autoDispose<AsyncValue<PersonalizedFeed>>((ref) {
   final postsAsync = ref.watch(publishedPostsProvider);
   final obsAsync = ref.watch(observationsProvider);
-  final readIds = ref.watch(readPostIdsProvider);
+  final readIds =
+      ref.watch(readPostIdsProvider).valueOrNull ?? const <String>{};
 
   return postsAsync.when(
     loading: () => const AsyncValue.loading(),

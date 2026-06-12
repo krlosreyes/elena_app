@@ -48,6 +48,31 @@ class PostRepositoryImpl implements PostRepository {
     }
   }
 
+  @override
+  Future<void> registerView(String postId) async {
+    try {
+      await _source.incrementViews(postId);
+    } catch (_) {
+      // Métrica best-effort: nunca rompe la experiencia de lectura.
+    }
+  }
+
+  @override
+  Future<void> markRead({
+    required String userId,
+    required String postId,
+  }) async {
+    try {
+      await _source.markRead(userId: userId, postId: postId);
+    } catch (_) {
+      // No bloqueante.
+    }
+  }
+
+  @override
+  Stream<Set<String>> watchReadIds(String userId) =>
+      _source.watchReadIds(userId);
+
   List<Post> _readCache() {
     final encoded = _prefs.getString(kCacheKey);
     if (encoded == null || encoded.isEmpty) return const [];
