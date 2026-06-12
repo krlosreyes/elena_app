@@ -123,7 +123,7 @@ class MetabolicCycleService {
           fastingProtocol: input.currentProtocol,
           tzOffsetMinutes: input.tzOffsetMinutes,
         );
-        await _repository.save(userId, fresh);
+        _persistCycle(userId, fresh);
         // SPEC-184: log estructurado con motivo. Permite reconstruir el
         // historial de aperturas desde Crashlytics sin tocar Firestore.
         AppLogger.info(
@@ -173,7 +173,7 @@ class MetabolicCycleService {
       magnitudes: input.currentMagnitudes,
       feedback: feedback,
     );
-    await _repository.save(userId, closed);
+    _persistCycle(userId, closed);
     // SPEC-184: log estructurado del cierre. Incluye reason, duración
     // del ayuno y duración de ventana para diagnóstico rápido. Ver
     // docs/METABOLIC_DAY_CONSTITUTION.md §6.
@@ -196,7 +196,7 @@ class MetabolicCycleService {
         fastingProtocol: input.currentProtocol,
         tzOffsetMinutes: input.tzOffsetMinutes,
       );
-      await _repository.save(userId, opened);
+      _persistCycle(userId, opened);
       // SPEC-184: log estructurado de re-apertura encadenada.
       AppLogger.info(
         '[cycle.open] cycleId=${opened.cycleId} '
@@ -212,7 +212,7 @@ class MetabolicCycleService {
         fastingProtocol: input.currentProtocol,
         tzOffsetMinutes: input.tzOffsetMinutes,
       );
-      await _repository.save(userId, opened);
+      _persistCycle(userId, opened);
       // SPEC-184: log estructurado de re-apertura por cambio de protocolo.
       AppLogger.info(
         '[cycle.open] cycleId=${opened.cycleId} '
@@ -223,6 +223,27 @@ class MetabolicCycleService {
     }
 
     return MetabolicCycleCheckResult.closed(closed: closed, opened: opened);
+  }
+
+  /// SPEC-206 (offline-first): persiste un ciclo SIN bloquear en el ack del
+  /// servidor. El `.set()` subyacente escribe en la caché local al instante
+  /// → el listener `watchOpenCycle` emite enseguida y los pilares se re-anclan
+  /// en tiempo real al nuevo límite, ONLINE U OFFLINE. Sincroniza al
+  /// reconectar.
+  ///
+  /// Con `await` (como antes), offline el Future del write NO resolvía: el
+  /// cierre del ciclo colgaba y la apertura del ciclo nuevo NUNCA corría →
+  /// quedaba sin ciclo abierto → los pilares caían al fallback de reloj
+  /// (medianoche) y MEZCLABAN dos días metabólicos. Ver SPEC-206 §3.
+  void _persistCycle(String userId, MetabolicCycle cycle) {
+    unawaited(
+      _repository.save(userId, cycle).catchError((Object e) {
+        AppLogger.warning(
+          '[cycle.persist] save de ${cycle.cycleId} falló '
+          '(se reintenta al sincronizar): $e',
+        );
+      }),
+    );
   }
 
   /// One-shot al bootstrap: si el usuario no tiene ciclo abierto pero
@@ -269,7 +290,7 @@ class MetabolicCycleService {
       fastingProtocol: protocol,
       tzOffsetMinutes: tzOffsetMinutes,
     );
-    await _repository.save(userId, cycle);
+    _persistCycle(userId, cycle);
     // SPEC-184: log estructurado del bootstrap one-shot. Este es el
     // único caso legítimo en que el sistema crea ciclo sin tap directo
     // del usuario — el contrato es: solo al primer login con ayuno

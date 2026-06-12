@@ -32,8 +32,19 @@ Piloto implementado en **Hidratación** (`hydration_notifier.addWater`). Validar
 ### inc1.fix — Login no se cuelga (`firebase_auth_repository._buildAccount`)
 Bug hallado en device: tras offline→reconexión→logout→login, **no se podía entrar a la app** (quedaba en /splash). Causa: `authStateChanges` hace `asyncMap` sobre `_buildAccount`, que hacía `await .get()` del doc de usuario; el try/catch atrapaba errores pero **no un cuelgue** → el stream nunca emitía → `authState` en loading eterno → router atrapado en /splash. Fix: `timeout(6s)` sobre la lectura + fallback a `GetOptions(source: cache)` (un usuario existente tiene su doc en caché y se clasifica bien sin servidor).
 
-## 4. Rollout pendiente (tras validar piloto)
-Replicar el patrón a: Ayuno (`fasting_notifier`/`transitionTo`), Ejercicio, Sueño, Nutrición, Racha (`streak_notifier`), Ciclo metabólico. Cada uno: write no-bloqueante + listener como fuente de verdad + efectos locales inmediatos.
+### inc2 — Transición de ciclo offline-first (`metabolic_cycle_service`) ★ FIX CRÍTICO
+Bug en device: el agua mezclaba dos días metabólicos. Causa raíz: la transición de ciclo (al iniciar ayuno) hacía `await _repository.save(closed)` y luego `await _repository.save(opened)` **secuenciales**. Offline el `await` del cierre se colgaba → la **apertura del ciclo nuevo nunca corría** → no había ciclo abierto → los 4 pilares caían al fallback de reloj (`startOfDay(now)` = medianoche) y mezclaban el día que cerró con el que abrió. Fix: helper `_persistCycle` no-bloqueante (`unawaited` + `catchError`) reemplaza los 5 `await save`. Ahora cierre y apertura escriben en caché al instante → `watchOpenCycle` emite el ciclo nuevo → los pilares se re-anclan en tiempo real, ONLINE U OFFLINE.
+
+### Estado de los pilares (auditoría)
+Los 4 pilares de datos (Hidratación, Sueño, Ejercicio, Nutrición) YA escuchan `currentMetabolicCycleProvider` y se re-suscriben con `_subscribeFor(newSince)` al cambiar el ciclo → real-time cycle-aware. No requieren cambio: el bug era exclusivamente que el ciclo no abría offline (inc2). El fallback `startOfDay(now)` queda SOLO para el caso legítimo "nunca hubo ciclo" (primer uso), donde no hay día previo con qué mezclar.
+
+## 4. Rollout pendiente (tras validar en device)
+Aplicar el mismo patrón no-bloqueante a las **escrituras de cada notifier** (Ayuno `transitionTo`, Ejercicio, Sueño, Nutrición, Racha) para que el registro individual tampoco cuelgue offline (Hidratación ya hecho en inc1). El ancla de día ya es correcta tras inc2.
+
+## 5b. Pendiente para mañana (handoff)
+- Tests: (a) `metabolic_cycle_service` — al cerrar+abrir, ambos ciclos se persisten aunque el `save` no resuelva (fake repo cuyo `save` devuelve un Future que nunca completa → verificar que igual se llamó open y que el método retorna `closed+opened`); (b) hidratación offline ya cubierta por validación device.
+- Correr suite `test/features/metabolic_cycle/` + `test/features/dashboard/` y `flutter analyze`.
+- Commit + push.
 
 ## 5. Notas
 - Auth: Firebase Auth persiste la sesión en disco → offline el usuario sigue logueado.
