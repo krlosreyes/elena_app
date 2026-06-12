@@ -10,22 +10,19 @@ import 'package:elena_app/src/core/theme/app_icons.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/analysis/application/analysis_range_provider.dart';
 import 'package:elena_app/src/features/analysis/application/analysis_series_providers.dart';
-import 'package:elena_app/src/features/analysis/application/observations_provider.dart';
+import 'package:elena_app/src/features/content/presentation/for_you_section.dart';
 // SPEC-168.1: helper para formatear el dateRange del card de Nutrición pie.
 import 'package:elena_app/src/features/analysis/application/chart_hero_computer.dart';
 // SPEC-168.5.4: distribución pie A vs E.
 import 'package:elena_app/src/features/analysis/application/nutrition_pie_provider.dart';
 // SPEC-168.1: aggregation mode + hero aggregation enums.
 import 'package:elena_app/src/features/analysis/domain/aggregation_mode.dart';
-import 'package:elena_app/src/features/analysis/domain/analysis_range.dart';
-import 'package:elena_app/src/features/analysis/domain/observation.dart';
 import 'package:elena_app/src/features/analysis/domain/chart_metric.dart';
 import 'package:elena_app/src/features/analysis/domain/hero_aggregation.dart';
 import 'package:elena_app/src/features/analysis/domain/metric_series.dart';
 // SPEC-168.5.4: domain del pie chart de Nutrición.
 import 'package:elena_app/src/features/analysis/domain/nutrition_pie_data.dart';
 import 'package:elena_app/src/features/analysis/presentation/monthly_calendar_screen.dart';
-import 'package:elena_app/src/features/analysis/presentation/widgets/observation_tile.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/transformation_card.dart';
 // SPEC-168.4: tile compacto del overview con sparkline + tap a detalle.
 import 'package:elena_app/src/features/analysis/presentation/widgets/pillar_overview_tile.dart';
@@ -88,7 +85,6 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
     final hydration = ref.watch(hydrationHabitSeriesProvider);
     final exercise = ref.watch(exerciseHabitSeriesProvider);
     final sleep = ref.watch(sleepHabitSeriesProvider);
-    final observations = ref.watch(observationsProvider);
 
     // SPEC-168.2-fix: solo consideramos "first load" cuando NINGÚN
     // provider tiene .value aún (transición inicial AsyncLoading →
@@ -132,7 +128,6 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                   hydrationSeries: hydration.value!,
                   exerciseSeries: exercise.value!,
                   sleepSeries: sleep.value!,
-                  observations: observations,
                   aggregationMode: aggregationMode,
                   nutritionPie: nutritionPie.value ?? const NutritionPieData(
                     aDominantCount: 0,
@@ -255,7 +250,6 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
     required MetricSeries hydrationSeries,
     required MetricSeries exerciseSeries,
     required MetricSeries sleepSeries,
-    required AsyncValue<List<Observation>> observations,
     required AggregationMode aggregationMode,
     required NutritionPieData nutritionPie,
   }) {
@@ -308,70 +302,10 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
       const SizedBox(height: 10),
       _sleepTile(sleepSeries),
       const SizedBox(height: 36),
-      _sectionTitle('Tus tendencias'),
-      const SizedBox(height: 4),
-      observations.when(
-        loading: () => const Padding(
-          padding: EdgeInsets.symmetric(vertical: 16),
-          child: SizedBox(
-            width: 18,
-            height: 18,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: AppColors.metabolicGreen,
-            ),
-          ),
-        ),
-        error: (_, __) => Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          child: Text(
-            'No pudimos cargar las observaciones.',
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.55),
-              fontSize: 13,
-            ),
-          ),
-        ),
-        data: (list) {
-          if (list.isEmpty) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              child: Text(
-                'Seguí registrando unos días más — en cuanto tengas un '
-                'patrón, acá te muestro observaciones útiles sobre tu '
-                'semana.',
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.55),
-                  fontSize: 13,
-                  height: 1.5,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            );
-          }
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children:
-                list.map((o) => ObservationTile(observation: o)).toList(),
-          );
-        },
-      ),
+      // SPEC-205: "Tus tendencias" → "Para ti" (feed de artículos
+      // personalizado). Sección autocontenida (observa su propio provider).
+      const ForYouSection(),
     ];
-  }
-
-  String _periodLabelFor(AnalysisRange r) {
-    switch (r) {
-      case AnalysisRange.d30:
-        return 'Últimos 30 días';
-      case AnalysisRange.m3:
-        return 'Últimos 3 meses';
-      case AnalysisRange.m6:
-        return 'Últimos 6 meses';
-      case AnalysisRange.y1:
-        return 'Último año';
-      case AnalysisRange.all:
-        return 'Desde el inicio';
-    }
   }
 
   // ─── SPEC-168.4: tiles del overview ─────────────────────────────────
@@ -555,81 +489,6 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
         ],
       ),
     );
-  }
-
-  // ─── Headlines conversacionales (SPEC-165 §2.6) ────────────────────
-
-  String _imrHeadline(MetricSeries s, String periodLabel) {
-    final avg = _avg(s);
-    if (avg == null) return 'Sin datos de IMR todavía.';
-    final value = avg.round();
-    return 'Tu IMR promedio fue $value en ${_periodIntoPhrase(periodLabel)}.';
-  }
-
-  String _weightHeadline(MetricSeries s) {
-    final current = s.currentValue;
-    if (current == null) return 'Sin datos de peso todavía.';
-    final delta = s.delta;
-    if (delta == null || delta.abs() < 0.05) {
-      return 'Pesás ${current.toStringAsFixed(1)} kg. '
-          'Sostuviste tu peso en este período.';
-    }
-    final verb = delta < 0 ? 'Bajaste' : 'Subiste';
-    return 'Pesás ${current.toStringAsFixed(1)} kg. '
-        '$verb ${delta.abs().toStringAsFixed(1)} kg en este período.';
-  }
-
-  String _fastingHeadline(MetricSeries s) {
-    // SPEC-168.5.2: Ayuno se mide en horas promedio por bucket. El
-    // copy refleja el esfuerzo real ("16.4 h de ayuno en promedio"),
-    // no días cumplidos.
-    final avg = _avg(s);
-    if (avg == null) return 'Sin registros de ayuno todavía.';
-    return 'Promediaste ${avg.toStringAsFixed(1)} h de ayuno por día '
-        'en este período.';
-  }
-
-  String _nutritionHeadline(MetricSeries s) {
-    final avg = _avg(s);
-    if (avg == null) return 'Sin registros de comidas todavía.';
-    return 'El ${avg.round()}% de tus comidas fueron A-dominantes.';
-  }
-
-  String _hydrationHeadline(MetricSeries s) {
-    // SPEC-168.5.3: Hidratación se mide en litros por día. El copy
-    // refleja el consumo absoluto, no el porcentaje vs meta.
-    final avg = _avg(s);
-    if (avg == null) return 'Sin registros de hidratación todavía.';
-    return 'Tomaste ${avg.toStringAsFixed(1)} L de agua por día en '
-        'promedio.';
-  }
-
-  String _exerciseHeadline(MetricSeries s) {
-    final avg = _avg(s);
-    if (avg == null) return 'Sin registros de ejercicio todavía.';
-    return 'Hiciste ${avg.round()} min de ejercicio por día en '
-        'promedio.';
-  }
-
-  String _sleepHeadline(MetricSeries s) {
-    final avg = _avg(s);
-    if (avg == null) return 'Sin registros de sueño todavía.';
-    return 'Dormiste un promedio de ${avg.toStringAsFixed(1)} h '
-        'por noche.';
-  }
-
-  double? _avg(MetricSeries s) {
-    if (s.points.isEmpty) return null;
-    final sum = s.points.fold<double>(0, (acc, p) => acc + p.value);
-    return sum / s.points.length;
-  }
-
-  String _periodIntoPhrase(String periodLabel) {
-    // "Últimos 3 meses" → "los últimos 3 meses"
-    if (periodLabel.startsWith('Últim')) {
-      return 'los ${periodLabel.toLowerCase()}';
-    }
-    return 'todo el período';
   }
 
   static const _daysLong = [
