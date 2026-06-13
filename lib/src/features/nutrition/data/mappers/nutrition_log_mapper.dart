@@ -61,6 +61,8 @@ class NutritionLogMapper {
     // campos, preservando la semántica null = "sin datos NOVA".
     if (log.upfSlots != null) map['upfSlots'] = log.upfSlots;
     if (log.totalSlots != null) map['totalSlots'] = log.totalSlots;
+    // SPEC-BUG6: persiste solo si el log trae ids de alimentos.
+    if (log.plateItemIds.isNotEmpty) map['plateItemIds'] = log.plateItemIds;
     return map;
   }
 
@@ -108,6 +110,11 @@ class NutritionLogMapper {
       totalSlots = null;
     }
 
+    // SPEC-BUG6: lista de ids de alimentos para pre-cargar el PlateBuilder
+    // al editar. Logs pre-BUG6 no tienen el campo → lista vacía.
+    final plateItemIds =
+        (map['plateItemIds'] as List<dynamic>?)?.cast<String>() ?? const <String>[];
+
     final log = NutritionLog(
       id: id,
       timestamp: timestamp,
@@ -124,6 +131,7 @@ class NutritionLogMapper {
       isCheatDay: isCheatDay,
       upfSlots: upfSlots,
       totalSlots: totalSlots,
+      plateItemIds: plateItemIds,
     );
     _validate(log);
     return log;

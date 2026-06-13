@@ -100,6 +100,16 @@ class NutritionLog {
   /// plato (número de items) no es derivable del `MealRatio`.
   final int? totalSlots;
 
+  // ── SPEC-BUG6: ids de alimentos del PlateBuilder ─────────────────────
+
+  /// IDs de los alimentos del plato tal como aparecen en `FoodCatalog.all`.
+  ///
+  /// Se persiste para poder pre-cargar el `PlateBuilder` al editar un log
+  /// ya guardado. Vacío para logs pre-SPEC-BUG6 o registros sin composición
+  /// explícita. Los slugs son estables — no se derivan del `ratio` ni de
+  /// los macros, que solo reflejan el agregado.
+  final List<String> plateItemIds;
+
   NutritionLog({
     required this.id,
     required this.timestamp,
@@ -116,6 +126,7 @@ class NutritionLog {
     this.isCheatDay = false,
     this.upfSlots,
     this.totalSlots,
+    this.plateItemIds = const [],
   }) {
     _validateNonNegative('calories', calories);
     _validateNonNegative('protein', protein);
@@ -162,6 +173,7 @@ class NutritionLog {
     bool? isCheatDay,
     int? upfSlots,
     int? totalSlots,
+    List<String>? plateItemIds,
   }) {
     return NutritionLog(
       id: id ?? this.id,
@@ -180,6 +192,7 @@ class NutritionLog {
       isCheatDay: isCheatDay ?? this.isCheatDay,
       upfSlots: upfSlots ?? this.upfSlots,
       totalSlots: totalSlots ?? this.totalSlots,
+      plateItemIds: plateItemIds ?? this.plateItemIds,
     );
   }
 

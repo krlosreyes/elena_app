@@ -224,6 +224,8 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
     // SPEC-138: total de slots del plato (denominador).
     // Null si el caller no usa PlateBuilder.
     int? totalSlots,
+    // SPEC-BUG6: ids de alimentos del PlateBuilder para pre-cargar edición.
+    List<String> plateItemIds = const [],
   }) async {
     final userId = _activeUserId;
     if (userId == null) return;
@@ -283,6 +285,8 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
       // La validación dura está en el constructor de NutritionLog.
       upfSlots: upfSlots,
       totalSlots: totalSlots,
+      // SPEC-BUG6: ids para pre-cargar edición.
+      plateItemIds: plateItemIds,
     );
 
     final repo = _ref.read(nutritionRepositoryProvider);
@@ -365,6 +369,7 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
     bool forceLog = true,
     int? upfSlots,
     int? totalSlots,
+    List<String> plateItemIds = const [],
   }) async {
     final userId = _activeUserId;
     if (userId == null) return;
@@ -396,6 +401,7 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
       forceLog: forceLog,
       upfSlots: upfSlots,
       totalSlots: totalSlots,
+      plateItemIds: plateItemIds,
     );
   }
 

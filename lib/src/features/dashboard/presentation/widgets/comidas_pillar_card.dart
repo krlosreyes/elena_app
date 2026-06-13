@@ -101,6 +101,7 @@ class ComidasPillarCard extends ConsumerWidget {
                                   label: lastLog.label,
                                   initialMealTime: lastLog.timestamp,
                                   logToReplaceId: lastLog.id,
+                                  initialPlateItemIds: lastLog.plateItemIds,
                                 ),
                       ),
                     ),

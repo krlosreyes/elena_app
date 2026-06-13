@@ -38,11 +38,17 @@ class PlateRatioSheet extends ConsumerStatefulWidget {
   /// este log y persiste el nuevo. El id se usa para el `deleteMealById`.
   final String? logToReplaceId;
 
+  /// IDs de alimentos del log a editar. El `PlateBuilder` se pre-carga con
+  /// ellos en `initState` para que el usuario vea el plato actual al abrir
+  /// el sheet en modo edición.
+  final List<String> initialPlateItemIds;
+
   const PlateRatioSheet({
     super.key,
     this.label,
     this.initialMealTime,
     this.logToReplaceId,
+    this.initialPlateItemIds = const [],
   });
 
   static Future<void> show(
@@ -50,6 +56,7 @@ class PlateRatioSheet extends ConsumerStatefulWidget {
     String? label,
     DateTime? initialMealTime,
     String? logToReplaceId,
+    List<String> initialPlateItemIds = const [],
   }) {
     return showModalBottomSheet<void>(
       context: context,
@@ -62,6 +69,7 @@ class PlateRatioSheet extends ConsumerStatefulWidget {
         label: label,
         initialMealTime: initialMealTime,
         logToReplaceId: logToReplaceId,
+        initialPlateItemIds: initialPlateItemIds,
       ),
     );
   }
@@ -89,6 +97,14 @@ class _PlateRatioSheetState extends ConsumerState<PlateRatioSheet> {
     // Si el caller pasó un timestamp explícito (caso "registrar comida
     // pasada"), respetarlo desde el inicio.
     _userEditedTime = widget.initialMealTime != null;
+    // SPEC-BUG6: pre-cargar el PlateBuilder con los alimentos del log
+    // existente. Solo aplica en modo edición (initialPlateItemIds no vacío).
+    if (widget.initialPlateItemIds.isNotEmpty) {
+      for (final id in widget.initialPlateItemIds) {
+        final food = FoodCatalog.all.where((f) => f.id == id).firstOrNull;
+        if (food != null) _builder.add(food);
+      }
+    }
   }
 
   @override
@@ -288,6 +304,9 @@ class _PlateRatioSheetState extends ConsumerState<PlateRatioSheet> {
           _userEditedTime ? _mealTime : DateTime.now();
       final notifier = ref.read(nutritionProvider.notifier);
       final oldId = widget.logToReplaceId;
+      // SPEC-BUG6: capturamos los ids del plato actual para persistirlos.
+      final currentPlateIds =
+          _builder.items.map((f) => f.id).toList();
       if (oldId != null) {
         // Modo edición: reemplaza el log viejo.
         await notifier.replaceMeal(
@@ -299,6 +318,7 @@ class _PlateRatioSheetState extends ConsumerState<PlateRatioSheet> {
           forceLog: true, // slot ya existía, no validar intervalo.
           upfSlots: _builder.totalSlots > 0 ? _builder.upfSlots : null,
           totalSlots: _builder.totalSlots > 0 ? _builder.totalSlots : null,
+          plateItemIds: currentPlateIds,
         );
       } else {
         await notifier.logMeal(
@@ -311,6 +331,7 @@ class _PlateRatioSheetState extends ConsumerState<PlateRatioSheet> {
           // el plato tiene contenido (totalSlots > 0).
           upfSlots: _builder.totalSlots > 0 ? _builder.upfSlots : null,
           totalSlots: _builder.totalSlots > 0 ? _builder.totalSlots : null,
+          plateItemIds: currentPlateIds,
         );
       }
       if (mounted) Navigator.of(context).pop();
