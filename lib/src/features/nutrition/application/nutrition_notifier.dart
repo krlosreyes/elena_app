@@ -20,6 +20,7 @@ import 'package:uuid/uuid.dart';
 import 'package:elena_app/src/core/analytics/analytics_events.dart';
 import 'package:elena_app/src/core/orchestrator/biological_phases.dart';
 import 'package:elena_app/src/core/services/analytics_service.dart';
+import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/core/services/day_boundary_resolver.dart';
 import 'package:elena_app/src/features/coaching/application/coaching_completion_service.dart';
 import 'package:elena_app/src/core/services/notification_scheduler.dart';
@@ -284,36 +285,34 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
       totalSlots: totalSlots,
     );
 
-    if (mounted) state = state.copyWith(isSaving: true);
-    try {
-      final repo = _ref.read(nutritionRepositoryProvider);
-      await repo.saveMeal(userId, log);
-      // SPEC-193: comida registrada. quality_bucket = ratio A:E (categoría,
-      // sin PII). Solo en write exitoso.
-      AnalyticsService.logEvent(
-        AnalyticsEvents.mealLogged,
-        params: {AnalyticsParams.qualityBucket: ratio.name},
-      );
-      // SPEC-194: correlación con la acción recomendada.
-      _ref.read(coachingCompletionProvider).onPillarActivity(Pillar.nutrition);
-      // El stream emitirá la nueva lista; no hay que mutar todayLogs aquí.
+    final repo = _ref.read(nutritionRepositoryProvider);
 
-      // SPEC-137 E.5: agendar push del SO 30 min antes de la próxima
-      // comida sugerida. Si está en cheat day, cancelar cualquier
-      // notificación previa — el usuario eligió libre y no queremos
-      // bombardearlo con recordatorios.
-      if (isCheatDay) {
-        await NotificationScheduler.cancelNextMealReminder();
-      } else {
-        final nextAt = timestamp.add(MealIntervalRules.recommendedInterval);
-        await NotificationScheduler.scheduleNextMealReminder(
-          nextMealAt: nextAt,
-          leadTime: MealIntervalRules.notificationLeadTime,
-        );
-      }
-    } finally {
-      if (mounted) state = state.copyWith(isSaving: false);
+    // SPEC-206 (offline-first): el stream `watchSinceLogs` refleja la comida
+    // desde la caché al instante (con o sin red); el write sincroniza al
+    // reconectar. Antes el `await` colgaba offline e isSaving quedaba trabado.
+    if (mounted) state = state.copyWith(isSaving: false);
+
+    // SPEC-193/194: analytics (se auto-encola sin red) + coaching.
+    AnalyticsService.logEvent(
+      AnalyticsEvents.mealLogged,
+      params: {AnalyticsParams.qualityBucket: ratio.name},
+    );
+    _ref.read(coachingCompletionProvider).onPillarActivity(Pillar.nutrition);
+
+    // SPEC-137 E.5: notificación de próxima comida (local, no requiere red).
+    if (isCheatDay) {
+      unawaited(NotificationScheduler.cancelNextMealReminder());
+    } else {
+      final nextAt = timestamp.add(MealIntervalRules.recommendedInterval);
+      unawaited(NotificationScheduler.scheduleNextMealReminder(
+        nextMealAt: nextAt,
+        leadTime: MealIntervalRules.notificationLeadTime,
+      ));
     }
+
+    unawaited(repo.saveMeal(userId, log).catchError((Object e) {
+      AppLogger.error('Persistencia de comida falló (reintenta al sync)', e);
+    }));
   }
 
   /// Elimina el último registro del día.
@@ -321,8 +320,11 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
     final userId = _activeUserId;
     if (userId == null) return;
     final repo = _ref.read(nutritionRepositoryProvider);
-    await repo.removeLastMeal(userId);
-    // El stream emitirá la lista actualizada.
+    // SPEC-206 (offline-first): borrado no bloqueante. El stream refleja la
+    // lista actualizada desde la caché al instante; sincroniza al reconectar.
+    unawaited(repo.removeLastMeal(userId).catchError((Object e) {
+      AppLogger.error('Borrado de comida falló (reintenta al sync)', e);
+    }));
 
     // SPEC-137 E.5: si después de remover queda alguna comida hoy,
     // re-agendar la notificación con la nueva "última comida". Si no

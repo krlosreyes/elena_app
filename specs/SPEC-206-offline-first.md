@@ -38,8 +38,15 @@ Bug en device: el agua mezclaba dos días metabólicos. Causa raíz: la transici
 ### Estado de los pilares (auditoría)
 Los 4 pilares de datos (Hidratación, Sueño, Ejercicio, Nutrición) YA escuchan `currentMetabolicCycleProvider` y se re-suscriben con `_subscribeFor(newSince)` al cambiar el ciclo → real-time cycle-aware. No requieren cambio: el bug era exclusivamente que el ciclo no abría offline (inc2). El fallback `startOfDay(now)` queda SOLO para el caso legítimo "nunca hubo ciclo" (primer uso), donde no hay día previo con qué mezclar.
 
-## 4. Rollout pendiente (tras validar en device)
-Aplicar el mismo patrón no-bloqueante a las **escrituras de cada notifier** (Ayuno `transitionTo`, Ejercicio, Sueño, Nutrición, Racha) para que el registro individual tampoco cuelgue offline (Hidratación ya hecho en inc1). El ancla de día ya es correcta tras inc2.
+### inc3 — Escrituras de todos los pilares no bloqueantes (2026-06-11)
+Aplicado el patrón a las escrituras de cada notifier (antes todas `await` → colgaban offline e isSaving quedaba trabado):
+- **Ayuno** (`fasting_notifier`): `startFastingManual`, `correctFastingStartTime`, `confirmManualFastingEnd`, `confirmFeedingEnd` → estado optimista + write `unawaited` + efectos locales (hitos/notifs) inmediatos + analytics/coaching en `.then`/inmediato; rollback solo en error REAL (catchError).
+- **Ejercicio** (`exercise_notifier.logExercise`): optimista, listener `watchSince` como fuente de verdad.
+- **Sueño** (`sleep_notifier`): `confirmManualWakeUp`, `saveManualSleep`, `deleteLastLog` → setean `state.lastLog` optimista + writes `unawaited`.
+- **Nutrición** (`nutrition_notifier`): `addMeal`, `removeLastMeal` → optimista, listener como verdad.
+- **Racha** (`streak_notifier`): `_persistToday`, `_persistAdherence` → `unawaited` con catch logout-aware (SPEC-87) preservado.
+
+Regla aplicada uniformemente: efectos LOCALES (flutter_local_notifications) corren ya; efectos ONLINE (analytics/coaching) en el ack o se auto-encolan; `.catchError` capta solo errores reales (el offline queda pendiente sin emitir).
 
 ## 5b. Pendiente para mañana (handoff)
 - Tests: (a) `metabolic_cycle_service` — al cerrar+abrir, ambos ciclos se persisten aunque el `save` no resuelva (fake repo cuyo `save` devuelve un Future que nunca completa → verificar que igual se llamó open y que el método retorna `closed+opened`); (b) hidratación offline ya cubierta por validación device.

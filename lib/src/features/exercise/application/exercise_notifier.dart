@@ -154,35 +154,39 @@ class ExerciseNotifier extends StateNotifier<ExerciseState> {
       throw Exception("La duración debe ser mayor a 0");
     }
 
-    state = state.copyWith(isSaving: true, error: null);
+    final log = ExerciseLog(
+      id: const Uuid().v4(),
+      userId: userId,
+      durationMinutes: minutes,
+      activityType: activityType,
+      timestamp: timestamp,
+      type: type,
+      intensity: intensity,
+      rpe: rpe,
+      heartRateAvg: heartRateAvg,
+    );
 
-    try {
-      final log = ExerciseLog(
-        id: const Uuid().v4(),
-        userId: userId,
-        durationMinutes: minutes,
-        activityType: activityType,
-        timestamp: timestamp,
-        type: type,
-        intensity: intensity,
-        rpe: rpe,
-        heartRateAvg: heartRateAvg,
-      );
+    // SPEC-206 (offline-first): registro optimista. El listener `watchSince`
+    // refleja el log desde la caché al instante (con o sin red) y el write
+    // sincroniza al reconectar. Antes el `await` colgaba offline → isSaving
+    // trabado y nada se registraba en la UI.
+    final repo = ref.read(exerciseRepositoryProvider);
+    state = state.copyWith(isSaving: false, error: null);
 
-      final repo = ref.read(exerciseRepositoryProvider);
-      await repo.save(userId, log);
-      state = state.copyWith(isSaving: false, error: null);
-      // SPEC-193: pilar registrado (solo en write exitoso).
-      AnalyticsService.logEvent(
-        AnalyticsEvents.pillarLogged,
-        params: const {AnalyticsParams.pillar: 'exercise'},
-      );
-      // SPEC-194: correlación con la acción recomendada.
-      ref.read(coachingCompletionProvider).onPillarActivity(Pillar.exercise);
-    } catch (e) {
-      state = state.copyWith(isSaving: false, error: "Fallo al guardar: $e");
-      throw Exception(state.error);
-    }
+    // SPEC-193/194: analytics (se auto-encola sin red) + coaching.
+    AnalyticsService.logEvent(
+      AnalyticsEvents.pillarLogged,
+      params: const {AnalyticsParams.pillar: 'exercise'},
+    );
+    ref.read(coachingCompletionProvider).onPillarActivity(Pillar.exercise);
+
+    unawaited(
+      repo.save(userId, log).catchError((Object e) {
+        // Error REAL (no el offline pendiente): informar a la UI.
+        if (!mounted) return;
+        state = state.copyWith(error: 'Fallo al guardar: $e');
+      }),
+    );
   }
 
   /// SPEC-58 + SPEC-149.2: Reset idempotente disparado al cierre del

@@ -307,38 +307,36 @@ class StreakNotifier extends StateNotifier<StreakState> {
     // la escritura hasta tener un uid real.
     final uid = _userId;
     if (uid == null || uid.isEmpty) return;
-    try {
-      // SPEC-50.5: UserProfileRepository (no UserRepository).
-      final repo = _ref.read(userProfileRepositoryProvider);
-      await repo.updateWeeklyAdherence(uid, adherence);
-    } catch (e) {
+    // SPEC-206 (offline-first): write no bloqueante (offline el await no
+    // resuelve). El catch preserva el manejo logout-aware (SPEC-87).
+    final repo = _ref.read(userProfileRepositoryProvider);
+    unawaited(repo.updateWeeklyAdherence(uid, adherence).catchError((Object e) {
       if (_userId == null) {
         AppLogger.debug('[StreakNotifier] Adherence abortado por logout: $e');
       } else {
         AppLogger.error('[StreakNotifier] Error al persistir adherencia', e);
       }
-    }
+    }));
   }
 
   Future<void> _persistToday(StreakEntry entry) async {
     final uid = _userId;
     if (uid == null || uid.isEmpty) return;
-    try {
-      // SPEC-50.3: StreakRepository (no UserRepository).
-      final StreakRepository repo = _ref.read(streakRepositoryProvider);
-      await repo.save(uid, entry);
+    // SPEC-206 (offline-first): write no bloqueante. El stream de racha refleja
+    // la entrada desde la caché; el ack sincroniza al reconectar.
+    final StreakRepository repo = _ref.read(streakRepositoryProvider);
+    unawaited(repo.save(uid, entry).then((_) {
       AppLogger.debug(
           '[StreakNotifier] Racha guardada: ${entry.date} — ${entry.pillarsCompleted}/5 pilares');
-    } catch (e) {
-      // SPEC-87 fix: si entre el guard y el await el usuario hizo
-      // logout, la escritura falla con permission-denied. Es ruido
-      // esperado del logout, no un bug.
+    }).catchError((Object e) {
+      // SPEC-87 fix: tras logout la escritura falla con permission-denied
+      // (ruido esperado, no bug).
       if (_userId == null) {
         AppLogger.debug('[StreakNotifier] Persist abortado por logout: $e');
       } else {
         AppLogger.error('[StreakNotifier] Error al persistir racha', e);
       }
-    }
+    }));
   }
 
   @override

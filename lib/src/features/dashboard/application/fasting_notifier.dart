@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/core/analytics/analytics_events.dart';
 // SPEC-194: solo `Pillar` — `biological_phases` también define `FastingPhase`,
@@ -181,8 +183,12 @@ class FastingNotifier extends StateNotifier<FastingState> {
     //      al guard del listener (SPEC-187 segunda parte).
     final now = DateTime.now();
     final duration = now.difference(startTime);
+    // SPEC-206 (offline-first): NO bloqueamos en isSaving. El write entra a la
+    // caché local al instante → el listener `lastFastingIntervalProvider`
+    // dispara la transición de ciclo (cierre+apertura) aunque no haya red.
+    // Antes, el `await` del write colgaba offline y dejaba isSaving en true.
     state = state.copyWith(
-      isSaving: true,
+      isSaving: false,
       startTime: startTime,
       isActive: true,
       duration: duration,
@@ -194,48 +200,44 @@ class FastingNotifier extends StateNotifier<FastingState> {
       completedToday: false,
       closedProgressToday: 0.0,
     );
+    _fastingEndConfirmedToday = false;
 
     // SPEC-50.4: FastingIntervalRepository (no UserRepository).
     final repo = _ref.read(fastingIntervalRepositoryProvider);
 
-    try {
-      await repo.transitionTo(
-        userId: uid,
-        isFasting: true,
-        startTime: startTime,
-      );
-      _fastingEndConfirmedToday = false;
+    // SPEC-05: hitos de ayuno (12h/18h/24h). Local (flutter_local_notifications)
+    // → corre con o sin red, de inmediato.
+    unawaited(NotificationScheduler.scheduleFastingMilestones(startTime));
 
-      state = state.copyWith(isSaving: false);
+    // Write no bloqueante (offline-first). Efectos que requieren red (analytics,
+    // coaching) van en el ack del servidor; un error REAL revierte el inicio.
+    unawaited(
+      repo
+          .transitionTo(userId: uid, isFasting: true, startTime: startTime)
+          .then((_) {
+        AnalyticsService.logEvent(
+          AnalyticsEvents.fastingStarted,
+          params: {AnalyticsParams.protocol: state.fastingProtocol},
+        );
+        _ref.read(coachingCompletionProvider).onPillarActivity(Pillar.fasting);
+      }).catchError((Object e) {
+        // SPEC-187: rollback solo ante error REAL (no el offline pendiente).
+        if (!mounted) return;
+        state = state.copyWith(
+          isActive: false,
+          startTime: null,
+          duration: Duration.zero,
+          phase: FastingPhase.none,
+          activationSource: FastingActivationSource.none,
+        );
+        AppLogger.warning('startFastingManual falló, rollback aplicado: $e', e);
+      }),
+    );
 
-      // SPEC-193: ayuno iniciado (transición false→true exitosa, acción
-      // explícita del usuario). NO se dispara desde el listener de restore.
-      AnalyticsService.logEvent(
-        AnalyticsEvents.fastingStarted,
-        params: {AnalyticsParams.protocol: state.fastingProtocol},
-      );
-      // SPEC-194: correlación con la acción recomendada (iniciar ayuno).
-      _ref.read(coachingCompletionProvider).onPillarActivity(Pillar.fasting);
-
-      // SPEC-05: Programar hitos de ayuno (12h, 18h, 24h) desde el inicio real.
-      await NotificationScheduler.scheduleFastingMilestones(startTime);
-
-      AppLogger.debug(
-        'Ayuno iniciado manualmente a las $startTime '
-        '(Duración inicial: ${duration.inHours}h)',
-      );
-    } catch (e) {
-      // SPEC-187: rollback del update optimista si Firestore falla.
-      state = state.copyWith(
-        isSaving: false,
-        isActive: false,
-        startTime: null,
-        duration: Duration.zero,
-        phase: FastingPhase.none,
-        activationSource: FastingActivationSource.none,
-      );
-      AppLogger.warning('startFastingManual falló, rollback aplicado: $e', e);
-    }
+    AppLogger.debug(
+      'Ayuno iniciado manualmente a las $startTime '
+      '(Duración inicial: ${duration.inHours}h)',
+    );
   }
 
   Future<void> startFasting() async {
@@ -263,40 +265,35 @@ class FastingNotifier extends StateNotifier<FastingState> {
     if (newStart.isAfter(now)) return;
     if (now.difference(newStart).inHours > 24) return;
 
-    state = state.copyWith(isSaving: true);
+    final repo = _ref.read(fastingIntervalRepositoryProvider);
+    final newDuration = now.difference(newStart);
 
-    try {
-      final repo = _ref.read(fastingIntervalRepositoryProvider);
-      // SPEC-100: filtrar por isFasting=true para no pisar
-      // ventanas fantasma con endTime null que puedan existir por
-      // data legacy.
-      await repo.correctOpenIntervalStartTime(
-        userId: uid,
-        newStartTime: newStart,
-        isFastingFilter: true,
-      );
+    // SPEC-206 (offline-first): corrección optimista + write no bloqueante.
+    state = state.copyWith(
+      isSaving: false,
+      startTime: newStart,
+      duration: newDuration,
+      phase: FastingState.determinePhase(newDuration),
+    );
 
-      final newDuration = now.difference(newStart);
-      state = state.copyWith(
-        isSaving: false,
-        startTime: newStart,
-        duration: newDuration,
-        phase: FastingState.determinePhase(newDuration),
-      );
+    // Reagendar hitos desde el nuevo startTime (local, inmediato).
+    unawaited(NotificationScheduler.scheduleFastingMilestones(newStart));
 
-      // Reagendar hitos desde el nuevo startTime (12h, 18h, 24h).
-      // `scheduleFastingMilestones` debería cancelar los anteriores
-      // antes de programar — si no lo hace, agregar cancel aquí.
-      await NotificationScheduler.scheduleFastingMilestones(newStart);
-
-      AppLogger.debug(
-        'Hora de inicio del ayuno corregida a $newStart '
-        '(nueva duración: ${newDuration.inMinutes}min).',
-      );
-    } catch (e, stack) {
-      AppLogger.error('No se pudo corregir la hora de inicio', e, stack);
-      state = state.copyWith(isSaving: false);
-    }
+    // SPEC-100: filtrar por isFasting=true para no pisar ventanas fantasma.
+    unawaited(
+      repo
+          .correctOpenIntervalStartTime(
+            userId: uid,
+            newStartTime: newStart,
+            isFastingFilter: true,
+          )
+          .then((_) => AppLogger.debug(
+              'Hora de inicio del ayuno corregida a $newStart '
+              '(nueva duración: ${newDuration.inMinutes}min).'))
+          .catchError((Object e) {
+        AppLogger.error('No se pudo corregir la hora de inicio (reintenta)', e);
+      }),
+    );
   }
 
   /// CIERRE MANUAL (Viaje en el tiempo para pruebas)
@@ -304,47 +301,13 @@ class FastingNotifier extends StateNotifier<FastingState> {
     final uid = _ref.read(authStateProvider).value?.uid;
     if (uid == null || state.isSaving) return;
 
-    state = state.copyWith(isSaving: true);
-    // SPEC-50.4: FastingIntervalRepository (no UserRepository).
+    // SPEC-206 (offline-first): el cierre se refleja en la UI al instante y el
+    // write va a la caché local (dispara la transición de ciclo). Antes, el
+    // `await` de persistencia colgaba offline y el ayuno nunca aparecía cerrado.
     final repo = _ref.read(fastingIntervalRepositoryProvider);
 
-    // 1. Persistencia en Firestore (Bloque Crítico)
-    try {
-      await repo.transitionTo(
-        userId: uid,
-        isFasting: false,
-        startTime: manualTime,
-      );
-      _fastingEndConfirmedToday = true;
-      AppLogger.debug('Ayuno cerrado y guardado exitosamente.');
-    } catch (e, stackTrace) {
-      AppLogger.error('Error crítico en persistencia', e, stackTrace);
-      state = state.copyWith(isSaving: false);
-      return; // Si la persistencia falla, no seguimos
-    }
-
-    // 2. Gestión de Notificaciones (Bloque Secundario - No debe bloquear)
-    try {
-      await NotificationService.cancelFasting();
-      final parts = state.fastingProtocol.split(':');
-      final feedingHours = parts.length > 1 ? int.tryParse(parts[1]) ?? 8 : 8;
-      final feedingEndTime = manualTime.add(Duration(hours: feedingHours));
-
-      await NotificationService.scheduleAt(
-        id: NotificationIds.lastMealWarning,
-        title: '⏰ Cierre de ventana en 30 min',
-        body: 'Última comida dentro del protocolo ${state.fastingProtocol}.',
-        scheduledTime: feedingEndTime.subtract(const Duration(minutes: 30)),
-        repeatsDaily: false,
-      );
-    } catch (e) {
-      AppLogger.warning('Error no crítico en notificaciones', e);
-    }
-
-    // 3. Actualización de UI
     // SPEC-113.bugfix: la duración del AYUNO es (manualTime - state.startTime),
-    // NO (now - manualTime). El segundo cálculo era el tiempo transcurrido
-    // de la ventana de alimentación recién iniciada, no del ayuno cerrado.
+    // NO (now - manualTime).
     final fastingStartTime = state.startTime;
     final fastingDuration = fastingStartTime != null
         ? manualTime.difference(fastingStartTime)
@@ -356,6 +319,10 @@ class FastingNotifier extends StateNotifier<FastingState> {
         ? (fastingDuration.inSeconds / (state.targetHours * 3600))
             .clamp(0.0, 1.0)
         : 0.0;
+
+    _fastingEndConfirmedToday = true;
+
+    // Cierre optimista de la UI (con o sin red).
     state = state.copyWith(
       isSaving: false,
       isWaitingForFastingEnd: false,
@@ -366,14 +333,46 @@ class FastingNotifier extends StateNotifier<FastingState> {
       closedProgressToday: achievedFraction,
     );
 
-    // SPEC-193: ayuno completado con target alcanzado (cierre explícito).
-    // Solo aquí; el listener de restore y continueFastingPastTarget NO
-    // disparan, para no duplicar el conteo.
+    // Notificaciones locales (no requieren red) — de inmediato.
+    unawaited(_scheduleFeedingWindowNotifs(manualTime, state.fastingProtocol));
+
+    // SPEC-193: analytics (se auto-encola si no hay red).
     if (reachedTarget) {
       AnalyticsService.logEvent(
         AnalyticsEvents.fastingCompleted,
         params: {AnalyticsParams.hours: fastingDuration.inHours},
       );
+    }
+
+    // Write no bloqueante.
+    unawaited(
+      repo
+          .transitionTo(userId: uid, isFasting: false, startTime: manualTime)
+          .then((_) => AppLogger.debug('Ayuno cerrado y sincronizado.'))
+          .catchError((Object e) {
+        AppLogger.error('Persistencia de cierre falló (reintenta al sync)', e);
+      }),
+    );
+  }
+
+  /// Notificaciones locales de la ventana de alimentación tras cerrar el ayuno.
+  /// Local (flutter_local_notifications) → corre con o sin red.
+  Future<void> _scheduleFeedingWindowNotifs(
+      DateTime manualTime, String protocol) async {
+    try {
+      await NotificationService.cancelFasting();
+      final parts = protocol.split(':');
+      final feedingHours = parts.length > 1 ? int.tryParse(parts[1]) ?? 8 : 8;
+      final feedingEndTime = manualTime.add(Duration(hours: feedingHours));
+      await NotificationService.scheduleAt(
+        id: NotificationIds.lastMealWarning,
+        title: '⏰ Cierre de ventana en 30 min',
+        body: 'Última comida dentro del protocolo $protocol.',
+        scheduledTime: feedingEndTime.subtract(const Duration(minutes: 30)),
+        repeatsDaily: false,
+      );
+    } catch (e) {
+      AppLogger.warning('Error no crítico en notificaciones', e);
     }
   }
 
@@ -412,27 +411,27 @@ class FastingNotifier extends StateNotifier<FastingState> {
     final uid = _ref.read(authStateProvider).value?.uid;
     if (uid == null || state.isSaving) return;
 
-    state = state.copyWith(isSaving: true);
     // SPEC-50.4: FastingIntervalRepository (no UserRepository).
     final repo = _ref.read(fastingIntervalRepositoryProvider);
 
-    try {
-      // Al cerrar ventana, iniciamos un "intervalo" que no es ayuno
-      await repo.transitionTo(
-        userId: uid,
-        isFasting: false,
-        startTime: manualTime,
-      );
+    // SPEC-206 (offline-first): cierre optimista de la ventana + write no
+    // bloqueante. Antes el `await` colgaba offline y la ventana no se cerraba.
+    state = state.copyWith(
+      isSaving: false,
+      isWaitingForFeedingEnd: false,
+      isActive: false,
+    );
 
-      state = state.copyWith(
-        isSaving: false,
-        isWaitingForFeedingEnd: false,
-        isActive: false,
-      );
-      AppLogger.debug('Ventana de alimentación cerrada a las $manualTime');
-    } catch (e) {
-      state = state.copyWith(isSaving: false);
-    }
+    // Al cerrar ventana, iniciamos un "intervalo" que no es ayuno.
+    unawaited(
+      repo
+          .transitionTo(userId: uid, isFasting: false, startTime: manualTime)
+          .then((_) => AppLogger.debug(
+              'Ventana de alimentación cerrada a las $manualTime'))
+          .catchError((Object e) {
+        AppLogger.warning('Cierre de ventana falló (reintenta al sync): $e');
+      }),
+    );
   }
 
   void _tick() {

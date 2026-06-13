@@ -224,8 +224,6 @@ class SleepNotifier extends StateNotifier<SleepState> {
         return;
       }
 
-      state = state.copyWith(isSaving: true);
-
       final realLog = SleepLog(
         // SPEC-138: id por día de atribución (punto medio).
         id: docId,
@@ -235,30 +233,27 @@ class SleepNotifier extends StateNotifier<SleepState> {
             sleepTimeThisCycle.subtract(const Duration(hours: 4)),
       );
 
-      try {
-        await repo.save(user.id, realLog);
-        // SPEC-193: pilar sueño registrado (vía wake-up manual). El guard
-        // `lastLog.id == docId` de arriba evita el doble conteo si ya existía.
-        AnalyticsService.logEvent(
-          AnalyticsEvents.pillarLogged,
-          params: const {AnalyticsParams.pillar: 'sleep'},
-        );
-        // SPEC-194: correlación con la acción recomendada.
-        _ref.read(coachingCompletionProvider).onPillarActivity(Pillar.sleep);
-        // SPEC-194: persistir confirmación por (user, día calendárico).
-        await _markWakeUpConfirmed(user.id, now);
-
-        state = state.copyWith(
-          lastLog: realLog,
-          isWaitingForWakeUp: false,
-          isSleepMode: false,
-          isSaving: false,
-        );
-        AppLogger.debug('Ciclo de sueño cerrado correctamente.');
-      } catch (e, stackTrace) {
-        AppLogger.error('Error al cerrar ciclo de sueño', e, stackTrace);
-        state = state.copyWith(isSaving: false);
-      }
+      // SPEC-206 (offline-first): la UI lee `state.lastLog`, así que el cierre
+      // del sueño se refleja al instante y los writes van a la caché (sync al
+      // reconectar). Antes el `await` colgaba offline → sueño nunca cerraba.
+      state = state.copyWith(
+        lastLog: realLog,
+        isWaitingForWakeUp: false,
+        isSleepMode: false,
+        isSaving: false,
+      );
+      // SPEC-193/194: analytics (se auto-encola sin red) + coaching.
+      AnalyticsService.logEvent(
+        AnalyticsEvents.pillarLogged,
+        params: const {AnalyticsParams.pillar: 'sleep'},
+      );
+      _ref.read(coachingCompletionProvider).onPillarActivity(Pillar.sleep);
+      unawaited(repo.save(user.id, realLog).catchError((Object e) {
+        AppLogger.error('Persistencia de sueño falló (reintenta al sync)', e);
+      }));
+      // SPEC-194: persistir confirmación por (user, día calendárico).
+      unawaited(_markWakeUpConfirmed(user.id, now));
+      AppLogger.debug('Ciclo de sueño cerrado (optimista).');
     }
   }
 
@@ -309,27 +304,30 @@ class SleepNotifier extends StateNotifier<SleepState> {
         subjectiveQuality: subjectiveQuality,
       );
 
-      await repo.save(user.id, realLog);
-      // SPEC-193: pilar sueño registrado (vía registro manual de sueño).
-      AnalyticsService.logEvent(
-        AnalyticsEvents.pillarLogged,
-        params: const {AnalyticsParams.pillar: 'sleep'},
-      );
-      // SPEC-194: correlación con la acción recomendada.
-      _ref.read(coachingCompletionProvider).onPillarActivity(Pillar.sleep);
-      // SPEC-194: registrar sueño manualmente también baja el overlay.
-      await _markWakeUpConfirmed(user.id, now);
-
+      // SPEC-206 (offline-first): registro optimista (la UI lee state.lastLog)
+      // + writes no bloqueantes. Antes el `await` colgaba offline.
       state = state.copyWith(
         lastLog: realLog,
         isSaving: false,
         isWaitingForWakeUp: false,
       );
+      // SPEC-193/194: analytics (se auto-encola sin red) + coaching.
+      AnalyticsService.logEvent(
+        AnalyticsEvents.pillarLogged,
+        params: const {AnalyticsParams.pillar: 'sleep'},
+      );
+      _ref.read(coachingCompletionProvider).onPillarActivity(Pillar.sleep);
+      unawaited(repo.save(user.id, realLog).catchError((Object e) {
+        AppLogger.error('Persistencia de sueño falló (reintenta al sync)', e);
+      }));
+      // SPEC-194: registrar sueño manualmente también baja el overlay.
+      unawaited(_markWakeUpConfirmed(user.id, now));
 
       AppLogger.debug(
         'Registro manual de sueño guardado: ${realLog.duration.inHours}h',
       );
     } catch (e, stackTrace) {
+      // Errores SÍNCRONOS (construcción de fechas/log). El write ya no lanza.
       AppLogger.error('Error en saveManualSleep', e, stackTrace);
       state = state.copyWith(isSaving: false);
       rethrow;
@@ -351,25 +349,22 @@ class SleepNotifier extends StateNotifier<SleepState> {
     final uid = _ref.read(authStateProvider).value?.uid;
     if (uid == null) return;
 
-    state = state.copyWith(isSaving: true);
-    try {
-      await _ref.read(sleepRepositoryProvider).delete(uid, lastLog.id);
-      // Optimistic: limpiamos el state local. NO usamos copyWith
-      // porque su contrato actual interpreta `null` como "no
-      // sobrescribir" (`lastLog ?? this.lastLog`). Construimos uno
-      // nuevo con lastLog explícitamente null.
-      state = SleepState(
-        lastLog: null,
-        isSleepMode: state.isSleepMode,
-        isSaving: false,
-        isWaitingForWakeUp: state.isWaitingForWakeUp,
-      );
-      AppLogger.debug('Registro de sueño eliminado: ${lastLog.id}');
-    } catch (e, stackTrace) {
-      AppLogger.error('Error al eliminar registro de sueño', e, stackTrace);
-      state = state.copyWith(isSaving: false);
-      rethrow;
-    }
+    // SPEC-206 (offline-first): borrado optimista del state local + delete no
+    // bloqueante. NO usamos copyWith porque su contrato interpreta `null` como
+    // "no sobrescribir"; construimos uno nuevo con lastLog explícitamente null.
+    state = SleepState(
+      lastLog: null,
+      isSleepMode: state.isSleepMode,
+      isSaving: false,
+      isWaitingForWakeUp: state.isWaitingForWakeUp,
+    );
+    unawaited(
+      _ref.read(sleepRepositoryProvider).delete(uid, lastLog.id).then((_) {
+        AppLogger.debug('Registro de sueño eliminado: ${lastLog.id}');
+      }).catchError((Object e) {
+        AppLogger.error('Borrado de sueño falló (reintenta al sincronizar)', e);
+      }),
+    );
   }
 }
 
