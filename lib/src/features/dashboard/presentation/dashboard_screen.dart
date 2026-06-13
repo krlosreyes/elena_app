@@ -972,7 +972,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           BottomNavigationBarItem(
               icon: Icon(Icons.grid_view_rounded), label: "Hoy"),
           BottomNavigationBarItem(
-              icon: Icon(Icons.insights_rounded), label: "Análisis"),
+              icon: Icon(Icons.insights_rounded), label: "Progreso"),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: "Perfil")
         ]);
   }

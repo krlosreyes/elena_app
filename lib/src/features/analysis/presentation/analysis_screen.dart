@@ -156,7 +156,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.insights_rounded),
-            label: 'Análisis',
+            label: 'Progreso',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person),
@@ -176,7 +176,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'Análisis',
+                'Progreso',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 34,
@@ -271,13 +271,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
     // pantalla de detalle con el chart completo. Patrón Apple Health
     // "Anteriores".
     return [
-      // SPEC-148 §RF-148-06 (2026-06-05): card de transformación 30d
-      // al inicio de Resultados. Antes que los tiles individuales para
-      // que sea lo primero que el usuario lee — narrativa del cambio
-      // por encima de la tabla de números.
-      const TransformationCardLive(),
-      const SizedBox(height: 20),
-      _sectionTitle('Resultados'),
+      _sectionTitle('Tus Resultados'),
       const SizedBox(height: 12),
       // SPEC-200: tile del Score del Día (HOY, llega a 100) — coherente con
       // los demás tiles (valor + sparkline → tap despliega el detalle). Va
