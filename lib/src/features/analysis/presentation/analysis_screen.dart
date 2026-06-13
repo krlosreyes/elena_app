@@ -26,7 +26,6 @@ import 'package:elena_app/src/features/analysis/presentation/monthly_calendar_sc
 import 'package:elena_app/src/features/analysis/presentation/widgets/transformation_card.dart';
 // SPEC-168.4: tile compacto del overview con sparkline + tap a detalle.
 import 'package:elena_app/src/features/analysis/presentation/widgets/pillar_overview_tile.dart';
-import 'package:elena_app/src/features/analysis/presentation/widgets/segmented_range_control.dart';
 
 class AnalysisScreen extends ConsumerStatefulWidget {
   const AnalysisScreen({super.key});
@@ -113,8 +112,6 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
             children: [
               // Header in-page estilo Apple.
               _buildPageHeader(context),
-              const SizedBox(height: 24),
-              const SegmentedRangeControl(),
               const SizedBox(height: 28),
               if (firstLoad)
                 _buildLoading()

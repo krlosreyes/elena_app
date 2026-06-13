@@ -316,7 +316,7 @@ class _AnalysisPillarDetailScreenState
     final docsAsync = ref.watch(
       historicSummariesProvider(
         HistoricSummariesRange(
-          fromIncl: _isoDate(start ?? DateTime(2000, 1, 1)),
+          fromIncl: _isoDate(start),
           toIncl: _isoDate(today),
         ),
       ),

@@ -11,8 +11,6 @@ import 'package:elena_app/src/features/analysis/domain/nutrition_pie_data.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
 import 'package:elena_app/src/features/nutrition/data/nutrition_repository_impl.dart';
 
-final _kEpoch = DateTime(2000);
-
 DateTime _todayLocal() {
   final n = DateTime.now();
   return DateTime(n.year, n.month, n.day);
@@ -25,7 +23,7 @@ final nutritionPieDataProvider =
     yield NutritionPieData.empty;
     return;
   }
-  final rangeStart = ref.watch(analysisRangeStartProvider) ?? _kEpoch;
+  final rangeStart = ref.watch(analysisRangeStartProvider);
   final until = _todayLocal().add(const Duration(days: 1));
   await for (final logs in ref
       .watch(nutritionRepositoryProvider)
