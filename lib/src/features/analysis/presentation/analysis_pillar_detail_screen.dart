@@ -38,37 +38,20 @@ import 'package:elena_app/src/features/analysis/presentation/widgets/nutrition_t
 import 'package:elena_app/src/features/analysis/presentation/widgets/segmented_range_control.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/trend_comparison_card.dart';
 
-/// Wrapper que aísla el rango temporal de esta pantalla del global.
-/// El ProviderScope override crea una instancia local de analysisRangeProvider
-/// que no contamina la pantalla principal de Progreso.
-class AnalysisPillarDetailScreen extends StatelessWidget {
+// Rango por defecto de los detalles de pilar: Semana.
+// Al salir, se restaura el default de la pantalla Progreso (m1).
+class AnalysisPillarDetailScreen extends ConsumerStatefulWidget {
   const AnalysisPillarDetailScreen({super.key, required this.metric});
 
   final ChartMetric metric;
 
   @override
-  Widget build(BuildContext context) {
-    return ProviderScope(
-      overrides: [
-        analysisRangeProvider.overrideWith((_) => AnalysisRange.w1),
-      ],
-      child: _AnalysisPillarDetailContent(metric: metric),
-    );
-  }
-}
-
-class _AnalysisPillarDetailContent extends ConsumerStatefulWidget {
-  const _AnalysisPillarDetailContent({required this.metric});
-
-  final ChartMetric metric;
-
-  @override
-  ConsumerState<_AnalysisPillarDetailContent> createState() =>
+  ConsumerState<AnalysisPillarDetailScreen> createState() =>
       _AnalysisPillarDetailScreenState();
 }
 
 class _AnalysisPillarDetailScreenState
-    extends ConsumerState<_AnalysisPillarDetailContent> {
+    extends ConsumerState<AnalysisPillarDetailScreen> {
   // SPEC-168.4.2: accent ámbar para % grasa corporal — coherente con
   // BodyCompositionMetric.bodyFatPct (#F59E0B).
   static const Color _accentBodyFat = Color(0xFFF59E0B);
@@ -76,7 +59,19 @@ class _AnalysisPillarDetailScreenState
   final ScrollController _scrollController = ScrollController();
 
   @override
+  void initState() {
+    super.initState();
+    // Arranca en Semana al abrir el detalle.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.read(analysisRangeProvider.notifier).state = AnalysisRange.w1;
+    });
+  }
+
+  @override
   void dispose() {
+    // Restaura el default de la pantalla Progreso al salir.
+    ref.read(analysisRangeProvider.notifier).state = AnalysisRange.m1;
     _scrollController.dispose();
     super.dispose();
   }

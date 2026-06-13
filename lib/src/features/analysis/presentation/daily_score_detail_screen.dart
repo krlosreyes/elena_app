@@ -1,11 +1,9 @@
 // SPEC-200 / SPEC-200.1: detalle del "Score del Día".
 //
-// Usa closedCycleScoreSeriesProvider — el score al momento del CIERRE del
-// ciclo metabólico, no el score en vivo del día actual.
+// Fuente: closedCycleScoreSeriesProvider — el score al momento del CIERRE
+// del ciclo metabólico (MetabolicCycle.dailyScore), no el score en vivo.
 //
-// Filtros locales (Semana / Mes / 3M / 6M / 1A) aislados de la pantalla
-// principal Progreso via ProviderScope override. Cambiar el rango acá NO
-// afecta el rango global del overview.
+// Rango: abre en Semana. Al salir restaura m1 para la pantalla Progreso.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -23,37 +21,30 @@ import 'package:elena_app/src/features/analysis/presentation/widgets/bar_chart_c
 import 'package:elena_app/src/features/analysis/presentation/widgets/segmented_range_control.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/trend_comparison_card.dart';
 
-/// Wrapper que aísla el rango temporal de esta pantalla del global.
-/// El ProviderScope override crea una instancia local de analysisRangeProvider
-/// que no contamina la pantalla principal de Progreso.
-class DailyScoreDetailScreen extends StatelessWidget {
+class DailyScoreDetailScreen extends ConsumerStatefulWidget {
   const DailyScoreDetailScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return ProviderScope(
-      overrides: [
-        analysisRangeProvider.overrideWith((_) => AnalysisRange.w1),
-      ],
-      child: const _DailyScoreDetailContent(),
-    );
-  }
+  ConsumerState<DailyScoreDetailScreen> createState() =>
+      _DailyScoreDetailScreenState();
 }
 
-class _DailyScoreDetailContent extends ConsumerStatefulWidget {
-  const _DailyScoreDetailContent();
-
-  @override
-  ConsumerState<_DailyScoreDetailContent> createState() =>
-      _DailyScoreDetailContentState();
-}
-
-class _DailyScoreDetailContentState
-    extends ConsumerState<_DailyScoreDetailContent> {
+class _DailyScoreDetailScreenState
+    extends ConsumerState<DailyScoreDetailScreen> {
   final ScrollController _scroll = ScrollController();
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.read(analysisRangeProvider.notifier).state = AnalysisRange.w1;
+    });
+  }
+
+  @override
   void dispose() {
+    ref.read(analysisRangeProvider.notifier).state = AnalysisRange.m1;
     _scroll.dispose();
     super.dispose();
   }
@@ -62,7 +53,6 @@ class _DailyScoreDetailContentState
   Widget build(BuildContext context) {
     final range = ref.watch(analysisRangeProvider);
     final mode = AggregationMode.forRange(range);
-    // Usa los scores de cierre de ciclo metabólico.
     final seriesAsync = ref.watch(closedCycleScoreSeriesProvider);
     final series = seriesAsync.valueOrNull ??
         MetricSeries(label: 'Score del día', unit: '', points: const []);
@@ -102,7 +92,6 @@ class _DailyScoreDetailContentState
                 ),
               ),
               const SizedBox(height: 18),
-              // Rango local — no afecta la pantalla de Progreso.
               const SegmentedRangeControl(),
               const SizedBox(height: 24),
               if (seriesAsync.isLoading)
