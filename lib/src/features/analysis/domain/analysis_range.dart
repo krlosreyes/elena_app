@@ -3,16 +3,18 @@
 // Pure Dart.
 
 enum AnalysisRange {
-  d30,
+  w1,
+  m1,
   m3,
   m6,
-  y1,
-  all;
+  y1;
 
-  /// Días desde hoy hacia atrás. `null` para `all` (sin límite).
-  int? get daysFromToday {
+  /// Días desde hoy hacia atrás.
+  int get daysFromToday {
     switch (this) {
-      case AnalysisRange.d30:
+      case AnalysisRange.w1:
+        return 7;
+      case AnalysisRange.m1:
         return 30;
       case AnalysisRange.m3:
         return 90;
@@ -20,23 +22,36 @@ enum AnalysisRange {
         return 180;
       case AnalysisRange.y1:
         return 365;
-      case AnalysisRange.all:
-        return null;
     }
   }
 
   String get label {
     switch (this) {
-      case AnalysisRange.d30:
-        return '30d';
+      case AnalysisRange.w1:
+        return 'Semana';
+      case AnalysisRange.m1:
+        return 'Mes';
       case AnalysisRange.m3:
-        return '3m';
+        return '3M';
       case AnalysisRange.m6:
-        return '6m';
+        return '6M';
       case AnalysisRange.y1:
-        return '1a';
-      case AnalysisRange.all:
-        return 'Todo';
+        return '1A';
+    }
+  }
+
+  String get periodLabel {
+    switch (this) {
+      case AnalysisRange.w1:
+        return 'Última semana';
+      case AnalysisRange.m1:
+        return 'Último mes';
+      case AnalysisRange.m3:
+        return 'Últimos 3 meses';
+      case AnalysisRange.m6:
+        return 'Últimos 6 meses';
+      case AnalysisRange.y1:
+        return 'Último año';
     }
   }
 }

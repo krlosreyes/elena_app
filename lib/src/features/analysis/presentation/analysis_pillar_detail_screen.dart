@@ -38,39 +38,42 @@ import 'package:elena_app/src/features/analysis/presentation/widgets/nutrition_t
 import 'package:elena_app/src/features/analysis/presentation/widgets/segmented_range_control.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/trend_comparison_card.dart';
 
-class AnalysisPillarDetailScreen extends ConsumerStatefulWidget {
+/// Wrapper que aísla el rango temporal de esta pantalla del global.
+/// El ProviderScope override crea una instancia local de analysisRangeProvider
+/// que no contamina la pantalla principal de Progreso.
+class AnalysisPillarDetailScreen extends StatelessWidget {
   const AnalysisPillarDetailScreen({super.key, required this.metric});
 
   final ChartMetric metric;
 
   @override
-  ConsumerState<AnalysisPillarDetailScreen> createState() =>
+  Widget build(BuildContext context) {
+    return ProviderScope(
+      overrides: [
+        analysisRangeProvider.overrideWith((_) => AnalysisRange.w1),
+      ],
+      child: _AnalysisPillarDetailContent(metric: metric),
+    );
+  }
+}
+
+class _AnalysisPillarDetailContent extends ConsumerStatefulWidget {
+  const _AnalysisPillarDetailContent({required this.metric});
+
+  final ChartMetric metric;
+
+  @override
+  ConsumerState<_AnalysisPillarDetailContent> createState() =>
       _AnalysisPillarDetailScreenState();
 }
 
 class _AnalysisPillarDetailScreenState
-    extends ConsumerState<AnalysisPillarDetailScreen> {
+    extends ConsumerState<_AnalysisPillarDetailContent> {
   // SPEC-168.4.2: accent ámbar para % grasa corporal — coherente con
   // BodyCompositionMetric.bodyFatPct (#F59E0B).
   static const Color _accentBodyFat = Color(0xFFF59E0B);
 
   final ScrollController _scrollController = ScrollController();
-
-  @override
-  void initState() {
-    super.initState();
-    // SPEC-168.4.5 (2026-06-04): el detalle del pilar siempre arranca
-    // en rango 30d. Permite al usuario ver evolución reciente sin
-    // arrastrar el rango largo del overview. Si quiere ampliar, lo
-    // hace con el SegmentedRangeControl.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final current = ref.read(analysisRangeProvider);
-      if (current != AnalysisRange.d30) {
-        ref.read(analysisRangeProvider.notifier).state = AnalysisRange.d30;
-      }
-    });
-  }
 
   @override
   void dispose() {

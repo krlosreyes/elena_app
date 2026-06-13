@@ -53,9 +53,6 @@ final cycleClosureBumpProvider = Provider<String?>((ref) {
 /// Umbral para considerar un día de ayuno "cumplido" (≥95% del target).
 const double _kFastingCompletedThreshold = 0.95;
 
-/// Sentinel temprano para rango "Todo".
-final DateTime _kEpoch = DateTime(2000);
-
 String _dateIso(DateTime dt) =>
     '${dt.year.toString().padLeft(4, '0')}-'
     '${dt.month.toString().padLeft(2, '0')}-'
@@ -74,12 +71,44 @@ AggregationMode _currentMode(Ref ref) {
   return AggregationMode.forRange(range);
 }
 
-/// SPEC-200.1: serie del Score del Día (HOY, 0-100) como MetricSeries, para
-/// renderizarla con el MISMO `BarChartCard` + `TrendComparisonCard` que el
-/// detalle de Ayuno (coherencia visual). Fuente: historial de streak (30 días),
-/// agregado con el mismo `TemporalAggregator` que los pilares.
+/// SPEC-200.1 rev2 (2026-06-13): serie del Score del Día usando el score
+/// registrado al CIERRE del ciclo metabólico (`MetabolicCycle.dailyScore`).
+/// Fuente: `metabolicCyclesHistoryProvider` (90 últimos ciclos cerrados).
+/// Se abandona `StreakEntry.dailyQualityScore` (score en vivo del día) porque
+/// el valor definitivo es el que queda grabado cuando el usuario cierra su
+/// ciclo conscientemente — no el snapshot en tiempo real de mitad del día.
+final closedCycleScoreSeriesProvider =
+    StreamProvider.autoDispose<MetricSeries>((ref) async* {
+  // Bump: refresca cuando se cierra un ciclo.
+  ref.watch(cycleClosureBumpProvider);
+  final rangeStart = ref.watch(analysisRangeStartProvider);
+  final mode = _currentMode(ref);
+
+  await for (final cycles
+      in ref.watch(metabolicCyclesHistoryProvider.stream)) {
+    // Filtra por rango y descarta ciclos sin closedAt o sin dailyScore.
+    final inRange = cycles.where((c) {
+      final dt = c.closedAt;
+      final score = c.dailyScore;
+      return dt != null && score != null && !dt.isBefore(rangeStart);
+    }).toList();
+
+    final points = TemporalAggregator.aggregate(
+      items: inRange,
+      timestampOf: (c) => c.closedAt!,
+      valueOf: (c) => c.dailyScore!.toDouble(),
+      aggregation: TemporalAggregation.avg,
+      mode: mode,
+    );
+    yield MetricSeries(label: 'Score del día', unit: '', points: points);
+  }
+});
+
+/// Alias de compatibilidad — la pantalla Progreso (tile overview) puede
+/// seguir usando este nombre; devuelve la serie en vivo desde el streak
+/// para el tile del día actual (no el histórico de cierres).
 final dailyScoreSeriesProvider = Provider.autoDispose<MetricSeries>((ref) {
-  final rangeStart = ref.watch(analysisRangeStartProvider) ?? _kEpoch;
+  final rangeStart = ref.watch(analysisRangeStartProvider);
   final mode = _currentMode(ref);
   final history = ref.watch(streakProvider).history;
   final inRange = history.where((StreakEntry e) {
@@ -107,7 +136,7 @@ final imrSeriesProvider =
     yield MetricSeries.empty(label: 'IMR', unit: '');
     return;
   }
-  final rangeStart = ref.watch(analysisRangeStartProvider) ?? _kEpoch;
+  final rangeStart = ref.watch(analysisRangeStartProvider);
   final mode = _currentMode(ref);
   final repo = ref.watch(dailySummaryRepositoryProvider);
   await for (final docs in repo.watchRange(
@@ -212,7 +241,7 @@ final fastingHabitSeriesProvider =
   // semana" comunica mucho más que "5 días cumplidos". El cómputo
   // de achievement (SPEC-168.3) se preserva: comparar value (horas
   // reales) vs target (horas del protocolo activo).
-  final rangeStart = ref.watch(analysisRangeStartProvider) ?? _kEpoch;
+  final rangeStart = ref.watch(analysisRangeStartProvider);
   final mode = _currentMode(ref);
   await for (final intervals in ref
       .watch(fastingIntervalRepositoryProvider)
@@ -249,7 +278,7 @@ final nutritionHabitSeriesProvider =
     yield MetricSeries.empty(label: 'Nutrición A', unit: '%');
     return;
   }
-  final rangeStart = ref.watch(analysisRangeStartProvider) ?? _kEpoch;
+  final rangeStart = ref.watch(analysisRangeStartProvider);
   final mode = _currentMode(ref);
   await for (final logs in ref
       .watch(nutritionRepositoryProvider)
@@ -285,7 +314,7 @@ final hydrationHabitSeriesProvider =
     yield MetricSeries.empty(label: 'Hidratación', unit: 'L');
     return;
   }
-  final rangeStart = ref.watch(analysisRangeStartProvider) ?? _kEpoch;
+  final rangeStart = ref.watch(analysisRangeStartProvider);
   final mode = _currentMode(ref);
   await for (final logs in ref.watch(hydrationRepositoryProvider).watchSince(
         account.uid,
@@ -323,7 +352,7 @@ final exerciseHabitSeriesProvider =
     yield MetricSeries.empty(label: 'Ejercicio', unit: 'min');
     return;
   }
-  final rangeStart = ref.watch(analysisRangeStartProvider) ?? _kEpoch;
+  final rangeStart = ref.watch(analysisRangeStartProvider);
   final mode = _currentMode(ref);
   await for (final logs in ref.watch(exerciseRepositoryProvider).watchSince(
         account.uid,

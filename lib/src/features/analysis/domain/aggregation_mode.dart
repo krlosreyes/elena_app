@@ -14,13 +14,13 @@ enum AggregationMode {
   /// ventanas largas usan buckets gruesos.
   static AggregationMode forRange(AnalysisRange range) {
     switch (range) {
-      case AnalysisRange.d30:
+      case AnalysisRange.w1:
+      case AnalysisRange.m1:
         return AggregationMode.daily;
       case AnalysisRange.m3:
       case AnalysisRange.m6:
         return AggregationMode.weekly;
       case AnalysisRange.y1:
-      case AnalysisRange.all:
         return AggregationMode.monthly;
     }
   }

@@ -1,7 +1,11 @@
-// SPEC-200 / SPEC-200.1: detalle del "Score del Día" — abierto desde el tile
-// de Resultados. Usa el MISMO BarChartCard + sección Tendencia que el detalle
-// de Ayuno para mantener coherencia visual (barras día a día + hero promedio +
-// línea de meta + comparación corto vs largo).
+// SPEC-200 / SPEC-200.1: detalle del "Score del Día".
+//
+// Usa closedCycleScoreSeriesProvider — el score al momento del CIERRE del
+// ciclo metabólico, no el score en vivo del día actual.
+//
+// Filtros locales (Semana / Mes / 3M / 6M / 1A) aislados de la pantalla
+// principal Progreso via ProviderScope override. Cambiar el rango acá NO
+// afecta el rango global del overview.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,29 +23,34 @@ import 'package:elena_app/src/features/analysis/presentation/widgets/bar_chart_c
 import 'package:elena_app/src/features/analysis/presentation/widgets/segmented_range_control.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/trend_comparison_card.dart';
 
-class DailyScoreDetailScreen extends ConsumerStatefulWidget {
+/// Wrapper que aísla el rango temporal de esta pantalla del global.
+/// El ProviderScope override crea una instancia local de analysisRangeProvider
+/// que no contamina la pantalla principal de Progreso.
+class DailyScoreDetailScreen extends StatelessWidget {
   const DailyScoreDetailScreen({super.key});
 
   @override
-  ConsumerState<DailyScoreDetailScreen> createState() =>
-      _DailyScoreDetailScreenState();
+  Widget build(BuildContext context) {
+    return ProviderScope(
+      overrides: [
+        analysisRangeProvider.overrideWith((_) => AnalysisRange.w1),
+      ],
+      child: const _DailyScoreDetailContent(),
+    );
+  }
 }
 
-class _DailyScoreDetailScreenState
-    extends ConsumerState<DailyScoreDetailScreen> {
-  final ScrollController _scroll = ScrollController();
+class _DailyScoreDetailContent extends ConsumerStatefulWidget {
+  const _DailyScoreDetailContent();
 
   @override
-  void initState() {
-    super.initState();
-    // Igual que el detalle de pilar: arranca en 30 días.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      if (ref.read(analysisRangeProvider) != AnalysisRange.d30) {
-        ref.read(analysisRangeProvider.notifier).state = AnalysisRange.d30;
-      }
-    });
-  }
+  ConsumerState<_DailyScoreDetailContent> createState() =>
+      _DailyScoreDetailContentState();
+}
+
+class _DailyScoreDetailContentState
+    extends ConsumerState<_DailyScoreDetailContent> {
+  final ScrollController _scroll = ScrollController();
 
   @override
   void dispose() {
@@ -53,7 +62,10 @@ class _DailyScoreDetailScreenState
   Widget build(BuildContext context) {
     final range = ref.watch(analysisRangeProvider);
     final mode = AggregationMode.forRange(range);
-    final series = ref.watch(dailyScoreSeriesProvider);
+    // Usa los scores de cierre de ciclo metabólico.
+    final seriesAsync = ref.watch(closedCycleScoreSeriesProvider);
+    final series = seriesAsync.valueOrNull ??
+        MetricSeries(label: 'Score del día', unit: '', points: const []);
 
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
@@ -90,29 +102,40 @@ class _DailyScoreDetailScreenState
                 ),
               ),
               const SizedBox(height: 18),
+              // Rango local — no afecta la pantalla de Progreso.
               const SegmentedRangeControl(),
               const SizedBox(height: 24),
-              BarChartCard(
-                series: series,
-                accent: AppColors.metabolicGreen,
-                periodLabel: _periodLabel(range),
-                headline: 'Tu score por día en este período.',
-                aggregationMode: mode,
-                heroAggregation: HeroAggregation.avg,
-                heroUnit: '',
-                targetValue: 100,
-                targetLabel: 'Meta 100',
-                deltaIsBetterIf: 'up',
-              ),
-              const SizedBox(height: 24),
-              _buildTrendSection(series, mode),
+              if (seriesAsync.isLoading)
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 60),
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                )
+              else ...[
+                BarChartCard(
+                  series: series,
+                  accent: AppColors.metabolicGreen,
+                  periodLabel: range.periodLabel,
+                  headline: 'Score al cierre de cada día metabólico.',
+                  aggregationMode: mode,
+                  heroAggregation: HeroAggregation.avg,
+                  heroUnit: '',
+                  targetValue: 100,
+                  targetLabel: 'Meta 100',
+                  deltaIsBetterIf: 'up',
+                ),
+                const SizedBox(height: 24),
+                _buildTrendSection(series, mode),
+              ],
               const SizedBox(height: 12),
               Padding(
                 padding: const EdgeInsets.only(left: 2),
                 child: Text(
-                  'Tu puntaje diario refleja cómo viviste cada día — llega a '
-                  '100 cuando cumples los 5 pilares. Es distinto del IMR, que '
-                  'mide tu estado metabólico de fondo y se mueve en semanas.',
+                  'Tu puntaje refleja cómo viviste cada día metabólico al '
+                  'momento de cerrarlo — llega a 100 cuando cumples los 5 '
+                  'pilares. Es distinto del IMR, que mide tu estado '
+                  'metabólico de fondo y se mueve en semanas.',
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.55),
                     fontSize: 13,
@@ -159,20 +182,5 @@ class _DailyScoreDetailScreenState
         ),
       ],
     );
-  }
-
-  String _periodLabel(AnalysisRange r) {
-    switch (r) {
-      case AnalysisRange.d30:
-        return 'Últimos 30 días';
-      case AnalysisRange.m3:
-        return 'Últimos 3 meses';
-      case AnalysisRange.m6:
-        return 'Últimos 6 meses';
-      case AnalysisRange.y1:
-        return 'Último año';
-      case AnalysisRange.all:
-        return 'Todo tu historial';
-    }
   }
 }
