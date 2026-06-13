@@ -14,6 +14,8 @@ import 'package:elena_app/src/features/goals/application/goal_notifier.dart';
 import 'package:elena_app/src/features/goals/domain/user_goal.dart';
 import 'package:elena_app/src/features/goals/presentation/goal_icons.dart';
 import 'package:elena_app/src/features/health_sync/presentation/health_sync_card.dart';
+import 'package:elena_app/src/features/profile/application/biometric_lock_provider.dart';
+import 'package:elena_app/src/features/profile/domain/biometric_lock_service.dart';
 import 'package:elena_app/src/features/profile/domain/biometry_recalc.dart';
 import 'package:elena_app/src/features/profile/presentation/widgets/body_composition_card.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
@@ -283,6 +285,25 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
     );
   }
 
+  // SPEC-BUG7: snackbar educativo cuando el usuario intenta editar
+  // biometría durante el período de bloqueo semanal.
+  void _showBiometryLockedSnackbar(BiometricLockState lock) {
+    final msg = lock.unlocksAt != null
+        ? 'Datos biométricos bloqueados — ${lock.unlockLabel}. '
+            'Tu IMR Base se estabiliza durante 6 días para reflejar '
+            'cambios reales, no fluctuaciones diarias.'
+        : 'Datos biométricos bloqueados. Volvé en 6 días o cerrá tu '
+            'semana con un Día de Permitidos.';
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: const Color(0xFF334155),
+        duration: const Duration(seconds: 5),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
   /// SPEC-92: recalcula bodyFat usando las medidas vigentes + el campo
   /// que se acaba de editar, y persiste ambos campos (editado + bodyFat
   /// recalculado) si la combinación es coherente.
@@ -291,6 +312,13 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
     double? newWaist,
     double? newNeck,
   }) async {
+    // SPEC-BUG7: doble-check de seguridad — aunque los botones están
+    // deshabilitados visualmente, no aceptamos edits si el lock está activo.
+    final lock = ref.read(biometricLockProvider);
+    if (lock.isLocked) {
+      _showBiometryLockedSnackbar(lock);
+      return;
+    }
     final user = widget.user;
     final effectiveWeight = newWeight ?? user.weight;
     final effectiveWaist = newWaist ?? user.waistCircumference;
@@ -468,6 +496,9 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
       }
     }
 
+    // SPEC-BUG7: lock semanal de biometría.
+    final biometryLock = ref.watch(biometricLockProvider);
+
     // SPEC-116: rediseño del Perfil — premium, simple, jerárquico.
     // Reemplaza el "muro de tarjetas" por grupos con divisores internos
     // (patrón iOS Settings / Oura / Apple Health). Misma información,
@@ -491,37 +522,89 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
         // SPEC-117: disclosure group con preview de 1 línea. El
         // usuario rara vez edita estos datos — quedan accesibles pero
         // no consumen scroll cuando no se necesitan.
+        // SPEC-BUG7: preview muestra estado del lock cuando está activo.
         _DisclosureSection(
           title: 'Datos biométricos',
-          preview: _biometricPreview(),
-          child: ProfileDataGroupCard(
-            rows: [
-              ProfileDataRow.readonly('Nombre', widget.user.name),
-              ProfileDataRow.readonly('Edad', '${widget.user.age} años'),
-              ProfileDataRow.readonly('Género',
-                  widget.user.gender == 'M' ? 'Masculino' : 'Femenino'),
-              ProfileDataRow.readonly('Estatura', '${widget.user.height.toInt()} cm'),
-              ProfileDataRow.editable(
-                label: 'Peso',
-                value: '${widget.user.weight.toInt()} kg',
-                onTap: _editWeight,
-              ),
-              ProfileDataRow.editable(
-                label: 'Cintura',
-                value: '${widget.user.waistCircumference?.toInt() ?? 0} cm',
-                onTap: _editWaist,
-              ),
-              ProfileDataRow.editable(
-                label: 'Cuello',
-                value: '${widget.user.neckCircumference?.toInt() ?? 0} cm',
-                onTap: _editNeck,
-              ),
-              ProfileDataRow.info(
-                label: '% Grasa est.',
-                value: _formatBodyFat(widget.user.bodyFatPercentage),
-                tag: 'confianza ${widget.user.confidenceLevel}',
-                tagColor: _confidenceColor(widget.user.confidenceLevel),
-                onInfoTap: _showBodyFatExplanation,
+          preview: biometryLock.isLocked
+              ? '🔒 ${biometryLock.unlockLabel}'
+              : _biometricPreview(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // SPEC-BUG7: banner de lock visible dentro de la sección.
+              if (biometryLock.isLocked)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF334155).withValues(alpha: 0.60),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.10),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.lock_outline_rounded,
+                            size: 15, color: Color(0xFF94A3B8)),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            '${biometryLock.unlockLabel}. El IMR Base se '
+                            'estabiliza 6 días para reflejar cambios reales. '
+                            'Tu Día de Permitidos también cierra el ciclo.',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.60),
+                              fontSize: 11,
+                              height: 1.4,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ProfileDataGroupCard(
+                rows: [
+                  ProfileDataRow.readonly('Nombre', widget.user.name),
+                  ProfileDataRow.readonly('Edad', '${widget.user.age} años'),
+                  ProfileDataRow.readonly('Género',
+                      widget.user.gender == 'M' ? 'Masculino' : 'Femenino'),
+                  ProfileDataRow.readonly(
+                      'Estatura', '${widget.user.height.toInt()} cm'),
+                  ProfileDataRow.editable(
+                    label: 'Peso',
+                    value: '${widget.user.weight.toInt()} kg',
+                    onTap: biometryLock.isLocked
+                        ? () => _showBiometryLockedSnackbar(biometryLock)
+                        : _editWeight,
+                  ),
+                  ProfileDataRow.editable(
+                    label: 'Cintura',
+                    value:
+                        '${widget.user.waistCircumference?.toInt() ?? 0} cm',
+                    onTap: biometryLock.isLocked
+                        ? () => _showBiometryLockedSnackbar(biometryLock)
+                        : _editWaist,
+                  ),
+                  ProfileDataRow.editable(
+                    label: 'Cuello',
+                    value:
+                        '${widget.user.neckCircumference?.toInt() ?? 0} cm',
+                    onTap: biometryLock.isLocked
+                        ? () => _showBiometryLockedSnackbar(biometryLock)
+                        : _editNeck,
+                  ),
+                  ProfileDataRow.info(
+                    label: '% Grasa est.',
+                    value: _formatBodyFat(widget.user.bodyFatPercentage),
+                    tag: 'confianza ${widget.user.confidenceLevel}',
+                    tagColor: _confidenceColor(widget.user.confidenceLevel),
+                    onInfoTap: _showBodyFatExplanation,
+                  ),
+                ],
               ),
             ],
           ),

@@ -1,7 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:elena_app/src/core/providers/shared_preferences_provider.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
 import 'package:elena_app/src/features/progress/application/biometric_history_service.dart';
 import 'package:elena_app/src/features/progress/domain/biometric_delta.dart';
+import 'package:elena_app/src/features/profile/domain/biometric_lock_service.dart';
 import 'package:elena_app/src/shared/data/user_profile_repository_impl.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 
@@ -112,6 +114,13 @@ class ProfileController extends StateNotifier<ProfileEditState> {
             currentUser: currentUser,
             delta: delta,
           );
+      // SPEC-BUG7: persiste la fecha del edit para el lock semanal.
+      // Se guarda DESPUÉS de la escritura exitosa — si el write falla,
+      // el lock no se activa y el usuario puede reintentar.
+      await ref
+          .read(sharedPreferencesProvider)
+          .setString(BiometricLockService.kLastEditKey,
+              DateTime.now().toIso8601String());
       state = state.copyWith(isSaving: false, savedSuccessfully: true);
     } catch (e) {
       state = state.copyWith(
