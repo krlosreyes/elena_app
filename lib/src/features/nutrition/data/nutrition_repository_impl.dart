@@ -83,6 +83,11 @@ class NutritionRepositoryImpl implements NutritionRepository {
     if (latest == null) return;
     await _source.deleteLog(userId, latest.docId);
   }
+
+  @override
+  Future<void> deleteMealById(String userId, String mealId) async {
+    await _source.deleteLog(userId, mealId);
+  }
 }
 
 // ─── Providers ────────────────────────────────────────────────────────────

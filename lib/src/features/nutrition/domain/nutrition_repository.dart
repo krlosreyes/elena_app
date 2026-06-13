@@ -46,4 +46,8 @@ abstract class NutritionRepository {
   /// Elimina el log más reciente del día (acción "deshacer").
   /// Si el usuario no tiene logs hoy, es no-op.
   Future<void> removeLastMeal(String userId);
+
+  /// Elimina un log por su id. No-op si no existe.
+  /// Usado para "editar plato": se elimina el viejo y se guarda el nuevo.
+  Future<void> deleteMealById(String userId, String mealId);
 }

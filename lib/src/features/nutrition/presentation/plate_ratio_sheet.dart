@@ -34,16 +34,22 @@ class PlateRatioSheet extends ConsumerStatefulWidget {
   /// pasada" que vivía en AddPastMealSheet).
   final DateTime? initialMealTime;
 
+  /// Si se provee, el sheet actúa en modo "editar": al guardar elimina
+  /// este log y persiste el nuevo. El id se usa para el `deleteMealById`.
+  final String? logToReplaceId;
+
   const PlateRatioSheet({
     super.key,
     this.label,
     this.initialMealTime,
+    this.logToReplaceId,
   });
 
   static Future<void> show(
     BuildContext context, {
     String? label,
     DateTime? initialMealTime,
+    String? logToReplaceId,
   }) {
     return showModalBottomSheet<void>(
       context: context,
@@ -55,6 +61,7 @@ class PlateRatioSheet extends ConsumerStatefulWidget {
       builder: (_) => PlateRatioSheet(
         label: label,
         initialMealTime: initialMealTime,
+        logToReplaceId: logToReplaceId,
       ),
     );
   }
@@ -279,18 +286,33 @@ class _PlateRatioSheetState extends ConsumerState<PlateRatioSheet> {
       // armar el plato.
       final effectiveMealTime =
           _userEditedTime ? _mealTime : DateTime.now();
-      await ref.read(nutritionProvider.notifier).logMeal(
-            label: widget.label,
-            mealTime: effectiveMealTime,
-            ratio: _builder.derivedMealRatio,
-            isCheatDay: isCheatDay,
-            forceLog: forceLog,
-            // SPEC-138: trazabilidad NOVA del plato. Solo persistimos si
-            // el plato tiene contenido (totalSlots > 0).
-            upfSlots: _builder.totalSlots > 0 ? _builder.upfSlots : null,
-            totalSlots:
-                _builder.totalSlots > 0 ? _builder.totalSlots : null,
-          );
+      final notifier = ref.read(nutritionProvider.notifier);
+      final oldId = widget.logToReplaceId;
+      if (oldId != null) {
+        // Modo edición: reemplaza el log viejo.
+        await notifier.replaceMeal(
+          oldId: oldId,
+          label: widget.label,
+          mealTime: effectiveMealTime,
+          ratio: _builder.derivedMealRatio,
+          isCheatDay: isCheatDay,
+          forceLog: true, // slot ya existía, no validar intervalo.
+          upfSlots: _builder.totalSlots > 0 ? _builder.upfSlots : null,
+          totalSlots: _builder.totalSlots > 0 ? _builder.totalSlots : null,
+        );
+      } else {
+        await notifier.logMeal(
+          label: widget.label,
+          mealTime: effectiveMealTime,
+          ratio: _builder.derivedMealRatio,
+          isCheatDay: isCheatDay,
+          forceLog: forceLog,
+          // SPEC-138: trazabilidad NOVA del plato. Solo persistimos si
+          // el plato tiene contenido (totalSlots > 0).
+          upfSlots: _builder.totalSlots > 0 ? _builder.upfSlots : null,
+          totalSlots: _builder.totalSlots > 0 ? _builder.totalSlots : null,
+        );
+      }
       if (mounted) Navigator.of(context).pop();
     } on MealTooSoonException catch (e) {
       if (mounted) {

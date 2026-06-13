@@ -4,7 +4,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/meals_locked_dialog.dart';
@@ -12,6 +11,8 @@ import 'package:elena_app/src/features/dashboard/presentation/widgets/pillar_car
 import 'package:elena_app/src/features/nutrition/application/cociente_a_service.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
 import 'package:elena_app/src/features/nutrition/domain/meal_interval_rules.dart';
+import 'package:elena_app/src/features/nutrition/domain/meal_ratio.dart';
+import 'package:elena_app/src/features/nutrition/domain/nutrition_log.dart';
 import 'package:elena_app/src/features/nutrition/presentation/plate_ratio_sheet.dart';
 
 class ComidasPillarCard extends ConsumerWidget {
@@ -37,10 +38,11 @@ class ComidasPillarCard extends ConsumerWidget {
     const cocienteService = CocienteAService();
     final cocienteA = cocienteService.calculate(state.todayLogs);
     final cocientePct = (cocienteA * 100).round();
-    final aDominantCount = cocienteService.aDominantCount(state.todayLogs);
+    final lastLog = state.todayLogs.isNotEmpty ? state.todayLogs.last : null;
 
     final card = PillarCardUi.shell(
-      title: 'Nutrición Científica',
+      // Título vacío: la card se identifica por el badge de comidas.
+      title: '',
       badge: '${state.mealsLoggedToday}/${state.targetMeals} comidas',
       accent: accent,
       children: [
@@ -69,13 +71,11 @@ class ComidasPillarCard extends ConsumerWidget {
                       big: true),
                 ],
               ),
-              const SizedBox(height: 16),
-              PillarCardUi.benefitChip(
-                accent: accent,
-                text: state.windowAdherence >= 0.5
-                    ? '✓ Comidas dentro de ventana circadiana — alineación con ritmo metabólico óptima'
-                    : 'Mantén tus comidas dentro de la ventana circadiana para alinear tu ritmo metabólico.',
-              ),
+              // ── Composición del último plato ────────────────────────
+              if (lastLog != null) ...[
+                const SizedBox(height: 14),
+                _LastPlateCard(log: lastLog, accent: accent),
+              ],
               const SizedBox(height: 18),
               PillarCardUi.primaryButton(
                 label: 'Registrar ${state.nextMealLabel}',
@@ -85,23 +85,40 @@ class ComidasPillarCard extends ConsumerWidget {
                     ? null
                     : () => PlateRatioSheet.show(context),
               ),
-              const SizedBox(height: 10),
-              PillarCardUi.secondaryButton(
-                label: 'Deshacer última comida registrada',
-                icon: Icons.undo_rounded,
-                onPressed: isFastingActive || state.todayLogs.isEmpty
-                    ? null
-                    : () =>
-                        ref.read(nutritionProvider.notifier).removeLastMeal(),
-              ),
-              const SizedBox(height: 10),
-              PillarCardUi.secondaryButton(
-                label: aDominantCount == 0
-                    ? 'Ver semana →'
-                    : 'Ver semana → · $aDominantCount A-dominantes hoy',
-                icon: Icons.calendar_view_week_rounded,
-                onPressed: () => context.push('/nutrition/weekly'),
-              ),
+              // ── Editar / Eliminar último plato ──────────────────────
+              if (lastLog != null) ...[
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: PillarCardUi.secondaryButton(
+                        label: 'Editar plato',
+                        icon: Icons.edit_outlined,
+                        onPressed: isFastingActive
+                            ? null
+                            : () => PlateRatioSheet.show(
+                                  context,
+                                  label: lastLog.label,
+                                  initialMealTime: lastLog.timestamp,
+                                  logToReplaceId: lastLog.id,
+                                ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: PillarCardUi.secondaryButton(
+                        label: 'Eliminar',
+                        icon: Icons.delete_outline_rounded,
+                        onPressed: isFastingActive
+                            ? null
+                            : () => ref
+                                .read(nutritionProvider.notifier)
+                                .removeLastMeal(),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),
@@ -179,5 +196,89 @@ class ComidasPillarCard extends ConsumerWidget {
       return '${diff.inHours}h ${diff.inMinutes.remainder(60)}m';
     }
     return '${diff.inMinutes}m';
+  }
+}
+
+/// Widget compacto que muestra la composición del último plato registrado.
+class _LastPlateCard extends StatelessWidget {
+  const _LastPlateCard({required this.log, required this.accent});
+
+  final NutritionLog log;
+  final Color accent;
+
+  Color _ratioColor(MealRatio ratio) {
+    return switch (ratio) {
+      MealRatio.allA => AppColors.statusGood,
+      MealRatio.a3e1 => AppColors.statusGood,
+      MealRatio.a2e1 => AppColors.accent,
+      MealRatio.a1e1 => AppColors.statusWarn,
+      MealRatio.allE => AppColors.statusBad,
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ratioColor = _ratioColor(log.ratio);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: accent.withValues(alpha: 0.20)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.restaurant_menu_rounded,
+                  size: 13, color: accent.withValues(alpha: 0.7)),
+              const SizedBox(width: 5),
+              Text(
+                'Último: ${log.label}',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.7),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const Spacer(),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: ratioColor.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  log.ratio.label,
+                  style: TextStyle(
+                    color: ratioColor,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (log.hasMacros) ...[
+            const SizedBox(height: 6),
+            Text(
+              [
+                if (log.calories != null) '${log.calories!.round()} kcal',
+                if (log.protein != null) 'P: ${log.protein!.round()}g',
+                if (log.carbs != null) 'C: ${log.carbs!.round()}g',
+                if (log.fat != null) 'G: ${log.fat!.round()}g',
+              ].join(' · '),
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.45),
+                fontSize: 11,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
   }
 }

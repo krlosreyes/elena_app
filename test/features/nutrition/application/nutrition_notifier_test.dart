@@ -67,6 +67,14 @@ class FakeNutritionRepository implements NutritionRepository {
     emit(_today.sublist(0, _today.length - 1));
   }
 
+  @override
+  Future<void> deleteMealById(String userId, String mealId) async {
+    final idx = _today.indexWhere((l) => l.id == mealId);
+    if (idx == -1) return;
+    final next = [..._today]..removeAt(idx);
+    emit(next);
+  }
+
   void dispose() {
     _logsController.close();
   }

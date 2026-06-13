@@ -344,6 +344,61 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
     }
   }
 
+  /// Reemplaza un log existente (editar plato): elimina el log con [oldId]
+  /// y registra uno nuevo con los parámetros provistos.
+  ///
+  /// La eliminación es no bloqueante (offline-first). El stream re-emite
+  /// la lista corregida al instante desde la caché de Firestore.
+  Future<void> replaceMeal({
+    required String oldId,
+    String? label,
+    DateTime? mealTime,
+    double? calories,
+    double? protein,
+    double? carbs,
+    double? fat,
+    double? fiber,
+    int? glycemicIndex,
+    NutritionLogSource source = NutritionLogSource.userInput,
+    MealRatio ratio = MealRatio.a2e1,
+    bool isCheatDay = false,
+    bool forceLog = true,
+    int? upfSlots,
+    int? totalSlots,
+  }) async {
+    final userId = _activeUserId;
+    if (userId == null) return;
+
+    // Eliminar el viejo primero (no bloqueante).
+    unawaited(
+      _ref
+          .read(nutritionRepositoryProvider)
+          .deleteMealById(userId, oldId)
+          .catchError((Object e) {
+        AppLogger.error('replaceMeal: eliminación del viejo falló', e);
+      }),
+    );
+
+    // Registrar el nuevo (forceLog=true salta la validación de intervalo
+    // porque el usuario ya tenía ese slot ocupado).
+    await logMeal(
+      label: label,
+      mealTime: mealTime,
+      calories: calories,
+      protein: protein,
+      carbs: carbs,
+      fat: fat,
+      fiber: fiber,
+      glycemicIndex: glycemicIndex,
+      source: source,
+      ratio: ratio,
+      isCheatDay: isCheatDay,
+      forceLog: forceLog,
+      upfSlots: upfSlots,
+      totalSlots: totalSlots,
+    );
+  }
+
   /// SPEC-58 + SPEC-149.2: Reset idempotente disparado al cierre del
   /// ciclo metabólico o a medianoche calendárica (red de seguridad).
   ///
