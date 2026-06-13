@@ -11,6 +11,7 @@ import 'package:elena_app/src/core/providers/shared_preferences_provider.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_service.dart';
 import 'package:elena_app/src/features/metabolic_cycle/data/metabolic_cycle_repository_impl.dart';
+import 'package:elena_app/src/features/metabolic_cycle/domain/closure_reason.dart';
 import 'package:elena_app/src/features/metabolic_cycle/domain/metabolic_cycle.dart';
 
 /// Service singleton para la sesión. NO autoDispose — debe preservar
@@ -131,9 +132,20 @@ const Duration kCycleClosureFreshness = Duration(hours: 6);
 /// SPEC-202.2: además exige que el cierre sea FRESCO — un cierre viejo (la app
 /// estuvo cerrada y el ciclo cerró por fallback en la madrugada) ya no salta
 /// como tarjeta desconectada.
+/// BUG-FIX (2026-06-13): solo se activa para cierres `manualNextFasting`.
+/// Los cierres por fallback (fallback3hAfterWindow, fallbackSleepDetected,
+/// fallbackAbsolute, protocolChanged) NO deben disparar la card pasiva —
+/// son automáticos y ocurren típicamente al abrir la app via el microtask
+/// del evaluador, desconectados de la acción consciente del usuario.
+/// El path correcto para `manualNextFasting` es `cycleClosureMomentProvider`
+/// (modal inmediato + auto-dismiss); esta card es únicamente el fallback
+/// por si el listener del Dashboard no alcanzó a dispararse.
 final hasUnreadCycleClosureProvider = Provider<bool>((ref) {
   final last = ref.watch(lastClosedMetabolicCycleProvider).valueOrNull;
   if (last == null) return false;
+
+  // Solo cierres conscientes (usuario inició el siguiente ayuno).
+  if (last.closureReason != ClosureReason.manualNextFasting) return false;
 
   final dismissedCycleId = ref.watch(cycleClosureDismissalProvider);
   if (dismissedCycleId == last.cycleId) return false;
