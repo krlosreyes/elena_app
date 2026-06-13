@@ -25,7 +25,8 @@ import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cyc
 import 'package:elena_app/src/features/metabolic_cycle/domain/closure_reason.dart';
 import 'package:elena_app/src/features/metabolic_cycle/domain/metabolic_cycle.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
-import 'package:elena_app/src/features/streak/application/daily_score_provider.dart';
+import 'package:elena_app/src/features/streak/application/daily_score_provider.dart'
+    show dailyScoreProvider, displayDailyScoreProvider;
 import 'package:elena_app/src/features/streak/application/streak_notifier.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 
@@ -106,7 +107,12 @@ Future<void> _evaluate(
     nutrition: today?.nutritionLogged ?? false,
   );
 
-  final dailyScore = ref.read(dailyScoreProvider);
+  // SPEC-BUG (2026-06-13): usar displayDailyScoreProvider (cycle-aware,
+  // CycleScoreComputer) en lugar del legacy dailyScoreProvider (calendario).
+  // El Dashboard muestra displayDailyScoreProvider; el ciclo debe guardar
+  // el MISMO valor que el usuario ve, no un cálculo diferente.
+  // ref.read evita dependencia reactiva — sin riesgo de ciclo.
+  final dailyScore = ref.read(displayDailyScoreProvider);
   final eatingWindow = ref.read(eatingWindowProvider);
   final sleepState = ref.read(sleepProvider);
   final nutritionState = ref.read(nutritionProvider);
