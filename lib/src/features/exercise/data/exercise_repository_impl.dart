@@ -79,6 +79,11 @@ class ExerciseRepositoryImpl implements ExerciseRepository {
     final data = _mapper.toMap(log);
     await _source.persist(userId: userId, docId: log.id, data: data);
   }
+
+  @override
+  Future<void> removeLastSession(String userId, DateTime since) async {
+    await _source.deleteLatest(userId: userId, since: since);
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────

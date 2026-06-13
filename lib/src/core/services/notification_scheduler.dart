@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/core/services/notification_service.dart';
@@ -110,31 +111,37 @@ class NotificationScheduler {
       }
 
       // ── 4. Alerta bloqueo intestinal: 60 min antes (20:30) ───────────────
-      // SPEC-70.5: lock movido a 21:30; alertas se ajustan en consecuencia.
+      // Audit notif (2026-06-10): el "modo reparación" se ANCLA al sueño real
+      // del usuario, no a 21:30 fijo. Quien duerme temprano lo recibe antes de
+      // dormir (antes le llegaba a las 21:30, ya dormido = fuera de tiempo).
+      // Quien duerme tarde mantiene el tope circadiano 21:30 (regla dura
+      // cierre de ventana ≤21:00, ver CIRCADIAN_BIBLIOGRAPHY).
+      final lockActive = repairLockActiveTime(profile.sleepTime);
+      final lock30 = lockActive.subtract(const Duration(minutes: 30));
+      final lock60 = lockActive.subtract(const Duration(minutes: 60));
+
       await _scheduleCircadian(
         id: NotificationIds.intestinalLock60,
-        hour: 20,
-        minute: 30,
+        hour: lock60.hour,
+        minute: lock60.minute,
         title: '🌙 Una hora para soltar el día',
         body: 'En una hora tu cuerpo empieza a descansar. Si vas a cenar, '
             'mejor ya.',
       );
 
-      // ── 5. Alerta bloqueo intestinal: 30 min antes (21:00) ───────────────
       await _scheduleCircadian(
         id: NotificationIds.intestinalLock30,
-        hour: 21,
-        minute: 0,
+        hour: lock30.hour,
+        minute: lock30.minute,
         title: '🌙 30 minutos para soltar',
         body: 'Falta media hora para que tu cuerpo se enfoque en descansar. '
             'Vas bien.',
       );
 
-      // ── 6. Bloqueo intestinal activo (21:30) ─────────────────────────────
       await _scheduleCircadian(
         id: NotificationIds.intestinalLockActive,
-        hour: 21,
-        minute: 30,
+        hour: lockActive.hour,
+        minute: lockActive.minute,
         title: '🌙 Modo reparación activado',
         body: 'Tu cuerpo empieza a hacer lo suyo mientras descansás. Buen '
             'momento para soltar el día.',
@@ -334,6 +341,22 @@ class NotificationScheduler {
   /// desconocido (caso fallback a `profile.lastMealGoal`).
   ///
   /// Público para testabilidad — no se usa desde fuera del scheduler.
+  /// Audit notif (2026-06-10): hora del "modo reparación" anclada al sueño del
+  /// usuario, con tope circadiano 21:30 (regla dura cierre de ventana ≤21:00).
+  /// - Duerme tarde (≥22:00 o pasada la medianoche) → 21:30 fijo.
+  /// - Duerme temprano (18:00–21:59) → 30 min antes de acostarse.
+  /// Devuelve un DateTime base (2000-01-01); solo importan hour/minute.
+  @visibleForTesting
+  static DateTime repairLockActiveTime(DateTime sleepTime) {
+    final sleepHour = sleepTime.hour;
+    final sleepsLate = sleepHour >= 22 || sleepHour < 12;
+    if (sleepsLate) {
+      return DateTime(2000, 1, 1, 21, 30);
+    }
+    final base = DateTime(2000, 1, 1, sleepTime.hour, sleepTime.minute);
+    return base.subtract(const Duration(minutes: 30));
+  }
+
   static int? protocolFastingHours(String protocol) {
     switch (protocol) {
       case '12:12':

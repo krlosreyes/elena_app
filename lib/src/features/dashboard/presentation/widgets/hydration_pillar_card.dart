@@ -89,19 +89,15 @@ class HydrationPillarCard extends ConsumerWidget {
         PillarCardUi.secondaryButton(
           label: 'Descontar último vaso (-250 ml)',
           icon: Icons.remove_circle_outline_rounded,
-          onPressed: () => _pendingSnack(context, 'Descontar último vaso'),
+          // Deshabilitado si no hay nada que descontar o si hay una
+          // operación en curso.
+          onPressed: state.history.isEmpty
+              ? null
+              : () => ref
+                  .read(hydrationProvider.notifier)
+                  .removeLastWater(),
         ),
       ],
-    );
-  }
-
-  void _pendingSnack(BuildContext context, String featureName) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$featureName: función disponible próximamente'),
-        duration: const Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
-      ),
     );
   }
 }

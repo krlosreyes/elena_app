@@ -63,6 +63,9 @@ class _FakeExerciseRepository implements ExerciseRepository {
     DateTime? until,
   }) =>
       const Stream.empty();
+
+  @override
+  Future<void> removeLastSession(String userId, DateTime since) async {}
 }
 
 // Fake del BiometricRepository: reusamos fake_cloud_firestore para tener

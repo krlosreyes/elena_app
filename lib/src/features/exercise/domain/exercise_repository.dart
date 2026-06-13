@@ -38,4 +38,8 @@ abstract class ExerciseRepository {
 
   /// Persiste o sobrescribe un registro usando `log.id` como clave.
   Future<void> save(String userId, ExerciseLog log);
+
+  /// Borra el log más reciente en la ventana [since, ∞).
+  /// No-op si no hay logs en la ventana.
+  Future<void> removeLastSession(String userId, DateTime since);
 }

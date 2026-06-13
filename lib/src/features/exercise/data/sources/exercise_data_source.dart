@@ -16,4 +16,11 @@ abstract class ExerciseDataSource {
     required String docId,
     required Map<String, dynamic> data,
   });
+
+  /// Borra el log más reciente en la ventana [since, ∞).
+  /// No-op si no hay logs en la ventana.
+  Future<void> deleteLatest({
+    required String userId,
+    required DateTime since,
+  });
 }

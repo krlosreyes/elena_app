@@ -94,9 +94,18 @@ service cloud.firestore {
       // mismo dueño, mismo límite de tamaño. Sin id-match porque los
       // docs hijos pueden o no tener `id` y el path ya enlaza al
       // dueño vía wildcard.
+      //
+      // BUG-FIX (2026-06-13): `allow write` unificado incluía
+      // `withinSizeLimit()` que llama a `request.resource.size()`.
+      // En operaciones DELETE `request.resource` no existe → la
+      // evaluación falla → permission denied en todos los borrados
+      // (sleep, hidratación, ejercicio, etc.).
+      // Separamos create/update (necesitan size check) de delete
+      // (solo requiere ownership).
       match /{allPaths=**} {
         allow read: if isOwner(userId);
-        allow write: if isOwner(userId) && withinSizeLimit();
+        allow create, update: if isOwner(userId) && withinSizeLimit();
+        allow delete: if isOwner(userId);
       }
     }
 

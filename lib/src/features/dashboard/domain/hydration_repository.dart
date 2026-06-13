@@ -41,4 +41,8 @@ abstract class HydrationRepository {
   /// Añade un registro nuevo. No sobrescribe — cada llamada crea una
   /// entrada distinta en el storage (Firestore auto-id).
   Future<void> add(String userId, HydrationLog log);
+
+  /// Borra el log más reciente del ciclo (desde [since] en adelante).
+  /// No-op si no hay logs en la ventana.
+  Future<void> removeLastLog(String userId, DateTime since);
 }

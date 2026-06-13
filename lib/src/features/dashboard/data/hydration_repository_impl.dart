@@ -57,6 +57,11 @@ class HydrationRepositoryImpl implements HydrationRepository {
     final data = _mapper.toMap(log);
     await _source.append(userId: userId, data: data);
   }
+
+  @override
+  Future<void> removeLastLog(String userId, DateTime since) async {
+    await _source.deleteLatest(userId: userId, since: since);
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────

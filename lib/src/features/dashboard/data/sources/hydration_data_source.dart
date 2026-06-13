@@ -23,4 +23,11 @@ abstract class HydrationDataSource {
     required String userId,
     required Map<String, dynamic> data,
   });
+
+  /// Borra el log más reciente (mayor timestamp) desde [since] en adelante.
+  /// Idempotente — si no hay logs en la ventana, no hace nada.
+  Future<void> deleteLatest({
+    required String userId,
+    required DateTime since,
+  });
 }

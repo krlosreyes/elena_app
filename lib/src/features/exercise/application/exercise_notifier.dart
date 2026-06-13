@@ -9,6 +9,7 @@ import 'package:elena_app/src/core/analytics/analytics_events.dart';
 import 'package:elena_app/src/core/orchestrator/biological_phases.dart';
 import 'package:elena_app/src/core/services/analytics_service.dart';
 import 'package:elena_app/src/features/coaching/application/coaching_completion_service.dart';
+import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/features/exercise/data/exercise_repository_impl.dart';
 import 'package:elena_app/src/features/exercise/domain/exercise_log.dart';
 // SPEC-189: el import del repositorio abstracto era unused (pre-existente).
@@ -110,7 +111,14 @@ class ExerciseNotifier extends StateNotifier<ExerciseState> {
             0,
             (sum, log) => sum + log.durationMinutes,
           );
-          state = state.copyWith(todayMinutes: totalMinutes, error: null);
+          // Ordenamos desc por timestamp para que history[0] sea la más reciente.
+          final sorted = [...logs]
+            ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+          state = state.copyWith(
+            todayMinutes: totalMinutes,
+            history: sorted,
+            error: null,
+          );
         }
       },
       onError: (err) {
@@ -185,6 +193,29 @@ class ExerciseNotifier extends StateNotifier<ExerciseState> {
         // Error REAL (no el offline pendiente): informar a la UI.
         if (!mounted) return;
         state = state.copyWith(error: 'Fallo al guardar: $e');
+      }),
+    );
+  }
+
+  /// Elimina la última sesión registrada en el ciclo activo.
+  /// El stream re-emite la lista corregida automáticamente.
+  Future<void> removeLastSession() async {
+    final userId = _activeUserId;
+    if (userId == null || userId.isEmpty) return;
+    if (state.history.isEmpty) return;
+
+    final since = _currentCycleStartedAt ??
+        DayBoundaryResolver.startOfDay(DateTime.now());
+
+    unawaited(
+      ref
+          .read(exerciseRepositoryProvider)
+          .removeLastSession(userId, since)
+          .catchError((Object e) {
+        AppLogger.error('ExerciseNotifier.removeLastSession falló', e);
+        if (mounted) {
+          state = state.copyWith(error: 'No pudimos eliminar la sesión. Revisá tu conexión.');
+        }
       }),
     );
   }

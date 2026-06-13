@@ -131,6 +131,11 @@ class NotificationService {
       presentAlert: true,
       presentBadge: false,
       presentSound: true,
+      // Audit notif (2026-06-10): timeSensitive para que NO se silencien en
+      // Focus/Modo Sueño y se vean prominentes en lock screen + Apple Watch.
+      // Requiere el entitlement Time Sensitive Notifications (Apple Developer);
+      // sin él, iOS lo degrada a `active` sin romper nada.
+      interruptionLevel: InterruptionLevel.timeSensitive,
     ),
   );
 
@@ -139,14 +144,17 @@ class NotificationService {
       'elena_fasting',
       'Ayuno Metabólico',
       channelDescription: 'Hitos científicos de tu protocolo de ayuno',
-      importance: Importance.defaultImportance,
-      priority: Priority.defaultPriority,
+      importance: Importance.high,
+      priority: Priority.high,
       icon: '@mipmap/ic_launcher',
     ),
     iOS: DarwinNotificationDetails(
       presentAlert: true,
       presentBadge: false,
-      presentSound: false,
+      // Audit notif (2026-06-10): sonido ON → el Apple Watch vibra al cruzar
+      // un hito (antes era false, llegaba sin háptica).
+      presentSound: true,
+      interruptionLevel: InterruptionLevel.timeSensitive,
     ),
   );
 

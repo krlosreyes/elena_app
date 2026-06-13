@@ -17,6 +17,7 @@ final _privateConstructorUsedError = UnsupportedError(
 /// @nodoc
 mixin _$ExerciseState {
   int get todayMinutes => throw _privateConstructorUsedError;
+  List<ExerciseLog> get history => throw _privateConstructorUsedError;
   bool get isSaving => throw _privateConstructorUsedError;
   String? get error => throw _privateConstructorUsedError;
 
@@ -33,7 +34,11 @@ abstract class $ExerciseStateCopyWith<$Res> {
           ExerciseState value, $Res Function(ExerciseState) then) =
       _$ExerciseStateCopyWithImpl<$Res, ExerciseState>;
   @useResult
-  $Res call({int todayMinutes, bool isSaving, String? error});
+  $Res call(
+      {int todayMinutes,
+      List<ExerciseLog> history,
+      bool isSaving,
+      String? error});
 }
 
 /// @nodoc
@@ -52,6 +57,7 @@ class _$ExerciseStateCopyWithImpl<$Res, $Val extends ExerciseState>
   @override
   $Res call({
     Object? todayMinutes = null,
+    Object? history = null,
     Object? isSaving = null,
     Object? error = freezed,
   }) {
@@ -60,6 +66,10 @@ class _$ExerciseStateCopyWithImpl<$Res, $Val extends ExerciseState>
           ? _value.todayMinutes
           : todayMinutes // ignore: cast_nullable_to_non_nullable
               as int,
+      history: null == history
+          ? _value.history
+          : history // ignore: cast_nullable_to_non_nullable
+              as List<ExerciseLog>,
       isSaving: null == isSaving
           ? _value.isSaving
           : isSaving // ignore: cast_nullable_to_non_nullable
@@ -80,7 +90,11 @@ abstract class _$$ExerciseStateImplCopyWith<$Res>
       __$$ExerciseStateImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({int todayMinutes, bool isSaving, String? error});
+  $Res call(
+      {int todayMinutes,
+      List<ExerciseLog> history,
+      bool isSaving,
+      String? error});
 }
 
 /// @nodoc
@@ -97,6 +111,7 @@ class __$$ExerciseStateImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? todayMinutes = null,
+    Object? history = null,
     Object? isSaving = null,
     Object? error = freezed,
   }) {
@@ -105,6 +120,10 @@ class __$$ExerciseStateImplCopyWithImpl<$Res>
           ? _value.todayMinutes
           : todayMinutes // ignore: cast_nullable_to_non_nullable
               as int,
+      history: null == history
+          ? _value._history
+          : history // ignore: cast_nullable_to_non_nullable
+              as List<ExerciseLog>,
       isSaving: null == isSaving
           ? _value.isSaving
           : isSaving // ignore: cast_nullable_to_non_nullable
@@ -121,11 +140,24 @@ class __$$ExerciseStateImplCopyWithImpl<$Res>
 
 class _$ExerciseStateImpl implements _ExerciseState {
   const _$ExerciseStateImpl(
-      {this.todayMinutes = 0, this.isSaving = false, this.error});
+      {this.todayMinutes = 0,
+      final List<ExerciseLog> history = const [],
+      this.isSaving = false,
+      this.error})
+      : _history = history;
 
   @override
   @JsonKey()
   final int todayMinutes;
+  final List<ExerciseLog> _history;
+  @override
+  @JsonKey()
+  List<ExerciseLog> get history {
+    if (_history is EqualUnmodifiableListView) return _history;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_history);
+  }
+
   @override
   @JsonKey()
   final bool isSaving;
@@ -134,7 +166,7 @@ class _$ExerciseStateImpl implements _ExerciseState {
 
   @override
   String toString() {
-    return 'ExerciseState(todayMinutes: $todayMinutes, isSaving: $isSaving, error: $error)';
+    return 'ExerciseState(todayMinutes: $todayMinutes, history: $history, isSaving: $isSaving, error: $error)';
   }
 
   @override
@@ -144,13 +176,15 @@ class _$ExerciseStateImpl implements _ExerciseState {
             other is _$ExerciseStateImpl &&
             (identical(other.todayMinutes, todayMinutes) ||
                 other.todayMinutes == todayMinutes) &&
+            const DeepCollectionEquality().equals(other._history, _history) &&
             (identical(other.isSaving, isSaving) ||
                 other.isSaving == isSaving) &&
             (identical(other.error, error) || other.error == error));
   }
 
   @override
-  int get hashCode => Object.hash(runtimeType, todayMinutes, isSaving, error);
+  int get hashCode => Object.hash(runtimeType, todayMinutes,
+      const DeepCollectionEquality().hash(_history), isSaving, error);
 
   /// Create a copy of ExerciseState
   /// with the given fields replaced by the non-null parameter values.
@@ -164,11 +198,14 @@ class _$ExerciseStateImpl implements _ExerciseState {
 abstract class _ExerciseState implements ExerciseState {
   const factory _ExerciseState(
       {final int todayMinutes,
+      final List<ExerciseLog> history,
       final bool isSaving,
       final String? error}) = _$ExerciseStateImpl;
 
   @override
   int get todayMinutes;
+  @override
+  List<ExerciseLog> get history;
   @override
   bool get isSaving;
   @override

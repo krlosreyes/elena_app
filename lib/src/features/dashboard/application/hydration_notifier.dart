@@ -290,6 +290,33 @@ class HydrationNotifier extends StateNotifier<HydrationState> {
     }
   }
 
+  /// Descuenta el último vaso registrado en el ciclo actual.
+  /// Borra el log más reciente de Firestore; el stream re-emite el total
+  /// corregido automáticamente. No-op si no hay logs en la ventana.
+  Future<void> removeLastWater() async {
+    final user = _ref.read(currentUserStreamProvider).value;
+    if (user == null) return;
+    if (state.history.isEmpty) return;
+
+    final since = _currentCycleStartedAt ??
+        DayBoundaryResolver.startOfDay(DateTime.now());
+
+    unawaited(
+      _ref
+          .read(hydrationRepositoryProvider)
+          .removeLastLog(user.id, since)
+          .catchError((Object e) {
+        AppLogger.error('HydrationNotifier.removeLastWater falló', e);
+        if (mounted) {
+          state = state.copyWith(
+            lastWriteError:
+                'No pudimos descontar el vaso. Revisá tu conexión.',
+          );
+        }
+      }),
+    );
+  }
+
   /// SPEC-179: la UI llama esto cuando muestra el SnackBar de error
   /// para que no se repita en el próximo build.
   void clearWriteError() {

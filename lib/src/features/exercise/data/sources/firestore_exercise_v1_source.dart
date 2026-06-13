@@ -45,4 +45,19 @@ class FirestoreExerciseV1Source implements ExerciseDataSource {
   }) async {
     await _collection(userId).doc(docId).set(data);
   }
+
+  @override
+  Future<void> deleteLatest({
+    required String userId,
+    required DateTime since,
+  }) async {
+    final snap = await _collection(userId)
+        .where('timestamp',
+            isGreaterThanOrEqualTo: Timestamp.fromDate(since))
+        .orderBy('timestamp', descending: true)
+        .limit(1)
+        .get();
+    if (snap.docs.isEmpty) return;
+    await snap.docs.first.reference.delete();
+  }
 }

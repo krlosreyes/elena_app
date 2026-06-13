@@ -10,13 +10,18 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:elena_app/src/core/providers/shared_preferences_provider.dart';
 import 'package:elena_app/src/features/health_sync/application/health_sync_service.dart';
 import 'package:elena_app/src/features/health_sync/domain/health_permission_status.dart';
 import 'package:elena_app/src/features/health_sync/domain/health_sync_result.dart';
 
 /// Singleton del servicio. Inyectable por tests vía override.
+/// BUG-FIX (2026-06-13): inyectamos SharedPreferences para que el flag
+/// de autorización iOS persista entre sesiones y el auto-sync funcione
+/// en cold open sin que el usuario tenga que re-autorizar cada vez.
 final healthSyncServiceProvider = Provider<HealthSyncService>((ref) {
-  return HealthSyncService();
+  final prefs = ref.watch(sharedPreferencesProvider);
+  return HealthSyncService(prefs: prefs);
 });
 
 /// Estado del último permiso conocido. Empieza como `null`

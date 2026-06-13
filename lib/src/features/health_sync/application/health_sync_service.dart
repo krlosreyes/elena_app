@@ -18,6 +18,7 @@ import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:health/health.dart' as hp;
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/features/health_sync/domain/health_metric.dart';
@@ -64,10 +65,18 @@ List<hp.HealthDataType> _typesFor(HealthMetric metric) {
   }
 }
 
+/// Key de SharedPreferences para el flag de autorización iOS HealthKit.
+/// Persiste entre sesiones para que el auto-sync funcione en cold open.
+const String _kIosHealthAuthGrantedKey = 'health.iosAuthGranted';
+
 /// Servicio de sincronización con HealthKit (iOS) / Health Connect (Android).
 class HealthSyncService {
   /// Instancia del plugin. Inyectable para tests.
   final hp.Health _plugin;
+
+  /// SharedPreferences para persistir el flag de autorización iOS entre
+  /// sesiones. Null en tests o cuando no está disponible.
+  final SharedPreferences? _prefs;
 
   /// Conjunto de métricas que la app puede sincronizar. Constante.
   static const Set<HealthMetric> supportedMetrics = {
@@ -87,13 +96,22 @@ class HealthSyncService {
   /// nativo (porque el botón "Conectar" no aparecía). Resultado:
   /// errores "Authorization not determined" en loop.
   ///
-  /// Fix: trackeamos en memoria si el usuario ya solicitó autorización
-  /// en esta sesión. Si nunca lo hizo → reportamos Denied y la UI
-  /// muestra "Conectar". Una vez que `requestAuthorization` retorna
-  /// Granted, asumimos granted para el resto de la sesión.
+  /// Fix: trackeamos si el usuario ya autorizó HealthKit, tanto en
+  /// memoria (esta sesión) como en SharedPreferences (entre sesiones).
+  /// BUG-FIX (2026-06-13): el flag en memoria se reseteaba en cada
+  /// cold open → checkPermissions() retornaba Denied → auto-sync
+  /// abortaba → Apple Watch nunca sincronizaba automáticamente.
+  /// Ahora también leemos/escribimos en SharedPreferences.
   bool _iosAuthRequestedThisSession = false;
 
-  HealthSyncService({hp.Health? plugin}) : _plugin = plugin ?? hp.Health();
+  HealthSyncService({hp.Health? plugin, SharedPreferences? prefs})
+      : _plugin = plugin ?? hp.Health(),
+        _prefs = prefs {
+    // Hidratar el flag desde prefs al construir el servicio.
+    if (prefs != null && (prefs.getBool(_kIosHealthAuthGrantedKey) ?? false)) {
+      _iosAuthRequestedThisSession = true;
+    }
+  }
 
   /// `true` si la plataforma soporta el plugin (iOS o Android).
   /// Web/Desktop nunca van a poder leer datos nativos de salud.
@@ -157,6 +175,10 @@ class HealthSyncService {
 
       if (granted) {
         _iosAuthRequestedThisSession = true;
+        // BUG-FIX (2026-06-13): persistir en prefs para que cold opens
+        // posteriores arranquen con el flag ya hidratado y el auto-sync
+        // no aborte por falso "Denied".
+        await _prefs?.setBool(_kIosHealthAuthGrantedKey, true);
         return const HealthPermissionGranted();
       } else {
         return const HealthPermissionDenied();

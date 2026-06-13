@@ -117,4 +117,47 @@ void main() {
       );
     });
   });
+
+  group('Audit notif — "modo reparación" anclado al sueño real', () {
+    DateTime sleepAt(int h, int m) => DateTime(2000, 1, 1, h, m);
+
+    test('Duerme temprano (20:00) → reparación 30 min antes (19:30)', () {
+      // Antes le llegaba 21:30, ya dormido = fuera de tiempo. Ahora 19:30.
+      final lock = NotificationScheduler.repairLockActiveTime(sleepAt(20, 0));
+      expect(lock.hour, 19);
+      expect(lock.minute, 30);
+    });
+
+    test('Duerme 21:00 → reparación 20:30 (antes de acostarse)', () {
+      final lock = NotificationScheduler.repairLockActiveTime(sleepAt(21, 0));
+      expect(lock.hour, 20);
+      expect(lock.minute, 30);
+    });
+
+    test('Duerme tarde (23:00) → tope circadiano 21:30', () {
+      final lock = NotificationScheduler.repairLockActiveTime(sleepAt(23, 0));
+      expect(lock.hour, 21);
+      expect(lock.minute, 30);
+    });
+
+    test('Duerme 22:00 (límite) → tope circadiano 21:30', () {
+      final lock = NotificationScheduler.repairLockActiveTime(sleepAt(22, 0));
+      expect(lock.hour, 21);
+      expect(lock.minute, 30);
+    });
+
+    test('Duerme pasada la medianoche (01:00) → tope 21:30 (no 00:30)', () {
+      final lock = NotificationScheduler.repairLockActiveTime(sleepAt(1, 0));
+      expect(lock.hour, 21);
+      expect(lock.minute, 30);
+    });
+
+    test('Reparación nunca supera el tope circadiano 21:30', () {
+      for (var h = 18; h <= 23; h++) {
+        final lock = NotificationScheduler.repairLockActiveTime(sleepAt(h, 45));
+        final afterCap = lock.hour > 21 || (lock.hour == 21 && lock.minute > 30);
+        expect(afterCap, isFalse, reason: 'sleep $h:45 → ${lock.hour}:${lock.minute}');
+      }
+    });
+  });
 }
