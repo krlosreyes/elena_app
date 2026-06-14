@@ -176,4 +176,83 @@ void main() {
       }
     });
   });
+
+  // ─── SPEC-207: Borrado en cascada al eliminar cuenta ────────────────────────
+
+  group('SPEC-207 — deleteAccount: best-effort fasting_history', () {
+    setUp(() async {
+      // Seed: doc raíz del usuario
+      await firestore.collection('users').doc(testUid).set({
+        'name': 'Carlos MR',
+        'email': testEmail,
+      });
+
+      // Seed: 3 docs de fasting_history del usuario
+      for (var i = 0; i < 3; i++) {
+        await firestore.collection('fasting_history').add({
+          'userId': testUid,
+          'startedAt': DateTime.now().millisecondsSinceEpoch,
+        });
+      }
+
+      // Seed: 1 doc de otro usuario (NO debe borrarse)
+      await firestore.collection('fasting_history').add({
+        'userId': 'otro-uid',
+        'startedAt': DateTime.now().millisecondsSinceEpoch,
+      });
+    });
+
+    test(
+        'SPEC-207-01: borra los 3 docs de fasting_history del usuario '
+        'y preserva el de otro usuario', () async {
+      await repo.deleteAccount();
+
+      final propios = await firestore
+          .collection('fasting_history')
+          .where('userId', isEqualTo: testUid)
+          .get();
+      expect(propios.docs, isEmpty,
+          reason: 'Los docs del usuario deben estar eliminados');
+
+      final ajenos = await firestore
+          .collection('fasting_history')
+          .where('userId', isEqualTo: 'otro-uid')
+          .get();
+      expect(ajenos.docs.length, 1,
+          reason: 'Docs de otros usuarios no deben tocarse');
+    });
+
+    test('SPEC-207-02: borra el doc raíz users/{uid}', () async {
+      await repo.deleteAccount();
+
+      final doc = await firestore.collection('users').doc(testUid).get();
+      expect(doc.exists, isFalse);
+    });
+
+    test(
+        'SPEC-207-03: no lanza si fasting_history del usuario ya está vacía',
+        () async {
+      // Borrar previamente los docs del usuario
+      final snapshot = await firestore
+          .collection('fasting_history')
+          .where('userId', isEqualTo: testUid)
+          .get();
+      for (final doc in snapshot.docs) {
+        await doc.reference.delete();
+      }
+
+      // deleteAccount no debe lanzar en este caso
+      await expectLater(repo.deleteAccount(), completes);
+    });
+
+    test(
+        'SPEC-207-04: no lanza si no hay doc raíz users/{uid} '
+        '(doc ya fue borrado por la Cloud Function)', () async {
+      // Borrar el doc raíz antes de llamar deleteAccount
+      await firestore.collection('users').doc(testUid).delete();
+
+      // No debe propagar excepción
+      await expectLater(repo.deleteAccount(), completes);
+    });
+  });
 }
