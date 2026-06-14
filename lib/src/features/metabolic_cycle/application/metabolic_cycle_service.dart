@@ -81,6 +81,13 @@ class MetabolicCycleService {
 
   final MetabolicCycleRepository _repository;
 
+  // SPEC-214: flag de serialización. Previene que dos llamadas concurrentes
+  // a evaluateAndApply (e.g., tap usuario + listener Riverpod) lean el
+  // mismo openCycle y creen duplicados. La llamada concurrente devuelve
+  // noop inmediatamente — el resultado es correcto porque evaluateAndApply
+  // es idempotente: el in-flight ya está procesando el estado actual.
+  bool _evaluating = false;
+
   // ─── API pública ──────────────────────────────────────────────────────────
 
   /// Evalúa el estado actual contra el ciclo abierto y ejecuta cierre +
@@ -90,10 +97,22 @@ class MetabolicCycleService {
   /// Retorna el resultado del check para que el caller (provider de UI)
   /// pueda reaccionar — `cycleClosed` indica que ocurrió un cierre, útil
   /// para disparar el card de cierre en Dashboard.
+  ///
+  /// SPEC-214: serializado — si ya hay una evaluación en curso, la llamada
+  /// concurrente devuelve `noop` inmediatamente sin tocar Firestore.
   Future<MetabolicCycleCheckResult> evaluateAndApply({
     required String userId,
     required MetabolicCycleEvaluationInput input,
   }) async {
+    if (_evaluating) {
+      AppLogger.debug(
+        '[cycle.evaluate.skip] evaluateAndApply ya en curso — '
+        'llamada concurrente descartada (SPEC-214).',
+      );
+      return MetabolicCycleCheckResult.noop();
+    }
+    _evaluating = true;
+    try {
     final openCycle = await _repository.fetchOpenCycle(userId);
 
     // Caso 1: no hay ciclo abierto — abrir uno nuevo si hay nuevo ayuno.
@@ -223,6 +242,10 @@ class MetabolicCycleService {
     }
 
     return MetabolicCycleCheckResult.closed(closed: closed, opened: opened);
+    } finally {
+      // SPEC-214: siempre liberar el flag, incluso si el método lanzó.
+      _evaluating = false;
+    }
   }
 
   /// SPEC-206 (offline-first): persiste un ciclo SIN bloquear en el ack del

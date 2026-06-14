@@ -35,4 +35,8 @@ class FreeBillingService implements BillingService {
   @override
   Future<PurchaseResult> restore() async =>
       PurchaseResult.success(const EntitlementStatus.free());
+
+  // SPEC-213: no-op — FreeBillingService no tiene recursos que liberar.
+  @override
+  void dispose() {}
 }

@@ -32,6 +32,8 @@ class RevenueCatBillingService implements BillingService {
   final Map<String, Package> _packageCache = {};
   EntitlementStatus _last = const EntitlementStatus.free();
   bool _initialized = false;
+  // SPEC-213: referencia al listener para removeCustomerInfoUpdateListener en dispose().
+  CustomerInfoUpdateListener? _customerInfoListener;
 
   @override
   Future<void> initialize() async {
@@ -39,14 +41,16 @@ class RevenueCatBillingService implements BillingService {
     try {
       if (debugLogging) await Purchases.setLogLevel(LogLevel.debug);
       await Purchases.configure(PurchasesConfiguration(apiKey));
-      Purchases.addCustomerInfoUpdateListener((info) {
+      // SPEC-213: guardar referencia al listener para poder removerlo en dispose().
+      _customerInfoListener = (info) {
         _last = _mapCustomerInfo(info);
-        _controller.add(_last);
-      });
+        if (!_controller.isClosed) _controller.add(_last);
+      };
+      Purchases.addCustomerInfoUpdateListener(_customerInfoListener!);
       // Sembrar el estado inicial.
       final info = await Purchases.getCustomerInfo();
       _last = _mapCustomerInfo(info);
-      _controller.add(_last);
+      if (!_controller.isClosed) _controller.add(_last);
       _initialized = true;
     } catch (e) {
       // Degradación segura: si el SDK no arranca, todos quedan Free.
@@ -110,7 +114,7 @@ class RevenueCatBillingService implements BillingService {
       final result = await Purchases.purchasePackage(rcPkg);
       final status = _mapCustomerInfo(result.customerInfo);
       _last = status;
-      _controller.add(status);
+      if (!_controller.isClosed) _controller.add(status);
       return PurchaseResult.success(status);
     } on PlatformException catch (e) {
       final code = PurchasesErrorHelper.getErrorCode(e);
@@ -129,7 +133,7 @@ class RevenueCatBillingService implements BillingService {
       final info = await Purchases.restorePurchases();
       final status = _mapCustomerInfo(info);
       _last = status;
-      _controller.add(status);
+      if (!_controller.isClosed) _controller.add(status);
       return PurchaseResult.success(status);
     } catch (e) {
       return PurchaseResult.error('No se pudieron restaurar las compras: $e');
@@ -179,5 +183,14 @@ class RevenueCatBillingService implements BillingService {
     }
   }
 
-  void dispose() => _controller.close();
+  // SPEC-213: cierra el StreamController y remueve el listener del SDK.
+  // Llamado por ref.onDispose en billing_providers.dart.
+  @override
+  void dispose() {
+    if (_customerInfoListener != null) {
+      Purchases.removeCustomerInfoUpdateListener(_customerInfoListener!);
+      _customerInfoListener = null;
+    }
+    if (!_controller.isClosed) _controller.close();
+  }
 }

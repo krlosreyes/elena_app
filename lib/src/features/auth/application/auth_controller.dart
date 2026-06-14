@@ -17,7 +17,9 @@ import 'package:elena_app/src/features/dashboard/application/fasting_notifier.da
 import 'package:elena_app/src/features/dashboard/application/sleep_notifier.dart';
 import 'package:elena_app/src/features/dashboard/application/hydration_notifier.dart';
 import 'package:elena_app/src/features/exercise/application/exercise_notifier.dart';
+import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
+import 'package:elena_app/src/features/progress/application/progress_notifier.dart';
 import 'package:elena_app/src/features/streak/application/streak_notifier.dart';
 import 'package:elena_app/src/features/engagement/application/engagement_service.dart';
 
@@ -81,9 +83,12 @@ class AuthController extends StateNotifier<AsyncValue<void>> {
   /// SPEC-11: signOut invalida todos los StateNotifiers antes de cerrar
   /// Firebase, así un nuevo usuario en el mismo dispositivo recibe
   /// estado limpio sin datos residuales.
+  // SPEC-212: signOut invalida TODOS los providers con estado de usuario
+  // para garantizar estado limpio en el mismo dispositivo.
   Future<void> signOut() async {
     state = const AsyncLoading();
 
+    // Pilares
     _ref.invalidate(fastingProvider);
     _ref.invalidate(sleepProvider);
     _ref.invalidate(hydrationProvider);
@@ -91,6 +96,16 @@ class AuthController extends StateNotifier<AsyncValue<void>> {
     _ref.invalidate(nutritionProvider);
     _ref.invalidate(streakProvider);
     _ref.invalidate(engagementProvider);
+
+    // SPEC-212: providers faltantes en la implementación original
+    _ref.invalidate(lastFastingIntervalProvider);
+    _ref.invalidate(lastCompletedFastingProvider);
+    _ref.invalidate(currentMetabolicCycleProvider);
+    _ref.invalidate(lastClosedMetabolicCycleProvider);
+    _ref.invalidate(metabolicCyclesHistoryProvider);
+    _ref.invalidate(last7ClosedCyclesProvider);
+    _ref.invalidate(last14ClosedCyclesProvider);
+    _ref.invalidate(progressProvider);
 
     state = await AsyncValue.guard(() => repository.signOut());
   }

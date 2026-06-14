@@ -185,7 +185,12 @@ Future<List<Override>> _initBilling() async {
   final service = RevenueCatBillingService(apiKey: key, debugLogging: kDebugMode);
   await service.initialize();
   return [
-    billingServiceProvider.overrideWithValue(service),
+    // SPEC-213: overrideWith (no overrideWithValue) para que ref.onDispose
+    // cierre el StreamController cuando el ProviderScope se destruye.
+    billingServiceProvider.overrideWith((ref) {
+      ref.onDispose(service.dispose);
+      return service;
+    }),
     billingEnabledProvider.overrideWithValue(true),
   ];
 }

@@ -62,4 +62,8 @@ abstract class BillingService {
 
   /// Restaura compras previas (obligatorio para App Store).
   Future<PurchaseResult> restore();
+
+  /// SPEC-213: libera recursos (StreamController, listeners SDK).
+  /// Riverpod lo invoca vía ref.onDispose cuando el provider se destruye.
+  void dispose();
 }
