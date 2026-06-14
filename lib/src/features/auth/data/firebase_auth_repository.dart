@@ -194,18 +194,52 @@ class FirebaseAuthRepository implements AuthRepository {
       // Best-effort. No bloquea el flujo.
     }
 
-    // 3. Cerrar sesión local para limpiar caches de Firebase Auth.
+    // 3. Best-effort: borrar fasting_history plana (colección SPEC-50.4).
+    //
+    // La Cloud Function `onUserDeleted` (SPEC-207) hace el borrado completo en
+    // background. Este bloque es un intento previo desde el cliente para
+    // adelantar la limpieza antes de que el user pierda auth. Si falla, la
+    // Cloud Function lo completa igualmente.
+    //
+    // Límite de 400 docs por batch (Firestore permite 500; dejamos margen).
+    try {
+      await _deleteFastingHistoryForUser(uid);
+    } catch (_) {
+      // Best-effort. La Cloud Function SPEC-207 garantiza el borrado final.
+    }
+
+    // 4. Cerrar sesión local para limpiar caches de Firebase Auth.
     try {
       await _auth.signOut();
     } catch (_) {
       // Best-effort.
     }
 
-    // NOTA SPEC-83 (out of scope): las subcolecciones
-    // `users/{uid}/sleep_history`, `streak_history`, `hydration_history`,
-    // `exercise_history`, `nutrition_history`, `biometric_history`,
-    // `protocol_adjustments` NO se eliminan aquí. Quedan huérfanas
-    // hasta que se implemente una limpieza recursiva (SPEC futura).
+    // NOTA SPEC-207: las subcolecciones bajo `users/{uid}` y la colección
+    // plana `fasting_history` son eliminadas por la Cloud Function
+    // `onUserDeleted` que se dispara automáticamente al llamar `user.delete()`
+    // arriba. El paso 3 es una aceleración best-effort desde el cliente.
+  }
+
+  /// Borra los documentos de `fasting_history` donde `userId == uid`.
+  ///
+  /// SPEC-207 inc2 — best-effort en cliente mientras la Cloud Function
+  /// corre en background. No lanza excepción; el caller la envuelve en try/catch.
+  Future<void> _deleteFastingHistoryForUser(String uid) async {
+    const batchSize = 400;
+    final col = _firestore.collection('fasting_history');
+    var snapshot =
+        await col.where('userId', isEqualTo: uid).limit(batchSize).get();
+
+    while (snapshot.docs.isNotEmpty) {
+      final batch = _firestore.batch();
+      for (final doc in snapshot.docs) {
+        batch.delete(doc.reference);
+      }
+      await batch.commit();
+      snapshot =
+          await col.where('userId', isEqualTo: uid).limit(batchSize).get();
+    }
   }
 
   /// Lee `users/{uid}` y construye el AppAccount clasificando el shape.
