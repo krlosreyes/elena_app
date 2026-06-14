@@ -171,6 +171,11 @@ class StreakNotifier extends StateNotifier<StreakState> {
     final nutrition = _ref.read(nutritionProvider);
     final userModel = _ref.read(currentUserStreamProvider).valueOrNull;
 
+    // Obtener protocolo con fallback al estado actual si el provider está cargando (evita toggles)
+    // Declarado antes del bloque SPEC-208 porque fastingHours lo necesita.
+    final String currentProtocol =
+        userModel?.fastingProtocol ?? (_userId != null ? '16:8' : 'Ninguno');
+
     // SPEC-208: preservar el progreso del ayuno DESPUÉS de cerrarlo.
     // Bug previo: cuando !isActive, fastingHours = 0.0 → al registrar
     // agua/comida después de cerrar el ayuno, _evaluateToday() sobreescribía
@@ -192,10 +197,6 @@ class StreakNotifier extends StateNotifier<StreakState> {
     }
 
     final double sleepHours = sleep.lastLog?.duration.inHours.toDouble() ?? 0.0;
-
-    // Obtener protocolo con fallback al estado actual si el provider está cargando (evita toggles)
-    final String currentProtocol =
-        userModel?.fastingProtocol ?? (_userId != null ? '16:8' : 'Ninguno');
 
     // SPEC-65: magnitudes continuas. Calculadas una sola vez aquí — NO
     // duplicamos la lógica de los `evaluateX` (esos siguen siendo el
