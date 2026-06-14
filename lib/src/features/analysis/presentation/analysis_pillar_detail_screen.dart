@@ -32,7 +32,8 @@ import 'package:elena_app/src/features/analysis/presentation/widgets/bar_chart_c
 // SPEC-168.4.3: widget completo de composición corporal con tabs.
 import 'package:elena_app/src/features/analysis/presentation/widgets/body_composition_trend_chart.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/line_chart_card.dart';
-import 'package:elena_app/src/features/analysis/presentation/widgets/imr_trend_chart.dart';
+import 'package:elena_app/src/features/analysis/presentation/widgets/imr_pillar_bar_chart.dart';
+import 'package:elena_app/src/features/analysis/presentation/widgets/imr_pillar_feedback_card.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/nutrition_pie_card.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/nutrition_trend_bar_card.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/segmented_range_control.dart';
@@ -102,6 +103,11 @@ class _AnalysisPillarDetailScreenState
               // data suficiente, devuelve SizedBox.shrink.
               const SizedBox(height: 24),
               _buildTrendSection(aggregationMode),
+              // IMR: card de feedback por pilar debajo de la tendencia.
+              if (widget.metric == ChartMetric.imr) ...[
+                const SizedBox(height: 24),
+                _imrFeedbackCard(),
+              ],
             ],
           ),
         ),
@@ -300,12 +306,10 @@ class _AnalysisPillarDetailScreenState
 
   // ─── Cards por pilar ────────────────────────────────────────────
 
-  /// Detalle del IMR: gráfico DÍA A DÍA con línea de promedio + mejor/peor
-  /// día + bandas de zona (ImrTrendChart). Alimentado por los docs crudos del
-  /// rango (`daily_summaries`), no por la serie agregada — así muestra el
-  /// puntaje real de cada día tal como lo pidió el usuario.
+  /// Detalle del IMR: barras apiladas semanales con los 5 pilares en sus
+  /// colores. Cada barra = una semana; la altura = promedio IMR de esa
+  /// semana; los segmentos de color = proporción relativa por pilar.
   Widget _imrCard(AggregationMode mode, String periodLabel) {
-    final range = ref.watch(analysisRangeProvider);
     final start = ref.watch(analysisRangeStartProvider);
     final today = DateTime.now();
     final docsAsync = ref.watch(
@@ -318,8 +322,24 @@ class _AnalysisPillarDetailScreenState
     );
     final docs = docsAsync.value;
     if (docs == null) return _loadingBox();
-    final daysInPeriod = range.daysFromToday ?? _spanDaysInclusive(docs, today);
-    return ImrTrendChart(docs: docs, daysInPeriod: daysInPeriod);
+    return ImrPillarBarChart(docs: docs);
+  }
+
+  /// Card de feedback de pilares para la sección IMR.
+  Widget _imrFeedbackCard() {
+    final start = ref.watch(analysisRangeStartProvider);
+    final today = DateTime.now();
+    final docsAsync = ref.watch(
+      historicSummariesProvider(
+        HistoricSummariesRange(
+          fromIncl: _isoDate(start),
+          toIncl: _isoDate(today),
+        ),
+      ),
+    );
+    final docs = docsAsync.value;
+    if (docs == null || docs.isEmpty) return const SizedBox.shrink();
+    return ImrPillarFeedbackCard(docs: docs);
   }
 
   static String _isoDate(DateTime d) =>
