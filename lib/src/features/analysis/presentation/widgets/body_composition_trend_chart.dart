@@ -90,7 +90,6 @@ class _BodyCompositionTrendChartState
     final heightCm = (user?.height ?? 0) > 0 ? user!.height : null;
     final bodyFatPct = user?.bodyFatPercentage;
     final isMale = (user?.gender ?? 'M').toUpperCase() == 'M';
-    final goalWeight = (user?.goalWeight ?? 0) > 0 ? user!.goalWeight : null;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
@@ -113,7 +112,6 @@ class _BodyCompositionTrendChartState
               list,
               heightCm: heightCm,
               isMale: isMale,
-              goalWeight: goalWeight,
               days: days,
             ),
           ),
@@ -213,7 +211,6 @@ class _BodyCompositionTrendChartState
     List<BiometricCheckIn> all, {
     double? heightCm,
     required bool isMale,
-    double? goalWeight,
     required int days,
   }) {
     final samples = <_TrendPoint>[];
@@ -242,16 +239,10 @@ class _BodyCompositionTrendChartState
         _buildAxisLabels(days),
         const SizedBox(height: 16),
         // 3. Barra de estado
-        _buildStatusBar(last.value, isMale: isMale, goalWeight: goalWeight),
+        _buildStatusBar(last.value, isMale: isMale),
         const SizedBox(height: 14),
         // 4. Feedback card
-        _buildFeedbackCard(
-          last.value,
-          delta,
-          samples.length,
-          isMale: isMale,
-          goalWeight: goalWeight,
-        ),
+        _buildFeedbackCard(last.value, delta, isMale: isMale),
       ],
     );
   }
@@ -383,13 +374,9 @@ class _BodyCompositionTrendChartState
 
   // ─── Barra de estado (zona de salud) ─────────────────────────────────
 
-  Widget _buildStatusBar(
-    double value, {
-    required bool isMale,
-    double? goalWeight,
-  }) {
-    final zone = _healthZone(value, isMale: isMale, goalWeight: goalWeight);
-    final fill = _healthFill(value, isMale: isMale, goalWeight: goalWeight);
+  Widget _buildStatusBar(double value, {required bool isMale}) {
+    final zone = _healthZone(value, isMale: isMale);
+    final fill = _healthFill(value, isMale: isMale);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -443,17 +430,10 @@ class _BodyCompositionTrendChartState
 
   Widget _buildFeedbackCard(
     double current,
-    double delta,
-    int sampleCount, {
+    double delta, {
     required bool isMale,
-    double? goalWeight,
   }) {
-    final text = _feedbackText(
-      current,
-      delta,
-      isMale: isMale,
-      goalWeight: goalWeight,
-    );
+    final text = _feedbackText(current, delta, isMale: isMale);
     if (text == null) return const SizedBox.shrink();
 
     return Container(
@@ -489,20 +469,11 @@ class _BodyCompositionTrendChartState
 
   // ─── Lógica de zona de salud ─────────────────────────────────────────
 
-  _HealthZone _healthZone(
-    double value, {
-    required bool isMale,
-    double? goalWeight,
-  }) {
+  _HealthZone _healthZone(double value, {required bool isMale}) {
     switch (_metric) {
       case BodyCompositionMetric.weight:
-        if (goalWeight == null) {
-          return const _HealthZone('Sin meta', Color(0xFF94A3B8));
-        }
-        final diff = (value - goalWeight).abs();
-        if (diff <= 1.0) return const _HealthZone('En meta ✓', Color(0xFF10B981));
-        if (diff <= 5.0) return const _HealthZone('Cerca', Color(0xFF38BDF8));
-        return const _HealthZone('Por trabajar', Color(0xFFF59E0B));
+        // Sin meta de peso en el modelo actual — mostramos tendencia
+        return const _HealthZone('Seguimiento', Color(0xFF60A5FA));
 
       case BodyCompositionMetric.bodyFatPct:
         // ACSM ranges (adultos)
@@ -544,16 +515,10 @@ class _BodyCompositionTrendChartState
     }
   }
 
-  double _healthFill(
-    double value, {
-    required bool isMale,
-    double? goalWeight,
-  }) {
+  double _healthFill(double value, {required bool isMale}) {
     switch (_metric) {
       case BodyCompositionMetric.weight:
-        if (goalWeight == null || goalWeight <= 0) return 0.5;
-        final progress = 1.0 - ((value - goalWeight).abs() / goalWeight);
-        return progress.clamp(0.0, 1.0);
+        return 0.5; // sin meta de peso en el modelo actual
 
       case BodyCompositionMetric.bodyFatPct:
         final max = isMale ? 32.0 : 37.0;
@@ -583,7 +548,6 @@ class _BodyCompositionTrendChartState
     double current,
     double delta, {
     required bool isMale,
-    double? goalWeight,
   }) {
     final trend = delta.abs() < 0.05
         ? 'estable'
@@ -593,19 +557,16 @@ class _BodyCompositionTrendChartState
 
     switch (_metric) {
       case BodyCompositionMetric.weight:
-        if (goalWeight == null) {
-          return 'Registra tu meta de peso en el perfil para ver tu progreso hacia ella.';
+        if (delta.abs() < 0.05) {
+          return 'Peso estable en el período. Los cambios reales se ven '
+              'en semanas y meses, no en días.';
         }
-        final diff = current - goalWeight;
-        if (diff.abs() <= 1.0) {
-          return '¡Estás en tu meta! Mantén los hábitos que te trajeron acá.';
+        if (delta < 0) {
+          return 'Perdiste ${(-delta).toStringAsFixed(1)} kg en el período. '
+              'Continúa con tus 5 pilares para mantener la tendencia.';
         }
-        if (diff > 0) {
-          return 'Te faltan ${diff.toStringAsFixed(1)} kg para tu meta. '
-              'Tu peso viene $trend — sigue con el protocolo.';
-        }
-        return 'Estás ${(-diff).toStringAsFixed(1)} kg por debajo de tu meta. '
-            'Ajusta tu plan si es necesario.';
+        return 'Ganaste ${delta.toStringAsFixed(1)} kg en el período. '
+            'Revisa la ventana de alimentación y la hidratación.';
 
       case BodyCompositionMetric.bodyFatPct:
         final safeMax = isMale ? 24.0 : 31.0;
