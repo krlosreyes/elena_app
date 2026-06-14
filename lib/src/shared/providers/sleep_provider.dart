@@ -1,41 +1,28 @@
-/// SPEC-29 + SPEC-52.1 (cleanup): Global Sleep Provider.
+/// SPEC-209: Providers derivados de sueño — fuente única `sleepProvider`.
 ///
-/// Punto de entrada centralizado para el estado de sueño sin crear
-/// dependencias cíclicas entre notifiers.
+/// SPEC-29 + SPEC-52.1 (cleanup): antes este archivo instanciaba
+/// `globalSleepProvider` (segunda instancia de SleepNotifier) causando:
+///   - Doble suscripción Firestore a sleep_history.
+///   - IMR calculado con datos del usuario anterior tras logout.
+///   - Desincronización entre sleepProvider y globalSleepProvider.
 ///
-/// SPEC-52.1: limpiados los selectores que apuntaban a getters inexistentes
-/// en SleepState (`lastSleepDurationHours`, `isSufficientSleep`,
-/// `isOptimalSleep`, `sleepAdherence`, `recoveryStatus`). Esos getters eran
-/// deuda baseline — habían sido removidos del modelo en algún refactor
-/// previo y este archivo no se actualizó. Ahora los selectores derivan de
-/// `lastLog.duration` directamente.
+/// SPEC-209 elimina globalSleepProvider. Todo el código apunta a
+/// `sleepProvider` (lib/src/features/dashboard/application/sleep_notifier.dart)
+/// que es la fuente de verdad única, correctamente invalidada en signOut().
 library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/features/dashboard/application/sleep_notifier.dart';
-import 'package:elena_app/src/features/dashboard/domain/sleep_log.dart';
-
-/// Provider global del SleepNotifier. El resto de la app no lo construye
-/// directamente; siempre usa `globalSleepProvider`.
-final globalSleepProvider =
-    StateNotifierProvider<SleepNotifier, SleepState>((ref) {
-  return SleepNotifier(ref);
-});
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Selectors derivados de lastLog
+// Selectors derivados — todos leen de sleepProvider (fuente única)
 // ─────────────────────────────────────────────────────────────────────────────
 
 /// Duración del último sueño en horas (0.0 si no hay log).
 final sleepDurationProvider = Provider<double>((ref) {
-  final log = ref.watch(globalSleepProvider).lastLog;
+  final log = ref.watch(sleepProvider).lastLog;
   if (log == null) return 0.0;
   return log.duration.inMinutes / 60.0;
-});
-
-/// Último log de sueño persistido (puede ser null).
-final lastSleepLogProvider = Provider<SleepLog?>((ref) {
-  return ref.watch(globalSleepProvider).lastLog;
 });
 
 /// True si el sueño fue suficiente (≥ 6.5h, umbral AASM).
@@ -63,9 +50,4 @@ final recoveryStatusProvider = Provider<String>((ref) {
   if (ref.watch(isSleepOptimalProvider)) return 'OPTIMAL';
   if (ref.watch(isSleepSufficientProvider)) return 'ADEQUATE';
   return 'INSUFFICIENT';
-});
-
-/// Notifier para invocar acciones de control (saveManualSleep, etc.).
-final sleepNotifierProvider = Provider((ref) {
-  return ref.watch(globalSleepProvider.notifier);
 });

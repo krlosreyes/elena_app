@@ -9,7 +9,7 @@ import 'package:elena_app/src/features/dashboard/application/hydration_notifier.
 import 'package:elena_app/src/features/exercise/application/exercise_notifier.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
 import 'package:elena_app/src/features/streak/application/streak_notifier.dart';
-import 'package:elena_app/src/shared/providers/sleep_provider.dart';
+import 'package:elena_app/src/features/dashboard/application/sleep_notifier.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -40,11 +40,17 @@ final metabolicStateProvider = Provider<MetabolicState>((ref) {
   final now = ref.watch(metabolicPulseProvider).value ?? DateTime.now();
 
   final fasting = ref.watch(fastingProvider);
-  final sleepHours = ref.watch(sleepDurationProvider);
+  // SPEC-209: fuente única de sueño — sleepProvider (antes: globalSleepProvider).
+  // Elimina la doble suscripción Firestore y el bug de datos del usuario
+  // anterior tras logout.
+  final sleepState = ref.watch(sleepProvider);
+  final sleepHours = sleepState.lastLog != null
+      ? sleepState.lastLog!.duration.inMinutes / 60.0
+      : 0.0;
   // SPEC-69: el último log alimenta dimensiones multidimensionales
   // (gap metabólico, latencia, despertares, percepción subjetiva) al
   // SleepQualityCalculator. Si es null, se usa solo `sleepHours`.
-  final lastSleepLog = ref.watch(lastSleepLogProvider);
+  final lastSleepLog = sleepState.lastLog;
   final exercise = ref.watch(exerciseProvider);
   final nutrition = ref.watch(nutritionProvider);
   final hydration = ref.watch(hydrationProvider);

@@ -171,8 +171,25 @@ class StreakNotifier extends StateNotifier<StreakState> {
     final nutrition = _ref.read(nutritionProvider);
     final userModel = _ref.read(currentUserStreamProvider).valueOrNull;
 
-    final double fastingHours =
-        fasting.isActive ? fasting.duration.inSeconds / 3600.0 : 0.0;
+    // SPEC-208: preservar el progreso del ayuno DESPUÉS de cerrarlo.
+    // Bug previo: cuando !isActive, fastingHours = 0.0 → al registrar
+    // agua/comida después de cerrar el ayuno, _evaluateToday() sobreescribía
+    // fastingCompleted: true → false en Firestore.
+    // Fix: usar completedToday / closedProgressToday que FastingNotifier
+    // preserva al cerrar el ayuno.
+    final double fastingHours;
+    if (fasting.isActive) {
+      // Ayuno en curso: duración real acumulada.
+      fastingHours = fasting.duration.inSeconds / 3600.0;
+    } else if (fasting.completedToday == true) {
+      // Ayuno cerrado y completado: target completo → magnitude ≥ 1.0.
+      fastingHours = _fastingTargetHours(currentProtocol);
+    } else {
+      // Ayuno cerrado sin completar, o sin ayuno hoy.
+      fastingHours =
+          (fasting.closedProgressToday ?? 0.0) *
+          _fastingTargetHours(currentProtocol);
+    }
 
     final double sleepHours = sleep.lastLog?.duration.inHours.toDouble() ?? 0.0;
 
