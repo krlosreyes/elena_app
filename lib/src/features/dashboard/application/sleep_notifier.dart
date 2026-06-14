@@ -339,8 +339,15 @@ class SleepNotifier extends StateNotifier<SleepState> {
     } catch (e, stackTrace) {
       // Errores SÍNCRONOS (construcción de fechas/log). El write ya no lanza.
       AppLogger.error('Error en saveManualSleep', e, stackTrace);
-      state = state.copyWith(isSaving: false);
       rethrow;
+    } finally {
+      // SPEC-216: garantizar que isSaving vuelve a false incluso en paths
+      // no capturados por el catch (excepciones futuras, early return, etc.).
+      // En el happy path ya se puso a false en el copyWith de arriba;
+      // el guard evita el doble setState innecesario.
+      if (mounted && state.isSaving) {
+        state = state.copyWith(isSaving: false);
+      }
     }
   }
 
