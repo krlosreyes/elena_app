@@ -100,12 +100,21 @@ class SleepNotifier extends StateNotifier<SleepState> {
     _sleepSubscription?.cancel();
     // SPEC-50: consumimos sleepRepositoryProvider en lugar de
     // userRepositoryProvider — Sleep ya no vive en el repo monolítico.
+    // SPEC-211: onDone re-suscribe tras token refresh / reconexión Firestore.
     _sleepSubscription =
-        _ref.read(sleepRepositoryProvider).watchLatest(userId).listen((log) {
-      if (mounted) {
-        state = state.copyWith(lastLog: log);
-      }
-    });
+        _ref.read(sleepRepositoryProvider).watchLatest(userId).listen(
+      (log) {
+        if (mounted) {
+          state = state.copyWith(lastLog: log);
+        }
+      },
+      onError: (Object e) {
+        AppLogger.warning('[SleepNotifier] stream error (transitorio): $e');
+      },
+      onDone: () {
+        if (mounted) _initSleepSubscription(userId);
+      },
+    );
   }
 
   @override

@@ -121,10 +121,13 @@ class ExerciseNotifier extends StateNotifier<ExerciseState> {
           );
         }
       },
-      onError: (err) {
-        if (mounted) {
-          state = state.copyWith(error: "Error al cargar ejercicio: $err");
-        }
+      onError: (Object err) {
+        // SPEC-211: no cambiar state — el dato anterior sigue siendo válido.
+        AppLogger.warning('[ExerciseNotifier] stream error (transitorio): $err');
+      },
+      onDone: () {
+        // SPEC-211: Firestore cerró el stream (token refresh, reconexión).
+        if (mounted) _subscribeFor(cycleStartedAt);
       },
     );
   }

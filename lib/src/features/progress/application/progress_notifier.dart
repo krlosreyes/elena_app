@@ -6,6 +6,7 @@
 
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/features/streak/domain/streak_entry.dart';
@@ -135,15 +136,24 @@ class ProgressNotifier extends StateNotifier<ProgressState> {
 
   void _subscribeToBiometric(String userId) {
     _bioSub?.cancel();
+    // SPEC-211: onDone re-suscribe tras token refresh / reconexión Firestore.
     _bioSub = _ref
         .read(biometricRepositoryProvider)
         .watchHistory(userId)
-        .listen((list) {
-      // Firestore devuelve descendente — invertimos
-      if (mounted) {
-        state = state.copyWith(biometricHistory: list.reversed.toList());
-      }
-    });
+        .listen(
+      (list) {
+        // Firestore devuelve descendente — invertimos
+        if (mounted) {
+          state = state.copyWith(biometricHistory: list.reversed.toList());
+        }
+      },
+      onError: (Object e) {
+        AppLogger.warning('[ProgressNotifier] biometric stream error (transitorio): $e');
+      },
+      onDone: () {
+        if (mounted) _subscribeToBiometric(userId);
+      },
+    );
   }
 
   // ─── API pública ────────────────────────────────────────────────────────────
