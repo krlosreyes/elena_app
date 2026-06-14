@@ -217,7 +217,7 @@ class ImrPillarFeedbackCard extends StatelessWidget {
       _PillarResult(
         name: 'Ejercicio',
         emoji: '🏃',
-        color: const Color(0xFF14B8A6),
+        color: const Color(0xFFEF4444),
         avg: _avg(docs.map((d) => d.exerciseProgress).toList()),
         status: _PillarStatus.improve,
       ),

@@ -60,7 +60,7 @@ const List<_Pilar> _pilares = [
   _Pilar(name: 'Ayuno',       color: Color(0xFF10B981), progress: _fastingOf),
   _Pilar(name: 'Nutrición',   color: Color(0xFFF59E0B), progress: _nutritionOf),
   _Pilar(name: 'Hidratación', color: Color(0xFF38BDF8), progress: _hydrationOf),
-  _Pilar(name: 'Ejercicio',   color: Color(0xFF14B8A6), progress: _exerciseOf),
+  _Pilar(name: 'Ejercicio',   color: Color(0xFFEF4444), progress: _exerciseOf),
   _Pilar(name: 'Sueño',       color: Color(0xFF818CF8), progress: _sleepOf),
 ];
 
