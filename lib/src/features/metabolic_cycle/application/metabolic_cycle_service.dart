@@ -19,6 +19,8 @@ import 'package:elena_app/src/features/metabolic_cycle/domain/cycle_feedback.dar
 import 'package:elena_app/src/features/metabolic_cycle/domain/metabolic_cycle.dart';
 import 'package:elena_app/src/features/metabolic_cycle/domain/metabolic_cycle_repository.dart';
 import 'package:elena_app/src/features/metabolic_cycle/domain/metabolic_cycle_resolver.dart';
+// SPEC-215: fuente canónica única para protocolo → horas.
+import 'package:elena_app/src/shared/utils/fasting_protocol.dart';
 
 /// Entrada de datos del momento del check para decidir cierre + cómputo
 /// del feedback. Permite que el caller arme el snapshot con su lógica
@@ -362,38 +364,18 @@ class MetabolicCycleService {
     // aproximación. Bloque C/SPEC-149.next puede refinar con datos
     // reales del FastingInterval.
     final mag = input.currentMagnitudes.fastingMagnitude.clamp(0.0, 1.5);
-    final targetHours = _hoursFromProtocol(input.currentProtocol);
+    // SPEC-215: delegar a fuente canónica (shared/utils/fasting_protocol.dart).
+    final targetHours = fastingHoursForProtocol(input.currentProtocol);
     if (targetHours == null) return null;
     return mag * targetHours;
   }
 
   double? _computeFeedingHours(MetabolicCycleEvaluationInput input) {
-    final targetHours = _hoursFromProtocol(input.currentProtocol);
+    // SPEC-215: delegar a fuente canónica (shared/utils/fasting_protocol.dart).
+    final targetHours = fastingHoursForProtocol(input.currentProtocol);
     if (targetHours == null) return null;
-    return 24 - targetHours;
-  }
-
-  double? _hoursFromProtocol(String protocol) {
-    switch (protocol) {
-      case '12:12':
-        return 12;
-      case '14:10':
-        return 14;
-      case '16:8':
-        return 16;
-      case '18:6':
-        return 18;
-      case '20:4':
-        return 20;
-      case '22:2':
-        return 22;
-      case 'OMAD':
-        return 23;
-      case 'Ninguno':
-        return null;
-      default:
-        return null;
-    }
+    // targetHours es int; cast a double para respetar el tipo de retorno double?.
+    return 24.0 - targetHours;
   }
 }
 
