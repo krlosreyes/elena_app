@@ -59,6 +59,7 @@ class SleepNotifier extends StateNotifier<SleepState> {
     _init();
   }
 
+
   /// Clave por usuario y día calendárico (usa wakeTime o now). El overlay
   /// matutino vive en la dimensión "hoy desperté", no en la del ciclo
   /// metabólico — está explícitamente fuera del scope cycle-aware
