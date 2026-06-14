@@ -13,6 +13,8 @@
 import 'package:elena_app/src/core/engine/score_engine.dart';
 import 'package:elena_app/src/core/errors/validation_error.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
+// SPEC-215: fuente canónica única para protocolo → horas.
+import 'package:elena_app/src/shared/utils/fasting_protocol.dart';
 
 class UserProfileMapper {
   const UserProfileMapper();
@@ -88,7 +90,10 @@ Map<String, dynamic> userToCanonicalMirror(UserModel user) {
   final String nowIso = DateTime.now().toUtc().toIso8601String();
   final String genderCanonical =
       user.gender.toUpperCase() == 'M' ? 'male' : 'female';
-  final int? fastingHours = _parseFastingProtocol(user.fastingProtocol);
+  // SPEC-215: fuente canónica (shared/utils/fasting_protocol.dart).
+  // 'Ninguno' → null; el mirror canónico lo reporta como 0 al backend MR.
+  final int? fastingHours =
+      fastingHoursForProtocol(user.fastingProtocol) ?? 0;
   final double? lastMealHour = _toHourFloat(user.profile.lastMealGoal);
 
   return <String, dynamic>{
@@ -193,22 +198,8 @@ Map<String, dynamic> imrToCanonicalMap(IMRv2Result imr) {
   return base;
 }
 
-/// Convierte `'Ninguno' | '16:8' | '18:6' | '20:4'` a horas de ayuno.
-/// Retorna null si el protocolo no se reconoce (no inventamos).
-int? _parseFastingProtocol(String protocol) {
-  switch (protocol) {
-    case 'Ninguno':
-      return 0;
-    case '16:8':
-      return 16;
-    case '18:6':
-      return 18;
-    case '20:4':
-      return 20;
-    default:
-      return null;
-  }
-}
+// SPEC-215: _parseFastingProtocol eliminado. Reemplazado por fastingHoursForProtocol
+// de shared/utils/fasting_protocol.dart (fuente canónica única).
 
 /// Convierte un DateTime a hora float (ej. 21:30 → 21.5).
 /// Retorna null si el DateTime es null.

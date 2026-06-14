@@ -160,13 +160,5 @@ final hasUnreadCycleClosureProvider = Provider<bool>((ref) {
   return true;
 });
 
-/// Helper legacy mantenido por compat. Internamente delega al notifier
-/// reactivo. Nuevos callers deben usar
-/// `ref.read(cycleClosureDismissalProvider.notifier).dismiss(cycleId)`.
-@Deprecated('Use cycleClosureDismissalProvider.notifier.dismiss instead.')
-Future<void> dismissLastCycleClosure({
-  required SharedPreferences prefs,
-  required String cycleId,
-}) async {
-  await prefs.setString(_kLastCycleClosureDismissedKey, cycleId);
-}
+// SPEC-215: dismissLastCycleClosure() @Deprecated eliminado — sin callers activos.
+// Usar: ref.read(cycleClosureDismissalProvider.notifier).dismiss(cycleId)

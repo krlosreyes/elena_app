@@ -23,11 +23,12 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:elena_app/src/core/services/notification_scheduler.dart';
+// SPEC-215: ya no importa NotificationScheduler para obtener horas de protocolo.
 import 'package:elena_app/src/features/metabolic_cycle/application/cycle_score_computer.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart';
 import 'package:elena_app/src/features/streak/application/streak_notifier.dart';
 import 'package:elena_app/src/features/streak/domain/streak_entry.dart';
+import 'package:elena_app/src/shared/utils/fasting_protocol.dart';
 
 /// SPEC-140: cómputo puro del Score del Día desde la entrada de hoy.
 /// Expuesto público para tests directos sin necesidad de ProviderContainer.
@@ -79,7 +80,7 @@ final displayDailyScoreProvider = Provider<int>((ref) {
   final cycle = ref.watch(currentMetabolicCycleProvider).valueOrNull;
   final cycleHours = cycle == null
       ? null
-      : NotificationScheduler.protocolFastingHours(cycle.fastingProtocol);
+      : fastingHoursForProtocol(cycle.fastingProtocol);
 
   if (cycle == null || cycleHours == null) {
     return ref.watch(dailyScoreProvider);
@@ -102,7 +103,7 @@ final displayDailyScoreDeltaProvider = Provider<int?>((ref) {
   final cycle = ref.watch(currentMetabolicCycleProvider).valueOrNull;
   final cycleHours = cycle == null
       ? null
-      : NotificationScheduler.protocolFastingHours(cycle.fastingProtocol);
+      : fastingHoursForProtocol(cycle.fastingProtocol);
 
   if (cycle == null || cycleHours == null) {
     return ref.watch(dailyScoreDeltaProvider);

@@ -5,6 +5,8 @@ import 'package:elena_app/src/core/services/notification_service.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/features/hydration/domain/hydration_message_pool.dart';
 import 'package:elena_app/src/features/metabolic_cycle/domain/metabolic_cycle.dart';
+// SPEC-215: fuente canónica única para protocolo → horas.
+import 'package:elena_app/src/shared/utils/fasting_protocol.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // NotificationScheduler — Motor de agenda circadiana
@@ -80,7 +82,7 @@ class NotificationScheduler {
       final lastMeal = profile.lastMealGoal;
       final cycleFastingHours = openCycle == null
           ? null
-          : protocolFastingHours(openCycle.fastingProtocol);
+          : fastingHoursForProtocol(openCycle.fastingProtocol);
       DateTime? lastMealDt;
       if (openCycle != null && cycleFastingHours != null) {
         // Cierre de ventana = startedAt + 24h. La hora local del ciclo
@@ -357,27 +359,12 @@ class NotificationScheduler {
     return base.subtract(const Duration(minutes: 30));
   }
 
-  static int? protocolFastingHours(String protocol) {
-    switch (protocol) {
-      case '12:12':
-        return 12;
-      case '14:10':
-        return 14;
-      case '16:8':
-        return 16;
-      case '18:6':
-        return 18;
-      case '20:4':
-        return 20;
-      case '22:2':
-        return 22;
-      case 'OMAD':
-        return 23;
-      case 'Ninguno':
-      default:
-        return null;
-    }
-  }
+  /// SPEC-215: delegar a [fastingHoursForProtocol] (shared/utils/fasting_protocol.dart).
+  /// Mantenido como wrapper por compat con callers existentes y tests de SPEC-169.
+  /// Nuevos callers deben importar y usar [fastingHoursForProtocol] directamente.
+  @Deprecated('Use fastingHoursForProtocol() from shared/utils/fasting_protocol.dart')
+  static int? protocolFastingHours(String protocol) =>
+      fastingHoursForProtocol(protocol);
 
   // ─── SPEC-150: hidratación ──────────────────────────────────────────────
 
