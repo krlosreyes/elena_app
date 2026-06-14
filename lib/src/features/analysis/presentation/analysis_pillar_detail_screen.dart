@@ -322,7 +322,7 @@ class _AnalysisPillarDetailScreenState
     );
     final docs = docsAsync.value;
     if (docs == null) return _loadingBox();
-    return ImrPillarBarChart(docs: docs);
+    return ImrPillarBarChart(docs: docs, mode: mode);
   }
 
   /// Card de feedback de pilares para la sección IMR.
