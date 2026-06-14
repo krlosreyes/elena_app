@@ -38,7 +38,6 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
   // Acentos por métrica. UI #2: los 5 pilares leen los tokens canónicos de
   // AppColors (mismo color que su card e ícono). IMR usa el accent teal.
   static const _accentImr = AppColors.accent;
-  static const _accentWeight = Color(0xFF60A5FA);
   // SPEC-168.4.2: ámbar — coherente con BodyCompositionMetric.bodyFatPct.
   static const _accentBodyFat = Color(0xFFF59E0B);
   static const _accentFasting = AppColors.pillarAyuno;
@@ -74,8 +73,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
     // pantalla de detalle de cada pilar. La home solo muestra tiles
     // con valor agregado + sparkline.
     final imr = ref.watch(imrSeriesProvider);
-    final weight = ref.watch(weightSeriesProvider);
-    // SPEC-168.4.2: % grasa corporal, nuevo tile en Resultados.
+    // SPEC-168.4.2: % grasa corporal (tile Composición Corporal).
     final bodyFat = ref.watch(bodyFatSeriesProvider);
     final fasting = ref.watch(fastingHabitSeriesProvider);
     final nutrition = ref.watch(nutritionHabitSeriesProvider);
@@ -91,7 +89,6 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
     // disparan loading state — el árbol queda estable y el scroll
     // se mantiene en su posición.
     final firstLoad = imr.value == null ||
-        weight.value == null ||
         bodyFat.value == null ||
         fasting.value == null ||
         nutrition.value == null ||
@@ -118,7 +115,6 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
               else
                 ..._buildContent(
                   imrSeries: imr.value!,
-                  weightSeries: weight.value!,
                   bodyFatSeries: bodyFat.value!,
                   fastingSeries: fasting.value!,
                   nutritionSeries: nutrition.value!,
@@ -240,7 +236,6 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
 
   List<Widget> _buildContent({
     required MetricSeries imrSeries,
-    required MetricSeries weightSeries,
     required MetricSeries bodyFatSeries,
     required MetricSeries fastingSeries,
     required MetricSeries nutritionSeries,
@@ -251,7 +246,6 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
     required NutritionPieData nutritionPie,
   }) {
     final allEmpty = imrSeries.isEmpty &&
-        weightSeries.isEmpty &&
         bodyFatSeries.isEmpty &&
         fastingSeries.isEmpty &&
         nutritionSeries.isEmpty &&
@@ -276,8 +270,6 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
       _dailyScoreTile(),
       const SizedBox(height: 10),
       _imrTile(imrSeries),
-      const SizedBox(height: 10),
-      _weightTile(weightSeries),
       const SizedBox(height: 10),
       _bodyFatTile(bodyFatSeries),
       const SizedBox(height: 28),
@@ -329,19 +321,6 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
       value: v == null ? '' : ChartHeroComputer.formatValue(v),
       unit: '',
       accent: _accentImr,
-      sparklineValues: s.points.map((p) => p.value).toList(),
-    );
-  }
-
-  PillarOverviewTile _weightTile(MetricSeries s) {
-    final v = ChartHeroComputer.aggregateValue(s, HeroAggregation.last);
-    return PillarOverviewTile(
-      metric: ChartMetric.weight,
-      icon: AppIcons.peso,
-      label: 'Peso',
-      value: v == null ? '' : ChartHeroComputer.formatValue(v),
-      unit: 'kg',
-      accent: _accentWeight,
       sparklineValues: s.points.map((p) => p.value).toList(),
     );
   }

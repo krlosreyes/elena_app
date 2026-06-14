@@ -117,6 +117,22 @@ enum BodyCompositionMetric {
     return value.toStringAsFixed(1);
   }
 
+  /// Emoji para el card de feedback.
+  String get feedbackEmoji {
+    switch (this) {
+      case BodyCompositionMetric.weight:
+        return '⚖️';
+      case BodyCompositionMetric.waistCm:
+        return '📏';
+      case BodyCompositionMetric.bodyFatPct:
+        return '🔥';
+      case BodyCompositionMetric.whtr:
+        return '📊';
+      case BodyCompositionMetric.leanMassKg:
+        return '💪';
+    }
+  }
+
   /// Para el copy del delta: "1.2 kg menos", "0.02 más", etc.
   /// SPEC-152 §2.4: copy NEUTRO, sin valoración moral. Color es el
   /// que comunica intención (ámbar = sube, verde = baja).

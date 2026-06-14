@@ -32,6 +32,8 @@ import 'package:elena_app/src/features/analysis/presentation/widgets/bar_chart_c
 // SPEC-168.4.3: widget completo de composición corporal con tabs.
 import 'package:elena_app/src/features/analysis/presentation/widgets/body_composition_trend_chart.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/line_chart_card.dart';
+import 'package:elena_app/src/features/analysis/presentation/widgets/ayuno_feedback_card.dart';
+import 'package:elena_app/src/shared/providers/user_provider.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/imr_pillar_bar_chart.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/imr_pillar_feedback_card.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/nutrition_pie_card.dart';
@@ -107,6 +109,11 @@ class _AnalysisPillarDetailScreenState
               if (widget.metric == ChartMetric.imr) ...[
                 const SizedBox(height: 24),
                 _imrFeedbackCard(),
+              ],
+              // Ayuno: card de análisis de hábito debajo de la tendencia.
+              if (widget.metric == ChartMetric.fastingHours) ...[
+                const SizedBox(height: 24),
+                _ayunoFeedbackCard(),
               ],
             ],
           ),
@@ -340,6 +347,30 @@ class _AnalysisPillarDetailScreenState
     final docs = docsAsync.value;
     if (docs == null || docs.isEmpty) return const SizedBox.shrink();
     return ImrPillarFeedbackCard(docs: docs);
+  }
+
+  /// Card de feedback de hábito de ayuno.
+  Widget _ayunoFeedbackCard() {
+    final s = ref.watch(fastingHabitSeriesProvider);
+    final series = s.valueOrNull;
+    if (series == null || series.points.isEmpty) return const SizedBox.shrink();
+    // fastingProtocol es String: '16:8' | '18:6' | '20:4' | 'Ninguno'
+    final user = ref.watch(currentUserStreamProvider).valueOrNull;
+    final targetHours = _protocolHours(user?.fastingProtocol ?? '16:8');
+    return AyunoFeedbackCard(series: series, targetHours: targetHours);
+  }
+
+  static double _protocolHours(String protocol) {
+    switch (protocol) {
+      case '18:6':
+        return 18.0;
+      case '20:4':
+        return 20.0;
+      case 'Ninguno':
+        return 12.0;
+      default:
+        return 16.0; // 16:8 default
+    }
   }
 
   static String _isoDate(DateTime d) =>
