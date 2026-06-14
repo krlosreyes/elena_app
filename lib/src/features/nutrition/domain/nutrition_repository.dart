@@ -43,9 +43,11 @@ abstract class NutritionRepository {
   /// Persiste un nuevo registro. Usa `log.id` como clave del documento.
   Future<void> saveMeal(String userId, NutritionLog log);
 
-  /// Elimina el log más reciente del día (acción "deshacer").
-  /// Si el usuario no tiene logs hoy, es no-op.
-  Future<void> removeLastMeal(String userId);
+  /// Elimina el log más reciente desde [since] hasta ahora (acción "deshacer").
+  /// [since] debe ser el inicio del ciclo metabólico actual, no medianoche.
+  /// SPEC-210: fix para ciclos que empiezan antes de medianoche.
+  /// Si no hay logs desde [since], es no-op.
+  Future<void> removeLastMeal(String userId, {required DateTime since});
 
   /// Elimina un log por su id. No-op si no existe.
   /// Usado para "editar plato": se elimina el viejo y se guarda el nuevo.

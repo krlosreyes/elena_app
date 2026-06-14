@@ -89,12 +89,14 @@ class NutritionRepositoryImpl implements NutritionRepository {
   }
 
   @override
-  Future<void> removeLastMeal(String userId) async {
-    final now = DateTime.now();
+  Future<void> removeLastMeal(String userId, {required DateTime since}) async {
+    // SPEC-210: busca desde el inicio del ciclo actual (no desde medianoche).
+    // endOfDay: null → sin tope superior, busca hasta el momento actual.
+    // Evita borrar comidas del ciclo anterior en sesiones nocturnas.
     final latest = await _source.latestTodayLog(
       userId,
-      startOfDay: DayBoundaryResolver.startOfDay(now),
-      endOfDay: DayBoundaryResolver.endOfDay(now),
+      startOfDay: since,
+      endOfDay: null,
     );
     if (latest == null) return;
     await _source.deleteLog(userId, latest.docId);

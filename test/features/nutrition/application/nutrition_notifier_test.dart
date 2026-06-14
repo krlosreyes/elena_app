@@ -60,9 +60,13 @@ class FakeNutritionRepository implements NutritionRepository {
     emit(next);
   }
 
+  /// SPEC-210: captura el `since` pasado por el notifier.
+  DateTime? lastRemoveSince;
+
   @override
-  Future<void> removeLastMeal(String userId) async {
+  Future<void> removeLastMeal(String userId, {required DateTime since}) async {
     removeLastCount++;
+    lastRemoveSince = since;
     if (_today.isEmpty) return;
     emit(_today.sublist(0, _today.length - 1));
   }
@@ -240,6 +244,49 @@ void main() {
       expect(state.nutritionScore, 0.0);
       // No se invocó repo.removeLastMeal — los logs persisten en Firestore.
       expect(fakeRepo.removeLastCount, 0);
+    });
+
+    // ── SPEC-210: removeLastMeal cycle-aware ───────────────────────────────────
+
+    test(
+        'SPEC-210-01: removeLastMeal pasa since != null al repositorio',
+        () async {
+      await Future<void>.delayed(Duration.zero);
+      await container.read(nutritionProvider.notifier).removeLastMeal();
+
+      expect(fakeRepo.lastRemoveSince, isNotNull,
+          reason: 'SPEC-210: since debe pasarse siempre (no null)');
+    });
+
+    test(
+        'SPEC-210-02: since es >= startOfDay (nunca anterior a medianoche del '
+        'día actual si no hay ciclo activo)', () async {
+      await Future<void>.delayed(Duration.zero);
+      await container.read(nutritionProvider.notifier).removeLastMeal();
+
+      final since = fakeRepo.lastRemoveSince!;
+      final startOfToday = DateTime(
+        DateTime.now().year,
+        DateTime.now().month,
+        DateTime.now().day,
+      );
+      // Sin ciclo activo el fallback es startOfDay — no puede ser antes.
+      expect(
+        since.isAfter(startOfToday) || since.isAtSameMomentAs(startOfToday),
+        isTrue,
+        reason: 'SPEC-210: sin ciclo activo, since debe ser >= startOfDay',
+      );
+    });
+
+    test('SPEC-210-03: sin logs en el ciclo → removeLastCount=1 pero lista intacta',
+        () async {
+      await Future<void>.delayed(Duration.zero);
+      // No emitimos logs → todayLogs está vacío
+      await container.read(nutritionProvider.notifier).removeLastMeal();
+
+      expect(fakeRepo.removeLastCount, 1,
+          reason: 'El repo siempre se invoca (sin-op decisión del repo)');
+      expect(container.read(nutritionProvider).todayLogs, isEmpty);
     });
   });
 }

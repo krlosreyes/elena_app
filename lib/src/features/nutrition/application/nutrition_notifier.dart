@@ -332,14 +332,18 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
     }));
   }
 
-  /// Elimina el último registro del día.
+  /// Elimina el último registro del ciclo actual (acción "deshacer").
   Future<void> removeLastMeal() async {
     final userId = _activeUserId;
     if (userId == null) return;
     final repo = _ref.read(nutritionRepositoryProvider);
+    // SPEC-210: usar inicio del ciclo actual como ventana, no medianoche.
+    // Fallback a startOfDay si no hay ciclo activo (primer uso del día).
+    final since = _currentCycleStartedAt ??
+        DayBoundaryResolver.startOfDay(DateTime.now());
     // SPEC-206 (offline-first): borrado no bloqueante. El stream refleja la
     // lista actualizada desde la caché al instante; sincroniza al reconectar.
-    unawaited(repo.removeLastMeal(userId).catchError((Object e) {
+    unawaited(repo.removeLastMeal(userId, since: since).catchError((Object e) {
       AppLogger.error('Borrado de comida falló (reintenta al sync)', e);
     }));
 
