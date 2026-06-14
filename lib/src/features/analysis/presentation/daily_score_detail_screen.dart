@@ -44,7 +44,15 @@ class _DailyScoreDetailScreenState
 
   @override
   void dispose() {
-    ref.read(analysisRangeProvider.notifier).state = AnalysisRange.m1;
+    // BUGFIX (2026-06-14): la mutación de analysisRangeProvider propaga
+    // sincronamente la invalidación de dailyScoreSeriesProvider al widget
+    // mientras está en medio del teardown → "Cannot use ref after disposed".
+    // try-catch defensivo: el valor se restaura correctamente en el caso
+    // feliz; en el caso de error (ProviderScope teardown, hot-restart en
+    // debug), el estado se resetea en el siguiente cold start sin impacto.
+    try {
+      ref.read(analysisRangeProvider.notifier).state = AnalysisRange.m1;
+    } catch (_) {}
     _scroll.dispose();
     super.dispose();
   }
@@ -54,8 +62,19 @@ class _DailyScoreDetailScreenState
     final range = ref.watch(analysisRangeProvider);
     final mode = AggregationMode.forRange(range);
     final seriesAsync = ref.watch(closedCycleScoreSeriesProvider);
-    final series = seriesAsync.valueOrNull ??
-        MetricSeries(label: 'Score del día', unit: '', points: const []);
+
+    // Fallback a streak-based cuando no hay ciclos cerrados con score en el
+    // rango actual (ej. usuario no cerró ciclos esta semana, o dailyScore era
+    // null en ciclos históricos pre-SPEC-200.1).
+    final closedSeries = seriesAsync.valueOrNull;
+    final streakSeries = ref.watch(dailyScoreSeriesProvider);
+    final series = (closedSeries != null && closedSeries.points.isNotEmpty)
+        ? closedSeries
+        : streakSeries;
+
+    // Solo mostramos spinner si todavía estamos cargando Y no tenemos datos
+    // de streak que mostrar mientras tanto.
+    final showSpinner = seriesAsync.isLoading && streakSeries.points.isEmpty;
 
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
@@ -94,7 +113,7 @@ class _DailyScoreDetailScreenState
               const SizedBox(height: 18),
               const SegmentedRangeControl(),
               const SizedBox(height: 24),
-              if (seriesAsync.isLoading)
+              if (showSpinner)
                 const Center(
                   child: Padding(
                     padding: EdgeInsets.symmetric(vertical: 60),

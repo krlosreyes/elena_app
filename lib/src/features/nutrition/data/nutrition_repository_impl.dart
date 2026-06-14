@@ -8,6 +8,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/core/services/day_boundary_resolver.dart';
 import 'package:elena_app/src/features/nutrition/data/mappers/nutrition_log_mapper.dart';
 import 'package:elena_app/src/features/nutrition/data/sources/firestore_nutrition_v1_source.dart';
@@ -60,8 +61,23 @@ class NutritionRepositoryImpl implements NutritionRepository {
     return _source
         .watchTodayLogs(userId, startOfDay: start, endOfDay: end)
         .map(
+          // BUGFIX (2026-06-14): si fromMap lanza (timestamp corrupto,
+          // label inválido, etc.), NO propagar el error al stream —
+          // eso causa que onError lo silencie y el estado quede en 0
+          // permanentemente. En cambio, saltamos el doc inválido y
+          // seguimos procesando el resto del snapshot.
           (rows) => rows
-              .map((row) => _mapper.fromMap(row.data, docId: row.docId))
+              .expand((row) {
+                try {
+                  return [_mapper.fromMap(row.data, docId: row.docId)];
+                } catch (e) {
+                  AppLogger.warning(
+                    'nutrition_history: doc ${row.docId} inválido, '
+                    'ignorado: $e',
+                  );
+                  return const <NutritionLog>[];
+                }
+              })
               .toList(growable: false),
         );
   }

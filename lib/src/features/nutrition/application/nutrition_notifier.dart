@@ -180,9 +180,16 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
         if (!mounted) return;
         state = _recalculate(logs, state.targetMeals);
       },
-      onError: (Object _) {
-        // El repositorio puede emitir errors transitorios de red. Mantener
-        // el estado anterior; el próximo evento estable corregirá.
+      onError: (Object e) {
+        // Error transitorio de red o permiso. Mantener estado previo;
+        // el próximo evento estable corregirá.
+        AppLogger.warning('nutrition stream error (transitorio): $e');
+      },
+      onDone: () {
+        // BUGFIX (2026-06-14): Firestore puede cerrar el stream por
+        // reconexión, cambio de token o error irrecuperable. Si no
+        // re-suscribimos, los logs nuevos nunca llegan al estado.
+        if (mounted) _subscribeFor(_currentCycleStartedAt);
       },
     );
   }
@@ -291,10 +298,16 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
 
     final repo = _ref.read(nutritionRepositoryProvider);
 
-    // SPEC-206 (offline-first): el stream `watchSinceLogs` refleja la comida
-    // desde la caché al instante (con o sin red); el write sincroniza al
-    // reconectar. Antes el `await` colgaba offline e isSaving quedaba trabado.
-    if (mounted) state = state.copyWith(isSaving: false);
+    // SPEC-206 (offline-first) + BUGFIX (2026-06-14): update optimista
+    // inmediato — el conteo sube al instante en UI sin depender de que
+    // el stream de Firestore emita primero. El stream confirmará (o
+    // corregirá) la lista cuando llegue el snapshot de la caché local.
+    // Antes: si el stream tenía un error silenciado, el conteo quedaba
+    // en 0 aunque el write fuera exitoso.
+    if (mounted) {
+      final optimisticLogs = List<NutritionLog>.from(state.todayLogs)..add(log);
+      state = _recalculate(optimisticLogs, state.targetMeals);
+    }
 
     // SPEC-193/194: analytics (se auto-encola sin red) + coaching.
     AnalyticsService.logEvent(
