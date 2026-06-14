@@ -15,6 +15,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/features/billing/application/billing_service.dart';
 import 'package:elena_app/src/features/billing/application/free_billing_service.dart';
+import 'package:elena_app/src/features/billing/domain/billing_package.dart';
 import 'package:elena_app/src/features/billing/domain/entitlement_status.dart';
 
 // ─── Fake que expone el StreamController para los tests ───────────────────────
@@ -36,7 +37,7 @@ class FakeBillingServiceWithController implements BillingService {
   Stream<EntitlementStatus> customerInfoStream() => _ctrl.stream;
 
   @override
-  Future<List<dynamic>> currentOfferingPackages() async => const [];
+  Future<List<BillingPackage>> currentOfferingPackages() async => const [];
 
   @override
   Future<PurchaseResult> purchase(dynamic pkg) async =>

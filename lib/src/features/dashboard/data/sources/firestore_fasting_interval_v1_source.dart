@@ -1,9 +1,15 @@
-// SPEC-50.4: implementación Firestore v1 del FastingIntervalDataSource.
+// SPEC-50.4: implementación Firestore del FastingIntervalDataSource.
 //
-// Schema legacy: colección flat `fasting_history/{docId}` con `userId`
-// como campo del doc. Distinto del resto de pilares que usan
-// `users/{uid}/...`. Decisión histórica preservada — esta SPEC envuelve
-// el schema, no lo migra.
+// SPEC-217 (2026-06-14): migración de colección plana `fasting_history/{docId}`
+// a subcolección `users/{uid}/fasting_history/{docId}`.
+//
+// Antes:  _db.collection('fasting_history') + .where('userId', isEqualTo: uid)
+// Ahora:  _db.collection('users').doc(uid).collection('fasting_history')
+//
+// La subcolección está aislada por uid → no se necesita el filtro por userId.
+// El campo `userId` sigue escribiéndose en el documento (vía FastingInterval.toJson)
+// por retrocompatibilidad durante el período de transición (inc2/inc5 de SPEC-217).
+// Eliminarlo es deuda post-migración confirmada.
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -15,26 +21,21 @@ class FirestoreFastingIntervalV1Source implements FastingIntervalDataSource {
   FirestoreFastingIntervalV1Source({FirebaseFirestore? firestore})
       : _firestore = firestore ?? FirebaseFirestore.instance;
 
-  CollectionReference<Map<String, dynamic>> get _collection =>
-      _firestore.collection('fasting_history');
+  // SPEC-217: subcolección por uid — aislamiento garantizado por path.
+  CollectionReference<Map<String, dynamic>> _col(String userId) => _firestore
+      .collection('users')
+      .doc(userId)
+      .collection('fasting_history');
 
   @override
   Stream<Map<String, dynamic>?> streamLatest(String userId) {
     // SPEC-99: "más reciente" no es "startTime mayor" — es "intervalo
     // abierto si hay uno; si no, el último cerrado".
     //
-    // Antes ordenábamos sólo por startTime descending y limit 1. Si el
-    // usuario corregía la hora de inicio del ayuno HACIA ATRÁS (caso
-    // común con SPEC-97), su `startTime` quedaba menor al de otros
-    // docs históricos y el snapshot devolvía un doc cerrado viejo —
-    // el listener marcaba `isActive=false` y abría ventana de comida
-    // fantasma.
-    //
-    // Solución: traemos los últimos 5 docs por startTime y en cliente
-    // priorizamos el primero que esté abierto (endTime==null). Si
-    // ninguno está abierto, devolvemos el más reciente por startTime.
-    return _collection
-        .where('userId', isEqualTo: userId)
+    // Traemos los últimos 5 docs por startTime y en cliente priorizamos
+    // el primero que esté abierto (endTime==null). Si ninguno está
+    // abierto, devolvemos el más reciente por startTime.
+    return _col(userId)
         .orderBy('startTime', descending: true)
         .limit(5)
         .snapshots()
@@ -43,16 +44,8 @@ class FirestoreFastingIntervalV1Source implements FastingIntervalDataSource {
 
       // SPEC-100: prioridad explícita entre abiertos.
       // (a) Ayuno abierto (isFasting=true, endTime=null) — gana siempre.
-      // (b) Si no hay ayuno abierto, cualquier otro abierto (ventana
-      //     de comida en curso, en data sana).
+      // (b) Si no hay ayuno abierto, cualquier otro abierto (ventana de comida).
       // (c) Si no hay nada abierto, el más reciente cerrado.
-      //
-      // Esto blinda el caso de data corrupta donde haya un ayuno y
-      // una ventana fantasma simultáneamente abiertos: gana el ayuno
-      // y el listener pinta el state correcto.
-      // Fix Web: doc.data() puede retornar LegacyJavaScriptObject;
-      // convertimos a Map Dart en cada uso para acceso seguro por
-      // clave string.
       for (final doc in snap.docs) {
         final data = Map<String, dynamic>.from(doc.data());
         if (data['endTime'] == null && data['isFasting'] == true) {
@@ -72,19 +65,8 @@ class FirestoreFastingIntervalV1Source implements FastingIntervalDataSource {
   @override
   Stream<Map<String, dynamic>?> streamLastCompletedFasting(String userId) {
     // SPEC-101 / SPEC-113.bugfix: último ayuno cerrado (endTime != null,
-    // isFasting=true).
-    //
-    // ANTES: combinábamos where('userId') + where('isFasting') +
-    // orderBy('endTime', desc). Requiere un índice compuesto que
-    // probablemente NO está desplegado en Firebase, así que la query
-    // fallaba con `failed-precondition` y el stream nunca emitía →
-    // el satélite Ayuno caía a 0% al reabrir la app.
-    //
-    // AHORA: usamos solo where('userId') + orderBy('startTime', desc)
-    // — el mismo índice que `streamLatest` ya consume — y filtramos
-    // client-side los docs cerrados de tipo ayuno. Sin índices nuevos.
-    return _collection
-        .where('userId', isEqualTo: userId)
+    // isFasting=true). Sin índice compuesto — filtramos client-side.
+    return _col(userId)
         .orderBy('startTime', descending: true)
         .limit(20)
         .snapshots()
@@ -116,12 +98,8 @@ class FirestoreFastingIntervalV1Source implements FastingIntervalDataSource {
     int limit = 365,
   }) {
     // SPEC-162 (2026-06-02): últimos N ayunos cerrados (isFasting=true,
-    // endTime != null), ordenados por startTime desc. Reusamos el índice
-    // (userId, startTime) — el mismo que streamLatest. Filtramos
-    // client-side por isFasting y endTime para no requerir índices
-    // compuestos adicionales (consistente con streamLastCompletedFasting).
-    return _collection
-        .where('userId', isEqualTo: userId)
+    // endTime != null), ordenados por startTime desc. Filtro client-side.
+    return _col(userId)
         .orderBy('startTime', descending: true)
         .limit(limit)
         .snapshots()
@@ -143,13 +121,9 @@ class FirestoreFastingIntervalV1Source implements FastingIntervalDataSource {
     required DateTime newStartTime,
     bool? isFastingFilter,
   }) async {
-    // SPEC-97 + SPEC-100: buscamos intervalos abiertos del usuario y
-    // les mutamos el startTime. Si `isFastingFilter` está presente,
-    // solo afectamos docs con ese tipo (evita pisar ventanas fantasma
-    // cuando se corrige un ayuno).
-    Query<Map<String, dynamic>> q = _collection
-        .where('userId', isEqualTo: userId)
-        .where('endTime', isNull: true);
+    // SPEC-97 + SPEC-100: buscar intervalos abiertos y mutar startTime.
+    Query<Map<String, dynamic>> q =
+        _col(userId).where('endTime', isNull: true);
     if (isFastingFilter != null) {
       q = q.where('isFasting', isEqualTo: isFastingFilter);
     }
@@ -177,22 +151,19 @@ class FirestoreFastingIntervalV1Source implements FastingIntervalDataSource {
     required DateTime closeAt,
     required Map<String, dynamic> Function(String newDocId) buildNewData,
   }) async {
+    final col = _col(userId);
     final batch = _firestore.batch();
 
-    // 1. Buscar todos los abiertos para cerrarlos.
-    final openQuery = await _collection
-        .where('userId', isEqualTo: userId)
-        .where('endTime', isNull: true)
-        .get();
-
+    // 1. Cerrar todos los abiertos.
+    final openQuery = await col.where('endTime', isNull: true).get();
     for (final doc in openQuery.docs) {
       batch.update(doc.reference, {
         'endTime': Timestamp.fromDate(closeAt),
       });
     }
 
-    // 2. Crear el nuevo (id auto-generado).
-    final newDocRef = _collection.doc();
+    // 2. Crear el nuevo (id auto-generado en la subcolección del uid).
+    final newDocRef = col.doc();
     final data = buildNewData(newDocRef.id);
     batch.set(newDocRef, data);
 

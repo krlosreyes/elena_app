@@ -144,9 +144,13 @@ service cloud.firestore {
         && request.resource.data.analytics.views >= resource.data.analytics.views;
     }
 
-    // 6. fasting_history: SPEC-50.4 schema legacy top-level con
-    //    `userId` como campo del doc. Ownership por campo, no por
-    //    path. SPEC-81 agrega size limit.
+    // 6. fasting_history plana (SPEC-50.4 schema legacy).
+    //    SPEC-217 (2026-06-14): nueva escritura va a users/{uid}/fasting_history
+    //    (subcolección cubierta por `match /{allPaths=**}` arriba).
+    //    Esta regla se mantiene durante el período de transición para que
+    //    los documentos históricos sean legibles/borrables por el usuario.
+    //    TODO-SPEC-217-inc5: eliminar esta regla 7 días después de validar
+    //    que la migración de datos históricos está completa.
     match /fasting_history/{docId} {
       allow read: if signedIn()
         && resource.data.userId == request.auth.uid;

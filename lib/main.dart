@@ -58,7 +58,11 @@ Future<void> _bootstrap() async {
   if (!kIsWeb) {
     FirebaseFirestore.instance.settings = const Settings(
       persistenceEnabled: true,
-      cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+      // SPEC-218: 100 MB cubre ~3.5 años de historial completo.
+      // Firestore evicta datos históricos raramente accedidos al superar el límite.
+      // Era CACHE_SIZE_UNLIMITED (SPEC-206) — ahora acotado para proteger
+      // dispositivos con almacenamiento limitado (16–32 GB).
+      cacheSizeBytes: 100 * 1024 * 1024,
     );
   }
 
