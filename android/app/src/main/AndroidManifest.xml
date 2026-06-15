@@ -17,6 +17,10 @@
     <uses-permission android:name="android.permission.health.READ_WEIGHT"/>
     <uses-permission android:name="android.permission.health.READ_SLEEP"/>
     <uses-permission android:name="android.permission.health.READ_STEPS"/>
+    <!-- SPEC-223: WORKOUT (ExerciseSessionRecord) requiere READ_EXERCISE. -->
+    <!-- Sin este permiso declarado, requestAuthorization() rechaza TODO el lote -->
+    <!-- (incluyendo weight/sleep/steps) y el usuario nunca ve el sheet de HC. -->
+    <uses-permission android:name="android.permission.health.READ_EXERCISE"/>
     <!-- Activity Recognition (steps): permission "dangerous", requiere user grant. -->
     <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION"/>
 

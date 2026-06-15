@@ -919,14 +919,10 @@ class _AnalysisPillarDetailScreenState
     }
   }
 
+  // SPEC-221: el label debe derivarse del AnalysisRange seleccionado,
+  // NO del AggregationMode, porque daily cubre tanto w1 ("Última semana")
+  // como m1 ("Último mes"). AnalysisRange.periodLabel es la fuente de verdad.
   String _periodLabelFor(AggregationMode mode) {
-    switch (mode) {
-      case AggregationMode.daily:
-        return 'Últimos 30 días';
-      case AggregationMode.weekly:
-        return 'Últimos meses';
-      case AggregationMode.monthly:
-        return 'Último año';
-    }
+    return ref.read(analysisRangeProvider).periodLabel;
   }
 }

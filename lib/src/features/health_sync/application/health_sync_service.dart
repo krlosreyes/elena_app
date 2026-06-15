@@ -155,7 +155,10 @@ class HealthSyncService {
       // En Android, chequear que Health Connect esté instalado.
       if (!kIsWeb && Platform.isAndroid) {
         final status = await _plugin.getHealthConnectSdkStatus();
-        if (status == hp.HealthConnectSdkStatus.sdkUnavailable) {
+        // SPEC-223: sdkUnavailable = Android < 9 / sin Google Play.
+        // sdkNotInstalled = Android 9-13 sin la app HC instalada.
+        // Ambos casos deben mostrar el CTA de instalación.
+        if (status != hp.HealthConnectSdkStatus.sdkAvailable) {
           return const HealthConnectNotInstalled();
         }
       }
@@ -208,7 +211,9 @@ class HealthSyncService {
 
       if (!kIsWeb && Platform.isAndroid) {
         final status = await _plugin.getHealthConnectSdkStatus();
-        if (status == hp.HealthConnectSdkStatus.sdkUnavailable) {
+        // SPEC-223: misma lógica que requestAuthorization — cualquier
+        // estado distinto de sdkAvailable es "no disponible".
+        if (status != hp.HealthConnectSdkStatus.sdkAvailable) {
           return const HealthConnectNotInstalled();
         }
       }
