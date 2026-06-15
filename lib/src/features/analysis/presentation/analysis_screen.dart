@@ -298,7 +298,8 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
   /// NO usar dailyScoreSeriesProvider directamente — ver SPEC-219.
   PillarOverviewTile _dailyScoreTile() {
     final s = ref.watch(resolvedDailyScoreSeriesProvider);
-    final v = ChartHeroComputer.aggregateValue(s, HeroAggregation.avg);
+    // SPEC-220: last = score más reciente (no promedio histórico del mes).
+    final v = ChartHeroComputer.aggregateValue(s, HeroAggregation.last);
     return PillarOverviewTile(
       // `metric` se ignora porque pasamos `routeOverride`.
       metric: ChartMetric.imr,
