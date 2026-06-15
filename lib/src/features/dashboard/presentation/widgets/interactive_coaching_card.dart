@@ -123,6 +123,22 @@ class InteractiveCoachingCard extends ConsumerWidget {
           },
         );
         break;
+
+      // SPEC-224: los prompts de ayuno/ejercicio/nutrición llegan por
+      // notificación en Fase A; si la tarjeta los recibiera, los descartamos.
+      case PromptActionType.closeFasting:
+      case PromptActionType.logExercise:
+      case PromptActionType.logMeal:
+        ref.read(dismissedHydrationPromptProvider.notifier).state = prompt.id;
+        AnalyticsService.logEvent(
+          'coaching_prompt_answered',
+          params: {
+            'type': option.action.name,
+            'option': 'card_tap',
+            'surface': 'card',
+          },
+        );
+        break;
     }
   }
 }
