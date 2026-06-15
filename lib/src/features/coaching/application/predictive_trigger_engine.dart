@@ -60,5 +60,103 @@ class PredictiveTriggerEngine {
     );
   }
 
+  // ── SPEC-224: prompts de los otros 3 pilares ────────────────────────────────
+
+  /// Prompt de ayuno accionable: aparece cuando el protocolo está completado
+  /// o a punto de completarse (decision del caller). Devuelve `null` si el
+  /// ayuno ya está cerrado o no está activo.
+  static ActionablePrompt? fastingPrompt({
+    required bool fastingActive,
+    required bool protocolReached,
+    required DateTime now,
+  }) {
+    if (!fastingActive || !protocolReached) return null;
+
+    final bucket = '${now.year}'
+        '${_two(now.month)}${_two(now.day)}${_two(now.hour)}';
+    return ActionablePrompt(
+      id: 'fasting_close_$bucket',
+      title: '¡Protocolo completado! 🎉',
+      message: 'Alcanzaste tu meta de ayuno. ¿Lo cerramos y abrimos la ventana de alimentación?',
+      options: const [
+        PromptOption(
+          label: 'Cerrar ayuno',
+          action: PromptActionType.closeFasting,
+          isPrimary: true,
+        ),
+        PromptOption(
+          label: 'Continuar un poco más',
+          action: PromptActionType.snooze,
+        ),
+      ],
+    );
+  }
+
+  /// Prompt de ejercicio: se suprime si ya cumplió la meta del día o si está
+  /// fuera de la ventana circadiana óptima de actividad física (15-17h).
+  static ActionablePrompt? exercisePrompt({
+    required bool goalReached,
+    required DateTime now,
+    /// Hora mínima para proponer ejercicio (default: 6h, tras despertar).
+    int wakeHour = 6,
+    /// Hora de corte — no molestar después de esta hora.
+    int cutoffHour = 20,
+  }) {
+    if (goalReached) return null;
+    if (now.hour < wakeHour || now.hour >= cutoffHour) return null;
+
+    final bucket = '${now.year}'
+        '${_two(now.month)}${_two(now.day)}${_two(now.hour)}';
+    return ActionablePrompt(
+      id: 'exercise_$bucket',
+      title: 'Momento de moverte 💪',
+      message: '30 minutos de actividad moderada hoy marcan la diferencia. ¿Ya lo hiciste?',
+      options: const [
+        PromptOption(
+          label: 'Sí, lo registro',
+          action: PromptActionType.logExercise,
+          isPrimary: true,
+        ),
+        PromptOption(
+          label: 'Luego lo hago',
+          action: PromptActionType.snooze,
+        ),
+      ],
+    );
+  }
+
+  /// Prompt de nutrición: se suprime si la ventana de alimentación aún no
+  /// abrió, si ya cerró, o si comió recientemente.
+  static ActionablePrompt? nutritionPrompt({
+    required bool windowOpen,
+    required DateTime now,
+    /// Tiempo desde la última comida; null = nunca ha comido hoy.
+    required Duration? sinceLastMeal,
+    /// Gap mínimo para no molestar si comió hace poco (default: 2h).
+    Duration minGap = const Duration(hours: 2),
+  }) {
+    if (!windowOpen) return null;
+    if (sinceLastMeal != null && sinceLastMeal < minGap) return null;
+
+    final bucket = '${now.year}'
+        '${_two(now.month)}${_two(now.day)}${_two(now.hour)}';
+    return ActionablePrompt(
+      id: 'nutrition_$bucket',
+      title: 'Tu ventana está abierta 🍽',
+      message: 'Es buen momento para tu próxima comida. ¿Ya comiste?',
+      options: const [
+        PromptOption(
+          label: 'Registrar comida',
+          action: PromptActionType.logMeal,
+          isPrimary: true,
+        ),
+        PromptOption(
+          label: 'Aún no',
+          action: PromptActionType.snooze,
+        ),
+      ],
+    );
+  }
+
   static String _two(int n) => n.toString().padLeft(2, '0');
 }

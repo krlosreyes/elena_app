@@ -34,7 +34,33 @@ const String kHydrationNoActionId = 'hydration_no';
 /// y el tamaño exacto son decisión abierta del SPEC-199 §10.
 const double kHydrationGlassLiters = 0.25;
 
-enum PendingActionType { addWater, hydrationSnoozed }
+// SPEC-224: categorías e IDs de acción para Ayuno, Ejercicio y Nutrición.
+// Misma convención que hidratación; constantes compartidas entre
+// NotificationService (registro de categorías) y esta cola (traducción).
+const String kFastingActionCategoryId = 'elena_fasting_action';
+const String kFastingCloseActionId = 'fasting_close';
+const String kFastingSnoozeActionId = 'fasting_snooze';
+
+const String kExerciseCategoryId = 'elena_exercise_action';
+const String kExerciseLogActionId = 'exercise_log';
+const String kExerciseSnoozeActionId = 'exercise_snooze';
+
+const String kNutritionCategoryId = 'elena_nutrition_action';
+const String kNutritionLogActionId = 'nutrition_log';
+const String kNutritionSnoozeActionId = 'nutrition_snooze';
+
+/// Minutos por sesión de ejercicio registrada desde un prompt.
+/// Valor conservador; el usuario puede ajustar desde el pilar.
+const int kExercisePromptMinutes = 30;
+
+enum PendingActionType {
+  addWater,
+  hydrationSnoozed,
+  // SPEC-224: nuevas acciones de pilares
+  closeFasting,
+  logExercise,
+  logMeal,
+}
 
 class PendingAction {
   final String id;
@@ -152,6 +178,42 @@ class PendingActionQueue {
           millisSinceEpoch: t.millisecondsSinceEpoch,
         ));
         break;
+
+      // SPEC-224: Ayuno — cerrar ventana en el momento del prompt.
+      case kFastingCloseActionId:
+        await enqueue(PendingAction(
+          id: 'closeFasting_${notificationId ?? 0}_$bucket',
+          type: PendingActionType.closeFasting,
+          millisSinceEpoch: t.millisecondsSinceEpoch,
+        ));
+        break;
+      case kFastingSnoozeActionId:
+        // "Continuar ayuno" → no encolar nada; el usuario eligió seguir.
+        break;
+
+      // SPEC-224: Ejercicio — registrar sesión de 30 min.
+      case kExerciseLogActionId:
+        await enqueue(PendingAction(
+          id: 'logExercise_${notificationId ?? 0}_$bucket',
+          type: PendingActionType.logExercise,
+          amount: kExercisePromptMinutes.toDouble(),
+          millisSinceEpoch: t.millisecondsSinceEpoch,
+        ));
+        break;
+      case kExerciseSnoozeActionId:
+        break;
+
+      // SPEC-224: Nutrición — registrar comida con defaults seguros.
+      case kNutritionLogActionId:
+        await enqueue(PendingAction(
+          id: 'logMeal_${notificationId ?? 0}_$bucket',
+          type: PendingActionType.logMeal,
+          millisSinceEpoch: t.millisecondsSinceEpoch,
+        ));
+        break;
+      case kNutritionSnoozeActionId:
+        break;
+
       default:
         // Tap en el cuerpo (sin actionId) u otra categoría: nada que encolar.
         break;

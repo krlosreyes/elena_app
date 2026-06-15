@@ -1,6 +1,7 @@
 import Flutter
 import UIKit
 import UserNotifications
+import flutter_local_notifications
 
 @main
 @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
@@ -12,6 +13,14 @@ import UserNotifications
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
+    // SPEC-224 (A1b): registrar plugins en el isolate de background para que
+    // SharedPreferences esté disponible cuando el handler de notificación corra
+    // sin que la app esté en foreground. Debe ir ANTES de super.application.
+    // Ref: https://pub.dev/packages/flutter_local_notifications#-ios-setup-background
+    FlutterLocalNotificationsPlugin.setPluginRegistrantCallback { registry in
+      GeneratedPluginRegistrant.register(with: registry)
+    }
+
     // SPEC-172 (2026-06-04): banner + sonido en foreground.
     // Sin esto, las notifs locales NO se muestran cuando la app está
     // abierta — iOS las silencia por default. `flutter_local_notifications`

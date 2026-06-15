@@ -6,7 +6,21 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'app_logger.dart';
-import 'pending_action_queue.dart';
+import 'pending_action_queue.dart'
+    show
+        PendingActionQueue,
+        kHydrationYesActionId,
+        kHydrationNoActionId,
+        kHydrationCategoryId,
+        kFastingActionCategoryId,
+        kFastingCloseActionId,
+        kFastingSnoozeActionId,
+        kExerciseCategoryId,
+        kExerciseLogActionId,
+        kExerciseSnoozeActionId,
+        kNutritionCategoryId,
+        kNutritionLogActionId,
+        kNutritionSnoozeActionId;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SPEC-199 Fase A — Handlers de respuesta a notificaciones accionables
@@ -104,6 +118,14 @@ const _fastingChannel = AndroidNotificationChannel(
   importance: Importance.defaultImportance,
 );
 
+// SPEC-224: canal para notificaciones de ejercicio accionables.
+const _exerciseChannel = AndroidNotificationChannel(
+  'elena_exercise',
+  'Ejercicio',
+  description: 'Recordatorios de actividad física',
+  importance: Importance.high,
+);
+
 // ─────────────────────────────────────────────────────────────────────────────
 // NotificationService
 // ─────────────────────────────────────────────────────────────────────────────
@@ -126,6 +148,8 @@ class NotificationService {
       importance: Importance.high,
       priority: Priority.high,
       icon: '@mipmap/ic_launcher',
+      // SPEC-224: public → Wear OS refleja la notificación en el reloj.
+      visibility: NotificationVisibility.public,
     ),
     iOS: DarwinNotificationDetails(
       presentAlert: true,
@@ -147,6 +171,8 @@ class NotificationService {
       importance: Importance.high,
       priority: Priority.high,
       icon: '@mipmap/ic_launcher',
+      // SPEC-224: public → Wear OS refleja la notificación en el reloj.
+      visibility: NotificationVisibility.public,
     ),
     iOS: DarwinNotificationDetails(
       presentAlert: true,
@@ -158,11 +184,12 @@ class NotificationService {
     ),
   );
 
-  // SPEC-199 Fase A: notificación de hidratación ACCIONABLE — botones
-  // "Sí, lo registro" / "Aún no". En iOS los botones cuelgan de la categoría
-  // `kHydrationCategoryId` (registrada en init); en Android van inline en
-  // `actions`. `showsUserInterface`/`foreground` = abre la app para aplicar
-  // el registro de forma confiable (ver nota de los handlers).
+  // SPEC-199 / SPEC-224: notificación de hidratación ACCIONABLE.
+  // A1b: se eliminó `DarwinNotificationActionOption.foreground` de las acciones
+  // iOS (ver `_hydrationCategory` en init) para que el handler background
+  // registre el vaso sin abrir la app — requiere el plugin registrant en
+  // AppDelegate (SPEC-224). En Android, `showsUserInterface: false` deja la
+  // acción en background; el flush ocurre al reanudar la app.
   static final NotificationDetails _hydrationActionableDetails =
       NotificationDetails(
     android: AndroidNotificationDetails(
@@ -172,16 +199,18 @@ class NotificationService {
       importance: Importance.high,
       priority: Priority.high,
       icon: '@mipmap/ic_launcher',
+      // SPEC-224: public → Wear OS refleja la notificación en el reloj.
+      visibility: NotificationVisibility.public,
       actions: <AndroidNotificationAction>[
         AndroidNotificationAction(
           kHydrationYesActionId,
           'Sí, lo registro',
-          showsUserInterface: true,
+          showsUserInterface: false,
         ),
         AndroidNotificationAction(
           kHydrationNoActionId,
           'Aún no',
-          showsUserInterface: true,
+          showsUserInterface: false,
         ),
       ],
     ),
@@ -189,7 +218,108 @@ class NotificationService {
       presentAlert: true,
       presentBadge: false,
       presentSound: true,
+      // SPEC-224: timeSensitive para que no se silencie en Focus/Modo Sueño.
+      interruptionLevel: InterruptionLevel.timeSensitive,
       categoryIdentifier: kHydrationCategoryId,
+    ),
+  );
+
+  // SPEC-224: Ayuno — "¿Quieres cerrar tu ayuno ahora?"
+  static final NotificationDetails _fastingActionableDetails =
+      NotificationDetails(
+    android: AndroidNotificationDetails(
+      'elena_fasting',
+      'Ayuno Metabólico',
+      channelDescription: 'Hitos científicos de tu protocolo de ayuno',
+      importance: Importance.high,
+      priority: Priority.high,
+      icon: '@mipmap/ic_launcher',
+      visibility: NotificationVisibility.public,
+      actions: <AndroidNotificationAction>[
+        AndroidNotificationAction(
+          kFastingCloseActionId,
+          'Cerrar ayuno',
+          showsUserInterface: false,
+        ),
+        AndroidNotificationAction(
+          kFastingSnoozeActionId,
+          'Continuar ayuno',
+          showsUserInterface: false,
+        ),
+      ],
+    ),
+    iOS: DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: false,
+      presentSound: true,
+      interruptionLevel: InterruptionLevel.timeSensitive,
+      categoryIdentifier: kFastingActionCategoryId,
+    ),
+  );
+
+  // SPEC-224: Ejercicio — "¿Ya hiciste tu actividad de hoy?"
+  static final NotificationDetails _exerciseActionableDetails =
+      NotificationDetails(
+    android: AndroidNotificationDetails(
+      'elena_exercise',
+      'Ejercicio',
+      channelDescription: 'Recordatorios de actividad física',
+      importance: Importance.high,
+      priority: Priority.high,
+      icon: '@mipmap/ic_launcher',
+      visibility: NotificationVisibility.public,
+      actions: <AndroidNotificationAction>[
+        AndroidNotificationAction(
+          kExerciseLogActionId,
+          'Sí, lo registro',
+          showsUserInterface: false,
+        ),
+        AndroidNotificationAction(
+          kExerciseSnoozeActionId,
+          'Luego lo hago',
+          showsUserInterface: false,
+        ),
+      ],
+    ),
+    iOS: DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: false,
+      presentSound: true,
+      interruptionLevel: InterruptionLevel.timeSensitive,
+      categoryIdentifier: kExerciseCategoryId,
+    ),
+  );
+
+  // SPEC-224: Nutrición — "¿Ya comiste en tu ventana de alimentación?"
+  static final NotificationDetails _nutritionActionableDetails =
+      NotificationDetails(
+    android: AndroidNotificationDetails(
+      'elena_circadian',
+      'Ritmos Circadianos',
+      channelDescription: 'Alertas basadas en tu biología circadiana',
+      importance: Importance.high,
+      priority: Priority.high,
+      icon: '@mipmap/ic_launcher',
+      visibility: NotificationVisibility.public,
+      actions: <AndroidNotificationAction>[
+        AndroidNotificationAction(
+          kNutritionLogActionId,
+          'Registrar comida',
+          showsUserInterface: false,
+        ),
+        AndroidNotificationAction(
+          kNutritionSnoozeActionId,
+          'Aún no',
+          showsUserInterface: false,
+        ),
+      ],
+    ),
+    iOS: DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: false,
+      presentSound: true,
+      interruptionLevel: InterruptionLevel.timeSensitive,
+      categoryIdentifier: kNutritionCategoryId,
     ),
   );
 
@@ -222,26 +352,58 @@ class NotificationService {
       const AndroidInitializationSettings androidSettings =
           AndroidInitializationSettings('@mipmap/ic_launcher');
 
-      // SPEC-199 Fase A: categoría accionable de hidratación (iOS). Los
-      // botones aparecen al expandir / mantener presionada la notificación.
+      // SPEC-199 / SPEC-224: categorías accionables iOS.
+      // A1b: se quita `foreground` de las acciones de hidratación para que el
+      // handler background pueda encolar sin abrir la app. El plugin registrant
+      // en AppDelegate garantiza que SharedPreferences esté disponible en el
+      // isolate de background (ver ios/Runner/AppDelegate.swift).
+
       final DarwinNotificationCategory hydrationCategory =
           DarwinNotificationCategory(
         kHydrationCategoryId,
         actions: <DarwinNotificationAction>[
-          DarwinNotificationAction.plain(
-            kHydrationYesActionId,
-            'Sí, lo registro',
-            options: <DarwinNotificationActionOption>{
-              DarwinNotificationActionOption.foreground,
-            },
-          ),
-          DarwinNotificationAction.plain(
-            kHydrationNoActionId,
-            'Aún no',
-            options: <DarwinNotificationActionOption>{
-              DarwinNotificationActionOption.foreground,
-            },
-          ),
+          // A1b: sin `foreground` → registra en background sin abrir la app.
+          DarwinNotificationAction.plain(kHydrationYesActionId, 'Sí, lo registro'),
+          DarwinNotificationAction.plain(kHydrationNoActionId, 'Aún no'),
+        ],
+        options: <DarwinNotificationCategoryOption>{
+          DarwinNotificationCategoryOption.hiddenPreviewShowTitle,
+        },
+      );
+
+      // SPEC-224: categoría de ayuno accionable.
+      final DarwinNotificationCategory fastingCategory =
+          DarwinNotificationCategory(
+        kFastingActionCategoryId,
+        actions: <DarwinNotificationAction>[
+          DarwinNotificationAction.plain(kFastingCloseActionId, 'Cerrar ayuno'),
+          DarwinNotificationAction.plain(kFastingSnoozeActionId, 'Continuar ayuno'),
+        ],
+        options: <DarwinNotificationCategoryOption>{
+          DarwinNotificationCategoryOption.hiddenPreviewShowTitle,
+        },
+      );
+
+      // SPEC-224: categoría de ejercicio accionable.
+      final DarwinNotificationCategory exerciseCategory =
+          DarwinNotificationCategory(
+        kExerciseCategoryId,
+        actions: <DarwinNotificationAction>[
+          DarwinNotificationAction.plain(kExerciseLogActionId, 'Sí, lo registro'),
+          DarwinNotificationAction.plain(kExerciseSnoozeActionId, 'Luego lo hago'),
+        ],
+        options: <DarwinNotificationCategoryOption>{
+          DarwinNotificationCategoryOption.hiddenPreviewShowTitle,
+        },
+      );
+
+      // SPEC-224: categoría de nutrición accionable.
+      final DarwinNotificationCategory nutritionCategory =
+          DarwinNotificationCategory(
+        kNutritionCategoryId,
+        actions: <DarwinNotificationAction>[
+          DarwinNotificationAction.plain(kNutritionLogActionId, 'Registrar comida'),
+          DarwinNotificationAction.plain(kNutritionSnoozeActionId, 'Aún no'),
         ],
         options: <DarwinNotificationCategoryOption>{
           DarwinNotificationCategoryOption.hiddenPreviewShowTitle,
@@ -255,6 +417,9 @@ class NotificationService {
         requestSoundPermission: true,
         notificationCategories: <DarwinNotificationCategory>[
           hydrationCategory,
+          fastingCategory,
+          exerciseCategory,
+          nutritionCategory,
         ],
       );
 
@@ -276,6 +441,8 @@ class NotificationService {
 
       await androidPlugin?.createNotificationChannel(_circadianChannel);
       await androidPlugin?.createNotificationChannel(_fastingChannel);
+      // SPEC-224: canal de ejercicio para notificaciones accionables.
+      await androidPlugin?.createNotificationChannel(_exerciseChannel);
 
       _initialized = true;
       AppLogger.info('[NotificationService] Inicializado correctamente.');
@@ -354,6 +521,10 @@ class NotificationService {
     bool repeatsDaily = true,
     bool isFasting = false,
     bool actionableHydration = false,
+    // SPEC-224: nuevos tipos de notificación accionable.
+    bool actionableFasting = false,
+    bool actionableExercise = false,
+    bool actionableNutrition = false,
   }) async {
     if (kIsWeb || !_initialized) return;
 
@@ -367,9 +538,19 @@ class NotificationService {
         return;
       }
 
-      final NotificationDetails details = actionableHydration
-          ? _hydrationActionableDetails
-          : (isFasting ? _fastingDetails : _circadianDetails);
+      // Prioridad: accionable específico > accionable hydration > fasting/circadian.
+      final NotificationDetails details;
+      if (actionableFasting) {
+        details = _fastingActionableDetails;
+      } else if (actionableExercise) {
+        details = _exerciseActionableDetails;
+      } else if (actionableNutrition) {
+        details = _nutritionActionableDetails;
+      } else if (actionableHydration) {
+        details = _hydrationActionableDetails;
+      } else {
+        details = isFasting ? _fastingDetails : _circadianDetails;
+      }
 
       await _plugin.zonedSchedule(
         id: id,

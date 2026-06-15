@@ -4,7 +4,10 @@ import 'package:elena_app/src/core/services/analytics_service.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/core/services/notification_service.dart';
 import 'package:elena_app/src/core/services/pending_action_queue.dart';
+import 'package:elena_app/src/features/dashboard/application/fasting_notifier.dart';
 import 'package:elena_app/src/features/dashboard/application/hydration_notifier.dart';
+import 'package:elena_app/src/features/exercise/application/exercise_notifier.dart';
+import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -73,6 +76,84 @@ class CoachingActionRouter {
               'surface': 'notification',
             },
           );
+          break;
+
+        // SPEC-224: Ayuno — cerrar ventana en el momento del prompt.
+        case PendingActionType.closeFasting:
+          if (user == null || user.id.isEmpty) continue;
+          await ref
+              .read(fastingProvider.notifier)
+              .confirmManualFastingEnd(DateTime.now());
+          await PendingActionQueue.remove(action.id);
+          applied++;
+          AnalyticsService.logEvent(
+            'coaching_prompt_answered',
+            params: const {
+              'type': 'fasting',
+              'option': 'close',
+              'surface': 'notification',
+            },
+          );
+          AppLogger.debug('[CoachingActionRouter] ayuno cerrado vía prompt');
+          break;
+
+        // SPEC-224: Ejercicio — sesión de 30 min a la hora del prompt.
+        case PendingActionType.logExercise:
+          if (user == null || user.id.isEmpty) continue;
+          try {
+            await ref.read(exerciseProvider.notifier).registerExercise(
+                  minutes: (action.amount ?? kExercisePromptMinutes).toInt(),
+                  activityType: 'Actividad moderada',
+                  timestamp: DateTime.fromMillisecondsSinceEpoch(
+                      action.millisSinceEpoch),
+                );
+          } catch (e) {
+            // Validación fallida (p. ej. >120 min): descartamos igual para
+            // no bloquear la cola. El usuario puede registrar desde el pilar.
+            AppLogger.warning(
+                '[CoachingActionRouter] logExercise descartado: $e');
+          }
+          await PendingActionQueue.remove(action.id);
+          applied++;
+          AnalyticsService.logEvent(
+            'coaching_prompt_answered',
+            params: const {
+              'type': 'exercise',
+              'option': 'log',
+              'surface': 'notification',
+            },
+          );
+          AppLogger.debug('[CoachingActionRouter] ejercicio registrado vía prompt');
+          break;
+
+        // SPEC-224: Nutrición — comida simple con defaults seguros.
+        case PendingActionType.logMeal:
+          if (user == null || user.id.isEmpty) continue;
+          try {
+            await ref.read(nutritionProvider.notifier).logMeal(
+                  label: 'Comida',
+                  mealTime: DateTime.fromMillisecondsSinceEpoch(
+                      action.millisSinceEpoch),
+                  // forceLog evita el warning de intervalo (2-3h), pero
+                  // el bloqueo duro (<2h) sigue activo — si falla,
+                  // descartamos sin romper la cola.
+                  forceLog: true,
+                );
+          } catch (e) {
+            AppLogger.warning(
+                '[CoachingActionRouter] logMeal descartado: $e');
+          }
+          await PendingActionQueue.remove(action.id);
+          applied++;
+          AnalyticsService.logEvent(
+            'coaching_prompt_answered',
+            params: const {
+              'type': 'nutrition',
+              'option': 'log',
+              'surface': 'notification',
+            },
+          );
+          AppLogger.debug('[CoachingActionRouter] comida registrada vía prompt');
           break;
       }
     }

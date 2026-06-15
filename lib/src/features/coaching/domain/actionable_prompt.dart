@@ -11,6 +11,17 @@ enum PromptActionType {
 
   /// Posponer: ocultar el prompt por ahora (in-app) / re-recordar (notif).
   snooze,
+
+  // SPEC-224: acciones de los otros 3 pilares accionables.
+
+  /// Cierra la ventana de ayuno en el momento actual.
+  closeFasting,
+
+  /// Registra una sesión de ejercicio (defaults del prompt).
+  logExercise,
+
+  /// Registra una comida simple (defaults seguros).
+  logMeal,
 }
 
 class PromptOption {
