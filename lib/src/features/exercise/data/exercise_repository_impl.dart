@@ -84,6 +84,11 @@ class ExerciseRepositoryImpl implements ExerciseRepository {
   Future<void> removeLastSession(String userId, DateTime since) async {
     await _source.deleteLatest(userId: userId, since: since);
   }
+
+  @override
+  Future<void> deleteById(String userId, String logId) async {
+    await _source.deleteById(userId: userId, logId: logId);
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────

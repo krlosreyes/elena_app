@@ -346,8 +346,20 @@ class HealthImportService {
       final dayKey = entry.key;
       // SPEC-203: si ese día hubo un entrenamiento real, los pasos NO
       // cuentan como ejercicio (el workout ya es la verdad del día).
+      // BUG-FIX: antes solo saltábamos la escritura, pero si un sync
+      // anterior ya había guardado `hk_steps_{dayKey}` (antes de que
+      // el workout fuera detectado), ese doc seguía en Firestore y se
+      // sumaba a los minutos del ciclo junto al workout → doble-conteo.
+      // Ahora también borramos el doc de pasos si existe.
       if (skipDays.contains(dayKey)) {
         skippedWorkoutDay++;
+        try {
+          await _exerciseRepo.deleteById(userId, 'hk_steps_$dayKey');
+        } catch (e) {
+          AppLogger.warning(
+            'HealthImport[steps]: no pudo borrar hk_steps_$dayKey: $e',
+          );
+        }
         continue;
       }
       final stepsCount = entry.value.round();

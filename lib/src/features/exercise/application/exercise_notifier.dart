@@ -179,10 +179,12 @@ class ExerciseNotifier extends StateNotifier<ExerciseState> {
 
     // SPEC-206 (offline-first): registro optimista. El listener `watchSince`
     // refleja el log desde la caché al instante (con o sin red) y el write
-    // sincroniza al reconectar. Antes el `await` colgaba offline → isSaving
-    // trabado y nada se registraba en la UI.
+    // sincroniza al reconectar.
+    // BUG-FIX: antes se ponía isSaving=false directamente sin pasar por true
+    // → el botón del sheet NUNCA se deshabilitaba → taps rápidos creaban
+    // sesiones duplicadas (cada tap genera un UUID nuevo → no hay dedup).
     final repo = ref.read(exerciseRepositoryProvider);
-    state = state.copyWith(isSaving: false, error: null);
+    state = state.copyWith(isSaving: true, error: null);
 
     // SPEC-193/194: analytics (se auto-encola sin red) + coaching.
     AnalyticsService.logEvent(
@@ -192,10 +194,11 @@ class ExerciseNotifier extends StateNotifier<ExerciseState> {
     ref.read(coachingCompletionProvider).onPillarActivity(Pillar.exercise);
 
     unawaited(
-      repo.save(userId, log).catchError((Object e) {
+      repo.save(userId, log).then((_) {
+        if (mounted) state = state.copyWith(isSaving: false);
+      }).catchError((Object e) {
         // Error REAL (no el offline pendiente): informar a la UI.
-        if (!mounted) return;
-        state = state.copyWith(error: 'Fallo al guardar: $e');
+        if (mounted) state = state.copyWith(isSaving: false, error: 'Fallo al guardar: $e');
       }),
     );
   }

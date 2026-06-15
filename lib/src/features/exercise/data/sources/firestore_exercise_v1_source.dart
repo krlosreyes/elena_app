@@ -21,8 +21,16 @@ class FirestoreExerciseV1Source implements ExerciseDataSource {
     required DateTime startOfDay,
     DateTime? endOfDay,
   }) {
-    Query<Map<String, dynamic>> query = _collection(userId).where('timestamp',
-        isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay));
+    // BUG-FIX: antes faltaba orderBy('timestamp'). Firestore exige que el
+    // campo del filtro de rango tenga un orderBy explícito para usar el
+    // índice correcto. Sin él, los docs se devuelven en orden de docId
+    // (alfabético) → el índice de timestamp no se usa → el stream puede
+    // no actualizarse en vivo correctamente con la caché offline.
+    // deleteLatest ya usaba orderBy — ahora streamSince es consistente.
+    Query<Map<String, dynamic>> query = _collection(userId)
+        .where('timestamp',
+            isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+        .orderBy('timestamp');
     if (endOfDay != null) {
       query = query.where('timestamp',
           isLessThan: Timestamp.fromDate(endOfDay));
@@ -59,5 +67,14 @@ class FirestoreExerciseV1Source implements ExerciseDataSource {
         .get();
     if (snap.docs.isEmpty) return;
     await snap.docs.first.reference.delete();
+  }
+
+  @override
+  Future<void> deleteById({
+    required String userId,
+    required String logId,
+  }) async {
+    // Firestore delete es idempotente — no lanza si el doc no existe.
+    await _collection(userId).doc(logId).delete();
   }
 }

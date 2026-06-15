@@ -42,4 +42,9 @@ abstract class ExerciseRepository {
   /// Borra el log más reciente en la ventana [since, ∞).
   /// No-op si no hay logs en la ventana.
   Future<void> removeLastSession(String userId, DateTime since);
+
+  /// Borra un log por ID determinístico. No-op si no existe.
+  /// Usado por HealthImportService para limpiar `hk_steps_{day}` cuando
+  /// se detecta un workout real del mismo día (Bug 3 — double-counting).
+  Future<void> deleteById(String userId, String logId);
 }

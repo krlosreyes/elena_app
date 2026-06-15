@@ -66,6 +66,11 @@ class _FakeExerciseRepository implements ExerciseRepository {
 
   @override
   Future<void> removeLastSession(String userId, DateTime since) async {}
+
+  @override
+  Future<void> deleteById(String userId, String logId) async {
+    saved.removeWhere((log) => log.id == logId);
+  }
 }
 
 // Fake del BiometricRepository: reusamos fake_cloud_firestore para tener

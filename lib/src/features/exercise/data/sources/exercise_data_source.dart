@@ -23,4 +23,12 @@ abstract class ExerciseDataSource {
     required String userId,
     required DateTime since,
   });
+
+  /// Borra un log por ID determinístico (ej. `hk_steps_YYYY-MM-DD`).
+  /// No-op si el documento no existe. Usado por HealthImportService para
+  /// limpiar logs de pasos cuando se detecta un workout del mismo día.
+  Future<void> deleteById({
+    required String userId,
+    required String logId,
+  });
 }
