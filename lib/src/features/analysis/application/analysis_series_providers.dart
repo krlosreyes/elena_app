@@ -104,9 +104,49 @@ final closedCycleScoreSeriesProvider =
   }
 });
 
-/// Alias de compatibilidad — la pantalla Progreso (tile overview) puede
-/// seguir usando este nombre; devuelve la serie en vivo desde el streak
-/// para el tile del día actual (no el histórico de cierres).
+// ────────────────────────────────────────────────────────────────────────
+// SPEC-219 (2026-06-14): fuente canónica única para Score del Día.
+//
+// REGLA: cualquier widget que muestre el Score del Día DEBE usar
+// `resolvedDailyScoreSeriesProvider`. NUNCA usar `dailyScoreSeriesProvider`
+// ni `closedCycleScoreSeriesProvider` directamente como fuente primaria.
+//
+// Jerarquía de fallback:
+//   1. closedCycleScoreSeriesProvider — score del CIERRE del ciclo
+//      metabólico (MetabolicCycle.dailyScore). Es el valor definitivo.
+//   2. dailyScoreSeriesProvider — snapshot calendárico de StreakEntry.
+//      Solo se usa cuando no hay ciclos cerrados aún (onboarding,
+//      usuarios con protocolo 'Ninguno', ciclos sin dailyScore pre-SPEC-200.1).
+//
+// Este es el único lugar donde vive la lógica de fallback. Si en el
+// futuro se quiere cambiar la fuente de verdad, se cambia solo aquí.
+// ────────────────────────────────────────────────────────────────────────
+
+/// SPEC-219: fuente canónica del Score del Día para toda la UI.
+/// Prioriza ciclos metabólicos cerrados; cae a streak calendárico solo
+/// cuando no hay ciclos con score en el rango actual.
+///
+/// Para el estado de carga (spinner), watch también
+/// `closedCycleScoreSeriesProvider` directamente y chequear `.isLoading`.
+final resolvedDailyScoreSeriesProvider =
+    Provider.autoDispose<MetricSeries>((ref) {
+  final closed = ref.watch(closedCycleScoreSeriesProvider).valueOrNull;
+  if (closed != null && closed.points.isNotEmpty) return closed;
+  // Fallback: ciclos cerrados aún vacíos o cargando → usar streak calendárico.
+  return ref.watch(dailyScoreSeriesProvider);
+});
+
+/// Fallback calendárico para Score del Día. Fuente: StreakEntry.dailyQualityScore
+/// (snapshot en vivo del día calendario, persistido cada 30s por
+/// DailySummaryPersistenceService). NO usar como fuente primaria en la UI.
+///
+/// Usar `resolvedDailyScoreSeriesProvider` en su lugar.
+// ignore: deprecated_member_use_from_same_package
+@Deprecated(
+  'No usar directamente en la UI. '
+  'Usar resolvedDailyScoreSeriesProvider que aplica la jerarquía correcta '
+  '(ciclos cerrados primero, streak como fallback). SPEC-219 (2026-06-14).',
+)
 final dailyScoreSeriesProvider = Provider.autoDispose<MetricSeries>((ref) {
   final rangeStart = ref.watch(analysisRangeStartProvider);
   final mode = _currentMode(ref);

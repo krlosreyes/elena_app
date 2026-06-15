@@ -293,11 +293,11 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
 
   // ─── SPEC-168.4: tiles del overview ─────────────────────────────────
 
-  /// SPEC-200: tile del Score del Día (HOY). Valor = promedio del historial;
-  /// sparkline = puntaje diario. Navega a su detalle dedicado vía
-  /// `routeOverride` (no es un ChartMetric, para no tocar los switch del enum).
+  /// SPEC-200 / SPEC-219: tile del Score del Día.
+  /// Fuente: resolvedDailyScoreSeriesProvider (ciclos cerrados → streak fallback).
+  /// NO usar dailyScoreSeriesProvider directamente — ver SPEC-219.
   PillarOverviewTile _dailyScoreTile() {
-    final s = ref.watch(dailyScoreSeriesProvider);
+    final s = ref.watch(resolvedDailyScoreSeriesProvider);
     final v = ChartHeroComputer.aggregateValue(s, HeroAggregation.avg);
     return PillarOverviewTile(
       // `metric` se ignora porque pasamos `routeOverride`.
