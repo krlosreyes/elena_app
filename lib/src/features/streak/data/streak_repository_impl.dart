@@ -21,7 +21,9 @@ class StreakRepositoryImpl implements StreakRepository {
 
   @override
   Stream<List<StreakEntry>> watchHistory(String userId) {
-    final cutoff = DateTime.now().subtract(const Duration(days: 30));
+    // SPEC-141: computeActiveDaysLast90 necesita 90 días de historial.
+    // Con 30 días, adherenceTrend (input del IMR) quedaba subvalorado.
+    final cutoff = DateTime.now().subtract(const Duration(days: 90));
     final cutoffKey = _formatDateKey(cutoff);
     return _source
         .streamSince(userId: userId, cutoffDateKey: cutoffKey)
