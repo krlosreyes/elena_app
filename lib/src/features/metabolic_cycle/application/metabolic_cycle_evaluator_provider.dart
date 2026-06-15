@@ -20,6 +20,7 @@ import 'package:elena_app/src/features/dashboard/application/eating_window_provi
 import 'package:elena_app/src/features/dashboard/application/fasting_notifier.dart';
 import 'package:elena_app/src/features/dashboard/application/sleep_notifier.dart';
 import 'package:elena_app/src/features/dashboard/domain/fasting_status.dart';
+import 'package:elena_app/src/features/metabolic_cycle/application/cycle_score_computer.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_service.dart';
 import 'package:elena_app/src/features/metabolic_cycle/domain/closure_reason.dart';
@@ -47,6 +48,29 @@ final metabolicCycleEvaluatorProvider = Provider<void>((ref) {
     },
   );
 
+  // SPEC-225 (2026-06-15): snapshot pre-cierre de StreakState.
+  //
+  // Problema: cuando el usuario inicia un nuevo ayuno, StreakNotifier
+  // escucha fastingProvider y llama _evaluateToday() ANTES de que el
+  // evaluador del ciclo capture el snapshot. Esto establece
+  // fastingMagnitude = 0 (nuevo ayuno recién iniciado = 0s de duración),
+  // y el ciclo se guarda con score incorrecto.
+  //
+  // Solución: aprovechar la cascada de Riverpod. Cuando fastingProvider
+  // cambia, StreakNotifier actualiza su estado (streakProvider cambia) →
+  // los listeners de streakProvider se disparan con (previous = streak
+  // correcto, next = streak reseteado) → luego corre nuestro listener de
+  // fastingProvider. Guardamos `previous` en una variable local para
+  // pasarla a _evaluate como snapshot pre-cierre.
+  StreakState? preClosureStreakSnapshot;
+  ref.listen<StreakState>(
+    streakProvider,
+    (previous, next) {
+      if (previous != null) preClosureStreakSnapshot = previous;
+    },
+    fireImmediately: false,
+  );
+
   // Transición isActive false→true del ayuno.
   //
   // SPEC-183 (2026-06-05): la transición SOLO debe crear ciclo
@@ -69,6 +93,9 @@ final metabolicCycleEvaluatorProvider = Provider<void>((ref) {
           DateTime.now(),
           newFastingTriggered: true,
           newFastingAt: next.startTime,
+          // SPEC-225: pasar el streak del ciclo que cierra — ya contiene
+          // las magnitudes correctas antes de que se reseteen.
+          preClosureStreak: preClosureStreakSnapshot,
         );
       }
     },
@@ -80,6 +107,9 @@ Future<void> _evaluate(
   DateTime now, {
   bool newFastingTriggered = false,
   DateTime? newFastingAt,
+  // SPEC-225: streak capturado antes de que StreakNotifier resetee
+  // fastingMagnitude al iniciar el nuevo ayuno.
+  StreakState? preClosureStreak,
 }) async {
   final account = ref.read(authStateProvider).value;
   if (account == null) return;
@@ -87,8 +117,17 @@ Future<void> _evaluate(
   final user = ref.read(currentUserStreamProvider).valueOrNull;
   if (user == null) return;
 
-  final streak = ref.read(streakProvider);
-  final today = streak.todayEntry;
+  // SPEC-225 (2026-06-15): al cerrar por nuevo ayuno, usar el StreakEntry
+  // del ciclo que CIERRA, no el del ciclo recién abierto.
+  //
+  // Cuando el usuario toca "Iniciar ayuno", StreakNotifier._evaluateToday()
+  // ya corrió y puso fastingMagnitude = 0 (el nuevo ayuno tiene duración 0).
+  // Si leemos streakProvider ahora, capturamos ese 0 en lugar del progreso
+  // real del día que terminó. preClosureStreak preserva el estado anterior.
+  final StreakState streakForSnapshot = (newFastingTriggered && preClosureStreak != null)
+      ? preClosureStreak
+      : ref.read(streakProvider);
+  final today = streakForSnapshot.todayEntry;
 
   // Magnitudes del día actual (StreakEntry). Si no hay, todo en 0.
   final magnitudes = CycleMagnitudes(
@@ -111,8 +150,34 @@ Future<void> _evaluate(
   // CycleScoreComputer) en lugar del legacy dailyScoreProvider (calendario).
   // El Dashboard muestra displayDailyScoreProvider; el ciclo debe guardar
   // el MISMO valor que el usuario ve, no un cálculo diferente.
-  // ref.read evita dependencia reactiva — sin riesgo de ciclo.
-  final dailyScore = ref.read(displayDailyScoreProvider);
+  //
+  // SPEC-225 (2026-06-15): cuando cerramos por nuevo ayuno, el
+  // displayDailyScoreProvider ya refleja el nuevo ciclo (fastingMagnitude=0).
+  // Recalculamos desde las magnitudes del preClosureStreak usando el mismo
+  // CycleScoreComputer para garantizar consistencia con lo que el usuario vio.
+  final int dailyScore;
+  if (newFastingTriggered && preClosureStreak != null) {
+    dailyScore = CycleScoreComputer.compute(
+      fastingMagnitude: today?.fastingMagnitude,
+      sleepQualityScore: today?.sleepQualityScore,
+      hydrationMagnitude: today?.hydrationMagnitude,
+      exerciseMagnitude: today?.exerciseMagnitude,
+      nutritionMagnitude: today?.nutritionMagnitude,
+    );
+    AppLogger.debug(
+      '[metabolicCycleEvaluator] snapshot pre-cierre: '
+      'score=$dailyScore '
+      'fasting=${today?.fastingMagnitude?.toStringAsFixed(2)} '
+      'hydration=${today?.hydrationMagnitude?.toStringAsFixed(2)} '
+      'exercise=${today?.exerciseMagnitude?.toStringAsFixed(2)} '
+      'nutrition=${today?.nutritionMagnitude?.toStringAsFixed(2)} '
+      'sleep=${today?.sleepQualityScore?.toStringAsFixed(2)}',
+    );
+  } else {
+    // ref.read evita dependencia reactiva — sin riesgo de ciclo.
+    dailyScore = ref.read(displayDailyScoreProvider);
+  }
+
   final eatingWindow = ref.read(eatingWindowProvider);
   final sleepState = ref.read(sleepProvider);
   final nutritionState = ref.read(nutritionProvider);
