@@ -14,6 +14,7 @@
 // - Plataforma-aware: en Web/Desktop retorna `HealthPermissionUnavailable`
 //   sin crashear; en Android distingue Health Connect no instalado.
 
+import 'dart:async' show TimeoutException;
 import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -353,18 +354,30 @@ class HealthSyncService {
     DateTime end,
   ) async {
     final types = _typesFor(metric);
+    // Timeout por tipo: si HealthKit/HC no responde en 30s, no bloqueamos
+    // el sync completo ni dejamos isRunning=true para siempre.
+    // WORKOUT en iOS requiere HKObjectType.workoutType() y puede colgar
+    // si el permiso nunca fue concedido interactivamente.
+    const kFetchTimeout = Duration(seconds: 30);
+
     final allPoints = <hp.HealthDataPoint>[];
     for (final type in types) {
       try {
-        final points = await _plugin.getHealthDataFromTypes(
-          types: [type],
-          startTime: start,
-          endTime: end,
-        );
+        final points = await _plugin
+            .getHealthDataFromTypes(
+              types: [type],
+              startTime: start,
+              endTime: end,
+            )
+            .timeout(kFetchTimeout);
         AppLogger.info(
           'HealthSync: ${metric.label}/${type.name} → ${points.length} samples',
         );
         allPoints.addAll(points);
+      } on TimeoutException {
+        AppLogger.warning(
+          'HealthSync: ${metric.label}/${type.name} timeout (>30s) — se omite',
+        );
       } catch (e) {
         AppLogger.warning(
           'HealthSync: ${metric.label}/${type.name} falló: $e',
