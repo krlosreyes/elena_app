@@ -13,6 +13,8 @@ import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/features/coaching/application/coaching_completion_service.dart';
 import 'package:elena_app/src/core/services/firestore_errors.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
+import 'package:elena_app/src/core/providers/shared_preferences_provider.dart';
+import 'package:elena_app/src/features/dashboard/data/fasting_history_migrator.dart';
 import 'package:elena_app/src/features/dashboard/data/fasting_interval_repository_impl.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/core/services/notification_service.dart';
@@ -46,12 +48,25 @@ final lastCompletedFastingProvider = StreamProvider<FastingInterval?>((ref) {
 class FastingNotifier extends StateNotifier<FastingState> {
   final Ref _ref;
   bool _fastingEndConfirmedToday = false;
+  // SPEC-222: evitar lanzar la migración más de una vez por sesión.
+  bool _migrationTriggered = false;
 
   FastingNotifier(this._ref) : super(FastingState.initial()) {
     _init();
   }
 
   void _init() {
+    // SPEC-222: migración one-shot flat fasting_history → subcollección.
+    // Se dispara la primera vez que el uid es no-null en esta sesión.
+    _ref.listen(authStateProvider, (_, next) {
+      final uid = next.value?.uid;
+      if (uid != null && !_migrationTriggered) {
+        _migrationTriggered = true;
+        final prefs = _ref.read(sharedPreferencesProvider);
+        FastingHistoryMigrator(prefs: prefs).migrateIfNeeded(uid);
+      }
+    }, fireImmediately: true);
+
     _ref.listen(currentUserStreamProvider, (previous, next) {
       final user = next.value;
       if (user != null && state.fastingProtocol != user.fastingProtocol) {
