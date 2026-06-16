@@ -66,10 +66,12 @@ class CoachingFatigueNotifier extends StateNotifier<CoachingFatigueState> {
   /// opcionalmente reconcilia con Firestore en background (cross-device).
   CoachingFatigueNotifier(
     this._prefs, {
-    this._repo,
-    this._uid,
+    AppStateRepository? repo,
+    String? uid,
     DateTime Function()? clock,
-  })  : _clock = clock ?? DateTime.now,
+  })  : _repo = repo,
+        _uid = uid,
+        _clock = clock ?? DateTime.now,
         super(_hydrate(_prefs)) {
     _rollOverIfNeeded();
     // Reconciliación cross-device solo si hay uid y repo disponibles.

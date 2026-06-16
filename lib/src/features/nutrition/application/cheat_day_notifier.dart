@@ -76,9 +76,11 @@ class CheatDayNotifier extends StateNotifier<CheatDayState> {
   /// opcionalmente reconcilia con Firestore en background (cross-device).
   CheatDayNotifier(
     this._prefs, {
-    this._repo,
-    this._uid,
-  }) : super(const CheatDayState.empty()) {
+    AppStateRepository? repo,
+    String? uid,
+  })  : _repo = repo,
+        _uid = uid,
+        super(const CheatDayState.empty()) {
     _hydrate();
     if (_repo != null && _uid != null) {
       _syncFromFirestore();
@@ -88,8 +90,14 @@ class CheatDayNotifier extends StateNotifier<CheatDayState> {
   /// Constructor testeable: hydrata contra un instante específico.
   /// Útil para tests deterministas que controlan el "hoy" y la semana ISO.
   @visibleForTesting
-  CheatDayNotifier.withClock(this._prefs, DateTime now, {this._repo, this._uid})
-      : super(const CheatDayState.empty()) {
+  CheatDayNotifier.withClock(
+    this._prefs,
+    DateTime now, {
+    AppStateRepository? repo,
+    String? uid,
+  })  : _repo = repo,
+        _uid = uid,
+        super(const CheatDayState.empty()) {
     _hydrate(now: now);
     // No reconciliación Firestore en tests (repo/uid típicamente null).
   }

@@ -130,6 +130,13 @@ class AppStateRepository {
 
   void confirmSleepWakeUp(String uid, String dayKey) =>
       _write(uid, 'sleep_wakeup', {dayKey: true});
+
+  // ── ONBOARDING ────────────────────────────────────────────────────────
+  // Estructura: { completed: true }
+
+  Future<void> setOnboardingCompleted(String uid) async {
+    await _doc(uid, 'onboarding').set({'completed': true}, SetOptions(merge: true));
+  }
 }
 
 final appStateRepositoryProvider = Provider<AppStateRepository>((ref) {
