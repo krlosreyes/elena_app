@@ -174,17 +174,37 @@ Future<void> _bootstrap() async {
 /// SPEC-196/197/198: inicializa el servicio de cobro activo.
 ///
 /// Prioridad:
-///   1. BILLING_FAKE=true → FakeBillingService (gating activo, sin tienda).
-///      Úsalo para validar locks y paywall en device antes de tener RC keys.
-///      flutter run --dart-define=BILLING_FAKE=true
-///   2. RC_IOS_KEY / RC_ANDROID_KEY → RevenueCatBillingService (producción).
-///   3. Sin nada → FreeBillingService, gating inerte (app completa sin muro).
+///   1. RC_IOS_KEY / RC_ANDROID_KEY → RevenueCatBillingService (producción).
+///   2. kDebugMode (sin keys) → FakeBillingService automático.
+///      Gating activo, paywall funcional, sin tienda real.
+///      Solo requiere `flutter run` (debug build normal).
+///   3. Release sin keys → FreeBillingService, gating inerte.
 Future<List<Override>> _initBilling() async {
-  // 1. Modo fake para desarrollo/QA.
-  const billingFake = bool.fromEnvironment('BILLING_FAKE');
-  if (billingFake) {
+  if (kIsWeb) return const [];
+
+  // 1. RevenueCat con keys reales (producción o QA con sandbox).
+  const iosKey = String.fromEnvironment('RC_IOS_KEY');
+  const androidKey = String.fromEnvironment('RC_ANDROID_KEY');
+  final key =
+      defaultTargetPlatform == TargetPlatform.iOS ? iosKey : androidKey;
+  if (key.isNotEmpty) {
+    final service =
+        RevenueCatBillingService(apiKey: key, debugLogging: kDebugMode);
+    await service.initialize();
+    AppLogger.info('SPEC-196: RevenueCatBillingService activo.');
+    return [
+      billingServiceProvider.overrideWith((ref) {
+        ref.onDispose(service.dispose);
+        return service;
+      }),
+      billingEnabledProvider.overrideWithValue(true),
+    ];
+  }
+
+  // 2. Debug sin keys → FakeBillingService para validar gating/paywall en device.
+  if (kDebugMode) {
     AppLogger.info(
-      'SPEC-197/198: BILLING_FAKE=true → FakeBillingService activo. '
+      'SPEC-197/198: debug sin RC key → FakeBillingService activo. '
       'Gating visible, paywall funcional sin tienda real.',
     );
     final service = FakeBillingService();
@@ -197,28 +217,10 @@ Future<List<Override>> _initBilling() async {
     ];
   }
 
-  // 2. RevenueCat con keys reales.
-  if (kIsWeb) return const [];
-  const iosKey = String.fromEnvironment('RC_IOS_KEY');
-  const androidKey = String.fromEnvironment('RC_ANDROID_KEY');
-  final key =
-      defaultTargetPlatform == TargetPlatform.iOS ? iosKey : androidKey;
-  if (key.isEmpty) {
-    AppLogger.info(
-      'SPEC-196: sin RC key para esta plataforma → cobro deshabilitado '
-      '(gating inerte, app completa). Ver docs/SETUP_BILLING.md.',
-    );
-    return const [];
-  }
-  final service = RevenueCatBillingService(apiKey: key, debugLogging: kDebugMode);
-  await service.initialize();
-  return [
-    // SPEC-213: overrideWith (no overrideWithValue) para que ref.onDispose
-    // cierre el StreamController cuando el ProviderScope se destruye.
-    billingServiceProvider.overrideWith((ref) {
-      ref.onDispose(service.dispose);
-      return service;
-    }),
-    billingEnabledProvider.overrideWithValue(true),
-  ];
+  // 3. Release sin keys → FreeBillingService, gating inerte (app completa).
+  AppLogger.info(
+    'SPEC-196: release sin RC key → cobro deshabilitado. '
+    'Ver docs/SETUP_BILLING.md.',
+  );
+  return const [];
 }
