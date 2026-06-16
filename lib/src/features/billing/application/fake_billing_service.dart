@@ -32,14 +32,15 @@ class FakeBillingService implements BillingService {
   late final StreamController<EntitlementStatus> _controller;
   EntitlementStatus _current = const EntitlementStatus.free();
 
-  // Emite el estado actual + todos los cambios futuros.
-  // Usar `Stream.value(_current).followedBy(...)` garantiza que cada nuevo
-  // suscriptor (StreamProvider de Riverpod) reciba el valor de arranque
-  // aunque se suscriba después de que el constructor emitió el primer evento.
-  // (Los broadcast streams descartan eventos emitidos sin suscriptores activos.)
+  // Emite el estado actual inmediatamente y luego los cambios futuros.
+  // El generador async* garantiza que cada nuevo suscriptor (el StreamProvider
+  // de Riverpod) reciba el valor actual aunque se suscriba después del
+  // constructor — los broadcast streams descartarían el evento inicial.
   @override
-  Stream<EntitlementStatus> customerInfoStream() =>
-      Stream.value(_current).followedBy(_controller.stream);
+  Stream<EntitlementStatus> customerInfoStream() async* {
+    yield _current;
+    yield* _controller.stream;
+  }
 
   static final List<BillingPackage> _fakePackages = [
     const BillingPackage(
