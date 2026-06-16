@@ -50,7 +50,8 @@ class _DailyScoreExplainerSheet extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             const Text(
-              'Tus dos números',
+              // SPEC-230: título más descriptivo que refleja los nombres oficiales.
+              'Progreso Hoy vs. IMR',
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 22,
@@ -59,8 +60,9 @@ class _DailyScoreExplainerSheet extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             Text(
-              'En el header del Dashboard ves dos números. Los dos son '
-              'tuyos, pero te cuentan cosas distintas.',
+              'Ves dos números en tu Dashboard. Los dos son tuyos, '
+              'pero miden cosas distintas: uno cambia cada día, '
+              'el otro refleja semanas de trabajo.',
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.75),
                 fontSize: 14,
@@ -97,12 +99,38 @@ class _DailyScoreExplainerSheet extends StatelessWidget {
             // ── IMR ──────────────────────────────────────────────────
             _ScoreSection(
               accent: const Color(0xFF22D3EE),
+              // SPEC-230: nombre completo visible para reforzar identidad.
               title: 'IMR',
-              subtitle: 'Tu base metabólica',
+              subtitle: 'Índice Metabólico Real',
               body: 'Se mueve más lento, en semanas y meses. Esto es lo '
                   'que importa cuando hablamos de cambios reales en tu '
                   'cuerpo. No está pensado para llegar a 100 — está '
                   'pensado para subir poco a poco.',
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'BLOQUES DEL IMR',
+              style: TextStyle(
+                color: Color(0xFF94A3B8),
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.5,
+              ),
+            ),
+            const SizedBox(height: 10),
+            const _WeightRow(label: 'Estructura corporal', value: 50),
+            const _WeightRow(label: 'Metabolismo (ayuno)', value: 25),
+            const _WeightRow(label: 'Conducta circadiana', value: 25),
+            const SizedBox(height: 10),
+            Text(
+              'El bloque Estructura usa tu cintura y composición corporal. '
+              'Si aún no los ingresaste, aparece como "estimado" hasta '
+              'que completes tu Check-in en Progreso.',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.50),
+                fontSize: 12,
+                height: 1.45,
+              ),
             ),
             const SizedBox(height: 20),
             Container(
