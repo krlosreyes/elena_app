@@ -11,7 +11,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'dart:io' show Platform;
+
+import 'package:android_intent_plus/android_intent.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/health_sync/application/health_auto_sync_controller.dart';
@@ -416,33 +419,24 @@ class _HealthSyncCardState extends ConsumerState<HealthSyncCard>
         .runNow(userId: user.id);
   }
 
-  /// SPEC-238: abre Samsung Health directamente con el intent URL de Android.
-  /// Si la app no está instalada, cae al Play Store como fallback.
-  /// Setea `_openedSamsungHealth = true` para que al volver se dispare
-  /// el sync automático en `didChangeAppLifecycleState`.
+  /// SPEC-238: abre Samsung Health directamente via AndroidIntent.
+  /// Fallback: Health Connect settings si Samsung Health no está instalado.
+  /// Setea `_openedSamsungHealth = true` para disparar sync al volver.
   Future<void> _handleOpenSamsungHealth() async {
     _openedSamsungHealth = true;
 
-    // Intent URL: lanza Samsung Health por package name.
-    // S.browser_fallback_url redirige a Play Store si no está instalada.
-    final samsungHealthUri = Uri.parse(
-      'intent://#Intent;'
-      'action=android.intent.action.MAIN;'
-      'category=android.intent.category.LAUNCHER;'
-      'package=com.sec.android.app.shealth;'
-      'S.browser_fallback_url=market%3A%2F%2Fdetails%3Fid%3Dcom.sec.android.app.shealth;'
-      'end',
-    );
+    if (kIsWeb || !Platform.isAndroid) return;
 
     try {
-      final launched = await launchUrl(
-        samsungHealthUri,
-        mode: LaunchMode.externalApplication,
+      const samsungPackage = 'com.sec.android.app.shealth';
+      final intent = AndroidIntent(
+        action: 'android.intent.action.MAIN',
+        package: samsungPackage,
+        flags: <int>[0x10000000], // FLAG_ACTIVITY_NEW_TASK
       );
-      if (!launched) throw Exception('launchUrl returned false');
+      await intent.launch();
     } catch (_) {
       // Fallback: abrir Health Connect settings (siempre disponible).
-      _openedSamsungHealth = true; // mantener el flag para el sync al volver
       await ref.read(healthSyncServiceProvider).openHealthConnectSettings();
     }
   }

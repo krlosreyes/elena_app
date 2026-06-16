@@ -20,7 +20,7 @@ import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:health/health.dart' as hp;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:android_intent_plus/android_intent.dart';
 
 import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/features/health_sync/domain/health_metric.dart';
@@ -343,15 +343,13 @@ class HealthSyncService {
   Future<void> openHealthConnectSettings() async {
     if (kIsWeb || !Platform.isAndroid) return;
     try {
-      // Intent URL para abrir Health Connect directamente.
-      final uri = Uri.parse(
-        'intent://#Intent;'
-        'action=androidx.health.ACTION_HEALTH_CONNECT_SETTINGS;'
-        'package=com.google.android.apps.healthdata;'
-        'S.browser_fallback_url=market%3A%2F%2Fdetails%3Fid%3Dcom.google.android.apps.healthdata;'
-        'end',
+      const hcPackage = 'com.google.android.apps.healthdata';
+      final intent = AndroidIntent(
+        action: 'androidx.health.ACTION_HEALTH_CONNECT_SETTINGS',
+        package: hcPackage,
+        flags: <int>[0x10000000], // FLAG_ACTIVITY_NEW_TASK
       );
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
+      await intent.launch();
     } catch (e, st) {
       AppLogger.error(
         'HealthSyncService.openHealthConnectSettings falló',
