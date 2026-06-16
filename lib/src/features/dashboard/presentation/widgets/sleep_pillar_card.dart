@@ -10,6 +10,8 @@ import 'package:elena_app/src/features/dashboard/domain/sleep_log.dart';
 import 'package:elena_app/src/features/dashboard/presentation/sleep_input_sheet.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/pillar_card_ui.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/sleep_existing_log_dialog.dart';
+import 'package:elena_app/src/features/health_sync/application/health_sync_providers.dart';
+import 'package:elena_app/src/features/health_sync/domain/health_permission_status.dart';
 
 class SleepPillarCard extends ConsumerWidget {
   const SleepPillarCard({super.key, required this.state});
@@ -28,6 +30,10 @@ class SleepPillarCard extends ConsumerWidget {
     // anoche — igual que el satélite, que ya quedó en 0%.
     final log = ref.watch(currentCycleSleepProvider);
     final showLog = log != null;
+
+    // SPEC-231: chip "entrada manual" cuando HealthKit no está activo.
+    final healthPerm = ref.watch(healthPermissionStatusProvider);
+    final isManual = healthPerm is! HealthPermissionGranted;
 
     final hours = showLog ? log.duration.inHours : 0;
     final minutes = showLog ? log.duration.inMinutes.remainder(60) : 0;
@@ -57,8 +63,9 @@ class SleepPillarCard extends ConsumerWidget {
               progress: progress,
               pct: pct,
               fmt: fmt,
+              isManual: isManual,
             )
-          : _waitingChildren(context: context, accent: accent),
+          : _waitingChildren(context: context, accent: accent, isManual: isManual),
     );
   }
 
@@ -73,6 +80,7 @@ class SleepPillarCard extends ConsumerWidget {
     required double progress,
     required int pct,
     required String Function(DateTime?) fmt,
+    required bool isManual,
   }) {
     return [
       Row(
@@ -111,6 +119,8 @@ class SleepPillarCard extends ConsumerWidget {
             : 'Buscas sueño reparador: 7-9h activan la GH pulsátil que repara músculo y reduce inflamación.',
       ),
       const SizedBox(height: 18),
+      // SPEC-231: chip "entrada manual" cuando HealthKit no está activo.
+      if (isManual) PillarCardUi.manualDataChip(),
       // SPEC-106 / SPEC-108: el sheet precarga el último log si existe. Si ya
       // hay registro de HOY, primero pasa por un diálogo donde el usuario
       // elige editar o eliminar y recrear. Si no hay log, abre sheet limpio.
@@ -136,6 +146,7 @@ class SleepPillarCard extends ConsumerWidget {
   List<Widget> _waitingChildren({
     required BuildContext context,
     required Color accent,
+    required bool isManual,
   }) {
     return [
       Row(
@@ -184,6 +195,8 @@ class SleepPillarCard extends ConsumerWidget {
             'memoria y hormonas.',
       ),
       const SizedBox(height: 18),
+      // SPEC-231: chip "entrada manual" cuando HealthKit no está activo.
+      if (isManual) PillarCardUi.manualDataChip(),
       PillarCardUi.primaryButton(
         label: 'Registrar Sueño',
         icon: Icons.nightlight_round,

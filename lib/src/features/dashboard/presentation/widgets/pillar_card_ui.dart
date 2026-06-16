@@ -196,6 +196,33 @@ class PillarCardUi {
     );
   }
 
+  /// SPEC-231: chip discreto "entrada manual" cuando HealthKit/Health Connect
+  /// no está activo para este pilar. Se coloca justo antes del botón principal.
+  /// El label es sutil — informa sin alarmar; el tono sigue siendo positivo.
+  static Widget manualDataChip() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.edit_outlined,
+            size: 13,
+            color: Color(0xFF94A3B8),
+          ),
+          const SizedBox(width: 5),
+          Text(
+            'Entrada manual · conecta Apple Health para sync automático',
+            style: const TextStyle(
+              color: Color(0xFF94A3B8),
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   static Widget outlinedActionButton({
     required String label,
     required Color accent,

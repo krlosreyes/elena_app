@@ -11,6 +11,8 @@ import 'package:elena_app/src/features/exercise/application/exercise_state.dart'
 import 'package:elena_app/src/features/exercise/domain/exercise_log.dart';
 import 'package:elena_app/src/features/exercise/presentation/exercise_input_sheet.dart';
 import 'package:elena_app/src/features/goals/application/pillar_goal_providers.dart';
+import 'package:elena_app/src/features/health_sync/application/health_sync_providers.dart';
+import 'package:elena_app/src/features/health_sync/domain/health_permission_status.dart';
 
 class ExercisePillarCard extends ConsumerWidget {
   const ExercisePillarCard({super.key, required this.state});
@@ -20,6 +22,9 @@ class ExercisePillarCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     const accent = Color(0xFF2DD4BF);
+    // SPEC-231: HealthKit activo cuando el permiso es Granted.
+    final healthPerm = ref.watch(healthPermissionStatusProvider);
+    final isManual = healthPerm is! HealthPermissionGranted;
     // BUGFIX objetivos: meta desde "Mis objetivos" (SoT) con fallback.
     final goal = ref.watch(effectiveExerciseGoalProvider);
     final minutes = state.todayMinutes;
@@ -75,6 +80,8 @@ class ExercisePillarCard extends ConsumerWidget {
               : 'Acumula minutos para activar la síntesis proteica muscular post-ejercicio.',
         ),
         const SizedBox(height: 18),
+        // SPEC-231: chip visible cuando HealthKit no está activo.
+        if (isManual) PillarCardUi.manualDataChip(),
         PillarCardUi.primaryButton(
           label: 'Agregar Sesión',
           icon: Icons.fitness_center_rounded,
