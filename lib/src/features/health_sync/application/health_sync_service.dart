@@ -336,6 +336,23 @@ class HealthSyncService {
     }
   }
 
+  /// SPEC-238: abre la pantalla de ajustes de Health Connect.
+  /// Úsalo como fallback cuando no se puede lanzar Samsung Health
+  /// directamente. No-op en iOS / Web.
+  Future<void> openHealthConnectSettings() async {
+    if (kIsWeb || !Platform.isAndroid) return;
+    try {
+      await _ensureConfigured();
+      await _plugin.openHealthConnectSettings();
+    } catch (e, st) {
+      AppLogger.error(
+        'HealthSyncService.openHealthConnectSettings falló',
+        e,
+        st,
+      );
+    }
+  }
+
   // ─── Sync ──────────────────────────────────────────────────────────────
 
   /// Sincroniza las 3 métricas soportadas en la ventana indicada.

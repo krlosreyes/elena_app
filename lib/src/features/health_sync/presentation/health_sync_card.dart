@@ -4,12 +4,14 @@
 //   - Sincronizar ahora (si ya conectado)
 //   - Instalar Health Connect (Android sin HC instalado)
 //
-// Se renderiza en ProfileScreen como una sección más, debajo de
-// "Protocolo de ayuno" y antes de "Legal". En Web/Desktop el widget
-// se auto-oculta retornando SizedBox.shrink().
+// SPEC-238: guía Samsung simplificada — 1 botón que abre Samsung Health
+// directamente + sync automático al volver.
+//
+// Se renderiza en ProfileScreen como una sección más.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/health_sync/application/health_auto_sync_controller.dart';
@@ -27,12 +29,16 @@ class HealthSyncCard extends ConsumerStatefulWidget {
   ConsumerState<HealthSyncCard> createState() => _HealthSyncCardState();
 }
 
-class _HealthSyncCardState extends ConsumerState<HealthSyncCard> {
+class _HealthSyncCardState extends ConsumerState<HealthSyncCard>
+    with WidgetsBindingObserver {
+  // SPEC-238: cuando el usuario va a Samsung Health y vuelve, disparamos
+  // un sync inmediato sin esperar el debounce de 15 min.
+  bool _openedSamsungHealth = false;
+
   @override
   void initState() {
     super.initState();
-    // Refrescar estado de permisos al abrir el perfil. No pide al
-    // usuario, solo consulta.
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref
           .read(healthAutoSyncControllerProvider.notifier)
@@ -41,13 +47,29 @@ class _HealthSyncCardState extends ConsumerState<HealthSyncCard> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    // Cortocircuito: si la plataforma no soporta el plugin (Web,
-    // Desktop), no mostramos la sección.
-    final service = ref.read(healthSyncServiceProvider);
-    if (!service.isPlatformSupported) {
-      return const SizedBox.shrink();
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState appState) {
+    // Al volver de Samsung Health, sync inmediato (bypass debounce).
+    if (appState == AppLifecycleState.resumed && _openedSamsungHealth) {
+      _openedSamsungHealth = false;
+      final user = ref.read(currentUserStreamProvider).value;
+      if (user != null) {
+        ref
+            .read(healthAutoSyncControllerProvider.notifier)
+            .runNow(userId: user.id);
+      }
     }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final service = ref.read(healthSyncServiceProvider);
+    if (!service.isPlatformSupported) return const SizedBox.shrink();
 
     final state = ref.watch(healthAutoSyncControllerProvider);
     final perm = state.permissionStatus;
@@ -121,7 +143,6 @@ class _HealthSyncCardState extends ConsumerState<HealthSyncCard> {
 
   Widget _buildBody(HealthAutoSyncState state, HealthPermissionStatus? perm) {
     if (perm == null) {
-      // Consultando permisos por primera vez.
       return const Padding(
         padding: EdgeInsets.symmetric(vertical: 4),
         child: Row(
@@ -148,13 +169,8 @@ class _HealthSyncCardState extends ConsumerState<HealthSyncCard> {
       );
     }
 
-    if (perm is HealthConnectNotInstalled) {
-      return _buildInstallButton();
-    }
-
-    if (perm is HealthPermissionDenied) {
-      return _buildConnectButton();
-    }
+    if (perm is HealthConnectNotInstalled) return _buildInstallButton();
+    if (perm is HealthPermissionDenied) return _buildConnectButton();
 
     // Granted (o Partial) — mostrar última sync + botón manual.
     return _buildSyncStatusAndButton(state);
@@ -246,41 +262,121 @@ class _HealthSyncCardState extends ConsumerState<HealthSyncCard> {
             style: const TextStyle(fontSize: 12, color: Color(0xFFFB923C)),
           ),
         ],
-        // SPEC-237: guía Samsung Health cuando sync Android regresa vacío.
+        // SPEC-238: guía Samsung simplificada — 1 botón, sync al volver.
         if (state.needsSamsungHealthGuide) ...[
           const SizedBox(height: 12),
-          _buildSamsungHealthGuide(),
+          _buildSamsungHealthGuide(isRunning),
         ],
-        const SizedBox(height: 12),
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton(
-            style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.white,
-              side: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
+        if (!state.needsSamsungHealthGuide) ...[
+          const SizedBox(height: 12),
+          _buildSyncNowButton(isRunning),
+        ],
+      ],
+    );
+  }
+
+  /// SPEC-238: guía Samsung rediseñada.
+  /// UN botón que lleva al usuario directamente a Samsung Health.
+  /// Al volver, `didChangeAppLifecycleState` dispara el sync automático.
+  Widget _buildSamsungHealthGuide(bool isRunning) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A2E),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: const Color(0xFFFB923C).withValues(alpha: 0.5),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Título
+          Row(
+            children: const [
+              Icon(Icons.watch_outlined, size: 15, color: Color(0xFFFB923C)),
+              SizedBox(width: 7),
+              Text(
+                'Tu reloj Samsung no sincroniza sueño',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFFFB923C),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          // Descripción corta
+          const Text(
+            'Activa "Sueño" en Samsung Health → '
+            'Health Connect para que los datos lleguen aquí.',
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.white70,
+              height: 1.45,
+            ),
+          ),
+          const SizedBox(height: 12),
+          // Botón de acción principal
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFFFB923C),
+                foregroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              onPressed: isRunning ? null : _handleOpenSamsungHealth,
+              icon: const Icon(Icons.open_in_new, size: 16),
+              label: const Text(
+                'Abrir Samsung Health',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
               ),
             ),
-            onPressed: isRunning ? null : _handleSyncNow,
-            child: isRunning
-                ? const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      SizedBox(
-                        width: 14,
-                        height: 14,
-                        child: CircularProgressIndicator(strokeWidth: 1.5),
-                      ),
-                      SizedBox(width: 10),
-                      Text('Sincronizando…'),
-                    ],
-                  )
-                : const Text('Sincronizar ahora'),
+          ),
+          const SizedBox(height: 8),
+          // Confirmación de lo que pasa al volver
+          const Text(
+            'Al volver, sincronizaremos automáticamente.',
+            style: TextStyle(fontSize: 11, color: Colors.white38),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSyncNowButton(bool isRunning) {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: Colors.white,
+          side: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
           ),
         ),
-      ],
+        onPressed: isRunning ? null : _handleSyncNow,
+        child: isRunning
+            ? const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(strokeWidth: 1.5),
+                  ),
+                  SizedBox(width: 10),
+                  Text('Sincronizando…'),
+                ],
+              )
+            : const Text('Sincronizar ahora'),
+      ),
     );
   }
 
@@ -293,7 +389,6 @@ class _HealthSyncCardState extends ConsumerState<HealthSyncCard> {
 
     if (!mounted) return;
     if (result is HealthPermissionGranted) {
-      // Disparar primer sync inmediato post-conexión.
       final user = ref.read(currentUserStreamProvider).value;
       if (user != null) {
         // ignore: use_build_context_synchronously
@@ -319,6 +414,37 @@ class _HealthSyncCardState extends ConsumerState<HealthSyncCard> {
     await ref
         .read(healthAutoSyncControllerProvider.notifier)
         .runNow(userId: user.id);
+  }
+
+  /// SPEC-238: abre Samsung Health directamente con el intent URL de Android.
+  /// Si la app no está instalada, cae al Play Store como fallback.
+  /// Setea `_openedSamsungHealth = true` para que al volver se dispare
+  /// el sync automático en `didChangeAppLifecycleState`.
+  Future<void> _handleOpenSamsungHealth() async {
+    _openedSamsungHealth = true;
+
+    // Intent URL: lanza Samsung Health por package name.
+    // S.browser_fallback_url redirige a Play Store si no está instalada.
+    final samsungHealthUri = Uri.parse(
+      'intent://#Intent;'
+      'action=android.intent.action.MAIN;'
+      'category=android.intent.category.LAUNCHER;'
+      'package=com.sec.android.app.shealth;'
+      'S.browser_fallback_url=market%3A%2F%2Fdetails%3Fid%3Dcom.sec.android.app.shealth;'
+      'end',
+    );
+
+    try {
+      final launched = await launchUrl(
+        samsungHealthUri,
+        mode: LaunchMode.externalApplication,
+      );
+      if (!launched) throw Exception('launchUrl returned false');
+    } catch (_) {
+      // Fallback: abrir Health Connect settings (siempre disponible).
+      _openedSamsungHealth = true; // mantener el flag para el sync al volver
+      await ref.read(healthSyncServiceProvider).openHealthConnectSettings();
+    }
   }
 
   // ─── Format helpers ──────────────────────────────────────────────
@@ -364,65 +490,9 @@ class _HealthSyncCardState extends ConsumerState<HealthSyncCard> {
       return 'No encontramos datos en Apple Health · Health Connect '
           'para los últimos 7 días.';
     }
-    // Leyó datos pero no se importó nada: el plugin trajo $total
-    // samples y todas fueron descartadas por reglas internas
-    // (siestas <30min, <500 pasos/día, o ya existía un check-in
-    // manual). Mostramos el detalle para que el usuario entienda.
     return 'Leídos $total registros · 0 importados '
         '(siestas <30min, días con <500 pasos o pesos ya registrados '
         'manualmente).';
-  }
-
-  /// SPEC-237: guía específica para usuarios con Samsung Galaxy Watch.
-  /// Se muestra cuando el sync completó con permisos OK pero sin datos —
-  /// la causa más frecuente es Samsung Health sin configurar para HC.
-  Widget _buildSamsungHealthGuide() {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1A1A2E),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: const Color(0xFFFB923C).withValues(alpha: 0.45),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(
-                Icons.watch_outlined,
-                size: 14,
-                color: Color(0xFFFB923C),
-              ),
-              const SizedBox(width: 6),
-              const Text(
-                '¿Usas Samsung Galaxy Watch?',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFFFB923C),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          const Text(
-            'Para sincronizar sueño y actividad del reloj:\n'
-            '1. Abre Samsung Health\n'
-            '2. Menú → Ajustes → Servicios conectados → Health Connect\n'
-            '3. Activa Sueño y Actividad física\n'
-            '4. Vuelve aquí y toca "Sincronizar ahora"',
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.white70,
-              height: 1.5,
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   String _formatImportSummary(HealthImportSummary s) {
