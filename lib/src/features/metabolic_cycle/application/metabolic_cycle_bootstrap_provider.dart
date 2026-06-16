@@ -1,25 +1,24 @@
 // SPEC-149 §RF-149-10: provider side-effect de bootstrap del ciclo.
 //
-// Al primer login del usuario (de por vida en este dispositivo), si no
-// hay ciclo metabólico abierto, dispara `bootstrapIfMissing` para
-// reconstruir un ciclo retroactivo desde el ayuno persistido.
+// Al primer login del usuario (de por vida), si no hay ciclo metabólico
+// abierto, dispara `bootstrapIfMissing` para reconstruir un ciclo
+// retroactivo desde el ayuno persistido.
 //
-// SPEC-186 (2026-06-05): el flag "ya ejecutado" persiste en
-// SharedPreferences por userId. ANTES era una variable local de la
-// closure del provider que se RESETEABA con cada hot reload, causando
-// que bootstrapIfMissing se ejecutara una y otra vez cada vez que
-// Carlos modificaba código. Con el flag persistido:
-// - Hot reload → flag persiste → skip → NO crea ciclo huérfano
+// SPEC-186 (2026-06-05): flag "ya ejecutado" para evitar re-bootstrap.
+// SPEC-228 (2026-06-15): flag migrado de SharedPreferences a Firestore
+// (users/{uid}/app_state/migrations.cycle_bootstrap_done) para ser
+// cross-device: iOS, Android y Web comparten el mismo flag.
+// - Hot reload → flag en Firestore persiste → skip
 // - flutter clean + run → flag persiste → skip
 // - Logout/login del MISMO usuario → flag persiste → skip
-// - Reinstall de la app (storage borrado) → flag se pierde → re-ejecuta
+// - Reinstall + mismo uid → flag en Firestore persiste → skip
+// - Cuenta nueva o uid nuevo → flag ausente → ejecuta
 //
 // Patrón gemelo del biometricBackfillProvider (SPEC-143 §RF-143-07).
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:elena_app/src/core/providers/shared_preferences_provider.dart';
+import 'package:elena_app/src/core/data/app_state_repository.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/features/dashboard/application/fasting_notifier.dart';
 import 'package:elena_app/src/features/dashboard/domain/fasting_status.dart';
@@ -28,23 +27,9 @@ import 'package:elena_app/src/features/metabolic_cycle/data/metabolic_cycle_repo
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 
-/// SPEC-186: clave de SharedPreferences que indica que el bootstrap
-/// retroactivo ya corrió para un usuario específico. Persiste entre
-/// hot reloads, restarts y logout/login.
-///
-/// Para forzar re-ejecución (admin debug o reset manual), borrar la
-/// clave correspondiente o usar `clearBootstrapFlag(prefs, userId)`.
-String _bootstrapFlagKey(String userId) => 'cycle_bootstrap_done_$userId';
-
-/// Helper público para tests y debugging — borra la flag de un usuario
-/// para forzar re-ejecución del bootstrap. NO se llama desde código
-/// de producción normalmente.
-Future<void> clearMetabolicCycleBootstrapFlag(
-  SharedPreferences prefs,
-  String userId,
-) async {
-  await prefs.remove(_bootstrapFlagKey(userId));
-}
+/// SPEC-228: clave Firestore para el flag de bootstrap en
+/// users/{uid}/app_state/migrations.
+const String _kBootstrapMigrationKey = 'cycle_bootstrap_done';
 
 final metabolicCycleBootstrapProvider = Provider<void>((ref) {
   // SPEC-193 hotfix (2026-06-05): para evitar el deadlock
@@ -59,8 +44,7 @@ final metabolicCycleBootstrapProvider = Provider<void>((ref) {
   // si hay ayuno activo SIN ciclo abierto, ignorar el flag y crear.
 
   Future<void> runBootstrap(UserModel user) async {
-    final prefs = ref.read(sharedPreferencesProvider);
-    final flagKey = _bootstrapFlagKey(user.id);
+    final appState = ref.read(appStateRepositoryProvider);
     final fasting = ref.read(fastingProvider);
     final hasActiveFasting =
         fasting.isActive && fasting.startTime != null;
@@ -73,7 +57,11 @@ final metabolicCycleBootstrapProvider = Provider<void>((ref) {
         .fetchOpenCycle(user.id);
     final hasOrphanFasting = hasActiveFasting && openCycle == null;
 
-    if (prefs.getBool(flagKey) == true && !hasOrphanFasting) {
+    final bootstrapDone = await appState.getMigrationFlag(
+      user.id,
+      _kBootstrapMigrationKey,
+    );
+    if (bootstrapDone && !hasOrphanFasting) {
       // Flag activo y NO hay desync → respetar el flag.
       return;
     }
@@ -95,7 +83,7 @@ final metabolicCycleBootstrapProvider = Provider<void>((ref) {
                 tzOffsetMinutes:
                     DateTime.now().timeZoneOffset.inMinutes,
               );
-      await prefs.setBool(flagKey, true);
+      await appState.setMigrationFlag(user.id, _kBootstrapMigrationKey);
       AppLogger.info(
         '[cycle.bootstrap.done] userId=${user.id} '
         'created=${result != null} '

@@ -24,6 +24,7 @@ import 'package:elena_app/src/features/onboarding/presentation/widgets/intro_scr
 // SPEC-132 Bloque E: paso opcional para conectar HealthKit / Health Connect.
 import 'package:elena_app/src/features/health_sync/application/health_auto_sync_controller.dart';
 import 'package:elena_app/src/features/health_sync/application/health_sync_providers.dart';
+import 'package:elena_app/src/core/data/app_state_repository.dart';
 import 'package:elena_app/src/core/providers/shared_preferences_provider.dart';
 import 'package:elena_app/src/core/services/notification_service.dart';
 import 'package:elena_app/src/features/health_sync/presentation/onboarding_health_step.dart';
@@ -1381,14 +1382,18 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       ref.read(authTelemetryProvider).onboardingCompleted();
 
       // SPEC-182 §RF-182-06 (2026-06-05): flag local que `main.dart`
-      // consulta para decidir si pide permisos de notifs en cold start.
-      // Usuarios que pasaron por SPEC-182 (paso 104) NO necesitan el
-      // prompt ciego — ya respondieron en momento educativo. Usuarios
-      // pre-SPEC-182 que ya tenían cuenta lo seteen acá también al
-      // recargar el flow alguna vez.
+      // consulta para decidir si pide permisos de notifs en cold start
+      // (antes de tener uid). Se mantiene en SharedPreferences para ese
+      // caso específico. SPEC-228: además se escribe en Firestore para
+      // que en un nuevo device no aparezca el onboarding de nuevo.
       try {
         final prefs = ref.read(sharedPreferencesProvider);
         await prefs.setBool('onboardingCompleted', true);
+        // Firestore cross-device (fire-and-forget).
+        final uid = ref.read(authStateProvider).value?.uid;
+        if (uid != null) {
+          ref.read(appStateRepositoryProvider).setOnboardingCompleted(uid);
+        }
       } catch (_) {
         // Si la pref falla no rompemos el cierre del onboarding.
       }

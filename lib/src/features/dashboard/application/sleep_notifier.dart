@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/core/analytics/analytics_events.dart';
 import 'package:elena_app/src/core/orchestrator/biological_phases.dart';
-import 'package:elena_app/src/core/providers/shared_preferences_provider.dart';
+import 'package:elena_app/src/core/data/app_state_repository.dart';
 import 'package:elena_app/src/core/services/analytics_service.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/features/coaching/application/coaching_completion_service.dart';
@@ -60,23 +60,23 @@ class SleepNotifier extends StateNotifier<SleepState> {
   }
 
 
-  /// Clave por usuario y día calendárico (usa wakeTime o now). El overlay
-  /// matutino vive en la dimensión "hoy desperté", no en la del ciclo
-  /// metabólico — está explícitamente fuera del scope cycle-aware
-  /// (METABOLIC_DAY_CONSTITUTION.md §9, SPEC-191).
-  String _wakeUpFlagKey(String userId, DateTime dayAnchor) {
-    final key = DayBoundaryResolver.dayKeyIso(dayAnchor);
-    return 'wake_up_confirmed_${userId}_$key';
-  }
+  /// Clave por día calendárico para el flag de wake-up.
+  /// SPEC-228: persiste en Firestore (users/{uid}/app_state/sleep_wakeup)
+  /// para que el overlay "¿Ya despertaste?" se muestre una sola vez por día
+  /// en CUALQUIER device del mismo usuario.
+  static String _dayKey(DateTime dayAnchor) =>
+      DayBoundaryResolver.dayKeyIso(dayAnchor);
 
-  bool _isWakeUpConfirmedFor(String userId, DateTime dayAnchor) {
-    final prefs = _ref.read(sharedPreferencesProvider);
-    return prefs.getBool(_wakeUpFlagKey(userId, dayAnchor)) ?? false;
+  Future<bool> _isWakeUpConfirmedFor(String userId, DateTime dayAnchor) {
+    return _ref
+        .read(appStateRepositoryProvider)
+        .isSleepWakeUpConfirmed(userId, _dayKey(dayAnchor));
   }
 
   Future<void> _markWakeUpConfirmed(String userId, DateTime dayAnchor) async {
-    final prefs = _ref.read(sharedPreferencesProvider);
-    await prefs.setBool(_wakeUpFlagKey(userId, dayAnchor), true);
+    _ref
+        .read(appStateRepositoryProvider)
+        .confirmSleepWakeUp(userId, _dayKey(dayAnchor));
   }
 
   void _init() {
@@ -139,10 +139,12 @@ class SleepNotifier extends StateNotifier<SleepState> {
     );
   }
 
-  void updateSleepConsciousness() {
+  // SPEC-228: método async porque el flag de wake-up ahora se lee
+  // desde Firestore (cache-first). Los callers usan unawaited.
+  Future<void> updateSleepConsciousness() async {
     final userAsync = _ref.read(currentUserStreamProvider);
 
-    userAsync.whenData((user) {
+    await userAsync.whenData((user) async {
       if (user == null) return;
 
       final now = DateTime.now();
@@ -158,12 +160,13 @@ class SleepNotifier extends StateNotifier<SleepState> {
       final wakeTime = DateTime(now.year, now.month, now.day,
           user.profile.wakeUpTime.hour, user.profile.wakeUpTime.minute);
 
-      // SPEC-194: la confirmación del overlay se lee desde
-      // SharedPreferences. El día calendárico de `now` es la dimensión
-      // correcta: el overlay matutino pertenece a "hoy desperté", no al
-      // ciclo metabólico (cf. METABOLIC_DAY_CONSTITUTION §9).
+      // SPEC-228: el flag de wake-up se lee desde Firestore (cache-first)
+      // para que sea cross-device. La latencia es mínima por el cache local
+      // de Firestore SDK.
       final wakeAlreadyConfirmed =
-          _isWakeUpConfirmedFor(user.id, now);
+          await _isWakeUpConfirmedFor(user.id, now);
+
+      if (!mounted) return;
 
       // Solo mostramos el overlay si está en rango Y NO ha confirmado.
       final bool inWakeUpWindow = now.isAfter(wakeTime) &&
@@ -173,7 +176,6 @@ class SleepNotifier extends StateNotifier<SleepState> {
       final isNight = now.isAfter(sleepTime) || now.isBefore(wakeTime);
 
       state = state.copyWith(
-        // Removido: lastLog: log (ya no hardcodeamos 7h si el usuario no ha registrado)
         isSleepMode: isNight,
         isWaitingForWakeUp: inWakeUpWindow,
       );

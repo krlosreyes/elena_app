@@ -7,6 +7,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:elena_app/src/core/data/app_state_repository.dart';
 import 'package:elena_app/src/core/providers/shared_preferences_provider.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/cycle_score_migration_service.dart';
@@ -166,13 +167,12 @@ final hasUnreadCycleClosureProvider = Provider<bool>((ref) {
 
 // ─── SPEC-226: Migración one-shot de dailyScores históricos ─────────────────
 
-/// Service que corre la migración v1. Singleton para que el guard
-/// SharedPrefs sea efectivo durante toda la sesión.
+/// Service que corre la migración v1. Singleton para toda la sesión.
 final cycleScoreMigrationServiceProvider =
     Provider<CycleScoreMigrationService>((ref) {
   return CycleScoreMigrationService(
     repository: ref.watch(metabolicCycleRepositoryProvider),
-    prefs: ref.watch(sharedPreferencesProvider),
+    appState: ref.watch(appStateRepositoryProvider),
   );
 });
 

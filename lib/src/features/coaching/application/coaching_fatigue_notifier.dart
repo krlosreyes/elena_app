@@ -3,8 +3,8 @@
 // Antes los inputs anti-fatiga del `CoachingSnapshot` (`shownTodayActionIds`,
 // `ignoredStreakByActionId`) quedaban en su default vacío → el motor NUNCA
 // suprimía una acción ignorada para un usuario real. Este store los persiste
-// localmente (SharedPreferences) y los expone de forma reactiva y síncrona
-// para que `coachingSnapshotProvider` los lea.
+// y los expone de forma reactiva y síncrona para que `coachingSnapshotProvider`
+// los lea.
 //
 // Semántica:
 // - `shownTodayActionIds`: ids mostrados como acción principal HOY (penaliza
@@ -13,14 +13,21 @@
 //   pero NO se completó (penaliza lo ya ignorado — `kFatiguePerIgnore`). Se
 //   incrementa en el rollover de día; se resetea a 0 al completarse.
 //
-// Dart puro + SharedPreferences (CONSTITUTION §3.2: sin Firestore).
+// SPEC-228: dual-write para single source of truth cross-device.
+// - Lectura síncrona de arranque: SharedPreferences (cache local, startup rápido).
+// - Escritura dual: SharedPreferences local + Firestore remote (fire-and-forget).
+// - Reconciliación async: al montar con uid, lee Firestore en background y
+//   actualiza el state si el remote tiene un `lastDate` más reciente.
+// Resultado: iOS, Android y Web ven el mismo estado de coaching.
 
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:elena_app/src/core/data/app_state_repository.dart';
 import 'package:elena_app/src/core/providers/shared_preferences_provider.dart';
+import 'package:elena_app/src/shared/providers/user_provider.dart';
 
 /// Estado inmutable del anti-fatiga.
 class CoachingFatigueState {
@@ -55,15 +62,25 @@ class CoachingFatigueState {
 }
 
 class CoachingFatigueNotifier extends StateNotifier<CoachingFatigueState> {
-  CoachingFatigueNotifier(this._prefs, {DateTime Function()? clock})
-      : _clock = clock ?? DateTime.now,
+  /// Constructor de producción: hydrata de SharedPreferences (sync) y
+  /// opcionalmente reconcilia con Firestore en background (cross-device).
+  CoachingFatigueNotifier(
+    this._prefs, {
+    this._repo,
+    this._uid,
+    DateTime Function()? clock,
+  })  : _clock = clock ?? DateTime.now,
         super(_hydrate(_prefs)) {
-    // Reconciliar al arrancar: si el último día guardado no es hoy, las
-    // acciones mostradas y no completadas ayer cuentan como ignoradas.
     _rollOverIfNeeded();
+    // Reconciliación cross-device solo si hay uid y repo disponibles.
+    if (_repo != null && _uid != null) {
+      _syncFromFirestore();
+    }
   }
 
   final SharedPreferences _prefs;
+  final AppStateRepository? _repo;
+  final String? _uid;
   final DateTime Function() _clock;
 
   static const String _kKey = 'coaching.fatigue.v1';
@@ -73,42 +90,70 @@ class CoachingFatigueNotifier extends StateNotifier<CoachingFatigueState> {
       '${dt.month.toString().padLeft(2, '0')}-'
       '${dt.day.toString().padLeft(2, '0')}';
 
+  // ── Hidratación desde SharedPreferences (síncrona) ──────────────────
+
   static CoachingFatigueState _hydrate(SharedPreferences prefs) {
     final raw = prefs.getString(_kKey);
     if (raw == null) {
       return const CoachingFatigueState(lastDate: '');
     }
     try {
-      final j = jsonDecode(raw) as Map<String, dynamic>;
-      return CoachingFatigueState(
-        lastDate: (j['lastDate'] as String?) ?? '',
-        shownTodayActionIds:
-            ((j['shown'] as List?)?.cast<String>() ?? const []).toSet(),
-        completedTodayActionIds:
-            ((j['completed'] as List?)?.cast<String>() ?? const []).toSet(),
-        ignoredStreakByActionId:
-            ((j['ignored'] as Map?)?.map(
-                  (k, v) => MapEntry(k as String, (v as num).toInt()),
-                ) ??
-                const {}),
-      );
+      return _fromJson(jsonDecode(raw) as Map<String, dynamic>);
     } catch (_) {
-      // Dato corrupto → arrancar limpio.
       return const CoachingFatigueState(lastDate: '');
     }
   }
 
-  Future<void> _persist() async {
-    await _prefs.setString(
-      _kKey,
-      jsonEncode({
+  static CoachingFatigueState _fromJson(Map<String, dynamic> j) {
+    return CoachingFatigueState(
+      lastDate: (j['lastDate'] as String?) ?? '',
+      shownTodayActionIds:
+          ((j['shown'] as List?)?.cast<String>() ?? const []).toSet(),
+      completedTodayActionIds:
+          ((j['completed'] as List?)?.cast<String>() ?? const []).toSet(),
+      ignoredStreakByActionId:
+          ((j['ignored'] as Map?)?.map(
+                (k, v) => MapEntry(k as String, (v as num).toInt()),
+              ) ??
+              const {}),
+    );
+  }
+
+  Map<String, dynamic> _toJson() => {
         'lastDate': state.lastDate,
         'shown': state.shownTodayActionIds.toList(),
         'completed': state.completedTodayActionIds.toList(),
         'ignored': state.ignoredStreakByActionId,
-      }),
-    );
+      };
+
+  // ── Reconciliación desde Firestore (async, cross-device) ────────────
+
+  Future<void> _syncFromFirestore() async {
+    final data = await _repo!.getCoachingFatigue(_uid!);
+    if (data == null || !mounted) return;
+    final remoteDate = (data['lastDate'] as String?) ?? '';
+    // Solo actualiza si Firestore tiene datos de un día más reciente.
+    if (remoteDate.compareTo(state.lastDate) <= 0) return;
+    final remoteState = _fromJson(data);
+    state = remoteState;
+    // Sincronizar a SharedPreferences para el próximo arranque.
+    await _prefs.setString(_kKey, jsonEncode(data));
+    _rollOverIfNeeded();
   }
+
+  // ── Persistencia dual (local + remote) ──────────────────────────────
+
+  Future<void> _persist() async {
+    final data = _toJson();
+    // 1. Local síncrono (startup rápido en el mismo device).
+    await _prefs.setString(_kKey, jsonEncode(data));
+    // 2. Firestore cross-device (fire-and-forget, SPEC-206).
+    if (_repo != null && _uid != null) {
+      _repo!.saveCoachingFatigue(_uid!, data);
+    }
+  }
+
+  // ── Lógica de rollover y mutación ───────────────────────────────────
 
   /// Si cambió el día desde `lastDate`, incrementa `ignoredStreak` de cada
   /// acción mostrada y no completada el día anterior, y limpia los sets de
@@ -118,7 +163,6 @@ class CoachingFatigueNotifier extends StateNotifier<CoachingFatigueState> {
     if (state.lastDate == today) return;
 
     final ignored = Map<String, int>.from(state.ignoredStreakByActionId);
-    // Solo penaliza si había un día previo real (no en el primer arranque).
     if (state.lastDate.isNotEmpty) {
       for (final id in state.shownTodayActionIds) {
         if (!state.completedTodayActionIds.contains(id)) {
@@ -160,8 +204,13 @@ class CoachingFatigueNotifier extends StateNotifier<CoachingFatigueState> {
 }
 
 /// Store reactivo del anti-fatiga. `coachingSnapshotProvider` lo watchea.
+/// SPEC-228: se monta con uid + AppStateRepository para sync cross-device.
 final coachingFatigueProvider =
     StateNotifierProvider<CoachingFatigueNotifier, CoachingFatigueState>((ref) {
   final prefs = ref.watch(sharedPreferencesProvider);
-  return CoachingFatigueNotifier(prefs);
+  final uid = ref.watch(
+    currentUserStreamProvider.select((v) => v.valueOrNull?.id),
+  );
+  final repo = ref.read(appStateRepositoryProvider);
+  return CoachingFatigueNotifier(prefs, repo: repo, uid: uid);
 });

@@ -18,8 +18,7 @@
 
 import 'dart:async';
 
-import 'package:shared_preferences/shared_preferences.dart';
-
+import 'package:elena_app/src/core/data/app_state_repository.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/cycle_score_computer.dart';
 import 'package:elena_app/src/features/metabolic_cycle/domain/closure_reason.dart';
@@ -28,7 +27,8 @@ import 'package:elena_app/src/features/metabolic_cycle/domain/metabolic_cycle_re
 import 'package:elena_app/src/shared/utils/fasting_protocol.dart';
 
 class CycleScoreMigrationService {
-  static const String _kMigrationV1Key = 'cycle_score_migration_v1_done';
+  // Guard key en Firestore users/{uid}/app_state/migrations (SPEC-228).
+  static const String _kMigrationV1Key = 'cycle_score_v1';
 
   // Umbral: fastingMagnitude < 0.05 se considera "efectivamente 0" (bug).
   // Un ciclo legítimo con ayuno muy corto podría tener ~0.1, pero un ciclo
@@ -36,18 +36,18 @@ class CycleScoreMigrationService {
   static const double _kBugMagnitudeThreshold = 0.05;
 
   final MetabolicCycleRepository _repository;
-  final SharedPreferences _prefs;
+  final AppStateRepository _appState;
 
   CycleScoreMigrationService({
     required MetabolicCycleRepository repository,
-    required SharedPreferences prefs,
+    required AppStateRepository appState,
   })  : _repository = repository,
-        _prefs = prefs;
+        _appState = appState;
 
   /// Ejecuta la migración si no se ha marcado como completada.
   /// Idempotente — safe para llamar en cada arranque de la app.
   Future<void> runIfNeeded(String userId) async {
-    if (_prefs.getBool(_kMigrationV1Key) == true) return;
+    if (await _appState.getMigrationFlag(userId, _kMigrationV1Key)) return;
 
     try {
       AppLogger.info('[CycleScoreMigration] iniciando migración v1…');
@@ -143,8 +143,9 @@ class CycleScoreMigrationService {
 
       // Marcar como completada DESPUÉS de encolar todos los saves.
       // Si la app cae antes de esta línea, la migración re-corre al
-      // arrancar de nuevo (idempotente).
-      await _prefs.setBool(_kMigrationV1Key, true);
+      // arrancar de nuevo (idempotente). Guard en Firestore garantiza
+      // que no re-corre en NINGÚN device (SPEC-228 cross-device).
+      await _appState.setMigrationFlag(userId, _kMigrationV1Key);
     } catch (e, st) {
       // No marcar como completa — se reintentará en el próximo arranque.
       AppLogger.error('[CycleScoreMigration] error en migración v1', e, st);

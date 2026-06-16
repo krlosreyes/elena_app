@@ -7,8 +7,9 @@
 // y produciendo "Sin datos" en todas las pantallas de análisis de Ayuno.
 //
 // GARANTÍAS:
-//  - Idempotente: la clave SharedPreferences `spec217_fasting_migrated_{uid}`
-//    impide que corra más de una vez por usuario en el dispositivo.
+//  - Idempotente: la clave Firestore `spec217_fasting_migrated` en
+//    users/{uid}/app_state/migrations impide que corra más de una vez
+//    por usuario en CUALQUIER dispositivo (SPEC-228: cross-device guard).
 //  - No destructiva: solo COPIA — NO borra la colección plana. El borrado
 //    es responsabilidad de SPEC-217 inc5 (post-launch, una vez confirmada
 //    la integridad de la subcolección en producción).
@@ -20,29 +21,27 @@
 // LLAMADA: FastingNotifier._init() cuando el usuario hace login.
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:elena_app/src/core/data/app_state_repository.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
 
 class FastingHistoryMigrator {
   final FirebaseFirestore _firestore;
-  final SharedPreferences _prefs;
+  final AppStateRepository _appState;
 
   FastingHistoryMigrator({
     FirebaseFirestore? firestore,
-    required SharedPreferences prefs,
+    required AppStateRepository appState,
   }) : _firestore = firestore ?? FirebaseFirestore.instance,
-       _prefs = prefs;
+       _appState = appState;
 
-  /// Clave por uid para soportar múltiples cuentas en el mismo dispositivo
-  /// (p. ej., cuenta de prueba + cuenta de producción).
-  static String _prefKey(String uid) => 'spec217_fasting_migrated_$uid';
+  static const String _kMigrationKey = 'spec217_fasting_migrated';
 
   /// Corre la migración si aún no se completó para este uid.
+  /// Guard key en Firestore — funciona igual en iOS, Android y Web.
   /// No lanza — los errores se registran y se dejan para el próximo intento.
   Future<void> migrateIfNeeded(String uid) async {
-    final key = _prefKey(uid);
-    if (_prefs.getBool(key) == true) return; // Ya migrado — salir rápido.
+    if (await _appState.getMigrationFlag(uid, _kMigrationKey)) return;
 
     AppLogger.debug('[SPEC-222] Iniciando migración fasting_history → subcollección uid=$uid');
 
@@ -56,7 +55,7 @@ class FastingHistoryMigrator {
       if (flatSnap.docs.isEmpty) {
         // Nada que migrar (cuenta nueva o ya limpia). Marcar como hecho.
         AppLogger.debug('[SPEC-222] Sin datos en colección plana — migración trivial completada.');
-        await _prefs.setBool(key, true);
+        await _appState.setMigrationFlag(uid, _kMigrationKey);
         return;
       }
 
@@ -85,7 +84,7 @@ class FastingHistoryMigrator {
       }
 
       // Solo marcar como hecho si TODOS los batches tuvieron éxito.
-      await _prefs.setBool(key, true);
+      await _appState.setMigrationFlag(uid, _kMigrationKey);
       AppLogger.debug('[SPEC-222] Migración completada — ${docs.length} docs copiados.');
     } catch (e, st) {
       // No relanzar — el fallo se reintentará en el próximo arranque.

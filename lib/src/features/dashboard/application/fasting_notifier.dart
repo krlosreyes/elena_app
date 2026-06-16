@@ -13,7 +13,7 @@ import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/features/coaching/application/coaching_completion_service.dart';
 import 'package:elena_app/src/core/services/firestore_errors.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
-import 'package:elena_app/src/core/providers/shared_preferences_provider.dart';
+import 'package:elena_app/src/core/data/app_state_repository.dart';
 import 'package:elena_app/src/features/dashboard/data/fasting_history_migrator.dart';
 import 'package:elena_app/src/features/dashboard/data/fasting_interval_repository_impl.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
@@ -62,8 +62,8 @@ class FastingNotifier extends StateNotifier<FastingState> {
       final uid = next.value?.uid;
       if (uid != null && !_migrationTriggered) {
         _migrationTriggered = true;
-        final prefs = _ref.read(sharedPreferencesProvider);
-        FastingHistoryMigrator(prefs: prefs).migrateIfNeeded(uid);
+        final appState = _ref.read(appStateRepositoryProvider);
+        FastingHistoryMigrator(appState: appState).migrateIfNeeded(uid);
       }
     }, fireImmediately: true);
 
