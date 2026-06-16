@@ -201,7 +201,10 @@ Future<List<Override>> _initBilling() async {
     ];
   }
 
-  // 2. Debug sin keys → FakeBillingService para validar gating/paywall en device.
+  // 2. Debug sin keys → FakeBillingService para que el paywall muestre paquetes
+  //    y la compra simulada funcione. billingEnabledProvider ya es true por
+  //    defecto en debug (ver billing_providers.dart), así que el gating está
+  //    activo incluso si este override no llega a aplicarse.
   if (kDebugMode) {
     AppLogger.info(
       'SPEC-197/198: debug sin RC key → FakeBillingService activo. '
@@ -213,7 +216,6 @@ Future<List<Override>> _initBilling() async {
         ref.onDispose(service.dispose);
         return service;
       }),
-      billingEnabledProvider.overrideWithValue(true),
     ];
   }
 
