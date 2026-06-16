@@ -20,6 +20,7 @@ import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:health/health.dart' as hp;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/features/health_sync/domain/health_metric.dart';
@@ -336,14 +337,21 @@ class HealthSyncService {
     }
   }
 
-  /// SPEC-238: abre la pantalla de ajustes de Health Connect.
+  /// SPEC-238: abre la pantalla de ajustes de Health Connect via intent.
   /// Úsalo como fallback cuando no se puede lanzar Samsung Health
   /// directamente. No-op en iOS / Web.
   Future<void> openHealthConnectSettings() async {
     if (kIsWeb || !Platform.isAndroid) return;
     try {
-      await _ensureConfigured();
-      await _plugin.openHealthConnectSettings();
+      // Intent URL para abrir Health Connect directamente.
+      final uri = Uri.parse(
+        'intent://#Intent;'
+        'action=androidx.health.ACTION_HEALTH_CONNECT_SETTINGS;'
+        'package=com.google.android.apps.healthdata;'
+        'S.browser_fallback_url=market%3A%2F%2Fdetails%3Fid%3Dcom.google.android.apps.healthdata;'
+        'end',
+      );
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
     } catch (e, st) {
       AppLogger.error(
         'HealthSyncService.openHealthConnectSettings falló',
