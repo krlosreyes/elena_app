@@ -52,6 +52,11 @@ class MetabolicCycleMapper {
     if (cycle.feedback != null) {
       m['feedback'] = _feedbackToMap(cycle.feedback!);
     }
+    // SPEC-227: liveScore solo existe en ciclos abiertos; no se escribe
+    // en el documento de cierre para no contaminar el schema histórico.
+    if (cycle.liveScore != null) {
+      m['liveScore'] = cycle.liveScore;
+    }
     return m;
   }
 
@@ -99,6 +104,7 @@ class MetabolicCycleMapper {
             : null,
         fastingProtocol: fastingProtocol,
         tzOffsetMinutes: tzOffsetMinutes,
+        liveScore: (data['liveScore'] as num?)?.toInt(),
       );
     } catch (_) {
       return null;

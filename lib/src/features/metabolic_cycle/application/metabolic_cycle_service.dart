@@ -184,12 +184,21 @@ class MetabolicCycleService {
       recentInsightIds: input.recentInsightIds,
     );
 
+    // SPEC-227: preferir el liveScore stampado en el ciclo abierto (~10s
+    // antes del cierre) sobre `input.currentDailyScore`, que puede estar
+    // stale por el ordering de listeners Riverpod (e.g., StreakNotifier
+    // reseteando fastingMagnitude antes de que el evaluador capture el
+    // snapshot). liveScore fue calculado con el estado real del ciclo.
+    // Fallback a input.currentDailyScore si aún no hay stamp (primer
+    // ciclo o primer tick tras apertura).
+    final scoreAtClose = openCycle.liveScore ?? input.currentDailyScore;
+
     final closed = openCycle.close(
       closedAt: closeTime,
       reason: reason,
       fastingDurationHours: _computeFastingHours(openCycle, input),
       feedingWindowHours: _computeFeedingHours(input),
-      dailyScore: input.currentDailyScore,
+      dailyScore: scoreAtClose,
       pillarsCompleted: input.currentPillarsCompleted,
       magnitudes: input.currentMagnitudes,
       feedback: feedback,

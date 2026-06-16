@@ -100,6 +100,34 @@ class MetabolicCycleRepositoryImpl implements MetabolicCycleRepository {
     }
     return null;
   }
+
+  /// SPEC-226: one-shot fetch de ciclos cerrados para la migración.
+  @override
+  Future<List<MetabolicCycle>> fetchRecentClosed(
+    String userId, {
+    int limit = 90,
+  }) async {
+    final snap = await _col(userId)
+        .orderBy('startedAt', descending: true)
+        .limit(limit)
+        .get();
+    return snap.docs
+        .map((doc) => _mapper.fromMap(Map<String, dynamic>.from(doc.data())))
+        .whereType<MetabolicCycle>()
+        .where((c) => c.isClosed)
+        .toList();
+  }
+
+  /// SPEC-227: targeted merge write de liveScore. Firestore aplica la
+  /// escritura a la caché local al instante — fetchOpenCycle posterior
+  /// (incluso en el mismo frame) devuelve el valor correcto.
+  @override
+  Future<void> updateLiveScore(
+      String userId, String cycleId, int score) async {
+    await _col(userId)
+        .doc(cycleId)
+        .set({'liveScore': score}, SetOptions(merge: true));
+  }
 }
 
 // ─── Provider ───────────────────────────────────────────────────────────────

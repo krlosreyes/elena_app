@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:elena_app/src/core/providers/shared_preferences_provider.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
+import 'package:elena_app/src/features/metabolic_cycle/application/cycle_score_migration_service.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_service.dart';
 import 'package:elena_app/src/features/metabolic_cycle/data/metabolic_cycle_repository_impl.dart';
 import 'package:elena_app/src/features/metabolic_cycle/domain/closure_reason.dart';
@@ -162,3 +163,33 @@ final hasUnreadCycleClosureProvider = Provider<bool>((ref) {
 
 // SPEC-215: dismissLastCycleClosure() @Deprecated eliminado — sin callers activos.
 // Usar: ref.read(cycleClosureDismissalProvider.notifier).dismiss(cycleId)
+
+// ─── SPEC-226: Migración one-shot de dailyScores históricos ─────────────────
+
+/// Service que corre la migración v1. Singleton para que el guard
+/// SharedPrefs sea efectivo durante toda la sesión.
+final cycleScoreMigrationServiceProvider =
+    Provider<CycleScoreMigrationService>((ref) {
+  return CycleScoreMigrationService(
+    repository: ref.watch(metabolicCycleRepositoryProvider),
+    prefs: ref.watch(sharedPreferencesProvider),
+  );
+});
+
+/// Provider side-effect que dispara la migración SPEC-226 una única vez
+/// por device. Se monta en `app.dart` junto al evaluador.
+///
+/// Espera a que haya usuario autenticado para poder leer los ciclos.
+/// El servicio interno tiene guard de SharedPrefs — si ya corrió,
+/// `runIfNeeded` retorna inmediatamente sin tocar Firestore.
+final cycleScoreMigrationProvider = Provider<void>((ref) {
+  final account = ref.watch(authStateProvider).value;
+  if (account == null) return;
+
+  // Future.microtask para no bloquear el build del árbol de widgets.
+  Future.microtask(() {
+    ref
+        .read(cycleScoreMigrationServiceProvider)
+        .runIfNeeded(account.uid);
+  });
+});

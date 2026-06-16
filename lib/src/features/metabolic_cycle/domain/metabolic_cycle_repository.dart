@@ -32,4 +32,17 @@ abstract class MetabolicCycleRepository {
   /// One-shot fetch del ciclo abierto (sin stream). Útil para el
   /// service al bootstrap antes de suscribirse a streams.
   Future<MetabolicCycle?> fetchOpenCycle(String userId);
+
+  /// SPEC-226: one-shot fetch de los últimos [limit] ciclos cerrados.
+  /// Para migraciones y operaciones batch que no necesitan reactividad.
+  Future<List<MetabolicCycle>> fetchRecentClosed(
+    String userId, {
+    int limit = 90,
+  });
+
+  /// SPEC-227: actualiza únicamente el campo liveScore del ciclo abierto.
+  /// No bloquea — el caller usa unawaited(). Firestore escribe en caché
+  /// local al instante; fetchOpenCycle posterior lee el valor correcto
+  /// incluso antes de que el write llegue al servidor.
+  Future<void> updateLiveScore(String userId, String cycleId, int score);
 }

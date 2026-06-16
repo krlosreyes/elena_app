@@ -60,6 +60,13 @@ class MetabolicCycle {
   /// Soporte para usuarios viajeros + reconstrucción de hora local.
   final int tzOffsetMinutes;
 
+  /// SPEC-227: score en vivo del ciclo abierto. El evaluador lo stampa
+  /// cada ~10s. Al cierre, `MetabolicCycleService` lo usa como fuente
+  /// canónica en lugar de leer el score de los providers en vivo, que
+  /// pueden estar stale por el ordering de listeners Riverpod.
+  /// Solo presente en ciclos abiertos; `close()` no lo propaga.
+  final int? liveScore;
+
   const MetabolicCycle({
     required this.cycleId,
     required this.startedAt,
@@ -73,6 +80,7 @@ class MetabolicCycle {
     this.feedback,
     required this.fastingProtocol,
     required this.tzOffsetMinutes,
+    this.liveScore,
   });
 
   /// True si el ciclo está abierto (sin closedAt).

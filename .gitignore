@@ -45,5 +45,9 @@ app.*.map.json
 /android/app/release
 .DS_Store
 test/**/failures/
+# Secrets locales — NUNCA commitear
+.env.local
+run_ios.sh
+run_android.sh
 .flutter-plugins-dependencies
 .flutter-plugins-dependencies

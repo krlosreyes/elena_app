@@ -39,8 +39,18 @@ class _HangingSaveRepo implements MetabolicCycleRepository {
   Stream<MetabolicCycle?> watchLastClosed(String userId) => Stream.value(null);
 
   @override
-  Stream<List<MetabolicCycle>> watchRecentClosed(String userId, {int limit = 90}) =>
+  Stream<List<MetabolicCycle>> watchRecentClosed(String userId,
+          {int limit = 90}) =>
       Stream.value(const []);
+
+  @override
+  Future<List<MetabolicCycle>> fetchRecentClosed(String userId,
+          {int limit = 90}) async =>
+      const [];
+
+  @override
+  Future<void> updateLiveScore(String userId, String cycleId, int score) async {
+  }
 }
 
 CycleMagnitudes _mag(double q) => CycleMagnitudes(

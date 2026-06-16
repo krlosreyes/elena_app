@@ -10,6 +10,8 @@
 //
 // Side-effect-only. Para que ejecute, el Dashboard hace `ref.watch`.
 
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elena_app/src/core/providers/ticker_providers.dart';
@@ -23,11 +25,12 @@ import 'package:elena_app/src/features/dashboard/domain/fasting_status.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/cycle_score_computer.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_service.dart';
+import 'package:elena_app/src/features/metabolic_cycle/data/metabolic_cycle_repository_impl.dart';
 import 'package:elena_app/src/features/metabolic_cycle/domain/closure_reason.dart';
 import 'package:elena_app/src/features/metabolic_cycle/domain/metabolic_cycle.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
 import 'package:elena_app/src/features/streak/application/daily_score_provider.dart'
-    show dailyScoreProvider, displayDailyScoreProvider;
+    show displayDailyScoreProvider;
 import 'package:elena_app/src/features/streak/application/streak_notifier.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 
@@ -176,6 +179,31 @@ Future<void> _evaluate(
   } else {
     // ref.read evita dependencia reactiva — sin riesgo de ciclo.
     dailyScore = ref.read(displayDailyScoreProvider);
+  }
+
+  // SPEC-227: stampear liveScore en el ciclo abierto en cada pulso
+  // periódico. Al cerrar, MetabolicCycleService leerá openCycle.liveScore
+  // en lugar de recalcular desde providers (que pueden estar stale por el
+  // ordering de listeners). Solo en pulsos periódicos — en el path
+  // manualNextFasting el ciclo va a cerrarse y SPEC-225 ya captura el
+  // score correcto desde preClosureStreak antes de que se resetee.
+  //
+  // Firestore escribe en caché local al instante (SPEC-206), por lo que
+  // fetchOpenCycle() del service leerá liveScore correcto incluso offline.
+  if (!newFastingTriggered) {
+    final openCycleSnap =
+        ref.read(currentMetabolicCycleProvider).valueOrNull;
+    if (openCycleSnap != null && openCycleSnap.liveScore != dailyScore) {
+      unawaited(
+        ref
+            .read(metabolicCycleRepositoryProvider)
+            .updateLiveScore(account.uid, openCycleSnap.cycleId, dailyScore)
+            .catchError((Object e) {
+          AppLogger.debug(
+              '[evaluator] updateLiveScore falló (offline?): $e');
+        }),
+      );
+    }
   }
 
   final eatingWindow = ref.read(eatingWindowProvider);

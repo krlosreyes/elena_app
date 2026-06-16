@@ -15,6 +15,8 @@ import 'package:elena_app/src/features/analysis/application/daily_summary_persis
 import 'package:elena_app/src/features/health_sync/application/health_auto_sync_controller.dart';
 import 'package:elena_app/src/features/health_sync/application/health_observer_provider.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_evaluator_provider.dart';
+import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart'
+    show cycleScoreMigrationProvider;
 import 'package:elena_app/src/core/engine/weekly_imr_staleness_trigger.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
@@ -99,6 +101,11 @@ class _ElenaAppState extends ConsumerState<ElenaApp>
     // salía a Análisis/Perfil, el provider se desmontaba y el ciclo
     // dejaba de evaluarse. Acá vive durante toda la sesión.
     ref.watch(metabolicCycleEvaluatorProvider);
+
+    // SPEC-226: migración one-shot de dailyScores históricos afectados
+    // por el bug de SPEC-225 (fastingMagnitude=0 al cerrar por nuevo
+    // ayuno). Guard SharedPrefs garantiza que solo corre una vez por device.
+    ref.watch(cycleScoreMigrationProvider);
 
     // SPEC-141 §RF-141-12.C (2026-06-05): gatillo de staleness para
     // re-snapshot del IMR longitudinal. Al primer login (o cambio de

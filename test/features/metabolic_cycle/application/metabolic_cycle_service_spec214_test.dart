@@ -68,6 +68,15 @@ class _FakeRepo implements MetabolicCycleRepository {
   @override
   Stream<List<MetabolicCycle>> watchRecentClosed(String userId, {int? limit}) =>
       Stream.value([]);
+
+  @override
+  Future<List<MetabolicCycle>> fetchRecentClosed(String userId,
+          {int limit = 90}) async =>
+      [];
+
+  @override
+  Future<void> updateLiveScore(String userId, String cycleId, int score) async {
+  }
 }
 
 // ─── Input helpers ────────────────────────────────────────────────────────────
