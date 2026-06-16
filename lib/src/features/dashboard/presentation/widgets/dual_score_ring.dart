@@ -21,6 +21,7 @@ class DualScoreRing extends StatelessWidget {
     required this.imrScore,
     required this.onTap,
     this.imrZone = '',
+    this.imrIsPartial = false,
   });
 
   /// Score del Día 0-100 (display anclado al ciclo metabólico — SPEC-171).
@@ -34,6 +35,11 @@ class DualScoreRing extends StatelessWidget {
 
   /// Zona del IMR (para color calmo + etiqueta). UI #2/#4.
   final String imrZone;
+
+  /// SPEC-229: true cuando el bloque Estructura del IMR usa datos
+  /// poblacionales (waist/bodyFat ausentes). Cambia el sublabel a
+  /// "estimado" para comunicar la incertidumbre sin asustar al usuario.
+  final bool imrIsPartial;
 
   /// Abre el ExplainerSheet único que cubre ambos.
   final VoidCallback onTap;
@@ -76,7 +82,7 @@ class DualScoreRing extends StatelessWidget {
                   score: imrScore,
                   color: AppColors.imrZoneColor(imrZone),
                   label: 'IMR',
-                  sublabel: 'tu base',
+                  sublabel: imrIsPartial ? 'estimado' : 'tu base',
                   size: refSize,
                 ),
               ],

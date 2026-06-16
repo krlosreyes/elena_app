@@ -487,7 +487,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'TU DÍA',
+                // SPEC-230: renombrado a "PROGRESO HOY" para distinguir
+                // claramente el Score del Día (cambio diario) del IMR
+                // (Índice Metabólico Real, cambio semanal/mensual).
+                'PROGRESO HOY',
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.45),
                   fontSize: 10,
@@ -523,6 +526,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             dailyDelta: delta,
             imrScore: ref.watch(displayedImrProvider).score,
             imrZone: ref.watch(displayedImrProvider).zone,
+            // SPEC-229: biometrías parciales → sublabel "estimado" en el IMR ring.
+            imrIsPartial:
+                ref.watch(displayedImrProvider).localFull?.isPartialBiometrics ??
+                    false,
             onTap: () => showDailyScoreExplainerSheet(context),
           ),
           const SizedBox(height: 12),

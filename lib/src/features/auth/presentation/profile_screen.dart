@@ -920,6 +920,22 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
                   letterSpacing: 0.4,
                 ),
               ),
+              // SPEC-229: badge "datos incompletos" cuando el bloque
+              // Estructura usa valores poblacionales (50% del IMR).
+              if (imrResult.localFull?.isPartialBiometrics == true)
+                const Padding(
+                  padding: EdgeInsets.only(top: 3),
+                  child: Text(
+                    'estimado',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 7.5,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFFF59E0B),
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ),
             ],
           ),
         ],

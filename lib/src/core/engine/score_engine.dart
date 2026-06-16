@@ -63,6 +63,12 @@ class IMRv2Result {
   final double? subscoreAdherence;
   final double? subscoreCoherence;
 
+  // SPEC-229: true cuando el bloque Estructura usa datos de población
+  // (NHANES/FFMI) porque waistCircumference o bodyFatPercentage son null.
+  // El 50% del IMR puede ser genérico — la UI debe indicarlo al usuario
+  // para incentivar la completitud de biometrías.
+  final bool isPartialBiometrics;
+
   const IMRv2Result({
     required this.totalScore,
     required this.structureScore,
@@ -81,6 +87,7 @@ class IMRv2Result {
     this.subscoreBehaviorTrend,
     this.subscoreAdherence,
     this.subscoreCoherence,
+    this.isPartialBiometrics = false,
   });
 
   /// Resultado vacío para cuando no hay datos suficientes (estado inicial,
@@ -251,6 +258,11 @@ class ScoreEngine {
     final int metabolicAge =
         _metabolicAgeFromStructure(user.age, structureBlock);
 
+    // SPEC-229: detecta datos poblacionales en bloque Estructura (50% del IMR).
+    final bool isPartial = (user.waistCircumference == null ||
+            user.waistCircumference! <= 0) ||
+        (user.bodyFatPercentage == null || user.bodyFatPercentage! <= 0);
+
     return IMRv2Result(
       totalScore: score,
       structureScore: structureBlock,
@@ -265,6 +277,7 @@ class ScoreEngine {
       ica: ica,
       ffmi: ffmi,
       whtr: ica,
+      isPartialBiometrics: isPartial,
     );
   }
 
@@ -316,6 +329,12 @@ class ScoreEngine {
     final int metabolicAge =
         _metabolicAgeFromStructure(user.age, structureBlock);
 
+    // SPEC-229: baseline siempre es parcial (sin comportamiento Y posiblemente
+    // sin biometrías reales). El 50% estructura ya usa defaults poblacionales.
+    final bool baselineIsPartial = (user.waistCircumference == null ||
+            user.waistCircumference! <= 0) ||
+        (user.bodyFatPercentage == null || user.bodyFatPercentage! <= 0);
+
     return IMRv2Result(
       totalScore: score,
       structureScore: structureBlock,
@@ -330,6 +349,7 @@ class ScoreEngine {
       ica: ica,
       ffmi: ffmi,
       whtr: ica,
+      isPartialBiometrics: baselineIsPartial,
     );
   }
 
