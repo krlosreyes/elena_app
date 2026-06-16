@@ -33,6 +33,11 @@
         <intent>
             <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
         </intent>
+        <!-- SPEC-238: URL scheme de Samsung Health para deep-link directo. -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="shealth" />
+        </intent>
     </queries>
 
     <application

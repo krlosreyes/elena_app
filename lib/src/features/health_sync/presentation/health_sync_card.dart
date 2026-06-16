@@ -424,21 +424,50 @@ class _HealthSyncCardState extends ConsumerState<HealthSyncCard>
   /// Setea `_openedSamsungHealth = true` para disparar sync al volver.
   Future<void> _handleOpenSamsungHealth() async {
     _openedSamsungHealth = true;
-
     if (kIsWeb || !Platform.isAndroid) return;
 
+    // Intento 1: URL scheme nativo de Samsung Health.
     try {
-      const samsungPackage = 'com.sec.android.app.shealth';
-      final intent = AndroidIntent(
-        action: 'android.intent.action.MAIN',
-        package: samsungPackage,
-        flags: <int>[0x10000000], // FLAG_ACTIVITY_NEW_TASK
+      // ignore: avoid_print
+      print('🩺 SAMSUNG OPEN: intentando shealth://');
+      const intent1 = AndroidIntent(
+        action: 'android.intent.action.VIEW',
+        data: 'shealth://home',
+        package: 'com.sec.android.app.shealth',
+        flags: <int>[0x10000000],
       );
-      await intent.launch();
-    } catch (_) {
-      // Fallback: abrir Health Connect settings (siempre disponible).
-      await ref.read(healthSyncServiceProvider).openHealthConnectSettings();
+      await intent1.launch();
+      // ignore: avoid_print
+      print('🩺 SAMSUNG OPEN: shealth:// OK');
+      return;
+    } catch (e) {
+      // ignore: avoid_print
+      print('🩺 SAMSUNG OPEN: shealth:// falló — $e');
     }
+
+    // Intento 2: intent MAIN + category LAUNCHER (forma estándar de abrir apps).
+    try {
+      // ignore: avoid_print
+      print('🩺 SAMSUNG OPEN: intentando MAIN/LAUNCHER');
+      const intent2 = AndroidIntent(
+        action: 'android.intent.action.MAIN',
+        category: 'android.intent.category.LAUNCHER',
+        package: 'com.sec.android.app.shealth',
+        flags: <int>[0x10000000],
+      );
+      await intent2.launch();
+      // ignore: avoid_print
+      print('🩺 SAMSUNG OPEN: MAIN/LAUNCHER OK');
+      return;
+    } catch (e) {
+      // ignore: avoid_print
+      print('🩺 SAMSUNG OPEN: MAIN/LAUNCHER falló — $e');
+    }
+
+    // Fallback final: Health Connect settings.
+    // ignore: avoid_print
+    print('🩺 SAMSUNG OPEN: fallback → Health Connect');
+    await ref.read(healthSyncServiceProvider).openHealthConnectSettings();
   }
 
   // ─── Format helpers ──────────────────────────────────────────────
