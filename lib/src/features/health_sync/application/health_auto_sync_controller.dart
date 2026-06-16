@@ -226,13 +226,27 @@ class HealthAutoSyncController extends StateNotifier<HealthAutoSyncState> {
         AppLogger.info('HealthAutoSync: nada que importar');
         // ignore: avoid_print
         print('🩺 SYNC EMPTY — nada que importar');
+      }
 
-        // SPEC-237: sync Android vacío con permisos OK →
-        // posible Samsung Health sin configurar para Health Connect.
-        // La UI mostrará una guía específica para el usuario.
-        final isAndroid = !kIsWeb && Platform.isAndroid;
-        if (isAndroid && canSync) {
+      // SPEC-237: en Android, mostrar guía Samsung Health si no entraron
+      // datos de SUEÑO. Steps pueden sincronizar vía Health Connect nativo
+      // pero el reloj Samsung requiere configuración explícita para sueño.
+      // Condición: Android + permisos OK + 0 sesiones de sueño importadas.
+      // No usamos result.isEmpty porque steps puede tener datos aunque
+      // sueño esté vacío (exactamente el caso Samsung Galaxy Watch).
+      final isAndroid = !kIsWeb && Platform.isAndroid;
+      if (isAndroid && canSync) {
+        // Leemos el lastImport del state (que ya fue actualizado arriba).
+        final importSummary = state.lastImport;
+        final noSleepImported = importSummary == null ||
+            importSummary.sleepSessionsImported == 0;
+        if (noSleepImported) {
           state = state.copyWith(needsSamsungHealthGuide: true);
+          // ignore: avoid_print
+          print('🩺 SAMSUNG GUIDE: sueño=0, mostrando guía HC');
+        } else {
+          // Sueño importó correctamente → ocultar guía si estaba visible.
+          state = state.copyWith(needsSamsungHealthGuide: false);
         }
       }
     } catch (e, st) {
