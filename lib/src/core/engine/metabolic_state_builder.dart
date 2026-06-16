@@ -75,11 +75,19 @@ class MetabolicStateBuilder {
 
     // ── circadianAlignment ───────────────────────────────────────────────
     // Compara lastMealTime con lastMealGoal del perfil circadiano.
-    final DateTime stableLastMeal = fasting.startTime ??
-        user.profile.lastMealGoal ??
-        DateTime(now.year, now.month, now.day, 20, 0);
-    final double circadianAlignment =
-        _calculateCircadianAlignment(stableLastMeal, user.profile.lastMealGoal);
+    //
+    // SPEC-233: stableLastMeal es nullable cuando no hay ayuno activo ni
+    // lastMealGoal configurado. En ese caso retornamos circadianAlignment=1.0
+    // (neutral — sin datos reales no penalizamos al usuario).
+    // El fallback hardcodeado a 20:00 generaba un circadianAlignment artificial
+    // que corrompía el bloque Comportamiento del IMR para usuarios nuevos sin
+    // datos. lastMealTime es nullable en MetabolicState y ScoreEngine retorna
+    // empty() cuando es null — la cadena ya estaba preparada para este caso.
+    final DateTime? stableLastMeal =
+        fasting.startTime ?? user.profile.lastMealGoal;
+    final double circadianAlignment = stableLastMeal != null
+        ? _calculateCircadianAlignment(stableLastMeal, user.profile.lastMealGoal)
+        : 1.0; // sin dato real → neutral (no penalizar)
 
     // ── sleepQuality ─────────────────────────────────────────────────────
     // SPEC-69: métrica multidimensional. Si tenemos `lastSleepLog`, alimentamos
@@ -169,7 +177,7 @@ class MetabolicStateBuilder {
       nutritionScoreRaw: nutritionScoreRaw,
       weeklyAdherence: weeklyAdherence,
       weeklyQualityScore: weeklyQualityScore,
-      lastMealTime: stableLastMeal,
+      lastMealTime: stableLastMeal, // nullable: null = sin dato real
       timestamp: now,
     );
   }
