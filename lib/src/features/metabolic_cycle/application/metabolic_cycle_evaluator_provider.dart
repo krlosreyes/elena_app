@@ -279,13 +279,14 @@ Future<void> _evaluate(
     // SPEC-235: notificación push al cierre AUTOMÁTICO del ciclo metabólico.
     // manualNextFasting queda excluido — el usuario lo inició conscientemente
     // y ya ve feedback visual; una notificación redundante genera ruido.
-    if (closed != null &&
-        closed.closureReason != ClosureReason.manualNextFasting) {
+    final closureReason = closed?.closureReason;
+    if (closureReason != null &&
+        closureReason != ClosureReason.manualNextFasting) {
       unawaited(
         NotificationService.showImmediate(
           id: NotificationIds.autoCycleClosure,
           title: 'Tu día metabólico cerró',
-          body: _autoCycleClosureBody(closed.closureReason),
+          body: _autoCycleClosureBody(closureReason),
         ).catchError((Object e) {
           AppLogger.debug('[evaluator] SPEC-235 notif falló: $e');
         }),
