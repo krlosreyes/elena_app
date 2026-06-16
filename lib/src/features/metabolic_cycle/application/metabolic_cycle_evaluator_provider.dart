@@ -22,6 +22,7 @@ import 'package:elena_app/src/features/dashboard/application/eating_window_provi
 import 'package:elena_app/src/features/dashboard/application/fasting_notifier.dart';
 import 'package:elena_app/src/features/dashboard/application/sleep_notifier.dart';
 import 'package:elena_app/src/features/dashboard/domain/fasting_status.dart';
+import 'package:elena_app/src/core/services/notification_service.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/cycle_score_computer.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_service.dart';
@@ -274,7 +275,43 @@ Future<void> _evaluate(
         closed.feedback != null) {
       ref.read(cycleClosureMomentProvider.notifier).state = closed;
     }
+
+    // SPEC-235: notificación push al cierre AUTOMÁTICO del ciclo metabólico.
+    // manualNextFasting queda excluido — el usuario lo inició conscientemente
+    // y ya ve feedback visual; una notificación redundante genera ruido.
+    if (closed != null &&
+        closed.closureReason != ClosureReason.manualNextFasting) {
+      unawaited(
+        NotificationService.showImmediate(
+          id: NotificationIds.autoCycleClosure,
+          title: 'Tu día metabólico cerró',
+          body: _autoCycleClosureBody(closed.closureReason),
+        ).catchError((Object e) {
+          AppLogger.debug('[evaluator] SPEC-235 notif falló: $e');
+        }),
+      );
+    }
   } catch (e) {
     AppLogger.warning('[metabolicCycleEvaluator] eval falló: $e', e);
+  }
+}
+
+/// SPEC-235: copia cálida por motivo de cierre automático.
+/// Tono: humano, empático, sin culpa. Ver feedback_notification_tone.md.
+String _autoCycleClosureBody(ClosureReason reason) {
+  switch (reason) {
+    case ClosureReason.fallback3hAfterWindow:
+      return 'Cerraste bien tu ventana. Mañana seguimos sumando 💪';
+    case ClosureReason.fallbackSleepDetected:
+      return 'Detectamos que te fuiste a descansar. ¡Buen cierre del día!';
+    case ClosureReason.fallbackAbsolute:
+      return 'El día metabólico cerró. Mañana es otra oportunidad. 🌅';
+    case ClosureReason.fallbackCalendar:
+      return 'Nuevo día, nueva energía. Tu ciclo de ayer ya cerró.';
+    case ClosureReason.protocolChanged:
+      return 'Actualizaste tu protocolo. El ciclo anterior cerró automáticamente.';
+    case ClosureReason.manualNextFasting:
+      // No debería llegar aquí — filtrado antes de llamar a este helper.
+      return '';
   }
 }

@@ -79,6 +79,11 @@ class NotificationIds {
   static const int fasting18h = 201;
   static const int fasting24h = 202;
 
+  // SPEC-235: notificación de cierre automático del ciclo metabólico.
+  // Se dispara cuando el ciclo cierra por fallback (sueño, 3h, 28h, calendario)
+  // — no por acción explícita del usuario (manualNextFasting).
+  static const int autoCycleClosure = 300;
+
   // SPEC-137 E.5: 30 min antes de la próxima comida sugerida
   // (lastMealAt + 3h). One-shot, no repeatsDaily.
   static const int nextMealReady = 300;
