@@ -86,7 +86,8 @@ class NotificationIds {
 
   // SPEC-137 E.5: 30 min antes de la próxima comida sugerida
   // (lastMealAt + 3h). One-shot, no repeatsDaily.
-  static const int nextMealReady = 300;
+  // ID 301 para no colisionar con autoCycleClosure (300).
+  static const int nextMealReady = 301;
 
   // SPEC-150: hidratación. Rango 400-419 reservado (hasta 20 slots/día).
   // cancelHydration() cancela todo el rango.

@@ -20,7 +20,9 @@ class NotificationIds {
   static const int fasting16h = 203;
   // SPEC-137 E.5: 30 min antes de la próxima comida sugerida
   // (lastMealAt + 3h). One-shot, no repeatsDaily.
-  static const int nextMealReady = 300;
+  static const int nextMealReady = 301;
+  // SPEC-235: notificación al cierre automático del ciclo metabólico.
+  static const int autoCycleClosure = 300;
   // Hidratación. Cadencia 30 min → rango 400-439.
   static const int hydrationStart = 400;
   static const int hydrationEnd = 439;
