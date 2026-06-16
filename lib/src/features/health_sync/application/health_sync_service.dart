@@ -433,6 +433,10 @@ class HealthSyncService {
         AppLogger.info(
           'HealthSync: ${metric.label}/${type.name} → ${points.length} samples',
         );
+        // ignore: avoid_print
+        if (metric == HealthMetric.sleepSession) {
+          print('🩺 SLEEP/${type.name} → ${points.length} muestras');
+        }
         allPoints.addAll(points);
       } on TimeoutException {
         AppLogger.warning(

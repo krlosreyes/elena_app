@@ -245,10 +245,15 @@ class HealthImportService {
     int skippedShort = 0;
     int skippedInvalid = 0;
     for (final s in samples) {
+      // ignore: avoid_print
+      print('🩺 SLEEP sample: start=${s.start}, end=${s.end}, '
+          'duration=${s.duration.inMinutes}min, source=${s.sourceName}');
       // Filtros sanos: ignorar sesiones absurdamente cortas (siestas
       // < 30 min) que el plugin a veces reporta como ruido.
       if (s.duration.inMinutes < 30) {
         skippedShort++;
+        // ignore: avoid_print
+        print('🩺 SLEEP SKIP <30min: ${s.duration.inMinutes}min');
         continue;
       }
 
