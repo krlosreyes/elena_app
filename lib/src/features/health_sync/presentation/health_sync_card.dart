@@ -246,6 +246,11 @@ class _HealthSyncCardState extends ConsumerState<HealthSyncCard> {
             style: const TextStyle(fontSize: 12, color: Color(0xFFFB923C)),
           ),
         ],
+        // SPEC-237: guía Samsung Health cuando sync Android regresa vacío.
+        if (state.needsSamsungHealthGuide) ...[
+          const SizedBox(height: 12),
+          _buildSamsungHealthGuide(),
+        ],
         const SizedBox(height: 12),
         SizedBox(
           width: double.infinity,
@@ -361,11 +366,63 @@ class _HealthSyncCardState extends ConsumerState<HealthSyncCard> {
     }
     // Leyó datos pero no se importó nada: el plugin trajo $total
     // samples y todas fueron descartadas por reglas internas
-    // (siestas <30min, <2000 pasos/día, o ya existía un check-in
+    // (siestas <30min, <500 pasos/día, o ya existía un check-in
     // manual). Mostramos el detalle para que el usuario entienda.
     return 'Leídos $total registros · 0 importados '
-        '(siestas <30min, días con <2000 pasos o pesos ya registrados '
+        '(siestas <30min, días con <500 pasos o pesos ya registrados '
         'manualmente).';
+  }
+
+  /// SPEC-237: guía específica para usuarios con Samsung Galaxy Watch.
+  /// Se muestra cuando el sync completó con permisos OK pero sin datos —
+  /// la causa más frecuente es Samsung Health sin configurar para HC.
+  Widget _buildSamsungHealthGuide() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A2E),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: const Color(0xFFFB923C).withValues(alpha: 0.45),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.watch_outlined,
+                size: 14,
+                color: Color(0xFFFB923C),
+              ),
+              const SizedBox(width: 6),
+              const Text(
+                '¿Usas Samsung Galaxy Watch?',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFFFB923C),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Para sincronizar sueño y actividad del reloj:\n'
+            '1. Abre Samsung Health\n'
+            '2. Menú → Ajustes → Servicios conectados → Health Connect\n'
+            '3. Activa Sueño y Actividad física\n'
+            '4. Vuelve aquí y toca "Sincronizar ahora"',
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.white70,
+              height: 1.5,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   String _formatImportSummary(HealthImportSummary s) {

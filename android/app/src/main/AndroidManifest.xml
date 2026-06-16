@@ -25,8 +25,11 @@
     <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION"/>
 
     <!-- SPEC-132: query del paquete Health Connect para detectar instalación. -->
+    <!-- SPEC-237: Samsung Health — detectar si está instalado para mostrar -->
+    <!-- guía de configuración cuando sync retorna vacío en Android.       -->
     <queries>
         <package android:name="com.google.android.apps.healthdata" />
+        <package android:name="com.sec.android.app.shealth" />
         <intent>
             <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
         </intent>

@@ -16,6 +16,9 @@
 //   - Persistencia del lastRunAt en memoria. Si la app se cierra,
 //     el debounce se resetea — aceptable porque sync es barato.
 
+import 'dart:io' show Platform;
+
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elena_app/src/core/services/app_logger.dart';
@@ -51,12 +54,18 @@ class HealthAutoSyncState {
   /// debouncing.
   final DateTime? lastRunAt;
 
+  /// SPEC-237: Android — sync completó con permisos OK pero 0 datos de
+  /// sueño/ejercicio. Señal de que Samsung Health no está configurado para
+  /// compartir con Health Connect. La UI muestra una guía específica.
+  final bool needsSamsungHealthGuide;
+
   const HealthAutoSyncState({
     this.permissionStatus,
     this.lastResult,
     this.lastImport,
     this.isRunning = false,
     this.lastRunAt,
+    this.needsSamsungHealthGuide = false,
   });
 
   HealthAutoSyncState copyWith({
@@ -65,6 +74,7 @@ class HealthAutoSyncState {
     HealthImportSummary? lastImport,
     bool? isRunning,
     DateTime? lastRunAt,
+    bool? needsSamsungHealthGuide,
   }) {
     return HealthAutoSyncState(
       permissionStatus: permissionStatus ?? this.permissionStatus,
@@ -72,6 +82,8 @@ class HealthAutoSyncState {
       lastImport: lastImport ?? this.lastImport,
       isRunning: isRunning ?? this.isRunning,
       lastRunAt: lastRunAt ?? this.lastRunAt,
+      needsSamsungHealthGuide:
+          needsSamsungHealthGuide ?? this.needsSamsungHealthGuide,
     );
   }
 }
@@ -171,7 +183,13 @@ class HealthAutoSyncController extends StateNotifier<HealthAutoSyncState> {
       // ignore: avoid_print
       print('🩺 SYNC permisos=${perm.runtimeType}');
 
-      if (perm is! HealthPermissionGranted) {
+      // SPEC-237: también sincronizamos si hay permisos PARCIALES.
+      // En Android, si WORKOUT fue denegado pero SLEEP/STEPS están concedidos,
+      // checkPermissions() retorna HealthPermissionPartial. El sync corre igual;
+      // _fetchMetric omite silenciosamente los tipos sin permiso.
+      final canSync =
+          perm is HealthPermissionGranted || perm is HealthPermissionPartial;
+      if (!canSync) {
         AppLogger.debug(
           'HealthAutoSync: sin permisos (${perm.runtimeType}), '
           'no se sincroniza',
@@ -208,6 +226,14 @@ class HealthAutoSyncController extends StateNotifier<HealthAutoSyncState> {
         AppLogger.info('HealthAutoSync: nada que importar');
         // ignore: avoid_print
         print('🩺 SYNC EMPTY — nada que importar');
+
+        // SPEC-237: sync Android vacío con permisos OK →
+        // posible Samsung Health sin configurar para Health Connect.
+        // La UI mostrará una guía específica para el usuario.
+        final isAndroid = !kIsWeb && Platform.isAndroid;
+        if (isAndroid && canSync) {
+          state = state.copyWith(needsSamsungHealthGuide: true);
+        }
       }
     } catch (e, st) {
       AppLogger.error('HealthAutoSync: ciclo falló', e, st);

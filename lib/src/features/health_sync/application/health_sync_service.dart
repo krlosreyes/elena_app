@@ -31,7 +31,12 @@ import 'package:elena_app/src/features/health_sync/domain/health_sync_result.dar
 ///
 /// IMPORTANTE: el plugin `health` ^13.3.1 usa tipos distintos según
 /// plataforma para sueño:
-///   - Android (Health Connect): `SLEEP_SESSION` agrupa toda la noche.
+///   - Android (Health Connect): Samsung Galaxy Watch escribe etapas
+///     detalladas (`SleepSessionRecord.Stage`) además de la sesión
+///     principal. El plugin las expone como tipos independientes
+///     (SLEEP_ASLEEP, DEEP, LIGHT, REM). Todos mapean al mismo permiso
+///     READ_SLEEP en HC, por lo que no generan prompts extra.
+///     `_consolidateSleepByNight` une solapamientos en 1 sesión/noche.
 ///   - iOS (HealthKit): `SLEEP_SESSION` NO existe. El Apple Watch
 ///     escribe sueño en MÚLTIPLES categorías:
 ///       - SLEEP_IN_BED = tiempo en cama (incluye despertarse a mitad)
@@ -57,12 +62,41 @@ List<hp.HealthDataType> _typesFor(HealthMetric metric) {
           hp.HealthDataType.SLEEP_REM,
         ];
       }
-      return [hp.HealthDataType.SLEEP_SESSION];
+      // Android / Health Connect: SLEEP_SESSION cubre la sesión consolidada.
+      // Samsung Galaxy Watch 7 también escribe etapas separadas —
+      // pedimos las 4 etapas de sueño "activo" para capturarlas.
+      // _fetchMetric usa try/catch independiente por tipo y
+      // _consolidateSleepByNight unifica los solapamientos en 1 noche.
+      return [
+        hp.HealthDataType.SLEEP_SESSION,
+        hp.HealthDataType.SLEEP_ASLEEP,
+        hp.HealthDataType.SLEEP_DEEP,
+        hp.HealthDataType.SLEEP_LIGHT,
+        hp.HealthDataType.SLEEP_REM,
+      ];
     case HealthMetric.steps:
       return [hp.HealthDataType.STEPS];
     case HealthMetric.workout:
       // SPEC-203: entrenamientos reales (HKWorkout / ExerciseSessionRecord).
       return [hp.HealthDataType.WORKOUT];
+  }
+}
+
+/// Tipo principal de cada métrica para el check de permisos individual en
+/// Android. Evita verificar la lista completa (que incluye etapas de sueño
+/// secundarias) en una sola llamada — todas las etapas de sueño mapean al
+/// mismo permiso READ_SLEEP que `SLEEP_SESSION`, por lo que verificar una
+/// es suficiente.
+hp.HealthDataType _primaryTypeFor(HealthMetric metric) {
+  switch (metric) {
+    case HealthMetric.weight:
+      return hp.HealthDataType.WEIGHT;
+    case HealthMetric.sleepSession:
+      return hp.HealthDataType.SLEEP_SESSION;
+    case HealthMetric.steps:
+      return hp.HealthDataType.STEPS;
+    case HealthMetric.workout:
+      return hp.HealthDataType.WORKOUT;
   }
 }
 
@@ -200,6 +234,12 @@ class HealthSyncService {
   /// Consulta el estado actual de permisos sin solicitar nada.
   /// Útil al abrir la app para decidir si mostrar el badge de
   /// "Sincronizando..." o el CTA "Conectar Apple Health".
+  ///
+  /// SPEC-237 (Android fix): en Android verificamos per-métrica.
+  /// `hasPermissions(todosLosTipos)` es atómico — si WORKOUT está denegado
+  /// retornaba `false` aunque sleep/steps estuvieran concedidos, abortando
+  /// el sync completo. Ahora retorna `HealthPermissionPartial` cuando
+  /// algunas métricas tienen permiso, y el sync omite las denegadas.
   Future<HealthPermissionStatus> checkPermissions() async {
     if (!isPlatformSupported) {
       return const HealthPermissionUnavailable(
@@ -211,37 +251,23 @@ class HealthSyncService {
       await _ensureConfigured();
 
       if (!kIsWeb && Platform.isAndroid) {
-        final status = await _plugin.getHealthConnectSdkStatus();
-        // SPEC-223: misma lógica que requestAuthorization — cualquier
-        // estado distinto de sdkAvailable es "no disponible".
-        if (status != hp.HealthConnectSdkStatus.sdkAvailable) {
+        final sdkStatus = await _plugin.getHealthConnectSdkStatus();
+        if (sdkStatus != hp.HealthConnectSdkStatus.sdkAvailable) {
           return const HealthConnectNotInstalled();
         }
+        // Verificación per-métrica para Android/Health Connect.
+        return await _checkPermissionsAndroid();
       }
 
-      // _typesFor puede retornar múltiples tipos por métrica
-      // (en iOS, sleep son 5 categorías distintas).
+      // iOS: hasPermissions() siempre retorna null (limitación de HK).
+      // Usamos el flag de sesión/prefs como proxy del estado real.
       final types = supportedMetrics.expand(_typesFor).toList();
       final permissions = List<hp.HealthDataAccess>.filled(
         types.length,
         hp.HealthDataAccess.READ,
       );
+      final has = await _plugin.hasPermissions(types, permissions: permissions);
 
-      final has = await _plugin.hasPermissions(
-        types,
-        permissions: permissions,
-      );
-
-      // hasPermissions() retorna null en iOS por la limitación de HK
-      // (no se puede saber el estado real, solo intentar leer).
-      //
-      // Comportamiento corregido:
-      //  - Si null Y el usuario YA solicitó autorización en esta
-      //    sesión → asumimos granted (HK no nos lo confirma pero el
-      //    usuario vio el sheet y aceptó).
-      //  - Si null Y el usuario NUNCA solicitó autorización → forzamos
-      //    Denied. Esto hace que la UI muestre el botón "Conectar" y
-      //    dispare el sheet nativo cuando el usuario lo toca.
       if (has == null) {
         return _iosAuthRequestedThisSession
             ? const HealthPermissionGranted()
@@ -251,13 +277,47 @@ class HealthSyncService {
           ? const HealthPermissionGranted()
           : const HealthPermissionDenied();
     } catch (e, st) {
-      AppLogger.error(
-        'HealthSyncService.checkPermissions falló',
-        e,
-        st,
-      );
+      AppLogger.error('HealthSyncService.checkPermissions falló', e, st);
       return HealthPermissionUnavailable(reason: e.toString());
     }
+  }
+
+  /// SPEC-237: verifica permisos individualmente en Android.
+  ///
+  /// Usa el tipo principal de cada métrica (`_primaryTypeFor`) — en sueño,
+  /// todas las etapas comparten el mismo permiso READ_SLEEP que SLEEP_SESSION,
+  /// así que verificar una es suficiente para determinar el acceso.
+  ///
+  /// Retorna:
+  ///   - `HealthPermissionGranted` si todas las métricas tienen permiso.
+  ///   - `HealthPermissionPartial` si algunas sí y otras no.
+  ///   - `HealthPermissionDenied` si ninguna tiene permiso.
+  Future<HealthPermissionStatus> _checkPermissionsAndroid() async {
+    final granted = <HealthMetric>[];
+    final denied = <HealthMetric>[];
+
+    for (final metric in supportedMetrics) {
+      try {
+        final has = await _plugin.hasPermissions(
+          [_primaryTypeFor(metric)],
+          permissions: [hp.HealthDataAccess.READ],
+        );
+        if (has == true) {
+          granted.add(metric);
+          AppLogger.debug('HealthSync HC: ${metric.label} → permiso OK');
+        } else {
+          denied.add(metric);
+          AppLogger.debug('HealthSync HC: ${metric.label} → sin permiso (has=$has)');
+        }
+      } catch (e) {
+        denied.add(metric);
+        AppLogger.debug('HealthSync HC: ${metric.label} → check falló: $e');
+      }
+    }
+
+    if (granted.isEmpty) return const HealthPermissionDenied();
+    if (denied.isEmpty) return const HealthPermissionGranted();
+    return HealthPermissionPartial(granted: granted, denied: denied);
   }
 
   /// En Android: abre Google Play en la página de Health Connect para
