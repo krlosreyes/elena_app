@@ -13,6 +13,7 @@ import 'src/app.dart';
 import 'src/core/config/recaptcha_config.dart';
 import 'src/core/providers/shared_preferences_provider.dart';
 import 'src/features/billing/application/billing_providers.dart';
+import 'src/features/billing/application/fake_billing_service.dart';
 import 'src/features/billing/data/revenuecat_billing_service.dart';
 import 'src/core/services/app_logger.dart';
 import 'src/core/services/analytics_service.dart';
@@ -170,10 +171,33 @@ Future<void> _bootstrap() async {
   );
 }
 
-/// SPEC-196: inicializa RevenueCat si hay key configurada para la plataforma.
-/// Devuelve los overrides (servicio real + `billingEnabled=true`), o vacío
-/// para quedarse en FreeBillingService con el gating inerte.
+/// SPEC-196/197/198: inicializa el servicio de cobro activo.
+///
+/// Prioridad:
+///   1. BILLING_FAKE=true → FakeBillingService (gating activo, sin tienda).
+///      Úsalo para validar locks y paywall en device antes de tener RC keys.
+///      flutter run --dart-define=BILLING_FAKE=true
+///   2. RC_IOS_KEY / RC_ANDROID_KEY → RevenueCatBillingService (producción).
+///   3. Sin nada → FreeBillingService, gating inerte (app completa sin muro).
 Future<List<Override>> _initBilling() async {
+  // 1. Modo fake para desarrollo/QA.
+  const billingFake = bool.fromEnvironment('BILLING_FAKE');
+  if (billingFake) {
+    AppLogger.info(
+      'SPEC-197/198: BILLING_FAKE=true → FakeBillingService activo. '
+      'Gating visible, paywall funcional sin tienda real.',
+    );
+    final service = FakeBillingService();
+    return [
+      billingServiceProvider.overrideWith((ref) {
+        ref.onDispose(service.dispose);
+        return service;
+      }),
+      billingEnabledProvider.overrideWithValue(true),
+    ];
+  }
+
+  // 2. RevenueCat con keys reales.
   if (kIsWeb) return const [];
   const iosKey = String.fromEnvironment('RC_IOS_KEY');
   const androidKey = String.fromEnvironment('RC_ANDROID_KEY');
