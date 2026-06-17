@@ -93,10 +93,14 @@ final coachingClosureFeedbackProvider =
     Provider.autoDispose<CoachingFeedback?>((ref) {
   if (!ref.watch(hasUnreadCycleClosureProvider)) return null;
 
-  final action = ref.read(coachingCompletionProvider).activeAction;
+  final completion = ref.read(coachingCompletionProvider);
+  // RF-194-05 fix: al cerrar ciclo, NextBestActionCard ya sobreescribió
+  // activeAction con la acción del nuevo ciclo. previousAction preserva
+  // la acción que estaba recomendada durante el ciclo que cerró.
+  final action = completion.previousAction ?? completion.activeAction;
   if (action == null) return null;
 
-  final completed = ref.read(coachingCompletionProvider).isCompleted(action.id);
+  final completed = completion.isCompleted(action.id);
   final weekly = ref.watch(weeklyCoachingProvider).valueOrNull;
   final delta = weekly == null ? null : _deltaForPillar(weekly, action.pillar);
 

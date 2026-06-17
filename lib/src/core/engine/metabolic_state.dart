@@ -153,6 +153,10 @@ class MetabolicState {
       exerciseMinutesRaw > 0 ||
       nutritionScoreRaw > 0;
 
+  // HOTFIX 2026-06-17: los 5 campos faltantes (nutritionScoreRaw,
+  // weeklyAdherence, weeklyQualityScore, lastMealTime, timestamp)
+  // impedían que Riverpod propagara cambios en nutrición/adherencia/calidad
+  // semanal a los consumidores (ScoreEngine, OrchestratorEngine, coaching).
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -167,7 +171,12 @@ class MetabolicState {
           metabolicCoherence == other.metabolicCoherence &&
           fastingHoursRaw == other.fastingHoursRaw &&
           sleepHoursRaw == other.sleepHoursRaw &&
-          exerciseMinutesRaw == other.exerciseMinutesRaw;
+          exerciseMinutesRaw == other.exerciseMinutesRaw &&
+          nutritionScoreRaw == other.nutritionScoreRaw &&
+          weeklyAdherence == other.weeklyAdherence &&
+          weeklyQualityScore == other.weeklyQualityScore &&
+          lastMealTime == other.lastMealTime &&
+          timestamp == other.timestamp;
 
   @override
   int get hashCode => Object.hash(
@@ -182,6 +191,11 @@ class MetabolicState {
         fastingHoursRaw,
         sleepHoursRaw,
         exerciseMinutesRaw,
+        nutritionScoreRaw,
+        weeklyAdherence,
+        weeklyQualityScore,
+        lastMealTime,
+        timestamp,
       );
 
   @override

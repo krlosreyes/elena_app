@@ -23,15 +23,26 @@ class CoachingCompletionService {
   final void Function(String actionId)? onCompleted;
 
   CoachingAction? _activePrimary;
+  CoachingAction? _previousAction;
   final Set<String> _completed = <String>{};
 
   /// El card llama esto al mostrar (o limpiar) la acción principal.
+  /// Preserva la acción saliente en [_previousAction] para que el feedback
+  /// de cierre (RF-194-05) pueda leerla aunque el card ya haya cambiado
+  /// a la acción del nuevo ciclo.
   void setActive(CoachingAction? primary) {
+    if (_activePrimary != null && primary?.id != _activePrimary?.id) {
+      _previousAction = _activePrimary;
+    }
     _activePrimary = primary;
   }
 
   /// Acción recomendada activa (para el feedback de cierre RF-194-05).
   CoachingAction? get activeAction => _activePrimary;
+
+  /// Acción que estaba activa antes de la actual — la del ciclo cerrado.
+  /// El feedback de cierre la usa cuando [activeAction] ya apunta al nuevo ciclo.
+  CoachingAction? get previousAction => _previousAction;
 
   /// ¿Se contó como completada la acción con este id?
   bool isCompleted(String id) => _completed.contains(id);
