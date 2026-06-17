@@ -5,11 +5,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-/// SPEC-222: llave global del navigator raíz para deeplink routing
-/// desde notificaciones (cold start + foreground).
-final rootNavigatorKey = GlobalKey<NavigatorState>();
-
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
 import 'package:elena_app/src/features/auth/presentation/login_screen.dart';
 import 'package:elena_app/src/features/auth/presentation/register_screen.dart';
@@ -36,6 +31,10 @@ import 'package:elena_app/src/features/profile/presentation/body_composition_scr
 import 'package:elena_app/src/features/goals/presentation/goal_setup_screen.dart';
 // SPEC-15: Road Map de Avance Personal
 import 'package:elena_app/src/features/progress/presentation/progress_screen.dart';
+
+/// SPEC-222: llave global del navigator raíz para deeplink routing
+/// desde notificaciones (cold start + foreground).
+final rootNavigatorKey = GlobalKey<NavigatorState>();
 
 final goRouterProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
