@@ -69,4 +69,8 @@ dependencies {
     implementation("com.google.firebase:firebase-appcheck-playintegrity")
     // SPEC-239: Samsung Health Data SDK — lectura directa sin Health Connect.
     implementation(files("libs/samsung-health-data-api-1.1.0.aar"))
+    // SPEC-239: kotlinx-coroutines-android para el CoroutineScope del bridge.
+    // Normalmente viene como dep transitiva del plugin 'health', pero se declara
+    // explícitamente para garantizar disponibilidad.
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 }

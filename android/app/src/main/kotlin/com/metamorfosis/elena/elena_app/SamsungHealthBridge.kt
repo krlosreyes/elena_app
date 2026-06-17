@@ -1,185 +1,220 @@
 package com.metamorfosis.elena.elena_app
 
-// SPEC-239: Lectura directa de Samsung Health sin pasar por Health Connect.
-// Arquitectura:
-//   - FlutterMethodChannel "com.metamorfosisreal.elena/samsung_health"
-//   - Samsung Health Data SDK 1.1.0
-//   - Convierte SleepSession → Map para consumo en Dart
+// SPEC-239: Samsung Health Data SDK 1.1.0 — lectura directa de sueño sin Health Connect.
 //
-// Flujo:
-//   1. connect()    — establece conexión con Samsung Health (necesita SH instalado)
-//   2. hasPermissions() — consulta si ya tenemos acceso
-//   3. requestPermissions() — pide acceso al usuario vía diálogo de SH
-//   4. readSleep(startMs, endMs) — devuelve lista de sesiones de sueño
-//
-// En Dart: health_sync_service.dart llama este channel cuando Health Connect
-// devuelve 0 sesiones de sueño en Android.
+// API verificada contra bytecode del AAR (R8 full obfuscation):
+//   - HealthDataService(Context)                → instancia del servicio
+//   - service.getStore(Context)                 → HealthDataStore (síncrono)
+//   - store.getGrantedPermissionsAsync(perms)   → AsyncSingleFuture<Set<Permission>>
+//   - store.requestPermissionsAsync(perms, act) → AsyncSingleFuture<Set<Permission>>
+//   - store.readDataAsync(request)              → AsyncSingleFuture<DataResponse<HealthDataPoint>>
+//   - AsyncSingleFuture.setCallback(Executor, Consumer<T>, Consumer<Throwable>)
+//   - InstantTimeFilter.since(startInstant)     ← único factory con nombre JVM preservado
+//   - DataType.SleepType()                      ← no-arg constructor; es un DataType
+//   - sleepType.readDataRequestBuilder          ← DualTimeBuilder pre-configurado
+//   - dataPoint.startTime / dataPoint.endTime   ← Instant
 
 import android.app.Activity
-import android.content.Context
 import com.samsung.android.sdk.health.data.HealthDataService
 import com.samsung.android.sdk.health.data.HealthDataStore
-import com.samsung.android.sdk.health.data.error.HealthDataException
+import com.samsung.android.sdk.health.data.permission.AccessType
 import com.samsung.android.sdk.health.data.permission.Permission
 import com.samsung.android.sdk.health.data.request.DataType
 import com.samsung.android.sdk.health.data.request.InstantTimeFilter
-import com.samsung.android.sdk.health.data.request.ReadDataRequest
-import io.flutter.embedding.android.FlutterFragmentActivity
+import com.samsung.android.sdk.health.data.response.AsyncSingleFuture
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import java.time.Instant
+import java.util.concurrent.Executor
+import java.util.concurrent.Executors
+import java.util.function.Consumer
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlin.coroutines.suspendCoroutine
 
-class SamsungHealthBridge(private val activity: FlutterFragmentActivity) {
+class SamsungHealthBridge(private val activity: Activity) {
 
     companion object {
         const val CHANNEL = "com.metamorfosisreal.elena/samsung_health"
     }
 
+    // Scope principal: Main para que result.success/.error lleguen al hilo UI.
+    private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+
+    // Executor para callbacks de AsyncSingleFuture (no bloquea Main).
+    private val executor: Executor = Executors.newSingleThreadExecutor()
+
+    // Store: se inicializa al llamar "connect".
     private var store: HealthDataStore? = null
 
-    // Permisos que pedimos: solo lectura de Sueño.
-    // Steps llegan vía Health Connect (funcionan bien). Weight también.
-    private val requiredPermissions = setOf(
-        Permission.of(DataType.SleepType, Permission.AccessType.READ),
+    // DataType de sueño y permisos requeridos.
+    private val sleepType = DataType.SleepType()
+    private val sleepPermissions: Set<Permission> = setOf(
+        Permission.of(sleepType, AccessType.READ),
     )
 
+    // ─── Dispatcher ──────────────────────────────────────────────────────────
+
     fun handle(call: MethodCall, result: MethodChannel.Result) {
-        when (call.method) {
-            "isSamsungHealthAvailable" -> checkAvailable(result)
-            "connect"                  -> connect(result)
-            "hasPermissions"           -> hasPermissions(result)
-            "requestPermissions"       -> requestPermissions(result)
-            "readSleep"                -> readSleep(call, result)
-            else                       -> result.notImplemented()
+        scope.launch {
+            try {
+                when (call.method) {
+                    "isSamsungHealthAvailable" ->
+                        result.success(isSamsungHealthAvailable())
+
+                    "connect" ->
+                        result.success(connect())
+
+                    "hasPermissions" ->
+                        result.success(hasPermissions())
+
+                    "requestPermissions" ->
+                        result.success(requestPermissions())
+
+                    "readSleep" -> {
+                        // Flutter puede enviar Int o Long; normalizamos a Long.
+                        val startMs = (call.argument<Any>("startMs") as Number).toLong()
+                        val endMs   = (call.argument<Any>("endMs")   as Number).toLong()
+                        result.success(readSleep(startMs, endMs))
+                    }
+
+                    else -> result.notImplemented()
+                }
+            } catch (e: Exception) {
+                println("🩺 SH BRIDGE ERROR [${call.method}]: ${e.message}")
+                result.error("SAMSUNG_HEALTH_ERROR", e.message, null)
+            }
         }
     }
 
-    // ─── Disponibilidad ──────────────────────────────────────────────
+    // ─── ¿Instalado? ─────────────────────────────────────────────────────────
 
-    private fun checkAvailable(result: MethodChannel.Result) {
-        val pm = activity.packageManager
-        val available = try {
-            pm.getPackageInfo("com.sec.android.app.shealth", 0)
+    private fun isSamsungHealthAvailable(): Boolean {
+        return try {
+            activity.packageManager.getPackageInfo("com.sec.android.app.shealth", 0)
+            println("🩺 SH BRIDGE: Samsung Health instalado")
             true
-        } catch (_: Exception) { false }
-        result.success(available)
+        } catch (_: Exception) {
+            println("🩺 SH BRIDGE: Samsung Health NO instalado")
+            false
+        }
     }
 
-    // ─── Conexión ────────────────────────────────────────────────────
+    // ─── Conexión ────────────────────────────────────────────────────────────
 
-    private fun connect(result: MethodChannel.Result) {
-        try {
-            HealthDataService.getStore(
-                activity,
-                object : HealthDataStore.ConnectionListener {
-                    override fun onConnected(healthDataStore: HealthDataStore) {
-                        store = healthDataStore
-                        android.util.Log.d("SamsungHealth", "🩺 SH conectado")
-                        result.success(true)
-                    }
-                    override fun onConnectionFailed(e: HealthDataException) {
-                        android.util.Log.e("SamsungHealth", "🩺 SH conexión falló: ${e.message}")
-                        result.error("SH_CONNECTION_FAILED", e.message, null)
-                    }
-                    override fun onDisconnected() {
-                        android.util.Log.d("SamsungHealth", "🩺 SH desconectado")
-                        store = null
-                    }
-                }
+    /** Inicializa el HealthDataStore. Síncrono según bytecode de HealthDataService. */
+    private fun connect(): Boolean {
+        return try {
+            val service = HealthDataService(activity)
+            store = service.getStore(activity)
+            println("🩺 SH BRIDGE: connect OK")
+            true
+        } catch (e: Exception) {
+            println("🩺 SH BRIDGE: connect ERROR — ${e.message}")
+            false
+        }
+    }
+
+    // ─── Permisos ────────────────────────────────────────────────────────────
+
+    private suspend fun hasPermissions(): Boolean {
+        val s = store ?: return false
+        return try {
+            val granted = awaitFuture(s.getGrantedPermissionsAsync(sleepPermissions))
+            val has = granted.containsAll(sleepPermissions)
+            println("🩺 SH BRIDGE: hasPermissions=$has")
+            has
+        } catch (e: Exception) {
+            println("🩺 SH BRIDGE: hasPermissions ERROR — ${e.message}")
+            false
+        }
+    }
+
+    private suspend fun requestPermissions(): Boolean {
+        val s = store ?: return false
+        return try {
+            val granted = awaitFuture(s.requestPermissionsAsync(sleepPermissions, activity))
+            val has = granted.containsAll(sleepPermissions)
+            println("🩺 SH BRIDGE: requestPermissions → $has")
+            has
+        } catch (e: Exception) {
+            println("🩺 SH BRIDGE: requestPermissions ERROR — ${e.message}")
+            false
+        }
+    }
+
+    // ─── Lectura de sueño ────────────────────────────────────────────────────
+
+    /**
+     * Lee sesiones de sueño en [startMs, endMs].
+     * Devuelve lista de maps: { startMs, endMs, durationMin }.
+     * Filtra sesiones < 30 min (ruido).
+     *
+     * Nota: InstantTimeFilter.since(startInstant) es la única factory
+     * con nombre JVM preservado tras R8 en el AAR. La cota de fin
+     * se aplica manualmente en el bucle.
+     */
+    private suspend fun readSleep(startMs: Long, endMs: Long): List<Map<String, Any>> {
+        val s = store ?: return emptyList()
+
+        val startInstant = Instant.ofEpochMilli(startMs)
+        val endInstant   = Instant.ofEpochMilli(endMs)
+
+        println("🩺 SH BRIDGE: readSleep $startInstant → $endInstant")
+
+        val timeFilter = InstantTimeFilter.since(startInstant)
+        val request    = sleepType.readDataRequestBuilder
+            .setInstantTimeFilter(timeFilter)
+            .build()
+
+        val response = awaitFuture(s.readDataAsync(request))
+        val sessions = mutableListOf<Map<String, Any>>()
+
+        for (dataPoint in response.dataList) {
+            val pStartMs = dataPoint.startTime.toEpochMilli()
+            val pEndMs   = dataPoint.endTime.toEpochMilli()
+
+            // Excluir sesiones que empiezan fuera del rango solicitado.
+            if (pStartMs >= endInstant.toEpochMilli()) continue
+
+            val durationMin = ((pEndMs - pStartMs) / 60_000L).toInt()
+
+            // Descartar ruido (naps muy cortos, interrupciones).
+            if (durationMin < 30) continue
+
+            println("🩺 SH BRIDGE: sesión sueño ${durationMin}min")
+            sessions += mapOf(
+                "startMs"     to pStartMs,
+                "endMs"       to pEndMs,
+                "durationMin" to durationMin,
             )
-        } catch (e: Exception) {
-            result.error("SH_CONNECT_EXCEPTION", e.message, null)
         }
+
+        println("🩺 SH BRIDGE: ${sessions.size} sesiones de sueño leídas")
+        return sessions
     }
 
-    // ─── Permisos ────────────────────────────────────────────────────
+    // ─── AsyncSingleFuture → suspend ─────────────────────────────────────────
 
-    private fun hasPermissions(result: MethodChannel.Result) {
-        val s = store ?: run { result.success(false); return }
-        try {
-            s.getGrantedPermissions(requiredPermissions)
-                .addOnSuccessListener { granted ->
-                    result.success(granted.containsAll(requiredPermissions))
-                }
-                .addOnFailureListener { e ->
-                    result.error("SH_PERM_CHECK_FAILED", e.message, null)
-                }
-        } catch (e: Exception) {
-            result.error("SH_PERM_CHECK_EXCEPTION", e.message, null)
-        }
-    }
-
-    private fun requestPermissions(result: MethodChannel.Result) {
-        val s = store ?: run {
-            result.error("SH_NOT_CONNECTED", "Llama connect() primero", null)
-            return
-        }
-        try {
-            s.requestPermissions(requiredPermissions, activity)
-                .addOnSuccessListener { granted ->
-                    result.success(granted.containsAll(requiredPermissions))
-                }
-                .addOnFailureListener { e ->
-                    result.error("SH_PERM_REQUEST_FAILED", e.message, null)
-                }
-        } catch (e: Exception) {
-            result.error("SH_PERM_REQUEST_EXCEPTION", e.message, null)
-        }
-    }
-
-    // ─── Lectura de datos ────────────────────────────────────────────
-
-    private fun readSleep(call: MethodCall, result: MethodChannel.Result) {
-        val s = store ?: run {
-            result.error("SH_NOT_CONNECTED", "Llama connect() primero", null)
-            return
-        }
-
-        val startMs = call.argument<Long>("startMs")
-            ?: run { result.error("SH_BAD_ARGS", "falta startMs", null); return }
-        val endMs = call.argument<Long>("endMs")
-            ?: run { result.error("SH_BAD_ARGS", "falta endMs", null); return }
-
-        android.util.Log.d("SamsungHealth",
-            "🩺 SH readSleep: ${Instant.ofEpochMilli(startMs)} → ${Instant.ofEpochMilli(endMs)}")
-
-        try {
-            val timeFilter = InstantTimeFilter.of(
-                Instant.ofEpochMilli(startMs),
-                Instant.ofEpochMilli(endMs),
+    /**
+     * Convierte AsyncSingleFuture<T> en suspend fun usando
+     * setCallback(Executor, Consumer<T>, Consumer<Throwable>).
+     *
+     * El método setCallback tiene nombre JVM preservado en el AAR
+     * (verificado en bytecode). java.util.function.Consumer es
+     * compatible con SAM conversion de Kotlin.
+     */
+    @Suppress("UNCHECKED_CAST")
+    private suspend fun <T> awaitFuture(future: AsyncSingleFuture<T>): T =
+        suspendCoroutine { cont ->
+            future.setCallback(
+                executor,
+                Consumer { value: T        -> cont.resume(value) },
+                Consumer { err: Throwable  -> cont.resumeWithException(err) },
             )
-            val request = ReadDataRequest.builder(DataType.SleepType, timeFilter).build()
-
-            s.readData(request)
-                .addOnSuccessListener { dataSet ->
-                    val sessions = mutableListOf<Map<String, Any>>()
-                    for (point in dataSet.dataPoints) {
-                        // SleepSession extiende HealthDataPoint — campos
-                        // startTime/endTime son instantes en epoch ms.
-                        val startEpoch = point.startTime.toEpochMilli()
-                        val endEpoch   = point.endTime.toEpochMilli()
-                        val durationMs = endEpoch - startEpoch
-                        val durationMin = durationMs / 60_000L
-
-                        android.util.Log.d("SamsungHealth",
-                            "🩺 SH sleep: ${durationMin}min")
-
-                        sessions.add(mapOf(
-                            "startMs"     to startEpoch,
-                            "endMs"       to endEpoch,
-                            "durationMin" to durationMin,
-                        ))
-                    }
-                    android.util.Log.d("SamsungHealth",
-                        "🩺 SH readSleep: ${sessions.size} sesiones encontradas")
-                    result.success(sessions)
-                }
-                .addOnFailureListener { e ->
-                    android.util.Log.e("SamsungHealth", "🩺 SH readData falló: ${e.message}")
-                    result.error("SH_READ_FAILED", e.message, null)
-                }
-        } catch (e: Exception) {
-            result.error("SH_READ_EXCEPTION", e.message, null)
         }
-    }
 }
