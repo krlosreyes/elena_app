@@ -14,24 +14,31 @@
 // SPEC-00: Dart puro — sin dependencias externas.
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Fases fisiológicas del ayuno basadas en horas de ayuno acumuladas.
+/// Bandas internas del OrchestratorEngine para lógica de decisión.
 ///
-/// Mapeo:
-///   <4h   → alerta
+/// SPEC-221 (2026-06-17): este enum es el INTERNO del orchestrator.
+/// El enum canónico para UI/notificaciones/coaching es `FastingPhase`
+/// de `fasting_status.dart` (6 valores, más granular y científicamente
+/// preciso). Este se mantiene por compatibilidad con Freezed
+/// (`OrchestratorState.fastingPhase`). Pendiente: unificar tras
+/// correr `build_runner` y renombrar a `OrchestratorFastingBand`.
+///
+/// Mapeo interno (umbrales del OrchestratorEngine):
+///   <4h   → alerta       (= early)
 ///   4–8h  → gluconeogenesis
-///   8–12h → cetosis
-///   12h+  → autofagia
+///   8–12h → cetosis       (= ketosis)
+///   12h+  → autofagia     (= deepFasting)
 enum FastingPhase {
-  /// Estado post-ingesta (insulina activa)
+  /// Estado post-ingesta (insulina activa). Equivale a 'early'.
   alerta,
 
-  /// Producción de glucosa hepática
+  /// Producción de glucosa hepática. Equivale a 'gluconeogenesis'.
   gluconeogenesis,
 
-  /// Uso de grasa como energía primaria
+  /// Uso de grasa como energía primaria. Equivale a 'ketosis'.
   cetosis,
 
-  /// Reciclaje celular profundo
+  /// Reciclaje celular profundo. Equivale a 'deepFasting'.
   autofagia,
 }
 

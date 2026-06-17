@@ -1,11 +1,55 @@
-/// Fases biológicas extendidas según el mapa cronológico del ayuno real
+/// Fases biológicas extendidas según el mapa cronológico del ayuno real.
+///
+/// SPEC-221 (2026-06-17): este es el enum CANÓNICO de fases de ayuno.
+/// El OrchestratorEngine mantiene su propio `FastingPhase` en
+/// `biological_phases.dart` por compatibilidad con Freezed (pendiente
+/// de unificación completa tras correr `build_runner`). Usa
+/// [orchestratorBand] para mapear a las 4 bandas del orchestrator.
 enum FastingPhase {
   none, // Estado inicial/Alimentación
   postAbsorption, // 0-12h: Descenso de insulina
   transition, // 12-18h: Gluconeogénesis
   fatBurning, // 18-24h: Cetosis nutricional
   autophagy, // 24-48h: Reciclaje celular
-  survival // 48h+: Conservación profunda
+  survival; // 48h+: Conservación profunda
+
+  /// Nombre para UI del dashboard y notificaciones.
+  String get displayName => switch (this) {
+        none => 'Alimentación',
+        postAbsorption => 'Post-absorción',
+        transition => 'Transición',
+        fatBurning => 'Quema de grasa',
+        autophagy => 'Autofagia',
+        survival => 'Conservación',
+      };
+
+  /// Descripción breve para tooltips o cards de coaching.
+  String get description => switch (this) {
+        none => 'Tu cuerpo usa la energía de lo que comiste.',
+        postAbsorption => 'La insulina baja, tu cuerpo empieza a usar reservas.',
+        transition => 'Tu hígado produce glucosa; la oxidación de grasa aumenta.',
+        fatBurning => 'Cetosis nutricional: la grasa es tu fuente principal.',
+        autophagy => 'Reciclaje celular profundo. Tu cuerpo se repara.',
+        survival => 'Conservación profunda. Solo con supervisión médica.',
+      };
+
+  /// SPEC-221: Banda simplificada que mapea al OrchestratorEngine.
+  ///
+  /// El orchestrator opera con 4 estados internos. Este getter permite
+  /// que cualquier consumer pase de la fase canónica (6 valores) a la
+  /// banda del orchestrator (4 valores) sin conocer los umbrales.
+  ///
+  /// Mapeo:
+  ///   none / postAbsorption  → 'early' (alerta en el orchestrator)
+  ///   transition             → 'gluconeogenesis'
+  ///   fatBurning             → 'ketosis' (cetosis)
+  ///   autophagy / survival   → 'deepFasting' (autofagia)
+  String get orchestratorBand => switch (this) {
+        none || postAbsorption => 'early',
+        transition => 'gluconeogenesis',
+        fatBurning => 'ketosis',
+        autophagy || survival => 'deepFasting',
+      };
 }
 
 /// SPEC-183 (2026-06-05): origen de la activación del ayuno.

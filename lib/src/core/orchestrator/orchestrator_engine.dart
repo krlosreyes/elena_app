@@ -145,9 +145,13 @@ class OrchestratorEngine {
   // Métodos privados puros
   // ═══════════════════════════════════════════════════════════════════════════
 
-  /// Determina FastingPhase tipado desde horas de ayuno.
+  /// Determina la banda interna de ayuno del orchestrator.
   ///
-  /// Umbrales: <4h alerta, 4-8h gluconeogénesis, 8-12h cetosis, ≥12h autofagia.
+  /// SPEC-221: Estos umbrales (4/8/12h) son las bandas de DECISIÓN del
+  /// orchestrator — NO las fases biológicas del UI (que usan 12/18/24h).
+  /// El enum canónico para display es `FastingPhase` de `fasting_status.dart`.
+  /// Pendiente: recibir directamente `FastingPhase` del dashboard y usar
+  /// `.orchestratorBand` en lugar de recalcular desde horas.
   static FastingPhase _determineFastingPhase(double fastingHoursRaw) {
     if (fastingHoursRaw < 4) return FastingPhase.alerta;
     if (fastingHoursRaw < 8) return FastingPhase.gluconeogenesis;
