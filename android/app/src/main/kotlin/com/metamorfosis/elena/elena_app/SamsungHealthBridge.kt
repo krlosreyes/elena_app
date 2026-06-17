@@ -20,6 +20,7 @@ import com.samsung.android.sdk.health.data.HealthDataStore
 import com.samsung.android.sdk.health.data.permission.AccessType
 import com.samsung.android.sdk.health.data.permission.Permission
 import com.samsung.android.sdk.health.data.request.DataType
+import com.samsung.android.sdk.health.data.request.DataTypes
 import com.samsung.android.sdk.health.data.request.InstantTimeFilter
 import com.samsung.android.sdk.health.data.response.AsyncSingleFuture
 import io.flutter.plugin.common.MethodCall
@@ -51,10 +52,11 @@ class SamsungHealthBridge(private val activity: Activity) {
     // Store: se inicializa al llamar "connect".
     private var store: HealthDataStore? = null
 
-    // DataType de sueño y permisos requeridos.
-    private val sleepType = DataType.SleepType()
+    // DataTypes.SLEEP es el singleton pre-instanciado de DataType.SleepType
+    // que expone Samsung a través de DataTypes (@JvmField, verificado en bytecode).
+    // NUNCA usar DataType.SleepType() — constructor es internal en el SDK.
     private val sleepPermissions: Set<Permission> = setOf(
-        Permission.of(sleepType, AccessType.READ),
+        Permission.of(DataTypes.SLEEP, AccessType.READ),
     )
 
     // ─── Dispatcher ──────────────────────────────────────────────────────────
@@ -106,11 +108,14 @@ class SamsungHealthBridge(private val activity: Activity) {
 
     // ─── Conexión ────────────────────────────────────────────────────────────
 
-    /** Inicializa el HealthDataStore. Síncrono según bytecode de HealthDataService. */
+    /**
+     * Inicializa el HealthDataStore.
+     * HealthDataService es un Kotlin object (singleton con INSTANCE),
+     * no se instancia — se llama HealthDataService.getStore() directo.
+     */
     private fun connect(): Boolean {
         return try {
-            val service = HealthDataService(activity)
-            store = service.getStore(activity)
+            store = HealthDataService.getStore(activity)
             println("🩺 SH BRIDGE: connect OK")
             true
         } catch (e: Exception) {
@@ -167,7 +172,9 @@ class SamsungHealthBridge(private val activity: Activity) {
         println("🩺 SH BRIDGE: readSleep $startInstant → $endInstant")
 
         val timeFilter = InstantTimeFilter.since(startInstant)
-        val request    = sleepType.readDataRequestBuilder
+        // DataTypes.SLEEP: instancia singleton de DataType.SleepType provista por el SDK.
+        // readDataRequestBuilder devuelve DualTimeBuilder<HealthDataPoint> tipado.
+        val request    = DataTypes.SLEEP.readDataRequestBuilder
             .setInstantTimeFilter(timeFilter)
             .build()
 
@@ -175,8 +182,9 @@ class SamsungHealthBridge(private val activity: Activity) {
         val sessions = mutableListOf<Map<String, Any>>()
 
         for (dataPoint in response.dataList) {
-            val pStartMs = dataPoint.startTime.toEpochMilli()
-            val pEndMs   = dataPoint.endTime.toEpochMilli()
+            // startTime/endTime son Instant? (nullable) según bytecode del AAR
+            val pStartMs = dataPoint.startTime?.toEpochMilli() ?: continue
+            val pEndMs   = dataPoint.endTime?.toEpochMilli()   ?: continue
 
             // Excluir sesiones que empiezan fuera del rango solicitado.
             if (pStartMs >= endInstant.toEpochMilli()) continue
