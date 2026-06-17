@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/core/services/notification_service.dart';
+import 'package:elena_app/src/core/services/notification_router.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/features/hydration/domain/hydration_message_pool.dart';
 import 'package:elena_app/src/features/metabolic_cycle/domain/metabolic_cycle.dart';
@@ -38,6 +39,7 @@ class NotificationScheduler {
   static Future<void> scheduleCircadianDay(
     UserModel user, {
     MetabolicCycle? openCycle,
+    bool isFasting = false,
   }) async {
     try {
       await NotificationService.cancelCircadian();
@@ -59,11 +61,15 @@ class NotificationScheduler {
         title: '☀️ Buenos días',
         body: 'Despertaste con energía nueva. Aprovéchala en algo que te '
             'importe hoy.',
+        payload: NotificationRouter.circadianPayload(),
       );
 
       // ── 2. Apertura de ventana de alimentación ───────────────────────────
+      // Consciencia ayuno↔alimentación: si el usuario está ayunando, NO
+      // programar la notificación de apertura de ventana. Al cerrar el
+      // ayuno, _scheduleFeedingWindowNotifs() reprograma lo necesario.
       final firstMeal = profile.firstMealGoal;
-      if (firstMeal != null) {
+      if (firstMeal != null && !isFasting) {
         await _scheduleCircadian(
           id: NotificationIds.firstMeal,
           hour: firstMeal.hour,
@@ -71,6 +77,7 @@ class NotificationScheduler {
           title: '🍽️ Tu ventana abrió',
           body: 'Si tienes hambre, este es buen momento para comer. Tu '
               'cuerpo ya está listo.',
+          payload: NotificationRouter.nutritionPayload(),
         );
       }
 
@@ -99,7 +106,9 @@ class NotificationScheduler {
       } else if (lastMeal != null) {
         lastMealDt = DateTime(2000, 1, 1, lastMeal.hour, lastMeal.minute);
       }
-      if (lastMealDt != null) {
+      // Consciencia ayuno↔alimentación: el aviso de cierre de ventana solo
+      // aplica durante la fase de alimentación.
+      if (lastMealDt != null && !isFasting) {
         final warningTime =
             lastMealDt.subtract(const Duration(minutes: 30));
         await _scheduleCircadian(
@@ -109,6 +118,7 @@ class NotificationScheduler {
           title: '⏰ 30 minutos para cerrar tu ventana',
           body: 'Si te falta algo por comer, ahora es buen momento. Sin '
               'culpa.',
+          payload: NotificationRouter.nutritionPayload(),
         );
       }
 
@@ -129,6 +139,7 @@ class NotificationScheduler {
         title: '🌙 Una hora para soltar el día',
         body: 'En una hora tu cuerpo empieza a descansar. Si vas a cenar, '
             'mejor ya.',
+        payload: NotificationRouter.circadianPayload(),
       );
 
       await _scheduleCircadian(
@@ -138,6 +149,7 @@ class NotificationScheduler {
         title: '🌙 30 minutos para soltar',
         body: 'Falta media hora para que tu cuerpo se enfoque en descansar. '
             'Vas bien.',
+        payload: NotificationRouter.circadianPayload(),
       );
 
       await _scheduleCircadian(
@@ -147,6 +159,7 @@ class NotificationScheduler {
         title: '🌙 Modo reparación activado',
         body: 'Tu cuerpo empieza a hacer lo suyo mientras descansás. Buen '
             'momento para soltar el día.',
+        payload: NotificationRouter.circadianPayload(),
       );
 
       // ── 7. Recordatorio de sueño ─────────────────────────────────────────
@@ -157,6 +170,7 @@ class NotificationScheduler {
         title: '🌙 Hora de descansar',
         body: 'Hora de descansar. Las primeras horas de sueño son las que '
             'más te reparan.',
+        payload: NotificationRouter.circadianPayload(),
       );
 
       // ── 8. SPEC-169 (2026-06-04): eTRF pre-sueño ─────────────────────────
@@ -172,8 +186,11 @@ class NotificationScheduler {
         profile.sleepTime.hour,
         profile.sleepTime.minute,
       );
+      // Consciencia ayuno↔alimentación: el eTRF ("cerrá la cocina") no tiene
+      // sentido durante ayuno — la cocina ya está cerrada.
       final eTRFCutoff = sleepDt.subtract(const Duration(hours: 3));
-      if (lastMealDt == null || eTRFCutoff.isBefore(lastMealDt)) {
+      if (!isFasting &&
+          (lastMealDt == null || eTRFCutoff.isBefore(lastMealDt))) {
         await _scheduleCircadian(
           id: NotificationIds.eTRFPreSleep,
           hour: eTRFCutoff.hour,
@@ -181,6 +198,7 @@ class NotificationScheduler {
           title: '🌙 3 horas antes de dormir',
           body: 'Si cerrás la cocina ahora, tu descanso de esta noche te lo '
               'va a agradecer.',
+          payload: NotificationRouter.circadianPayload(),
         );
       }
 
@@ -217,6 +235,7 @@ class NotificationScheduler {
         scheduledTime: m12h,
         repeatsDaily: false,
         isFasting: true,
+        payload: NotificationRouter.fastingPayload(),
       );
 
       await NotificationService.scheduleAt(
@@ -227,6 +246,7 @@ class NotificationScheduler {
         scheduledTime: m16h,
         repeatsDaily: false,
         isFasting: true,
+        payload: NotificationRouter.fastingPayload(),
       );
 
       await NotificationService.scheduleAt(
@@ -237,6 +257,7 @@ class NotificationScheduler {
         scheduledTime: m18h,
         repeatsDaily: false,
         isFasting: true,
+        payload: NotificationRouter.fastingPayload(),
       );
 
       await NotificationService.scheduleAt(
@@ -247,6 +268,7 @@ class NotificationScheduler {
         scheduledTime: m24h,
         repeatsDaily: false,
         isFasting: true,
+        payload: NotificationRouter.fastingPayload(),
       );
 
       AppLogger.info(
@@ -270,6 +292,7 @@ class NotificationScheduler {
     required String title,
     required String body,
     bool actionableHydration = false,
+    String? payload,
   }) async {
     final tz.TZDateTime now = tz.TZDateTime.now(tz.local);
     tz.TZDateTime scheduled = tz.TZDateTime(
@@ -294,6 +317,7 @@ class NotificationScheduler {
       scheduledTime: scheduled.toLocal(),
       repeatsDaily: true,
       actionableHydration: actionableHydration,
+      payload: payload,
     );
   }
 
@@ -322,6 +346,7 @@ class NotificationScheduler {
             'comida sugerida.',
         scheduledTime: triggerAt,
         repeatsDaily: false,
+        payload: NotificationRouter.nutritionPayload(),
       );
     } catch (e) {
       AppLogger.error('[NotificationScheduler] scheduleNextMealReminder', e);
@@ -432,6 +457,7 @@ class NotificationScheduler {
           // SPEC-199 Fase A: cada recordatorio de hidratación es accionable
           // (botones "Sí, lo registro" / "Aún no").
           actionableHydration: true,
+          payload: NotificationRouter.hydrationPayload(),
         );
         current = current.add(kHydrationCadence);
         slotIndex++;

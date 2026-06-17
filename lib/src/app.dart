@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:elena_app/src/router/app_router.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/core/providers/notification_provider.dart';
 import 'package:elena_app/src/core/services/analytics_service.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
+import 'package:elena_app/src/core/services/notification_router.dart';
 import 'package:elena_app/src/features/auth/domain/app_account.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
 import 'package:elena_app/src/features/billing/application/billing_providers.dart';
@@ -40,6 +42,34 @@ class _ElenaAppState extends ConsumerState<ElenaApp>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // SPEC-222: cold start — chequear si la app se abrió al tocar una
+    // notificación. Si hay payload, guardarlo para flush cuando el
+    // widget tree tenga BuildContext + GoRouter montado.
+    _checkColdStartNotification();
+  }
+
+  /// SPEC-222: consulta `getNotificationAppLaunchDetails` para detectar
+  /// si la app se lanzó desde una notificación. En ese caso, guarda el
+  /// payload para que `flushPending` lo navegue tras el primer frame.
+  Future<void> _checkColdStartNotification() async {
+    try {
+      final plugin = FlutterLocalNotificationsPlugin();
+      final details = await plugin.getNotificationAppLaunchDetails();
+      if (details != null &&
+          details.didNotificationLaunchApp &&
+          details.notificationResponse?.payload != null &&
+          details.notificationResponse!.payload!.isNotEmpty) {
+        NotificationRouter.handlePayload(
+          details.notificationResponse!.payload!,
+        );
+        AppLogger.debug(
+          '[ElenaApp] Cold start con payload: '
+          '${details.notificationResponse!.payload}',
+        );
+      }
+    } catch (e) {
+      AppLogger.debug('[ElenaApp] Error cold start notification check: $e');
+    }
   }
 
   @override
@@ -58,6 +88,12 @@ class _ElenaAppState extends ConsumerState<ElenaApp>
     // el sync. `runNow` ignora el debounce; el flag `state.isRunning`
     // sigue previniendo runs concurrentes.
     if (state == AppLifecycleState.resumed) {
+      // SPEC-222: flush pending notification deeplink al volver a foreground.
+      final navContext = rootNavigatorKey.currentContext;
+      if (navContext != null && NotificationRouter.hasPending) {
+        NotificationRouter.flushPending(navContext);
+      }
+
       // SPEC-199 Fase A: aplicar acciones pendientes encoladas desde prompts
       // accionables (p. ej. "Sí, lo registro" del agua). Idempotente; las
       // acciones que requieren usuario se conservan si aún no hay sesión.
@@ -159,6 +195,17 @@ class _ElenaAppState extends ConsumerState<ElenaApp>
       minTextAdapt: true,
       splitScreenMode: true,
       builder: (context, child) {
+        // SPEC-222: flush pending notification payload tras el primer frame.
+        // Usamos addPostFrameCallback para que GoRouter ya esté montado.
+        if (NotificationRouter.hasPending) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            final navContext = rootNavigatorKey.currentContext;
+            if (navContext != null) {
+              NotificationRouter.flushPending(navContext);
+            }
+          });
+        }
+
         // SPEC-89: forzamos dark theme en ambos slots + themeMode.dark
         // para evitar flash de light durante transiciones del sistema.
         return MaterialApp.router(

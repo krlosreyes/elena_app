@@ -62,6 +62,7 @@ class NotificationService {
     required String title,
     required String body,
     bool isFasting = false,
+    String? payload,
   }) async {
     // No-op en Web
   }
@@ -74,6 +75,10 @@ class NotificationService {
     bool repeatsDaily = true,
     bool isFasting = false,
     bool actionableHydration = false,
+    bool actionableFasting = false,
+    bool actionableExercise = false,
+    bool actionableNutrition = false,
+    String? payload,
   }) async {
     // No-op en Web
   }
@@ -91,6 +96,10 @@ class NotificationService {
   }
 
   static Future<void> cancelFasting() async {
+    // No-op en Web
+  }
+
+  static Future<void> cancelFeeding() async {
     // No-op en Web
   }
 

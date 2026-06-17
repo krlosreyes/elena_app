@@ -2,8 +2,13 @@
 // consultar `users/{uid}` por su cuenta (antes hacía 3 llamadas a
 // `isUserOnboarded` por cada cambio de ruta).
 
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+/// SPEC-222: llave global del navigator raíz para deeplink routing
+/// desde notificaciones (cold start + foreground).
+final rootNavigatorKey = GlobalKey<NavigatorState>();
 
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
 import 'package:elena_app/src/features/auth/presentation/login_screen.dart';
@@ -36,6 +41,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
 
   return GoRouter(
+    navigatorKey: rootNavigatorKey,
     // SPEC-146: initialLocation cambiado de '/dashboard' a '/splash'
     // para evitar flash de pantallas privadas mientras Firebase Auth
     // hidrata la sesión del keychain en cold start. La lógica completa

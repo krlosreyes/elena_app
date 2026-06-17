@@ -6,6 +6,7 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'app_logger.dart';
+import 'notification_router.dart';
 import 'pending_action_queue.dart'
     show
         PendingActionQueue,
@@ -48,11 +49,22 @@ void notificationBackgroundResponseHandler(NotificationResponse response) {
 void _notificationForegroundResponseHandler(NotificationResponse response) {
   AppLogger.debug(
     '[NotificationService] response: action=${response.actionId} '
-    'id=${response.id}',
+    'id=${response.id} payload=${response.payload}',
   );
-  unawaited(
-    PendingActionQueue.handleNotificationAction(response.actionId, response.id),
-  );
+
+  // SPEC-222: Si hay actionId (botón de acción), va al PendingActionQueue.
+  // Si no hay actionId pero hay payload (tap en el cuerpo), va al router.
+  final actionId = response.actionId;
+  if (actionId != null && actionId.isNotEmpty) {
+    unawaited(
+      PendingActionQueue.handleNotificationAction(actionId, response.id),
+    );
+  } else if (response.payload != null && response.payload!.isNotEmpty) {
+    // Body tap: navegar al destino indicado por el payload.
+    // Intentamos navegar de inmediato si hay un navigator context;
+    // sino, guardamos para flush en el próximo frame.
+    NotificationRouter.handlePayload(response.payload!);
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -502,6 +514,7 @@ class NotificationService {
     required String title,
     required String body,
     bool isFasting = false,
+    String? payload,
   }) async {
     if (kIsWeb || !_initialized) return;
 
@@ -511,6 +524,7 @@ class NotificationService {
         title: title,
         body: body,
         notificationDetails: isFasting ? _fastingDetails : _circadianDetails,
+        payload: payload,
       );
 
       AppLogger.debug('[NotificationService] showImmediate: $title');
@@ -531,6 +545,8 @@ class NotificationService {
     bool actionableFasting = false,
     bool actionableExercise = false,
     bool actionableNutrition = false,
+    // SPEC-222: payload JSON para deeplink routing al tocar el cuerpo.
+    String? payload,
   }) async {
     if (kIsWeb || !_initialized) return;
 
@@ -566,6 +582,7 @@ class NotificationService {
         notificationDetails: details,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
         matchDateTimeComponents: repeatsDaily ? DateTimeComponents.time : null,
+        payload: payload,
       );
 
       AppLogger.debug(
@@ -608,6 +625,19 @@ class NotificationService {
 
     AppLogger.debug(
         '[NotificationService] Notificaciones de ayuno canceladas.');
+  }
+
+  /// Cancela notificaciones relacionadas con alimentación: apertura de ventana,
+  /// cierre de ventana, próxima comida y eTRF. Se invoca al iniciar ayuno para
+  /// evitar que el usuario reciba invitaciones a comer durante un ayuno activo.
+  static Future<void> cancelFeeding() async {
+    if (kIsWeb || !_initialized) return;
+    await _plugin.cancel(id: NotificationIds.firstMeal);
+    await _plugin.cancel(id: NotificationIds.lastMealWarning);
+    await _plugin.cancel(id: NotificationIds.nextMealReady);
+    await _plugin.cancel(id: NotificationIds.eTRFPreSleep);
+    AppLogger.debug(
+        '[NotificationService] Notificaciones de alimentación canceladas.');
   }
 
   /// SPEC-150: cancela las 20 slots reservadas a hidratación (400-419).
