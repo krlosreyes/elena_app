@@ -1,7 +1,7 @@
 import Flutter
 import UIKit
 import UserNotifications
-import BackgroundTasks
+// import BackgroundTasks  // SPEC-223: descomentar con BackgroundTaskHandler
 import flutter_local_notifications
 
 @main
@@ -22,10 +22,10 @@ import flutter_local_notifications
       GeneratedPluginRegistrant.register(with: registry)
     }
 
-    // SPEC-223 Fase 2: registrar BGAppRefreshTask para recálculo de
-    // notificaciones en background (~2-3x/día).
-    BackgroundTaskHandler.register()
-    BackgroundTaskHandler.scheduleNotificationRefresh()
+    // SPEC-223 Fase 2: BGAppRefreshTask — BLOCKED hasta entitlement en
+    // Apple Developer Portal. Descomentar cuando esté disponible:
+    // BackgroundTaskHandler.register()
+    // BackgroundTaskHandler.scheduleNotificationRefresh()
 
     // SPEC-172 (2026-06-04): banner + sonido en foreground.
     // Sin esto, las notifs locales NO se muestran cuando la app está
