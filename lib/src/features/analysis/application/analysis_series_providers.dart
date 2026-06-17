@@ -77,8 +77,16 @@ AggregationMode _currentMode(Ref ref) {
 /// Se abandona `StreakEntry.dailyQualityScore` (score en vivo del día) porque
 /// el valor definitivo es el que queda grabado cuando el usuario cierra su
 /// ciclo conscientemente — no el snapshot en tiempo real de mitad del día.
+// BUGFIX (2026-06-17): NO autoDispose. Con autoDispose, cada vez que el
+// usuario navega fuera del Análisis o cambia el rango, el provider se
+// destruye y recrea → pasa por AsyncLoading SIN valor previo →
+// resolvedDailyScoreSeriesProvider cae al fallback de streak (scores
+// distintos) → el chart parpadea entre dos fuentes de datos.
+// Sin autoDispose, Riverpod mantiene el último AsyncData como
+// previousValue durante re-evaluación, y .valueOrNull nunca es null
+// después de la primera emisión.
 final closedCycleScoreSeriesProvider =
-    StreamProvider.autoDispose<MetricSeries>((ref) async* {
+    StreamProvider<MetricSeries>((ref) async* {
   // Bump: refresca cuando se cierra un ciclo.
   ref.watch(cycleClosureBumpProvider);
   final rangeStart = ref.watch(analysisRangeStartProvider);
@@ -126,13 +134,29 @@ final closedCycleScoreSeriesProvider =
 /// Prioriza ciclos metabólicos cerrados; cae a streak calendárico solo
 /// cuando no hay ciclos con score en el rango actual.
 ///
-/// Para el estado de carga (spinner), watch también
-/// `closedCycleScoreSeriesProvider` directamente y chequear `.isLoading`.
+/// BUGFIX (2026-06-17): el fallback a streak SOLO se activa cuando el
+/// stream de ciclos cerrados ya resolvió y devolvió datos vacíos. Mientras
+/// el stream está en AsyncLoading (sin valor previo), retorna serie vacía
+/// para que la UI muestre spinner — NUNCA cae al streak, que tiene scores
+/// distintos y causaba el flip-flop visual.
 final resolvedDailyScoreSeriesProvider =
     Provider.autoDispose<MetricSeries>((ref) {
-  final closed = ref.watch(closedCycleScoreSeriesProvider).valueOrNull;
+  final closedAsync = ref.watch(closedCycleScoreSeriesProvider);
+
+  // 1. Stream tiene datos (o está refrescando con valor previo) → usar.
+  final closed = closedAsync.valueOrNull;
   if (closed != null && closed.points.isNotEmpty) return closed;
-  // Fallback: ciclos cerrados aún vacíos o cargando → usar streak calendárico.
+
+  // 2. Stream aún cargando su PRIMERA emisión (cold start) → serie vacía.
+  //    La UI muestra spinner. NO caer al streak (fuente con scores distintos).
+  if (closedAsync.isLoading) {
+    return MetricSeries(label: 'Score del día', unit: '', points: const []);
+  }
+
+  // 3. Stream resolvió pero no hay ciclos cerrados con dailyScore en el
+  //    rango (onboarding, usuario sin protocolo, ciclos pre-SPEC-200) →
+  //    fallback genuino a streak calendárico.
+  // ignore: deprecated_member_use_from_same_package
   return ref.watch(dailyScoreSeriesProvider);
 });
 
