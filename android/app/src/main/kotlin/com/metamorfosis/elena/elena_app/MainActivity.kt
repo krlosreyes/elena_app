@@ -29,12 +29,25 @@ class MainActivity : FlutterFragmentActivity() {
     // SPEC-239: registrar el MethodChannel de Samsung Health Data SDK.
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-        samsungHealthBridge = SamsungHealthBridge(this)
-        MethodChannel(
-            flutterEngine.dartExecutor.binaryMessenger,
-            SamsungHealthBridge.CHANNEL,
-        ).setMethodCallHandler { call, result ->
-            samsungHealthBridge.handle(call, result)
+        try {
+            samsungHealthBridge = SamsungHealthBridge(this)
+            MethodChannel(
+                flutterEngine.dartExecutor.binaryMessenger,
+                SamsungHealthBridge.CHANNEL,
+            ).setMethodCallHandler { call, result ->
+                samsungHealthBridge.handle(call, result)
+            }
+            android.util.Log.d("SH_BRIDGE", "MethodChannel registrado OK")
+        } catch (e: Exception) {
+            // Si el bridge no se pudo inicializar, registra un handler noop
+            // para que el Dart no reciba MissingPluginException sino un error claro.
+            android.util.Log.e("SH_BRIDGE", "INIT FALLÓ: ${e.message}", e)
+            MethodChannel(
+                flutterEngine.dartExecutor.binaryMessenger,
+                SamsungHealthBridge.CHANNEL,
+            ).setMethodCallHandler { _, result ->
+                result.error("SH_INIT_FAILED", e.message, null)
+            }
         }
     }
 }
