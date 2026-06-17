@@ -28,6 +28,7 @@ import 'package:elena_app/src/features/dashboard/presentation/widgets/hydration_
 import 'package:elena_app/src/features/dashboard/presentation/widgets/sleep_pillar_card.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/comidas_pillar_card.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/fasting_consciousness_card.dart';
+import 'package:elena_app/src/features/dashboard/presentation/widgets/celebration_overlay.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/clock_explainer_sheet.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
 import 'package:elena_app/src/features/progress/application/biometric_backfill_provider.dart';
@@ -203,7 +204,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         });
 
         return Scaffold(
-          body: SafeArea(
+          body: Stack(
+            children: [
+          SafeArea(
             child: SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
               padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -392,6 +395,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 ],
               ),
             ),
+          ),
+          // SPEC-220: overlay de celebración 3/5 pilares.
+          const CelebrationOverlay(),
+          ],
           ),
           bottomNavigationBar: _buildBottomNav(context),
         );

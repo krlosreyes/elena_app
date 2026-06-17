@@ -1,0 +1,194 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:elena_app/src/core/providers/celebration_providers.dart';
+import 'package:elena_app/src/core/theme/app_theme.dart';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SPEC-220: Banner de celebración al cruzar umbral 3/5 pilares
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// Widget overlay que observa `celebrationEventProvider`. Cuando recibe un
+// evento, muestra un banner animado desde arriba que se auto-descarta a los
+// 3 segundos. Tap descarta inmediato. One-shot: limpia el evento al consumir.
+//
+// Uso: insertar como hijo de un Stack en el dashboard:
+//   Stack(children: [
+//     ... contenido normal ...,
+//     const CelebrationOverlay(),
+//   ])
+
+class CelebrationOverlay extends ConsumerStatefulWidget {
+  const CelebrationOverlay({super.key});
+
+  @override
+  ConsumerState<CelebrationOverlay> createState() => _CelebrationOverlayState();
+}
+
+class _CelebrationOverlayState extends ConsumerState<CelebrationOverlay>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<Offset> _slideAnimation;
+  late final Animation<double> _fadeAnimation;
+  CelebrationEvent? _currentEvent;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+      reverseDuration: const Duration(milliseconds: 300),
+    );
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, -1),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeOutCubic,
+      reverseCurve: Curves.easeIn,
+    ));
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _show(CelebrationEvent event) {
+    _currentEvent = event;
+    _controller.forward().then((_) {
+      // Auto-dismiss a los 3 segundos
+      Future.delayed(const Duration(seconds: 3), () {
+        if (mounted && _currentEvent == event) _dismiss();
+      });
+    });
+  }
+
+  void _dismiss() {
+    _controller.reverse().then((_) {
+      if (mounted) {
+        setState(() => _currentEvent = null);
+        // Limpiar el provider para que no se re-dispare
+        ref.read(celebrationEventProvider.notifier).state = null;
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    ref.listen<CelebrationEvent?>(celebrationEventProvider, (prev, next) {
+      if (next != null && next != prev) _show(next);
+    });
+
+    if (_currentEvent == null) return const SizedBox.shrink();
+
+    return Positioned(
+      top: MediaQuery.of(context).padding.top + 8,
+      left: 16,
+      right: 16,
+      child: SlideTransition(
+        position: _slideAnimation,
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: GestureDetector(
+            onTap: _dismiss,
+            child: _CelebrationBanner(event: _currentEvent!),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CelebrationBanner extends StatelessWidget {
+  final CelebrationEvent event;
+  const _CelebrationBanner({required this.event});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      decoration: BoxDecoration(
+        color: _backgroundColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: _backgroundColor.withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Text(
+            _icon,
+            style: const TextStyle(fontSize: 24),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    height: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  _subtitle,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.85),
+                    fontSize: 13,
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String get _icon {
+    if (event.pillarsCompleted >= 5) return '⭐';
+    if (event.pillarsCompleted >= 4) return '💪';
+    if (event.currentStreak > 1) return '🔥';
+    return '🎯';
+  }
+
+  String get _title {
+    final p = event.pillarsCompleted;
+    return '$p/5 pilares';
+  }
+
+  String get _subtitle {
+    if (event.pillarsCompleted >= 5) {
+      return 'Día perfecto. Tu cuerpo lo nota.';
+    }
+    if (event.pillarsCompleted == 4) {
+      return 'Casi perfecto. Vas muy bien.';
+    }
+    if (event.currentStreak > 1) {
+      return 'Día ${event.currentStreak} consecutivo. Sigue así.';
+    }
+    return '¡Hoy cuentas para tu racha!';
+  }
+
+  Color get _backgroundColor {
+    if (event.pillarsCompleted >= 5) return const Color(0xFF10B981); // verde
+    if (event.pillarsCompleted >= 4) return const Color(0xFF818CF8); // indigo
+    return AppColors.metabolicGreen;
+  }
+}
