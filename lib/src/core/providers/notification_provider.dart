@@ -3,6 +3,7 @@ import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 import 'package:elena_app/src/core/services/notification_scheduler.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
+import 'package:elena_app/src/features/dashboard/application/fasting_notifier.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart';
 import 'package:elena_app/src/features/metabolic_cycle/domain/metabolic_cycle.dart';
 
@@ -49,6 +50,17 @@ class NotificationSchedulerNotifier extends StateNotifier<void> {
         });
       },
     );
+
+    // Consciencia ayuno↔alimentación: cuando el estado de ayuno cambia,
+    // reprogramar para suprimir/restaurar notificaciones de comida.
+    _ref.listen(
+      fastingProvider.select((s) => s.isActive),
+      (previous, next) {
+        if (previous == next) return;
+        final user = _ref.read(currentUserStreamProvider).valueOrNull;
+        if (user != null) _maybeReschedule(user, force: true);
+      },
+    );
   }
 
   Future<void> _maybeReschedule(UserModel? user, {bool force = false}) async {
@@ -63,9 +75,13 @@ class NotificationSchedulerNotifier extends StateNotifier<void> {
       '[NotificationProvider] Reprogramando agenda '
       '(cycle=${openCycle?.cycleId ?? "-"}).',
     );
+    // Consciencia ayuno↔alimentación: suprimir notificaciones de comida
+    // mientras el usuario está en ayuno activo.
+    final isFasting = _ref.read(fastingProvider).isActive;
     await NotificationScheduler.scheduleCircadianDay(
       user,
       openCycle: openCycle,
+      isFasting: isFasting,
     );
     // SPEC-150: hidratación reprograma junto con la agenda circadiana.
     // Default 90 min entre slots durante la ventana de despertar,

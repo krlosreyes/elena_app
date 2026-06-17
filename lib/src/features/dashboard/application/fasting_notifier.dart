@@ -224,6 +224,12 @@ class FastingNotifier extends StateNotifier<FastingState> {
     // → corre con o sin red, de inmediato.
     unawaited(NotificationScheduler.scheduleFastingMilestones(startTime));
 
+    // Consciencia ayuno↔alimentación: al entrar en ayuno, cancelar toda
+    // notificación que invite a comer (firstMeal, lastMealWarning,
+    // nextMealReady, eTRFPreSleep). Sin esto, el usuario en pleno ayuno
+    // recibe "Tu ventana abrió" o "Tu próxima comida es a las HH:MM".
+    unawaited(NotificationService.cancelFeeding());
+
     // Write no bloqueante (offline-first). Efectos que requieren red (analytics,
     // coaching) van en el ack del servidor; un error REAL revierte el inicio.
     unawaited(
