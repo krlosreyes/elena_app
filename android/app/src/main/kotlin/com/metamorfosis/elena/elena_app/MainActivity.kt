@@ -10,8 +10,13 @@ import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderF
 // Android 14+ tiran IllegalStateException). Ver:
 // https://pub.dev/packages/health#android-setup
 import io.flutter.embedding.android.FlutterFragmentActivity
+import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterFragmentActivity() {
+
+    private lateinit var samsungHealthBridge: SamsungHealthBridge
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         FirebaseApp.initializeApp(this)
@@ -19,5 +24,17 @@ class MainActivity : FlutterFragmentActivity() {
         firebaseAppCheck.installAppCheckProviderFactory(
             PlayIntegrityAppCheckProviderFactory.getInstance()
         )
+    }
+
+    // SPEC-239: registrar el MethodChannel de Samsung Health Data SDK.
+    override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
+        super.configureFlutterEngine(flutterEngine)
+        samsungHealthBridge = SamsungHealthBridge(this)
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            SamsungHealthBridge.CHANNEL,
+        ).setMethodCallHandler { call, result ->
+            samsungHealthBridge.handle(call, result)
+        }
     }
 }

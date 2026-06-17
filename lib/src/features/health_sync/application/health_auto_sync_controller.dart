@@ -25,6 +25,7 @@ import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/features/dashboard/data/sleep_repository_impl.dart';
 import 'package:elena_app/src/features/exercise/data/exercise_repository_impl.dart';
 import 'package:elena_app/src/features/health_sync/application/health_import_service.dart';
+import 'package:elena_app/src/features/health_sync/application/samsung_health_service.dart';
 import 'package:elena_app/src/features/health_sync/application/health_sync_providers.dart';
 import 'package:elena_app/src/features/health_sync/application/health_sync_service.dart';
 import 'package:elena_app/src/features/health_sync/domain/health_permission_status.dart';
@@ -226,6 +227,48 @@ class HealthAutoSyncController extends StateNotifier<HealthAutoSyncState> {
         AppLogger.info('HealthAutoSync: nada que importar');
         // ignore: avoid_print
         print('🩺 SYNC EMPTY — nada que importar');
+      }
+
+      // SPEC-239: fallback Samsung Health SDK cuando HC no tiene sueño.
+      // Solo Android. No bloquea el ciclo si falla.
+      final isAndroidForSH = !kIsWeb && Platform.isAndroid;
+      if (isAndroidForSH) {
+        final importSummary = state.lastImport;
+        final noSleepFromHC = importSummary == null ||
+            importSummary.sleepSessionsImported == 0;
+        if (noSleepFromHC) {
+          // ignore: avoid_print
+          print('🩺 HC sin sueño → intentando Samsung Health SDK directo');
+          try {
+            final shService = SamsungHealthService();
+            final window = _kDefaultSyncWindow;
+            final shSessions = await shService.fetchSleepIfAvailable(
+              start: DateTime.now().subtract(window),
+              end: DateTime.now(),
+            );
+            if (shSessions.isNotEmpty) {
+              final shImported =
+                  await _importService.importSamsungSleep(userId, shSessions);
+              if (shImported > 0) {
+                // Actualiza el summary para que la UI y la guía reflejen
+                // que ahora sí hay datos de sueño.
+                final updated = HealthImportSummary(
+                  weightsImported: importSummary?.weightsImported ?? 0,
+                  sleepSessionsImported:
+                      (importSummary?.sleepSessionsImported ?? 0) + shImported,
+                  stepsActivitiesImported:
+                      importSummary?.stepsActivitiesImported ?? 0,
+                  workoutsImported: importSummary?.workoutsImported ?? 0,
+                );
+                state = state.copyWith(lastImport: updated);
+                // ignore: avoid_print
+                print('🩺 SH SDK: $shImported sesiones importadas OK');
+              }
+            }
+          } catch (e) {
+            AppLogger.warning('SamsungHealth SDK fallback falló: $e');
+          }
+        }
       }
 
       // SPEC-237: en Android, mostrar guía Samsung Health si no entraron

@@ -67,4 +67,6 @@ dependencies {
     //implementation("androidx.multidex:multidex:2.0.1")
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
     implementation("com.google.firebase:firebase-appcheck-playintegrity")
+    // SPEC-239: Samsung Health Data SDK — lectura directa sin Health Connect.
+    implementation(files("libs/samsung-health-data-api-1.1.0.aar"))
 }

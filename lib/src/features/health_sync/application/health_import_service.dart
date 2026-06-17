@@ -15,6 +15,8 @@
 
 import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/features/dashboard/domain/sleep_log.dart';
+import 'package:elena_app/src/features/health_sync/application/samsung_health_service.dart'
+    as samsung_health;
 import 'package:elena_app/src/features/dashboard/domain/sleep_repository.dart';
 import 'package:elena_app/src/features/exercise/domain/exercise_log.dart';
 import 'package:elena_app/src/features/exercise/domain/exercise_repository.dart';
@@ -510,6 +512,50 @@ class HealthImportService {
       case ExerciseType.mobility:
         return ExerciseIntensity.low;
     }
+  }
+
+  // ─── Samsung Health directo (SPEC-239) ──────────────────────────
+
+  /// Importa sesiones de sueño leídas directamente desde Samsung Health SDK,
+  /// cuando Health Connect devolvió 0. Reutiliza la lógica de `_importSleep`
+  /// pero recibe `SamsungSleepSession` en lugar de `HealthSample`.
+  Future<int> importSamsungSleep(
+    String userId,
+    List<samsung_health.SamsungSleepSession> sessions,
+  ) async {
+    AppLogger.info(
+      'HealthImport[samsung_sleep]: ${sessions.length} sesiones recibidas',
+    );
+    int imported = 0;
+    int skippedShort = 0;
+    for (final s in sessions) {
+      if (s.durationMinutes < 30) {
+        skippedShort++;
+        continue;
+      }
+      final id = 'sh_sleep_${s.start.toIso8601String()}';
+      final assumedLastMeal = s.start.subtract(const Duration(hours: 3));
+      try {
+        final log = SleepLog(
+          id: id,
+          fellAsleep: s.start,
+          wokeUp: s.end,
+          lastMealTime: assumedLastMeal,
+        );
+        await _sleepRepo.save(userId, log);
+        imported++;
+      } catch (e, st) {
+        AppLogger.warning('SamsungSleepLog inválido: $e');
+        AppLogger.debug('Session: $s', e, st);
+      }
+    }
+    AppLogger.info(
+      'HealthImport[samsung_sleep]: importados $imported, '
+      'saltados $skippedShort <30min',
+    );
+    // ignore: avoid_print
+    print('🩺 SH IMPORT: $imported sesiones importadas');
+    return imported;
   }
 
   // ─── Helpers ─────────────────────────────────────────────────────
