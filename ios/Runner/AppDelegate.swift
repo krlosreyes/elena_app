@@ -1,6 +1,7 @@
 import Flutter
 import UIKit
 import UserNotifications
+import BackgroundTasks
 import flutter_local_notifications
 
 @main
@@ -20,6 +21,11 @@ import flutter_local_notifications
     FlutterLocalNotificationsPlugin.setPluginRegistrantCallback { registry in
       GeneratedPluginRegistrant.register(with: registry)
     }
+
+    // SPEC-223 Fase 2: registrar BGAppRefreshTask para recálculo de
+    // notificaciones en background (~2-3x/día).
+    BackgroundTaskHandler.register()
+    BackgroundTaskHandler.scheduleNotificationRefresh()
 
     // SPEC-172 (2026-06-04): banner + sonido en foreground.
     // Sin esto, las notifs locales NO se muestran cuando la app está
