@@ -119,6 +119,11 @@ class SamsungHealthService {
   /// Flujo completo: connect → permisos → read.
   /// Retorna lista de sesiones, o [] si Samsung Health no está disponible
   /// o si no hay permisos.
+  ///
+  /// SPEC-239 BLOQUEADO: requiere Samsung Health Partner App Program aprobado.
+  /// El SDK retorna AuthorizationException 2003 ("Could not get policy") hasta
+  /// que Samsung registre el package com.metamorfosis.elena.elena_app.
+  /// Solicitar en: developer.samsung.com/health/data/process.html
   Future<List<SamsungSleepSession>> fetchSleepIfAvailable({
     required DateTime start,
     required DateTime end,
@@ -127,34 +132,18 @@ class SamsungHealthService {
 
     // 1. ¿Instalado?
     final available = await isAvailable();
-    if (!available) {
-      AppLogger.debug('SamsungHealth: no instalado, skip');
-      return [];
-    }
+    if (!available) return [];
 
     // 2. Conectar.
     final connected = await connect();
-    if (!connected) {
-      AppLogger.debug('SamsungHealth: no se pudo conectar');
-      return [];
-    }
+    if (!connected) return [];
 
-    // 3. Permisos.
+    // 3. Permisos (falla con 2003 hasta tener partnership Samsung).
     var hasPerms = await hasPermissions();
-    if (!hasPerms) {
-      AppLogger.info('SamsungHealth: solicitando permisos al usuario');
-      hasPerms = await requestPermissions();
-    }
-    if (!hasPerms) {
-      AppLogger.info('SamsungHealth: permisos denegados');
-      return [];
-    }
+    if (!hasPerms) hasPerms = await requestPermissions();
+    if (!hasPerms) return [];
 
     // 4. Leer.
-    final sessions = await readSleep(start: start, end: end);
-    AppLogger.info('SamsungHealth: ${sessions.length} sesiones de sueño');
-    // ignore: avoid_print
-    print('🩺 SH DIRECT: ${sessions.length} sesiones de sueño leídas');
-    return sessions;
+    return readSleep(start: start, end: end);
   }
 }
