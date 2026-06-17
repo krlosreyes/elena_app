@@ -21,9 +21,7 @@ class AdaptiveSuggestionCard extends ConsumerWidget {
 
     if (suggestion == null || dismissed) return const SizedBox.shrink();
 
-    final isLevelUp = suggestion.type == SuggestionType.levelUp;
-    final primaryColor =
-        isLevelUp ? const Color(0xFF818CF8) : const Color(0xFFFBBF24);
+    const primaryColor = Color(0xFF818CF8);
 
     return Container(
       width: double.infinity,
@@ -59,8 +57,8 @@ class AdaptiveSuggestionCard extends ConsumerWidget {
                   color: primaryColor.withValues(alpha: 0.2),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(
-                  isLevelUp ? Icons.auto_graph_rounded : Icons.healing_rounded,
+                child: const Icon(
+                  Icons.auto_graph_rounded,
                   color: primaryColor,
                   size: 20,
                 ),
@@ -119,9 +117,9 @@ class AdaptiveSuggestionCard extends ConsumerWidget {
                     ),
                     elevation: 0,
                   ),
-                  child: Text(
-                    isLevelUp ? 'Subir de Nivel' : 'Simplificar',
-                    style: const TextStyle(
+                  child: const Text(
+                    'Subir de Nivel',
+                    style: TextStyle(
                       fontWeight: FontWeight.w800,
                       fontSize: 13,
                     ),

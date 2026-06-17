@@ -4,7 +4,7 @@ import 'package:elena_app/src/features/streak/domain/streak_entry.dart';
 import 'package:elena_app/src/features/engagement/application/engagement_service.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 
-enum SuggestionType { levelUp, simplify }
+enum SuggestionType { levelUp }
 
 class AdaptiveSuggestion {
   final SuggestionType type;
@@ -76,32 +76,6 @@ class AdaptiveEngine {
               'Estás dominando tu protocolo. ¿Te gustaría añadir un micro-entrenamiento aumentando tu meta de ejercicio a ${currentExerciseGoal + 10} min?',
           newExerciseGoal: currentExerciseGoal + 10,
           reason: 'Protocolo actual dominado.',
-        );
-      }
-    }
-
-    // 2. Lógica de SIMPLIFICACIÓN (Engagement Regular o Crítico)
-    if (engagement == EngagementLevel.critico ||
-        engagement == EngagementLevel.regular) {
-      if (currentProtocol != 'Ninguno' && currentProtocol != '12:12') {
-        return AdaptiveSuggestion(
-          type: SuggestionType.simplify,
-          title: 'Recuperar Ritmo',
-          description:
-              'Parece que el ritmo actual es exigente. Simplificar a un protocolo de 12:12 te ayudará a recuperar consistencia sin estrés.',
-          newProtocol: '12:12',
-          reason: 'Baja adherencia detectada.',
-        );
-      }
-
-      // Si ya está en 12:12 o Ninguno, sugerir priorizar Hidratación
-      if (engagement == EngagementLevel.critico) {
-        return const AdaptiveSuggestion(
-          type: SuggestionType.simplify,
-          title: 'Enfoque en lo Esencial',
-          description:
-              'Para retomar el control, ignora el ayuno hoy y enfócate únicamente en tu hidratación. Mañana será otro día.',
-          reason: 'Nivel de compromiso crítico.',
         );
       }
     }
