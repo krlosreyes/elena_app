@@ -1,6 +1,6 @@
 # SPEC-221 — Unificar escalas de fases de ayuno
 
-**Estado:** PARTIALLY-IMPLEMENTED (2026-06-17) — displayName/description/orchestratorBand en fasting_status.dart. Pendiente: renombrar biological_phases.FastingPhase a OrchestratorFastingBand + build_runner
+**Estado:** IMPLEMENTED (2026-06-17) — displayName/description/orchestratorBand en fasting_status.dart. Rename biological_phases.FastingPhase → OrchestratorFastingBand completado en todos los archivos (engine, state, freezed, validators, tests). Typedef deprecado eliminado.
 **Versión:** 0.1
 **Líder:** Carlos · **Implementación:** Claude
 **Depende de:** SPEC-149 (día metabólico), OrchestratorEngine.

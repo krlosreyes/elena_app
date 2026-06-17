@@ -16,29 +16,26 @@
 
 /// Bandas internas del OrchestratorEngine para lógica de decisión.
 ///
-/// SPEC-221 (2026-06-17): este enum es el INTERNO del orchestrator.
-/// El enum canónico para UI/notificaciones/coaching es `FastingPhase`
-/// de `fasting_status.dart` (6 valores, más granular y científicamente
-/// preciso). Este se mantiene por compatibilidad con Freezed
-/// (`OrchestratorState.fastingPhase`). Pendiente: unificar tras
-/// correr `build_runner` y renombrar a `OrchestratorFastingBand`.
+/// SPEC-221 (2026-06-17): renombrado de `FastingPhase` a
+/// `OrchestratorFastingBand` para eliminar la ambigüedad con el
+/// `FastingPhase` canónico de UI en `fasting_status.dart`.
 ///
-/// Mapeo interno (umbrales del OrchestratorEngine):
-///   <4h   → alerta       (= early)
+/// Umbrales del OrchestratorEngine:
+///   <4h   → alerta
 ///   4–8h  → gluconeogenesis
-///   8–12h → cetosis       (= ketosis)
-///   12h+  → autofagia     (= deepFasting)
-enum FastingPhase {
-  /// Estado post-ingesta (insulina activa). Equivale a 'early'.
+///   8–12h → cetosis
+///   12h+  → autofagia
+enum OrchestratorFastingBand {
+  /// Estado post-ingesta (insulina activa).
   alerta,
 
-  /// Producción de glucosa hepática. Equivale a 'gluconeogenesis'.
+  /// Producción de glucosa hepática.
   gluconeogenesis,
 
-  /// Uso de grasa como energía primaria. Equivale a 'ketosis'.
+  /// Uso de grasa como energía primaria.
   cetosis,
 
-  /// Reciclaje celular profundo. Equivale a 'deepFasting'.
+  /// Reciclaje celular profundo.
   autofagia,
 }
 

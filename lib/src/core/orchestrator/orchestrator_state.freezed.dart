@@ -17,7 +17,7 @@ final _privateConstructorUsedError = UnsupportedError(
 /// @nodoc
 mixin _$OrchestratorState {
 // ── Fases biológicas (tipadas) ──────────────────────────────────────
-  FastingPhase get fastingPhase => throw _privateConstructorUsedError;
+  OrchestratorFastingBand get fastingPhase => throw _privateConstructorUsedError;
   CircadianPhase get circadianPhase =>
       throw _privateConstructorUsedError; // ── Decisiones booleanas ────────────────────────────────────────────
   bool get canExerciseNow => throw _privateConstructorUsedError;
@@ -57,7 +57,7 @@ abstract class $OrchestratorStateCopyWith<$Res> {
       _$OrchestratorStateCopyWithImpl<$Res, OrchestratorState>;
   @useResult
   $Res call(
-      {FastingPhase fastingPhase,
+      {OrchestratorFastingBand fastingPhase,
       CircadianPhase circadianPhase,
       bool canExerciseNow,
       bool canEatNow,
@@ -113,7 +113,7 @@ class _$OrchestratorStateCopyWithImpl<$Res, $Val extends OrchestratorState>
       fastingPhase: null == fastingPhase
           ? _value.fastingPhase
           : fastingPhase // ignore: cast_nullable_to_non_nullable
-              as FastingPhase,
+              as OrchestratorFastingBand,
       circadianPhase: null == circadianPhase
           ? _value.circadianPhase
           : circadianPhase // ignore: cast_nullable_to_non_nullable
@@ -191,7 +191,7 @@ abstract class _$$OrchestratorStateImplCopyWith<$Res>
   @override
   @useResult
   $Res call(
-      {FastingPhase fastingPhase,
+      {OrchestratorFastingBand fastingPhase,
       CircadianPhase circadianPhase,
       bool canExerciseNow,
       bool canEatNow,
@@ -245,7 +245,7 @@ class __$$OrchestratorStateImplCopyWithImpl<$Res>
       fastingPhase: null == fastingPhase
           ? _value.fastingPhase
           : fastingPhase // ignore: cast_nullable_to_non_nullable
-              as FastingPhase,
+              as OrchestratorFastingBand,
       circadianPhase: null == circadianPhase
           ? _value.circadianPhase
           : circadianPhase // ignore: cast_nullable_to_non_nullable
@@ -341,7 +341,7 @@ class _$OrchestratorStateImpl extends _OrchestratorState {
 
 // ── Fases biológicas (tipadas) ──────────────────────────────────────
   @override
-  final FastingPhase fastingPhase;
+  final OrchestratorFastingBand fastingPhase;
   @override
   final CircadianPhase circadianPhase;
 // ── Decisiones booleanas ────────────────────────────────────────────
@@ -483,7 +483,7 @@ class _$OrchestratorStateImpl extends _OrchestratorState {
 
 abstract class _OrchestratorState extends OrchestratorState {
   const factory _OrchestratorState(
-      {required final FastingPhase fastingPhase,
+      {required final OrchestratorFastingBand fastingPhase,
       required final CircadianPhase circadianPhase,
       required final bool canExerciseNow,
       required final bool canEatNow,
@@ -504,7 +504,7 @@ abstract class _OrchestratorState extends OrchestratorState {
 
 // ── Fases biológicas (tipadas) ──────────────────────────────────────
   @override
-  FastingPhase get fastingPhase;
+  OrchestratorFastingBand get fastingPhase;
   @override
   CircadianPhase
       get circadianPhase; // ── Decisiones booleanas ────────────────────────────────────────────

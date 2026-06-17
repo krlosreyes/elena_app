@@ -30,7 +30,7 @@ part 'orchestrator_state.freezed.dart';
 class OrchestratorState with _$OrchestratorState {
   const factory OrchestratorState({
     // ── Fases biológicas (tipadas) ──────────────────────────────────────
-    required FastingPhase fastingPhase,
+    required OrchestratorFastingBand fastingPhase,
     required CircadianPhase circadianPhase,
 
     // ── Decisiones booleanas ────────────────────────────────────────────
@@ -72,7 +72,7 @@ class OrchestratorState with _$OrchestratorState {
   /// sin `Random()`, sin efectos secundarios. La instancia es const y
   /// equivalente entre llamadas.
   factory OrchestratorState.initial() => const OrchestratorState(
-        fastingPhase: FastingPhase.alerta,
+        fastingPhase: OrchestratorFastingBand.alerta,
         circadianPhase: CircadianPhase.alerta,
         canExerciseNow: false,
         canEatNow: false,

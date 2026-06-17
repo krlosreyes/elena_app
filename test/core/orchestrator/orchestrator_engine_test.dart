@@ -84,7 +84,7 @@ void main() {
         streak: const StreakState(),
       );
       // initial() trae fastingPhase.alerta y sourceTimestamp null
-      expect(out.fastingPhase, FastingPhase.alerta);
+      expect(out.fastingPhase, OrchestratorFastingBand.alerta);
       expect(out.circadianPhase, CircadianPhase.alerta);
       expect(out.sourceTimestamp, isNull);
       expect(out.fastedHours, 0.0);
@@ -99,14 +99,14 @@ void main() {
       final s = _state(timestamp: DateTime(2026, 5, 6, 12), fastingHoursRaw: 2);
       final out =
           OrchestratorEngine.calculate(state: s, user: user, streak: streak);
-      expect(out.fastingPhase, FastingPhase.alerta);
+      expect(out.fastingPhase, OrchestratorFastingBand.alerta);
     });
 
     test('4..8h -> gluconeogenesis', () {
       final s = _state(timestamp: DateTime(2026, 5, 6, 12), fastingHoursRaw: 6);
       final out =
           OrchestratorEngine.calculate(state: s, user: user, streak: streak);
-      expect(out.fastingPhase, FastingPhase.gluconeogenesis);
+      expect(out.fastingPhase, OrchestratorFastingBand.gluconeogenesis);
     });
 
     test('8..12h -> cetosis', () {
@@ -114,7 +114,7 @@ void main() {
           _state(timestamp: DateTime(2026, 5, 6, 12), fastingHoursRaw: 10);
       final out =
           OrchestratorEngine.calculate(state: s, user: user, streak: streak);
-      expect(out.fastingPhase, FastingPhase.cetosis);
+      expect(out.fastingPhase, OrchestratorFastingBand.cetosis);
     });
 
     test('>= 12h -> autofagia', () {
@@ -122,7 +122,7 @@ void main() {
           _state(timestamp: DateTime(2026, 5, 6, 12), fastingHoursRaw: 16);
       final out =
           OrchestratorEngine.calculate(state: s, user: user, streak: streak);
-      expect(out.fastingPhase, FastingPhase.autofagia);
+      expect(out.fastingPhase, OrchestratorFastingBand.autofagia);
     });
   });
 

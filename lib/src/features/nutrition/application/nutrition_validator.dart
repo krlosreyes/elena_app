@@ -39,7 +39,7 @@ class NutritionValidator {
     required double carbsG,
     required double proteinG,
     required double fatG,
-    required FastingPhase currentFastingPhase,
+    required OrchestratorFastingBand currentOrchestratorFastingBand,
     required double hoursIntoCurrent,
     required CircadianPhase currentCircadianPhase,
   }) {
@@ -61,7 +61,7 @@ class NutritionValidator {
     }
 
     // Regla 2: Extremo en AUTOFAGIA
-    if (currentFastingPhase == FastingPhase.autofagia && carbsG > 100) {
+    if (currentOrchestratorFastingBand == OrchestratorFastingBand.autofagia && carbsG > 100) {
       return (
         true,
         '⚠️  En Autofagia profunda con >100g carbos. '
@@ -126,7 +126,7 @@ class NutritionValidator {
 
   /// Valida si es seguro comer ahora
   static bool canEatNow({
-    required FastingPhase currentFastingPhase,
+    required OrchestratorFastingBand currentOrchestratorFastingBand,
     required CircadianPhase currentCircadianPhase,
   }) {
     // No es seguro/recomendado comer en la fase de SUEÑO

@@ -9,10 +9,10 @@ El paquete `core/orchestrator/` contiene la implementación única del Orquestad
 | Archivo | Rol |
 |---|---|
 | `orchestrator_engine.dart` | Función pura `(MetabolicState, UserModel, StreakState) → OrchestratorState`. Sin efectos secundarios, sin Riverpod, sin Firestore. |
-| `orchestrator_state.dart` | Modelo Freezed inmutable del estado del orquestador. Usa enums tipados (`FastingPhase`, `CircadianPhase`). |
+| `orchestrator_state.dart` | Modelo Freezed inmutable del estado del orquestador. Usa enums tipados (`OrchestratorFastingBand`, `CircadianPhase`). |
 | `orchestrator_state.freezed.dart` | Código generado por Freezed. **NO editar manualmente.** |
 | `orchestrator_provider.dart` | `orchestratorProvider` y selectores derivados. Es la API pública del paquete. |
-| `biological_phases.dart` | Enums `FastingPhase`, `CircadianPhase`, `Pillar`, `RecommendationPriority`. |
+| `biological_phases.dart` | Enums `OrchestratorFastingBand`, `CircadianPhase`, `Pillar`, `RecommendationPriority`. |
 | `recommendation.dart` | Tipo `Recommendation` que produce el engine. |
 | `phase_info_mapper.dart` | Mapeo de enums a metadatos UI (íconos, colores, etiquetas). |
 

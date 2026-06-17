@@ -67,7 +67,7 @@ class ExerciseIntensityValidator {
   /// Retorna (isSafe, warningMessage)
   static (bool isSafe, String? warning) validateIntensityAgainstMetabolicState({
     required int intensityPercent,
-    required FastingPhase currentFastingPhase,
+    required OrchestratorFastingBand currentOrchestratorFastingBand,
     required CircadianPhase currentCircadianPhase,
     required double sleepQuality,
     required int durationMinutes,
@@ -75,7 +75,7 @@ class ExerciseIntensityValidator {
     final String exerciseType = categorizeIntensity(intensityPercent);
 
     // Regla 1: No ejercitar en AUTOFAGIA con sueño deficiente
-    if (currentFastingPhase == FastingPhase.autofagia && sleepQuality < 0.4) {
+    if (currentOrchestratorFastingBand == OrchestratorFastingBand.autofagia && sleepQuality < 0.4) {
       return (
         true, // Permitir pero advertir
         '⚠️  CRÍTICO: No es seguro ejercitar ahora. '
@@ -85,7 +85,7 @@ class ExerciseIntensityValidator {
     }
 
     // Regla 2: No HIIT en AUTOFAGIA (fase de ayuno profundo)
-    if (currentFastingPhase == FastingPhase.autofagia &&
+    if (currentOrchestratorFastingBand == OrchestratorFastingBand.autofagia &&
         exerciseType == 'HIIT') {
       return (
         true, // Permitir pero advertir fuerte
@@ -132,7 +132,7 @@ class ExerciseIntensityValidator {
 
   /// RF-37-03: Recomendación óptima de intensidad basada en SPEC-01
   static (int, String, String) recommendOptimalIntensity({
-    required FastingPhase currentFastingPhase,
+    required OrchestratorFastingBand currentOrchestratorFastingBand,
     required CircadianPhase currentCircadianPhase,
     required double sleepQuality,
   }) {
@@ -143,7 +143,7 @@ class ExerciseIntensityValidator {
     if (sleepQuality < 0.4) {
       recommendedType = 'LISS';
       recommendedIntensity = 35;
-    } else if (currentFastingPhase == FastingPhase.autofagia) {
+    } else if (currentOrchestratorFastingBand == OrchestratorFastingBand.autofagia) {
       recommendedType = sleepQuality > 0.6 ? 'STRENGTH' : 'LISS';
       recommendedIntensity = 50;
     } else {
@@ -176,7 +176,7 @@ class ExerciseIntensityValidator {
     }
 
     String reasoning = _getReasoning(
-      fastingPhase: currentFastingPhase,
+      fastingPhase: currentOrchestratorFastingBand,
       circadianPhase: currentCircadianPhase,
       sleepQuality: sleepQuality,
       recommendedType: recommendedType,
@@ -187,7 +187,7 @@ class ExerciseIntensityValidator {
 
   /// Genera explicación de por qué se recomienda esta intensidad
   static String _getReasoning({
-    required FastingPhase fastingPhase,
+    required OrchestratorFastingBand fastingPhase,
     required CircadianPhase circadianPhase,
     required double sleepQuality,
     required String? recommendedType,
@@ -196,7 +196,7 @@ class ExerciseIntensityValidator {
       return 'Recuperación baja. Solo LISS para no estresar el sistema.';
     }
 
-    if (fastingPhase == FastingPhase.autofagia) {
+    if (fastingPhase == OrchestratorFastingBand.autofagia) {
       return 'En Autofagia profunda. Evita catabolismo muscular con LISS/STRENGTH moderado.';
     }
 
@@ -217,18 +217,18 @@ class ExerciseIntensityValidator {
   }
 
   /// Multiplicador de seguridad (Sincronizado SPEC-01)
-  static double getExerciseSafetyMultiplier(FastingPhase fastingPhase) {
+  static double getExerciseSafetyMultiplier(OrchestratorFastingBand fastingPhase) {
     return switch (fastingPhase) {
-      FastingPhase.alerta => 1.0,
-      FastingPhase.gluconeogenesis => 0.95,
-      FastingPhase.cetosis => 0.85,
-      FastingPhase.autofagia => 0.6,
+      OrchestratorFastingBand.alerta => 1.0,
+      OrchestratorFastingBand.gluconeogenesis => 0.95,
+      OrchestratorFastingBand.cetosis => 0.85,
+      OrchestratorFastingBand.autofagia => 0.6,
     };
   }
 
   /// Verifica si el ejercicio propuesto es compatible con ayuno actual
   static bool isCompatibleWithCurrentFasting({
-    required FastingPhase fastingPhase,
+    required OrchestratorFastingBand fastingPhase,
     required int intensityPercent,
     required int durationMinutes,
   }) {
@@ -238,7 +238,7 @@ class ExerciseIntensityValidator {
     );
 
     // En AUTOFAGIA profunda, limita carga metabólica
-    if (fastingPhase == FastingPhase.autofagia && metabolicLoad > 1.5) {
+    if (fastingPhase == OrchestratorFastingBand.autofagia && metabolicLoad > 1.5) {
       return false;
     }
 

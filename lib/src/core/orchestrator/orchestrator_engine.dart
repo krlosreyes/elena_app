@@ -14,7 +14,7 @@
 //   - Mismo input → mismo output (determinista)
 //
 // REUTILIZACIÓN:
-//   - FastingPhase: clasificación por horas de ayuno (umbrales 4/8/12h).
+//   - OrchestratorFastingBand: clasificación por horas de ayuno (umbrales 4/8/12h).
 //   - CircadianPhase: delegada a CircadianEngine.currentPhase (SPEC-51 cerrado).
 //   - metabolicCoherence: usa state.metabolicCoherence directo (calculado
 //     por CoherenceEngine desde MetabolicStateBuilder). SPEC-71 cerrado:
@@ -61,7 +61,7 @@ class OrchestratorEngine {
     }
 
     // ── 1. Fases biológicas ──────────────────────────────────────────────
-    final fastingPhase = _determineFastingPhase(state.fastingHoursRaw);
+    final fastingPhase = _determineOrchestratorFastingBand(state.fastingHoursRaw);
     // SPEC-51: la fase circadiana viene del CircadianEngine (fuente única).
     final circadianPhase = CircadianEngine.currentPhase(now);
 
@@ -149,14 +149,14 @@ class OrchestratorEngine {
   ///
   /// SPEC-221: Estos umbrales (4/8/12h) son las bandas de DECISIÓN del
   /// orchestrator — NO las fases biológicas del UI (que usan 12/18/24h).
-  /// El enum canónico para display es `FastingPhase` de `fasting_status.dart`.
-  /// Pendiente: recibir directamente `FastingPhase` del dashboard y usar
+  /// El enum canónico para display es `OrchestratorFastingBand` de `fasting_status.dart`.
+  /// Pendiente: recibir directamente `OrchestratorFastingBand` del dashboard y usar
   /// `.orchestratorBand` en lugar de recalcular desde horas.
-  static FastingPhase _determineFastingPhase(double fastingHoursRaw) {
-    if (fastingHoursRaw < 4) return FastingPhase.alerta;
-    if (fastingHoursRaw < 8) return FastingPhase.gluconeogenesis;
-    if (fastingHoursRaw < 12) return FastingPhase.cetosis;
-    return FastingPhase.autofagia;
+  static OrchestratorFastingBand _determineOrchestratorFastingBand(double fastingHoursRaw) {
+    if (fastingHoursRaw < 4) return OrchestratorFastingBand.alerta;
+    if (fastingHoursRaw < 8) return OrchestratorFastingBand.gluconeogenesis;
+    if (fastingHoursRaw < 12) return OrchestratorFastingBand.cetosis;
+    return OrchestratorFastingBand.autofagia;
   }
 
   // SPEC-51: _determineCircadianPhase eliminado. La determinación de fase
@@ -194,12 +194,12 @@ class OrchestratorEngine {
   ///   - No ejercitar en autofagia + sueño deficiente.
   ///   - No ejercitar en fase de sueño circadiano.
   static bool _canExerciseNow({
-    required FastingPhase fastingPhase,
+    required OrchestratorFastingBand fastingPhase,
     required CircadianPhase circadianPhase,
     required double sleepQuality,
   }) {
     // Autofagia profunda + sueño malo → riesgo de catabolismo
-    if (fastingPhase == FastingPhase.autofagia && sleepQuality < 0.4) {
+    if (fastingPhase == OrchestratorFastingBand.autofagia && sleepQuality < 0.4) {
       return false;
     }
 
@@ -215,12 +215,12 @@ class OrchestratorEngine {
   ///
   /// Óptimo si la fase es cetosis o autofagia y la calidad de sueño > 0.6.
   static bool _isOptimalForFasting({
-    required FastingPhase fastingPhase,
+    required OrchestratorFastingBand fastingPhase,
     required double sleepQuality,
   }) {
     // Óptimo si estamos en cetosis o autofagia Y sleep quality bueno
-    final isDeepFasting = fastingPhase == FastingPhase.cetosis ||
-        fastingPhase == FastingPhase.autofagia;
+    final isDeepFasting = fastingPhase == OrchestratorFastingBand.cetosis ||
+        fastingPhase == OrchestratorFastingBand.autofagia;
     return isDeepFasting && sleepQuality > 0.6;
   }
 
@@ -228,12 +228,12 @@ class OrchestratorEngine {
   ///
   /// Reduce la intensidad recomendada conforme avanza el ayuno: alerta=1.0,
   /// gluconeogénesis=0.95, cetosis=0.85, autofagia=0.6.
-  static double _exerciseSafetyMultiplier(FastingPhase phase) {
+  static double _exerciseSafetyMultiplier(OrchestratorFastingBand phase) {
     return switch (phase) {
-      FastingPhase.alerta => 1.0,
-      FastingPhase.gluconeogenesis => 0.95,
-      FastingPhase.cetosis => 0.85,
-      FastingPhase.autofagia => 0.6,
+      OrchestratorFastingBand.alerta => 1.0,
+      OrchestratorFastingBand.gluconeogenesis => 0.95,
+      OrchestratorFastingBand.cetosis => 0.85,
+      OrchestratorFastingBand.autofagia => 0.6,
     };
   }
 
@@ -258,7 +258,7 @@ class OrchestratorEngine {
   /// circadiana y la calidad de sueño. SPEC-68 sustituirá los strings
   /// por un enum tipado de tipo de ejercicio.
   static (String?, int) _exerciseRecommendation({
-    required FastingPhase fastingPhase,
+    required OrchestratorFastingBand fastingPhase,
     required CircadianPhase circadianPhase,
     required double sleepQuality,
   }) {
@@ -268,7 +268,7 @@ class OrchestratorEngine {
     }
 
     // Autofagia → no HIIT (riesgo catabolismo)
-    if (fastingPhase == FastingPhase.autofagia) {
+    if (fastingPhase == OrchestratorFastingBand.autofagia) {
       return (sleepQuality > 0.6 ? 'STRENGTH' : 'LISS', 50);
     }
 
@@ -288,14 +288,14 @@ class OrchestratorEngine {
   /// Recibe el MetabolicState (no parámetros individuales) y devuelve la
   /// lista de mensajes de violación detectados.
   static List<String> _detectViolations({
-    required FastingPhase fastingPhase,
+    required OrchestratorFastingBand fastingPhase,
     required CircadianPhase circadianPhase,
     required MetabolicState state,
   }) {
     final List<String> violations = [];
 
     // Deshidratación en autofagia
-    if (fastingPhase == FastingPhase.autofagia && state.hydrationLevel < 0.5) {
+    if (fastingPhase == OrchestratorFastingBand.autofagia && state.hydrationLevel < 0.5) {
       violations.add(
         'Riesgo deshidratación en Autofagia: hidratación al '
         '${(state.hydrationLevel * 100).toStringAsFixed(0)}%',
@@ -311,7 +311,7 @@ class OrchestratorEngine {
     }
 
     // Ejercicio excesivo en autofagia
-    if (fastingPhase == FastingPhase.autofagia &&
+    if (fastingPhase == OrchestratorFastingBand.autofagia &&
         state.exerciseMinutesRaw > 60) {
       violations.add(
         'Ejercicio intenso en Autofagia '
@@ -336,7 +336,7 @@ class OrchestratorEngine {
   /// Solo genera recomendaciones con reglas claras derivadas de datos reales.
   /// Si no hay base para una recomendación, NO la genera.
   static List<Recommendation> _generateRecommendations({
-    required FastingPhase fastingPhase,
+    required OrchestratorFastingBand fastingPhase,
     required CircadianPhase circadianPhase,
     required MetabolicState state,
     required StreakState streak,
@@ -344,7 +344,7 @@ class OrchestratorEngine {
     final List<Recommendation> recs = [];
 
     // Hidratación urgente en autofagia
-    if (fastingPhase == FastingPhase.autofagia && state.hydrationLevel < 0.5) {
+    if (fastingPhase == OrchestratorFastingBand.autofagia && state.hydrationLevel < 0.5) {
       recs.add(const Recommendation(
         id: 'hydrate_during_autophagy',
         priority: RecommendationPriority.high,

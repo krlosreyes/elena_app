@@ -7,14 +7,14 @@ class ExerciseValidator {
   ///
   /// Retorna (esSeguro, razonSiNo)
   static (bool, String?) validateExercise({
-    required FastingPhase fastingPhase,
+    required OrchestratorFastingBand fastingPhase,
     required CircadianPhase circadianPhase,
     required double sleepQuality,
     required String? exerciseType,
     required int intensityPercent,
   }) {
     // Primero: verificar seguridad básica (Autofagia profunda + sueño malo)
-    if (fastingPhase == FastingPhase.autofagia && sleepQuality < 0.4) {
+    if (fastingPhase == OrchestratorFastingBand.autofagia && sleepQuality < 0.4) {
       return (
         false,
         'No es seguro ejercitar ahora: Autofagia profunda con recuperación de sueño insuficiente (${(sleepQuality * 100).toStringAsFixed(0)}%)',
@@ -30,7 +30,7 @@ class ExerciseValidator {
     }
 
     // RF-34-02: Validar que HIIT no ocurre en Autofagia profunda
-    if (fastingPhase == FastingPhase.autofagia &&
+    if (fastingPhase == OrchestratorFastingBand.autofagia &&
         exerciseType == 'HIIT' &&
         intensityPercent > 70) {
       return (
@@ -41,7 +41,7 @@ class ExerciseValidator {
     }
 
     // Validar intensidad en Autofagia
-    if (fastingPhase == FastingPhase.autofagia && intensityPercent > 75) {
+    if (fastingPhase == OrchestratorFastingBand.autofagia && intensityPercent > 75) {
       return (
         false,
         'Intensidad >75% en Autofagia es arriesgada. '
@@ -63,12 +63,12 @@ class ExerciseValidator {
 
   /// Calcula multiplicador de seguridad basado en fasting phase
   /// Valores sincronizados con OrchestratorEngine
-  static double getExerciseSafetyMultiplier(FastingPhase fastingPhase) {
+  static double getExerciseSafetyMultiplier(OrchestratorFastingBand fastingPhase) {
     return switch (fastingPhase) {
-      FastingPhase.alerta => 1.0,
-      FastingPhase.gluconeogenesis => 0.95,
-      FastingPhase.cetosis => 0.85,
-      FastingPhase.autofagia => 0.6,
+      OrchestratorFastingBand.alerta => 1.0,
+      OrchestratorFastingBand.gluconeogenesis => 0.95,
+      OrchestratorFastingBand.cetosis => 0.85,
+      OrchestratorFastingBand.autofagia => 0.6,
     };
   }
 }
