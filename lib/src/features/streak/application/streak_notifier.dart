@@ -12,6 +12,7 @@ import 'package:elena_app/src/features/dashboard/application/hydration_notifier.
 import 'package:elena_app/src/features/dashboard/domain/sleep_quality_calculator.dart';
 import 'package:elena_app/src/features/exercise/application/exercise_notifier.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
+import 'package:elena_app/src/core/providers/celebration_providers.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/core/services/day_boundary_resolver.dart';
 import 'package:elena_app/src/core/services/firestore_errors.dart';
@@ -28,9 +29,15 @@ class StreakState {
   /// Mejor racha histórica.
   final int longestStreak;
 
-  /// Adherencia de los últimos 7 días (0.0-1.0). Métrica binaria:
-  /// proporción de días que cruzaron el umbral (3 pilares + IMR≥60).
+  /// SPEC-219: Tasa de completación semanal (0.0-1.0). Métrica binaria:
+  /// proporción de días con ≥3 pilares (qualifiesForStreak). SIN requisito
+  /// de IMR — rompe la circularidad con el ScoreEngine.
   final double weeklyAdherence;
+
+  /// SPEC-219: Tasa de engagement semanal (0.0-1.0). Métrica binaria:
+  /// proporción de días con IMR ≥ 60 Y ≥3 pilares (isEngaged).
+  /// Para analytics y display — NO alimenta al ScoreEngine.
+  final double weeklyEngagementRate;
 
   /// SPEC-53: calidad ponderada de los últimos 7 días (0.0-1.0).
   /// Promedio del `dailyQualityScore` de las entradas en ventana —
@@ -54,6 +61,7 @@ class StreakState {
     this.currentStreak = 0,
     this.longestStreak = 0,
     this.weeklyAdherence = 0.0,
+    this.weeklyEngagementRate = 0.0,
     this.weeklyQualityScore = 0.0,
     this.todayEntry,
     this.history = const [],
@@ -63,6 +71,7 @@ class StreakState {
     int? currentStreak,
     int? longestStreak,
     double? weeklyAdherence,
+    double? weeklyEngagementRate,
     double? weeklyQualityScore,
     StreakEntry? todayEntry,
     List<StreakEntry>? history,
@@ -71,6 +80,7 @@ class StreakState {
         currentStreak: currentStreak ?? this.currentStreak,
         longestStreak: longestStreak ?? this.longestStreak,
         weeklyAdherence: weeklyAdherence ?? this.weeklyAdherence,
+        weeklyEngagementRate: weeklyEngagementRate ?? this.weeklyEngagementRate,
         weeklyQualityScore: weeklyQualityScore ?? this.weeklyQualityScore,
         todayEntry: todayEntry ?? this.todayEntry,
         history: history ?? this.history,
@@ -265,6 +275,18 @@ class StreakNotifier extends StateNotifier<StreakState> {
         newEntry.pillarsCompleted != prevPillars) {
       _persistToday(newEntry);
     }
+
+    // SPEC-220: Celebración al cruzar umbral 3/5 (o subir a 4/5, 5/5).
+    // Solo emitir si el pilar completado subió Y estamos en ≥3.
+    if (newEntry.pillarsCompleted >= 3 &&
+        newEntry.pillarsCompleted > prevPillars) {
+      _ref.read(celebrationEventProvider.notifier).state = CelebrationEvent(
+        type: CelebrationType.streakThreshold,
+        pillarsCompleted: newEntry.pillarsCompleted,
+        currentStreak: state.currentStreak,
+        timestamp: DateTime.now(),
+      );
+    }
   }
 
   /// Actualiza el IMR en el entry de hoy (llamado desde AnalysisScreen).
@@ -297,7 +319,10 @@ class StreakNotifier extends StateNotifier<StreakState> {
     );
 
     final prevAdherence = state.weeklyAdherence;
-    final newAdherence = StreakEngine.computeWeeklyAdherence(history);
+    // SPEC-219: completionRate (sin IMR) para ScoreEngine,
+    // engagementRate (con IMR) para analytics/display.
+    final newAdherence = StreakEngine.computeWeeklyCompletionRate(history);
+    final newEngagement = StreakEngine.computeWeeklyEngagementRate(history);
     // SPEC-53: calidad continua de los últimos 7 días.
     final newQualityScore = StreakEngine.computeWeeklyQualityScore(history);
 
@@ -307,6 +332,7 @@ class StreakNotifier extends StateNotifier<StreakState> {
       currentStreak: StreakEngine.computeCurrentStreak(history),
       longestStreak: StreakEngine.computeLongestStreak(history),
       weeklyAdherence: newAdherence,
+      weeklyEngagementRate: newEngagement,
       weeklyQualityScore: newQualityScore,
     );
 

@@ -40,7 +40,13 @@ class StreakEngine {
   /// no metamorfosis". AASM Practice Guidelines establece 7-9h como rango
   /// óptimo; por debajo de 7h el eje grelina/leptina se altera y aumenta
   /// el riesgo de obesidad, T2D e hipertensión.
-  static bool evaluateSleep({required double sleepHours}) => sleepHours >= 7.0;
+  ///
+  /// HOTFIX 2026-06-17: alineado a ≥6.5h para ser consistente con el
+  /// doc en StreakEntry ("≥6.5 horas de sueño efectivo registrado").
+  /// 6.5h es el umbral mínimo funcional — no el óptimo. Un usuario que
+  /// duerme 6:40 merece crédito por el pilar; el score de calidad
+  /// multidimensional (SPEC-69) ya penaliza <7h de forma continua.
+  static bool evaluateSleep({required double sleepHours}) => sleepHours >= 6.5;
 
   /// Evalúa si la hidratación alcanzó el 75% de la meta.
   /// SPEC-70 §7.2 — ENGINEERING JUDGMENT (mínimo funcional sin
@@ -142,20 +148,37 @@ class StreakEngine {
     return longest;
   }
 
-  /// Adherencia semanal: proporción de los últimos 7 días que calificaron (SPEC-07).
-  /// Retorna 0.0-1.0. Métrica binaria — un día cuenta o no cuenta.
-  /// Un día califica si tiene IMR >= 60 y al menos 3 pilares activos.
+  /// SPEC-219: Tasa de completación semanal (sin requisito de IMR).
+  /// Proporción de los últimos 7 días donde el usuario completó ≥3 pilares.
+  /// Alimenta al ScoreEngine vía MetabolicState.weeklyAdherence.
   ///
-  /// SPEC-53: convive con [computeWeeklyQualityScore]. Esta sigue siendo
-  /// útil para reporting y para downstream que aún espere el binario;
-  /// el ScoreEngine consume la versión continua.
-  static double computeWeeklyAdherence(List<StreakEntry> history) {
+  /// ANTES (pre SPEC-219): usaba `isEngaged` (IMR ≥ 60 + ≥3 pilares),
+  /// creando un loop circular: IMR depende de adherencia, adherencia
+  /// depende de IMR. Ahora solo mide completación binaria de pilares.
+  static double computeWeeklyCompletionRate(List<StreakEntry> history) {
     final now = DateTime.now();
-
-    // Ventana de los últimos 7 días terminando hoy
-    // SPEC-138: inicio del día vía fuente única.
     final cutoff = DayBoundaryResolver.startOfDay(now)
-        .subtract(const Duration(days: 6)); // 1 día (hoy) + 6 anteriores = 7
+        .subtract(const Duration(days: 6));
+
+    final lastWeek = history.where((e) {
+      final eDate = DateTime.tryParse(e.date);
+      return eDate != null && !eDate.isBefore(cutoff);
+    });
+
+    if (lastWeek.isEmpty) return 0.0;
+
+    final qualified = lastWeek.where((e) => e.qualifiesForStreak).length;
+    return (qualified / 7.0).clamp(0.0, 1.0);
+  }
+
+  /// SPEC-219: Tasa de engagement semanal (con requisito de IMR).
+  /// Proporción de los últimos 7 días donde `isEngaged` (IMR ≥ 60 + ≥3
+  /// pilares). Para analytics y display en Análisis — NO alimenta al
+  /// ScoreEngine (rompe circularidad).
+  static double computeWeeklyEngagementRate(List<StreakEntry> history) {
+    final now = DateTime.now();
+    final cutoff = DayBoundaryResolver.startOfDay(now)
+        .subtract(const Duration(days: 6));
 
     final lastWeek = history.where((e) {
       final eDate = DateTime.tryParse(e.date);
@@ -172,13 +195,13 @@ class StreakEngine {
   ///
   /// Promedio simple de [StreakEntry.dailyQualityScore] sobre las
   /// entradas que caen en la ventana [hoy-6, hoy]. A diferencia de
-  /// [computeWeeklyAdherence] (binario "calificó o no"), esta métrica
+  /// [computeWeeklyCompletionRate] (binario "calificó o no"), esta métrica
   /// captura el "cuánto" — un día con magnitudes de 0.85 puntúa más
   /// que un día apenas en 0.61, aunque ambos califiquen.
   ///
   /// Casos:
   /// - Historial vacío o sin entradas en la ventana → 0.0 (mismo
-  ///   comportamiento que [computeWeeklyAdherence], evita penalizar
+  ///   comportamiento que [computeWeeklyCompletionRate], evita penalizar
   ///   diferente al usuario nuevo).
   /// - Entradas legacy sin magnitudes → su `dailyQualityScore` cae al
   ///   fallback `pillarsCompleted/5`, así que la mezcla legacy+modernas

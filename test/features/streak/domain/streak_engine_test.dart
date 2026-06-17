@@ -37,11 +37,13 @@ void main() {
           isFalse);
     });
 
-    test('evaluateSleep SPEC-70.5: requiere ≥ 7.0h (rango óptimo AASM)', () {
+    test('evaluateSleep: requiere ≥ 6.5h (umbral mínimo funcional)', () {
       expect(StreakEngine.evaluateSleep(sleepHours: 7.0), isTrue);
-      expect(StreakEngine.evaluateSleep(sleepHours: 6.9), isFalse);
-      // El antiguo umbral 6.5h ya NO califica como sueño cumplido.
-      expect(StreakEngine.evaluateSleep(sleepHours: 6.5), isFalse);
+      expect(StreakEngine.evaluateSleep(sleepHours: 6.5), isTrue);
+      expect(StreakEngine.evaluateSleep(sleepHours: 6.4), isFalse);
+      // HOTFIX 2026-06-17: alineado con doc StreakEntry ("≥6.5 horas").
+      // El score de calidad multidimensional (SPEC-69) ya penaliza <7h
+      // de forma continua — este umbral es binario mínimo.
     });
 
     test('evaluateHydration: requiere ≥ 75% de la meta', () {
