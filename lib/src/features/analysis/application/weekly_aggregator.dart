@@ -1,5 +1,9 @@
 // SPEC-162: agregador semanal genérico.
 //
+// ⚠️ DEPRECATED — SPEC-230 (2026-06-18): reemplazado por TemporalAggregator
+// que soporta daily/weekly/monthly con timezone correcto. Ningún caller
+// activo usa esta clase. Mantenida temporalmente por si hay tests legacy.
+//
 // Toma una colección de items con fecha asociada y los agrupa por
 // semana ISO (lunes-domingo). Soporta múltiples modos de agregación.
 //
@@ -74,10 +78,12 @@ class WeeklyAggregator {
   }
 
   /// Inicio del lunes de la semana ISO de [date], hora 00:00:00 local.
+  /// SPEC-230 BUG-F: toLocal() defensivo (Firestore timestamps son UTC).
   static DateTime _startOfIsoWeek(DateTime date) {
+    final local = date.toLocal();
     // weekday: lunes=1, ..., domingo=7.
-    final daysSinceMonday = date.weekday - 1;
-    final monday = DateTime(date.year, date.month, date.day)
+    final daysSinceMonday = local.weekday - 1;
+    final monday = DateTime(local.year, local.month, local.day)
         .subtract(Duration(days: daysSinceMonday));
     return monday;
   }

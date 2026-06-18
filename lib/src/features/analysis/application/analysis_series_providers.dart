@@ -410,7 +410,9 @@ final hydrationHabitSeriesProvider =
     // target line es el goal del usuario en hydrationLitersPerDay.
     final byDay = <String, double>{};
     for (final log in logs) {
-      final key = _dateIso(log.timestamp);
+      // SPEC-230 BUG-A: log.timestamp es UTC (Firestore Timestamp.toDate()).
+      // Sin toLocal(), un log a las 11pm local cae en el día UTC siguiente.
+      final key = _dateIso(log.timestamp.toLocal());
       byDay[key] = (byDay[key] ?? 0) + log.amountInLiters;
     }
     final dayEntries = byDay.entries
@@ -445,7 +447,8 @@ final exerciseHabitSeriesProvider =
       )) {
     final byDay = <String, int>{};
     for (final log in logs) {
-      final key = _dateIso(log.timestamp);
+      // SPEC-230 BUG-A: mismo fix timezone que hydration (ver arriba).
+      final key = _dateIso(log.timestamp.toLocal());
       byDay[key] = (byDay[key] ?? 0) + log.durationMinutes;
     }
     final dayEntries = byDay.entries
@@ -475,18 +478,19 @@ final sleepHabitSeriesProvider =
     yield MetricSeries.empty(label: 'Sueño', unit: 'h');
     return;
   }
+  // SPEC-230 BUG-B: ref.watch FUERA del await-for para que el provider
+  // se re-evalúe cuando el usuario cambia el rango de análisis (antes era
+  // ref.read DENTRO del loop → el sleep chart se quedaba congelado).
+  final rangeStart = ref.watch(analysisRangeStartProvider);
   final mode = _currentMode(ref);
   await for (final logs in ref
       .watch(sleepRepositoryProvider)
       // SPEC-168.4.7: 2000 cubre ~5 años de uso diario sin egress
       // problemático y elimina el corte silencioso para rango "Todo".
       .watchRecent(account.uid, limit: 2000)) {
-    final rangeStart = ref.read(analysisRangeStartProvider);
-    final filtered = rangeStart == null
-        ? logs
-        : logs
-            .where((l) => l.wokeUp.isAfter(rangeStart) || l.wokeUp == rangeStart)
-            .toList();
+    final filtered = logs
+        .where((l) => !l.wokeUp.isBefore(rangeStart))
+        .toList();
     final points = TemporalAggregator.aggregate(
       items: filtered,
       timestampOf: (l) => l.wokeUp,

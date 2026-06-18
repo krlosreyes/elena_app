@@ -79,6 +79,8 @@ class _TrendChartState extends State<TrendChart> {
   }
 
   void _handleTouch(double x, BuildContext context) {
+    // SPEC-230 BUG-D: data.length == 1 → division by zero.
+    if (widget.data.length < 2) return;
     final width = context.size?.width ?? 1.0;
     final itemWidth = width / (widget.data.length - 1);
     final index = (x / itemWidth).round().clamp(0, widget.data.length - 1);
@@ -100,6 +102,14 @@ class _LineChartPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     if (data.isEmpty) return;
+
+    // SPEC-230 BUG-D: un solo punto → dibujar dot centrado, no dividir por 0.
+    if (data.length == 1) {
+      final dotPaint = Paint()..color = color;
+      final y = size.height * 0.5;
+      canvas.drawCircle(Offset(size.width * 0.5, y), 4, dotPaint);
+      return;
+    }
 
     final paint = Paint()
       ..color = color
