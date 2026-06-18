@@ -16,6 +16,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/dashboard/application/sleep_notifier.dart';
 import 'package:elena_app/src/features/dashboard/domain/sleep_log.dart';
+import 'package:elena_app/src/shared/providers/user_provider.dart';
 
 class SleepInputSheet extends ConsumerStatefulWidget {
   /// SPEC-106: si se pasa `initial`, el sheet precarga todos los
@@ -58,8 +59,18 @@ class _SleepInputSheetState extends ConsumerState<SleepInputSheet> {
           _awakenings != null ||
           _subjectiveQuality != null;
     } else {
-      _bedtime = const TimeOfDay(hour: 22, minute: 30);
-      _wakeTime = const TimeOfDay(hour: 7, minute: 0);
+      // SPEC-231 BUG-A: antes hardcodeaba 22:30/7:00. Ahora lee el
+      // CircadianProfile del onboarding para que el sheet pre-cargue
+      // las horas reales del usuario. Fallback a 22:30/7:00 solo si
+      // el perfil no está disponible (edge: usuario sin onboarding).
+      final user = ref.read(currentUserStreamProvider).valueOrNull;
+      final profile = user?.profile;
+      _bedtime = profile != null
+          ? TimeOfDay(hour: profile.sleepTime.hour, minute: profile.sleepTime.minute)
+          : const TimeOfDay(hour: 22, minute: 30);
+      _wakeTime = profile != null
+          ? TimeOfDay(hour: profile.wakeUpTime.hour, minute: profile.wakeUpTime.minute)
+          : const TimeOfDay(hour: 7, minute: 0);
       _showDetail = false;
     }
   }

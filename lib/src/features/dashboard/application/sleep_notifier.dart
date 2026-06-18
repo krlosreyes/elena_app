@@ -221,19 +221,37 @@ class SleepNotifier extends StateNotifier<SleepState> {
 
       final docId = _attributionDocId(sleepTimeThisCycle, now);
 
-      // SPEC-108/138: si ya hay un registro para este MISMO día de atribución,
-      // no sobreescribimos con defaults calculados; solo bajamos el overlay.
-      if (state.lastLog?.id == docId) {
-        // SPEC-194: persistir la confirmación por (user, día calendárico).
-        await _markWakeUpConfirmed(user.id, now);
-        state = state.copyWith(
-          isWaitingForWakeUp: false,
-          isSleepMode: false,
-        );
-        AppLogger.debug(
-          'confirmManualWakeUp: ya hay registro de este día, no se sobreescribe',
-        );
-        return;
+      // SPEC-231 BUG-B: guard ampliado. Antes solo comparaba docId exacto,
+      // pero los logs de HealthKit usan `hk_sleep_*` y Samsung Health usa
+      // `sh_sleep_*`, así que el guard nunca matcheaba → se creaba un
+      // duplicado manual que sobreescribía datos precisos del wearable.
+      //
+      // Ahora: si el lastLog tiene `wokeUp` en el mismo día calendárico
+      // que `now`, ya hay un registro válido para esta noche — no crear
+      // otro. El guard por docId exacto se mantiene como OR para el caso
+      // donde el sleep se atribuye a un día diferente (punto medio).
+      final lastLog = state.lastLog;
+      if (lastLog != null) {
+        final sameDocId = lastLog.id == docId;
+        final lastWokeLocal = lastLog.wokeUp.toLocal();
+        final nowLocal = now.toLocal();
+        final sameCalendarDay = lastWokeLocal.year == nowLocal.year &&
+            lastWokeLocal.month == nowLocal.month &&
+            lastWokeLocal.day == nowLocal.day;
+        if (sameDocId || sameCalendarDay) {
+          // SPEC-194: persistir la confirmación por (user, día calendárico).
+          await _markWakeUpConfirmed(user.id, now);
+          state = state.copyWith(
+            isWaitingForWakeUp: false,
+            isSleepMode: false,
+          );
+          AppLogger.debug(
+            'confirmManualWakeUp: ya hay registro para hoy '
+            '(id=${lastLog.id}, sameDoc=$sameDocId, sameCal=$sameCalendarDay), '
+            'no se sobreescribe',
+          );
+          return;
+        }
       }
 
       final realLog = SleepLog(
