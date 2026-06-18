@@ -11,6 +11,7 @@
 // Side-effect-only. Para que ejecute, el Dashboard hace `ref.watch`.
 
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -34,6 +35,7 @@ import 'package:elena_app/src/features/streak/application/daily_score_provider.d
     show displayDailyScoreProvider;
 import 'package:elena_app/src/features/streak/application/streak_notifier.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
+import 'package:elena_app/src/shared/utils/fasting_protocol.dart';
 
 final metabolicCycleEvaluatorProvider = Provider<void>((ref) {
   // SPEC-174 (2026-06-04): primer tick INMEDIATO al montar el provider.
@@ -182,28 +184,40 @@ Future<void> _evaluate(
     dailyScore = ref.read(displayDailyScoreProvider);
   }
 
-  // SPEC-227: stampear liveScore en el ciclo abierto en cada pulso
-  // periódico. Al cerrar, MetabolicCycleService leerá openCycle.liveScore
-  // en lugar de recalcular desde providers (que pueden estar stale por el
-  // ordering de listeners). Solo en pulsos periódicos — en el path
-  // manualNextFasting el ciclo va a cerrarse y SPEC-225 ya captura el
-  // score correcto desde preClosureStreak antes de que se resetee.
+  // SPEC-227 + SPEC-229 BUG-A: stampear liveScore como HIGH WATER MARK.
+  //
+  // Antes (bug): se stampaba el valor ACTUAL del displayDailyScore en cada
+  // tick. Si el score bajaba (e.g., fasting magnitude decrece con el tiempo),
+  // el pico que el usuario VIO se perdía. Al cerrar el ciclo, el service
+  // leía el liveScore bajo → dailyScore bajo.
+  //
+  // Ahora: liveScore solo sube, nunca baja. `max(existente, nuevo)` garantiza
+  // que el score al cierre refleja el MEJOR momento del ciclo — coherente con
+  // lo que el usuario vio en el Dashboard.
+  //
+  // Solo en pulsos periódicos — en el path manualNextFasting SPEC-225 ya
+  // captura el score correcto desde preClosureStreak.
   //
   // Firestore escribe en caché local al instante (SPEC-206), por lo que
   // fetchOpenCycle() del service leerá liveScore correcto incluso offline.
   if (!newFastingTriggered) {
     final openCycleSnap =
         ref.read(currentMetabolicCycleProvider).valueOrNull;
-    if (openCycleSnap != null && openCycleSnap.liveScore != dailyScore) {
-      unawaited(
-        ref
-            .read(metabolicCycleRepositoryProvider)
-            .updateLiveScore(account.uid, openCycleSnap.cycleId, dailyScore)
-            .catchError((Object e) {
-          AppLogger.debug(
-              '[evaluator] updateLiveScore falló (offline?): $e');
-        }),
-      );
+    if (openCycleSnap != null) {
+      final existingLive = openCycleSnap.liveScore ?? 0;
+      final newLiveScore = math.max(existingLive, dailyScore);
+      if (openCycleSnap.liveScore != newLiveScore) {
+        unawaited(
+          ref
+              .read(metabolicCycleRepositoryProvider)
+              .updateLiveScore(
+                  account.uid, openCycleSnap.cycleId, newLiveScore)
+              .catchError((Object e) {
+            AppLogger.debug(
+                '[evaluator] updateLiveScore falló (offline?): $e');
+          }),
+        );
+      }
     }
   }
 
@@ -226,13 +240,43 @@ Future<void> _evaluate(
       ? null
       : nutritionState.todayLogs.last.timestamp;
 
+  // SPEC-229 BUG-B: Guard contra fallback3hAfterWindow prematuro.
+  //
+  // Problema: cuando hay ayuno activo, EatingWindowState.compute() devuelve
+  // un windowEnd basado en el schedule ÓPTIMO de HOY (e.g., hoy 6pm para
+  // 16:8). Pero si el usuario inició ayuno a las 5pm, la ventana de
+  // alimentación de ESTE ciclo aún no abrió — abrirá mañana tras completar
+  // 16h de ayuno. Sin embargo, el resolver ve now(9pm) - windowEnd(6pm) = 3h
+  // → dispara fallback3hAfterWindow → cierre prematuro a las ~6h de ciclo.
+  //
+  // Fix: si el ciclo lleva menos tiempo que targetFastingHours, la ventana
+  // de alimentación del ciclo ACTUAL no ha iniciado → windowEnd no aplica.
+  // Anulamos effectiveWindowClose para que el resolver no dispare el fallback.
+  DateTime? effectiveWindowClose = eatingWindow?.windowEnd;
+  final openCycleForGuard =
+      ref.read(currentMetabolicCycleProvider).valueOrNull;
+  if (openCycleForGuard != null && effectiveWindowClose != null) {
+    final targetHours =
+        fastingHoursForProtocol(openCycleForGuard.fastingProtocol);
+    if (targetHours != null &&
+        now.difference(openCycleForGuard.startedAt) <
+            Duration(hours: targetHours)) {
+      AppLogger.debug(
+        '[evaluator] SPEC-229-B: ciclo tiene '
+        '${now.difference(openCycleForGuard.startedAt).inHours}h, '
+        'target=${targetHours}h → ignorando windowEnd stale',
+      );
+      effectiveWindowClose = null;
+    }
+  }
+
   final input = MetabolicCycleEvaluationInput(
     now: now,
     currentProtocol: user.fastingProtocol,
     currentDailyScore: dailyScore,
     currentMagnitudes: magnitudes,
     currentPillarsCompleted: pillarsCompleted,
-    expectedWindowCloseTime: eatingWindow?.windowEnd,
+    expectedWindowCloseTime: effectiveWindowClose,
     lastMealTime: lastMealTime,
     sleepDetectedAfterLastMeal: sleepDetected,
     newFastingStartedExplicitly: newFastingTriggered,

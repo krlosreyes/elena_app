@@ -301,12 +301,19 @@ class StreakNotifier extends StateNotifier<StreakState> {
 
     _rebuildState(updatedHistory);
 
-    // Persistir en Firestore solo cuando el día califica por primera vez
-    // o cuando cambian los pilares completados (evitar writes excesivos)
+    // Persistir en Firestore cuando:
+    //   1. El día califica/descalifica por primera vez
+    //   2. Los pilares completados cambian
+    //   3. SPEC-229 BUG-D: alguna magnitud subió significativamente (> 0.1)
+    //      Sin esto, si la app se mata mid-day las magnitudes in-memory se
+    //      pierden y el evaluador lee valores stale al reiniciar.
     final prevQualified = prev?.qualifiesForStreak ?? false;
     final prevPillars = prev?.pillarsCompleted ?? 0;
+    final magnitudeDeltaSignificant = prev != null &&
+        _anyMagnitudeRose(prev, newEntry, threshold: 0.1);
     if (newEntry.qualifiesForStreak != prevQualified ||
-        newEntry.pillarsCompleted != prevPillars) {
+        newEntry.pillarsCompleted != prevPillars ||
+        magnitudeDeltaSignificant) {
       _persistToday(newEntry);
     }
 
@@ -395,6 +402,23 @@ class StreakNotifier extends StateNotifier<StreakState> {
         AppLogger.error('[StreakNotifier] Error al persistir adherencia', e);
       }
     }));
+  }
+
+  /// SPEC-229 BUG-D: detecta si alguna magnitud subió más de [threshold].
+  /// Solo miramos incrementos (high water mark en _evaluateToday ya impide
+  /// decrementos), así que comparamos `new > old + threshold`.
+  static bool _anyMagnitudeRose(
+    StreakEntry old,
+    StreakEntry current, {
+    required double threshold,
+  }) {
+    bool rose(double? oldVal, double? newVal) =>
+        (newVal ?? 0) - (oldVal ?? 0) > threshold;
+    return rose(old.fastingMagnitude, current.fastingMagnitude) ||
+        rose(old.sleepQualityScore, current.sleepQualityScore) ||
+        rose(old.hydrationMagnitude, current.hydrationMagnitude) ||
+        rose(old.exerciseMagnitude, current.exerciseMagnitude) ||
+        rose(old.nutritionMagnitude, current.nutritionMagnitude);
   }
 
   Future<void> _persistToday(StreakEntry entry) async {

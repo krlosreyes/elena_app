@@ -60,18 +60,24 @@ class TemporalAggregator {
   }
 
   /// Inicio del bucket que contiene [date], según [mode].
+  ///
+  /// SPEC-229 BUG-E: [date] puede llegar como UTC (Firestore
+  /// `Timestamp.toDate()` devuelve UTC). Convertimos a local ANTES
+  /// de extraer año/mes/día para que un cierre a las 11:30pm local
+  /// (= 4:30am UTC+1d) caiga en el día correcto del usuario.
   static DateTime _bucketStart(DateTime date, AggregationMode mode) {
+    final local = date.toLocal();
     switch (mode) {
       case AggregationMode.daily:
-        return DateTime(date.year, date.month, date.day);
+        return DateTime(local.year, local.month, local.day);
       case AggregationMode.weekly:
         // Semana ISO: lunes 00:00 local.
-        final daysSinceMonday = date.weekday - 1;
-        final monday = DateTime(date.year, date.month, date.day)
+        final daysSinceMonday = local.weekday - 1;
+        final monday = DateTime(local.year, local.month, local.day)
             .subtract(Duration(days: daysSinceMonday));
         return monday;
       case AggregationMode.monthly:
-        return DateTime(date.year, date.month, 1);
+        return DateTime(local.year, local.month, 1);
     }
   }
 
