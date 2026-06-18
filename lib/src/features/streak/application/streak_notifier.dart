@@ -230,33 +230,67 @@ class StreakNotifier extends StateNotifier<StreakState> {
     final double exerciseMagnitude = exercise.todayMinutes / 30.0;
     final double nutritionMagnitude = nutrition.nutritionScore.clamp(0.0, 1.0);
 
+    // Evaluación cruda desde el estado actual de los providers.
+    final rawFasting = StreakEngine.evaluateFasting(
+      fastingHours: fastingHours,
+      fastingProtocol: currentProtocol,
+    );
+    final rawSleep = StreakEngine.evaluateSleep(sleepHours: sleepHours);
+    final rawHydration = StreakEngine.evaluateHydration(
+      progressPercentage: hydration.progressPercentage,
+    );
+    final rawExercise = StreakEngine.evaluateExercise(
+      exerciseMinutes: exercise.todayMinutes,
+    );
+    final rawNutrition = StreakEngine.evaluateNutrition(
+      mealsLogged: nutrition.mealsLoggedToday,
+    );
+
+    // ── HIGH WATER MARK (2026-06-17) ────────────────────────────────────
+    // Dentro del mismo día calendario, un pilar completado NO puede
+    // degradarse a incompleto. Motivo: al cerrar un ciclo metabólico,
+    // triggerDailyReset() resetea los notifiers in-memory a cero. Los
+    // listeners del StreakNotifier disparan _evaluateToday() con datos
+    // vacíos y SOBREESCRIBEN la entrada en Firestore con 0 pilares,
+    // rompiendo la racha del usuario.
+    //
+    // Un ejercicio que ya se hizo no se "deshace". Un sueño que ya se
+    // registró no desaparece. La lógica OR garantiza que la entrada
+    // solo puede MEJORAR dentro del mismo día.
+    //
+    // Para magnitudes: MAX del valor previo y el nuevo. Misma lógica:
+    // si el usuario logró hydrationMagnitude=0.85 antes del reset,
+    // no debe bajar a 0.0 por el reset transitorio.
+    final prev = state.todayEntry;
+    final bool fastingOk = rawFasting || (prev?.fastingCompleted ?? false);
+    final bool sleepOk = rawSleep || (prev?.sleepCompleted ?? false);
+    final bool hydrationOk = rawHydration || (prev?.hydrationCompleted ?? false);
+    final bool exerciseOk = rawExercise || (prev?.exerciseLogged ?? false);
+    final bool nutritionOk = rawNutrition || (prev?.nutritionLogged ?? false);
+
+    double maxMag(double? a, double? b) {
+      if (a == null) return b ?? 0.0;
+      if (b == null) return a;
+      return a > b ? a : b;
+    }
+
     final newEntry = StreakEntry(
       date: _todayKey,
-      fastingCompleted: StreakEngine.evaluateFasting(
-        fastingHours: fastingHours,
-        fastingProtocol: currentProtocol,
-      ),
-      sleepCompleted: StreakEngine.evaluateSleep(sleepHours: sleepHours),
-      hydrationCompleted: StreakEngine.evaluateHydration(
-        progressPercentage: hydration.progressPercentage,
-      ),
-      exerciseLogged: StreakEngine.evaluateExercise(
-        exerciseMinutes: exercise.todayMinutes,
-      ),
-      nutritionLogged: StreakEngine.evaluateNutrition(
-        mealsLogged: nutrition.mealsLoggedToday,
-      ),
+      fastingCompleted: fastingOk,
+      sleepCompleted: sleepOk,
+      hydrationCompleted: hydrationOk,
+      exerciseLogged: exerciseOk,
+      nutritionLogged: nutritionOk,
       imrScore: state.todayEntry?.imrScore ??
           0, // Preservar el IMR actual con null-safety
-      fastingMagnitude: fastingMagnitude,
-      sleepQualityScore: sleepQualityScore,
-      hydrationMagnitude: hydrationMagnitude,
-      exerciseMagnitude: exerciseMagnitude,
-      nutritionMagnitude: nutritionMagnitude,
+      fastingMagnitude: maxMag(prev?.fastingMagnitude, fastingMagnitude),
+      sleepQualityScore: sleepQualityScore ?? prev?.sleepQualityScore,
+      hydrationMagnitude: maxMag(prev?.hydrationMagnitude, hydrationMagnitude),
+      exerciseMagnitude: maxMag(prev?.exerciseMagnitude, exerciseMagnitude),
+      nutritionMagnitude: maxMag(prev?.nutritionMagnitude, nutritionMagnitude),
     );
 
     // Solo actualizar si algo cambió (evita loops reactivos)
-    final prev = state.todayEntry;
     if (prev == newEntry) return;
 
     // Historial actualizado con la nueva entrada de hoy

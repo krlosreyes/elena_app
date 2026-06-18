@@ -293,9 +293,9 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
 
   // ─── SPEC-168.4: tiles del overview ─────────────────────────────────
 
-  /// SPEC-200 / SPEC-219: tile del Score del Día.
-  /// Fuente: resolvedDailyScoreSeriesProvider (ciclos cerrados → streak fallback).
-  /// NO usar dailyScoreSeriesProvider directamente — ver SPEC-219.
+  /// SPEC-200 / SPEC-219 rev2: tile del Score del Día.
+  /// Fuente ÚNICA: resolvedDailyScoreSeriesProvider (ciclos cerrados).
+  /// Sin fallback a streak — si no hay ciclos, tile vacío.
   PillarOverviewTile _dailyScoreTile() {
     final s = ref.watch(resolvedDailyScoreSeriesProvider);
     // SPEC-220: last = score más reciente (no promedio histórico del mes).

@@ -61,11 +61,10 @@ class _DailyScoreDetailScreenState
   Widget build(BuildContext context) {
     final range = ref.watch(analysisRangeProvider);
     final mode = AggregationMode.forRange(range);
-    // SPEC-219: fuente canónica — ciclos cerrados primero, streak fallback.
-    // La jerarquía vive en resolvedDailyScoreSeriesProvider (un solo lugar).
+    // SPEC-219 rev2: fuente ÚNICA — ciclos cerrados con dailyScore.
+    // Sin fallback a streak (scores distintos causaban flip-flop).
     final series = ref.watch(resolvedDailyScoreSeriesProvider);
-    // Para el spinner: necesitamos saber si el stream de ciclos cerrados
-    // sigue cargando Y todavía no hay nada (ni ciclos ni streak).
+    // Spinner mientras el stream de ciclos no haya emitido aún.
     final seriesAsync = ref.watch(closedCycleScoreSeriesProvider);
     final showSpinner = seriesAsync.isLoading && series.points.isEmpty;
 

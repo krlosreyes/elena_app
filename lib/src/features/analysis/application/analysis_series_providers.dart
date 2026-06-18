@@ -16,6 +16,7 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/features/analysis/application/analysis_range_provider.dart';
 import 'package:elena_app/src/features/analysis/application/temporal_aggregator.dart';
 import 'package:elena_app/src/features/analysis/data/daily_summary_repository_impl.dart';
@@ -94,12 +95,30 @@ final closedCycleScoreSeriesProvider =
 
   await for (final cycles
       in ref.watch(metabolicCyclesHistoryProvider.stream)) {
+    // ── DIAGNÓSTICO (2026-06-17) ──────────────────────────────────────
+    // Log cada emisión del stream para rastrear exactamente qué data llega.
+    final withScore = cycles.where((c) => c.dailyScore != null).length;
+    final withoutScore = cycles.where((c) => c.dailyScore == null).length;
+    AppLogger.debug(
+      '[closedCycleScoreSeries] stream emitió ${cycles.length} ciclos: '
+      '$withScore con dailyScore, $withoutScore sin dailyScore, '
+      'rangeStart=$rangeStart',
+    );
+
     // Filtra por rango y descarta ciclos sin closedAt o sin dailyScore.
     final inRange = cycles.where((c) {
       final dt = c.closedAt;
       final score = c.dailyScore;
       return dt != null && score != null && !dt.isBefore(rangeStart);
     }).toList();
+
+    // Log cada ciclo en rango con su score para validar visualmente.
+    for (final c in inRange) {
+      AppLogger.debug(
+        '[closedCycleScoreSeries]   → ${c.closedAt} score=${c.dailyScore} '
+        'reason=${c.closureReason}',
+      );
+    }
 
     final points = TemporalAggregator.aggregate(
       items: inRange,
@@ -108,56 +127,57 @@ final closedCycleScoreSeriesProvider =
       aggregation: TemporalAggregation.avg,
       mode: mode,
     );
+    AppLogger.debug(
+      '[closedCycleScoreSeries] → ${points.length} puntos agregados '
+      '(mode=$mode)',
+    );
     yield MetricSeries(label: 'Score del día', unit: '', points: points);
   }
 });
 
 // ────────────────────────────────────────────────────────────────────────
-// SPEC-219 (2026-06-14): fuente canónica única para Score del Día.
+// SPEC-219 rev2 (2026-06-17): fuente canónica ÚNICA para Score del Día.
 //
 // REGLA: cualquier widget que muestre el Score del Día DEBE usar
 // `resolvedDailyScoreSeriesProvider`. NUNCA usar `dailyScoreSeriesProvider`
 // ni `closedCycleScoreSeriesProvider` directamente como fuente primaria.
 //
-// Jerarquía de fallback:
-//   1. closedCycleScoreSeriesProvider — score del CIERRE del ciclo
-//      metabólico (MetabolicCycle.dailyScore). Es el valor definitivo.
-//   2. dailyScoreSeriesProvider — snapshot calendárico de StreakEntry.
-//      Solo se usa cuando no hay ciclos cerrados aún (onboarding,
-//      usuarios con protocolo 'Ninguno', ciclos sin dailyScore pre-SPEC-200.1).
+// CAMBIO CRÍTICO (2026-06-17): se ELIMINA el fallback a streak
+// calendárico (dailyScoreSeriesProvider). Motivo: el streak produce
+// scores DISTINTOS a los del cierre del ciclo metabólico porque es un
+// snapshot en vivo del día calendario, no el score al cierre. Mezclar
+// las dos fuentes causa que la gráfica oscile entre dos conjuntos de
+// valores, confundiendo al usuario.
 //
-// Este es el único lugar donde vive la lógica de fallback. Si en el
-// futuro se quiere cambiar la fuente de verdad, se cambia solo aquí.
+// Si no hay ciclos cerrados con dailyScore en el rango, la gráfica
+// muestra vacío. Es preferible un chart vacío a uno con datos erróneos.
 // ────────────────────────────────────────────────────────────────────────
 
-/// SPEC-219: fuente canónica del Score del Día para toda la UI.
-/// Prioriza ciclos metabólicos cerrados; cae a streak calendárico solo
-/// cuando no hay ciclos con score en el rango actual.
-///
-/// BUGFIX (2026-06-17): el fallback a streak SOLO se activa cuando el
-/// stream de ciclos cerrados ya resolvió y devolvió datos vacíos. Mientras
-/// el stream está en AsyncLoading (sin valor previo), retorna serie vacía
-/// para que la UI muestre spinner — NUNCA cae al streak, que tiene scores
-/// distintos y causaba el flip-flop visual.
+/// SPEC-219 rev2: fuente canónica del Score del Día para toda la UI.
+/// Fuente ÚNICA: ciclos metabólicos cerrados (MetabolicCycle.dailyScore).
+/// Sin fallback a streak — si no hay datos, retorna serie vacía.
 final resolvedDailyScoreSeriesProvider =
     Provider.autoDispose<MetricSeries>((ref) {
   final closedAsync = ref.watch(closedCycleScoreSeriesProvider);
 
   // 1. Stream tiene datos (o está refrescando con valor previo) → usar.
   final closed = closedAsync.valueOrNull;
-  if (closed != null && closed.points.isNotEmpty) return closed;
-
-  // 2. Stream aún cargando su PRIMERA emisión (cold start) → serie vacía.
-  //    La UI muestra spinner. NO caer al streak (fuente con scores distintos).
-  if (closedAsync.isLoading) {
-    return MetricSeries(label: 'Score del día', unit: '', points: const []);
+  if (closed != null && closed.points.isNotEmpty) {
+    AppLogger.debug(
+      '[resolvedDailyScore] usando ciclos cerrados: '
+      '${closed.points.length} puntos',
+    );
+    return closed;
   }
 
-  // 3. Stream resolvió pero no hay ciclos cerrados con dailyScore en el
-  //    rango (onboarding, usuario sin protocolo, ciclos pre-SPEC-200) →
-  //    fallback genuino a streak calendárico.
-  // ignore: deprecated_member_use_from_same_package
-  return ref.watch(dailyScoreSeriesProvider);
+  // 2. Sin datos (loading o vacío) → serie vacía. La UI muestra spinner
+  //    o estado vacío. NUNCA caer al streak.
+  AppLogger.debug(
+    '[resolvedDailyScore] sin datos de ciclos cerrados '
+    '(isLoading=${closedAsync.isLoading}, '
+    'valueOrNull=${closed == null ? "null" : "${closed.points.length}pts"})',
+  );
+  return MetricSeries(label: 'Score del día', unit: '', points: const []);
 });
 
 /// Fallback calendárico para Score del Día. Fuente: StreakEntry.dailyQualityScore
