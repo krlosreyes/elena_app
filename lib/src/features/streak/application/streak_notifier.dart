@@ -96,6 +96,12 @@ class StreakNotifier extends StateNotifier<StreakState> {
   String? _userId;
   StreamSubscription? _historySub;
 
+  /// SPEC-230 BUG-E: flag para evitar que _evaluateToday() persista
+  /// magnitudes en 0 antes de que el stream de Firestore entregue el
+  /// historial real. Sin esto, un pilar que emite en cold-start crea
+  /// un entry sin prev (HWM inefectivo) y puede sobreescribir datos.
+  bool _historyLoaded = false;
+
   /// Clave de fecha de hoy 'yyyy-MM-dd'.
   /// SPEC-138: delega en la fuente única del día.
   static String get _todayKey =>
@@ -120,6 +126,7 @@ class StreakNotifier extends StateNotifier<StreakState> {
           _historySub?.cancel();
           _historySub = null;
           _userId = null;
+          _historyLoaded = false; // SPEC-230 BUG-E: reset en logout
           return;
         }
         if (_userId != user.id) {
@@ -149,7 +156,10 @@ class StreakNotifier extends StateNotifier<StreakState> {
     final StreakRepository repo = _ref.read(streakRepositoryProvider);
     _historySub = repo.watchHistory(_userId!).listen(
       (history) {
+        _historyLoaded = true; // SPEC-230 BUG-E: safe to evaluate now
         _rebuildState(history);
+        // Trigger evaluation con el historial real como base del HWM.
+        _evaluateToday();
       },
       onError: (e) {
         // SPEC-87 fix / SPEC-107: durante el logout, las queries
@@ -173,6 +183,12 @@ class StreakNotifier extends StateNotifier<StreakState> {
 
   void _evaluateToday() {
     if (_userId == null) return;
+
+    // SPEC-230 BUG-E: no evaluar hasta que el stream de Firestore entregue
+    // el historial al menos una vez. Sin esto, prev = null → el HWM no
+    // protege contra magnitudes en 0, y _persistToday podría sobreescribir
+    // el entry real con un entry vacío.
+    if (!_historyLoaded) return;
 
     final fasting = _ref.read(fastingProvider);
     final sleep = _ref.read(sleepProvider);
@@ -284,7 +300,9 @@ class StreakNotifier extends StateNotifier<StreakState> {
       imrScore: state.todayEntry?.imrScore ??
           0, // Preservar el IMR actual con null-safety
       fastingMagnitude: maxMag(prev?.fastingMagnitude, fastingMagnitude),
-      sleepQualityScore: sleepQualityScore ?? prev?.sleepQualityScore,
+      // SPEC-230 BUG-C: aplicar maxMag como las demás magnitudes.
+      // Antes usaba `??` que permitía sobreescribir un pico con un valor más bajo.
+      sleepQualityScore: maxMag(prev?.sleepQualityScore, sleepQualityScore),
       hydrationMagnitude: maxMag(prev?.hydrationMagnitude, hydrationMagnitude),
       exerciseMagnitude: maxMag(prev?.exerciseMagnitude, exerciseMagnitude),
       nutritionMagnitude: maxMag(prev?.nutritionMagnitude, nutritionMagnitude),
