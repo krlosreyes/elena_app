@@ -31,6 +31,19 @@ class NotificationIds {
   // SPEC-198: nudges de conversión de trial (día 5 y día 12).
   static const int paywallNudgeDay5 = 500;
   static const int paywallNudgeDay12 = 501;
+
+  // SPEC-232: check-ins emocionales durante el ayuno. Rango 600-609.
+  static const int checkIn4h = 600;
+  static const int checkIn8h = 601;
+  static const int checkIn12h = 602;
+  static const int checkIn16h = 603;
+
+  // SPEC-234: coaching de sueño. Rango 610-619.
+  static const int sleepRoutine = 610;
+  static const int goodNight = 611;
+
+  // SPEC-235: Live Activity fallback Android. Rango 700-709.
+  static const int fastingLiveProgress = 700;
 }
 
 class NotificationService {

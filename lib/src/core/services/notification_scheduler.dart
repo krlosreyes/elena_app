@@ -548,7 +548,7 @@ class NotificationScheduler {
   /// Programa las notificaciones de coaching nocturno:
   ///   610: rutina nocturna (sleepTime - 90 min)
   ///   611: "buenas noches" enriquecido (sleepTime)
-  static Future<void> _scheduleSleepCoaching(TimeOfDay sleepTime) async {
+  static Future<void> _scheduleSleepCoaching(DateTime sleepTime) async {
     try {
       // Cancelar previas antes de reprogramar.
       await NotificationService.cancelSleepCoaching();
