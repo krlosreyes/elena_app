@@ -271,12 +271,75 @@ class NotificationScheduler {
         payload: NotificationRouter.fastingPayload(),
       );
 
+      // SPEC-232: programar check-ins emocionales en paralelo con los hitos.
+      await scheduleCheckInMilestones(fastingStart);
+
       AppLogger.info(
         '[NotificationScheduler] Hitos de ayuno programados desde $fastingStart.',
       );
     } catch (e, st) {
       AppLogger.error(
           '[NotificationScheduler] Error scheduleFastingMilestones()', e, st);
+    }
+  }
+
+  // ── SPEC-232: check-ins emocionales durante el ayuno ─────────────────────
+
+  /// Programa check-ins emocionales en las transiciones de fase del ayuno
+  /// (horas 4, 8, 12, 16). Cada notificación es accionable: el usuario puede
+  /// responder cómo se siente directamente desde la notificación.
+  static Future<void> scheduleCheckInMilestones(DateTime fastingStart) async {
+    try {
+      await NotificationService.cancelCheckIns();
+
+      // Copies contextualizados por hito (alineados con PredictiveTriggerEngine).
+      const milestones = <int, _CheckInMilestone>{
+        4: _CheckInMilestone(
+          id: NotificationIds.checkIn4h,
+          title: '¿Cómo empiezas el ayuno?',
+          body: 'Tu cuerpo está terminando la digestión. ¿Cómo te sientes?',
+        ),
+        8: _CheckInMilestone(
+          id: NotificationIds.checkIn8h,
+          title: 'Llevas 8 horas. ¿Cómo te sientes?',
+          body: 'El glucógeno se está agotando. Un momento para escucharte.',
+        ),
+        12: _CheckInMilestone(
+          id: NotificationIds.checkIn12h,
+          title: 'Tu cuerpo cambió de marcha',
+          body: 'La cetosis temprana está en marcha. ¿Cómo vas?',
+        ),
+        16: _CheckInMilestone(
+          id: NotificationIds.checkIn16h,
+          title: 'Limpieza profunda activa',
+          body: 'Tu cuerpo inició la autofagia. ¿Cómo estás?',
+        ),
+      };
+
+      for (final entry in milestones.entries) {
+        final scheduledTime =
+            fastingStart.add(Duration(hours: entry.key));
+
+        // No programar si el hito ya pasó.
+        if (scheduledTime.isBefore(DateTime.now())) continue;
+
+        await NotificationService.scheduleAt(
+          id: entry.value.id,
+          title: entry.value.title,
+          body: entry.value.body,
+          scheduledTime: scheduledTime,
+          repeatsDaily: false,
+          actionableCheckIn: true,
+          payload: NotificationRouter.fastingPayload(),
+        );
+      }
+
+      AppLogger.info(
+        '[NotificationScheduler] Check-ins emocionales programados.',
+      );
+    } catch (e, st) {
+      AppLogger.error(
+          '[NotificationScheduler] Error scheduleCheckInMilestones()', e, st);
     }
   }
 
@@ -476,4 +539,16 @@ class NotificationScheduler {
       );
     }
   }
+}
+
+/// Helper para los hitos de check-in emocional (SPEC-232).
+class _CheckInMilestone {
+  final int id;
+  final String title;
+  final String body;
+  const _CheckInMilestone({
+    required this.id,
+    required this.title,
+    required this.body,
+  });
 }

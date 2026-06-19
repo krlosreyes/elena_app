@@ -116,6 +116,14 @@ class NotificationIds {
   // SPEC-198: nudges de conversión de trial (día 5 y día 12).
   static const int paywallNudgeDay5 = 500;
   static const int paywallNudgeDay12 = 501;
+
+  // SPEC-232: check-ins emocionales durante el ayuno. Rango 600-609.
+  // Se programan al iniciar ayuno (horas 4, 8, 12, 16) y se cancelan al
+  // cerrar ayuno. cancelCheckIns() cancela todo el rango.
+  static const int checkIn4h = 600;
+  static const int checkIn8h = 601;
+  static const int checkIn12h = 602;
+  static const int checkIn16h = 603;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -341,6 +349,50 @@ class NotificationService {
     ),
   );
 
+  // SPEC-232: Check-in emocional — "¿Cómo te sientes?"
+  // 4 acciones (límite iOS); focused e irritable solo disponibles in-app.
+  static final NotificationDetails _checkInActionableDetails =
+      NotificationDetails(
+    android: AndroidNotificationDetails(
+      'elena_fasting',
+      'Ayuno Metabólico',
+      channelDescription: 'Hitos científicos de tu protocolo de ayuno',
+      importance: Importance.high,
+      priority: Priority.high,
+      icon: '@mipmap/ic_launcher',
+      visibility: NotificationVisibility.public,
+      actions: <AndroidNotificationAction>[
+        AndroidNotificationAction(
+          kCheckInEnergizedActionId,
+          'Con energía 💪',
+          showsUserInterface: false,
+        ),
+        AndroidNotificationAction(
+          kCheckInGoodActionId,
+          'Bien 🙂',
+          showsUserInterface: false,
+        ),
+        AndroidNotificationAction(
+          kCheckInHungryActionId,
+          'Con hambre 🍽️',
+          showsUserInterface: false,
+        ),
+        AndroidNotificationAction(
+          kCheckInTiredActionId,
+          'Cansado 😴',
+          showsUserInterface: false,
+        ),
+      ],
+    ),
+    iOS: DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: false,
+      presentSound: true,
+      interruptionLevel: InterruptionLevel.timeSensitive,
+      categoryIdentifier: kCheckInCategoryId,
+    ),
+  );
+
   // ── Inicialización ──────────────────────────────────────────────────────────
 
   static Future<void> init() async {
@@ -428,6 +480,23 @@ class NotificationService {
         },
       );
 
+      // SPEC-232: categoría de check-in emocional durante el ayuno.
+      // 4 acciones (límite iOS): energized, good, hungry, tired.
+      // Focused e irritable solo disponibles en la tarjeta in-app.
+      final DarwinNotificationCategory checkInCategory =
+          DarwinNotificationCategory(
+        kCheckInCategoryId,
+        actions: <DarwinNotificationAction>[
+          DarwinNotificationAction.plain(kCheckInEnergizedActionId, 'Con energía 💪'),
+          DarwinNotificationAction.plain(kCheckInGoodActionId, 'Bien 🙂'),
+          DarwinNotificationAction.plain(kCheckInHungryActionId, 'Con hambre 🍽️'),
+          DarwinNotificationAction.plain(kCheckInTiredActionId, 'Cansado 😴'),
+        ],
+        options: <DarwinNotificationCategoryOption>{
+          DarwinNotificationCategoryOption.hiddenPreviewShowTitle,
+        },
+      );
+
       final DarwinInitializationSettings iosSettings =
           DarwinInitializationSettings(
         requestAlertPermission: true,
@@ -438,6 +507,7 @@ class NotificationService {
           fastingCategory,
           exerciseCategory,
           nutritionCategory,
+          checkInCategory,
         ],
       );
 
@@ -545,6 +615,8 @@ class NotificationService {
     bool actionableFasting = false,
     bool actionableExercise = false,
     bool actionableNutrition = false,
+    // SPEC-232: check-in emocional durante el ayuno.
+    bool actionableCheckIn = false,
     // SPEC-222: payload JSON para deeplink routing al tocar el cuerpo.
     String? payload,
   }) async {
@@ -562,7 +634,9 @@ class NotificationService {
 
       // Prioridad: accionable específico > accionable hydration > fasting/circadian.
       final NotificationDetails details;
-      if (actionableFasting) {
+      if (actionableCheckIn) {
+        details = _checkInActionableDetails;
+      } else if (actionableFasting) {
         details = _fastingActionableDetails;
       } else if (actionableExercise) {
         details = _exerciseActionableDetails;
@@ -654,5 +728,20 @@ class NotificationService {
 
     AppLogger.debug(
         '[NotificationService] Notificaciones de hidratación canceladas.');
+  }
+
+  /// SPEC-232: cancela las notificaciones de check-in emocional (600-609).
+  /// Se llama al cerrar el ayuno o al reprogramar hitos.
+  static Future<void> cancelCheckIns() async {
+    if (kIsWeb || !_initialized) return;
+
+    for (int id = NotificationIds.checkIn4h;
+        id <= NotificationIds.checkIn4h + 9;
+        id++) {
+      await _plugin.cancel(id: id);
+    }
+
+    AppLogger.debug(
+        '[NotificationService] Notificaciones de check-in canceladas.');
   }
 }

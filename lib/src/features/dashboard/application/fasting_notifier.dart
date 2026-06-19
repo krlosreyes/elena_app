@@ -382,6 +382,8 @@ class FastingNotifier extends StateNotifier<FastingState> {
       DateTime manualTime, String protocol) async {
     try {
       await NotificationService.cancelFasting();
+      // SPEC-232: cancelar check-ins emocionales al cerrar ayuno.
+      await NotificationService.cancelCheckIns();
       final parts = protocol.split(':');
       final feedingHours = parts.length > 1 ? int.tryParse(parts[1]) ?? 8 : 8;
       final feedingEndTime = manualTime.add(Duration(hours: feedingHours));

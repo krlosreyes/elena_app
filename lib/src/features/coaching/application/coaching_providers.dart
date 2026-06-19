@@ -17,6 +17,7 @@ import 'package:elena_app/src/features/analysis/domain/weekly_coaching_insight.d
 import 'package:elena_app/src/features/coaching/application/adaptive_generator.dart';
 import 'package:elena_app/src/features/coaching/application/circadian_generator.dart';
 import 'package:elena_app/src/features/coaching/application/coaching_completion_service.dart';
+import 'package:elena_app/src/features/coaching/application/check_in_provider.dart';
 import 'package:elena_app/src/features/coaching/application/coaching_fatigue_notifier.dart';
 import 'package:elena_app/src/features/coaching/application/coaching_feedback_generator.dart';
 import 'package:elena_app/src/features/coaching/application/orchestrator_generator.dart';
@@ -56,6 +57,8 @@ final coachingSnapshotProvider = Provider.autoDispose<CoachingSnapshot>((ref) {
     liveCircadianScore: liveCircadianScore,
     ignoredStreakByActionId: fatigue.ignoredStreakByActionId,
     shownTodayActionIds: fatigue.shownTodayActionIds,
+    // SPEC-232: último sentimiento reportado en el ciclo de ayuno.
+    lastFeeling: ref.watch(lastCheckInProvider)?.feeling,
   );
 });
 

@@ -49,6 +49,14 @@ const String kNutritionCategoryId = 'elena_nutrition_action';
 const String kNutritionLogActionId = 'nutrition_log';
 const String kNutritionSnoozeActionId = 'nutrition_snooze';
 
+// SPEC-232: check-ins emocionales durante el ayuno.
+// 4 acciones en la notificación (límite iOS); las 2 restantes solo in-app.
+const String kCheckInCategoryId = 'elena_checkin';
+const String kCheckInEnergizedActionId = 'checkin_energized';
+const String kCheckInGoodActionId = 'checkin_good';
+const String kCheckInHungryActionId = 'checkin_hungry';
+const String kCheckInTiredActionId = 'checkin_tired';
+
 /// Minutos por sesión de ejercicio registrada desde un prompt.
 /// Valor conservador; el usuario puede ajustar desde el pilar.
 const int kExercisePromptMinutes = 30;
@@ -60,6 +68,9 @@ enum PendingActionType {
   closeFasting,
   logExercise,
   logMeal,
+  // SPEC-232: check-in emocional durante ayuno.
+  // `amount` codifica el ordinal de FastingFeeling (0=energized...5=irritable).
+  checkInFeeling,
 }
 
 class PendingAction {
@@ -212,6 +223,41 @@ class PendingActionQueue {
         ));
         break;
       case kNutritionSnoozeActionId:
+        break;
+
+      // SPEC-232: check-ins emocionales (4 acciones de notificación).
+      // El ordinal de FastingFeeling se codifica en `amount`.
+      case kCheckInEnergizedActionId:
+        await enqueue(PendingAction(
+          id: 'checkIn_${notificationId ?? 0}_$bucket',
+          type: PendingActionType.checkInFeeling,
+          amount: 0, // FastingFeeling.energized.index
+          millisSinceEpoch: t.millisecondsSinceEpoch,
+        ));
+        break;
+      case kCheckInGoodActionId:
+        await enqueue(PendingAction(
+          id: 'checkIn_${notificationId ?? 0}_$bucket',
+          type: PendingActionType.checkInFeeling,
+          amount: 2, // FastingFeeling.good.index
+          millisSinceEpoch: t.millisecondsSinceEpoch,
+        ));
+        break;
+      case kCheckInHungryActionId:
+        await enqueue(PendingAction(
+          id: 'checkIn_${notificationId ?? 0}_$bucket',
+          type: PendingActionType.checkInFeeling,
+          amount: 3, // FastingFeeling.hungry.index
+          millisSinceEpoch: t.millisecondsSinceEpoch,
+        ));
+        break;
+      case kCheckInTiredActionId:
+        await enqueue(PendingAction(
+          id: 'checkIn_${notificationId ?? 0}_$bucket',
+          type: PendingActionType.checkInFeeling,
+          amount: 4, // FastingFeeling.tired.index
+          millisSinceEpoch: t.millisecondsSinceEpoch,
+        ));
         break;
 
       default:

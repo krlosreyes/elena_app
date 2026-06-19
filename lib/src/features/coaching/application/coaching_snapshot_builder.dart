@@ -6,6 +6,7 @@ import 'package:elena_app/src/core/orchestrator/biological_phases.dart';
 import 'package:elena_app/src/features/analysis/domain/weekly_coaching_insight.dart';
 import 'package:elena_app/src/features/coaching/application/coaching_mappers.dart';
 import 'package:elena_app/src/features/coaching/domain/coaching_snapshot.dart';
+import 'package:elena_app/src/features/coaching/domain/fasting_check_in.dart';
 import 'package:elena_app/src/features/engagement/application/engagement_service.dart';
 import 'package:elena_app/src/features/goals/domain/user_goal.dart';
 
@@ -22,6 +23,7 @@ class CoachingSnapshotBuilder {
     double? liveCircadianScore,
     Map<String, int> ignoredStreakByActionId = const {},
     Set<String> shownTodayActionIds = const {},
+    FastingFeeling? lastFeeling,
   }) {
     final Pillar? weakest =
         weekly?.weakest == null ? null : CoachingMappers.fromWeakPillar(weekly!.weakest!);
@@ -38,6 +40,8 @@ class CoachingSnapshotBuilder {
       shownTodayActionIds: shownTodayActionIds,
       // Período de gracia: engagement neutro (<3 días de datos).
       isGracePeriod: engagement == EngagementLevel.neutro,
+      // SPEC-232: último sentimiento reportado en el ciclo.
+      lastFeeling: lastFeeling,
     );
   }
 

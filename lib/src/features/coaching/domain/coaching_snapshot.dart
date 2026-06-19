@@ -3,6 +3,7 @@
 // el CoachingSnapshotBuilder (application) desde providers existentes.
 
 import 'package:elena_app/src/core/orchestrator/biological_phases.dart';
+import 'package:elena_app/src/features/coaching/domain/fasting_check_in.dart';
 
 class CoachingSnapshot {
   const CoachingSnapshot({
@@ -16,6 +17,7 @@ class CoachingSnapshot {
     this.ignoredStreakByActionId = const {},
     this.shownTodayActionIds = const {},
     this.isGracePeriod = false,
+    this.lastFeeling,
   });
 
   /// Fase circadiana activa (de CircadianEngine).
@@ -55,4 +57,8 @@ class CoachingSnapshot {
   /// Período de gracia (engagement neutro, <3 días de datos): se suprime el
   /// motor y la UI muestra "Elena está aprendiendo tu ritmo".
   final bool isGracePeriod;
+
+  /// SPEC-232: último sentimiento reportado en el ciclo de ayuno actual.
+  /// Alimenta al CheckInResponseGenerator para priorizar coaching empático.
+  final FastingFeeling? lastFeeling;
 }

@@ -158,5 +158,111 @@ class PredictiveTriggerEngine {
     );
   }
 
+  // ── SPEC-232: check-in emocional durante el ayuno ──────────────────────────
+
+  /// Horas de ayuno en las que se dispara un check-in (transiciones de fase).
+  static const List<int> kCheckInMilestones = [4, 8, 12, 16];
+
+  /// Gap mínimo entre check-ins para evitar fatiga.
+  static const Duration kMinGapBetweenCheckIns = Duration(hours: 3);
+
+  /// Mensajes contextualizados por hito de ayuno.
+  static const Map<int, _CheckInCopy> _checkInCopies = {
+    4: _CheckInCopy(
+      title: '¿Cómo empiezas el ayuno?',
+      message: 'Tu cuerpo está terminando la digestión.',
+    ),
+    8: _CheckInCopy(
+      title: 'Llevas 8 horas. ¿Cómo te sientes?',
+      message: 'El glucógeno se está agotando.',
+    ),
+    12: _CheckInCopy(
+      title: 'Tu cuerpo cambió de marcha. ¿Cómo vas?',
+      message: 'La cetosis temprana está en marcha.',
+    ),
+    16: _CheckInCopy(
+      title: 'Entraste en limpieza profunda. ¿Cómo estás?',
+      message: 'Tu cuerpo inició la autofagia.',
+    ),
+  };
+
+  /// Devuelve el prompt de check-in si hay un hito activo que aún no fue
+  /// respondido, o `null` si se debe suprimir.
+  static ActionablePrompt? checkInPrompt({
+    required bool fastingActive,
+    required Duration fastingDuration,
+    required DateTime now,
+    required int wakeHour,
+    required int sleepHour,
+    /// Timestamp del último check-in respondido (null = ninguno este ciclo).
+    DateTime? lastCheckInAt,
+  }) {
+    if (!fastingActive) return null;
+
+    // Ventana de vigilia: no despertar al usuario.
+    if (now.hour < wakeHour || now.hour >= sleepHour) return null;
+
+    // ¿Cuál es el hito más alto alcanzado?
+    final hoursElapsed = fastingDuration.inHours;
+    int? activeHito;
+    for (final h in kCheckInMilestones.reversed) {
+      if (hoursElapsed >= h) {
+        activeHito = h;
+        break;
+      }
+    }
+    if (activeHito == null) return null;
+
+    // Anti-fatiga: respetar gap mínimo.
+    if (lastCheckInAt != null &&
+        now.difference(lastCheckInAt) < kMinGapBetweenCheckIns) {
+      return null;
+    }
+
+    final copy = _checkInCopies[activeHito]!;
+    final bucket = '${now.year}'
+        '${_two(now.month)}${_two(now.day)}_${activeHito}h';
+
+    return ActionablePrompt(
+      id: 'checkin_$bucket',
+      title: copy.title,
+      message: copy.message,
+      options: const [
+        PromptOption(
+          label: 'Con energía 💪',
+          action: PromptActionType.checkInFeeling,
+          isPrimary: true,
+        ),
+        PromptOption(
+          label: 'Bien 🙂',
+          action: PromptActionType.checkInFeeling,
+        ),
+        PromptOption(
+          label: 'Con hambre 🍽️',
+          action: PromptActionType.checkInFeeling,
+        ),
+        PromptOption(
+          label: 'Cansado 😴',
+          action: PromptActionType.checkInFeeling,
+        ),
+        PromptOption(
+          label: 'Concentrado 🧠',
+          action: PromptActionType.checkInFeeling,
+        ),
+        PromptOption(
+          label: 'Irritable 😤',
+          action: PromptActionType.checkInFeeling,
+        ),
+      ],
+    );
+  }
+
   static String _two(int n) => n.toString().padLeft(2, '0');
+}
+
+/// Helper interno para los copies de check-in.
+class _CheckInCopy {
+  final String title;
+  final String message;
+  const _CheckInCopy({required this.title, required this.message});
 }

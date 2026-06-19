@@ -78,6 +78,7 @@ class NotificationService {
     bool actionableFasting = false,
     bool actionableExercise = false,
     bool actionableNutrition = false,
+    bool actionableCheckIn = false,
     String? payload,
   }) async {
     // No-op en Web
@@ -106,6 +107,11 @@ class NotificationService {
   // SPEC-150: hidratación es No-op en web (notificaciones nativas no
   // funcionan igual en web). Las notifs solo aplican a iOS/Android.
   static Future<void> cancelHydration() async {
+    // No-op en Web
+  }
+
+  // SPEC-232: check-ins emocionales — No-op en web.
+  static Future<void> cancelCheckIns() async {
     // No-op en Web
   }
 }

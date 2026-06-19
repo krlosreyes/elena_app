@@ -4,6 +4,9 @@ import 'package:elena_app/src/core/services/analytics_service.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/core/services/notification_service.dart';
 import 'package:elena_app/src/core/services/pending_action_queue.dart';
+import 'package:elena_app/src/features/coaching/application/check_in_provider.dart';
+import 'package:elena_app/src/features/coaching/data/check_in_repository.dart';
+import 'package:elena_app/src/features/coaching/domain/fasting_check_in.dart';
 import 'package:elena_app/src/features/dashboard/application/fasting_notifier.dart';
 import 'package:elena_app/src/features/dashboard/application/hydration_notifier.dart';
 import 'package:elena_app/src/features/exercise/application/exercise_notifier.dart';
@@ -154,6 +157,37 @@ class CoachingActionRouter {
             },
           );
           AppLogger.debug('[CoachingActionRouter] comida registrada vía prompt');
+          break;
+
+        // SPEC-232: check-in emocional durante ayuno.
+        // `amount` codifica el ordinal de FastingFeeling (0-5).
+        case PendingActionType.checkInFeeling:
+          if (user == null || user.id.isEmpty) continue;
+          final ordinal = (action.amount ?? 0).toInt();
+          final feeling = ordinal >= 0 &&
+                  ordinal < FastingFeeling.values.length
+              ? FastingFeeling.values[ordinal]
+              : FastingFeeling.good; // fallback seguro
+          final fastingState = ref.read(fastingProvider);
+          saveCheckIn(
+            userId: user.id,
+            feeling: feeling,
+            repo: ref.read(checkInRepositoryProvider),
+            fastingStart: fastingState.startTime,
+            cycleId: null, // cycleId opcional; se resuelve en el provider
+          );
+          await PendingActionQueue.remove(action.id);
+          applied++;
+          AnalyticsService.logEvent(
+            'coaching_prompt_answered',
+            params: {
+              'type': 'check_in',
+              'option': feeling.name,
+              'surface': 'notification',
+            },
+          );
+          AppLogger.debug(
+              '[CoachingActionRouter] check-in ${feeling.name} vía prompt');
           break;
       }
     }

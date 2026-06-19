@@ -129,6 +129,8 @@ class InteractiveCoachingCard extends ConsumerWidget {
       case PromptActionType.closeFasting:
       case PromptActionType.logExercise:
       case PromptActionType.logMeal:
+      // SPEC-232: check-in se maneja en su propia CheckInCard.
+      case PromptActionType.checkInFeeling:
         ref.read(dismissedHydrationPromptProvider.notifier).state = prompt.id;
         AnalyticsService.logEvent(
           'coaching_prompt_answered',

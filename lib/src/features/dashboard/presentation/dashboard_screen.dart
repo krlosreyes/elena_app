@@ -22,6 +22,7 @@ import 'package:elena_app/src/features/billing/presentation/paywall_auto_trigger
 import 'package:elena_app/src/features/coaching/presentation/widgets/next_best_action_card.dart';
 import 'package:elena_app/src/features/coaching/presentation/widgets/cycle_coaching_feedback_card.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/interactive_coaching_card.dart';
+import 'package:elena_app/src/features/coaching/presentation/widgets/check_in_card.dart';
 import 'package:elena_app/src/features/goals/application/pillar_goal_providers.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/exercise_pillar_card.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/hydration_pillar_card.dart';
@@ -268,6 +269,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   // accionable (registrar vaso de un toque) decidida por el
                   // motor predictivo según contexto. Se oculta sola si no aplica.
                   const InteractiveCoachingCard(),
+
+                  // SPEC-232: check-in emocional durante el ayuno. Aparece
+                  // en hitos 4/8/12/16h con 6 opciones de sentimiento. Se
+                  // oculta sola si no hay hito activo o si ya respondió.
+                  const CheckInCard(),
                   const SizedBox(height: 16),
 
                   Stack(

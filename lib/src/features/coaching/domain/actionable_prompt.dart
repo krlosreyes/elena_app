@@ -22,6 +22,12 @@ enum PromptActionType {
 
   /// Registra una comida simple (defaults seguros).
   logMeal,
+
+  // SPEC-232: check-ins emocionales durante el ayuno.
+
+  /// Registra cómo se siente el usuario durante un hito de ayuno.
+  /// El label de la opción determina qué FastingFeeling se persiste.
+  checkInFeeling,
 }
 
 class PromptOption {
