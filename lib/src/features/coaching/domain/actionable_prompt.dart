@@ -28,6 +28,11 @@ enum PromptActionType {
   /// Registra cómo se siente el usuario durante un hito de ayuno.
   /// El label de la opción determina qué FastingFeeling se persiste.
   checkInFeeling,
+
+  // SPEC-233/234: coaching de sueño — inicio de rutina nocturna.
+
+  /// Navega al flujo de rutina nocturna guiada (SPEC-234).
+  startSleepRoutine,
 }
 
 class PromptOption {

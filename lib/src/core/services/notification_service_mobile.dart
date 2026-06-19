@@ -2,9 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:timezone/timezone.dart' as tz;
-import 'package:timezone/data/latest.dart' as tz;
 import 'package:flutter_timezone/flutter_timezone.dart';
+import 'package:timezone/data/latest.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
+
 import 'app_logger.dart';
 import 'notification_router.dart';
 import 'pending_action_queue.dart'
@@ -21,7 +22,13 @@ import 'pending_action_queue.dart'
         kExerciseSnoozeActionId,
         kNutritionCategoryId,
         kNutritionLogActionId,
-        kNutritionSnoozeActionId;
+        kNutritionSnoozeActionId,
+        // Check-in emotional actions (SPEC-232) — defined in pending_action_queue.dart
+        kCheckInCategoryId,
+        kCheckInEnergizedActionId,
+        kCheckInGoodActionId,
+        kCheckInHungryActionId,
+        kCheckInTiredActionId;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SPEC-199 Fase A — Handlers de respuesta a notificaciones accionables
@@ -124,6 +131,16 @@ class NotificationIds {
   static const int checkIn8h = 601;
   static const int checkIn12h = 602;
   static const int checkIn16h = 603;
+
+  // SPEC-234: coaching de sueño. Rango 610-619.
+  // 610 = rutina nocturna (sleepTime - 90min)
+  // 611 = "buenas noches" enriquecido (sleepTime)
+  static const int sleepRoutine = 610;
+  static const int goodNight = 611;
+
+  // SPEC-235: Live Activity fallback Android (notificación ongoing con progreso).
+  // Rango 700-709 reservado.
+  static const int fastingLiveProgress = 700;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -216,8 +233,8 @@ class NotificationService {
   // registre el vaso sin abrir la app — requiere el plugin registrant en
   // AppDelegate (SPEC-224). En Android, `showsUserInterface: false` deja la
   // acción en background; el flush ocurre al reanudar la app.
-  static final NotificationDetails _hydrationActionableDetails =
-      NotificationDetails(
+  static final NotificationDetails
+  _hydrationActionableDetails = NotificationDetails(
     android: AndroidNotificationDetails(
       'elena_circadian',
       'Ritmos Circadianos',
@@ -253,145 +270,145 @@ class NotificationService {
   // SPEC-224: Ayuno — "¿Quieres cerrar tu ayuno ahora?"
   static final NotificationDetails _fastingActionableDetails =
       NotificationDetails(
-    android: AndroidNotificationDetails(
-      'elena_fasting',
-      'Ayuno Metabólico',
-      channelDescription: 'Hitos científicos de tu protocolo de ayuno',
-      importance: Importance.high,
-      priority: Priority.high,
-      icon: '@mipmap/ic_launcher',
-      visibility: NotificationVisibility.public,
-      actions: <AndroidNotificationAction>[
-        AndroidNotificationAction(
-          kFastingCloseActionId,
-          'Cerrar ayuno',
-          showsUserInterface: false,
+        android: AndroidNotificationDetails(
+          'elena_fasting',
+          'Ayuno Metabólico',
+          channelDescription: 'Hitos científicos de tu protocolo de ayuno',
+          importance: Importance.high,
+          priority: Priority.high,
+          icon: '@mipmap/ic_launcher',
+          visibility: NotificationVisibility.public,
+          actions: <AndroidNotificationAction>[
+            AndroidNotificationAction(
+              kFastingCloseActionId,
+              'Cerrar ayuno',
+              showsUserInterface: false,
+            ),
+            AndroidNotificationAction(
+              kFastingSnoozeActionId,
+              'Continuar ayuno',
+              showsUserInterface: false,
+            ),
+          ],
         ),
-        AndroidNotificationAction(
-          kFastingSnoozeActionId,
-          'Continuar ayuno',
-          showsUserInterface: false,
+        iOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: false,
+          presentSound: true,
+          interruptionLevel: InterruptionLevel.timeSensitive,
+          categoryIdentifier: kFastingActionCategoryId,
         ),
-      ],
-    ),
-    iOS: DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: false,
-      presentSound: true,
-      interruptionLevel: InterruptionLevel.timeSensitive,
-      categoryIdentifier: kFastingActionCategoryId,
-    ),
-  );
+      );
 
   // SPEC-224: Ejercicio — "¿Ya hiciste tu actividad de hoy?"
   static final NotificationDetails _exerciseActionableDetails =
       NotificationDetails(
-    android: AndroidNotificationDetails(
-      'elena_exercise',
-      'Ejercicio',
-      channelDescription: 'Recordatorios de actividad física',
-      importance: Importance.high,
-      priority: Priority.high,
-      icon: '@mipmap/ic_launcher',
-      visibility: NotificationVisibility.public,
-      actions: <AndroidNotificationAction>[
-        AndroidNotificationAction(
-          kExerciseLogActionId,
-          'Sí, lo registro',
-          showsUserInterface: false,
+        android: AndroidNotificationDetails(
+          'elena_exercise',
+          'Ejercicio',
+          channelDescription: 'Recordatorios de actividad física',
+          importance: Importance.high,
+          priority: Priority.high,
+          icon: '@mipmap/ic_launcher',
+          visibility: NotificationVisibility.public,
+          actions: <AndroidNotificationAction>[
+            AndroidNotificationAction(
+              kExerciseLogActionId,
+              'Sí, lo registro',
+              showsUserInterface: false,
+            ),
+            AndroidNotificationAction(
+              kExerciseSnoozeActionId,
+              'Luego lo hago',
+              showsUserInterface: false,
+            ),
+          ],
         ),
-        AndroidNotificationAction(
-          kExerciseSnoozeActionId,
-          'Luego lo hago',
-          showsUserInterface: false,
+        iOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: false,
+          presentSound: true,
+          interruptionLevel: InterruptionLevel.timeSensitive,
+          categoryIdentifier: kExerciseCategoryId,
         ),
-      ],
-    ),
-    iOS: DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: false,
-      presentSound: true,
-      interruptionLevel: InterruptionLevel.timeSensitive,
-      categoryIdentifier: kExerciseCategoryId,
-    ),
-  );
+      );
 
   // SPEC-224: Nutrición — "¿Ya comiste en tu ventana de alimentación?"
   static final NotificationDetails _nutritionActionableDetails =
       NotificationDetails(
-    android: AndroidNotificationDetails(
-      'elena_circadian',
-      'Ritmos Circadianos',
-      channelDescription: 'Alertas basadas en tu biología circadiana',
-      importance: Importance.high,
-      priority: Priority.high,
-      icon: '@mipmap/ic_launcher',
-      visibility: NotificationVisibility.public,
-      actions: <AndroidNotificationAction>[
-        AndroidNotificationAction(
-          kNutritionLogActionId,
-          'Registrar comida',
-          showsUserInterface: false,
+        android: AndroidNotificationDetails(
+          'elena_circadian',
+          'Ritmos Circadianos',
+          channelDescription: 'Alertas basadas en tu biología circadiana',
+          importance: Importance.high,
+          priority: Priority.high,
+          icon: '@mipmap/ic_launcher',
+          visibility: NotificationVisibility.public,
+          actions: <AndroidNotificationAction>[
+            AndroidNotificationAction(
+              kNutritionLogActionId,
+              'Registrar comida',
+              showsUserInterface: false,
+            ),
+            AndroidNotificationAction(
+              kNutritionSnoozeActionId,
+              'Aún no',
+              showsUserInterface: false,
+            ),
+          ],
         ),
-        AndroidNotificationAction(
-          kNutritionSnoozeActionId,
-          'Aún no',
-          showsUserInterface: false,
+        iOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: false,
+          presentSound: true,
+          interruptionLevel: InterruptionLevel.timeSensitive,
+          categoryIdentifier: kNutritionCategoryId,
         ),
-      ],
-    ),
-    iOS: DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: false,
-      presentSound: true,
-      interruptionLevel: InterruptionLevel.timeSensitive,
-      categoryIdentifier: kNutritionCategoryId,
-    ),
-  );
+      );
 
   // SPEC-232: Check-in emocional — "¿Cómo te sientes?"
   // 4 acciones (límite iOS); focused e irritable solo disponibles in-app.
   static final NotificationDetails _checkInActionableDetails =
       NotificationDetails(
-    android: AndroidNotificationDetails(
-      'elena_fasting',
-      'Ayuno Metabólico',
-      channelDescription: 'Hitos científicos de tu protocolo de ayuno',
-      importance: Importance.high,
-      priority: Priority.high,
-      icon: '@mipmap/ic_launcher',
-      visibility: NotificationVisibility.public,
-      actions: <AndroidNotificationAction>[
-        AndroidNotificationAction(
-          kCheckInEnergizedActionId,
-          'Con energía 💪',
-          showsUserInterface: false,
+        android: AndroidNotificationDetails(
+          'elena_fasting',
+          'Ayuno Metabólico',
+          channelDescription: 'Hitos científicos de tu protocolo de ayuno',
+          importance: Importance.high,
+          priority: Priority.high,
+          icon: '@mipmap/ic_launcher',
+          visibility: NotificationVisibility.public,
+          actions: <AndroidNotificationAction>[
+            AndroidNotificationAction(
+              kCheckInEnergizedActionId,
+              'Con energía 💪',
+              showsUserInterface: false,
+            ),
+            AndroidNotificationAction(
+              kCheckInGoodActionId,
+              'Bien 🙂',
+              showsUserInterface: false,
+            ),
+            AndroidNotificationAction(
+              kCheckInHungryActionId,
+              'Con hambre 🍽️',
+              showsUserInterface: false,
+            ),
+            AndroidNotificationAction(
+              kCheckInTiredActionId,
+              'Cansado 😴',
+              showsUserInterface: false,
+            ),
+          ],
         ),
-        AndroidNotificationAction(
-          kCheckInGoodActionId,
-          'Bien 🙂',
-          showsUserInterface: false,
+        iOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: false,
+          presentSound: true,
+          interruptionLevel: InterruptionLevel.timeSensitive,
+          categoryIdentifier: kCheckInCategoryId,
         ),
-        AndroidNotificationAction(
-          kCheckInHungryActionId,
-          'Con hambre 🍽️',
-          showsUserInterface: false,
-        ),
-        AndroidNotificationAction(
-          kCheckInTiredActionId,
-          'Cansado 😴',
-          showsUserInterface: false,
-        ),
-      ],
-    ),
-    iOS: DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: false,
-      presentSound: true,
-      interruptionLevel: InterruptionLevel.timeSensitive,
-      categoryIdentifier: kCheckInCategoryId,
-    ),
-  );
+      );
 
   // ── Inicialización ──────────────────────────────────────────────────────────
 
@@ -414,7 +431,8 @@ class NotificationService {
       if (kIsWeb) {
         _initialized = true;
         AppLogger.info(
-            '[NotificationService] Web: Modo compatibilidad activado.');
+          '[NotificationService] Web: Modo compatibilidad activado.',
+        );
         return;
       }
 
@@ -428,12 +446,15 @@ class NotificationService {
       // en AppDelegate garantiza que SharedPreferences esté disponible en el
       // isolate de background (ver ios/Runner/AppDelegate.swift).
 
-      final DarwinNotificationCategory hydrationCategory =
-          DarwinNotificationCategory(
+      final DarwinNotificationCategory
+      hydrationCategory = DarwinNotificationCategory(
         kHydrationCategoryId,
         actions: <DarwinNotificationAction>[
           // A1b: sin `foreground` → registra en background sin abrir la app.
-          DarwinNotificationAction.plain(kHydrationYesActionId, 'Sí, lo registro'),
+          DarwinNotificationAction.plain(
+            kHydrationYesActionId,
+            'Sí, lo registro',
+          ),
           DarwinNotificationAction.plain(kHydrationNoActionId, 'Aún no'),
         ],
         options: <DarwinNotificationCategoryOption>{
@@ -444,72 +465,99 @@ class NotificationService {
       // SPEC-224: categoría de ayuno accionable.
       final DarwinNotificationCategory fastingCategory =
           DarwinNotificationCategory(
-        kFastingActionCategoryId,
-        actions: <DarwinNotificationAction>[
-          DarwinNotificationAction.plain(kFastingCloseActionId, 'Cerrar ayuno'),
-          DarwinNotificationAction.plain(kFastingSnoozeActionId, 'Continuar ayuno'),
-        ],
-        options: <DarwinNotificationCategoryOption>{
-          DarwinNotificationCategoryOption.hiddenPreviewShowTitle,
-        },
-      );
+            kFastingActionCategoryId,
+            actions: <DarwinNotificationAction>[
+              DarwinNotificationAction.plain(
+                kFastingCloseActionId,
+                'Cerrar ayuno',
+              ),
+              DarwinNotificationAction.plain(
+                kFastingSnoozeActionId,
+                'Continuar ayuno',
+              ),
+            ],
+            options: <DarwinNotificationCategoryOption>{
+              DarwinNotificationCategoryOption.hiddenPreviewShowTitle,
+            },
+          );
 
       // SPEC-224: categoría de ejercicio accionable.
       final DarwinNotificationCategory exerciseCategory =
           DarwinNotificationCategory(
-        kExerciseCategoryId,
-        actions: <DarwinNotificationAction>[
-          DarwinNotificationAction.plain(kExerciseLogActionId, 'Sí, lo registro'),
-          DarwinNotificationAction.plain(kExerciseSnoozeActionId, 'Luego lo hago'),
-        ],
-        options: <DarwinNotificationCategoryOption>{
-          DarwinNotificationCategoryOption.hiddenPreviewShowTitle,
-        },
-      );
+            kExerciseCategoryId,
+            actions: <DarwinNotificationAction>[
+              DarwinNotificationAction.plain(
+                kExerciseLogActionId,
+                'Sí, lo registro',
+              ),
+              DarwinNotificationAction.plain(
+                kExerciseSnoozeActionId,
+                'Luego lo hago',
+              ),
+            ],
+            options: <DarwinNotificationCategoryOption>{
+              DarwinNotificationCategoryOption.hiddenPreviewShowTitle,
+            },
+          );
 
       // SPEC-224: categoría de nutrición accionable.
       final DarwinNotificationCategory nutritionCategory =
           DarwinNotificationCategory(
-        kNutritionCategoryId,
-        actions: <DarwinNotificationAction>[
-          DarwinNotificationAction.plain(kNutritionLogActionId, 'Registrar comida'),
-          DarwinNotificationAction.plain(kNutritionSnoozeActionId, 'Aún no'),
-        ],
-        options: <DarwinNotificationCategoryOption>{
-          DarwinNotificationCategoryOption.hiddenPreviewShowTitle,
-        },
-      );
+            kNutritionCategoryId,
+            actions: <DarwinNotificationAction>[
+              DarwinNotificationAction.plain(
+                kNutritionLogActionId,
+                'Registrar comida',
+              ),
+              DarwinNotificationAction.plain(
+                kNutritionSnoozeActionId,
+                'Aún no',
+              ),
+            ],
+            options: <DarwinNotificationCategoryOption>{
+              DarwinNotificationCategoryOption.hiddenPreviewShowTitle,
+            },
+          );
 
       // SPEC-232: categoría de check-in emocional durante el ayuno.
       // 4 acciones (límite iOS): energized, good, hungry, tired.
       // Focused e irritable solo disponibles en la tarjeta in-app.
       final DarwinNotificationCategory checkInCategory =
           DarwinNotificationCategory(
-        kCheckInCategoryId,
-        actions: <DarwinNotificationAction>[
-          DarwinNotificationAction.plain(kCheckInEnergizedActionId, 'Con energía 💪'),
-          DarwinNotificationAction.plain(kCheckInGoodActionId, 'Bien 🙂'),
-          DarwinNotificationAction.plain(kCheckInHungryActionId, 'Con hambre 🍽️'),
-          DarwinNotificationAction.plain(kCheckInTiredActionId, 'Cansado 😴'),
-        ],
-        options: <DarwinNotificationCategoryOption>{
-          DarwinNotificationCategoryOption.hiddenPreviewShowTitle,
-        },
-      );
+            kCheckInCategoryId,
+            actions: <DarwinNotificationAction>[
+              DarwinNotificationAction.plain(
+                kCheckInEnergizedActionId,
+                'Con energía 💪',
+              ),
+              DarwinNotificationAction.plain(kCheckInGoodActionId, 'Bien 🙂'),
+              DarwinNotificationAction.plain(
+                kCheckInHungryActionId,
+                'Con hambre 🍽️',
+              ),
+              DarwinNotificationAction.plain(
+                kCheckInTiredActionId,
+                'Cansado 😴',
+              ),
+            ],
+            options: <DarwinNotificationCategoryOption>{
+              DarwinNotificationCategoryOption.hiddenPreviewShowTitle,
+            },
+          );
 
       final DarwinInitializationSettings iosSettings =
           DarwinInitializationSettings(
-        requestAlertPermission: true,
-        requestBadgePermission: false,
-        requestSoundPermission: true,
-        notificationCategories: <DarwinNotificationCategory>[
-          hydrationCategory,
-          fastingCategory,
-          exerciseCategory,
-          nutritionCategory,
-          checkInCategory,
-        ],
-      );
+            requestAlertPermission: true,
+            requestBadgePermission: false,
+            requestSoundPermission: true,
+            notificationCategories: <DarwinNotificationCategory>[
+              hydrationCategory,
+              fastingCategory,
+              exerciseCategory,
+              nutritionCategory,
+              checkInCategory,
+            ],
+          );
 
       final InitializationSettings initSettings = InitializationSettings(
         android: androidSettings,
@@ -518,14 +566,17 @@ class NotificationService {
 
       await _plugin.initialize(
         settings: initSettings,
-        onDidReceiveNotificationResponse: _notificationForegroundResponseHandler,
+        onDidReceiveNotificationResponse:
+            _notificationForegroundResponseHandler,
         onDidReceiveBackgroundNotificationResponse:
             notificationBackgroundResponseHandler,
       );
 
       // 3. Android channels
-      final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>();
+      final androidPlugin = _plugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
 
       await androidPlugin?.createNotificationChannel(_circadianChannel);
       await androidPlugin?.createNotificationChannel(_fastingChannel);
@@ -545,8 +596,10 @@ class NotificationService {
     if (kIsWeb || !_initialized) return false;
 
     try {
-      final iosPlugin = _plugin.resolvePlatformSpecificImplementation<
-          IOSFlutterLocalNotificationsPlugin>();
+      final iosPlugin = _plugin
+          .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin
+          >();
 
       final iosGranted = await iosPlugin?.requestPermissions(
         alert: true,
@@ -559,11 +612,13 @@ class NotificationService {
         return iosGranted;
       }
 
-      final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>();
+      final androidPlugin = _plugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
 
-      final androidGranted =
-          await androidPlugin?.requestNotificationsPermission();
+      final androidGranted = await androidPlugin
+          ?.requestNotificationsPermission();
 
       if (androidGranted != null) {
         AppLogger.logPermissionEvent('notifications_android', androidGranted);
@@ -623,12 +678,15 @@ class NotificationService {
     if (kIsWeb || !_initialized) return;
 
     try {
-      final tz.TZDateTime tzScheduled =
-          tz.TZDateTime.from(scheduledTime, tz.local);
+      final tz.TZDateTime tzScheduled = tz.TZDateTime.from(
+        scheduledTime,
+        tz.local,
+      );
 
       if (!repeatsDaily && tzScheduled.isBefore(tz.TZDateTime.now(tz.local))) {
         AppLogger.debug(
-            '[NotificationService] Skipped past notification: $title');
+          '[NotificationService] Skipped past notification: $title',
+        );
         return;
       }
 
@@ -660,7 +718,8 @@ class NotificationService {
       );
 
       AppLogger.debug(
-          '[NotificationService] scheduleAt: $title → $scheduledTime');
+        '[NotificationService] scheduleAt: $title → $scheduledTime',
+      );
     } catch (e) {
       AppLogger.error('[NotificationService] Error scheduleAt()', e);
     }
@@ -676,7 +735,8 @@ class NotificationService {
     if (kIsWeb || !_initialized) return;
     await _plugin.cancelAll();
     AppLogger.debug(
-        '[NotificationService] Todas las notificaciones canceladas.');
+      '[NotificationService] Todas las notificaciones canceladas.',
+    );
   }
 
   static Future<void> cancelCircadian() async {
@@ -687,7 +747,8 @@ class NotificationService {
     }
 
     AppLogger.debug(
-        '[NotificationService] Notificaciones circadianas canceladas.');
+      '[NotificationService] Notificaciones circadianas canceladas.',
+    );
   }
 
   static Future<void> cancelFasting() async {
@@ -698,7 +759,8 @@ class NotificationService {
     }
 
     AppLogger.debug(
-        '[NotificationService] Notificaciones de ayuno canceladas.');
+      '[NotificationService] Notificaciones de ayuno canceladas.',
+    );
   }
 
   /// Cancela notificaciones relacionadas con alimentación: apertura de ventana,
@@ -711,7 +773,8 @@ class NotificationService {
     await _plugin.cancel(id: NotificationIds.nextMealReady);
     await _plugin.cancel(id: NotificationIds.eTRFPreSleep);
     AppLogger.debug(
-        '[NotificationService] Notificaciones de alimentación canceladas.');
+      '[NotificationService] Notificaciones de alimentación canceladas.',
+    );
   }
 
   /// SPEC-150: cancela las 20 slots reservadas a hidratación (400-419).
@@ -720,14 +783,17 @@ class NotificationService {
   static Future<void> cancelHydration() async {
     if (kIsWeb || !_initialized) return;
 
-    for (int id = NotificationIds.hydrationStart;
-        id <= NotificationIds.hydrationEnd;
-        id++) {
+    for (
+      int id = NotificationIds.hydrationStart;
+      id <= NotificationIds.hydrationEnd;
+      id++
+    ) {
       await _plugin.cancel(id: id);
     }
 
     AppLogger.debug(
-        '[NotificationService] Notificaciones de hidratación canceladas.');
+      '[NotificationService] Notificaciones de hidratación canceladas.',
+    );
   }
 
   /// SPEC-232: cancela las notificaciones de check-in emocional (600-609).
@@ -735,13 +801,32 @@ class NotificationService {
   static Future<void> cancelCheckIns() async {
     if (kIsWeb || !_initialized) return;
 
-    for (int id = NotificationIds.checkIn4h;
-        id <= NotificationIds.checkIn4h + 9;
+    for (
+      int id = NotificationIds.checkIn4h;
+      id <= NotificationIds.checkIn4h + 9;
+      id++
+    ) {
+      await _plugin.cancel(id: id);
+    }
+
+    AppLogger.debug(
+      '[NotificationService] Notificaciones de check-in canceladas.',
+    );
+  }
+
+  /// SPEC-234: cancela las notificaciones de coaching de sueño (610-619).
+  /// Se llama al reprogramar el scheduler circadiano.
+  static Future<void> cancelSleepCoaching() async {
+    if (kIsWeb || !_initialized) return;
+
+    for (int id = NotificationIds.sleepRoutine;
+        id <= NotificationIds.sleepRoutine + 9;
         id++) {
       await _plugin.cancel(id: id);
     }
 
     AppLogger.debug(
-        '[NotificationService] Notificaciones de check-in canceladas.');
+      '[NotificationService] Notificaciones de sleep coaching canceladas.',
+    );
   }
 }

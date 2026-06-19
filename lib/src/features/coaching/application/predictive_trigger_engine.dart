@@ -158,6 +158,50 @@ class PredictiveTriggerEngine {
     );
   }
 
+  // ── SPEC-233/234: prompt de sueño — rutina nocturna ────────────────────────
+
+  /// Minutos antes de sleepTime para proponer la rutina nocturna (90 min).
+  static const int kSleepRoutineLeadMinutes = 90;
+
+  /// Prompt de sueño: aparece ~90 min antes de sleepTime si no hay log de
+  /// sueño hoy. Se suprime si ya pasó la hora de dormir.
+  static ActionablePrompt? sleepPrompt({
+    required DateTime now,
+    required int sleepHour,
+    required bool sleepLogged,
+  }) {
+    if (sleepLogged) return null;
+
+    // Ventana: mostrar entre sleepHour - 90min y sleepHour.
+    final minutesOfDay = now.hour * 60 + now.minute;
+    final sleepMinutes = sleepHour * 60;
+    final windowStart = sleepMinutes - kSleepRoutineLeadMinutes;
+
+    if (minutesOfDay < windowStart || minutesOfDay >= sleepMinutes) return null;
+
+    final minutesLeft = sleepMinutes - minutesOfDay;
+    final bucket = '${now.year}'
+        '${_two(now.month)}${_two(now.day)}_sleep';
+
+    return ActionablePrompt(
+      id: 'sleep_$bucket',
+      title: '🌙 Tu cuerpo se prepara',
+      message: 'En $minutesLeft min es tu hora de dormir. '
+          '¿Iniciamos tu rutina nocturna?',
+      options: const [
+        PromptOption(
+          label: 'Iniciar rutina',
+          action: PromptActionType.startSleepRoutine,
+          isPrimary: true,
+        ),
+        PromptOption(
+          label: 'Hoy no',
+          action: PromptActionType.snooze,
+        ),
+      ],
+    );
+  }
+
   // ── SPEC-232: check-in emocional durante el ayuno ──────────────────────────
 
   /// Horas de ayuno en las que se dispara un check-in (transiciones de fase).

@@ -157,7 +157,7 @@ class NotificationScheduler {
         hour: lockActive.hour,
         minute: lockActive.minute,
         title: '🌙 Modo reparación activado',
-        body: 'Tu cuerpo empieza a hacer lo suyo mientras descansás. Buen '
+        body: 'Tu cuerpo empieza a hacer lo suyo mientras descansas. Buen '
             'momento para soltar el día.',
         payload: NotificationRouter.circadianPayload(),
       );
@@ -172,6 +172,9 @@ class NotificationScheduler {
             'más te reparan.',
         payload: NotificationRouter.circadianPayload(),
       );
+
+      // ── 7b. SPEC-234: coaching de sueño (rutina nocturna + buenas noches)
+      await _scheduleSleepCoaching(profile.sleepTime);
 
       // ── 8. SPEC-169 (2026-06-04): eTRF pre-sueño ─────────────────────────
       // Patrón eTRF (Sutton 2018, Hutchison 2019): cerrar la ventana al
@@ -534,6 +537,55 @@ class NotificationScheduler {
     } catch (e, st) {
       AppLogger.error(
         '[NotificationScheduler] Error scheduleHydrationReminders()',
+        e,
+        st,
+      );
+    }
+  }
+
+  // ── SPEC-234: coaching de sueño ─────────────────────────────────────────
+
+  /// Programa las notificaciones de coaching nocturno:
+  ///   610: rutina nocturna (sleepTime - 90 min)
+  ///   611: "buenas noches" enriquecido (sleepTime)
+  static Future<void> _scheduleSleepCoaching(TimeOfDay sleepTime) async {
+    try {
+      // Cancelar previas antes de reprogramar.
+      await NotificationService.cancelSleepCoaching();
+
+      // Rutina nocturna: 90 min antes de dormir.
+      final sleepDt = DateTime(2000, 1, 1, sleepTime.hour, sleepTime.minute);
+      final routineDt = sleepDt.subtract(const Duration(minutes: 90));
+
+      await _scheduleCircadian(
+        id: NotificationIds.sleepRoutine,
+        hour: routineDt.hour,
+        minute: routineDt.minute,
+        title: '🌙 Tu cuerpo se prepara',
+        body: 'En 90 minutos es tu hora de dormir. ¿Iniciamos tu rutina '
+            'nocturna?',
+        payload: NotificationRouter.sleepRoutinePayload(),
+      );
+
+      // "Buenas noches" enriquecido: a la hora de dormir.
+      await _scheduleCircadian(
+        id: NotificationIds.goodNight,
+        hour: sleepTime.hour,
+        minute: sleepTime.minute,
+        title: '🌙 Buenas noches',
+        body: 'Hoy fue un buen día para tu metabolismo. Cada hora de sueño '
+            'profundo te repara.',
+        payload: NotificationRouter.circadianPayload(),
+      );
+
+      AppLogger.debug(
+        '[NotificationScheduler] Sleep coaching programado '
+        '(rutina: ${routineDt.hour}:${routineDt.minute.toString().padLeft(2, '0')}, '
+        'goodnight: ${sleepTime.hour}:${sleepTime.minute.toString().padLeft(2, '0')}).',
+      );
+    } catch (e, st) {
+      AppLogger.error(
+        '[NotificationScheduler] Error _scheduleSleepCoaching()',
         e,
         st,
       );

@@ -93,4 +93,8 @@ class NotificationRouter {
 
   /// Payload para paywall nudges.
   static String paywallPayload() => jsonEncode({'route': '/paywall'});
+
+  /// SPEC-234: payload para la rutina nocturna de sueño.
+  static String sleepRoutinePayload() =>
+      jsonEncode({'route': '/sleep-routine', 'category': 'sleep'});
 }

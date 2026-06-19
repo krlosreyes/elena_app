@@ -23,6 +23,7 @@ import 'package:elena_app/src/features/coaching/presentation/widgets/next_best_a
 import 'package:elena_app/src/features/coaching/presentation/widgets/cycle_coaching_feedback_card.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/interactive_coaching_card.dart';
 import 'package:elena_app/src/features/coaching/presentation/widgets/check_in_card.dart';
+import 'package:elena_app/src/features/coaching/presentation/widgets/wake_up_quality_overlay.dart';
 import 'package:elena_app/src/features/goals/application/pillar_goal_providers.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/exercise_pillar_card.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/hydration_pillar_card.dart';
@@ -304,7 +305,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         ),
                       ),
                       if (sleepState.isWaitingForWakeUp)
-                        _buildWakeUpOverlay(context, ref, sleepState.isSaving),
+                        const WakeUpQualityOverlay(),
                       if (fastingState.isWaitingForFastingEnd)
                         _buildFastingEndOverlay(context, ref, fastingState),
                       if (fastingState.isWaitingForFeedingEnd)
@@ -790,19 +791,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildWakeUpOverlay(
-      BuildContext context, WidgetRef ref, bool isSaving) {
-    return _buildBaseOverlay(
-      context: context,
-      icon: Icons.wb_sunny_rounded,
-      iconColor: Colors.orangeAccent,
-      title: "¿YA DESPERTASTE?",
-      subtitle: "Elena detecta actividad matutina.",
-      buttonLabel: "SÍ, DESPERTÉ",
-      isSaving: isSaving,
-      onConfirm: () => ref.read(sleepProvider.notifier).confirmManualWakeUp(),
-    );
-  }
+  // SPEC-234: _buildWakeUpOverlay reemplazado por WakeUpQualityOverlay
+  // (widget stateful con flujo "¿Ya despertaste?" → "¿Cómo dormiste?").
 
   Widget _buildBaseOverlay({
     required BuildContext context,

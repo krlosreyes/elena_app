@@ -17,6 +17,7 @@ import 'package:elena_app/src/core/data/app_state_repository.dart';
 import 'package:elena_app/src/features/dashboard/data/fasting_history_migrator.dart';
 import 'package:elena_app/src/features/dashboard/data/fasting_interval_repository_impl.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
+import 'package:elena_app/src/core/services/live_activity_service.dart';
 import 'package:elena_app/src/core/services/notification_service.dart';
 import 'package:elena_app/src/core/services/notification_scheduler.dart';
 import '../domain/fasting_status.dart';
@@ -48,6 +49,10 @@ final lastCompletedFastingProvider = StreamProvider<FastingInterval?>((ref) {
 class FastingNotifier extends StateNotifier<FastingState> {
   final Ref _ref;
   bool _fastingEndConfirmedToday = false;
+
+  /// SPEC-235: tracking del último minuto actualizado en Live Activity
+  /// para no enviar updates redundantes (tick es cada segundo).
+  int _lastLiveActivityMinute = -1;
   // SPEC-222: evitar lanzar la migración más de una vez por sesión.
   bool _migrationTriggered = false;
 
@@ -224,6 +229,13 @@ class FastingNotifier extends StateNotifier<FastingState> {
     // → corre con o sin red, de inmediato.
     unawaited(NotificationScheduler.scheduleFastingMilestones(startTime));
 
+    // SPEC-235: Live Activity en Isla Dinámica (iOS) / ongoing notif (Android).
+    unawaited(LiveActivityService.start(
+      startedAt: startTime,
+      protocol: state.fastingProtocol,
+      targetHours: state.targetHours,
+    ));
+
     // Consciencia ayuno↔alimentación: al entrar en ayuno, cancelar toda
     // notificación que invite a comer (firstMeal, lastMealWarning,
     // nextMealReady, eTRFPreSleep). Sin esto, el usuario en pleno ayuno
@@ -356,6 +368,14 @@ class FastingNotifier extends StateNotifier<FastingState> {
 
     // Notificaciones locales (no requieren red) — de inmediato.
     unawaited(_scheduleFeedingWindowNotifs(manualTime, state.fastingProtocol));
+
+    // SPEC-235: cerrar Live Activity con resumen.
+    unawaited(LiveActivityService.end(
+      totalMinutes: fastingDuration.inMinutes,
+      summary: reachedTarget
+          ? '¡Meta alcanzada! ${fastingDuration.inHours}h de ayuno'
+          : '${fastingDuration.inHours}h de ayuno completadas',
+    ));
 
     // SPEC-193: analytics (se auto-encola si no hay red).
     if (reachedTarget) {
@@ -510,6 +530,25 @@ class FastingNotifier extends StateNotifier<FastingState> {
           ? FastingState.determinePhase(duration)
           : FastingPhase.none,
     );
+
+    // SPEC-235: actualizar Live Activity cada minuto (no cada segundo).
+    if (state.isActive &&
+        LiveActivityService.isActive &&
+        duration.inMinutes != _lastLiveActivityMinute) {
+      _lastLiveActivityMinute = duration.inMinutes;
+      final phase =
+          LiveActivityPhase.fromElapsedMinutes(duration.inMinutes);
+      // Calcular próximo hito.
+      final targetMin = state.targetHours * 60;
+      final remaining =
+          targetMin > duration.inMinutes ? targetMin - duration.inMinutes : 0;
+      unawaited(LiveActivityService.update(
+        elapsedMinutes: duration.inMinutes,
+        phase: phase,
+        nextMilestoneMinutes: remaining > 0 ? remaining : null,
+        nextMilestoneName: remaining > 0 ? 'Meta' : null,
+      ));
+    }
   }
 
   /// SPEC-58: Reset diario idempotente.

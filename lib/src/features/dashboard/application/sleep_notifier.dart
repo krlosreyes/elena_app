@@ -191,7 +191,9 @@ class SleepNotifier extends StateNotifier<SleepState> {
   String _attributionDocId(DateTime fellAsleep, DateTime wokeUp) =>
       'sleep_${DayBoundaryResolver.attributionDayKey(start: fellAsleep, end: wokeUp)}';
 
-  Future<void> confirmManualWakeUp() async {
+  /// SPEC-234: acepta [subjectiveQuality] (1-5) opcional del overlay
+  /// "¿Cómo dormiste?". Si se provee, se persiste en el SleepLog.
+  Future<void> confirmManualWakeUp({int? subjectiveQuality}) async {
     final now = DateTime.now();
     final userAsync = _ref.read(currentUserStreamProvider);
     final fastingState = _ref.read(fastingProvider);
@@ -261,6 +263,8 @@ class SleepNotifier extends StateNotifier<SleepState> {
         wokeUp: now,
         lastMealTime: fastingState.startTime ??
             sleepTimeThisCycle.subtract(const Duration(hours: 4)),
+        // SPEC-234: calidad subjetiva del overlay "¿Cómo dormiste?"
+        subjectiveQuality: subjectiveQuality,
       );
 
       // SPEC-206 (offline-first): la UI lee `state.lastLog`, así que el cierre

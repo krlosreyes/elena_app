@@ -114,4 +114,9 @@ class NotificationService {
   static Future<void> cancelCheckIns() async {
     // No-op en Web
   }
+
+  // SPEC-234: sleep coaching — No-op en web.
+  static Future<void> cancelSleepCoaching() async {
+    // No-op en Web
+  }
 }

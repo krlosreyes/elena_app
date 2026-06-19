@@ -31,6 +31,8 @@ import 'package:elena_app/src/features/profile/presentation/body_composition_scr
 import 'package:elena_app/src/features/goals/presentation/goal_setup_screen.dart';
 // SPEC-15: Road Map de Avance Personal
 import 'package:elena_app/src/features/progress/presentation/progress_screen.dart';
+// SPEC-234: rutina nocturna guiada
+import 'package:elena_app/src/features/coaching/presentation/sleep_routine_screen.dart';
 
 /// SPEC-222: llave global del navigator raíz para deeplink routing
 /// desde notificaciones (cold start + foreground).
@@ -194,6 +196,12 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/progress',
         name: 'progress',
         builder: (context, state) => const ProgressScreen(),
+      ),
+      // SPEC-234: pantalla de rutina nocturna (deeplink desde notificación).
+      GoRoute(
+        path: '/sleep-routine',
+        name: 'sleep-routine',
+        builder: (context, state) => const SleepRoutineScreen(),
       ),
     ],
   );
