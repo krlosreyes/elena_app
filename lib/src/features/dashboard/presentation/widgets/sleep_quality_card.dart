@@ -349,7 +349,7 @@ class SleepQualityCard extends ConsumerWidget {
               SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'Tu reparación arranca acá.',
+                  'Tu reparación comienza aquí.',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 14,
@@ -361,7 +361,7 @@ class SleepQualityCard extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Registrá tu próximo despertar para empezar a ver tu '
+            'Registra tu próximo despertar para empezar a ver tu '
             'patrón de sueño y calidad subjetiva.',
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.65),

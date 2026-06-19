@@ -283,7 +283,7 @@ class HydrationWeeklyCard extends ConsumerWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 18),
       child: Text(
-        'Registrá tu hidratación para ver tu patrón semanal.',
+        'Registra tu hidratación para ver tu patrón semanal.',
         textAlign: TextAlign.center,
         style: TextStyle(
           color: Colors.white.withValues(alpha: 0.55),

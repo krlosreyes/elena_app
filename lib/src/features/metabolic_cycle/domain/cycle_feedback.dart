@@ -247,7 +247,7 @@ class CycleFeedbackGenerator {
         nutrition >= 0.80) {
       out.add((
         text:
-            'Cerrar la ventana temprano con platos A-dominantes es la combinación de mayor impacto. Sostené este patrón.',
+            'Cerrar la ventana temprano con platos A-dominantes es la combinación de mayor impacto. Sostén este patrón.',
         citation: 'Sutton 2018 + Lopez-Minguez 2018',
         id: 'insight-early-window-high-nutrition',
       ));

@@ -196,7 +196,7 @@ class NotificationScheduler {
           hour: eTRFCutoff.hour,
           minute: eTRFCutoff.minute,
           title: '🌙 3 horas antes de dormir',
-          body: 'Si cerrás la cocina ahora, tu descanso de esta noche te lo '
+          body: 'Si cierras la cocina ahora, tu descanso de esta noche te lo '
               'va a agradecer.',
           payload: NotificationRouter.circadianPayload(),
         );
@@ -230,8 +230,8 @@ class NotificationScheduler {
       await NotificationService.scheduleAt(
         id: NotificationIds.fasting12h,
         title: '⚡ 12 horas',
-        body: 'Tu cuerpo ya cambió de marcha, y vos llegaste hasta acá. '
-            'Bien ahí.',
+        body: 'Tu cuerpo ya cambió de marcha, y tú llegaste hasta aquí. '
+            'Muy bien.',
         scheduledTime: m12h,
         repeatsDaily: false,
         isFasting: true,
@@ -242,7 +242,7 @@ class NotificationScheduler {
         id: NotificationIds.fasting16h,
         title: '✨ 16 horas — Limpieza profunda',
         body: 'Tu cuerpo entró en limpieza profunda gracias a lo de hoy. '
-            'Seguís fuerte.',
+            'Sigues fuerte.',
         scheduledTime: m16h,
         repeatsDaily: false,
         isFasting: true,

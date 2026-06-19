@@ -112,16 +112,16 @@ class HydrationCoachingMessage {
         );
       case HydrationInsightTier.adequate:
         return const HydrationCoachingMessage(
-          headline: 'En rango. Sostené la cadencia.',
+          headline: 'En rango. Sostén la cadencia.',
           action:
-              'Mantené ≥1 vaso cada 90 min. Beber ≤21:00 protege tu sueño.',
+              'Mantén ≥1 vaso cada 90 min. Beber ≤21:00 protege tu sueño.',
           citation: 'EFSA 2010',
         );
       case HydrationInsightTier.optimal:
         return const HydrationCoachingMessage(
           headline: 'Excelente. La constancia regula el sistema linfático.',
           action:
-              'Mantené esta cadencia — es la base que sostiene los otros 4 pilares.',
+              'Mantén esta cadencia — es la base que sostiene los otros 4 pilares.',
           citation: 'EFSA 2010 + Popkin 2010',
         );
     }

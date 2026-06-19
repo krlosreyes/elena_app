@@ -333,7 +333,7 @@ class MealsRatioCard extends ConsumerWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 18),
       child: Text(
-        'Registrá tus comidas para ver tu distribución A:E semanal.',
+        'Registra tus comidas para ver tu distribución A:E semanal.',
         textAlign: TextAlign.center,
         style: TextStyle(
           color: Colors.white.withValues(alpha: 0.55),

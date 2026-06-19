@@ -195,7 +195,7 @@ class IntroNotificationsStep extends StatelessWidget {
           icon: Icons.nights_stay_outlined,
           headline: '3 horas antes de dormir',
           body:
-              'Si cerrás la ventana ahora, tu descanso te lo va a '
+              'Si cierras la ventana ahora, tu descanso te lo va a '
               'agradecer.',
           citation: '· Sutton 2018',
           isDark: isDark,

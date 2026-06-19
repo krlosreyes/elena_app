@@ -67,7 +67,7 @@ class BodySilhouette extends StatelessWidget {
           )
         else
           Text(
-            'Registrá tu % de grasa',
+            'Registra tu % de grasa',
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.55),
               fontSize: 16,

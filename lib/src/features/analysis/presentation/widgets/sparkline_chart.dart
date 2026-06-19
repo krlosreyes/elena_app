@@ -28,7 +28,7 @@ class SparklineChart extends StatelessWidget {
           child: Text(
             series.points.isEmpty
                 ? 'Sin datos en este rango'
-                : 'Solo 1 semana — necesitás 2+ para tendencia',
+                : 'Solo 1 semana — necesitas 2+ para tendencia',
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.30),
               fontSize: 11,

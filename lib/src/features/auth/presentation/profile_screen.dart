@@ -292,7 +292,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
         ? 'Datos biométricos bloqueados — ${lock.unlockLabel}. '
             'Tu IMR Base se estabiliza durante 6 días para reflejar '
             'cambios reales, no fluctuaciones diarias.'
-        : 'Datos biométricos bloqueados. Volvé en 6 días o cerrá tu '
+        : 'Datos biométricos bloqueados. Vuelve en 6 días o cierra tu '
             'semana con un Día de Permitidos.';
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

@@ -147,7 +147,7 @@ class CyclesHistoryCard extends ConsumerWidget {
               SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'Tu historia metabólica arranca acá.',
+                  'Tu historia metabólica comienza aquí.',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 14,

@@ -118,7 +118,7 @@ class MealsRatioInsight {
         return const MealsRatioInsight(
           headline: 'Tu semana fue E-dominante.',
           action:
-              'Los alimentos refinados están dictando tu metabolismo. Volvé al 2 a 1 mínimo esta semana.',
+              'Los alimentos refinados están dictando tu metabolismo. Vuelve al 2 a 1 mínimo esta semana.',
           citation: 'Frank Suárez (Tipo A/E)',
         );
     }

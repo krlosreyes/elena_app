@@ -184,7 +184,7 @@ class _PostQuizViewState extends State<PostQuizView> {
       child: Text(
         perfect
             ? '¡Perfecto! Acertaste las $total. 🎉'
-            : 'Acertaste $c de $total. Volvé al artículo si querés repasar.',
+            : 'Acertaste $c de $total. Vuelve al artículo si quieres repasar.',
         style: TextStyle(
           color: Colors.white,
           fontSize: 13.5,

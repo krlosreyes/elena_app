@@ -284,7 +284,7 @@ class ExerciseWeeklyCard extends ConsumerWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 18),
       child: Text(
-        'Registrá tu ejercicio para ver tu patrón semanal.',
+        'Registra tu ejercicio para ver tu patrón semanal.',
         textAlign: TextAlign.center,
         style: TextStyle(
           color: Colors.white.withValues(alpha: 0.55),

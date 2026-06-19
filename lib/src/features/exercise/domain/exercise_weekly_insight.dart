@@ -116,9 +116,9 @@ class ExerciseCoachingMessage {
         );
       case ExerciseInsightTier.meetsTarget:
         return const ExerciseCoachingMessage(
-          headline: 'En target. Sostené el ritmo.',
+          headline: 'En target. Sostén el ritmo.',
           action:
-              'Variá tipo: LISS + fuerza 2x/semana mejora sensibilidad a la insulina más que solo cardio.',
+              'Varía tipo: LISS + fuerza 2x/semana mejora sensibilidad a la insulina más que solo cardio.',
           citation: 'AHA 2018 + Mattson 2017',
         );
       case ExerciseInsightTier.aboveTarget:

@@ -65,7 +65,7 @@ class IMRZoneColors {
         return 'Tu metabolismo está encontrando su ritmo. '
             'Enfócate en el pilar indicado para ganar estabilidad.';
       case 'DETERIORADO':
-        return 'Este es tu punto de partida — desde acá solo se mejora. '
+        return 'Este es tu punto de partida — desde aquí solo se mejora. '
             'El paso más impactante para empezar es el ayuno consciente.';
       default:
         return 'Registra tus pilares para que Elena pueda calcular tu IMR.';

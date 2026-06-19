@@ -789,7 +789,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           _header("Protocolo", "Hábitos metabólicos", isDark),
           _stepHelperLine(
             'Ya tenemos tu perfil físico. Ahora vamos a conocerte un '
-            'poco más y a elegir cómo querés ayunar.',
+            'poco más y a elegir cómo quieres ayunar.',
             isDark,
           ),
           // SPEC-137 F: 3.A — 5 preguntas del sistema nervioso.

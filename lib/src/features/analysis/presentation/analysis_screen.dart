@@ -436,7 +436,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
               size: 32, color: Colors.white.withValues(alpha: 0.85)),
           const SizedBox(height: 14),
           const Text(
-            'Tu trazabilidad arranca acá.',
+            'Tu trazabilidad comienza aquí.',
             style: TextStyle(
               color: Colors.white,
               fontSize: 20,

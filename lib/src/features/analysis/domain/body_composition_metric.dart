@@ -96,15 +96,15 @@ enum BodyCompositionMetric {
   String get emptyStateMessage {
     switch (this) {
       case BodyCompositionMetric.weight:
-        return 'Registrá tu peso para ver la tendencia.';
+        return 'Registra tu peso para ver la tendencia.';
       case BodyCompositionMetric.waistCm:
-        return 'Registrá tu cintura para ver la tendencia.';
+        return 'Registra tu cintura para ver la tendencia.';
       case BodyCompositionMetric.bodyFatPct:
-        return 'Registrá tu % de grasa para ver la tendencia.';
+        return 'Registra tu % de grasa para ver la tendencia.';
       case BodyCompositionMetric.whtr:
-        return 'Registrá tu cintura para ver tu índice cintura/altura.';
+        return 'Registra tu cintura para ver tu índice cintura/altura.';
       case BodyCompositionMetric.leanMassKg:
-        return 'Registrá tu % de grasa para ver la masa magra.';
+        return 'Registra tu % de grasa para ver la masa magra.';
     }
   }
 

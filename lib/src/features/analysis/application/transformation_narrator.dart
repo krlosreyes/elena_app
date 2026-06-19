@@ -176,7 +176,7 @@ class TransformationNarrator {
         id: 'silent-weight-stable-waist-down',
         headline:
             'Estás perdiendo visceral antes que masa magra — eso es '
-            'exactamente lo que querés ver.',
+            'exactamente lo que quieres ver.',
         citation: 'Petersen-Shulman 2018',
       ));
     }
@@ -210,7 +210,7 @@ class TransformationNarrator {
       out.add(const TransformationNarrative(
         id: 'plateau-discipline-pays',
         headline:
-            'Seguís registrando con consistencia. El cuerpo responde en '
+            'Sigues registrando con consistencia. El cuerpo responde en '
             'ondas, no en líneas rectas — la próxima ola se prepara.',
         citation: 'Sutton 2018',
       ));

@@ -384,7 +384,7 @@ class WeeklyCoachingCard extends ConsumerWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'Estás sostenido en los 5 pilares esta semana. Mantené el ritmo.',
+              'Estás sostenido en los 5 pilares esta semana. Mantén el ritmo.',
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.88),
                 fontSize: 13,
@@ -409,7 +409,7 @@ class WeeklyCoachingCard extends ConsumerWidget {
         borderRadius: BorderRadius.circular(14),
       ),
       child: Text(
-        'Registrá unos días más para que podamos darte feedback más afinado.',
+        'Registra unos días más para que podamos darte feedback más afinado.',
         style: TextStyle(
           color: Colors.white.withValues(alpha: 0.65),
           fontSize: 13,
@@ -425,7 +425,7 @@ class WeeklyCoachingCard extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 8),
       alignment: Alignment.center,
       child: Text(
-        'Aún no tenés registros en los últimos 7 días.\nRegistrá tus pilares y vas a ver tu semana acá.',
+        'Aún no tienes registros en los últimos 7 días.\nRegistra tus pilares y verás tu semana aquí.',
         textAlign: TextAlign.center,
         style: TextStyle(
           color: Colors.white.withValues(alpha: 0.55),

@@ -113,21 +113,21 @@ class SleepCoachingMessage {
         return const SleepCoachingMessage(
           headline: 'Tu calidad subjetiva está bajo el target.',
           action:
-              'Probá temperatura ≤19°C y oscuridad total. Mantené el horario constante en fines de semana.',
+              'Prueba temperatura ≤19°C y oscuridad total. Mantén el horario constante en fines de semana.',
           citation: 'Walker 2017',
         );
       case SleepInsightTier.sustained:
         return const SleepCoachingMessage(
           headline: 'Tu sueño está sólido esta semana.',
           action:
-              'Mantené ritmo y horarios consistentes — la regularidad multiplica el beneficio metabólico.',
+              'Mantén ritmo y horarios consistentes — la regularidad multiplica el beneficio metabólico.',
           citation: 'AASM',
         );
       case SleepInsightTier.neutral:
         return const SleepCoachingMessage(
           headline: 'Estás en rango pero hay margen.',
           action:
-              'Probá una rutina pre-sueño de 30 min: estiramiento, libro, luz cálida.',
+              'Prueba una rutina pre-sueño de 30 min: estiramiento, libro, luz cálida.',
           citation: 'Walker 2017',
         );
     }

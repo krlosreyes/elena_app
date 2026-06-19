@@ -57,7 +57,7 @@ class ForYouSection extends ConsumerWidget {
   Widget _content(BuildContext context, PersonalizedFeed feed) {
     if (feed.isEmpty) {
       return _muted(
-        'Pronto vas a ver acá artículos elegidos para vos según cómo venís '
+        'Pronto vas a ver aquí artículos elegidos para ti según cómo vienes '
         'con tus pilares.',
       );
     }

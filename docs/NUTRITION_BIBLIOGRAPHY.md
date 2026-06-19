@@ -550,7 +550,7 @@ Aplicar memoria interna `notification-tone-human-not-clinical`. Copies validados
 
 - "Tu cuerpo lo agradece cuando le das menos comida industrial."
 - "Está bien tener tu día con algo de eso. El patrón importa más que el plato puntual."
-- "Notamos menos ultraprocesado esta semana. Eso se nota en cómo te sentís."
+- "Notamos menos ultraprocesado esta semana. Eso se nota en cómo te sientes."
 
 Pool definitivo en `lib/src/features/nutrition/application/upf_coaching_pool.dart`. Toda cita usa formato corto "· Monteiro 2019 · Hall 2019" al pie del copy.
 

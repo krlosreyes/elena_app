@@ -21,21 +21,21 @@ class HydrationMessagePool {
         id: 'hyd-morning-00',
         period: DayPeriod.morning,
         title: '💧 Un vaso para arrancar',
-        body: 'Tu cuerpo pasó la noche sin agua. Un vaso ahora y arrancás '
+        body: 'Tu cuerpo pasó la noche sin agua. Un vaso ahora y empiezas '
             'mejor.',
         citation: '',
       ),
       HydrationMessage(
         id: 'hyd-morning-01',
         period: DayPeriod.morning,
-        title: '💧 Hidratate apenas despiertes',
+        title: '💧 Hidrátate apenas despiertes',
         body: 'Tomar agua temprano te despeja y te pone en marcha.',
         citation: '',
       ),
       HydrationMessage(
         id: 'hyd-morning-02',
         period: DayPeriod.morning,
-        title: '💧 Despertá tu cuerpo',
+        title: '💧 Despierta tu cuerpo',
         body: 'Un vaso de agua ahora ayuda a poner todo en movimiento.',
         citation: '',
       ),
@@ -54,7 +54,7 @@ class HydrationMessagePool {
         id: 'hyd-midday-01',
         period: DayPeriod.midday,
         title: '💧 De a sorbos, sin apuro',
-        body: 'Tomá de a poco a lo largo del día; te sienta mejor.',
+        body: 'Toma de a poco a lo largo del día; te sienta mejor.',
         citation: '',
       ),
       HydrationMessage(
@@ -72,7 +72,7 @@ class HydrationMessagePool {
         id: 'hyd-afternoon-00',
         period: DayPeriod.afternoon,
         title: '💧 Energía sin café',
-        body: 'Mucho cansancio de la tarde es solo falta de agua. Probá un '
+        body: 'Mucho cansancio de la tarde es solo falta de agua. Prueba un '
             'vaso.',
         citation: '',
       ),
@@ -80,14 +80,14 @@ class HydrationMessagePool {
         id: 'hyd-afternoon-01',
         period: DayPeriod.afternoon,
         title: '💧 Tu cuerpo te lo agradece',
-        body: 'Un vaso ahora y seguís bien el resto de la tarde.',
+        body: 'Un vaso ahora y sigues bien el resto de la tarde.',
         citation: '',
       ),
       HydrationMessage(
         id: 'hyd-afternoon-02',
         period: DayPeriod.afternoon,
         title: '💧 No esperes a tener sed',
-        body: 'Cuando llega la sed ya vas tarde. Adelantate con un vaso.',
+        body: 'Cuando llega la sed ya vas tarde. Adelántate con un vaso.',
         citation: '',
       ),
     ],
@@ -97,7 +97,7 @@ class HydrationMessagePool {
       HydrationMessage(
         id: 'hyd-evening-00',
         period: DayPeriod.evening,
-        title: '💧 Hidratate, con calma',
+        title: '💧 Hidrátate, con calma',
         body: 'Un poco de agua ahora, sin exagerar para no cortar el sueño.',
         citation: '',
       ),
@@ -105,7 +105,7 @@ class HydrationMessagePool {
         id: 'hyd-evening-01',
         period: DayPeriod.evening,
         title: '💧 Agua para los antojos',
-        body: 'A veces el antojo de la noche es sed disfrazada. Probá un '
+        body: 'A veces el antojo de la noche es sed disfrazada. Prueba un '
             'vaso.',
         citation: '',
       ),

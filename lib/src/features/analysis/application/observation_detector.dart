@@ -154,7 +154,7 @@ class ObservationDetector {
       subject: 'racha-${top.label}',
       headline: 'Llevas ${top.days} días seguidos ${top.verb}.',
       detail: 'Tu mejor racha activa. La consistencia es lo que mueve tu IMR.',
-      action: 'Mantené el impulso hoy.',
+      action: 'Mantén el impulso hoy.',
       strength: (top.days / 7).clamp(0.3, 1.0),
     );
   }
@@ -204,7 +204,7 @@ class ObservationDetector {
         headline: 'Estás cerca de tu meta de agua.',
         detail: 'Los últimos ${lastN.length} días promediaste $pct % de tu '
             'meta diaria. Un vaso más y la cierras.',
-        action: 'Registrá un vaso ahora.',
+        action: 'Registra un vaso ahora.',
         strength: 0.55,
       );
     }
