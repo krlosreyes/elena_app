@@ -20,6 +20,8 @@ import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cyc
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart'
     show cycleScoreMigrationProvider;
 import 'package:elena_app/src/core/engine/weekly_imr_staleness_trigger.dart';
+import 'package:elena_app/src/core/services/watch_connectivity_service.dart';
+import 'package:elena_app/src/core/services/watch_state_sync.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 
@@ -46,6 +48,10 @@ class _ElenaAppState extends ConsumerState<ElenaApp>
     // notificación. Si hay payload, guardarlo para flush cuando el
     // widget tree tenga BuildContext + GoRouter montado.
     _checkColdStartNotification();
+    // SPEC-236 (SPEC-237 fix): inicializar el bridge Watch una sola vez
+    // en startup. Si no hay Watch pareado o el canal no está registrado,
+    // la llamada es no-op (MissingPluginException / PlatformException).
+    WatchConnectivityService.initialize();
   }
 
   /// SPEC-222: consulta `getNotificationAppLaunchDetails` para detectar
@@ -148,6 +154,11 @@ class _ElenaAppState extends ConsumerState<ElenaApp>
     // usuario), si pasaron >7 días desde el último snapshot, recalcula
     // y persiste. One-shot por sesión por usuario.
     ref.watch(weeklyImrStalenessTriggerProvider);
+
+    // SPEC-236 (SPEC-237 fix): registrar listeners de sincronización Watch.
+    // ref.listen en build() es el patrón correcto de Riverpod para side-effects
+    // — Riverpod deduplica automáticamente entre rebuilds.
+    WatchStateSync.registerListeners(ref);
 
     // SPEC-132.next (2026-06-10): observers de HealthKit con background
     // delivery. Arranca el side-effect que escucha los eventos nativos de

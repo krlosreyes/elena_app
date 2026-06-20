@@ -13,6 +13,7 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/features/dashboard/data/sources/fasting_interval_data_source.dart';
 
 class FirestoreFastingIntervalV1Source implements FastingIntervalDataSource {
@@ -154,15 +155,35 @@ class FirestoreFastingIntervalV1Source implements FastingIntervalDataSource {
     final col = _col(userId);
     final batch = _firestore.batch();
 
-    // 1. Cerrar todos los abiertos.
-    final openQuery = await col.where('endTime', isNull: true).get();
-    for (final doc in openQuery.docs) {
-      batch.update(doc.reference, {
-        'endTime': Timestamp.fromDate(closeAt),
-      });
+    // SPEC-237 (2026-06-20): offline-first — leer desde caché local primero.
+    //
+    // ANTES: .get() sin opciones → petición al servidor → cuelga sin red o
+    //        falla con 403 (App Check) → catchError en startFastingManual
+    //        dispara rollback → el usuario ve que "el ayuno no inicia".
+    //
+    // AHORA: Source.cache no requiere red. Si el cache falla (primera
+    //        instalación, cache expirado o error de permisos), se omite el
+    //        cierre de intervalos anteriores y se procede solo con la creación.
+    //        Los intervalos huérfanos se regularizan al recuperar red, y
+    //        streamLatest() ya prioriza isFasting=true + endTime=null (SPEC-99).
+    try {
+      final openQuery = await col
+          .where('endTime', isNull: true)
+          .get(const GetOptions(source: Source.cache));
+      for (final doc in openQuery.docs) {
+        batch.update(doc.reference, {
+          'endTime': Timestamp.fromDate(closeAt),
+        });
+      }
+    } on FirebaseException catch (e) {
+      // Cache miss o sin permisos: crear el nuevo sin cerrar anteriores.
+      AppLogger.debug(
+        '[FastingSource] closeAllOpenAndCreate: caché no disponible '
+        '(${e.code}), omitiendo cierre de intervalos anteriores.',
+      );
     }
 
-    // 2. Crear el nuevo (id auto-generado en la subcolección del uid).
+    // Crear el nuevo intervalo (va a caché local inmediatamente → no bloquea).
     final newDocRef = col.doc();
     final data = buildNewData(newDocRef.id);
     batch.set(newDocRef, data);
