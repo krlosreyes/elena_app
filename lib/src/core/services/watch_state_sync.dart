@@ -7,10 +7,13 @@
 // para no saturar WatchConnectivity (budget limitado en watchOS).
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:elena_app/src/core/services/live_activity_service.dart';
+import 'package:elena_app/src/core/services/pending_action_queue.dart'
+    show kHydrationGlassLiters;
 import 'package:elena_app/src/core/services/watch_connectivity_service.dart';
 import 'package:elena_app/src/features/dashboard/application/fasting_notifier.dart';
 import 'package:elena_app/src/features/dashboard/application/hydration_notifier.dart';
-import 'package:elena_app/src/core/services/live_activity_service.dart';
+import 'package:elena_app/src/features/dashboard/domain/fasting_status.dart';
 
 /// Inicializa los listeners de sincronización con el Watch.
 ///
@@ -64,8 +67,8 @@ class WatchStateSync {
 
     WatchConnectivityService.sendHydrationUpdate(
       glassesCount: state.history.length,
-      goalGlasses: state.dailyGoalGlasses,
-      totalLiters: state.todayTotal,
+      goalGlasses: (state.dailyGoalLiters / kHydrationGlassLiters).round(),
+      totalLiters: state.currentAmountLiters,
     );
   }
 
