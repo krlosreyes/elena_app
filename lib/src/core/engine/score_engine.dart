@@ -229,7 +229,12 @@ class ScoreEngine {
     //                    Nutrición 12% / Hidratación 10%.
     //
     // Suma = 100%. Ver IMR_BIBLIOGRAPHY.md §4 actualizada.
-    final double behaviorBlock = (0.38 * circadianScore.clamp(0.0, 1.0)) +
+    //
+    // SPEC-237 BUG-A: circadianScore NO se clampea aquí — debe llegar sin
+    // clamp al bloque para que el bonus eTRF (1.1) tenga efecto real.
+    // El clamp global a 100 en `score` ya absorbe cualquier exceso.
+    // Solo circadianAlignment (indicador UI 0-1) sigue clampado en el return.
+    final double behaviorBlock = (0.38 * circadianScore) +
         (0.20 * sSleep) +
         (0.20 * sExercise) +
         (0.12 * nutritionScore.clamp(0.0, 1.0)) +
@@ -276,7 +281,13 @@ class ScoreEngine {
       metabolicAge: metabolicAge,
       ica: ica,
       ffmi: ffmi,
-      whtr: ica,
+      // SPEC-237 BUG-B: whtr usa su propio cálculo explícito en lugar de
+      // reutilizar `ica` como alias. Son matemáticamente equivalentes
+      // (cintura/altura) pero mantener variables distintas hace el código
+      // auto-documentado y evita confusión futura si las fórmulas divergen.
+      whtr: (user.waistCircumference ?? 0) > 0
+          ? user.waistCircumference! / user.height
+          : 0.0,
       isPartialBiometrics: isPartial,
     );
   }
@@ -348,7 +359,10 @@ class ScoreEngine {
       metabolicAge: metabolicAge,
       ica: ica,
       ffmi: ffmi,
-      whtr: ica,
+      // SPEC-237 BUG-B: mismo fix que calculateIMR — whtr explícito.
+      whtr: (user.waistCircumference ?? 0) > 0
+          ? user.waistCircumference! / user.height
+          : 0.0,
       isPartialBiometrics: baselineIsPartial,
     );
   }

@@ -71,7 +71,9 @@ class _HealthSyncCardState extends ConsumerState<HealthSyncCard>
 
   @override
   Widget build(BuildContext context) {
-    final service = ref.read(healthSyncServiceProvider);
+    // SPEC-237 BUG-D: ref.read → ref.watch para que el widget sea reactivo
+    // si el provider cambia (ej. en tests o al cambiar plataforma).
+    final service = ref.watch(healthSyncServiceProvider);
     if (!service.isPlatformSupported) return const SizedBox.shrink();
 
     final state = ref.watch(healthAutoSyncControllerProvider);

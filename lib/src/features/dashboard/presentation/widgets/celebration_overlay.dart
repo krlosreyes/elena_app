@@ -117,7 +117,7 @@ class _CelebrationBanner extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: _backgroundColor.withOpacity(0.3),
+            color: _backgroundColor.withValues(alpha: 0.3), // SPEC-237 BUG-E
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -148,7 +148,7 @@ class _CelebrationBanner extends StatelessWidget {
                 Text(
                   _subtitle,
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.85),
+                    color: Colors.white.withValues(alpha: 0.85), // SPEC-237 BUG-E
                     fontSize: 13,
                     height: 1.3,
                   ),

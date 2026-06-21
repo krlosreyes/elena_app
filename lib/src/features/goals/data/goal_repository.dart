@@ -5,6 +5,7 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/features/goals/domain/user_goal.dart';
 
 class GoalRepository {
@@ -71,7 +72,13 @@ class GoalRepository {
       try {
         final goal = UserGoal.fromJson(entry.value as Map<String, dynamic>);
         result[goal.type] = goal;
-      } catch (_) {}
+      } catch (e) {
+        // SPEC-237 BUG-C: catch vacío silenciaba parse errors de goals.
+        // Si Firestore tiene un doc con schema antiguo o campo desconocido,
+        // ahora queda traza para diagnóstico. El goal se omite pero no se
+        // rompe la carga del resto.
+        AppLogger.warning('[GoalRepository] goal inválido key=${entry.key}: $e');
+      }
     }
     return result;
   }
