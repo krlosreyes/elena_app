@@ -92,6 +92,8 @@ class NotificationService {
     bool actionableExercise = false,
     bool actionableNutrition = false,
     bool actionableCheckIn = false,
+    // SPEC-241: hito de ayuno accionable — No-op en web.
+    bool actionableMilestone = false,
     String? payload,
   }) async {
     // No-op en Web
