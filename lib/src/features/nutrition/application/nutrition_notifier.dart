@@ -422,6 +422,51 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
     );
   }
 
+  /// SPEC-240: Elimina un log específico por su id.
+  ///
+  /// A diferencia de [removeLastMeal] (que solo borra el último), este
+  /// método permite eliminar cualquier comida del historial del Día
+  /// Metabólico activo desde [MealHistorySheet].
+  ///
+  /// Patrón offline-first (SPEC-206): borrado optimista inmediato en el
+  /// state local; Firestore sincroniza en background. El stream de
+  /// Firestore confirmará (o corregirá) el estado cuando llegue el
+  /// siguiente snapshot.
+  Future<void> deleteMealById(String mealId) async {
+    final userId = _activeUserId;
+    if (userId == null) return;
+
+    // Borrado optimista: quitar del cache local antes del round-trip.
+    if (mounted) {
+      final updated = state.todayLogs
+          .where((log) => log.id != mealId)
+          .toList(growable: false);
+      state = _recalculate(updated, state.targetMeals);
+    }
+
+    // Reajustar notificación de próxima comida.
+    final remaining = state.todayLogs;
+    final lastAt = MealIntervalRules.lastMealOf(remaining);
+    if (lastAt == null) {
+      unawaited(NotificationScheduler.cancelNextMealReminder());
+    } else {
+      final nextAt = lastAt.add(MealIntervalRules.recommendedInterval);
+      unawaited(NotificationScheduler.scheduleNextMealReminder(
+        nextMealAt: nextAt,
+        leadTime: MealIntervalRules.notificationLeadTime,
+      ));
+    }
+
+    unawaited(
+      _ref
+          .read(nutritionRepositoryProvider)
+          .deleteMealById(userId, mealId)
+          .catchError((Object e) {
+        AppLogger.error('deleteMealById: Firestore falló (reintenta al sync)', e);
+      }),
+    );
+  }
+
   /// SPEC-58 + SPEC-149.2: Reset idempotente disparado al cierre del
   /// ciclo metabólico o a medianoche calendárica (red de seguridad).
   ///

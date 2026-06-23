@@ -13,6 +13,7 @@ import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.
 import 'package:elena_app/src/features/nutrition/domain/meal_interval_rules.dart';
 import 'package:elena_app/src/features/nutrition/domain/meal_ratio.dart';
 import 'package:elena_app/src/features/nutrition/domain/nutrition_log.dart';
+import 'package:elena_app/src/features/nutrition/presentation/meal_history_sheet.dart';
 import 'package:elena_app/src/features/nutrition/presentation/plate_ratio_sheet.dart';
 
 class ComidasPillarCard extends ConsumerWidget {
@@ -118,6 +119,17 @@ class ComidasPillarCard extends ConsumerWidget {
                       ),
                     ),
                   ],
+                ),
+              ],
+              // ── Ver historial completo (SPEC-240) ────────────────────
+              if (state.todayLogs.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                PillarCardUi.secondaryButton(
+                  label: 'Ver historial (${state.mealsLoggedToday})',
+                  icon: Icons.history_rounded,
+                  onPressed: isFastingActive
+                      ? null
+                      : () => MealHistorySheet.show(context),
                 ),
               ],
             ],
