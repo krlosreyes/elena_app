@@ -172,7 +172,7 @@ class EatingWindowPainter extends CustomPainter {
         dotPos,
         fullWidth * 0.015,
         Paint()
-          ..color = Colors.orange.withValues(alpha: 0.15)
+          ..color = const Color(0xFF00C49A).withValues(alpha: 0.15)
           ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3),
       );
 
@@ -181,8 +181,9 @@ class EatingWindowPainter extends CustomPainter {
         dotPos,
         isEdge ? 4.0 : 2.5,
         Paint()
-          ..color =
-              isEdge ? Colors.orange : Colors.orange.withValues(alpha: 0.5),
+          ..color = isEdge
+              ? const Color(0xFF00C49A)
+              : const Color(0xFF00C49A).withValues(alpha: 0.5),
       );
     }
   }
