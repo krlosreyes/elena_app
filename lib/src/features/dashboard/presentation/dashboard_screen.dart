@@ -19,7 +19,6 @@ import 'package:elena_app/src/features/exercise/application/exercise_state.dart'
 import 'package:elena_app/src/features/engagement/presentation/widgets/engagement_banner.dart';
 import 'package:elena_app/src/features/adaptive/presentation/widgets/adaptive_suggestion_card.dart';
 import 'package:elena_app/src/features/billing/presentation/paywall_auto_trigger.dart';
-import 'package:elena_app/src/features/coaching/presentation/widgets/next_best_action_card.dart';
 import 'package:elena_app/src/features/coaching/presentation/widgets/cycle_coaching_feedback_card.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/interactive_coaching_card.dart';
 import 'package:elena_app/src/features/coaching/presentation/widgets/check_in_card.dart';
@@ -225,11 +224,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   // SPEC-198: orquestador invisible del paywall proactivo +
                   // nudges día 5/12. No dibuja nada.
                   const PaywallAutoTrigger(),
-
-                  // SPEC-194: "Tu siguiente paso" — acción de coaching
-                  // priorizada por el motor de decisión. Se oculta sola en
-                  // período de gracia o si no hay candidato.
-                  const NextBestActionCard(),
 
                   // SPEC-149: card de cierre del Día Metabólico. Aparece
                   // cuando hay un ciclo cerrado reciente que el usuario
