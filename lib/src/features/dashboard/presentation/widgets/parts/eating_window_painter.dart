@@ -157,10 +157,6 @@ class EatingWindowPainter extends CustomPainter {
     final int slots = mealsCount > 1 ? (mealsCount - 1) : 1;
     final double intervalAngle = windowSweep / slots;
 
-    final double mainIconSize = fullWidth * 0.055;
-    final double secondaryIconSize = fullWidth * 0.045;
-    final double internalDistance = radius - (fullWidth * 0.075);
-
     for (int i = 0; i < mealsCount; i++) {
       final double milestoneAngle = startAngle + (intervalAngle * i);
 
@@ -171,7 +167,7 @@ class EatingWindowPainter extends CustomPainter {
 
       final bool isEdge = (i == 0 || i == mealsCount - 1);
 
-      // Halo
+      // Halo sutil sobre el arco
       canvas.drawCircle(
         dotPos,
         fullWidth * 0.015,
@@ -180,7 +176,7 @@ class EatingWindowPainter extends CustomPainter {
           ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3),
       );
 
-      // Punto
+      // Punto de hito — solo geometría, sin íconos que invadan el timer
       canvas.drawCircle(
         dotPos,
         isEdge ? 4.0 : 2.5,
@@ -188,47 +184,6 @@ class EatingWindowPainter extends CustomPainter {
           ..color =
               isEdge ? Colors.orange : Colors.orange.withValues(alpha: 0.5),
       );
-
-      // Ícono según posición
-      IconData iconData;
-      if (i == 0) {
-        iconData = Icons.restaurant_rounded;
-      } else if (i == mealsCount - 1) {
-        iconData = Icons.bedtime_rounded;
-      } else {
-        iconData = Icons.lunch_dining_rounded;
-      }
-
-      final tp = TextPainter(
-        text: TextSpan(
-          text: String.fromCharCode(iconData.codePoint),
-          style: TextStyle(
-            fontSize: isEdge ? mainIconSize : secondaryIconSize,
-            fontFamily: iconData.fontFamily,
-            package: iconData.fontPackage,
-            color: isEdge
-                ? Colors.orangeAccent.withValues(alpha: 0.8)
-                : Colors.orangeAccent.withValues(alpha: 0.3),
-            shadows: isEdge
-                ? [
-                    Shadow(
-                      color: Colors.black.withValues(alpha: 0.3),
-                      blurRadius: 2,
-                      offset: const Offset(0.5, 0.5),
-                    )
-                  ]
-                : null,
-          ),
-        ),
-        textDirection: TextDirection.ltr,
-      )..layout();
-
-      final iconPos = Offset(
-        center.dx + internalDistance * math.cos(milestoneAngle) - tp.width / 2,
-        center.dy + internalDistance * math.sin(milestoneAngle) - tp.height / 2,
-      );
-
-      tp.paint(canvas, iconPos);
     }
   }
 
