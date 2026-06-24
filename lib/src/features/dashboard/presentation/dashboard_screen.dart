@@ -18,7 +18,10 @@ import 'package:elena_app/src/features/exercise/application/exercise_notifier.da
 import 'package:elena_app/src/features/exercise/application/exercise_state.dart';
 import 'package:elena_app/src/features/engagement/presentation/widgets/engagement_banner.dart';
 import 'package:elena_app/src/features/adaptive/presentation/widgets/adaptive_suggestion_card.dart';
+import 'package:elena_app/src/features/billing/application/billing_providers.dart';
 import 'package:elena_app/src/features/billing/presentation/paywall_auto_trigger.dart';
+import 'package:elena_app/src/features/billing/presentation/paywall_launcher.dart';
+import 'package:elena_app/src/features/billing/presentation/premium_lock.dart';
 import 'package:elena_app/src/features/coaching/presentation/widgets/cycle_coaching_feedback_card.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/interactive_coaching_card.dart';
 import 'package:elena_app/src/features/coaching/presentation/widgets/check_in_card.dart';
@@ -383,6 +386,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     nutrition: nutritionState,
                     user: user,
                   ),
+                  const SizedBox(height: 14),
+
+                  // GAP-2: bloqueo visible del IMR longitudinal en el Dashboard.
+                  // Free: ve el card atenuado con candado + CTA "Desbloquear".
+                  // Premium: ve el IMR actual + zona + enlace a Análisis.
+                  _buildImrLongitudinalCard(context, ref),
                   const SizedBox(height: 20),
 
                   // SPEC-88 fix: BodyCompositionCard, GoalsDashboardWidget
@@ -956,6 +965,109 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   // EngagementBanner widget en features/engagement/presentation/widgets/
   // que añade dismiss por sesión.
 
+  /// GAP-2: card "IMR Longitudinal" visible en el Dashboard principal.
+  ///
+  /// Free → atenuado con candado + "Desbloquear" que abre el paywall.
+  /// Premium → muestra IMR actual + zona + acceso directo a Análisis.
+  ///
+  /// Objetivo: el usuario Free ve inmediatamente que hay valor adicional
+  /// bloqueado y puede convertirse en ese momento sin salir del flujo.
+  Widget _buildImrLongitudinalCard(BuildContext context, WidgetRef ref) {
+    final gate = ref.watch(featureGateProvider);
+    final imr = ref.watch(displayedImrProvider);
+
+    final content = Container(
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E293B),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.trending_up_rounded,
+                    color: AppColors.metabolicGreen,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'IMR LONGITUDINAL',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.45),
+                      fontSize: 10,
+                      letterSpacing: 1.5,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              if (gate.analyticsHistoryAllowed)
+                GestureDetector(
+                  onTap: () => context.go('/analysis'),
+                  child: Text(
+                    'Ver detalle →',
+                    style: TextStyle(
+                      color: AppColors.metabolicGreen,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _ImrStatColumn(
+                label: 'IMR Actual',
+                value: imr.score.toString(),
+                accent: AppColors.metabolicGreen,
+              ),
+              _ImrStatColumn(
+                label: 'Zona',
+                value: imr.zone.isNotEmpty ? imr.zone : '—',
+                accent: Colors.white,
+              ),
+              _ImrStatColumn(
+                label: 'Tendencia',
+                value: '7 días',
+                accent: Colors.white,
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Text(
+            'Tu IMR longitudinal refleja tu estado metabólico real. '
+            'Sube con ciclos bien ejecutados, semana a semana.',
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.white.withValues(alpha: 0.50),
+              height: 1.45,
+            ),
+          ),
+        ],
+      ),
+    );
+
+    return PremiumLock(
+      isLocked: !gate.analyticsHistoryAllowed,
+      label: 'IMR Longitudinal',
+      onUpgrade: () => openPaywall(
+        context,
+        ref,
+        feature: GatedFeature.analyticsHistory,
+      ),
+      child: content,
+    );
+  }
+
   Widget _buildBottomNav(BuildContext context) {
     final String location = GoRouterState.of(context).matchedLocation;
     int currentIndex = 0;
@@ -979,5 +1091,44 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               icon: Icon(Icons.insights_rounded), label: "Progreso"),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: "Perfil")
         ]);
+  }
+}
+
+/// Columna de stat para el card IMR Longitudinal.
+class _ImrStatColumn extends StatelessWidget {
+  const _ImrStatColumn({
+    required this.label,
+    required this.value,
+    required this.accent,
+  });
+
+  final String label;
+  final String value;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            color: accent,
+            fontSize: 22,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.45),
+            fontSize: 10,
+            letterSpacing: 0.8,
+          ),
+        ),
+      ],
+    );
   }
 }

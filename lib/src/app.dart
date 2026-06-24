@@ -11,6 +11,8 @@ import 'package:elena_app/src/core/services/notification_router.dart';
 import 'package:elena_app/src/features/auth/domain/app_account.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
 import 'package:elena_app/src/features/billing/application/billing_providers.dart';
+import 'package:elena_app/src/features/onboarding/application/app_tour_notifier.dart';
+import 'package:elena_app/src/features/onboarding/presentation/app_tour_overlay.dart';
 import 'package:elena_app/src/features/coaching/application/coaching_action_router.dart';
 import 'package:elena_app/src/core/services/daily_reset_service.dart';
 import 'package:elena_app/src/features/analysis/application/daily_summary_persistence_service.dart';
@@ -226,6 +228,15 @@ class _ElenaAppState extends ConsumerState<ElenaApp>
           darkTheme: AppTheme.dark,
           themeMode: ThemeMode.dark,
           routerConfig: router,
+          // SPEC-243: el tour interactivo post-onboarding se monta sobre
+          // todo el árbol. AppTourOverlay retorna SizedBox.shrink() cuando
+          // appTourProvider.isActive es false → costo cero en operación normal.
+          builder: (ctx, child) => Stack(
+            children: [
+              child ?? const SizedBox.shrink(),
+              const AppTourOverlay(),
+            ],
+          ),
         );
       },
     );

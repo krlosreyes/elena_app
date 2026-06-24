@@ -63,8 +63,13 @@ class _PaywallAutoTriggerState extends ConsumerState<PaywallAutoTrigger> {
     if (isPremium) return;
 
     final prefs = ref.read(sharedPreferencesProvider);
+    // GAP-1 fix: usuarios MR migrados saltan el onboarding in-app y nunca
+    // setean la clave 'onboardingCompleted'. Tratamos account.isComplete
+    // como equivalente — si el perfil está completo en Firestore, el usuario
+    // ya completó el flujo de registro y tiene valor demostrado suficiente.
     final onboardingCompleted =
-        prefs.getBool('onboardingCompleted') ?? false;
+        (prefs.getBool('onboardingCompleted') ?? false) ||
+            (account?.isComplete == true);
     final now = DateTime.now();
     final days = createdAt == null ? 0 : now.difference(createdAt).inDays;
     final fastsCompleted =

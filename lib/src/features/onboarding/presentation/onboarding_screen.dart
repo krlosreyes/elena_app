@@ -36,6 +36,8 @@ import 'package:elena_app/src/features/goals/application/goal_suggestion_engine.
 import 'package:elena_app/src/features/goals/domain/user_goal.dart';
 import 'package:elena_app/src/features/goals/presentation/goal_setup_screen.dart'
     show GoalDraft, GoalSuggestionCard;
+// SPEC-243: tour interactivo post-onboarding.
+import 'package:elena_app/src/features/onboarding/application/app_tour_notifier.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -712,7 +714,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       setState(() => _pantSize = v.toInt());
                       _inferMedidas();
                     },
-                    isDark: isDark)),
+                    isDark: isDark,
+                    // Columna estrecha (mitad de pantalla): reducir ancho
+                    // del bloque valor para evitar overflow de 24px.
+                    valueBoxWidth: 48)),
           ]),
           _sectionTitle("MEDIDAS CRÍTICAS IMR", isDark),
           _stepperSelector(
@@ -1400,6 +1405,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       await Future.delayed(const Duration(milliseconds: 800));
       if (!mounted) return;
       context.go('/dashboard');
+
+      // SPEC-243: activar el tour interactivo post-onboarding.
+      // `tryActivate` retorna false si el flag 'appTourDone' ya está seteado
+      // (reinicio de app, reinstalación). Lo hacemos post-frame para que
+      // GoRouter haya terminado la transición al Dashboard.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(appTourProvider.notifier).tryActivate();
+      });
     } catch (e, stackTrace) {
       AppLogger.error('Error en Onboarding Submit', e, stackTrace);
     }
@@ -1414,7 +1427,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       required double min,
       required double max,
       required Function(double) onChanged,
-      required bool isDark}) {
+      required bool isDark,
+      // Ancho del bloque valor central. Reducir a 48 cuando el stepper
+      // se renderiza en columna estrecha (ej. fila Camisa/Pant.).
+      double valueBoxWidth = 65}) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
@@ -1433,7 +1449,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           _circleButton(Icons.remove,
               () => value > min ? onChanged(value - 1) : null, isDark),
           SizedBox(
-              width: 65,
+              width: valueBoxWidth,
               child: Center(
                   child: Text("${value.toInt()}$unit",
                       style: TextStyle(

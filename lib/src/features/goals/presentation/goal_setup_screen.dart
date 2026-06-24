@@ -417,20 +417,25 @@ class _GoalSuggestionCardState extends State<GoalSuggestionCard> {
                             ),
                           ),
                           const SizedBox(width: 8),
-                          // Badge de estado actual
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: c.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              draft.statusLabel,
-                              style: TextStyle(
-                                fontSize: 7.5,
-                                fontWeight: FontWeight.w800,
-                                color: c,
+                          // Badge de estado actual.
+                          // Flexible evita overflow cuando label + badge
+                          // superan el ancho del Expanded padre.
+                          Flexible(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: c.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                draft.statusLabel,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 7.5,
+                                  fontWeight: FontWeight.w800,
+                                  color: c,
+                                ),
                               ),
                             ),
                           ),
