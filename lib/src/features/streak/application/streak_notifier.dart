@@ -290,6 +290,29 @@ class StreakNotifier extends StateNotifier<StreakState> {
       return a > b ? a : b;
     }
 
+    // HOTFIX SPEC-229/SCORE (2026-06-23): nutritionMagnitude NO usa maxMag.
+    //
+    // Problema: maxMag congelaba nutritionMagnitude en su pico histórico
+    // del día (e.g., 1.0 tras un desayuno perfecto). Cuando el usuario
+    // registraba una comida de menor calidad, nutritionScore del
+    // nutritionProvider bajaba a 0.67, pero StreakEntry conservaba 1.0
+    // (maxMag(1.0, 0.67) = 1.0). Resultado: CycleScoreComputer calculaba
+    // HOY=100 mientras ComidasPillarCard mostraba 67% — incongruencia
+    // visible confirmada en device (screenshot 2026-06-23).
+    //
+    // La corrección: usar el valor actual si hay datos (> 0); si es 0
+    // (reset transitorio tras triggerDailyReset) preservar el previo para
+    // no sobreescribir el día con ceros ficticios.
+    //
+    // Diferencia con otros pilares: fasting, hydration y exercise son
+    // magnitudes unidireccionales dentro del día (solo suben). Nutrition
+    // es un promedio de CALIDAD de comidas — puede bajar cuando se
+    // registra una comida de menor ratio. maxMag es correcto para las
+    // demás pero incorrecto para nutrition.
+    final double resolvedNutritionMagnitude = nutritionMagnitude > 0
+        ? nutritionMagnitude
+        : (prev?.nutritionMagnitude ?? 0.0);
+
     final newEntry = StreakEntry(
       date: _todayKey,
       fastingCompleted: fastingOk,
@@ -305,7 +328,8 @@ class StreakNotifier extends StateNotifier<StreakState> {
       sleepQualityScore: maxMag(prev?.sleepQualityScore, sleepQualityScore),
       hydrationMagnitude: maxMag(prev?.hydrationMagnitude, hydrationMagnitude),
       exerciseMagnitude: maxMag(prev?.exerciseMagnitude, exerciseMagnitude),
-      nutritionMagnitude: maxMag(prev?.nutritionMagnitude, nutritionMagnitude),
+      // HOTFIX 2026-06-23: ver comentario arriba — no usa maxMag.
+      nutritionMagnitude: resolvedNutritionMagnitude,
     );
 
     // Solo actualizar si algo cambió (evita loops reactivos)

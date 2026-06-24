@@ -11,7 +11,6 @@
 // Side-effect-only. Para que ejecute, el Dashboard hace `ref.watch`.
 
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -23,6 +22,7 @@ import 'package:elena_app/src/features/dashboard/application/eating_window_provi
 import 'package:elena_app/src/features/dashboard/application/fasting_notifier.dart';
 import 'package:elena_app/src/features/dashboard/application/sleep_notifier.dart';
 import 'package:elena_app/src/features/dashboard/domain/fasting_status.dart';
+import 'package:elena_app/src/core/services/notification_router.dart';
 import 'package:elena_app/src/core/services/notification_service.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/cycle_score_computer.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart';
@@ -184,16 +184,16 @@ Future<void> _evaluate(
     dailyScore = ref.read(displayDailyScoreProvider);
   }
 
-  // SPEC-227 + SPEC-229 BUG-A: stampear liveScore como HIGH WATER MARK.
+  // SPEC-227 + HOTFIX SCORE (2026-06-23): stampear liveScore como el valor
+  // ACTUAL del Score del Día, no como high water mark.
   //
-  // Antes (bug): se stampaba el valor ACTUAL del displayDailyScore en cada
-  // tick. Si el score bajaba (e.g., fasting magnitude decrece con el tiempo),
-  // el pico que el usuario VIO se perdía. Al cerrar el ciclo, el service
-  // leía el liveScore bajo → dailyScore bajo.
-  //
-  // Ahora: liveScore solo sube, nunca baja. `max(existente, nuevo)` garantiza
-  // que el score al cierre refleja el MEJOR momento del ciclo — coherente con
-  // lo que el usuario vio en el Dashboard.
+  // El HWM anterior (math.max) fue diseñado para que el score de cierre
+  // reflejara "el mejor momento del ciclo". El problema: también inflaba
+  // el score en la UI cuando nutritionMagnitude bajaba (ver fix en
+  // streak_notifier.dart). Con el fix del nutritionMagnitude, el
+  // displayDailyScoreProvider ya es coherente con lo que el usuario ve en
+  // cada PillarCard. El liveScore en Firestore debe reflejar el estado real
+  // del ciclo, no el pico histórico.
   //
   // Solo en pulsos periódicos — en el path manualNextFasting SPEC-225 ya
   // captura el score correcto desde preClosureStreak.
@@ -204,14 +204,12 @@ Future<void> _evaluate(
     final openCycleSnap =
         ref.read(currentMetabolicCycleProvider).valueOrNull;
     if (openCycleSnap != null) {
-      final existingLive = openCycleSnap.liveScore ?? 0;
-      final newLiveScore = math.max(existingLive, dailyScore);
-      if (openCycleSnap.liveScore != newLiveScore) {
+      if (openCycleSnap.liveScore != dailyScore) {
         unawaited(
           ref
               .read(metabolicCycleRepositoryProvider)
               .updateLiveScore(
-                  account.uid, openCycleSnap.cycleId, newLiveScore)
+                  account.uid, openCycleSnap.cycleId, dailyScore)
               .catchError((Object e) {
             AppLogger.debug(
                 '[evaluator] updateLiveScore falló (offline?): $e');
@@ -326,13 +324,20 @@ Future<void> _evaluate(
     final closureReason = closed?.closureReason;
     if (closureReason != null &&
         closureReason != ClosureReason.manualNextFasting) {
+      // SPEC-241 Bug 300: scheduleAt +60s en vez de showImmediate.
+      // showImmediate() falla si la app volvió de background o fue terminada.
+      // Con +60s el sistema operativo agenda la notificación de forma
+      // confiable, incluso si la app cierra inmediatamente después.
       unawaited(
-        NotificationService.showImmediate(
+        NotificationService.scheduleAt(
           id: NotificationIds.autoCycleClosure,
           title: 'Tu día metabólico cerró',
           body: _autoCycleClosureBody(closureReason),
+          scheduledTime: DateTime.now().add(const Duration(seconds: 60)),
+          repeatsDaily: false,
+          payload: NotificationRouter.circadianPayload(),
         ).catchError((Object e) {
-          AppLogger.debug('[evaluator] SPEC-235 notif falló: $e');
+          AppLogger.debug('[evaluator] SPEC-241 notif falló: $e');
         }),
       );
     }
