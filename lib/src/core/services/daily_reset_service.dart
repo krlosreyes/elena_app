@@ -12,6 +12,7 @@ import 'package:elena_app/src/features/dashboard/application/sleep_notifier.dart
 import 'package:elena_app/src/features/dashboard/application/ui_interaction_notifier.dart';
 import 'package:elena_app/src/features/exercise/application/exercise_notifier.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
+import 'package:elena_app/src/features/streak/application/streak_notifier.dart';
 
 /// SPEC-33 + SPEC-58: Servicio que detecta cambios de día y triggeriza
 /// resets circadianos de los 5 pilares.
@@ -122,6 +123,15 @@ class DailyResetNotifier extends StateNotifier<void> {
         await _ref.read(dailySummaryPersistenceServiceProvider).flushClosingDay();
       }
 
+      // SPEC-242: señalar al StreakNotifier que los siguientes cambios de
+      // pilar son un reset transitorio, NO acciones del usuario. Durante
+      // este ventana, _evaluateToday() usa HWM para preservar el progreso
+      // del ciclo cerrado. Una vez terminado el reset (150ms de margen para
+      // que todos los listeners Riverpod hayan disparado), endReset() activa
+      // el modo dinámico: borrar agua baja el score inmediatamente.
+      final streakNotifier = _ref.read(streakProvider.notifier);
+      streakNotifier.beginReset();
+
       // Nutrición: limpia logs en memoria del día y resetea score.
       _ref.read(nutritionProvider.notifier).resetDaily();
 
@@ -143,6 +153,11 @@ class DailyResetNotifier extends StateNotifier<void> {
       // SPEC-72.2: limpiar descartes de banners para que reaparezcan en el
       // nuevo día si la condición que los origina sigue activa.
       _ref.read(uiInteractionProvider.notifier).resetDismissals();
+
+      // SPEC-242: dar tiempo a que todos los listeners de pilares disparen
+      // (todos sincrónicos en Riverpod, pero el microtask queue necesita
+      // un frame para propagarse a través de ref.listen). 150ms es seguro.
+      Future.delayed(const Duration(milliseconds: 150), streakNotifier.endReset);
 
       AppLogger.debug(
         'SPEC-58: reset diario completado en 5 pilares + descartes UI.',

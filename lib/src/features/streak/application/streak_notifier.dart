@@ -102,6 +102,25 @@ class StreakNotifier extends StateNotifier<StreakState> {
   /// un entry sin prev (HWM inefectivo) y puede sobreescribir datos.
   bool _historyLoaded = false;
 
+  /// SPEC-242: flag que indica que DailyResetService está ejecutando un
+  /// triggerDailyReset(). Durante este ventana, los 5 pilares se ponen
+  /// transitoriamente a 0 — queremos preservar los valores previos del
+  /// ciclo cerrado (para la racha del usuario). Fuera de esta ventana,
+  /// usamos los valores ACTUALES sin maxMag para que el score sea dinámico:
+  /// si el usuario borra vasos de agua, el score baja inmediatamente.
+  bool _resetInProgress = false;
+
+  /// Llamado por DailyResetService ANTES de resetear los pilares.
+  void beginReset() => _resetInProgress = true;
+
+  /// Llamado por DailyResetService DESPUÉS de que todos los listeners
+  /// de pilares hayan tenido tiempo de disparar (con Future.delayed).
+  /// Re-evalúa con el estado real post-reset.
+  void endReset() {
+    _resetInProgress = false;
+    _evaluateToday();
+  }
+
   /// Clave de fecha de hoy 'yyyy-MM-dd'.
   /// SPEC-138: delega en la fuente única del día.
   static String get _todayKey =>
@@ -262,57 +281,56 @@ class StreakNotifier extends StateNotifier<StreakState> {
       mealsLogged: nutrition.mealsLoggedToday,
     );
 
-    // ── HIGH WATER MARK (2026-06-17) ────────────────────────────────────
-    // Dentro del mismo día calendario, un pilar completado NO puede
-    // degradarse a incompleto. Motivo: al cerrar un ciclo metabólico,
-    // triggerDailyReset() resetea los notifiers in-memory a cero. Los
-    // listeners del StreakNotifier disparan _evaluateToday() con datos
-    // vacíos y SOBREESCRIBEN la entrada en Firestore con 0 pilares,
-    // rompiendo la racha del usuario.
+    // ── SCORE DINÁMICO vs PROTECCIÓN DE RESET (SPEC-242) ────────────────
     //
-    // Un ejercicio que ya se hizo no se "deshace". Un sueño que ya se
-    // registró no desaparece. La lógica OR garantiza que la entrada
-    // solo puede MEJORAR dentro del mismo día.
+    // Problema original (HWM 2026-06-17): al cerrar un ciclo metabólico,
+    // triggerDailyReset() resetea los 5 pilares a 0. Los listeners
+    // disparaban _evaluateToday() con 0 en todo y sobreescribían Firestore,
+    // rompiendo la racha del usuario. Por eso se añadió maxMag + OR.
     //
-    // Para magnitudes: MAX del valor previo y el nuevo. Misma lógica:
-    // si el usuario logró hydrationMagnitude=0.85 antes del reset,
-    // no debe bajar a 0.0 por el reset transitorio.
+    // Nuevo problema (2026-06-24): maxMag congela el score cuando el
+    // usuario BORRA entradas (e.g., vasos de agua). Borrar 2 vasos debe
+    // bajar el score, no mantenerlo en el pico del día.
+    //
+    // Solución: distinguir los dos casos con el flag _resetInProgress.
+    //   - _resetInProgress = true (DailyResetService ejecutando reset):
+    //       usar HWM (preservar prev) — los 0 son transitorios.
+    //   - _resetInProgress = false (cambio normal del usuario):
+    //       usar valores directos — el score refleja la realidad actual.
     final prev = state.todayEntry;
-    final bool fastingOk = rawFasting || (prev?.fastingCompleted ?? false);
-    final bool sleepOk = rawSleep || (prev?.sleepCompleted ?? false);
-    final bool hydrationOk = rawHydration || (prev?.hydrationCompleted ?? false);
-    final bool exerciseOk = rawExercise || (prev?.exerciseLogged ?? false);
-    final bool nutritionOk = rawNutrition || (prev?.nutritionLogged ?? false);
+    final bool fastingOk = _resetInProgress
+        ? (rawFasting || (prev?.fastingCompleted ?? false))
+        : rawFasting;
+    final bool sleepOk = _resetInProgress
+        ? (rawSleep || (prev?.sleepCompleted ?? false))
+        : rawSleep;
+    final bool hydrationOk = _resetInProgress
+        ? (rawHydration || (prev?.hydrationCompleted ?? false))
+        : rawHydration;
+    final bool exerciseOk = _resetInProgress
+        ? (rawExercise || (prev?.exerciseLogged ?? false))
+        : rawExercise;
+    final bool nutritionOk = _resetInProgress
+        ? (rawNutrition || (prev?.nutritionLogged ?? false))
+        : rawNutrition;
 
-    double maxMag(double? a, double? b) {
-      if (a == null) return b ?? 0.0;
-      if (b == null) return a;
-      return a > b ? a : b;
+    // SPEC-242: helper HWM solo usado cuando _resetInProgress = true.
+    // Fuera de un reset, las magnitudes usan el valor actual directamente.
+    double hwm(double? prev, double? current) {
+      if (prev == null) return current ?? 0.0;
+      if (current == null) return prev;
+      return prev > current ? prev : current;
     }
 
-    // HOTFIX SPEC-229/SCORE (2026-06-23): nutritionMagnitude NO usa maxMag.
+    // SPEC-242 — magnitudes dinámicas.
     //
-    // Problema: maxMag congelaba nutritionMagnitude en su pico histórico
-    // del día (e.g., 1.0 tras un desayuno perfecto). Cuando el usuario
-    // registraba una comida de menor calidad, nutritionScore del
-    // nutritionProvider bajaba a 0.67, pero StreakEntry conservaba 1.0
-    // (maxMag(1.0, 0.67) = 1.0). Resultado: CycleScoreComputer calculaba
-    // HOY=100 mientras ComidasPillarCard mostraba 67% — incongruencia
-    // visible confirmada en device (screenshot 2026-06-23).
+    // Durante _resetInProgress (DailyResetService vaciando pilares): usar
+    // HWM para no borrar el progreso del ciclo cerrado con 0 transitorios.
     //
-    // La corrección: usar el valor actual si hay datos (> 0); si es 0
-    // (reset transitorio tras triggerDailyReset) preservar el previo para
-    // no sobreescribir el día con ceros ficticios.
-    //
-    // Diferencia con otros pilares: fasting, hydration y exercise son
-    // magnitudes unidireccionales dentro del día (solo suben). Nutrition
-    // es un promedio de CALIDAD de comidas — puede bajar cuando se
-    // registra una comida de menor ratio. maxMag es correcto para las
-    // demás pero incorrecto para nutrition.
-    final double resolvedNutritionMagnitude = nutritionMagnitude > 0
-        ? nutritionMagnitude
-        : (prev?.nutritionMagnitude ?? 0.0);
-
+    // En operación normal: usar el valor ACTUAL del provider. Si el usuario
+    // borra vasos de agua o sesiones de ejercicio, el score baja de inmediato.
+    // Si no registró sueño, sleepQualityScore = null → CycleScoreComputer
+    // lo renormaliza. Esto es correcto: el score refleja la realidad.
     final newEntry = StreakEntry(
       date: _todayKey,
       fastingCompleted: fastingOk,
@@ -320,16 +338,22 @@ class StreakNotifier extends StateNotifier<StreakState> {
       hydrationCompleted: hydrationOk,
       exerciseLogged: exerciseOk,
       nutritionLogged: nutritionOk,
-      imrScore: state.todayEntry?.imrScore ??
-          0, // Preservar el IMR actual con null-safety
-      fastingMagnitude: maxMag(prev?.fastingMagnitude, fastingMagnitude),
-      // SPEC-230 BUG-C: aplicar maxMag como las demás magnitudes.
-      // Antes usaba `??` que permitía sobreescribir un pico con un valor más bajo.
-      sleepQualityScore: maxMag(prev?.sleepQualityScore, sleepQualityScore),
-      hydrationMagnitude: maxMag(prev?.hydrationMagnitude, hydrationMagnitude),
-      exerciseMagnitude: maxMag(prev?.exerciseMagnitude, exerciseMagnitude),
-      // HOTFIX 2026-06-23: ver comentario arriba — no usa maxMag.
-      nutritionMagnitude: resolvedNutritionMagnitude,
+      imrScore: state.todayEntry?.imrScore ?? 0,
+      fastingMagnitude: _resetInProgress
+          ? hwm(prev?.fastingMagnitude, fastingMagnitude)
+          : fastingMagnitude,
+      sleepQualityScore: _resetInProgress
+          ? hwm(prev?.sleepQualityScore, sleepQualityScore)
+          : sleepQualityScore,
+      hydrationMagnitude: _resetInProgress
+          ? hwm(prev?.hydrationMagnitude, hydrationMagnitude)
+          : hydrationMagnitude,
+      exerciseMagnitude: _resetInProgress
+          ? hwm(prev?.exerciseMagnitude, exerciseMagnitude)
+          : exerciseMagnitude,
+      nutritionMagnitude: _resetInProgress
+          ? hwm(prev?.nutritionMagnitude, nutritionMagnitude)
+          : nutritionMagnitude,
     );
 
     // Solo actualizar si algo cambió (evita loops reactivos)
