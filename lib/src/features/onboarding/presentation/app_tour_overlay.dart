@@ -271,12 +271,24 @@ class _SpotlightPainter extends CustomPainter {
       return;
     }
 
+    // Recortar el hueco para que nunca se extienda dentro del tab bar (≥ h*0.90).
+    // Los PillarRings están en h*0.85-0.91; el tab bar ocupa h*0.90-1.00.
+    // Al limitar en 0.90 mostramos el anillo completo (o casi) sin exponer
+    // los labels/íconos del tab bar dentro del spotlight.
+    final effectiveHole = Rect.fromLTRB(
+      holeRect!.left,
+      holeRect!.top,
+      holeRect!.right,
+      holeRect!.bottom.clamp(0.0, size.height * 0.90),
+    );
+
     // PathFillType.evenOdd hace que la intersección de los dos sub-paths
     // se reste → el RRect interior queda transparente (el hueco visible).
     final path = Path()
       ..fillType = PathFillType.evenOdd
       ..addRect(screenRect)
-      ..addRRect(RRect.fromRectAndRadius(holeRect!, const Radius.circular(20)));
+      ..addRRect(
+          RRect.fromRectAndRadius(effectiveHole, const Radius.circular(20)));
 
     canvas.drawPath(
       path,
@@ -285,10 +297,10 @@ class _SpotlightPainter extends CustomPainter {
         ..blendMode = BlendMode.srcOver,
     );
 
-    // Halo brillante alrededor del hueco.
+    // Halo brillante alrededor del hueco (ya recortado).
     canvas.drawRRect(
       RRect.fromRectAndRadius(
-          holeRect!.inflate(3), const Radius.circular(22)),
+          effectiveHole.inflate(3), const Radius.circular(22)),
       Paint()
         ..color = AppColors.metabolicGreen.withValues(alpha: 0.55)
         ..style = PaintingStyle.stroke
