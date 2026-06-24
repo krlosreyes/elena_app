@@ -172,22 +172,33 @@ class _SpotlightOverlay extends StatelessWidget {
         holeRect = Rect.fromLTWH(0, h * 0.79, w, h * 0.13);
         break;
 
-      // Los 5 anillos individuales de pilar están DENTRO de la card
-      // "PROGRESO HOY" (mismo widget _buildPillarsRow), debajo del
-      // DualScoreRing (HOY + IMR). La card completa ocupa ~h*0.58–0.90.
-      // Resaltamos la card COMPLETA para que el usuario vea tanto el
-      // score como el anillo; el texto del coach explica el pilar.
+      // Columnas individuales de cada pilar.
+      // La card PROGRESO HOY empieza a ~h*0.57. Dentro de ella hay:
+      //   - DualScoreRing (HOY + IMR) en la parte superior
+      //   - 5 PillarRings (56×56) con spaceAround en la parte inferior (~h*0.86-0.95)
+      // La columna es un rect estrecho que abarca TODO el alto de la card
+      // (h*0.57 → h*0.95), dejando ver el anillo específico Y el score.
+      // Posiciones X calculadas a partir del layout real del dashboard:
+      //   scrollPad=24, cardPad=18, 5 anillos de 56px con spaceAround en 306px.
       case TourSpotlightArea.fastingRing:
+        holeRect = _ringColumn(0, w, h);
+        break;
       case TourSpotlightArea.sleepRing:
+        holeRect = _ringColumn(1, w, h);
+        break;
       case TourSpotlightArea.hydrationRing:
+        holeRect = _ringColumn(2, w, h);
+        break;
       case TourSpotlightArea.exerciseRing:
+        holeRect = _ringColumn(3, w, h);
+        break;
       case TourSpotlightArea.comidasRing:
-        holeRect = Rect.fromLTWH(w * 0.02, h * 0.57, w * 0.96, h * 0.35);
+        holeRect = _ringColumn(4, w, h);
         break;
 
       case TourSpotlightArea.scoreCard:
-        // Solo la zona superior de la card: DualScoreRing (HOY + IMR).
-        holeRect = Rect.fromLTWH(w * 0.04, h * 0.59, w * 0.92, h * 0.18);
+        // Zona superior de la card: DualScoreRing (HOY + IMR) + motivación.
+        holeRect = Rect.fromLTWH(w * 0.04, h * 0.59, w * 0.92, h * 0.20);
         break;
 
       case TourSpotlightArea.fullScreen:
@@ -202,6 +213,39 @@ class _SpotlightOverlay extends StatelessWidget {
     );
   }
 
+  /// Columna estrecha que ilumina el slot de un pilar dentro de la card
+  /// PROGRESO HOY. Abarca desde el tope de la card hasta la parte baja
+  /// del PillarRing (incluye anillo + label).
+  ///
+  /// Layout real medido en device (iPhone 14 / 390×844):
+  ///   - ScrollView horizontal padding: 24pt
+  ///   - Card internal padding: 18pt
+  ///   - Content width disponible para los 5 anillos: 306pt
+  ///   - Anillos: 56×56, Row con MainAxisAlignment.spaceAround
+  ///   - Card top: ≈ h×0.57 | PillarRing centers: ≈ h×0.89
+  static Rect _ringColumn(int index, double w, double h) {
+    const scrollPad = 24.0; // padding horizontal del SingleChildScrollView
+    const cardPad = 18.0;   // padding interno del Container de la card
+    const ringSize = 56.0;
+    const n = 5;
+
+    final contentW = w - 2 * scrollPad - 2 * cardPad; // ≈ 306pt en 390px
+    // spaceAround: espacio a cada lado de un ring = (contentW - n*ringSize) / (n*2)
+    final halfGap = (contentW - n * ringSize) / (n * 2.0);
+
+    // Centro X del ring [index]
+    final cx = scrollPad + cardPad + halfGap
+        + index * (ringSize + 2.0 * halfGap)
+        + ringSize / 2.0;
+
+    // Columna: cubre desde el tope de la card (h*0.57) hasta debajo del ring
+    // (h*0.95). Ancho = ring + padding lateral.
+    const colPadH = 10.0;
+    final left = (cx - ringSize / 2.0 - colPadH).clamp(0.0, w);
+    final colW = (ringSize + 2.0 * colPadH).clamp(0.0, w - left);
+
+    return Rect.fromLTWH(left, h * 0.57, colW, h * 0.38);
+  }
 }
 
 class _SpotlightPainter extends CustomPainter {
