@@ -21,6 +21,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/onboarding/application/app_tour_notifier.dart';
+import 'package:elena_app/src/router/app_router.dart' show rootNavigatorKey;
 
 class AppTourOverlay extends ConsumerStatefulWidget {
   const AppTourOverlay({super.key});
@@ -57,19 +58,24 @@ class _AppTourOverlayState extends ConsumerState<AppTourOverlay>
     super.dispose();
   }
 
-  Future<void> _handleNavigation(TourStep step, BuildContext ctx) async {
-    if (step.navigateTo != null && ctx.mounted) {
-      ctx.go(step.navigateTo!);
+  Future<void> _handleNavigation(TourStep step) async {
+    if (step.navigateTo == null) return;
+    // El overlay vive en el builder de MaterialApp, ENCIMA del Router.
+    // El context local no tiene InheritedGoRouter → context.go() lanzaba
+    // "No GoRouter found in context". Usamos rootNavigatorKey que SÍ vive
+    // dentro del árbol del Router (registrado en app_router.dart).
+    final navCtx = rootNavigatorKey.currentContext;
+    if (navCtx != null && navCtx.mounted) {
+      navCtx.go(step.navigateTo!);
       await Future<void>.delayed(const Duration(milliseconds: 350));
     }
   }
 
-  Future<void> _advance(BuildContext ctx, AppTourNotifier notifier,
-      AppTourState tourState) async {
+  Future<void> _advance(
+      AppTourNotifier notifier, AppTourState tourState) async {
     final next = tourState.stepIndex + 1;
     if (next < kTourSteps.length) {
-      final nextStep = kTourSteps[next];
-      await _handleNavigation(nextStep, ctx);
+      await _handleNavigation(kTourSteps[next]);
     }
     await notifier.nextStep();
   }
@@ -116,9 +122,9 @@ class _AppTourOverlayState extends ConsumerState<AppTourOverlay>
                   stepIndex: tourState.stepIndex,
                   totalSteps: tourState.totalSteps,
                   screenSize: size,
-                  onNext: () => _advance(context, notifier, tourState),
+                  onNext: () => _advance(notifier, tourState),
                   onSkip: () async {
-                    context.go('/dashboard');
+                    rootNavigatorKey.currentContext?.go('/dashboard');
                     await notifier.skip();
                   },
                 ),
@@ -151,45 +157,37 @@ class _SpotlightOverlay extends StatelessWidget {
         break; // sin hueco
 
       case TourSpotlightArea.clock:
-        // El reloj ocupa ~el 30-55% vertical de la pantalla (después del header
-        // y los banners). Hueco centrado en horizontal, oval.
+        // El reloj CircadianClock ocupa ~78% del ancho de pantalla con ratio 1:1.
+        // Basado en screenshots reales: aparece aproximadamente entre h*0.18–0.55.
         holeRect = Rect.fromLTWH(
-          w * 0.05,
-          h * 0.22,
-          w * 0.90,
+          w * 0.07,
+          h * 0.18,
+          w * 0.86,
           h * 0.38,
         );
         break;
 
       case TourSpotlightArea.pillarRow:
-        // Fila completa de los 5 anillos (~72-84% vertical).
-        holeRect = Rect.fromLTWH(0, h * 0.70, w, h * 0.15);
+        // Fila de los 5 anillos en la parte baja de la card PROGRESO HOY.
+        holeRect = Rect.fromLTWH(0, h * 0.79, w, h * 0.13);
         break;
 
+      // Los 5 anillos individuales de pilar están DENTRO de la card
+      // "PROGRESO HOY" (mismo widget _buildPillarsRow), debajo del
+      // DualScoreRing (HOY + IMR). La card completa ocupa ~h*0.58–0.90.
+      // Resaltamos la card COMPLETA para que el usuario vea tanto el
+      // score como el anillo; el texto del coach explica el pilar.
       case TourSpotlightArea.fastingRing:
-        holeRect = _ringHole(0, w, h);
-        break;
       case TourSpotlightArea.sleepRing:
-        holeRect = _ringHole(1, w, h);
-        break;
       case TourSpotlightArea.hydrationRing:
-        holeRect = _ringHole(2, w, h);
-        break;
       case TourSpotlightArea.exerciseRing:
-        holeRect = _ringHole(3, w, h);
-        break;
       case TourSpotlightArea.comidasRing:
-        holeRect = _ringHole(4, w, h);
+        holeRect = Rect.fromLTWH(w * 0.02, h * 0.57, w * 0.96, h * 0.35);
         break;
 
       case TourSpotlightArea.scoreCard:
-        // Card PROGRESO HOY aparece debajo de los pilares (~78-95% vertical).
-        holeRect = Rect.fromLTWH(
-          w * 0.02,
-          h * 0.65,
-          w * 0.96,
-          h * 0.22,
-        );
+        // Solo la zona superior de la card: DualScoreRing (HOY + IMR).
+        holeRect = Rect.fromLTWH(w * 0.04, h * 0.59, w * 0.92, h * 0.18);
         break;
 
       case TourSpotlightArea.fullScreen:
@@ -204,23 +202,6 @@ class _SpotlightOverlay extends StatelessWidget {
     );
   }
 
-  /// Calcula el Rect de un anillo individual de pilar.
-  /// [index] 0=Ayuno, 1=Sueño, 2=Hidratación, 3=Ejercicio, 4=Comidas.
-  Rect _ringHole(int index, double w, double h) {
-    // La fila de 5 anillos está espaciada uniformemente.
-    // Cada columna ocupa w/5; el anillo centra en esa columna.
-    const ringCount = 5;
-    final colW = w / ringCount;
-    final cx = colW * index + colW / 2;
-    const ringRadius = 32.0;
-    const ringTop = 0.71; // fracción vertical de inicio de la fila
-
-    return Rect.fromCenter(
-      center: Offset(cx, h * ringTop + ringRadius + 8),
-      width: ringRadius * 2 + 20,
-      height: ringRadius * 2 + 48, // incluye el label debajo
-    );
-  }
 }
 
 class _SpotlightPainter extends CustomPainter {
