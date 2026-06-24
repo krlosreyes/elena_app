@@ -20,23 +20,33 @@ class PaywallNudges {
       ];
 
   /// Programa los dos nudges (one-shot). Idempotente por id.
+  ///
+  /// SPEC-241 Bug 500-501: solo se programan fechas FUTURAS. Si el usuario
+  /// ya superó el día 5 o 12, scheduleAt() silenciosamente descartaría la
+  /// notificación — ahora la ignoramos explícitamente y logueamos el motivo.
   static Future<void> schedule(DateTime createdAt) async {
+    final now = DateTime.now();
     final dates = nudgeDatesFor(createdAt);
-    await NotificationService.scheduleAt(
-      id: NotificationIds.paywallNudgeDay5,
-      title: 'Tu progreso está tomando forma',
-      body: 'Mira cómo evoluciona tu tendencia con Premium. Estás a tiempo.',
-      scheduledTime: dates[0],
-      repeatsDaily: false,
-    );
-    await NotificationService.scheduleAt(
-      id: NotificationIds.paywallNudgeDay12,
-      title: 'Tu prueba gratuita termina en 2 días',
-      body: 'Si quieres conservar tu coaching y tu tendencia, este es el '
-          'momento. Sin presión.',
-      scheduledTime: dates[1],
-      repeatsDaily: false,
-    );
+    if (dates[0].isAfter(now)) {
+      await NotificationService.scheduleAt(
+        id: NotificationIds.paywallNudgeDay5,
+        title: 'Tu progreso está tomando forma',
+        body:
+            'Mira cómo evoluciona tu tendencia con Premium. Estás a tiempo.',
+        scheduledTime: dates[0],
+        repeatsDaily: false,
+      );
+    }
+    if (dates[1].isAfter(now)) {
+      await NotificationService.scheduleAt(
+        id: NotificationIds.paywallNudgeDay12,
+        title: 'Tu prueba gratuita termina en 2 días',
+        body: 'Si quieres conservar tu coaching y tu tendencia, este es el '
+            'momento. Sin presión.',
+        scheduledTime: dates[1],
+        repeatsDaily: false,
+      );
+    }
   }
 
   /// Cancela ambos nudges (al volverse Premium ya no aplican).

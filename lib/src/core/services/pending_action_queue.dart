@@ -57,6 +57,12 @@ const String kCheckInGoodActionId = 'checkin_good';
 const String kCheckInHungryActionId = 'checkin_hungry';
 const String kCheckInTiredActionId = 'checkin_tired';
 
+// SPEC-241: hitos de ayuno accionables — ¿Cómo te sientes? Bien/Mal.
+// Categoría separada de check-ins para que el motor los distinga.
+const String kMilestoneCategoryId = 'elena_milestone';
+const String kMilestoneGoodActionId = 'milestone_good';
+const String kMilestoneBadActionId = 'milestone_bad';
+
 /// Minutos por sesión de ejercicio registrada desde un prompt.
 /// Valor conservador; el usuario puede ajustar desde el pilar.
 const int kExercisePromptMinutes = 30;
@@ -71,6 +77,10 @@ enum PendingActionType {
   // SPEC-232: check-in emocional durante ayuno.
   // `amount` codifica el ordinal de FastingFeeling (0=energized...5=irritable).
   checkInFeeling,
+  // SPEC-241: sentimiento en hito de ayuno (Bien/Mal).
+  // `amount` codifica las horas del hito (12, 16, 18, 24).
+  milestoneFeelingGood,
+  milestoneFeelingBad,
 }
 
 class PendingAction {
@@ -260,9 +270,40 @@ class PendingActionQueue {
         ));
         break;
 
+      // SPEC-241: hito de ayuno — sentimiento Bien/Mal.
+      // `amount` = horas del hito; se extrae del notificationId range (200-203).
+      case kMilestoneGoodActionId:
+        await enqueue(PendingAction(
+          id: 'milestoneGood_${notificationId ?? 0}_$bucket',
+          type: PendingActionType.milestoneFeelingGood,
+          amount: _milestoneHoursFromId(notificationId),
+          millisSinceEpoch: t.millisecondsSinceEpoch,
+        ));
+        break;
+      case kMilestoneBadActionId:
+        await enqueue(PendingAction(
+          id: 'milestoneBad_${notificationId ?? 0}_$bucket',
+          type: PendingActionType.milestoneFeelingBad,
+          amount: _milestoneHoursFromId(notificationId),
+          millisSinceEpoch: t.millisecondsSinceEpoch,
+        ));
+        break;
+
       default:
         // Tap en el cuerpo (sin actionId) u otra categoría: nada que encolar.
         break;
+    }
+  }
+
+  /// Convierte el ID de notificación de hito al número de horas correspondiente.
+  /// fasting12h=200 → 12h, fasting16h=203 → 16h, fasting18h=201 → 18h, fasting24h=202 → 24h.
+  static double _milestoneHoursFromId(int? id) {
+    switch (id) {
+      case 200: return 12;
+      case 201: return 18;
+      case 202: return 24;
+      case 203: return 16;
+      default:  return 0;
     }
   }
 

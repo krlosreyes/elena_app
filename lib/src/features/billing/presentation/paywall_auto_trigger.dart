@@ -26,16 +26,25 @@ class PaywallAutoTrigger extends ConsumerStatefulWidget {
 }
 
 class _PaywallAutoTriggerState extends ConsumerState<PaywallAutoTrigger> {
-  bool _ran = false;
+  @override
+  void initState() {
+    super.initState();
+    // SPEC-241 Bug 500-501: evaluación inicial post-frame.
+    // Antes se usaba un flag `_ran = true` one-shot. Problema: si isPremium
+    // venía de caché como `true` en el primer frame y luego cambiaba a `false`,
+    // los nudges nunca se reprogramaban. Ahora: evaluamos en initState Y
+    // escuchamos cambios en isPremiumProvider via ref.listen en build.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _evaluate();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    if (!_ran) {
-      _ran = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _evaluate();
-      });
-    }
+    // Re-evaluar si el estado premium cambia (ej: caché frío → Firestore).
+    ref.listen(isPremiumProvider, (_, __) {
+      if (mounted) _evaluate();
+    });
     return const SizedBox.shrink();
   }
 

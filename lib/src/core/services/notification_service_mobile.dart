@@ -28,7 +28,11 @@ import 'pending_action_queue.dart'
         kCheckInEnergizedActionId,
         kCheckInGoodActionId,
         kCheckInHungryActionId,
-        kCheckInTiredActionId;
+        kCheckInTiredActionId,
+        // SPEC-241: milestone feeling actions
+        kMilestoneCategoryId,
+        kMilestoneGoodActionId,
+        kMilestoneBadActionId;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SPEC-199 Fase A — Handlers de respuesta a notificaciones accionables
@@ -410,6 +414,39 @@ class NotificationService {
         ),
       );
 
+  // SPEC-241: hitos de ayuno accionables — "¿Cómo te sientes? Bien 😊 / Mal 😔"
+  static final NotificationDetails _milestoneActionableDetails =
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          'elena_fasting',
+          'Ayuno Metabólico',
+          channelDescription: 'Hitos científicos de tu protocolo de ayuno',
+          importance: Importance.high,
+          priority: Priority.high,
+          icon: '@mipmap/ic_launcher',
+          visibility: NotificationVisibility.public,
+          actions: <AndroidNotificationAction>[
+            AndroidNotificationAction(
+              kMilestoneGoodActionId,
+              'Bien 😊',
+              showsUserInterface: false,
+            ),
+            AndroidNotificationAction(
+              kMilestoneBadActionId,
+              'Mal 😔',
+              showsUserInterface: false,
+            ),
+          ],
+        ),
+        iOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: false,
+          presentSound: true,
+          interruptionLevel: InterruptionLevel.timeSensitive,
+          categoryIdentifier: kMilestoneCategoryId,
+        ),
+      );
+
   // ── Inicialización ──────────────────────────────────────────────────────────
 
   static Future<void> init() async {
@@ -545,6 +582,19 @@ class NotificationService {
             },
           );
 
+      // SPEC-241: categoría de hito de ayuno accionable — Bien/Mal.
+      final DarwinNotificationCategory milestoneCategory =
+          DarwinNotificationCategory(
+            kMilestoneCategoryId,
+            actions: <DarwinNotificationAction>[
+              DarwinNotificationAction.plain(kMilestoneGoodActionId, 'Bien 😊'),
+              DarwinNotificationAction.plain(kMilestoneBadActionId, 'Mal 😔'),
+            ],
+            options: <DarwinNotificationCategoryOption>{
+              DarwinNotificationCategoryOption.hiddenPreviewShowTitle,
+            },
+          );
+
       final DarwinInitializationSettings iosSettings =
           DarwinInitializationSettings(
             requestAlertPermission: true,
@@ -556,6 +606,7 @@ class NotificationService {
               exerciseCategory,
               nutritionCategory,
               checkInCategory,
+              milestoneCategory,
             ],
           );
 
@@ -672,6 +723,8 @@ class NotificationService {
     bool actionableNutrition = false,
     // SPEC-232: check-in emocional durante el ayuno.
     bool actionableCheckIn = false,
+    // SPEC-241: hito de ayuno accionable — "¿Cómo te sientes? Bien/Mal".
+    bool actionableMilestone = false,
     // SPEC-222: payload JSON para deeplink routing al tocar el cuerpo.
     String? payload,
   }) async {
@@ -690,9 +743,11 @@ class NotificationService {
         return;
       }
 
-      // Prioridad: accionable específico > accionable hydration > fasting/circadian.
+      // Prioridad: milestone > checkIn > fasting > exercise > nutrition > hydration > fasting/circadian.
       final NotificationDetails details;
-      if (actionableCheckIn) {
+      if (actionableMilestone) {
+        details = _milestoneActionableDetails;
+      } else if (actionableCheckIn) {
         details = _checkInActionableDetails;
       } else if (actionableFasting) {
         details = _fastingActionableDetails;

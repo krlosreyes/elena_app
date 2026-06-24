@@ -97,4 +97,9 @@ class NotificationRouter {
   /// SPEC-234: payload para la rutina nocturna de sueño.
   static String sleepRoutinePayload() =>
       jsonEncode({'route': '/sleep-routine', 'category': 'sleep'});
+
+  /// SPEC-241: payload para hitos de ayuno accionables.
+  /// Incluye las horas del hito para que el router sepa cuál fue.
+  static String fastingMilestonePayload({required int hours}) =>
+      jsonEncode({'route': '/', 'category': 'fasting', 'milestone_hours': hours});
 }

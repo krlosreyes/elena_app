@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 70;
+	objectVersion = 54;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -91,9 +91,39 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		B33EC4D92FE80DCD00F867C0 /* ElenaCash.app */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = ElenaCash.app; sourceTree = "<group>"; };
-		B33EC4E72FE80DCF00F867C0 /* ElenaCash.appTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = ElenaCash.appTests; sourceTree = "<group>"; };
-		B33EC4F12FE80DCF00F867C0 /* ElenaCash.appUITests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = ElenaCash.appUITests; sourceTree = "<group>"; };
+		B33EC4D92FE80DCD00F867C0 /* ElenaCash.app */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = ElenaCash.app;
+			sourceTree = "<group>";
+		};
+		B33EC4E72FE80DCF00F867C0 /* ElenaCash.appTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = ElenaCash.appTests;
+			sourceTree = "<group>";
+		};
+		B33EC4F12FE80DCF00F867C0 /* ElenaCash.appUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = ElenaCash.appUITests;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -284,8 +314,6 @@
 				B33EC4D92FE80DCD00F867C0 /* ElenaCash.app */,
 			);
 			name = ElenaCash.app;
-			packageProductDependencies = (
-			);
 			productName = ElenaCash.app;
 			productReference = B33EC4D82FE80DCD00F867C0 /* ElenaCash.app.app */;
 			productType = "com.apple.product-type.application";
@@ -307,8 +335,6 @@
 				B33EC4E72FE80DCF00F867C0 /* ElenaCash.appTests */,
 			);
 			name = ElenaCash.appTests;
-			packageProductDependencies = (
-			);
 			productName = ElenaCash.appTests;
 			productReference = B33EC4E42FE80DCF00F867C0 /* ElenaCash.appTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
@@ -330,8 +356,6 @@
 				B33EC4F12FE80DCF00F867C0 /* ElenaCash.appUITests */,
 			);
 			name = ElenaCash.appUITests;
-			packageProductDependencies = (
-			);
 			productName = ElenaCash.appUITests;
 			productReference = B33EC4EE2FE80DCF00F867C0 /* ElenaCash.appUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
@@ -502,13 +526,9 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-resources-${CONFIGURATION}-input-files.xcfilelist",
 			);
-			inputPaths = (
-			);
 			name = "[CP] Copy Pods Resources";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-resources-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -538,13 +558,9 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
-			inputPaths = (
-			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;

@@ -18,6 +18,7 @@ import 'package:elena_app/src/features/dashboard/data/fasting_history_migrator.d
 import 'package:elena_app/src/features/dashboard/data/fasting_interval_repository_impl.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/core/services/live_activity_service.dart';
+import 'package:elena_app/src/core/services/notification_router.dart';
 import 'package:elena_app/src/core/services/notification_service.dart';
 import 'package:elena_app/src/core/services/notification_scheduler.dart';
 import '../domain/fasting_status.dart';
@@ -404,6 +405,15 @@ class FastingNotifier extends StateNotifier<FastingState> {
       await NotificationService.cancelFasting();
       // SPEC-232: cancelar check-ins emocionales al cerrar ayuno.
       await NotificationService.cancelCheckIns();
+
+      // SPEC-241: ID 101 — disparar al cierre del ayuno, no por hora de perfil.
+      // El usuario acaba de cerrar el ayuno; su ventana abrió ahora mismo.
+      await NotificationService.showImmediate(
+        id: NotificationIds.firstMeal,
+        title: '🍽️ Tu ventana abrió',
+        body: 'Ya puedes comer. Tu cuerpo está listo para recibir nutrición.',
+        payload: NotificationRouter.nutritionPayload(),
+      );
       final parts = protocol.split(':');
       final feedingHours = parts.length > 1 ? int.tryParse(parts[1]) ?? 8 : 8;
       final feedingEndTime = manualTime.add(Duration(hours: feedingHours));

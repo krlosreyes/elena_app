@@ -65,9 +65,10 @@ class NotificationScheduler {
       );
 
       // ── 2. Apertura de ventana de alimentación ───────────────────────────
-      // Consciencia ayuno↔alimentación: si el usuario está ayunando, NO
-      // programar la notificación de apertura de ventana. Al cerrar el
-      // ayuno, _scheduleFeedingWindowNotifs() reprograma lo necesario.
+      // SPEC-241: ID 101 se dispara al CERRAR EL AYUNO (en fasting_notifier.dart
+      // → _scheduleFeedingWindowNotifs), NO por hora de perfil.
+      // Si el usuario no está ayunando, el programador por hora queda como
+      // fallback para días sin ayuno activo.
       final firstMeal = profile.firstMealGoal;
       if (firstMeal != null && !isFasting) {
         await _scheduleCircadian(
@@ -108,6 +109,9 @@ class NotificationScheduler {
       }
       // Consciencia ayuno↔alimentación: el aviso de cierre de ventana solo
       // aplica durante la fase de alimentación.
+      // SPEC-241: esta notificación NUNCA se agenda con ayuno activo.
+      // Al cerrar el ayuno, _scheduleFeedingWindowNotifs() la reprograma
+      // para el cierre real de ventana (startedAt + 24h - 30 min).
       if (lastMealDt != null && !isFasting) {
         final warningTime =
             lastMealDt.subtract(const Duration(minutes: 30));
@@ -137,8 +141,8 @@ class NotificationScheduler {
         hour: lock60.hour,
         minute: lock60.minute,
         title: '🌙 Una hora para soltar el día',
-        body: 'En una hora tu cuerpo empieza a descansar. Si vas a cenar, '
-            'mejor ya.',
+        body: 'En una hora tu cuerpo empieza a descansar. Si no has cenado, '
+            'hazlo ya.',
         payload: NotificationRouter.circadianPayload(),
       );
 
@@ -163,15 +167,9 @@ class NotificationScheduler {
       );
 
       // ── 7. Recordatorio de sueño ─────────────────────────────────────────
-      await _scheduleCircadian(
-        id: NotificationIds.sleep,
-        hour: profile.sleepTime.hour,
-        minute: profile.sleepTime.minute,
-        title: '🌙 Hora de descansar',
-        body: 'Hora de descansar. Las primeras horas de sueño son las que '
-            'más te reparan.',
-        payload: NotificationRouter.circadianPayload(),
-      );
+      // SPEC-241: ID 106 (sleep) ELIMINADO. Era duplicado de ID 611 (goodNight)
+      // que se agenda en _scheduleSleepCoaching() a la misma hora con mejor
+      // copy. Mantener los dos generaba doble notificación al mismo tiempo.
 
       // ── 7b. SPEC-234: coaching de sueño (rutina nocturna + buenas noches)
       await _scheduleSleepCoaching(profile.sleepTime);
@@ -230,48 +228,49 @@ class NotificationScheduler {
       final DateTime m18h = fastingStart.add(const Duration(hours: 18));
       final DateTime m24h = fastingStart.add(const Duration(hours: 24));
 
+      // SPEC-241: hitos accionables — "¿Cómo te sientes? Bien 😊 / Mal 😔"
       await NotificationService.scheduleAt(
         id: NotificationIds.fasting12h,
         title: '⚡ 12 horas',
         body: 'Tu cuerpo ya cambió de marcha, y tú llegaste hasta aquí. '
-            'Muy bien.',
+            '¿Cómo te sientes?',
         scheduledTime: m12h,
         repeatsDaily: false,
-        isFasting: true,
-        payload: NotificationRouter.fastingPayload(),
+        actionableMilestone: true,
+        payload: NotificationRouter.fastingMilestonePayload(hours: 12),
       );
 
       await NotificationService.scheduleAt(
         id: NotificationIds.fasting16h,
         title: '✨ 16 horas — Limpieza profunda',
         body: 'Tu cuerpo entró en limpieza profunda gracias a lo de hoy. '
-            'Sigues fuerte.',
+            '¿Cómo te sientes?',
         scheduledTime: m16h,
         repeatsDaily: false,
-        isFasting: true,
-        payload: NotificationRouter.fastingPayload(),
+        actionableMilestone: true,
+        payload: NotificationRouter.fastingMilestonePayload(hours: 16),
       );
 
       await NotificationService.scheduleAt(
         id: NotificationIds.fasting18h,
         title: '🔥 18 horas — Cabeza clara',
         body: 'Tu cuerpo encontró otro combustible. Vas a notar la cabeza '
-            'más clara. Lo estás logrando.',
+            'más clara. ¿Cómo te sientes?',
         scheduledTime: m18h,
         repeatsDaily: false,
-        isFasting: true,
-        payload: NotificationRouter.fastingPayload(),
+        actionableMilestone: true,
+        payload: NotificationRouter.fastingMilestonePayload(hours: 18),
       );
 
       await NotificationService.scheduleAt(
         id: NotificationIds.fasting24h,
         title: '✨ 24 horas — Reparación profunda',
         body: 'La limpieza llegó a su punto más alto. Trabajo profundo del '
-            'que pocas veces te das cuenta. Enorme.',
+            'que pocas veces te das cuenta. ¿Cómo te sientes?',
         scheduledTime: m24h,
         repeatsDaily: false,
-        isFasting: true,
-        payload: NotificationRouter.fastingPayload(),
+        actionableMilestone: true,
+        payload: NotificationRouter.fastingMilestonePayload(hours: 24),
       );
 
       // SPEC-232: programar check-ins emocionales en paralelo con los hitos.
@@ -400,7 +399,11 @@ class NotificationScheduler {
   }) async {
     try {
       await NotificationService.cancel(NotificationIds.nextMealReady);
-      final triggerAt = nextMealAt.subtract(leadTime);
+      // SPEC-241 Bug 301: buffer +10s para absorber drift de milisegundos
+      // en la conversión DateTime → TZDateTime que puede rechazar la notif.
+      final triggerAt = nextMealAt
+          .subtract(leadTime)
+          .add(const Duration(seconds: 10));
       if (triggerAt.isBefore(DateTime.now())) return;
       final hh = nextMealAt.hour.toString().padLeft(2, '0');
       final mm = nextMealAt.minute.toString().padLeft(2, '0');
@@ -463,7 +466,8 @@ class NotificationScheduler {
   /// SPEC-150 §1.3 — 90 min se eligió sobre los 30 min pedidos por
   /// Carlos basándose en Maughan 2003 + Adan 2012 + comparativa con
   /// apps comerciales (WaterMinder, Hydro Coach).
-  static const Duration kHydrationCadence = Duration(minutes: 30);
+  // SPEC-241: cadencia reducida de 30 → 45 min (de ~27 slots/día a ~17).
+  static const Duration kHydrationCadence = Duration(minutes: 45);
 
   /// Hora máxima a la que programamos hidratación. Coincide con la
   /// alerta de bloqueo intestinal 30 min de SPEC-70.5 — durante la

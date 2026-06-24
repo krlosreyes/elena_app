@@ -59,7 +59,7 @@ class CoachingActionRouter {
           break;
 
         case PendingActionType.hydrationSnoozed:
-          // "Aún no" → re-recordar en +15 min (one-shot, también accionable).
+          // SPEC-241: snooze reducido de 15 → 5 min (respuesta más inmediata).
           await PendingActionQueue.remove(action.id);
           await NotificationService.scheduleAt(
             id: NotificationIds.hydrationSnooze,
@@ -67,7 +67,7 @@ class CoachingActionRouter {
             body:
                 'Tu cuerpo sigue esperando ese vaso. Un toque y queda '
                 'registrado.',
-            scheduledTime: DateTime.now().add(const Duration(minutes: 15)),
+            scheduledTime: DateTime.now().add(const Duration(minutes: 5)),
             repeatsDaily: false,
             actionableHydration: true,
           );
@@ -188,6 +188,30 @@ class CoachingActionRouter {
           );
           AppLogger.debug(
               '[CoachingActionRouter] check-in ${feeling.name} vía prompt');
+          break;
+
+        // SPEC-241: sentimiento en hito de ayuno (Bien/Mal).
+        // `amount` = horas del hito (12, 16, 18, 24). No cierra el ayuno
+        // ni realiza ninguna acción intrusiva; solo registra la señal de
+        // bienestar para retroalimentar el motor predictivo.
+        case PendingActionType.milestoneFeelingGood:
+        case PendingActionType.milestoneFeelingBad:
+          await PendingActionQueue.remove(action.id);
+          applied++;
+          AnalyticsService.logEvent(
+            'fasting_milestone_feeling',
+            params: {
+              'feeling': action.type == PendingActionType.milestoneFeelingGood
+                  ? 'good'
+                  : 'bad',
+              'milestone_hours': action.amount?.toInt() ?? 0,
+              'surface': 'notification',
+            },
+          );
+          AppLogger.debug(
+            '[CoachingActionRouter] hito ${action.amount?.toInt()}h → '
+            '${action.type.name} registrado',
+          );
           break;
       }
     }
