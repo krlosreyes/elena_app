@@ -1402,17 +1402,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       } catch (_) {
         // Si la pref falla no rompemos el cierre del onboarding.
       }
+      // SPEC-243: activar el tour ANTES de navegar mientras el ref es válido.
+      // Si 'appTourDone' ya está en true (usuario que repite onboarding), es no-op.
+      await ref.read(appTourProvider.notifier).tryActivate();
+
       await Future.delayed(const Duration(milliseconds: 800));
       if (!mounted) return;
       context.go('/dashboard');
-
-      // SPEC-243: activar el tour interactivo post-onboarding.
-      // `tryActivate` retorna false si el flag 'appTourDone' ya está seteado
-      // (reinicio de app, reinstalación). Lo hacemos post-frame para que
-      // GoRouter haya terminado la transición al Dashboard.
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ref.read(appTourProvider.notifier).tryActivate();
-      });
     } catch (e, stackTrace) {
       AppLogger.error('Error en Onboarding Submit', e, stackTrace);
     }

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -20,6 +21,7 @@ import 'package:elena_app/src/features/profile/domain/biometry_recalc.dart';
 import 'package:elena_app/src/features/profile/presentation/widgets/body_composition_card.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
+import 'package:elena_app/src/features/onboarding/application/app_tour_notifier.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -694,6 +696,36 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
         const SizedBox(height: 6),
         _buildLegalGroup(context),
         const SizedBox(height: 28),
+
+        // ── DEBUG (solo en modo debug — invisible en producción) ─────
+        if (kDebugMode) ...[
+          _legalDivider(),
+          const SizedBox(height: 8),
+          Consumer(
+            builder: (ctx, ref, _) => TextButton(
+              onPressed: () async {
+                await ref.read(appTourProvider.notifier).forceReset();
+                if (ctx.mounted) {
+                  ScaffoldMessenger.of(ctx).showSnackBar(
+                    const SnackBar(
+                      content: Text('Tour reseteado — vuelve al Dashboard'),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                  await ref.read(appTourProvider.notifier).tryActivate();
+                  if (ctx.mounted) ctx.go('/dashboard');
+                }
+              },
+              style: TextButton.styleFrom(
+                minimumSize: const Size.fromHeight(40),
+                foregroundColor: Colors.orange.withValues(alpha: 0.7),
+              ),
+              child: const Text('[DEBUG] Repetir tour onboarding',
+                  style: TextStyle(fontSize: 12)),
+            ),
+          ),
+          const SizedBox(height: 4),
+        ],
 
         // ── Acciones destructivas (text buttons sutiles) ────────────
         _buildLogoutTextButton(context),

@@ -246,8 +246,10 @@ class _SpotlightPainter extends CustomPainter {
       return;
     }
 
-    // Crear un path con hueco redondeado.
+    // PathFillType.evenOdd hace que la intersección de los dos sub-paths
+    // se reste → el RRect interior queda transparente (el hueco visible).
     final path = Path()
+      ..fillType = PathFillType.evenOdd
       ..addRect(screenRect)
       ..addRRect(RRect.fromRectAndRadius(holeRect!, const Radius.circular(20)));
 

@@ -230,6 +230,14 @@ class AppTourNotifier extends StateNotifier<AppTourState> {
   /// Cierra el tour sin completarlo (botón "Saltar").
   Future<void> skip() async => _finish();
 
+  /// Borra el flag 'appTourDone' para volver a mostrar el tour.
+  /// Útil en QA / testing (Settings debug o shake gesture).
+  Future<void> forceReset() async {
+    final prefs = _ref.read(sharedPreferencesProvider);
+    await prefs.remove('appTourDone');
+    state = const AppTourState(isActive: false, stepIndex: 0);
+  }
+
   Future<void> _finish() async {
     final prefs = _ref.read(sharedPreferencesProvider);
     await prefs.setBool('appTourDone', true);
