@@ -2,6 +2,11 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>com.metamorfosis.elena.notification-refresh</string>
+		<string>com.metamorfosis.elena.healthkit-update</string>
+	</array>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
@@ -29,7 +34,7 @@
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
-		<true/>
+		<false/>
 	</dict>
 	<key>NSCameraUsageDescription</key>
 	<string>ElenaApp requiere acceso a la cámara para escanear alimentos y actualizar tu foto de perfil de progreso biométrico.</string>
@@ -38,7 +43,7 @@
 	<key>NSHealthShareUsageDescription</key>
 	<string>ElenaApp sincroniza con Apple Health para leer tu peso, sueño y actividad física, y así calcular tu IMR sin pedirte que ingreses todo manualmente.</string>
 	<key>NSHealthUpdateUsageDescription</key>
-	<string>ElenaApp puede registrar en Apple Health los datos que ingresás manualmente en la app, para que tu historial esté unificado.</string>
+	<string>ElenaApp puede registrar en Apple Health los datos que ingresas manualmente en la app, para que tu historial esté unificado.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>ElenaApp requiere acceso a la galería para subir registros visuales a tu progreso de coaching.</string>
 	<key>UIApplicationSceneManifest</key>
@@ -64,11 +69,6 @@
 	</dict>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
-	<key>BGTaskSchedulerPermittedIdentifiers</key>
-	<array>
-		<string>com.metamorfosis.elena.notification-refresh</string>
-		<string>com.metamorfosis.elena.healthkit-update</string>
-	</array>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>fetch</string>
@@ -82,15 +82,11 @@
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>UISupportedInterfaceOrientations~ipad</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
 		<string>UIInterfaceOrientationPortraitUpsideDown</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 </dict>
 </plist>
