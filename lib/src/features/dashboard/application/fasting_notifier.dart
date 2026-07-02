@@ -414,16 +414,24 @@ class FastingNotifier extends StateNotifier<FastingState> {
         body: 'Ya puedes comer. Tu cuerpo está listo para recibir nutrición.',
         payload: NotificationRouter.nutritionPayload(),
       );
-      final parts = protocol.split(':');
-      final feedingHours = parts.length > 1 ? int.tryParse(parts[1]) ?? 8 : 8;
-      final feedingEndTime = manualTime.add(Duration(hours: feedingHours));
-      await NotificationService.scheduleAt(
-        id: NotificationIds.lastMealWarning,
-        title: '⏰ Cierre de ventana en 30 min',
-        body: 'Última comida dentro del protocolo $protocol.',
-        scheduledTime: feedingEndTime.subtract(const Duration(minutes: 30)),
-        repeatsDaily: false,
-      );
+
+      // FIX (race condition): lastMealWarning (ID 102) ya NO se programa aquí.
+      //
+      // Problema previo: este método scheduleaba un one-shot anclado al ciclo
+      // (manualTime + feedingHours - 30min), pero NotificationProvider también
+      // responde al cambio isActive→false y llama scheduleCircadianDay(), que
+      // empieza con cancelCircadian() (cancela 100-109 incluyendo 102) y luego
+      // re-agenda 102 como daily basado en profile.lastMealGoal. Como ambas
+      // son async sin orden garantizado, el one-shot correcto era sobreescrito
+      // por el daily incorrecto → la notificación disparaba durante el ayuno
+      // del día siguiente.
+      //
+      // Fix: NotificationProvider es el único dueño de lastMealWarning.
+      // scheduleCircadianDay() lo agenda con !isFasting guard. El ciclo
+      // ya cerró → isFasting=false → se agenda correctamente a profile.lastMealGoal.
+      // Trade-off menor: no anclado al ciclo exacto si el usuario cerró su
+      // ayuno a una hora distinta de profile.firstMealGoal, pero al menos
+      // NUNCA dispara durante la ventana de ayuno.
     } catch (e) {
       AppLogger.warning('Error no crítico en notificaciones', e);
     }

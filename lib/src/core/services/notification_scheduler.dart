@@ -136,15 +136,25 @@ class NotificationScheduler {
       final lock30 = lockActive.subtract(const Duration(minutes: 30));
       final lock60 = lockActive.subtract(const Duration(minutes: 60));
 
-      await _scheduleCircadian(
-        id: NotificationIds.intestinalLock60,
-        hour: lock60.hour,
-        minute: lock60.minute,
-        title: '🌙 Una hora para soltar el día',
-        body: 'En una hora tu cuerpo empieza a descansar. Si no has cenado, '
-            'hazlo ya.',
-        payload: NotificationRouter.circadianPayload(),
-      );
+      // Consciencia ayuno↔alimentación: "Si no has cenado, hazlo ya" es
+      // incoherente durante el ayuno activo — el usuario NO puede comer.
+      // La notificación se suprime. lock30 e lockActive tienen copy neutro
+      // (soltar el día, descansar) y aplican igual durante o fuera de ayuno.
+      if (!isFasting) {
+        await _scheduleCircadian(
+          id: NotificationIds.intestinalLock60,
+          hour: lock60.hour,
+          minute: lock60.minute,
+          title: '🌙 Una hora para soltar el día',
+          body: 'En una hora tu cuerpo empieza a descansar. Si no has cenado, '
+              'hazlo ya.',
+          payload: NotificationRouter.circadianPayload(),
+        );
+      } else {
+        // Durante ayuno: cancelar explícitamente por si quedó programada de
+        // una sesión anterior (p.ej. el usuario inició ayuno temprano ese día).
+        await NotificationService.cancel(NotificationIds.intestinalLock60);
+      }
 
       await _scheduleCircadian(
         id: NotificationIds.intestinalLock30,

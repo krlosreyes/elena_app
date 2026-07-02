@@ -27,6 +27,7 @@ import 'package:elena_app/src/core/services/notification_scheduler.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart';
 import 'package:elena_app/src/features/metabolic_cycle/domain/metabolic_cycle.dart';
 import 'package:elena_app/src/features/nutrition/data/nutrition_repository_impl.dart';
+import 'package:elena_app/src/features/dashboard/application/fasting_notifier.dart';
 import 'package:elena_app/src/features/nutrition/domain/meal_interval_rules.dart';
 import 'package:elena_app/src/features/nutrition/domain/meal_ratio.dart';
 import 'package:elena_app/src/features/nutrition/domain/nutrition_log.dart';
@@ -317,7 +318,10 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
     _ref.read(coachingCompletionProvider).onPillarActivity(Pillar.nutrition);
 
     // SPEC-137 E.5: notificación de próxima comida (local, no requiere red).
-    if (isCheatDay) {
+    // Guard de ayuno: si el usuario está ayunando activamente, no agendar
+    // "Tu próxima comida es a las HH:MM" — es incoherente con el ayuno.
+    final isFastingNow = _ref.read(fastingProvider).isActive;
+    if (isCheatDay || isFastingNow) {
       unawaited(NotificationScheduler.cancelNextMealReminder());
     } else {
       final nextAt = timestamp.add(MealIntervalRules.recommendedInterval);
@@ -349,12 +353,13 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
 
     // SPEC-137 E.5: si después de remover queda alguna comida hoy,
     // re-agendar la notificación con la nueva "última comida". Si no
-    // queda ninguna, cancelar.
+    // queda ninguna, o si el usuario está ayunando, cancelar.
     final remaining = state.todayLogs.length > 1
         ? state.todayLogs.sublist(0, state.todayLogs.length - 1)
         : <NutritionLog>[];
     final lastAt = MealIntervalRules.lastMealOf(remaining);
-    if (lastAt == null) {
+    final isFastingNow = _ref.read(fastingProvider).isActive;
+    if (lastAt == null || isFastingNow) {
       await NotificationScheduler.cancelNextMealReminder();
     } else {
       final nextAt = lastAt.add(MealIntervalRules.recommendedInterval);
@@ -447,7 +452,8 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
     // Reajustar notificación de próxima comida.
     final remaining = state.todayLogs;
     final lastAt = MealIntervalRules.lastMealOf(remaining);
-    if (lastAt == null) {
+    final isFastingNow = _ref.read(fastingProvider).isActive;
+    if (lastAt == null || isFastingNow) {
       unawaited(NotificationScheduler.cancelNextMealReminder());
     } else {
       final nextAt = lastAt.add(MealIntervalRules.recommendedInterval);
