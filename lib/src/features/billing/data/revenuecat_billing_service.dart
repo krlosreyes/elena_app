@@ -19,7 +19,7 @@ import 'package:elena_app/src/features/billing/domain/billing_package.dart';
 import 'package:elena_app/src/features/billing/domain/entitlement_status.dart';
 
 /// Identificador del entitlement en el dashboard de RevenueCat (SPEC-196 §2.2).
-const String kPremiumEntitlementId = 'premium';
+const String kPremiumEntitlementId = 'Premium';
 
 class RevenueCatBillingService implements BillingService {
   RevenueCatBillingService({required this.apiKey, this.debugLogging = false});
