@@ -92,7 +92,26 @@ void main() {
       expect(e.qualifiesForStreak, isFalse);
     });
 
-    test('3 pilares: califica (umbral SPEC-06)', () {
+    test('3 pilares con ayuno: califica', () {
+      final e = make(fasting: true, hydration: true, exercise: true);
+      expect(e.pillarsCompleted, 3);
+      expect(e.qualifiesForStreak, isTrue);
+    });
+
+    test('3 pilares con sueño: califica', () {
+      final e = make(sleep: true, hydration: true, exercise: true);
+      expect(e.pillarsCompleted, 3);
+      expect(e.qualifiesForStreak, isTrue);
+    });
+
+    test('3 pilares sin ayuno ni sueño: NO califica', () {
+      // hydration + exercise + nutrition = 3 pilares pero sin pilar core.
+      final e = make(hydration: true, exercise: true, nutrition: true);
+      expect(e.pillarsCompleted, 3);
+      expect(e.qualifiesForStreak, isFalse);
+    });
+
+    test('3 pilares con ayuno + sueño: califica (SPEC-06 + regla pilar core)', () {
       final e = make(fasting: true, sleep: true, hydration: true);
       expect(e.pillarsCompleted, 3);
       expect(e.qualifiesForStreak, isTrue);

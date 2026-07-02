@@ -241,7 +241,12 @@ class StreakNotifier extends StateNotifier<StreakState> {
           _fastingTargetHours(currentProtocol);
     }
 
-    final double sleepHours = sleep.lastLog?.duration.inHours.toDouble() ?? 0.0;
+    // FIX: Duration.inHours trunca al entero (6:59 → 6, no 6.98).
+    // Usar inSeconds/3600.0 para precisión decimal.
+    final double sleepHours =
+        sleep.lastLog == null
+            ? 0.0
+            : sleep.lastLog!.duration.inSeconds / 3600.0;
 
     // SPEC-65: magnitudes continuas. Calculadas una sola vez aquí — NO
     // duplicamos la lógica de los `evaluateX` (esos siguen siendo el

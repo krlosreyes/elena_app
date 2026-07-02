@@ -1,7 +1,9 @@
 /// Registro de cumplimiento diario de los 5 pilares metabólicos.
 ///
 /// Un día "cuenta" para la racha si [qualifiesForStreak] es true,
-/// lo que requiere completar al menos 3 de los 5 pilares (umbral binario).
+/// lo que requiere completar al menos 3 de los 5 pilares (umbral binario)
+/// Y que al menos uno de esos pilares sea ayuno o sueño — los dos pilares
+/// con mayor evidencia científica en el modelo metabólico de Elena.
 ///
 /// SPEC-65: añade magnitudes continuas por pilar — `qualifiesForStreak`
 /// sigue siendo booleano, pero ahora `dailyQualityScore` ofrece una
@@ -91,8 +93,18 @@ class StreakEntry {
     return count;
   }
 
-  /// True si el día cuenta para la racha: mínimo 3 de 5 pilares completados.
-  bool get qualifiesForStreak => pillarsCompleted >= 3;
+  /// True si el día cuenta para la racha: mínimo 3 de 5 pilares completados
+  /// Y al menos uno de ellos es ayuno o sueño.
+  ///
+  /// Fundamento: evitar rachas sostenidas solo con los pilares de menor
+  /// impacto metabólico (hidratación + ejercicio + nutrición). La evidencia
+  /// respalda ayuno y sueño como los dos vectores más determinantes del
+  /// eje hormonal (grelina/leptina/insulina) — un día sin ninguno de los
+  /// dos no cumple el estándar mínimo de "día metabólico real".
+  ///
+  /// AASM 2015, Sutton 2018 Cell Metab, Walker 2017, Spiegel 1999 Lancet.
+  bool get qualifiesForStreak =>
+      pillarsCompleted >= 3 && (fastingCompleted || sleepCompleted);
 
   /// True si el día cumple con el estándar de Engagement (SPEC-07):
   /// IMR >= 60 Y mínimo 3 pilares completados.
