@@ -38,8 +38,6 @@
 	</dict>
 	<key>NSCameraUsageDescription</key>
 	<string>ElenaApp requiere acceso a la cámara para escanear alimentos y actualizar tu foto de perfil de progreso biométrico.</string>
-	<key>NSHealthClinicalHealthRecordsShareUsageDescription</key>
-	<string>ElenaApp sincroniza con Apple Health para leer tu peso, sueño y actividad física, y así calcular tu IMR sin pedirte que ingreses todo manualmente.</string>
 	<key>NSHealthShareUsageDescription</key>
 	<string>ElenaApp sincroniza con Apple Health para leer tu peso, sueño y actividad física, y así calcular tu IMR sin pedirte que ingreses todo manualmente.</string>
 	<key>NSHealthUpdateUsageDescription</key>
@@ -88,5 +86,7 @@
 		<string>UIInterfaceOrientationPortrait</string>
 		<string>UIInterfaceOrientationPortraitUpsideDown</string>
 	</array>
+	<key>UIRequiresFullScreen</key>
+	<true/>
 </dict>
 </plist>
