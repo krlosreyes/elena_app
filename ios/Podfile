@@ -36,35 +36,44 @@ target 'ElenaApp' do
 end
 
 post_install do |installer|
+  # Xcode 26 beta: aplicar ENABLE_MODULE_VERIFIER a nivel de PROYECTO
+  # (no solo targets) para que el verifier sintético tampoco lo active.
+  installer.pods_project.build_configurations.each do |config|
+    config.build_settings['ENABLE_MODULE_VERIFIER'] = 'NO'
+    config.build_settings['CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER'] = 'NO'
+    config.build_settings['GCC_TREAT_WARNINGS_AS_ERRORS'] = 'NO'
+  end
+
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
     target.build_configurations.each do |config|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
-      # SPEC-181.bugfix (2026-06-05): Xcode 16+ activó por default el
-      # treat-warning-as-error para "double-quoted include in framework
-      # header". FirebaseAuth tiene includes legacy con comillas dobles
-      # que rompen el build modular en release. Las 3 flags juntas
-      # garantizan que Firebase no escale a error en ningún target.
       config.build_settings['CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER'] = 'NO'
       config.build_settings['GCC_TREAT_WARNINGS_AS_ERRORS'] = 'NO'
       config.build_settings['SWIFT_TREAT_WARNINGS_AS_ERRORS'] = 'NO'
-      # Xcode 26 beta: leveldb-library y otros pods C++ fallan con
-      # "'cstdint' file not found" porque el toolchain nuevo no incluye
-      # las cabeceras C++ legacy por default. Forzar C++17 + libc++ resuelve.
+      config.build_settings['ENABLE_MODULE_VERIFIER'] = 'NO'
+      # Xcode 26 beta: C++ stdlib headers movidos — forzar c++17 + libc++
       config.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++17'
       config.build_settings['CLANG_CXX_LIBRARY'] = 'libc++'
-      # SPEC-193.bugfix (2026-06-07): Xcode 16 corre un "module verifier" en
-      # una fase separada (VerifyModule) que construye un framework sintético
-      # ("Test") y NO hereda CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER.
-      # Los umbrella headers de FirebaseAuth con includes en comillas vuelven
-      # a romper ahí (y en cascada: "module FirebaseAuthInterop not found").
-      # Desactivar el verifier en los pods es el fix estándar para Firebase
-      # + Xcode 16. No afecta el binario final, solo el chequeo de módulo.
-      config.build_settings['ENABLE_MODULE_VERIFIER'] = 'NO'
-      # Algunos targets de Firebase requieren modular_headers = false
-      # implícito para que sus umbrella headers con quotes pasen el
-      # verify-module step en release.
-      config.build_settings['DEFINES_MODULE'] = 'YES'
+      config.build_settings['OTHER_CPLUSPLUSFLAGS'] = '$(inherited) -std=c++17'
+
+      # permission_handler_apple: desactivar módulo para que no intente
+      # compilar la umbrella header (que importa Flutter/Flutter.h) antes
+      # de que Flutter.framework esté disponible en DerivedData.
+      if target.name == 'permission_handler_apple'
+        config.build_settings['DEFINES_MODULE'] = 'NO'
+        config.build_settings['CLANG_ENABLE_MODULES'] = 'NO'
+      end
+
+      # leveldb-library: deshabilitar completamente el módulo system para
+      # evitar que el module verifier de Xcode 26 intente compilar los
+      # headers C++ de leveldb (cstdint, cache.h, c.h) como módulo.
+      if target.name.include?('leveldb')
+        config.build_settings['CLANG_ENABLE_MODULES'] = 'NO'
+        config.build_settings['DEFINES_MODULE'] = 'NO'
+        config.build_settings['MODULEMAP_FILE'] = ''
+        config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
+      end
     end
   end
 end
