@@ -270,7 +270,7 @@ class HydrationNotifier extends StateNotifier<HydrationState> {
         AppLogger.error('HydrationNotifier.addWater falló', e);
         state = state.copyWith(
           lastWriteError:
-              'No pudimos guardar tu hidratación. Revisá tu conexión.',
+              'No pudimos guardar tu hidratación. Revisa tu conexión.',
         );
       }),
     );
@@ -310,7 +310,7 @@ class HydrationNotifier extends StateNotifier<HydrationState> {
         if (mounted) {
           state = state.copyWith(
             lastWriteError:
-                'No pudimos descontar el vaso. Revisá tu conexión.',
+                'No pudimos descontar el vaso. Revisa tu conexión.',
           );
         }
       }),

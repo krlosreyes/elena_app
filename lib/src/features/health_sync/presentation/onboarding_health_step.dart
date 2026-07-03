@@ -74,7 +74,7 @@ class OnboardingHealthStep extends ConsumerWidget {
         const SizedBox(height: 24),
         Text(
           'Al continuar, vas a ver el diálogo del sistema para elegir '
-          'qué datos compartir. Podés saltear este paso y conectar '
+          'qué datos compartir. Puedes saltear este paso y conectar '
           'más tarde desde Perfil > Salud.',
           textAlign: TextAlign.center,
           style: TextStyle(

@@ -930,7 +930,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           const SizedBox(height: 4),
           Text(
             _snSkipped
-                ? 'Podés responder más tarde desde Perfil.'
+                ? 'Puedes responder más tarde desde Perfil.'
                 : 'Cinco preguntas rápidas para personalizar tu plan.',
             style: const TextStyle(
               fontSize: 13,
@@ -1061,7 +1061,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           [
             'Plan inicial: 16:8',
             'Plato sugerido: 2 a 1',
-            'Podés refinarlo más adelante desde Perfil.',
+            'Puedes refinarlo más adelante desde Perfil.',
           ],
         ),
     };
@@ -1167,7 +1167,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               const SizedBox(height: 8),
               Text(
                 'Calculamos estos objetivos para ti con base en tu '
-                'peso, edad y rutina actual. Activá los que quieras '
+                'peso, edad y rutina actual. Activa los que quieras '
                 'trabajar y, si lo prefieres, ajustalos con el slider.',
                 style: TextStyle(
                   fontSize: 13,

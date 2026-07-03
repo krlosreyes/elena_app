@@ -46,7 +46,7 @@ class ForYouSection extends ConsumerWidget {
             ),
           ),
           error: (_, __) => _muted(
-            'No pudimos cargar el contenido. Revisá tu conexión.',
+            'No pudimos cargar el contenido. Revisa tu conexión.',
           ),
           data: (feed) => _content(context, feed),
         ),

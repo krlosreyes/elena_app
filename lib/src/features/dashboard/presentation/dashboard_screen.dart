@@ -45,6 +45,7 @@ import 'package:elena_app/src/features/metabolic_cycle/domain/metabolic_cycle.da
 import 'package:elena_app/src/features/streak/application/daily_score_provider.dart';
 // SPEC-137 E.5: banner countdown 30 min antes de la próxima comida.
 import 'package:elena_app/src/features/nutrition/presentation/widgets/next_meal_banner.dart';
+import 'package:elena_app/src/features/onboarding/application/app_tour_notifier.dart';
 
 // SPEC-88 fix: BodyCompositionCard y GoalsDashboardWidget se retiraron
 // del Dashboard. La primera vive ahora en Profile; la segunda queda
@@ -63,6 +64,20 @@ class DashboardScreen extends ConsumerStatefulWidget {
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   SelectedPillar _selectedPillar = SelectedPillar.ayuno;
+
+  // SPEC-243 BUILD-2 FIX: el tour solo se llamaba desde _finalSubmit() en
+  // onboarding. Usuarios con perfil ya creado llegan al dashboard sin pasar
+  // por ese método → tour nunca aparecía. Al verificar aquí con tryActivate()
+  // garantizamos que cualquier usuario que llegue por primera vez al dashboard
+  // vea el tour, independientemente del camino de onboarding que tomó.
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.read(appTourProvider.notifier).tryActivate();
+    });
+  }
 
   /// SPEC-116: si la URL trae `?pillar=xxx` la primera vez que se
   /// renderiza la pantalla, forzamos esa selección. Útil cuando el

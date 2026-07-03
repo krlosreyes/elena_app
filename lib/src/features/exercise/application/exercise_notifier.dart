@@ -220,7 +220,7 @@ class ExerciseNotifier extends StateNotifier<ExerciseState> {
           .catchError((Object e) {
         AppLogger.error('ExerciseNotifier.removeLastSession falló', e);
         if (mounted) {
-          state = state.copyWith(error: 'No pudimos eliminar la sesión. Revisá tu conexión.');
+          state = state.copyWith(error: 'No pudimos eliminar la sesión. Revisa tu conexión.');
         }
       }),
     );

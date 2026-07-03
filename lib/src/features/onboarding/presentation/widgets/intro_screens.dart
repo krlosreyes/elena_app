@@ -83,7 +83,7 @@ class IntroDataStep extends StatelessWidget {
             'de descanso. Con eso calculamos tu base y armamos tu '
             'coaching.',
         'Todo queda en tu cuenta privada. No vendemos ni compartimos. '
-            'Podés borrar tu cuenta cuando quieras desde Perfil.',
+            'Puedes borrar tu cuenta cuando quieras desde Perfil.',
       ],
     );
   }

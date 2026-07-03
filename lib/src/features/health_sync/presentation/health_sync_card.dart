@@ -406,7 +406,7 @@ class _HealthSyncCardState extends ConsumerState<HealthSyncCard>
         const SnackBar(
           content: Text(
             'Necesitamos los permisos para importar tus datos. '
-            'Podés activarlos desde Ajustes > Salud.',
+            'Puedes activarlos desde Ajustes > Salud.',
           ),
         ),
       );
