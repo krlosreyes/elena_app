@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -697,35 +696,56 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
         _buildLegalGroup(context),
         const SizedBox(height: 28),
 
-        // ── DEBUG (solo en modo debug — invisible en producción) ─────
-        if (kDebugMode) ...[
-          _legalDivider(),
-          const SizedBox(height: 8),
-          Consumer(
-            builder: (ctx, ref, _) => TextButton(
-              onPressed: () async {
-                await ref.read(appTourProvider.notifier).forceReset();
-                if (ctx.mounted) {
-                  ScaffoldMessenger.of(ctx).showSnackBar(
-                    const SnackBar(
-                      content: Text('Tour reseteado — vuelve al Dashboard'),
-                      duration: Duration(seconds: 2),
+        // ── Ayuda ────────────────────────────────────────────────────
+        _buildSectionTitle('Ayuda'),
+        const SizedBox(height: 6),
+        Consumer(
+          builder: (ctx, ref, _) => InkWell(
+            onTap: () async {
+              await ref.read(appTourProvider.notifier).forceReset();
+              await ref.read(appTourProvider.notifier).tryActivate();
+              if (ctx.mounted) ctx.go('/dashboard');
+            },
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Guía de la app',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white.withValues(alpha: 0.70),
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Vuelve a ver el tour interactivo',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w400,
+                            color: Colors.white.withValues(alpha: 0.34),
+                          ),
+                        ),
+                      ],
                     ),
-                  );
-                  await ref.read(appTourProvider.notifier).tryActivate();
-                  if (ctx.mounted) ctx.go('/dashboard');
-                }
-              },
-              style: TextButton.styleFrom(
-                minimumSize: const Size.fromHeight(40),
-                foregroundColor: Colors.orange.withValues(alpha: 0.7),
+                  ),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    color: Colors.white.withValues(alpha: 0.24),
+                    size: 18,
+                  ),
+                ],
               ),
-              child: const Text('[DEBUG] Repetir tour onboarding',
-                  style: TextStyle(fontSize: 12)),
             ),
           ),
-          const SizedBox(height: 4),
-        ],
+        ),
+        const SizedBox(height: 28),
 
         // ── Acciones destructivas (text buttons sutiles) ────────────
         _buildLogoutTextButton(context),
