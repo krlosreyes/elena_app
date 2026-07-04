@@ -49,12 +49,20 @@ final isPremiumProvider = Provider<bool>((ref) {
 
 // ─── Trial (SPEC-240) ────────────────────────────────────────────────────────
 
-/// Días restantes del trial. 0 si el trial venció o no hay fecha de creación.
-/// Negativo nunca — clampado a 0.
+/// Días restantes del trial. 0 si el trial venció.
+/// Si auth aún carga → 0 (sin parpadeo de banner).
+/// Si auth cargó pero createdAt es null (metadata ausente) → asumimos usuario
+/// nuevo y devolvemos kTrialDurationDays (caso seguro: no tiene entitlement RC).
 final trialDaysRemainingProvider = Provider<int>((ref) {
-  final account = ref.watch(authStateProvider).valueOrNull;
-  final createdAt = account?.createdAt;
-  if (createdAt == null) return 0;
+  final authAsync = ref.watch(authStateProvider);
+  // Mientras carga, no mostramos el banner (evita parpadeo).
+  if (!authAsync.hasValue) return 0;
+  final createdAt = authAsync.valueOrNull?.createdAt;
+  // createdAt puede ser null si Firebase no populó metadata.creationTime
+  // (ocurre en cuentas recién creadas en algunos builds). Asumimos trial
+  // completo: el peor caso es darle 14 días a alguien que ya tiene cuenta
+  // antigua sin metadata, pero isPremiumProvider lo corrige vía RC.
+  if (createdAt == null) return kTrialDurationDays;
   final elapsed = DateTime.now().difference(createdAt).inDays;
   final remaining = kTrialDurationDays - elapsed;
   return remaining > 0 ? remaining : 0;

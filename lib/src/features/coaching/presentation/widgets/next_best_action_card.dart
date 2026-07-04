@@ -45,12 +45,12 @@ class _NextBestActionCardState extends ConsumerState<NextBestActionCard> {
       return const SizedBox.shrink();
     }
 
-    // SPEC-197: gating de coaching. Free = 1 acción/día. Si ya mostró una
-    // acción DISTINTA hoy, la nueva queda tras el paywall (no es la misma que
-    // ya vio — esa se mantiene). Premium: ilimitado.
+    // SPEC-197 + SPEC-240: gating de coaching. Free = 1 acción/día. Si ya
+    // mostró una acción DISTINTA hoy, la nueva queda tras el paywall.
+    // Trial (hasFullAccess) = ilimitado, igual que premium.
     final gate = ref.watch(featureGateProvider);
     final shownToday = ref.read(coachingFatigueProvider).shownTodayActionIds;
-    final blockedByDailyLimit = !gate.isPremium &&
+    final blockedByDailyLimit = !gate.hasFullAccess &&
         shownToday.isNotEmpty &&
         !shownToday.contains(primary.id);
     if (blockedByDailyLimit) {
