@@ -8,6 +8,7 @@
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
 import 'package:elena_app/src/features/billing/application/billing_service.dart';
 import 'package:elena_app/src/features/billing/application/feature_gate.dart';
 import 'package:elena_app/src/features/billing/application/free_billing_service.dart';
@@ -46,9 +47,33 @@ final isPremiumProvider = Provider<bool>((ref) {
       );
 });
 
-/// SPEC-197: gate de features. Los callsites lo watchean para decidir qué
+// ─── Trial (SPEC-240) ────────────────────────────────────────────────────────
+
+/// Días restantes del trial. 0 si el trial venció o no hay fecha de creación.
+/// Negativo nunca — clampado a 0.
+final trialDaysRemainingProvider = Provider<int>((ref) {
+  final account = ref.watch(authStateProvider).valueOrNull;
+  final createdAt = account?.createdAt;
+  if (createdAt == null) return 0;
+  final elapsed = DateTime.now().difference(createdAt).inDays;
+  final remaining = kTrialDurationDays - elapsed;
+  return remaining > 0 ? remaining : 0;
+});
+
+/// True durante los primeros [kTrialDurationDays] días desde el registro.
+/// Si el usuario ya es premium, este provider retorna false (el trial
+/// "se absorbe" — no tiene efecto sobre la UX del banner).
+final isInTrialProvider = Provider<bool>((ref) {
+  if (ref.watch(isPremiumProvider)) return false;
+  return ref.watch(trialDaysRemainingProvider) > 0;
+});
+
+/// SPEC-197 + SPEC-240: gate de features. Los callsites lo watchean para decidir qué
 /// mostrar o bloquear. Reacciona en vivo a cambios de entitlement
-/// (free→premium desbloquea sin reiniciar).
+/// (free→premium desbloquea sin reiniciar). Trial también da acceso completo.
 final featureGateProvider = Provider<FeatureGate>((ref) {
-  return FeatureGate(isPremium: ref.watch(isPremiumProvider));
+  return FeatureGate(
+    isPremium: ref.watch(isPremiumProvider),
+    isInTrial: ref.watch(isInTrialProvider),
+  );
 });

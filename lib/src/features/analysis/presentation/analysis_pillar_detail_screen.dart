@@ -92,8 +92,8 @@ class _AnalysisPillarDetailScreenState
   Widget build(BuildContext context) {
     final range = ref.watch(analysisRangeProvider);
     final aggregationMode = AggregationMode.forRange(range);
-    // SPEC-197: detalle de pilar solo Premium.
-    final isPremium = ref.watch(isPremiumProvider);
+    // SPEC-197 + SPEC-240: detalle de pilar — Premium o en Trial.
+    final isPremium = ref.watch(featureGateProvider).hasFullAccess;
 
     return Scaffold(
       // SPEC-168.4.6: mismo fondo que Hoy/Perfil/Analisis (cards

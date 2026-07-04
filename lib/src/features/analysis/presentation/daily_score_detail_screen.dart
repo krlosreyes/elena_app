@@ -72,7 +72,7 @@ class _DailyScoreDetailScreenState
     final seriesAsync = ref.watch(closedCycleScoreSeriesProvider);
     final showSpinner = seriesAsync.isLoading && series.points.isEmpty;
     // SPEC-197: detalle Score del Día solo Premium.
-    final isPremium = ref.watch(isPremiumProvider);
+    final isPremium = ref.watch(featureGateProvider).hasFullAccess;
 
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,

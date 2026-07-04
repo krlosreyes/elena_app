@@ -180,7 +180,7 @@ class _HealthSyncCardState extends ConsumerState<HealthSyncCard>
     if (perm is HealthPermissionDenied) return _buildConnectButton();
 
     // Granted (o Partial) — verificar si el usuario puede sincronizar.
-    final isPremium = ref.watch(isPremiumProvider);
+    final isPremium = ref.watch(featureGateProvider).hasFullAccess;
     if (!isPremium) return _buildPremiumNeededBanner(context);
 
     // Solo Premium llega aquí — mostrar última sync + botón manual.

@@ -20,7 +20,7 @@ class BodyCompositionScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final userAsync = ref.watch(currentUserStreamProvider);
     // SPEC-197 soft gate: free users ven el contenido detrás de blur overlay.
-    final isPremium = ref.watch(isPremiumProvider);
+    final isPremium = ref.watch(featureGateProvider).hasFullAccess;
 
     return Scaffold(
       backgroundColor: Colors.black,

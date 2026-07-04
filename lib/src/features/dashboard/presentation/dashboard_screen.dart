@@ -22,6 +22,7 @@ import 'package:elena_app/src/features/billing/application/billing_providers.dar
 import 'package:elena_app/src/features/billing/presentation/paywall_auto_trigger.dart';
 import 'package:elena_app/src/features/billing/presentation/paywall_launcher.dart';
 import 'package:elena_app/src/features/billing/presentation/premium_lock.dart';
+import 'package:elena_app/src/features/billing/presentation/trial_banner.dart';
 import 'package:elena_app/src/features/coaching/presentation/widgets/cycle_coaching_feedback_card.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/interactive_coaching_card.dart';
 import 'package:elena_app/src/features/coaching/presentation/widgets/check_in_card.dart';
@@ -242,6 +243,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   // BANNER DE ENGAGEMENT (SPEC-07 + SPEC-72.2 dismiss por sesión)
                   const EngagementBanner(),
                   const SizedBox(height: 16),
+
+                  // SPEC-240: banner de periodo de prueba. Visible días 1–14
+                  // para usuarios no-premium. Se oculta solo al vencer o suscribir.
+                  const TrialBanner(),
 
                   // SPEC-198: orquestador invisible del paywall proactivo +
                   // nudges día 5/12. No dibuja nada.
