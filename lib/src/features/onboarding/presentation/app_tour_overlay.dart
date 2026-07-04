@@ -528,8 +528,11 @@ class _CoachCard extends StatelessWidget {
       case TourSpotlightArea.exerciseRing:
       case TourSpotlightArea.comidasRing:
       case TourSpotlightArea.pillarRow:
+        return false; // pilares están abajo → card arriba
       case TourSpotlightArea.scoreCard:
-        return false; // pilares/score están abajo → card arriba
+        // Tras el scroll automático, el DualScoreRing queda al ~32% de la
+        // pantalla (parte alta). La card debe ir abajo para no taparlo.
+        return true;
     }
   }
 
