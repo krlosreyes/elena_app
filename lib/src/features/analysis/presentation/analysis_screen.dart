@@ -2,6 +2,8 @@
 // Fitness, función de revisión histórica (NO motivacional — eso vive
 // en Hoy).
 
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -63,12 +65,9 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // SPEC-197: Progreso Detallado es función Premium.
-    // Safety net: si el usuario accede por deeplink o cualquier otra vía
-    // sin ser premium, mostramos la pantalla bloqueada.
-    // La guarda principal está en el tap del tab en DashboardScreen.
+    // SPEC-197 (soft gate): todos los usuarios llegan aquí. Free users ven
+    // el contenido real detrás de un blur overlay → efecto FOMO deliberado.
     final isPremium = ref.watch(isPremiumProvider);
-    if (!isPremium) return _buildLockedScreen(context);
 
     final range = ref.watch(analysisRangeProvider);
     // SPEC-168.1: mode temporal para que cada chart formatee la
@@ -110,34 +109,42 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
       // unidad visual en la app (las cards mantienen su #0C0C0E).
       backgroundColor: AppColors.backgroundDark,
       body: SafeArea(
-        child: SingleChildScrollView(
-          controller: _scrollController,
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Header in-page estilo Apple.
-              _buildPageHeader(context),
-              const SizedBox(height: 28),
-              if (firstLoad)
-                _buildLoading()
-              else
-                ..._buildContent(
-                  imrSeries: imr.value!,
-                  bodyFatSeries: bodyFat.value!,
-                  fastingSeries: fasting.value!,
-                  nutritionSeries: nutrition.value!,
-                  hydrationSeries: hydration.value!,
-                  exerciseSeries: exercise.value!,
-                  sleepSeries: sleep.value!,
-                  aggregationMode: aggregationMode,
-                  nutritionPie: nutritionPie.value ?? const NutritionPieData(
-                    aDominantCount: 0,
-                    eDominantCount: 0,
-                  ),
-                ),
-            ],
-          ),
+        child: Stack(
+          children: [
+            SingleChildScrollView(
+              controller: _scrollController,
+              // Free users: scroll deshabilitado — el blur overlay cubre el contenido.
+              physics: isPremium ? null : const NeverScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Header in-page estilo Apple.
+                  _buildPageHeader(context),
+                  const SizedBox(height: 28),
+                  if (firstLoad)
+                    _buildLoading()
+                  else
+                    ..._buildContent(
+                      imrSeries: imr.value!,
+                      bodyFatSeries: bodyFat.value!,
+                      fastingSeries: fasting.value!,
+                      nutritionSeries: nutrition.value!,
+                      hydrationSeries: hydration.value!,
+                      exerciseSeries: exercise.value!,
+                      sleepSeries: sleep.value!,
+                      aggregationMode: aggregationMode,
+                      nutritionPie: nutritionPie.value ?? const NutritionPieData(
+                        aDominantCount: 0,
+                        eDominantCount: 0,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            // SPEC-197 soft gate: blur overlay para usuarios Free.
+            if (!isPremium) _buildPremiumGateOverlay(context),
+          ],
         ),
       ),
       bottomNavigationBar: BottomNavigationBar(
@@ -169,111 +176,101 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
     );
   }
 
-  /// Pantalla bloqueada para usuarios Free que llegan a /analysis por deeplink
-  /// u otra vía distinta al tap del tab (que ya intercepta en DashboardScreen).
-  Widget _buildLockedScreen(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.backgroundDark,
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Header idéntico al de la pantalla real para no romper el contexto.
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-              child: _buildPageHeader(context),
-            ),
-            const Spacer(),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.insights_rounded,
-                    color: AppColors.metabolicGreen,
-                    size: 56,
-                  ),
-                  const SizedBox(height: 20),
-                  const Text(
-                    'Progreso Detallado',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    'Accede a tu historial completo de IMR, tendencias por pilar y análisis de transformación con Elena Premium.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.60),
-                      fontSize: 14,
-                      height: 1.5,
-                    ),
-                  ),
-                  const SizedBox(height: 28),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton(
-                      onPressed: () => openPaywall(
-                        context, ref,
-                        feature: GatedFeature.analyticsHistory,
-                      ),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.metabolicGreen,
-                        foregroundColor: Colors.black,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
-                      child: const Text(
-                        'Desbloquear Premium',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ),
-                  ),
+  /// Blur overlay para usuarios Free. Se apila sobre el contenido real
+  /// (que se renderiza y carga normalmente) para crear efecto FOMO visual.
+  /// El header "Progreso" queda visible arriba; el blur empieza debajo.
+  Widget _buildPremiumGateOverlay(BuildContext context) {
+    return Positioned(
+      // ~12pt padding top + ~36pt "Progreso" title + 6pt spacing + ~17pt fecha + 28pt gap = ~99pt
+      top: 99,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      child: ClipRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 14.0, sigmaY: 14.0),
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                stops: const [0.0, 0.45],
+                colors: [
+                  Colors.black.withValues(alpha: 0.08),
+                  AppColors.backgroundDark.withValues(alpha: 0.93),
                 ],
               ),
             ),
-            const Spacer(),
-          ],
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 68,
+                      height: 68,
+                      decoration: BoxDecoration(
+                        color: AppColors.metabolicGreen.withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(22),
+                      ),
+                      child: const Icon(
+                        Icons.lock_rounded,
+                        color: AppColors.metabolicGreen,
+                        size: 30,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    const Text(
+                      'Progreso Detallado',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Tus tendencias de IMR, hábitos y composición corporal, disponibles con Elena Premium.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.65),
+                        fontSize: 14,
+                        height: 1.55,
+                      ),
+                    ),
+                    const SizedBox(height: 28),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton(
+                        onPressed: () => openPaywall(
+                          context, ref,
+                          feature: GatedFeature.analyticsHistory,
+                        ),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.metabolicGreen,
+                          foregroundColor: Colors.black,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: const Text(
+                          'Desbloquear Premium',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: AppColors.backgroundDark,
-        selectedItemColor: AppColors.metabolicGreen,
-        unselectedItemColor: Colors.grey.withValues(alpha: 0.5),
-        currentIndex: 1,
-        type: BottomNavigationBarType.fixed,
-        onTap: (index) {
-          if (index == 0) context.go('/dashboard');
-          if (index == 2) context.go('/profile');
-          // index == 1 → ya estamos aquí; si el user es premium renavega
-          if (index == 1 && ref.read(isPremiumProvider)) {
-            context.go('/analysis');
-          }
-        },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.grid_view_rounded),
-            label: 'Hoy',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.insights_rounded),
-            label: 'Progreso',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Perfil',
-          ),
-        ],
       ),
     );
   }

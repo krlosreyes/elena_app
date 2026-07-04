@@ -1106,6 +1106,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         type: BottomNavigationBarType.fixed,
         onTap: (index) {
           if (index == 0) context.go('/dashboard');
+          // SPEC-197: gate vive dentro de AnalysisScreen (blur overlay).
+          // Todos los usuarios navegan; free users ven el soft gate allí.
           if (index == 1) context.go('/analysis');
           if (index == 2) context.go('/profile');
         },
