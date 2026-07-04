@@ -9,11 +9,15 @@
 // Hereda el rango temporal global (`analysisRangeProvider`), así que
 // si el usuario cambió a "6 M" en la lista, el detalle abre con "6 M".
 
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:elena_app/src/core/theme/app_theme.dart';
+import 'package:elena_app/src/features/billing/application/billing_providers.dart';
+import 'package:elena_app/src/features/billing/presentation/paywall_launcher.dart';
 import 'package:elena_app/src/features/analysis/application/analysis_range_provider.dart';
 import 'package:elena_app/src/features/analysis/application/historic_summaries_provider.dart';
 import 'package:elena_app/src/features/analysis/data/daily_summary_doc.dart';
@@ -88,63 +92,215 @@ class _AnalysisPillarDetailScreenState
   Widget build(BuildContext context) {
     final range = ref.watch(analysisRangeProvider);
     final aggregationMode = AggregationMode.forRange(range);
+    // SPEC-197: detalle de pilar solo Premium.
+    final isPremium = ref.watch(isPremiumProvider);
 
     return Scaffold(
       // SPEC-168.4.6: mismo fondo que Hoy/Perfil/Analisis (cards
       // mantienen su #0C0C0E).
       backgroundColor: AppColors.backgroundDark,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          controller: _scrollController,
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _buildHeader(context),
-              const SizedBox(height: 24),
-              const SegmentedRangeControl(),
-              const SizedBox(height: 24),
-              _buildChart(aggregationMode),
-              // SPEC-168.4.1: debajo del chart principal aparece la
-              // tendencia corta vs larga del mismo pilar. Si no hay
-              // data suficiente, devuelve SizedBox.shrink.
-              const SizedBox(height: 24),
-              _buildTrendSection(aggregationMode),
-              // IMR: card de feedback por pilar debajo de la tendencia.
-              if (widget.metric == ChartMetric.imr) ...[
-                const SizedBox(height: 24),
-                _imrFeedbackCard(),
-              ],
-              // Ayuno: card de análisis de hábito debajo de la tendencia.
-              if (widget.metric == ChartMetric.fastingHours) ...[
-                const SizedBox(height: 24),
-                _ayunoFeedbackCard(),
-              ],
-              // Hidratación: card de análisis de hábito debajo de la tendencia.
-              if (widget.metric == ChartMetric.hydrationLiters) ...[
-                const SizedBox(height: 24),
-                _hidratacionFeedbackCard(),
-              ],
-              // Ejercicio: card de análisis de hábito debajo de la tendencia.
-              if (widget.metric == ChartMetric.exerciseMin) ...[
-                const SizedBox(height: 24),
-                _ejercicioFeedbackCard(),
-              ],
-              // Sueño: card de análisis de hábito debajo de la tendencia.
-              if (widget.metric == ChartMetric.sleepHours) ...[
-                const SizedBox(height: 24),
-                _suenoFeedbackCard(),
-              ],
-              // Nutrición: card de análisis de hábito debajo de la tendencia.
-              if (widget.metric == ChartMetric.nutritionAPct) ...[
-                const SizedBox(height: 24),
-                _nutricionFeedbackCard(),
-              ],
-            ],
+      body: Stack(
+        children: [
+          SafeArea(
+            child: SingleChildScrollView(
+              controller: _scrollController,
+              physics: isPremium ? null : const NeverScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildHeader(context),
+                  const SizedBox(height: 24),
+                  const SegmentedRangeControl(),
+                  const SizedBox(height: 24),
+                  _buildChart(aggregationMode),
+                  // SPEC-168.4.1: debajo del chart principal aparece la
+                  // tendencia corta vs larga del mismo pilar. Si no hay
+                  // data suficiente, devuelve SizedBox.shrink.
+                  const SizedBox(height: 24),
+                  _buildTrendSection(aggregationMode),
+                  // IMR: card de feedback por pilar debajo de la tendencia.
+                  if (widget.metric == ChartMetric.imr) ...[
+                    const SizedBox(height: 24),
+                    _imrFeedbackCard(),
+                  ],
+                  // Ayuno: card de análisis de hábito debajo de la tendencia.
+                  if (widget.metric == ChartMetric.fastingHours) ...[
+                    const SizedBox(height: 24),
+                    _ayunoFeedbackCard(),
+                  ],
+                  // Hidratación: card de análisis de hábito debajo de la tendencia.
+                  if (widget.metric == ChartMetric.hydrationLiters) ...[
+                    const SizedBox(height: 24),
+                    _hidratacionFeedbackCard(),
+                  ],
+                  // Ejercicio: card de análisis de hábito debajo de la tendencia.
+                  if (widget.metric == ChartMetric.exerciseMin) ...[
+                    const SizedBox(height: 24),
+                    _ejercicioFeedbackCard(),
+                  ],
+                  // Sueño: card de análisis de hábito debajo de la tendencia.
+                  if (widget.metric == ChartMetric.sleepHours) ...[
+                    const SizedBox(height: 24),
+                    _suenoFeedbackCard(),
+                  ],
+                  // Nutrición: card de análisis de hábito debajo de la tendencia.
+                  if (widget.metric == ChartMetric.nutritionAPct) ...[
+                    const SizedBox(height: 24),
+                    _nutricionFeedbackCard(),
+                  ],
+                ],
+              ),
+            ),
+          ),
+          // SPEC-197 soft gate: blur overlay para usuarios Free.
+          if (!isPremium) _buildPremiumGateOverlay(context),
+        ],
+      ),
+    );
+  }
+
+  /// Overlay de blur + CTA premium. Incluye su propio botón ← para que el
+  /// usuario pueda volver al overview sin quedar atrapado.
+  Widget _buildPremiumGateOverlay(BuildContext context) {
+    final label = _metricLabel(widget.metric);
+    return Positioned.fill(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {},
+        child: ClipRect(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 12.0, sigmaY: 12.0),
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  stops: const [0.0, 0.50],
+                  colors: [
+                    Colors.black.withValues(alpha: 0.10),
+                    AppColors.backgroundDark.withValues(alpha: 0.92),
+                  ],
+                ),
+              ),
+              child: SafeArea(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Back button propio del overlay (el original queda detrás del blur).
+                    InkResponse(
+                      onTap: () => context.pop(),
+                      radius: 22,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                        child: Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          color: Colors.white.withValues(alpha: 0.85),
+                          size: 22,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 32),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 68,
+                                height: 68,
+                                decoration: BoxDecoration(
+                                  color: AppColors.metabolicGreen
+                                      .withValues(alpha: 0.14),
+                                  borderRadius: BorderRadius.circular(22),
+                                ),
+                                child: const Icon(
+                                  Icons.lock_rounded,
+                                  color: AppColors.metabolicGreen,
+                                  size: 30,
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                              Text(
+                                label,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              Text(
+                                'Gráficas detalladas, tendencias y análisis de evolución disponibles con Elena Premium.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.65),
+                                  fontSize: 14,
+                                  height: 1.55,
+                                ),
+                              ),
+                              const SizedBox(height: 28),
+                              SizedBox(
+                                width: double.infinity,
+                                child: FilledButton(
+                                  onPressed: () => openPaywall(
+                                    context, ref,
+                                    feature: GatedFeature.analyticsHistory,
+                                  ),
+                                  style: FilledButton.styleFrom(
+                                    backgroundColor: AppColors.metabolicGreen,
+                                    foregroundColor: Colors.black,
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 16),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    'Desbloquear Premium',
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
       ),
     );
+  }
+
+  static String _metricLabel(ChartMetric metric) {
+    switch (metric) {
+      case ChartMetric.imr:
+        return 'Detalle IMR';
+      case ChartMetric.bodyFatPct:
+        return 'Detalle Composición Corporal';
+      case ChartMetric.fastingHours:
+        return 'Detalle Ayuno';
+      case ChartMetric.nutritionAPct:
+        return 'Detalle Nutrición';
+      case ChartMetric.hydrationLiters:
+        return 'Detalle Hidratación';
+      case ChartMetric.exerciseMin:
+        return 'Detalle Ejercicio';
+      case ChartMetric.sleepHours:
+        return 'Detalle Sueño';
+      case ChartMetric.weight:
+        return 'Detalle Peso';
+    }
   }
 
   /// SPEC-168.4.1: sección "Tendencia" debajo del chart. Para
