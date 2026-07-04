@@ -17,6 +17,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// Lifetime: toda la sesión (Provider sin autoDispose).
 final pillarRowKeyProvider = Provider<GlobalKey>((ref) => GlobalKey());
 
+/// GlobalKey del widget DualScoreRing en DashboardScreen.
+/// Permite a AppTourOverlay calcular la posición exacta del scoreCard
+/// spotlight independientemente del scroll y de las cards condicionales.
+final dualScoreRingKeyProvider = Provider<GlobalKey>((ref) => GlobalKey());
+
 /// ScrollController del SingleChildScrollView de DashboardScreen.
 ///
 /// Lo comparte con AppTourOverlay para dos propósitos:

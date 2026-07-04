@@ -557,7 +557,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           // reemplazan el número grande 36pt. Cada uno con score, label
           // y sub-label propio. Tap en cualquiera abre el ExplainerSheet
           // único que cubre ambos.
+          // SPEC-243 fix: key compartida con AppTourOverlay para calcular
+          // posición real del spotlight "Progreso Hoy" (scoreCard).
           DualScoreRing(
+            key: ref.read(dualScoreRingKeyProvider),
             dailyScore: dailyScore,
             dailyDelta: delta,
             imrScore: ref.watch(displayedImrProvider).score,

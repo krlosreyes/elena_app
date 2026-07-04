@@ -121,6 +121,45 @@ class _AppTourOverlayState extends ConsumerState<AppTourOverlay>
     );
   }
 
+  /// Anima el scroll para que el DualScoreRing quede al ~30% del área útil.
+  /// Se llama al entrar en el paso scoreCard, que llega después de los pasos
+  /// de pilar (los cuales dejaron el scroll en una posición más baja).
+  void _scrollToShowScore(Size screenSize, double safeBottom) {
+    final ctrl = _scrollCtrl;
+    if (ctrl == null || !ctrl.hasClients) return;
+
+    final scoreKey = ref.read(dualScoreRingKeyProvider);
+    final rb = scoreKey.currentContext?.findRenderObject() as RenderBox?;
+    if (rb == null || !rb.hasSize) {
+      // Fallback: volver al inicio.
+      ctrl.animateTo(
+        0,
+        duration: const Duration(milliseconds: 380),
+        curve: Curves.easeInOut,
+      );
+      return;
+    }
+
+    const tabBarH = 56.0;
+    final usableH = screenSize.height - tabBarH - safeBottom;
+    // Queremos que el CENTRO del DualScoreRing quede al 32% del área útil.
+    final targetCenterY = usableH * 0.32;
+
+    final offset = rb.localToGlobal(Offset.zero);
+    final centerY = offset.dy + rb.size.height / 2;
+    final delta = centerY - targetCenterY;
+
+    if (delta.abs() < 24) return;
+
+    final targetOffset = (ctrl.offset + delta)
+        .clamp(0.0, ctrl.position.maxScrollExtent);
+    ctrl.animateTo(
+      targetOffset,
+      duration: const Duration(milliseconds: 380),
+      curve: Curves.easeInOut,
+    );
+  }
+
   Future<void> _handleNavigation(TourStep step) async {
     if (step.navigateTo == null) return;
     // El overlay vive en el builder de MaterialApp, ENCIMA del Router.
@@ -156,10 +195,17 @@ class _AppTourOverlayState extends ConsumerState<AppTourOverlay>
     if (tourState.stepIndex != _lastStep) {
       _lastStep = tourState.stepIndex;
       _anim.forward(from: 0);
-      // Scroll automático al entrar en un paso de pilar.
-      if (_isPilarStep(tourState.currentStep.spotlight)) {
+      final spotlight = tourState.currentStep.spotlight;
+      // Scroll automático según el tipo de paso.
+      if (_isPilarStep(spotlight)) {
+        // Pilares: bajar para mostrar anillos al 68% del área útil.
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) _scrollToShowPilars(size, safeBottom);
+        });
+      } else if (spotlight == TourSpotlightArea.scoreCard) {
+        // Progreso Hoy: subir para que el DualScoreRing quede al ~30% del área útil.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _scrollToShowScore(size, safeBottom);
         });
       }
     }
@@ -167,6 +213,7 @@ class _AppTourOverlayState extends ConsumerState<AppTourOverlay>
     final step = tourState.currentStep;
     final notifier = ref.read(appTourProvider.notifier);
     final pillarRowKey = ref.read(pillarRowKeyProvider);
+    final dualScoreKey = ref.read(dualScoreRingKeyProvider);
 
     return Material(
       type: MaterialType.transparency,
@@ -181,6 +228,7 @@ class _AppTourOverlayState extends ConsumerState<AppTourOverlay>
               area: step.spotlight,
               screenSize: size,
               pillarRowKey: pillarRowKey,
+              dualScoreRingKey: dualScoreKey,
               bottomSafeArea: safeBottom,
             ),
           ),
@@ -217,6 +265,8 @@ class _SpotlightOverlay extends StatelessWidget {
   final TourSpotlightArea area;
   final Size screenSize;
   final GlobalKey? pillarRowKey;
+  /// GlobalKey del DualScoreRing para medir posición real del scoreCard.
+  final GlobalKey? dualScoreRingKey;
   /// Altura del safe area inferior (home indicator) obtenida de MediaQuery.
   /// Se usa para calcular el límite inferior real del spotlight sin invadir
   /// el tab bar ni el home indicator.
@@ -227,6 +277,7 @@ class _SpotlightOverlay extends StatelessWidget {
     required this.area,
     required this.screenSize,
     this.pillarRowKey,
+    this.dualScoreRingKey,
     this.bottomSafeArea = 34.0,
   });
 
@@ -278,8 +329,30 @@ class _SpotlightOverlay extends StatelessWidget {
         break;
 
       case TourSpotlightArea.scoreCard:
-        // Zona superior de la card: DualScoreRing (HOY + IMR) + motivación.
-        holeRect = Rect.fromLTWH(w * 0.04, h * 0.59, w * 0.92, h * 0.20);
+        // SPEC-243 fix: usa dualScoreRingKey para medir posición real.
+        // El scoreCard llega DESPUÉS de los pasos de pilar, que hacen scroll.
+        // Las coordenadas hardcoded anteriores (h*0.59) apuntaban al scroll=0
+        // y quedaban desfasadas. Ahora: localToGlobal() da la posición real
+        // independientemente del offset de scroll.
+        // El spotlight cubre: 50pt sobre el DualScoreRing (título PROGRESO HOY)
+        // + el ring + 40pt abajo (frase motivacional).
+        if (dualScoreRingKey?.currentContext != null) {
+          final rb = dualScoreRingKey!.currentContext!.findRenderObject()
+              as RenderBox?;
+          if (rb != null && rb.hasSize) {
+            final offset = rb.localToGlobal(Offset.zero);
+            const titlePad = 50.0;  // espacio para el título "PROGRESO HOY"
+            const motivPad = 40.0;  // espacio para la frase motivacional
+            holeRect = Rect.fromLTWH(
+              w * 0.04,
+              offset.dy - titlePad,
+              w * 0.92,
+              rb.size.height + titlePad + motivPad,
+            );
+          }
+        }
+        // Fallback si el key no tiene context todavía.
+        holeRect ??= Rect.fromLTWH(w * 0.04, h * 0.55, w * 0.92, h * 0.22);
         break;
 
       case TourSpotlightArea.fullScreen:
@@ -301,50 +374,51 @@ class _SpotlightOverlay extends StatelessWidget {
 
   /// Columna estrecha que ilumina el slot de un pilar dentro del Row de anillos.
   ///
-  /// SPEC-243 fix: usa [pillarRowKey] para obtener la posición Y real del Row
-  /// mediante localToGlobal(). Esto hace la coordenada independiente de cuántas
-  /// cards condicionales (CycleClosureCard, CoachFeedbackCard, etc.) estén
-  /// visibles encima dentro del ScrollView.
+  /// SPEC-243 fix v2: usa [pillarRowKey] para obtener X, Y, ancho y alto reales
+  /// del Row mediante localToGlobal() + renderBox.size. Esto corrige dos bugs:
+  ///   1. Y independiente de cuántas cards condicionales estén encima.
+  ///   2. X calculada a partir del offset real del Row (que empieza en x=42pt
+  ///      por el padding del card exterior 24+18), no del scrollPad hardcoded
+  ///      que sólo consideraba el padding del SingleChildScrollView (24pt) y
+  ///      producía ≈14pt de desfase en Ayuno/Comidas.
   ///
-  /// Si el key todavía no tiene context (primer frame o dashboard no montado),
-  /// cae al fallback de h*0.57 para no mostrar una caja vacía.
-  ///
-  /// Layout X: el Row usa MainAxisAlignment.spaceAround sobre [w - 2*scrollPad].
-  /// Se reutiliza la misma aritmética spaceAround para calcular el centro X de
-  /// cada anillo.
+  /// Fallback si el key no tiene context todavía: coordenadas aproximadas
+  /// (h*0.57, rowWidth calculado con scrollPad=42).
   static Rect _ringColumn(int index, double w, double h, GlobalKey? rowKey) {
-    // ── Y real desde el GlobalKey ──────────────────────────────────────────
-    double rowTop = h * 0.57; // fallback
-    double rowHeight = h * 0.13; // fallback (≈ anillo 56px + label + padding)
+    // ── Posición y dimensiones reales desde el GlobalKey ───────────────────
+    double rowTop    = h * 0.57;       // fallback Y
+    double rowHeight = h * 0.13;       // fallback alto
+    double rowLeft   = 42.0;           // fallback X: scrollPad(24)+cardPad(18)
+    double rowWidth  = w - 2 * 42.0;  // fallback ancho
 
     if (rowKey?.currentContext != null) {
       final renderBox =
           rowKey!.currentContext!.findRenderObject() as RenderBox?;
       if (renderBox != null && renderBox.hasSize) {
         final offset = renderBox.localToGlobal(Offset.zero);
-        rowTop = offset.dy;
+        rowTop    = offset.dy;
         rowHeight = renderBox.size.height;
+        rowLeft   = offset.dx;
+        rowWidth  = renderBox.size.width;
       }
     }
 
-    // ── X calculada por aritmética spaceAround ─────────────────────────────
-    const scrollPad = 24.0; // padding horizontal del SingleChildScrollView
+    // ── X calculada con aritmética spaceAround sobre el ancho REAL del Row ─
     const ringSize = 56.0;
     const n = 5;
-
-    final rowWidth = w - 2 * scrollPad; // ancho del Row en pantalla
     // spaceAround: espacio a cada lado de un ring = (rowWidth - n*ringSize)/(n*2)
     final halfGap = (rowWidth - n * ringSize) / (n * 2.0);
-    final cx = scrollPad + halfGap
+    // Centro X del anillo `index` en coordenadas de pantalla.
+    final cx = rowLeft + halfGap
         + index * (ringSize + 2.0 * halfGap)
         + ringSize / 2.0;
 
-    const colPadH = 10.0; // padding lateral del spotlight sobre el anillo
+    // Padding lateral ampliado (16pt) para dar más presencia visual al spotlight
+    // y que el anillo quede bien enmarcado, no justo en el borde.
+    const colPadH = 16.0;
     final left = (cx - ringSize / 2.0 - colPadH).clamp(0.0, w);
     final colW = (ringSize + 2.0 * colPadH).clamp(0.0, w - left);
 
-    // Añadimos un pequeño margen vertical para que el spotlight no quede
-    // demasiado justo sobre el anillo + label.
     const vPad = 8.0;
     return Rect.fromLTWH(left, rowTop - vPad, colW, rowHeight + vPad * 2);
   }
