@@ -116,7 +116,14 @@ class BiometricRepository {
   /// Check-in del día de hoy si existe.
   Future<BiometricCheckIn?> fetchToday(String userId) async {
     final today = _dateKey(DateTime.now());
-    final doc = await _col(userId).doc(today).get();
+    return fetchByDate(userId, today);
+  }
+
+  /// Check-in para una fecha específica (yyyy-MM-dd) si existe.
+  /// Usado por HealthImportService para evitar sobreescribir pesos
+  /// manuales en días históricos (Hallazgo-3 de auditoría 2026-07-04).
+  Future<BiometricCheckIn?> fetchByDate(String userId, String date) async {
+    final doc = await _col(userId).doc(date).get();
     if (!doc.exists || doc.data() == null) return null;
     try {
       return BiometricCheckIn.fromJson(doc.data()!);

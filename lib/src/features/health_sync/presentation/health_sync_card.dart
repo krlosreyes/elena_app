@@ -14,9 +14,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:io' show Platform;
 
 import 'package:android_intent_plus/android_intent.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 
 import 'package:elena_app/src/core/theme/app_theme.dart';
+import 'package:elena_app/src/features/billing/application/billing_providers.dart';
+import 'package:elena_app/src/features/billing/presentation/paywall_launcher.dart';
 import 'package:elena_app/src/features/health_sync/application/health_auto_sync_controller.dart';
 import 'package:elena_app/src/features/health_sync/application/health_import_service.dart';
 import 'package:elena_app/src/features/health_sync/application/health_sync_providers.dart';
@@ -177,8 +179,64 @@ class _HealthSyncCardState extends ConsumerState<HealthSyncCard>
     if (perm is HealthConnectNotInstalled) return _buildInstallButton();
     if (perm is HealthPermissionDenied) return _buildConnectButton();
 
-    // Granted (o Partial) — mostrar última sync + botón manual.
+    // Granted (o Partial) — verificar si el usuario puede sincronizar.
+    final isPremium = ref.watch(isPremiumProvider);
+    if (!isPremium) return _buildPremiumNeededBanner(context);
+
+    // Solo Premium llega aquí — mostrar última sync + botón manual.
     return _buildSyncStatusAndButton(state);
+  }
+
+  /// Banner para usuarios Free que ya conectaron Apple Health pero
+  /// no tienen sincronización automática disponible (SPEC-197).
+  Widget _buildPremiumNeededBanner(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              Icons.lock_outline_rounded,
+              size: 14,
+              color: AppColors.metabolicGreen.withValues(alpha: 0.80),
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                'Sincronización automática disponible en Premium.',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.white.withValues(alpha: 0.65),
+                  height: 1.4,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.metabolicGreen,
+              foregroundColor: Colors.black,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            onPressed: () => openPaywall(
+              context, ref,
+              feature: GatedFeature.autoSync,
+            ),
+            child: const Text(
+              'Desbloquear sincronización',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _buildConnectButton() {
@@ -430,8 +488,10 @@ class _HealthSyncCardState extends ConsumerState<HealthSyncCard>
 
     // Intento 1: URL scheme nativo de Samsung Health.
     try {
-      // ignore: avoid_print
-      print('🩺 SAMSUNG OPEN: intentando shealth://');
+      if (kDebugMode) {
+        // ignore: avoid_print
+        print('🩺 SAMSUNG OPEN: intentando shealth://');
+      }
       const intent1 = AndroidIntent(
         action: 'android.intent.action.VIEW',
         data: 'shealth://home',
@@ -439,18 +499,24 @@ class _HealthSyncCardState extends ConsumerState<HealthSyncCard>
         flags: <int>[0x10000000],
       );
       await intent1.launch();
-      // ignore: avoid_print
-      print('🩺 SAMSUNG OPEN: shealth:// OK');
+      if (kDebugMode) {
+        // ignore: avoid_print
+        print('🩺 SAMSUNG OPEN: shealth:// OK');
+      }
       return;
     } catch (e) {
-      // ignore: avoid_print
-      print('🩺 SAMSUNG OPEN: shealth:// falló — $e');
+      if (kDebugMode) {
+        // ignore: avoid_print
+        print('🩺 SAMSUNG OPEN: shealth:// falló — $e');
+      }
     }
 
     // Intento 2: intent MAIN + category LAUNCHER (forma estándar de abrir apps).
     try {
-      // ignore: avoid_print
-      print('🩺 SAMSUNG OPEN: intentando MAIN/LAUNCHER');
+      if (kDebugMode) {
+        // ignore: avoid_print
+        print('🩺 SAMSUNG OPEN: intentando MAIN/LAUNCHER');
+      }
       const intent2 = AndroidIntent(
         action: 'android.intent.action.MAIN',
         category: 'android.intent.category.LAUNCHER',
@@ -458,17 +524,23 @@ class _HealthSyncCardState extends ConsumerState<HealthSyncCard>
         flags: <int>[0x10000000],
       );
       await intent2.launch();
-      // ignore: avoid_print
-      print('🩺 SAMSUNG OPEN: MAIN/LAUNCHER OK');
+      if (kDebugMode) {
+        // ignore: avoid_print
+        print('🩺 SAMSUNG OPEN: MAIN/LAUNCHER OK');
+      }
       return;
     } catch (e) {
-      // ignore: avoid_print
-      print('🩺 SAMSUNG OPEN: MAIN/LAUNCHER falló — $e');
+      if (kDebugMode) {
+        // ignore: avoid_print
+        print('🩺 SAMSUNG OPEN: MAIN/LAUNCHER falló — $e');
+      }
     }
 
     // Fallback final: Health Connect settings.
-    // ignore: avoid_print
-    print('🩺 SAMSUNG OPEN: fallback → Health Connect');
+    if (kDebugMode) {
+      // ignore: avoid_print
+      print('🩺 SAMSUNG OPEN: fallback → Health Connect');
+    }
     await ref.read(healthSyncServiceProvider).openHealthConnectSettings();
   }
 

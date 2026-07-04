@@ -18,7 +18,7 @@
 
 import 'dart:io' show Platform;
 
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elena_app/src/core/services/app_logger.dart';
@@ -168,11 +168,10 @@ class HealthAutoSyncController extends StateNotifier<HealthAutoSyncState> {
   // ─── Implementación ──────────────────────────────────────────────
 
   Future<void> _runNow({required String userId}) async {
-    // SPEC-173.bugfix2: prints directos con marcador único 🩺 para que
-    // aparezcan en Console.app del iPhone aunque AppLogger esté
-    // strippeado en release builds optimizados.
-    // ignore: avoid_print
-    print('🩺 SYNC START userId=$userId');
+    if (kDebugMode) {
+      // ignore: avoid_print
+      print('🩺 SYNC START userId=$userId');
+    }
     state = state.copyWith(isRunning: true);
     _ref.read(isHealthSyncingProvider.notifier).state = true;
 
@@ -181,8 +180,10 @@ class HealthAutoSyncController extends StateNotifier<HealthAutoSyncState> {
       final perm = await _syncService.checkPermissions();
       state = state.copyWith(permissionStatus: perm);
       _ref.read(healthPermissionStatusProvider.notifier).state = perm;
-      // ignore: avoid_print
-      print('🩺 SYNC permisos=${perm.runtimeType}');
+      if (kDebugMode) {
+        // ignore: avoid_print
+        print('🩺 SYNC permisos=${perm.runtimeType}');
+      }
 
       // SPEC-237: también sincronizamos si hay permisos PARCIALES.
       // En Android, si WORKOUT fue denegado pero SLEEP/STEPS están concedidos,
@@ -195,8 +196,10 @@ class HealthAutoSyncController extends StateNotifier<HealthAutoSyncState> {
           'HealthAutoSync: sin permisos (${perm.runtimeType}), '
           'no se sincroniza',
         );
-        // ignore: avoid_print
-        print('🩺 SYNC ABORT — sin permisos');
+        if (kDebugMode) {
+          // ignore: avoid_print
+          print('🩺 SYNC ABORT — sin permisos');
+        }
         return;
       }
 
@@ -205,16 +208,20 @@ class HealthAutoSyncController extends StateNotifier<HealthAutoSyncState> {
       state = state.copyWith(lastResult: result);
       _ref.read(lastHealthSyncResultProvider.notifier).state = result;
       AppLogger.info('HealthAutoSync: sync ok — $result');
-      // ignore: avoid_print
-      print('🩺 SYNC RESULT $result');
+      if (kDebugMode) {
+        // ignore: avoid_print
+        print('🩺 SYNC RESULT $result');
+      }
 
       // 3. Import (solo si hubo datos).
       if (!result.isEmpty) {
         final summary = await _importService.importResult(userId, result);
         state = state.copyWith(lastImport: summary);
         AppLogger.info('HealthAutoSync: import ok — $summary');
-        // ignore: avoid_print
-        print('🩺 SYNC IMPORTED $summary');
+        if (kDebugMode) {
+          // ignore: avoid_print
+          print('🩺 SYNC IMPORTED $summary');
+        }
 
         // BUGFIX coherencia (2026-06-07): _importWeights escribe el peso en
         // biometric_history (gráfica de Análisis) pero NO en users/{uid}.weight,
@@ -225,8 +232,10 @@ class HealthAutoSyncController extends StateNotifier<HealthAutoSyncState> {
         }
       } else {
         AppLogger.info('HealthAutoSync: nada que importar');
-        // ignore: avoid_print
-        print('🩺 SYNC EMPTY — nada que importar');
+        if (kDebugMode) {
+          // ignore: avoid_print
+          print('🩺 SYNC EMPTY — nada que importar');
+        }
       }
 
       // SPEC-239: fallback Samsung Health SDK cuando HC no tiene sueño.
@@ -237,8 +246,10 @@ class HealthAutoSyncController extends StateNotifier<HealthAutoSyncState> {
         final noSleepFromHC = importSummary == null ||
             importSummary.sleepSessionsImported == 0;
         if (noSleepFromHC) {
-          // ignore: avoid_print
-          print('🩺 HC sin sueño → intentando Samsung Health SDK directo');
+          if (kDebugMode) {
+            // ignore: avoid_print
+            print('🩺 HC sin sueño → intentando Samsung Health SDK directo');
+          }
           try {
             final shService = SamsungHealthService();
             final window = _kDefaultSyncWindow;
@@ -261,8 +272,10 @@ class HealthAutoSyncController extends StateNotifier<HealthAutoSyncState> {
                   workoutsImported: importSummary?.workoutsImported ?? 0,
                 );
                 state = state.copyWith(lastImport: updated);
-                // ignore: avoid_print
-                print('🩺 SH SDK: $shImported sesiones importadas OK');
+                if (kDebugMode) {
+                  // ignore: avoid_print
+                  print('🩺 SH SDK: $shImported sesiones importadas OK');
+                }
               }
             }
           } catch (e) {
@@ -285,8 +298,10 @@ class HealthAutoSyncController extends StateNotifier<HealthAutoSyncState> {
             importSummary.sleepSessionsImported == 0;
         if (noSleepImported) {
           state = state.copyWith(needsSamsungHealthGuide: true);
-          // ignore: avoid_print
-          print('🩺 SAMSUNG GUIDE: sueño=0, mostrando guía HC');
+          if (kDebugMode) {
+            // ignore: avoid_print
+            print('🩺 SAMSUNG GUIDE: sueño=0, mostrando guía HC');
+          }
         } else {
           // Sueño importó correctamente → ocultar guía si estaba visible.
           state = state.copyWith(needsSamsungHealthGuide: false);
@@ -294,10 +309,12 @@ class HealthAutoSyncController extends StateNotifier<HealthAutoSyncState> {
       }
     } catch (e, st) {
       AppLogger.error('HealthAutoSync: ciclo falló', e, st);
-      // ignore: avoid_print
-      print('🩺 SYNC ERROR $e');
-      // ignore: avoid_print
-      print(st);
+      if (kDebugMode) {
+        // ignore: avoid_print
+        print('🩺 SYNC ERROR $e');
+        // ignore: avoid_print
+        print(st);
+      }
     } finally {
       state = state.copyWith(
         isRunning: false,

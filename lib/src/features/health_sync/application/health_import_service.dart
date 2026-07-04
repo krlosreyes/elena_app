@@ -13,6 +13,8 @@
 //   4. Conteo por métrica — retorna `HealthImportSummary` para que la
 //      UI pueda mostrar "Importados: 3 pesos, 2 sesiones de sueño".
 
+import 'package:flutter/foundation.dart' show kDebugMode;
+
 import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/features/dashboard/domain/sleep_log.dart';
 import 'package:elena_app/src/features/health_sync/application/samsung_health_service.dart'
@@ -198,15 +200,10 @@ class HealthImportService {
       final dateKey = entry.key;
       final sample = entry.value;
 
-      // Anti-duplicado: si ya hay un check-in para ese día, lo
-      // respetamos. Los check-ins manuales tienen prioridad.
-      final existing = await _biometricRepo.fetchToday(userId);
+      // Anti-duplicado: si ya hay un check-in para ese día (manual o
+      // importado previamente), lo respetamos. Cubre HOY y días históricos.
       final dayDoc = await _fetchByDate(userId, dateKey);
       if (dayDoc != null) {
-        skippedExisting++;
-        continue;
-      }
-      if (existing != null && existing.date == dateKey) {
         skippedExisting++;
         continue;
       }
@@ -247,15 +244,19 @@ class HealthImportService {
     int skippedShort = 0;
     int skippedInvalid = 0;
     for (final s in samples) {
-      // ignore: avoid_print
-      print('🩺 SLEEP sample: start=${s.start}, end=${s.end}, '
-          'duration=${s.duration.inMinutes}min, source=${s.sourceName}');
+      if (kDebugMode) {
+        // ignore: avoid_print
+        print('🩺 SLEEP sample: start=${s.start}, end=${s.end}, '
+            'duration=${s.duration.inMinutes}min, source=${s.sourceName}');
+      }
       // Filtros sanos: ignorar sesiones absurdamente cortas (siestas
       // < 30 min) que el plugin a veces reporta como ruido.
       if (s.duration.inMinutes < 30) {
         skippedShort++;
-        // ignore: avoid_print
-        print('🩺 SLEEP SKIP <30min: ${s.duration.inMinutes}min');
+        if (kDebugMode) {
+          // ignore: avoid_print
+          print('🩺 SLEEP SKIP <30min: ${s.duration.inMinutes}min');
+        }
         continue;
       }
 
@@ -553,8 +554,10 @@ class HealthImportService {
       'HealthImport[samsung_sleep]: importados $imported, '
       'saltados $skippedShort <30min',
     );
-    // ignore: avoid_print
-    print('🩺 SH IMPORT: $imported sesiones importadas');
+    if (kDebugMode) {
+      // ignore: avoid_print
+      print('🩺 SH IMPORT: $imported sesiones importadas');
+    }
     return imported;
   }
 
@@ -570,24 +573,13 @@ class HealthImportService {
     return 'hk_sleep_${s.start.toIso8601String()}';
   }
 
-  /// Fetch directo por fecha (yyyy-MM-dd). El BiometricRepository solo
-  /// expone fetchToday(); para los demás días tenemos que hacer el
-  /// query a mano. Inline para no contaminar el repo con un método
-  /// que solo este servicio necesita por ahora.
+  /// Fetch directo por fecha (yyyy-MM-dd).
+  /// Usa `fetchByDate` del repositorio para cubrir tanto HOY como días
+  /// históricos, respetando datos manuales en cualquier fecha.
+  /// (Hallazgo-3 auditoría 2026-07-04: antes solo chequeaba HOY.)
   Future<BiometricCheckIn?> _fetchByDate(String userId, String date) async {
     try {
-      // Reutilizamos fetchToday() solo para HOY; para días pasados,
-      // fetchLatest + comparación es overhead innecesario. Hacemos un
-      // approach simple: si el día es HOY, usar fetchToday; si no, no
-      // chequeamos y dejamos que set+merge:true sobrescriba — pero
-      // como BiometricRepository.saveCheckIn ya usa merge:true, el
-      // dato manual sobreviviría parcialmente. Para Bloque C aceptamos
-      // esto y mejoramos en futuras iteraciones.
-      final today = _dateKey(DateTime.now());
-      if (date == today) {
-        return await _biometricRepo.fetchToday(userId);
-      }
-      return null;
+      return await _biometricRepo.fetchByDate(userId, date);
     } catch (_) {
       return null;
     }

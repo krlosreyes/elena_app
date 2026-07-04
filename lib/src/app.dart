@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -111,11 +112,8 @@ class _ElenaAppState extends ConsumerState<ElenaApp>
       if (user == null || user.id.isEmpty) return;
       // SPEC-197: el auto-sync de wearables es Premium. Free registra manual.
       if (!ref.read(featureGateProvider).autoSyncAllowed) return;
-      // `print` directo (no AppLogger) para que aparezca en Console.app
-      // del iPhone en release. AppLogger del paquete `logger` puede
-      // estar siendo strippeado en release builds optimizados.
       // ignore: avoid_print
-      print('[ElenaApp] resume — forzando HealthAutoSync.runNow');
+      if (kDebugMode) print('[ElenaApp] resume — forzando HealthAutoSync.runNow');
       ref
           .read(healthAutoSyncControllerProvider.notifier)
           .runNow(userId: user.id);
