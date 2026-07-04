@@ -8,6 +8,8 @@ import 'package:go_router/go_router.dart';
 
 import 'package:elena_app/src/core/theme/app_icons.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
+import 'package:elena_app/src/features/billing/application/billing_providers.dart';
+import 'package:elena_app/src/features/billing/presentation/paywall_launcher.dart';
 import 'package:elena_app/src/features/analysis/application/analysis_range_provider.dart';
 import 'package:elena_app/src/features/analysis/application/analysis_series_providers.dart';
 import 'package:elena_app/src/features/content/presentation/for_you_section.dart';
@@ -61,6 +63,13 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // SPEC-197: Progreso Detallado es función Premium.
+    // Safety net: si el usuario accede por deeplink o cualquier otra vía
+    // sin ser premium, mostramos la pantalla bloqueada.
+    // La guarda principal está en el tap del tab en DashboardScreen.
+    final isPremium = ref.watch(isPremiumProvider);
+    if (!isPremium) return _buildLockedScreen(context);
+
     final range = ref.watch(analysisRangeProvider);
     // SPEC-168.1: mode temporal para que cada chart formatee la
     // fecha-range del hero block correctamente.
@@ -141,6 +150,115 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
           if (index == 0) context.go('/dashboard');
           if (index == 1) context.go('/analysis');
           if (index == 2) context.go('/profile');
+        },
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.grid_view_rounded),
+            label: 'Hoy',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.insights_rounded),
+            label: 'Progreso',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Perfil',
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Pantalla bloqueada para usuarios Free que llegan a /analysis por deeplink
+  /// u otra vía distinta al tap del tab (que ya intercepta en DashboardScreen).
+  Widget _buildLockedScreen(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.backgroundDark,
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Header idéntico al de la pantalla real para no romper el contexto.
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+              child: _buildPageHeader(context),
+            ),
+            const Spacer(),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.insights_rounded,
+                    color: AppColors.metabolicGreen,
+                    size: 56,
+                  ),
+                  const SizedBox(height: 20),
+                  const Text(
+                    'Progreso Detallado',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    'Accede a tu historial completo de IMR, tendencias por pilar y análisis de transformación con Elena Premium.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.60),
+                      fontSize: 14,
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: () => openPaywall(
+                        context, ref,
+                        feature: GatedFeature.analyticsHistory,
+                      ),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.metabolicGreen,
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      child: const Text(
+                        'Desbloquear Premium',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Spacer(),
+          ],
+        ),
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        backgroundColor: AppColors.backgroundDark,
+        selectedItemColor: AppColors.metabolicGreen,
+        unselectedItemColor: Colors.grey.withValues(alpha: 0.5),
+        currentIndex: 1,
+        type: BottomNavigationBarType.fixed,
+        onTap: (index) {
+          if (index == 0) context.go('/dashboard');
+          if (index == 2) context.go('/profile');
+          // index == 1 → ya estamos aquí; si el user es premium renavega
+          if (index == 1 && ref.read(isPremiumProvider)) {
+            context.go('/analysis');
+          }
         },
         items: const [
           BottomNavigationBarItem(
