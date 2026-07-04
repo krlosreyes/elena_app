@@ -417,7 +417,7 @@
 			);
 			outputPaths = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
+			runOnlyForDeploymentPostprocessing = 1;
 			shellPath = /bin/sh;
 			shellScript = "# Fix Apple error 91169: strip simulator platform metadata\nfind \"${BUILT_PRODUCTS_DIR}/${FRAMEWORKS_FOLDER_PATH}\" -name \"*.framework\" -type d | while read framework; do\n  binary=\"${framework}/$(basename \"$framework\" .framework)\"\n  [ -f \"$binary\" ] || continue\n  if xcrun vtool -show-build \"$binary\" 2>/dev/null | grep -q \"IOSSIMULATOR\"; then\n    xcrun vtool -set-build-version ios 16.0 16.0 -replace -output \"$binary\" \"$binary\"\n    echo \"Fixed: $binary\"\n  fi\ndone\n";
 			showEnvVarsInLog = 0;
