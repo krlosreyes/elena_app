@@ -228,6 +228,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             children: [
           SafeArea(
             child: SingleChildScrollView(
+              // SPEC-243 fix: el controller compartido permite que AppTourOverlay
+              // haga scroll para centrar los PillarRings durante el tour.
+              controller: ref.read(dashboardScrollControllerProvider),
               physics: const BouncingScrollPhysics(),
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Column(

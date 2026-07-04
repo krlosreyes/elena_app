@@ -16,3 +16,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// GlobalKey del Row que contiene los 5 PillarRings en DashboardScreen.
 /// Lifetime: toda la sesión (Provider sin autoDispose).
 final pillarRowKeyProvider = Provider<GlobalKey>((ref) => GlobalKey());
+
+/// ScrollController del SingleChildScrollView de DashboardScreen.
+///
+/// Lo comparte con AppTourOverlay para dos propósitos:
+///   1. Hacer scroll automático cuando el tour activa un paso de pilar,
+///      trayendo el Row de anillos a una posición visible.
+///   2. Rebuilds reactivos del overlay al scrollear, de modo que el
+///      spotlight siga el Row en tiempo real durante la animación.
+final dashboardScrollControllerProvider = Provider<ScrollController>((ref) {
+  final ctrl = ScrollController();
+  ref.onDispose(ctrl.dispose);
+  return ctrl;
+});

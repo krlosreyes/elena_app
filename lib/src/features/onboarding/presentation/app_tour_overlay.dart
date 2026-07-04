@@ -39,6 +39,10 @@ class _AppTourOverlayState extends ConsumerState<AppTourOverlay>
 
   int _lastStep = -1;
 
+  /// Referencia al ScrollController del dashboard para hacer scroll
+  /// automático y para escuchar cambios que rebuilden el spotlight.
+  ScrollController? _scrollCtrl;
+
   @override
   void initState() {
     super.initState();
@@ -51,12 +55,70 @@ class _AppTourOverlayState extends ConsumerState<AppTourOverlay>
       begin: const Offset(0, 0.08),
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _anim, curve: Curves.easeOutCubic));
+
+    // Suscribirse al ScrollController del dashboard en el primer frame
+    // (el provider ya existe pero el controller puede no tener clients aún).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _scrollCtrl = ref.read(dashboardScrollControllerProvider);
+      _scrollCtrl?.addListener(_onScroll);
+    });
+  }
+
+  /// Rebuild el overlay en cada tick de scroll para que `localToGlobal()`
+  /// devuelva la posición actualizada y el spotlight siga al Row.
+  void _onScroll() {
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
+    _scrollCtrl?.removeListener(_onScroll);
     _anim.dispose();
     super.dispose();
+  }
+
+  static bool _isPilarStep(TourSpotlightArea area) {
+    switch (area) {
+      case TourSpotlightArea.fastingRing:
+      case TourSpotlightArea.sleepRing:
+      case TourSpotlightArea.hydrationRing:
+      case TourSpotlightArea.exerciseRing:
+      case TourSpotlightArea.comidasRing:
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  /// Anima el scroll del dashboard para que el centro del Row de PillarRings
+  /// quede al ~68 % de la altura útil (por encima del tab bar).
+  void _scrollToShowPilars(Size screenSize, double safeBottom) {
+    final ctrl = _scrollCtrl;
+    if (ctrl == null || !ctrl.hasClients) return;
+
+    final rowKey = ref.read(pillarRowKeyProvider);
+    final rb = rowKey.currentContext?.findRenderObject() as RenderBox?;
+    if (rb == null || !rb.hasSize) return;
+
+    const tabBarH = 56.0;
+    final usableH = screenSize.height - tabBarH - safeBottom;
+    // Queremos que la MITAD del Row de anillos caiga al 68 % del área útil.
+    final targetCenterY = usableH * 0.68;
+
+    final rowOffset = rb.localToGlobal(Offset.zero);
+    final rowCenterY = rowOffset.dy + rb.size.height / 2;
+    final delta = rowCenterY - targetCenterY;
+
+    if (delta.abs() < 24) return; // ya está en buen lugar, no mover
+
+    final targetOffset = (ctrl.offset + delta)
+        .clamp(0.0, ctrl.position.maxScrollExtent);
+    ctrl.animateTo(
+      targetOffset,
+      duration: const Duration(milliseconds: 380),
+      curve: Curves.easeInOut,
+    );
   }
 
   Future<void> _handleNavigation(TourStep step) async {
@@ -87,14 +149,22 @@ class _AppTourOverlayState extends ConsumerState<AppTourOverlay>
 
     if (!tourState.isActive) return const SizedBox.shrink();
 
+    final size = MediaQuery.of(context).size;
+    final safeBottom = MediaQuery.of(context).padding.bottom;
+
     // Animar entrada cuando el paso cambia.
     if (tourState.stepIndex != _lastStep) {
       _lastStep = tourState.stepIndex;
       _anim.forward(from: 0);
+      // Scroll automático al entrar en un paso de pilar.
+      if (_isPilarStep(tourState.currentStep.spotlight)) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _scrollToShowPilars(size, safeBottom);
+        });
+      }
     }
 
     final step = tourState.currentStep;
-    final size = MediaQuery.of(context).size;
     final notifier = ref.read(appTourProvider.notifier);
     final pillarRowKey = ref.read(pillarRowKeyProvider);
 
@@ -111,6 +181,7 @@ class _AppTourOverlayState extends ConsumerState<AppTourOverlay>
               area: step.spotlight,
               screenSize: size,
               pillarRowKey: pillarRowKey,
+              bottomSafeArea: safeBottom,
             ),
           ),
 
@@ -146,12 +217,17 @@ class _SpotlightOverlay extends StatelessWidget {
   final TourSpotlightArea area;
   final Size screenSize;
   final GlobalKey? pillarRowKey;
+  /// Altura del safe area inferior (home indicator) obtenida de MediaQuery.
+  /// Se usa para calcular el límite inferior real del spotlight sin invadir
+  /// el tab bar ni el home indicator.
+  final double bottomSafeArea;
 
   const _SpotlightOverlay({
     super.key,
     required this.area,
     required this.screenSize,
     this.pillarRowKey,
+    this.bottomSafeArea = 34.0,
   });
 
   @override
@@ -212,8 +288,13 @@ class _SpotlightOverlay extends StatelessWidget {
         break;
     }
 
+    // Límite inferior del spotlight: justo encima del tab bar.
+    // Tab bar Flutter estándar = 56 pt. Safe area inferior = bottomSafeArea.
+    // Dejamos 4 pt de margen extra para no rozar el borde.
+    final bottomLimit = screenSize.height - 56.0 - bottomSafeArea - 4.0;
+
     return CustomPaint(
-      painter: _SpotlightPainter(holeRect: holeRect),
+      painter: _SpotlightPainter(holeRect: holeRect, bottomLimit: bottomLimit),
       child: const SizedBox.expand(),
     );
   }
@@ -271,8 +352,12 @@ class _SpotlightOverlay extends StatelessWidget {
 
 class _SpotlightPainter extends CustomPainter {
   final Rect? holeRect;
+  /// Coordenada Y máxima permitida para el borde inferior del spotlight.
+  /// Calculada como screenHeight - tabBarH - safeBottom - 4.
+  /// Si es null, cae al fallback h*0.90 (comportamiento previo).
+  final double? bottomLimit;
 
-  const _SpotlightPainter({this.holeRect});
+  const _SpotlightPainter({this.holeRect, this.bottomLimit});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -292,15 +377,16 @@ class _SpotlightPainter extends CustomPainter {
       return;
     }
 
-    // Recortar el hueco para que nunca se extienda dentro del tab bar (≥ h*0.90).
-    // Los PillarRings están en h*0.85-0.91; el tab bar ocupa h*0.90-1.00.
-    // Al limitar en 0.90 mostramos el anillo completo (o casi) sin exponer
-    // los labels/íconos del tab bar dentro del spotlight.
+    // Recortar el hueco para que nunca se extienda dentro del tab bar.
+    // Antes: clamp hardcoded a h*0.90, demasiado agresivo en dispositivos
+    // con safe area grande. Ahora: límite calculado como
+    // screenH - tabBarH(56) - safeBottom - 4pt.
+    final limit = bottomLimit ?? size.height * 0.90;
     final effectiveHole = Rect.fromLTRB(
       holeRect!.left,
       holeRect!.top,
       holeRect!.right,
-      holeRect!.bottom.clamp(0.0, size.height * 0.90),
+      holeRect!.bottom.clamp(0.0, limit),
     );
 
     // PathFillType.evenOdd hace que la intersección de los dos sub-paths
@@ -330,7 +416,8 @@ class _SpotlightPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_SpotlightPainter old) => old.holeRect != holeRect;
+  bool shouldRepaint(_SpotlightPainter old) =>
+      old.holeRect != holeRect || old.bottomLimit != bottomLimit;
 }
 
 // ── Tarjeta del coach mark ────────────────────────────────────────────────────
