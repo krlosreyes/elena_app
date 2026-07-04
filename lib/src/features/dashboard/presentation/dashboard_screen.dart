@@ -46,6 +46,7 @@ import 'package:elena_app/src/features/streak/application/daily_score_provider.d
 // SPEC-137 E.5: banner countdown 30 min antes de la próxima comida.
 import 'package:elena_app/src/features/nutrition/presentation/widgets/next_meal_banner.dart';
 import 'package:elena_app/src/features/onboarding/application/app_tour_notifier.dart';
+import 'package:elena_app/src/features/onboarding/application/tour_targets_provider.dart';
 
 // SPEC-88 fix: BodyCompositionCard y GoalsDashboardWidget se retiraron
 // del Dashboard. La primera vive ahora en Profile; la segunda queda
@@ -585,7 +586,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
           const SizedBox(height: 14),
           // Fila de los 5 pilares con % bajo cada label.
+          // SPEC-243 fix: key compartida con AppTourOverlay para calcular
+          // posición real del spotlight de cada pilar (localToGlobal).
           Row(
+            key: ref.read(pillarRowKeyProvider),
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               PillarRing(

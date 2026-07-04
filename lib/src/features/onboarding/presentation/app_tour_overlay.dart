@@ -21,6 +21,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/onboarding/application/app_tour_notifier.dart';
+import 'package:elena_app/src/features/onboarding/application/tour_targets_provider.dart';
 import 'package:elena_app/src/router/app_router.dart' show rootNavigatorKey;
 
 class AppTourOverlay extends ConsumerStatefulWidget {
@@ -95,6 +96,7 @@ class _AppTourOverlayState extends ConsumerState<AppTourOverlay>
     final step = tourState.currentStep;
     final size = MediaQuery.of(context).size;
     final notifier = ref.read(appTourProvider.notifier);
+    final pillarRowKey = ref.read(pillarRowKeyProvider);
 
     return Material(
       type: MaterialType.transparency,
@@ -108,6 +110,7 @@ class _AppTourOverlayState extends ConsumerState<AppTourOverlay>
               key: ValueKey(step.spotlight),
               area: step.spotlight,
               screenSize: size,
+              pillarRowKey: pillarRowKey,
             ),
           ),
 
@@ -142,8 +145,14 @@ class _AppTourOverlayState extends ConsumerState<AppTourOverlay>
 class _SpotlightOverlay extends StatelessWidget {
   final TourSpotlightArea area;
   final Size screenSize;
+  final GlobalKey? pillarRowKey;
 
-  const _SpotlightOverlay({super.key, required this.area, required this.screenSize});
+  const _SpotlightOverlay({
+    super.key,
+    required this.area,
+    required this.screenSize,
+    this.pillarRowKey,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -173,27 +182,23 @@ class _SpotlightOverlay extends StatelessWidget {
         break;
 
       // Columnas individuales de cada pilar.
-      // La card PROGRESO HOY empieza a ~h*0.57. Dentro de ella hay:
-      //   - DualScoreRing (HOY + IMR) en la parte superior
-      //   - 5 PillarRings (56×56) con spaceAround en la parte inferior (~h*0.86-0.95)
-      // La columna es un rect estrecho que abarca TODO el alto de la card
-      // (h*0.57 → h*0.95), dejando ver el anillo específico Y el score.
-      // Posiciones X calculadas a partir del layout real del dashboard:
-      //   scrollPad=24, cardPad=18, 5 anillos de 56px con spaceAround en 306px.
+      // SPEC-243 fix: usa pillarRowKey para medir posición real del Row
+      // (independiente de cuántas cards condicionales estén encima).
+      // Si el key aún no tiene context (primer frame), cae al fallback h*0.57.
       case TourSpotlightArea.fastingRing:
-        holeRect = _ringColumn(0, w, h);
+        holeRect = _ringColumn(0, w, h, pillarRowKey);
         break;
       case TourSpotlightArea.sleepRing:
-        holeRect = _ringColumn(1, w, h);
+        holeRect = _ringColumn(1, w, h, pillarRowKey);
         break;
       case TourSpotlightArea.hydrationRing:
-        holeRect = _ringColumn(2, w, h);
+        holeRect = _ringColumn(2, w, h, pillarRowKey);
         break;
       case TourSpotlightArea.exerciseRing:
-        holeRect = _ringColumn(3, w, h);
+        holeRect = _ringColumn(3, w, h, pillarRowKey);
         break;
       case TourSpotlightArea.comidasRing:
-        holeRect = _ringColumn(4, w, h);
+        holeRect = _ringColumn(4, w, h, pillarRowKey);
         break;
 
       case TourSpotlightArea.scoreCard:
@@ -213,38 +218,54 @@ class _SpotlightOverlay extends StatelessWidget {
     );
   }
 
-  /// Columna estrecha que ilumina el slot de un pilar dentro de la card
-  /// PROGRESO HOY. Abarca desde el tope de la card hasta la parte baja
-  /// del PillarRing (incluye anillo + label).
+  /// Columna estrecha que ilumina el slot de un pilar dentro del Row de anillos.
   ///
-  /// Layout real medido en device (iPhone 14 / 390×844):
-  ///   - ScrollView horizontal padding: 24pt
-  ///   - Card internal padding: 18pt
-  ///   - Content width disponible para los 5 anillos: 306pt
-  ///   - Anillos: 56×56, Row con MainAxisAlignment.spaceAround
-  ///   - Card top: ≈ h×0.57 | PillarRing centers: ≈ h×0.89
-  static Rect _ringColumn(int index, double w, double h) {
+  /// SPEC-243 fix: usa [pillarRowKey] para obtener la posición Y real del Row
+  /// mediante localToGlobal(). Esto hace la coordenada independiente de cuántas
+  /// cards condicionales (CycleClosureCard, CoachFeedbackCard, etc.) estén
+  /// visibles encima dentro del ScrollView.
+  ///
+  /// Si el key todavía no tiene context (primer frame o dashboard no montado),
+  /// cae al fallback de h*0.57 para no mostrar una caja vacía.
+  ///
+  /// Layout X: el Row usa MainAxisAlignment.spaceAround sobre [w - 2*scrollPad].
+  /// Se reutiliza la misma aritmética spaceAround para calcular el centro X de
+  /// cada anillo.
+  static Rect _ringColumn(int index, double w, double h, GlobalKey? rowKey) {
+    // ── Y real desde el GlobalKey ──────────────────────────────────────────
+    double rowTop = h * 0.57; // fallback
+    double rowHeight = h * 0.13; // fallback (≈ anillo 56px + label + padding)
+
+    if (rowKey?.currentContext != null) {
+      final renderBox =
+          rowKey!.currentContext!.findRenderObject() as RenderBox?;
+      if (renderBox != null && renderBox.hasSize) {
+        final offset = renderBox.localToGlobal(Offset.zero);
+        rowTop = offset.dy;
+        rowHeight = renderBox.size.height;
+      }
+    }
+
+    // ── X calculada por aritmética spaceAround ─────────────────────────────
     const scrollPad = 24.0; // padding horizontal del SingleChildScrollView
-    const cardPad = 18.0;   // padding interno del Container de la card
     const ringSize = 56.0;
     const n = 5;
 
-    final contentW = w - 2 * scrollPad - 2 * cardPad; // ≈ 306pt en 390px
-    // spaceAround: espacio a cada lado de un ring = (contentW - n*ringSize) / (n*2)
-    final halfGap = (contentW - n * ringSize) / (n * 2.0);
-
-    // Centro X del ring [index]
-    final cx = scrollPad + cardPad + halfGap
+    final rowWidth = w - 2 * scrollPad; // ancho del Row en pantalla
+    // spaceAround: espacio a cada lado de un ring = (rowWidth - n*ringSize)/(n*2)
+    final halfGap = (rowWidth - n * ringSize) / (n * 2.0);
+    final cx = scrollPad + halfGap
         + index * (ringSize + 2.0 * halfGap)
         + ringSize / 2.0;
 
-    // Columna: cubre desde el tope de la card (h*0.57) hasta debajo del ring
-    // (h*0.95). Ancho = ring + padding lateral.
-    const colPadH = 10.0;
+    const colPadH = 10.0; // padding lateral del spotlight sobre el anillo
     final left = (cx - ringSize / 2.0 - colPadH).clamp(0.0, w);
     final colW = (ringSize + 2.0 * colPadH).clamp(0.0, w - left);
 
-    return Rect.fromLTWH(left, h * 0.57, colW, h * 0.38);
+    // Añadimos un pequeño margen vertical para que el spotlight no quede
+    // demasiado justo sobre el anillo + label.
+    const vPad = 8.0;
+    return Rect.fromLTWH(left, rowTop - vPad, colW, rowHeight + vPad * 2);
   }
 }
 

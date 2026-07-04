@@ -17,6 +17,7 @@ import 'package:elena_app/src/features/billing/application/paywall_prompt_store.
 import 'package:elena_app/src/features/billing/application/paywall_trigger.dart';
 import 'package:elena_app/src/features/billing/presentation/paywall_screen.dart';
 import 'package:elena_app/src/features/dashboard/application/fasting_history_provider.dart';
+import 'package:elena_app/src/features/onboarding/application/app_tour_notifier.dart';
 
 class PaywallAutoTrigger extends ConsumerStatefulWidget {
   const PaywallAutoTrigger({super.key});
@@ -45,10 +46,22 @@ class _PaywallAutoTriggerState extends ConsumerState<PaywallAutoTrigger> {
     ref.listen(isPremiumProvider, (_, __) {
       if (mounted) _evaluate();
     });
+    // SPEC-243 fix: re-evaluar cuando el tour termina, por si el paywall
+    // fue bloqueado durante el tour y aún aplica mostrarlo.
+    ref.listen(appTourProvider, (prev, next) {
+      if (prev?.isActive == true && !next.isActive) {
+        if (mounted) _evaluate();
+      }
+    });
     return const SizedBox.shrink();
   }
 
   Future<void> _evaluate() async {
+    // SPEC-243 fix: el tour tiene prioridad sobre el paywall proactivo.
+    // Si el tour está corriendo, diferimos la evaluación — el listener
+    // appTourProvider de arriba la re-disparará cuando el tour finalice.
+    if (ref.read(appTourProvider).isActive) return;
+
     final isPremium = ref.read(isPremiumProvider);
     final account = ref.read(authStateProvider).valueOrNull;
     final createdAt = account?.createdAt;
