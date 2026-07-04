@@ -15,6 +15,7 @@ class GatedFeature {
   static const String cycleFeedback = 'cycle_feedback';
   static const String analyticsHistory = 'analytics_history';
   static const String autoSync = 'auto_sync';
+  static const String bodyComposition = 'body_composition';
 }
 
 /// Abre el flujo de upgrade. [feature] alimenta la telemetría (qué muro

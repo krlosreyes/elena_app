@@ -2,9 +2,13 @@
 // Muestra el desglose científico de la composición corporal del usuario
 // con explicaciones en lenguaje accesible. Nunca muestra fórmulas matemáticas.
 
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
+import 'package:elena_app/src/features/billing/application/billing_providers.dart';
+import 'package:elena_app/src/features/billing/presentation/paywall_launcher.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/features/profile/presentation/widgets/body_composition_card.dart';
@@ -15,6 +19,8 @@ class BodyCompositionScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final userAsync = ref.watch(currentUserStreamProvider);
+    // SPEC-197 soft gate: free users ven el contenido detrás de blur overlay.
+    final isPremium = ref.watch(isPremiumProvider);
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -37,19 +43,126 @@ class BodyCompositionScreen extends ConsumerWidget {
         ),
         centerTitle: true,
       ),
-      body: userAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(
-          child: Text('Error: $e', style: const TextStyle(color: Colors.white)),
+      body: Stack(
+        children: [
+          // Contenido real — se carga siempre para maximizar el efecto FOMO.
+          userAsync.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, _) => Center(
+              child:
+                  Text('Error: $e', style: const TextStyle(color: Colors.white)),
+            ),
+            data: (user) {
+              if (user == null) {
+                return const Center(
+                  child:
+                      Text('Sin datos', style: TextStyle(color: Colors.white54)),
+                );
+              }
+              return _BodyCompositionContent(user: user);
+            },
+          ),
+          // Blur overlay para usuarios Free.
+          if (!isPremium) _buildPremiumGateOverlay(context, ref),
+        ],
+      ),
+    );
+  }
+
+  /// Overlay de blur + CTA premium. Cubre el body completo; el AppBar
+  /// (con "COMPOSICIÓN CORPORAL" y el botón ←) permanece visible y funcional.
+  Widget _buildPremiumGateOverlay(BuildContext context, WidgetRef ref) {
+    return Positioned.fill(
+      child: GestureDetector(
+        // HitTestBehavior.opaque bloquea scroll y taps al contenido inferior.
+        behavior: HitTestBehavior.opaque,
+        onTap: () {},
+        child: ClipRect(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 12.0, sigmaY: 12.0),
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  stops: const [0.0, 0.50],
+                  colors: [
+                    Colors.black.withValues(alpha: 0.10),
+                    Colors.black.withValues(alpha: 0.88),
+                  ],
+                ),
+              ),
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 32),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 68,
+                        height: 68,
+                        decoration: BoxDecoration(
+                          color: AppColors.metabolicGreen.withValues(alpha: 0.14),
+                          borderRadius: BorderRadius.circular(22),
+                        ),
+                        child: const Icon(
+                          Icons.lock_rounded,
+                          color: AppColors.metabolicGreen,
+                          size: 30,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      const Text(
+                        'Composición Corporal Detallada',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        'Tu FFMI, WHTR, masa magra y riesgo metabólico — análisis clínico disponible con Elena Premium.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.65),
+                          fontSize: 14,
+                          height: 1.55,
+                        ),
+                      ),
+                      const SizedBox(height: 28),
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton(
+                          onPressed: () => openPaywall(
+                            context, ref,
+                            feature: GatedFeature.bodyComposition,
+                          ),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.metabolicGreen,
+                            foregroundColor: Colors.black,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          child: const Text(
+                            'Desbloquear Premium',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
         ),
-        data: (user) {
-          if (user == null) {
-            return const Center(
-              child: Text('Sin datos', style: TextStyle(color: Colors.white54)),
-            );
-          }
-          return _BodyCompositionContent(user: user);
-        },
       ),
     );
   }
