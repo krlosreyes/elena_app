@@ -206,6 +206,7 @@ class AppTourNotifier extends StateNotifier<AppTourState> {
 
   /// Verifica si el tour ya se completó y lo activa si no.
   Future<bool> tryActivate() async {
+    if (state.isActive) return false; // tour ya corriendo — no resetear al navegar
     final prefs = _ref.read(sharedPreferencesProvider);
     final done = prefs.getBool('appTourDone') ?? false;
     if (done) return false;

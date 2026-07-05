@@ -223,13 +223,11 @@ class HealthAutoSyncController extends StateNotifier<HealthAutoSyncState> {
           print('🩺 SYNC IMPORTED $summary');
         }
 
-        // BUGFIX coherencia (2026-06-07): _importWeights escribe el peso en
-        // biometric_history (gráfica de Análisis) pero NO en users/{uid}.weight,
-        // que es lo que lee la card de Perfil. Propagamos el peso más reciente
-        // al doc canónico para que ambas vistas coincidan.
-        if (summary.weightsImported > 0) {
-          await _syncCanonicalWeight(userId);
-        }
+        // NOTA: NO propagamos el peso de AH al doc canónico users/{uid}.weight.
+        // El peso canónico lo controla el usuario (onboarding o edición manual en
+        // Perfil). Apple Health alimenta solo biometric_history (gráficas).
+        // Propagar AH sobreescribiría el peso que el usuario introdujo manualmente
+        // con datos históricos de AH, corrompiendo la recomendación de meta de peso.
       } else {
         AppLogger.info('HealthAutoSync: nada que importar');
         if (kDebugMode) {
