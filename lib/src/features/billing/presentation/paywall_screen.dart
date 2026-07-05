@@ -1,10 +1,15 @@
-// SPEC-198 — pantalla de paywall. Rediseño pro (2026-06-24).
+// SPEC-198 — pantalla de paywall. Rediseño pro (2026-07-04).
 //
-// Patrón trial-first: el precio queda en segundo plano; el CTA principal
-// es "Comenzar 14 días gratis". El usuario selecciona un plan (anual
-// preseleccionado por mayor valor y mejor conversión) y ve el precio
-// DESPUÉS del botón — nunca dentro de él. Mismo patrón que Headspace,
-// Calm y Duolingo.
+// Copy context-aware: el paywall lee el estado del trial (isInTrialProvider /
+// trialDaysRemainingProvider) y adapta subtitle, header de beneficios, CTA
+// y disclaimer al momento real del usuario. Tres estados:
+//
+//   1. En trial (días > 3)   : "Ya lo tienes todo — asegura tu acceso"
+//   2. En trial (días <= 3)  : urgencia máxima, N días nombrados
+//   3. Trial vencido         : "Tu prueba venció — reactiva acceso completo"
+//
+// NUNCA se promete "14 días gratis" a alguien que ya los está usando.
+// El CTA cambia de "Comenzar..." a "Asegurar mi plan" / "Suscribirme ahora".
 //
 // Lógica de negocio intacta: telemetría SPEC-193, purchase / restore /
 // cancel / error, FakeBillingService compatible.
@@ -22,12 +27,12 @@ import 'package:elena_app/src/features/billing/application/billing_service.dart'
 import 'package:elena_app/src/features/billing/domain/billing_package.dart';
 import 'package:elena_app/src/features/billing/domain/entitlement_status.dart';
 
-// ── Beneficios mostrados en el header ────────────────────────────────────────
+// ── Beneficios (lo que el usuario conserva al suscribirse) ───────────────────
 
 const List<_Feature> _kFeatures = [
   _Feature(
     icon: Icons.psychology_rounded,
-    text: 'Coaching ilimitado todos los días',
+    text: 'Coaching diario personalizado sin límite',
   ),
   _Feature(
     icon: Icons.show_chart_rounded,
@@ -179,13 +184,14 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen>
     );
   }
 
-  /// Línea de precio + disclaimer bajo el botón CTA.
-  /// Ejemplo: "Después US$4.99/mes · Sin cargo hoy · Cancela cuando quieras"
-  String _disclaimerText() {
+  /// Línea de precio + disclaimer bajo el botón CTA (context-aware).
+  String _disclaimerText(bool isInTrial, int daysRemaining) {
     if (_packages.isEmpty) return '';
     final pkg = _packages[_selectedIndex];
-    final period = pkg.period == BillingPeriod.annual ? 'año' : 'mes';
-    return 'Después ${pkg.priceString} · Sin cargo hoy · Cancela cuando quieras';
+    if (isInTrial && daysRemaining > 0) {
+      return 'Se cobra al vencer tu prueba · Cancela cuando quieras';
+    }
+    return 'Acceso inmediato al suscribirte · Cancela cuando quieras';
   }
 
   /// Porcentaje de ahorro del plan anual respecto al mensual (si ambos existen).
@@ -218,6 +224,35 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen>
   @override
   Widget build(BuildContext context) {
     final savings = _annualSavings();
+    final isInTrial = ref.watch(isInTrialProvider);
+    final daysRemaining = ref.watch(trialDaysRemainingProvider);
+
+    // ── Copy context-aware ─────────────────────────────────────────────────
+    final String subtitle;
+    final String featuresHeader;
+    final String ctaLabel;
+    final Color subtitleColor;
+
+    if (isInTrial && daysRemaining > 3) {
+      subtitle =
+          'Ya tienes acceso completo. Suscríbete para no perderlo.';
+      featuresHeader = 'LO QUE SEGUIRÁS TENIENDO';
+      ctaLabel = 'Asegurar mi plan';
+      subtitleColor = AppColors.metabolicGreen;
+    } else if (isInTrial && daysRemaining > 0) {
+      subtitle =
+          'Te quedan $daysRemaining ${daysRemaining == 1 ? 'día' : 'días'} '
+          '— suscríbete para no perder tu racha.';
+      featuresHeader = 'NO PIERDAS EL ACCESO A';
+      ctaLabel = 'Suscribirme ahora';
+      subtitleColor = const Color(0xFFFB923C); // naranja urgente
+    } else {
+      // trial vencido o usuario sin trial
+      subtitle = 'Reactiva el acceso completo a Elena.';
+      featuresHeader = 'VUELVE A TENER ACCESO A';
+      ctaLabel = 'Reactivar mi acceso';
+      subtitleColor = Colors.white70;
+    }
 
     return Container(
       margin: const EdgeInsets.fromLTRB(8, 0, 8, 8),
@@ -287,22 +322,38 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen>
                 ),
               ),
               const SizedBox(height: 6),
+
+              // Subtitle context-aware (nunca "14 días gratis" a alguien
+              // que ya los tiene).
               Text(
-                'Prueba gratis 14 días — sin cargo hasta que decidas',
+                subtitle,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14,
-                  color: AppColors.metabolicGreen,
+                  color: subtitleColor,
                   fontWeight: FontWeight.w600,
+                  height: 1.4,
                 ),
               ),
 
               const SizedBox(height: 24),
 
+              // ── Header de beneficios ───────────────────────────────────
+              Text(
+                featuresHeader,
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.6,
+                  color: Colors.white.withValues(alpha: 0.35),
+                ),
+              ),
+              const SizedBox(height: 12),
+
               // ── Beneficios ─────────────────────────────────────────────
               ..._kFeatures.map(_buildFeatureRow),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
 
               // ── Divisor sutil ──────────────────────────────────────────
               Container(
@@ -349,14 +400,14 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen>
 
               const SizedBox(height: 20),
 
-              // ── CTA principal ──────────────────────────────────────────
-              _buildCTA(),
+              // ── CTA principal (context-aware) ──────────────────────────
+              _buildCTA(ctaLabel),
 
               const SizedBox(height: 10),
 
               // ── Disclaimer de precio ───────────────────────────────────
               Text(
-                _disclaimerText(),
+                _disclaimerText(isInTrial, daysRemaining),
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 11,
@@ -560,9 +611,9 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen>
     );
   }
 
-  // ── Botón CTA ──────────────────────────────────────────────────────────────
+  // ── Botón CTA (label dinámico según contexto del trial) ───────────────────
 
-  Widget _buildCTA() {
+  Widget _buildCTA(String label) {
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 200),
       child: _busy
@@ -598,15 +649,14 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen>
                             Color(0xFF059669),
                           ],
                         ),
-                  color:
-                      _packages.isEmpty ? const Color(0xFF1E293B) : null,
+                  color: _packages.isEmpty ? const Color(0xFF1E293B) : null,
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: _packages.isEmpty
                       ? null
                       : [
                           BoxShadow(
-                            color: AppColors.metabolicGreen
-                                .withValues(alpha: 0.35),
+                            color:
+                                AppColors.metabolicGreen.withValues(alpha: 0.35),
                             blurRadius: 16,
                             offset: const Offset(0, 4),
                           ),
@@ -614,13 +664,12 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen>
                 ),
                 child: Center(
                   child: Text(
-                    'Comenzar 14 días gratis',
+                    label,
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w900,
-                      color: _packages.isEmpty
-                          ? Colors.white38
-                          : Colors.black,
+                      color:
+                          _packages.isEmpty ? Colors.white38 : Colors.black,
                       letterSpacing: 0.2,
                     ),
                   ),
