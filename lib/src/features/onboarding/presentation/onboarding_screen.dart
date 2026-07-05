@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -674,68 +675,95 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     _inferMedidas();
                   }, isDark),
               isDark),
-          _stepperSelector(
+          _pickerSelector(
               label: "Estatura",
-              value: _height,
-              unit: " cm",
-              min: 140,
-              max: 220,
-              onChanged: (v) => setState(() => _height = v),
-              isDark: isDark),
-          _stepperSelector(
+              displayValue: "${_height.toInt()} cm",
+              isDark: isDark,
+              onTap: () => _showNumericPicker(
+                    title: "Estatura",
+                    value: _height,
+                    min: 140,
+                    max: 220,
+                    unit: " cm",
+                    isDark: isDark,
+                    onChanged: (v) => setState(() => _height = v),
+                  )),
+          _pickerSelector(
               label: "Peso",
-              value: _weight,
-              unit: " kg",
-              min: 40,
-              max: 200,
-              onChanged: (v) => setState(() => _weight = v),
-              isDark: isDark),
+              displayValue: "${_weight.toInt()} kg",
+              isDark: isDark,
+              onTap: () => _showNumericPicker(
+                    title: "Peso",
+                    value: _weight,
+                    min: 40,
+                    max: 200,
+                    unit: " kg",
+                    isDark: isDark,
+                    onChanged: (v) => setState(() => _weight = v),
+                  )),
           _sectionTitle("TALLAS (INFERENCIA)", isDark),
           Row(children: [
             Expanded(
-                child: _simpleSelector(
-                    "Camisa",
-                    _shirtSize,
-                    () => _showSimpleOptions("Camisa", ["S", "M", "L", "XL"],
-                            (v) {
-                          setState(() => _shirtSize = v);
-                          _inferMedidas();
-                        }, isDark),
-                    isDark)),
+                child: _pickerSelector(
+                    label: "Camisa",
+                    displayValue: _shirtSize,
+                    isDark: isDark,
+                    onTap: () => _showStringPicker(
+                          title: "Talla de camisa",
+                          options: const ["XS", "S", "M", "L", "XL", "XXL"],
+                          current: _shirtSize,
+                          isDark: isDark,
+                          onChanged: (v) {
+                            setState(() => _shirtSize = v);
+                            _inferMedidas();
+                          },
+                        ))),
             const SizedBox(width: 12),
             Expanded(
-                child: _stepperSelector(
+                child: _pickerSelector(
                     label: "Pant.",
-                    value: _pantSize.toDouble(),
-                    unit: "",
-                    min: 28,
-                    max: 50,
-                    onChanged: (v) {
-                      setState(() => _pantSize = v.toInt());
-                      _inferMedidas();
-                    },
+                    displayValue: "$_pantSize",
                     isDark: isDark,
-                    // Columna estrecha (mitad de pantalla): reducir ancho
-                    // del bloque valor para evitar overflow de 24px.
-                    valueBoxWidth: 48)),
+                    onTap: () => _showNumericPicker(
+                          title: "Talla de pantalón",
+                          value: _pantSize.toDouble(),
+                          min: 26,
+                          max: 52,
+                          unit: "",
+                          isDark: isDark,
+                          onChanged: (v) {
+                            setState(() => _pantSize = v.toInt());
+                            _inferMedidas();
+                          },
+                        ))),
           ]),
           _sectionTitle("MEDIDAS CRÍTICAS IMR", isDark),
-          _stepperSelector(
+          _pickerSelector(
               label: "Cintura",
-              value: _waist,
-              unit: " cm",
-              min: 50,
-              max: 150,
-              onChanged: (v) => setState(() => _waist = v),
-              isDark: isDark),
-          _stepperSelector(
+              displayValue: "${_waist.toInt()} cm",
+              isDark: isDark,
+              onTap: () => _showNumericPicker(
+                    title: "Cintura",
+                    value: _waist,
+                    min: 50,
+                    max: 150,
+                    unit: " cm",
+                    isDark: isDark,
+                    onChanged: (v) => setState(() => _waist = v),
+                  )),
+          _pickerSelector(
               label: "Cuello",
-              value: _neck,
-              unit: " cm",
-              min: 20,
-              max: 60,
-              onChanged: (v) => setState(() => _neck = v),
-              isDark: isDark),
+              displayValue: "${_neck.toInt()} cm",
+              isDark: isDark,
+              onTap: () => _showNumericPicker(
+                    title: "Cuello",
+                    value: _neck,
+                    min: 20,
+                    max: 60,
+                    unit: " cm",
+                    isDark: isDark,
+                    onChanged: (v) => setState(() => _neck = v),
+                  )),
         ],
       );
 
@@ -812,14 +840,19 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   (v) => _handleProtocolChange(v),
                   isDark),
               isDark),
-          _stepperSelector(
+          _pickerSelector(
               label: "Comidas al día",
-              value: _mealsPerDay.toDouble(),
-              unit: "",
-              min: 1,
-              max: 6,
-              onChanged: (v) => setState(() => _mealsPerDay = v.toInt()),
-              isDark: isDark),
+              displayValue: "$_mealsPerDay",
+              isDark: isDark,
+              onTap: () => _showNumericPicker(
+                    title: "Comidas al día",
+                    value: _mealsPerDay.toDouble(),
+                    min: 1,
+                    max: 6,
+                    unit: "",
+                    isDark: isDark,
+                    onChanged: (v) => setState(() => _mealsPerDay = v.toInt()),
+                  )),
           _simpleSelector("Patologías", _pathologies.join(", "),
               () => _showMultiSelectPathologies(isDark), isDark),
         ],
@@ -1415,6 +1448,299 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   // --- HELPERS UI ---
+
+  // ─── Picker selector (reemplaza steppers +/-) ────────────────────────────
+
+  /// Card tappable que muestra label + valor actual. Al tocar abre un picker.
+  Widget _pickerSelector({
+    required String label,
+    required String displayValue,
+    required VoidCallback onTap,
+    required bool isDark,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E293B) : Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+                color: isDark ? Colors.white10 : const Color(0xFFE2E8F0)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color:
+                      isDark ? Colors.white70 : const Color(0xFF475569),
+                  fontSize: 14,
+                ),
+              ),
+              Row(
+                children: [
+                  Text(
+                    displayValue,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF10B981),
+                      fontSize: 15,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    Icons.expand_more_rounded,
+                    size: 18,
+                    color: isDark ? Colors.white38 : const Color(0xFFCBD5E1),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Picker de rueda (CupertinoPicker) para valores numéricos enteros.
+  /// El valor solo se confirma al tocar "Listo".
+  void _showNumericPicker({
+    required String title,
+    required double value,
+    required double min,
+    required double max,
+    required String unit,
+    required bool isDark,
+    required Function(double) onChanged,
+  }) {
+    final values = <int>[];
+    for (int v = min.toInt(); v <= max.toInt(); v++) {
+      values.add(v);
+    }
+
+    int initialIndex = values.indexWhere((v) => v == value.toInt());
+    if (initialIndex < 0) initialIndex = 0;
+
+    final controller =
+        FixedExtentScrollController(initialItem: initialIndex);
+    int selectedIndex = initialIndex;
+
+    showCupertinoModalPopup<void>(
+      context: context,
+      builder: (ctx) {
+        final bg =
+            isDark ? const Color(0xFF1E293B) : CupertinoColors.systemBackground;
+        final fg = isDark ? CupertinoColors.white : CupertinoColors.black;
+
+        return Container(
+          height: 320,
+          color: bg,
+          child: Column(
+            children: [
+              // Barra de acciones
+              Container(
+                height: 50,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                decoration: BoxDecoration(
+                  color: bg,
+                  border: Border(
+                    bottom: BorderSide(
+                      color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
+                    ),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    CupertinoButton(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      onPressed: () => Navigator.pop(ctx),
+                      child: Text(
+                        'Cancelar',
+                        style: TextStyle(
+                          color: isDark
+                              ? CupertinoColors.systemGrey
+                              : CupertinoColors.systemGrey,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      title,
+                      style: TextStyle(
+                        color: fg,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                      ),
+                    ),
+                    CupertinoButton(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      onPressed: () {
+                        onChanged(values[selectedIndex].toDouble());
+                        Navigator.pop(ctx);
+                      },
+                      child: const Text(
+                        'Listo',
+                        style: TextStyle(
+                          color: Color(0xFF10B981),
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Rueda
+              Expanded(
+                child: CupertinoPicker(
+                  scrollController: controller,
+                  itemExtent: 44,
+                  backgroundColor: bg,
+                  selectionOverlay: CupertinoPickerDefaultSelectionOverlay(
+                    background: const Color(0xFF10B981).withValues(alpha: 0.12),
+                  ),
+                  onSelectedItemChanged: (idx) => selectedIndex = idx,
+                  children: values
+                      .map(
+                        (v) => Center(
+                          child: Text(
+                            '$v$unit',
+                            style: TextStyle(
+                              color: fg,
+                              fontSize: 20,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      )
+                      .toList(),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// Picker de rueda para opciones de texto (tallas, categorías).
+  void _showStringPicker({
+    required String title,
+    required List<String> options,
+    required String current,
+    required bool isDark,
+    required Function(String) onChanged,
+  }) {
+    int initialIndex = options.indexOf(current);
+    if (initialIndex < 0) initialIndex = 0;
+
+    final controller =
+        FixedExtentScrollController(initialItem: initialIndex);
+    int selectedIndex = initialIndex;
+
+    showCupertinoModalPopup<void>(
+      context: context,
+      builder: (ctx) {
+        final bg =
+            isDark ? const Color(0xFF1E293B) : CupertinoColors.systemBackground;
+        final fg = isDark ? CupertinoColors.white : CupertinoColors.black;
+
+        return Container(
+          height: 300,
+          color: bg,
+          child: Column(
+            children: [
+              Container(
+                height: 50,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                decoration: BoxDecoration(
+                  color: bg,
+                  border: Border(
+                    bottom: BorderSide(
+                      color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
+                    ),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    CupertinoButton(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      onPressed: () => Navigator.pop(ctx),
+                      child: Text(
+                        'Cancelar',
+                        style: TextStyle(
+                          color: CupertinoColors.systemGrey,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      title,
+                      style: TextStyle(
+                        color: fg,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                      ),
+                    ),
+                    CupertinoButton(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      onPressed: () {
+                        onChanged(options[selectedIndex]);
+                        Navigator.pop(ctx);
+                      },
+                      child: const Text(
+                        'Listo',
+                        style: TextStyle(
+                          color: Color(0xFF10B981),
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: CupertinoPicker(
+                  scrollController: controller,
+                  itemExtent: 44,
+                  backgroundColor: bg,
+                  selectionOverlay: CupertinoPickerDefaultSelectionOverlay(
+                    background: const Color(0xFF10B981).withValues(alpha: 0.12),
+                  ),
+                  onSelectedItemChanged: (idx) => selectedIndex = idx,
+                  children: options
+                      .map(
+                        (opt) => Center(
+                          child: Text(
+                            opt,
+                            style: TextStyle(
+                              color: fg,
+                              fontSize: 20,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      )
+                      .toList(),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // ─── Stepper legacy (solo si queda algún callsite fuera de medidas) ────────
 
   Widget _stepperSelector(
       {required String label,
