@@ -116,8 +116,13 @@ Future<void> _bootstrap() async {
             ? AndroidProvider.playIntegrity
             : AndroidProvider.debug,
         // ignore: deprecated_member_use
-        appleProvider:
-            kReleaseMode ? AppleProvider.appAttest : AppleProvider.debug,
+        // appAttestWithDeviceCheckFallback: si AppAttest falla (dispositivo no
+        // soportado, provisioning issue, primer launch en TestFlight), cae a
+        // DeviceCheck automáticamente. AppAttest puro bloqueaba Firestore con
+        // 403 silencioso en algunos devices/TestFlight sin devolver error útil.
+        appleProvider: kReleaseMode
+            ? AppleProvider.appAttestWithDeviceCheckFallback
+            : AppleProvider.debug,
         // ignore: deprecated_member_use
         webProvider: ReCaptchaV3Provider(kRecaptchaSiteKey),
       );

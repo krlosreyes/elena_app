@@ -8,6 +8,7 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/features/billing/application/billing_providers.dart';
 import 'package:elena_app/src/features/health_sync/application/health_auto_sync_controller.dart';
 import 'package:elena_app/src/features/health_sync/application/health_observer_service.dart';
@@ -28,18 +29,37 @@ final healthObserverSideEffectProvider = Provider<void>((ref) {
   DateTime? lastTriggered;
   final sub = service.events.listen((event) {
     final now = DateTime.now();
+
     // Debounce local: una sola sync por ráfaga de eventos (<30s).
     if (lastTriggered != null &&
         now.difference(lastTriggered!) < const Duration(seconds: 30)) {
+      AppLogger.debug(
+        '[HKObserver] evento descartado — debounce activo '
+        '(${now.difference(lastTriggered!).inSeconds}s < 30s)',
+      );
       return;
     }
     lastTriggered = now;
 
     final user = ref.read(currentUserStreamProvider).valueOrNull;
-    if (user == null || user.id.isEmpty) return;
-    // SPEC-197: el auto-sync de wearables es Premium. Free registra manual.
-    if (!ref.read(featureGateProvider).autoSyncAllowed) return;
+    if (user == null || user.id.isEmpty) {
+      AppLogger.debug('[HKObserver] evento descartado — sin usuario autenticado');
+      return;
+    }
 
+    // SPEC-197: el auto-sync de wearables es Premium. Free registra manual.
+    final gate = ref.read(featureGateProvider);
+    if (!gate.autoSyncAllowed) {
+      AppLogger.debug(
+        '[HKObserver] evento descartado — autoSync no permitido '
+        '(isPremium=${gate.isPremium}, isInTrial=${gate.isInTrial}). '
+        'RC puede estar cargando aún; el listener de featureGateProvider '
+        'en app.dart relanzará el sync cuando el entitlement esté listo.',
+      );
+      return;
+    }
+
+    AppLogger.debug('[HKObserver] evento aceptado — lanzando runNow uid=${user.id}');
     // `runNow` (no `runIfDue`): el evento del observer ignora el debounce de
     // 15 min del foreground — es data fresca confirmada por HealthKit.
     ref.read(healthAutoSyncControllerProvider.notifier).runNow(userId: user.id);
@@ -48,4 +68,5 @@ final healthObserverSideEffectProvider = Provider<void>((ref) {
 
   // Arrancar los observers nativos (no-op en plataformas sin el canal).
   service.start();
+  AppLogger.debug('[HKObserver] observers nativos iniciados');
 });

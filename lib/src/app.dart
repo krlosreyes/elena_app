@@ -12,6 +12,7 @@ import 'package:elena_app/src/core/services/notification_router.dart';
 import 'package:elena_app/src/features/auth/domain/app_account.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
 import 'package:elena_app/src/features/billing/application/billing_providers.dart';
+import 'package:elena_app/src/features/billing/application/feature_gate.dart';
 import 'package:elena_app/src/features/onboarding/application/app_tour_notifier.dart';
 import 'package:elena_app/src/features/onboarding/presentation/app_tour_overlay.dart';
 import 'package:elena_app/src/features/coaching/application/coaching_action_router.dart';
@@ -183,6 +184,33 @@ class _ElenaAppState extends ConsumerState<ElenaApp>
       ref
           .read(healthAutoSyncControllerProvider.notifier)
           .runIfDue(userId: user.id);
+    });
+
+    // FIX race condition RC entitlement (2026-07-02):
+    // `currentUserStreamProvider` puede dispararse ANTES de que RevenueCat
+    // cargue el entitlement (isPremiumProvider arranca en false mientras
+    // el StreamProvider resuelve). Si eso ocurre, el runIfDue de arriba se
+    // aborta (`autoSyncAllowed = false`) y el sync nunca corre esa sesión
+    // porque `currentUserStreamProvider` no vuelve a emitir.
+    //
+    // Este listener reactiva el sync en cuanto el gate pasa a true (RC cargó
+    // + usuario Premium o en Trial). Cubre también el caso de upgrade en vivo
+    // (Free → Premium mientras la app está abierta).
+    ref.listen<FeatureGate>(featureGateProvider, (previous, next) {
+      final wasAllowed = previous?.autoSyncAllowed ?? false;
+      final isNowAllowed = next.autoSyncAllowed;
+      if (wasAllowed || !isNowAllowed) return; // sin transición false→true
+      final user = ref.read(currentUserStreamProvider).valueOrNull;
+      if (user == null || user.id.isEmpty) return;
+      if (kDebugMode) {
+        // ignore: avoid_print
+        print('[ElenaApp] featureGate autoSync unlocked — forzando HealthAutoSync.runNow');
+      }
+      // runNow (no runIfDue): el entitlement acaba de cargar, el debounce de
+      // 15 min no aplica — necesitamos datos frescos ahora.
+      ref
+          .read(healthAutoSyncControllerProvider.notifier)
+          .runNow(userId: user.id);
     });
 
     // SPEC-193: asociar el uid pseudónimo a Analytics (null en logout).
