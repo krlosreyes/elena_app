@@ -115,6 +115,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   // --- PASO 1: HARDWARE ---
   DateTime _birthDate = DateTime(1980, 1, 1);
   double _weight = 85.0;
+  // true cuando el usuario tocó el picker o vino prefillado desde MR.
+  // Bloquea el botón SIGUIENTE del paso Biometría hasta que se confirme
+  // el peso real — evita guardar el default 85 kg a Firestore.
+  bool _weightTouched = false;
   double _height = 180.0;
   String _gender = 'M';
   double _waist = 94.0;
@@ -358,7 +362,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           ? prefill.name
           : account.displayName;
 
-      if (prefill.weight != null) _weight = prefill.weight!;
+      if (prefill.weight != null) {
+        _weight = prefill.weight!;
+        _weightTouched = true; // viene de MR — ya es un valor real
+      }
       if (prefill.height != null) _height = prefill.height!;
       if (prefill.gender != null) _gender = prefill.gender!;
       if (prefill.waistCircumference != null) {
@@ -689,8 +696,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     onChanged: (v) => setState(() => _height = v),
                   )),
           _pickerSelector(
-              label: "Peso",
-              displayValue: "${_weight.toInt()} kg",
+              label: "Peso *",
+              displayValue: _weightTouched
+                  ? "${_weight.toInt()} kg"
+                  : "Toca para ingresar",
               isDark: isDark,
               onTap: () => _showNumericPicker(
                     title: "Peso",
@@ -699,7 +708,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     max: 200,
                     unit: " kg",
                     isDark: isDark,
-                    onChanged: (v) => setState(() => _weight = v),
+                    onChanged: (v) => setState(() {
+                      _weight = v;
+                      _weightTouched = true;
+                    }),
                   )),
           _sectionTitle("TALLAS (INFERENCIA)", isDark),
           Row(children: [
@@ -1856,7 +1868,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     // bloquea.
     final currentOriginalIndex =
         _activeSteps.isNotEmpty ? _activeSteps[_currentStep] : 0;
-    final canProceed = currentOriginalIndex != 0 || _disclaimerAccepted;
+    final canProceed = (currentOriginalIndex != 0 || _disclaimerAccepted) &&
+        (currentOriginalIndex != 1 || _weightTouched);
     final isLastStep = _currentStep == _activeSteps.length - 1;
     final disabledColor = isDark ? Colors.white24 : Colors.grey;
     final activeColor =
