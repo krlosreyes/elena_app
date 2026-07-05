@@ -6,10 +6,34 @@
 //   · Grasa corporal: rangos ACSM por género
 //   · Hidratación: 35 ml × kg (fisiología básica)
 //   · Sueño: 7–9 h (NIH / Huberman Lab)
-//   · Ejercicio: OMS 150 min/semana → ~22 min/día mínimo
+//   · Ejercicio: protocolo diferenciado por zona grasa + sistema nervioso (SPEC-244)
 
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/features/goals/domain/user_goal.dart';
+
+// ─── Protocolo de ejercicio (SPEC-244) ───────────────────────────────────────
+//
+// Encapsula el tipo de ejercicio recomendado, los minutos base y la
+// justificación científica para cada combinación de zona grasa + sistema
+// nervioso. No es const porque el campo rationale puede variar según
+// modificadores en tiempo de ejecución.
+
+class _ExerciseProtocol {
+  /// Etiqueta corta que aparece como badge de estado (máx ~20 chars).
+  final String typeLabel;
+
+  /// Minutos diarios de referencia para el protocolo (promedio semanal).
+  final int minTarget;
+
+  /// Texto largo que se muestra en "¿Por qué este objetivo?".
+  final String rationale;
+
+  const _ExerciseProtocol({
+    required this.typeLabel,
+    required this.minTarget,
+    required this.rationale,
+  });
+}
 
 // ─── Modelo de sugerencia ─────────────────────────────────────────────────────
 
@@ -74,7 +98,7 @@ class GoalSuggestionEngine {
       GoalType.bodyFatTarget: _bodyFatSuggestion(user, isMale),
       GoalType.fastingDaysPerWeek: _fastingDaysSuggestion(user),
       GoalType.exerciseMinPerDay:
-          _exerciseSuggestion(user, recentExerciseMinPerDay),
+          _exerciseSuggestion(user, isMale, recentExerciseMinPerDay),
       GoalType.sleepHoursPerNight: _sleepSuggestion(user),
       GoalType.hydrationLitersPerDay: _hydrationSuggestion(user),
       GoalType.nutritionADominantPercent:
@@ -238,51 +262,241 @@ class GoalSuggestionEngine {
     );
   }
 
-  // ─── Ejercicio (minutos/día) ────────────────────────────────────────────────
+  // ─── Ejercicio (minutos/día) — SPEC-244 ────────────────────────────────────
   //
-  // OMS: 150 min/semana de intensidad moderada = 22 min/día.
-  // Sugerimos max(30, min(ejercicio_actual + 10, 60)), redondeado a 5 min.
+  // El protocolo de ejercicio se diferencia por zona grasa ACSM y sistema
+  // nervioso (pasivo/excitado). No es un flat "current + 10": cada zona
+  // tiene un tipo de ejercicio óptimo y un rango de minutos distinto.
+  //
+  // Fuentes:
+  //   · ACSM Position Stand on Exercise and Physical Activity (2011)
+  //   · Laforgia et al. — EPOC y oxidación de grasa post-ejercicio
+  //   · Gibala et al. — HIIT vs. cardio continuo en recomposición
+  //   · OMS — 150-300 min/semana actividad moderada
 
   static GoalSuggestion _exerciseSuggestion(
     UserModel user,
+    bool isMale,
     double? recentMinPerDay,
   ) {
-    // SPEC-203.2: si hay actividad REAL reciente (logs/HealthKit), úsala como
-    // "actual"; si no, cae al goal configurado (estimado, sin historial).
+    // SPEC-203.2: actividad REAL de logs/HealthKit como "actual".
+    // Sin historial → placeholder del goal (estimado).
     final bool hasReal = recentMinPerDay != null;
     final double current = (hasReal
             ? recentMinPerDay
             : user.exerciseGoalMinutes.toDouble())
         .clamp(0, 120)
         .toDouble();
-    double rawTarget = (current + 10).clamp(30, 60);
-    // Redondear a múltiplo de 5
+
+    // ── Composición corporal ────────────────────────────────────────────────
+    final double rawBf = user.bodyFatPercentage ?? (isMale ? 20.0 : 28.0);
+    final double bf = rawBf.clamp(5.0, 50.0);
+
+    final double whtr = (user.waistCircumference != null && user.height > 0)
+        ? user.waistCircumference! / user.height
+        : 0.0;
+    final bool highVisceralRisk = whtr >= 0.56;
+
+    // Sistema nervioso: 'excitado' → bajar intensidad para no elevar cortisol.
+    final String ns = user.nervousSystem.toLowerCase();
+    final bool isExcited = ns == 'excitado' || ns == 'excited';
+
+    // ── Protocolo basado en zona grasa ──────────────────────────────────────
+    final _ExerciseProtocol proto = _exerciseProtocolFor(
+      bf: bf,
+      isMale: isMale,
+      highVisceralRisk: highVisceralRisk,
+      isExcited: isExcited,
+    );
+
+    // Si el usuario ya tiene actividad real, nunca sugerimos menos que su
+    // promedio actual + 5 min (progresión); el piso es el protocolo de zona.
+    final double rawTarget = hasReal
+        ? (current + 5).clamp(proto.minTarget.toDouble(), 75.0)
+        : proto.minTarget.toDouble();
     final double target = (rawTarget / 5).round() * 5.0;
 
     final bool outOfRange = current < 30;
 
+    // El statusLabel refleja el TIPO de ejercicio, no solo el volumen.
     String statusLabel;
     if (!hasReal) {
-      // Honestidad: sin actividad real registrada, no afirmamos un nivel.
-      statusLabel = 'Sin actividad registrada (estimado)';
+      statusLabel = proto.typeLabel;
     } else if (current < 15) {
-      statusLabel = 'Sin actividad registrada';
-    } else if (current < 30)
-      statusLabel = 'Por debajo de recomendación OMS';
-    else if (current < 45)
-      statusLabel = 'En rango recomendado';
-    else
-      statusLabel = 'Nivel alto de actividad';
+      statusLabel = 'Sin actividad · ${proto.typeLabel}';
+    } else if (current < 30) {
+      statusLabel = 'Bajo OMS · ${proto.typeLabel}';
+    } else {
+      statusLabel = proto.typeLabel;
+    }
 
     return GoalSuggestion(
       type: GoalType.exerciseMinPerDay,
       currentValue: current,
       suggestedTarget: target,
-      rationale: 'La OMS establece 150 min/semana como mínimo para beneficios '
-          'metabólicos. Con ${target.toStringAsFixed(0)} min/día puedes '
-          'sumar hasta 7.5 pts directos al bloque de Comportamiento en tu IMR.',
+      rationale: proto.rationale,
       shouldActivate: outOfRange,
       currentStatusLabel: statusLabel,
+    );
+  }
+
+  // ─── Tabla de protocolos por zona grasa + sistema nervioso ─────────────────
+
+  static _ExerciseProtocol _exerciseProtocolFor({
+    required double bf,
+    required bool isMale,
+    required bool highVisceralRisk,
+    required bool isExcited,
+  }) {
+    // ── ZONA ALTO (H ≥25 %, M ≥32 %) ───────────────────────────────────────
+    // Prioridad: reducción de grasa + preservar masa magra.
+    if (isMale ? bf >= 25 : bf >= 32) {
+      if (isExcited) {
+        return const _ExerciseProtocol(
+          typeLabel: 'Cardio suave + Movilidad',
+          minTarget: 30,
+          rationale:
+              'Tu zona de grasa (Alto) y sistema nervioso excitado piden '
+              'movimiento de baja intensidad para no elevar el cortisol, '
+              'que frena la quema de grasa.\n\n'
+              'Protocolo recomendado:\n'
+              '· 4 días — caminata rápida o bici suave (25-35 min)\n'
+              '· 2 días — movilidad, yoga o stretching dinámico (15-20 min)\n\n'
+              'El cardio de baja intensidad sostenida utiliza grasa como '
+              'combustible principal (zona aeróbica). Combinado con tu '
+              'ayuno intermitente, maximiza la oxidación lipídica sin '
+              'disparar el cortisol.',
+        );
+      }
+      return _ExerciseProtocol(
+        typeLabel: highVisceralRisk
+            ? 'Cardio diario + Fuerza funcional'
+            : 'Cardio + Fuerza funcional',
+        minTarget: 35,
+        rationale:
+            'Tu zona actual (Alto) prioriza reducción de grasa mientras '
+            'preservas músculo.\n\n'
+            'Protocolo recomendado:\n'
+            '· 3 días — cardio moderado-intenso: caminata rápida, bici '
+            'o natación (30-40 min)\n'
+            '· 2 días — fuerza funcional: sentadillas, peso corporal, '
+            'mancuernas ligeras (25-30 min)\n\n'
+            '${highVisceralRisk ? 'Tu cintura indica grasa visceral — la caminata diaria de 30+ min es la intervención más efectiva documentada para reducirla. ' : ''}'
+            'La combinación genera EPOC (quema elevada post-ejercicio) y '
+            'preserva tu masa magra durante el déficit del ayuno. '
+            'Cada sesión de fuerza mejora la sensibilidad a la insulina '
+            'hasta 48 h después.',
+      );
+    }
+
+    // ── ZONA PROMEDIO (H 18-24 %, M 25-31 %) ────────────────────────────────
+    // Prioridad: recomposición corporal (↑ masa magra = ↓ %grasa sin déficit).
+    if (isMale ? bf >= 18 : bf >= 25) {
+      if (isExcited) {
+        return const _ExerciseProtocol(
+          typeLabel: 'Fuerza moderada + Cardio suave',
+          minTarget: 35,
+          rationale:
+              'Zona Promedio con sistema nervioso excitado: recomposición '
+              'sin sobrecargar el eje cortisol-adrenalina.\n\n'
+              'Protocolo recomendado:\n'
+              '· 3 días — fuerza con pesos moderados: sentadillas, press, '
+              'jalones (30-35 min, descansos amplios)\n'
+              '· 2 días — caminata o natación suave (20-25 min)\n\n'
+              'La fuerza aumenta tu masa magra y mejora la sensibilidad a '
+              'la insulina — efecto que el cardio de alta intensidad no '
+              'produce en tu perfil nervioso. Cada kilo de músculo nuevo '
+              'quema ~50 kcal adicionales en reposo.',
+        );
+      }
+      return const _ExerciseProtocol(
+        typeLabel: 'Fuerza + Cardio moderado',
+        minTarget: 35,
+        rationale:
+            'Tu zona (Promedio) es ideal para recomposición corporal: '
+            'ganar músculo mientras reduces grasa.\n\n'
+            'Protocolo recomendado:\n'
+            '· 3 días — fuerza compuesta: pesas, TRX o funcional (30-40 min). '
+            'Ejercicios multiarticulares: sentadilla, peso muerto, press, remo\n'
+            '· 2 días — cardio moderado: bici, elíptica o trote suave '
+            '(25-30 min, zona 2 aeróbica)\n\n'
+            'Cada kilo de músculo nuevo quema ~50 kcal adicionales en reposo '
+            '— el mejor aliado de tu ayuno intermitente. La fuerza compuesta '
+            'activa más fibras musculares y eleva el EPOC post-entreno.',
+      );
+    }
+
+    // ── ZONA FITNESS (H 14-17 %, M 21-24 %) ─────────────────────────────────
+    // Prioridad: definición + potencia metabólica.
+    if (isMale ? bf >= 14 : bf >= 21) {
+      if (isExcited) {
+        return const _ExerciseProtocol(
+          typeLabel: 'Fuerza progresiva + Cardio zona 2',
+          minTarget: 35,
+          rationale:
+              'Zona Fitness con sistema nervioso excitado: mantén alta la '
+              'intensidad en fuerza pero sustituye el HIIT por cardio zona 2.\n\n'
+              'Protocolo recomendado:\n'
+              '· 3-4 días — fuerza progresiva con sobrecarga gradual (35-40 min)\n'
+              '· 2 días — cardio zona 2: bici o trote suave, frecuencia '
+              'cardíaca 60-70 % máx (20-25 min)\n\n'
+              'El cardio zona 2 optimiza la eficiencia mitocondrial y la '
+              'oxidación de grasa sin añadir carga al sistema nervioso. '
+              'En tu perfil, HIIT frecuente puede elevar cortisol y frenar '
+              'la recuperación muscular.',
+        );
+      }
+      return const _ExerciseProtocol(
+        typeLabel: 'Fuerza progresiva + HIIT',
+        minTarget: 40,
+        rationale:
+            'Tu zona Fitness permite entrenamientos de mayor intensidad '
+            'para seguir mejorando composición corporal.\n\n'
+            'Protocolo recomendado:\n'
+            '· 3-4 días — fuerza progresiva con sobrecarga gradual (35-45 min). '
+            'Incrementa peso o repeticiones cada 1-2 semanas\n'
+            '· 2 días — HIIT corto: intervalos 40"/20" o Tabata (15-20 min). '
+            'Sprints, burpees, saltos, bici estacionaria\n\n'
+            'El HIIT en tu rango de grasa eleva el EPOC hasta 24 h, '
+            'amplificando la quema de grasa durante el ayuno siguiente. '
+            'La sobrecarga progresiva en fuerza evita la adaptación y '
+            'mantiene activo tu metabolismo en reposo.',
+      );
+    }
+
+    // ── ZONA ATLÉTICO / ESENCIAL (H <14 %, M <21 %) ─────────────────────────
+    // Prioridad: mantenimiento de rendimiento + prevención de plateau.
+    if (isExcited) {
+      return const _ExerciseProtocol(
+        typeLabel: 'Fuerza + Recuperación activa',
+        minTarget: 40,
+        rationale:
+            'Tu composición atlética con sistema nervioso excitado requiere '
+            'gestionar la carga de entrenamiento para evitar sobreentrenamiento.\n\n'
+            'Protocolo recomendado:\n'
+            '· 3-4 días — fuerza periodizada: alterna semanas de volumen '
+            'e intensidad (35-45 min)\n'
+            '· 2 días — recuperación activa: yoga, natación suave o '
+            'caminata (20-25 min)\n\n'
+            'La recuperación activa mantiene el metabolismo elevado sin '
+            'acumular estrés neuromuscular. La periodización evita el '
+            'plateau y mantiene la respuesta anabólica activa semana a semana.',
+      );
+    }
+    return const _ExerciseProtocol(
+      typeLabel: 'Fuerza periodizada + Cardio activo',
+      minTarget: 45,
+      rationale:
+          'Tu composición atlética soporta entrenamiento de alto rendimiento '
+          'y periodización estructurada.\n\n'
+          'Protocolo recomendado:\n'
+          '· 4 días — fuerza con periodización: alterna bloques de volumen '
+          '(4x12) e intensidad (5x5) cada 3-4 semanas (40-50 min)\n'
+          '· 2 días — cardio activo: trote, ciclismo o natación a ritmo '
+          'moderado-alto (30-35 min)\n\n'
+          'La periodización previene la adaptación y mantiene tu metabolismo '
+          'respondiendo progresivamente. El cardio activo mejora la capacidad '
+          'aeróbica sin interferir con las adaptaciones de fuerza.',
     );
   }
 
