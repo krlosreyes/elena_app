@@ -13,6 +13,7 @@
 
 import 'dart:math' as math;
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -154,7 +155,7 @@ class _PlateRatioSheetState extends ConsumerState<PlateRatioSheet> {
               ),
               const SizedBox(height: 2),
               const Text(
-                'Buscá y agregá lo que comiste. El plato te dice qué tan sano fue.',
+                'Busca y agrega lo que comiste. El plato te dice qué tan sano fue.',
                 style: TextStyle(
                   color: AppColors.textSecondary,
                   fontSize: 13,
@@ -175,6 +176,10 @@ class _PlateRatioSheetState extends ConsumerState<PlateRatioSheet> {
               ),
               const SizedBox(height: 18),
               _QualityBadge(quality: quality, tip: tip),
+              if (_builder.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                _AERatioBar(builder: _builder),
+              ],
               // SPEC-138 §16.4: chip silencioso cuando el plato contiene
               // al menos un alimento NOVA 4. Sin tono de culpa — informa
               // sin estigmatizar (memoria notification-tone-human-not-clinical).
@@ -199,11 +204,20 @@ class _PlateRatioSheetState extends ConsumerState<PlateRatioSheet> {
                 const SizedBox(height: 10),
                 _SearchResults(
                   results: searchResults,
-                  onPick: (food) {
-                    setState(() {
-                      _builder.add(food);
-                      _searchController.clear();
-                    });
+                  onPick: (food) async {
+                    final copies = await _FoodPickerSheet.show(
+                      context,
+                      food: food,
+                      builder: _builder,
+                    );
+                    if (copies != null && copies > 0 && mounted) {
+                      setState(() {
+                        for (var i = 0; i < copies; i++) {
+                          _builder.add(food);
+                        }
+                        _searchController.clear();
+                      });
+                    }
                   },
                 ),
               ],
@@ -373,7 +387,7 @@ class _PlateRatioSheetState extends ConsumerState<PlateRatioSheet> {
         ),
         content: Text(
           'Tu última comida fue hace $sinceMin minutos. Tu cuerpo todavía '
-          'tiene insulina alta. Esperá al menos hasta las '
+          'tiene insulina alta. Espera al menos hasta las '
           '$canRegisterTime para que la digestión se complete y mantengas '
           'tu metabolismo en flujo.',
           style: const TextStyle(color: AppColors.textSecondary),
@@ -404,7 +418,7 @@ class _PlateRatioSheetState extends ConsumerState<PlateRatioSheet> {
         content: Text(
           'Tu última comida fue hace $sinceMin minutos. Lo ideal son 3 '
           'horas (a partir de las $recommendedTime) para que la insulina '
-          'baje del todo. ¿Querés registrar igual?',
+          'baje del todo. ¿Quieres registrar igual?',
           style: const TextStyle(color: AppColors.textSecondary),
         ),
         actions: [
@@ -785,7 +799,7 @@ class _SearchField extends StatelessWidget {
 
 class _SearchResults extends StatelessWidget {
   final List<Food> results;
-  final void Function(Food food) onPick;
+  final Future<void> Function(Food food) onPick;
 
   const _SearchResults({required this.results, required this.onPick});
 
@@ -1004,6 +1018,310 @@ class _CheatDayToggle extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ── A/E Ratio Bar ─────────────────────────────────────────────────────
+
+/// Indicador visual de la relación Tipo A / Tipo E del plato.
+/// Meta óptima: 3 partes A por cada 1 parte E (75% A).
+class _AERatioBar extends StatelessWidget {
+  final PlateBuilder builder;
+  const _AERatioBar({required this.builder});
+
+  @override
+  Widget build(BuildContext context) {
+    final total = builder.totalSlots;
+    if (total == 0) return const SizedBox.shrink();
+
+    int tipoASlots = 0;
+    int tipoESlots = 0;
+    for (final food in builder.items) {
+      if (food.isTipoA) {
+        tipoASlots += food.category.slots;
+      } else {
+        tipoESlots += food.category.slots;
+      }
+    }
+
+    final aPercent = total > 0 ? (tipoASlots / total).toDouble() : 0.0;
+    final isOptimal = aPercent >= 0.70;
+    final barColor = isOptimal
+        ? AppColors.metabolicGreen
+        : (aPercent >= 0.50 ? const Color(0xFFEAB308) : const Color(0xFFEF4444));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              'Proporción A/E',
+              style: TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const Spacer(),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: barColor.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: barColor.withValues(alpha: 0.40)),
+              ),
+              child: Text(
+                '${(aPercent * 100).round()}% Tipo A  ·  ${((1 - aPercent) * 100).round()}% Tipo E',
+                style: TextStyle(
+                  color: barColor,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 5),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: LinearProgressIndicator(
+            value: aPercent.toDouble(),
+            minHeight: 6,
+            backgroundColor: const Color(0xFFEF4444).withValues(alpha: 0.30),
+            valueColor: AlwaysStoppedAnimation<Color>(barColor),
+          ),
+        ),
+        const SizedBox(height: 3),
+        Text(
+          isOptimal ? 'Plato en proporción ideal (3A:1E)' : 'Meta: al menos 3 partes A por cada 1 E',
+          style: TextStyle(
+            color: AppColors.textMuted,
+            fontSize: 11,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Food Picker Sheet ─────────────────────────────────────────────────
+
+/// Sheet de selección de cantidad con CupertinoPicker.
+/// Muestra: nombre, badge A/E, porción de referencia, impacto en calidad,
+/// y picker de cantidad. Retorna el número de copias a agregar.
+class _FoodPickerSheet extends StatefulWidget {
+  final Food food;
+  final PlateBuilder currentBuilder;
+
+  const _FoodPickerSheet({required this.food, required this.currentBuilder});
+
+  static Future<int?> show(
+    BuildContext context, {
+    required Food food,
+    required PlateBuilder builder,
+  }) {
+    return showModalBottomSheet<int>(
+      context: context,
+      backgroundColor: AppColors.bgSurface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => _FoodPickerSheet(food: food, currentBuilder: builder),
+    );
+  }
+
+  @override
+  State<_FoodPickerSheet> createState() => _FoodPickerSheetState();
+}
+
+class _FoodPickerSheetState extends State<_FoodPickerSheet> {
+  int _selectedIndex = 0;
+
+  Food get _food => widget.food;
+
+  /// Número de copias que se añadirán según la selección actual.
+  int get _copies => _food.servingUnit.copyCounts[_selectedIndex];
+
+  /// Vista previa del % de calidad del plato si se agrega esta cantidad.
+  double _previewQualityPercent() {
+    // Simula agregar N copias al builder actual.
+    final simBuilder = PlateBuilder();
+    for (final f in widget.currentBuilder.items) {
+      simBuilder.add(f);
+    }
+    for (var i = 0; i < _copies; i++) {
+      simBuilder.add(_food);
+    }
+    return simBuilder.totalSlots > 0 ? simBuilder.qualityPercent.toDouble() : 0.0;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final labels = _food.servingUnit.pickerLabels(_food.name);
+    final qualityPreview = _previewQualityPercent();
+    final currentQuality = widget.currentBuilder.totalSlots > 0
+        ? widget.currentBuilder.qualityPercent.toDouble()
+        : qualityPreview;
+    final delta = qualityPreview - currentQuality;
+    final foodColor = PlatePainter._colorForScore(_food.qualityScore);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Handle
+          Center(
+            child: Container(
+              width: 36, height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.borderStrong,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Nombre + badge A/E
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  _food.name,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: foodColor.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: foodColor.withValues(alpha: 0.45)),
+                ),
+                child: Text(
+                  _food.isTipoA ? 'Tipo A' : 'Tipo E',
+                  style: TextStyle(
+                    color: foodColor,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+
+          // Porción de referencia
+          Text(
+            'Referencia: ${_food.portionLabel}',
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 13,
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // CupertinoPicker
+          SizedBox(
+            height: 180,
+            child: CupertinoPicker(
+              scrollController: FixedExtentScrollController(initialItem: 0),
+              itemExtent: 44,
+              selectionOverlay: CupertinoPickerDefaultSelectionOverlay(
+                background: const Color(0xFF10B981).withValues(alpha: 0.12),
+              ),
+              onSelectedItemChanged: (i) {
+                setState(() => _selectedIndex = i);
+              },
+              children: labels.map((label) {
+                return Center(
+                  child: Text(
+                    label,
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 16,
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Impacto en calidad
+          _buildImpactRow(qualityPreview, delta, widget.currentBuilder.isEmpty),
+          const SizedBox(height: 16),
+
+          // Botón Agregar
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(_copies),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.metabolicGreen,
+                foregroundColor: AppColors.bgBase,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: Text(
+                'Agregar al plato',
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildImpactRow(double previewQuality, double delta, bool isEmpty) {
+    final percent = (previewQuality * 100).round();
+    final arrow = isEmpty
+        ? ''
+        : delta > 0.01
+            ? '↑'
+            : delta < -0.01
+                ? '↓'
+                : '→';
+    final arrowColor = delta > 0.01
+        ? AppColors.metabolicGreen
+        : delta < -0.01
+            ? const Color(0xFFEF4444)
+            : AppColors.textSecondary;
+
+    return Row(
+      children: [
+        const Icon(Icons.auto_graph_rounded,
+            color: AppColors.textSecondary, size: 16),
+        const SizedBox(width: 8),
+        Text(
+          isEmpty ? 'Calidad del plato: $percent%' : 'Calidad resultante: $percent%',
+          style: const TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 13,
+          ),
+        ),
+        if (!isEmpty && arrow.isNotEmpty) ...[
+          const SizedBox(width: 6),
+          Text(
+            '$arrow ${delta.abs() > 0.01 ? (delta * 100).round().abs().toString() + '%' : ''}',
+            style: TextStyle(
+              color: arrowColor,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

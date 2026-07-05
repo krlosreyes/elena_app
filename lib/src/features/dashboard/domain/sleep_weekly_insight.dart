@@ -106,7 +106,7 @@ class SleepCoachingMessage {
         return const SleepCoachingMessage(
           headline: 'Fragmentación nocturna recurrente esta semana.',
           action:
-              'Reducí líquidos y luz 2h antes de dormir. Cerrá la última comida ≥3h antes.',
+              'Reduce líquidos y luz 2h antes de dormir. Cierra la última comida ≥3h antes.',
           citation: 'AASM + Lopez-Minguez 2018',
         );
       case SleepInsightTier.lowQuality:

@@ -141,15 +141,15 @@ class PlateBuilder {
 
     // Caso 1: faltan categorías esenciales.
     if (hasCarbs && !hasProtein && !hasFat) {
-      return 'Tu plato solo tiene carbos. Agregá una proteína '
+      return 'Tu plato solo tiene carbos. Agrega una proteína '
           '(pollo, huevo, lentejas) y una grasa (aguacate, almendras).';
     }
     if (hasCarbs && !hasProtein) {
-      return 'Agregá una proteína (pollo, huevo, lentejas) para '
+      return 'Agrega una proteína (pollo, huevo, lentejas) para '
           'balancear tu plato.';
     }
     if (hasCarbs && !hasFat) {
-      return 'Agregá una grasa saludable (aguacate, almendras) para '
+      return 'Agrega una grasa saludable (aguacate, almendras) para '
           'balancear tu plato.';
     }
 
@@ -158,11 +158,11 @@ class PlateBuilder {
         (a, b) => a.qualityScore <= b.qualityScore ? a : b);
 
     if (lowest.qualityScore < 35) {
-      return 'Reducí ${_articleFor(lowest.name)} '
+      return 'Reduce ${_articleFor(lowest.name)} '
           '${lowest.name.toLowerCase()} para subir a ${nextLevel.label}.';
     }
 
-    return 'Reducí los alimentos con menos puntaje (ej. '
+    return 'Reduce los alimentos con menos puntaje (ej. '
         '${lowest.name.toLowerCase()}) para subir a ${nextLevel.label}.';
   }
 
