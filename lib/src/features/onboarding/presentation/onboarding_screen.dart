@@ -365,6 +365,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       if (prefill.weight != null) {
         _weight = prefill.weight!;
         _weightTouched = true; // viene de MR — ya es un valor real
+      } else {
+        // Fallback: leer el peso actual del perfil Firestore del usuario
+        // (re-onboarding, usuario existente sin datos MR).
+        final existingUser =
+            ref.read(currentUserStreamProvider).valueOrNull;
+        if (existingUser != null && existingUser.weight > 0) {
+          _weight = existingUser.weight;
+          _weightTouched = true;
+        }
       }
       if (prefill.height != null) _height = prefill.height!;
       if (prefill.gender != null) _gender = prefill.gender!;
