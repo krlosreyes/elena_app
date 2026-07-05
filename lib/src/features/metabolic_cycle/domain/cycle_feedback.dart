@@ -137,7 +137,7 @@ class CycleFeedbackGenerator {
       candidates.add((
         pillar: 'fasting',
         gap: kAchievementThreshold - m.fastingMagnitude,
-        copy: 'Ayuno corto — mañana apuntá al 80% del protocolo para activar autofagia',
+        copy: 'Ayuno corto — mañana apunta al 80% del protocolo para activar autofagia',
       ));
     }
     if (m.sleepQualityScore < kAchievementThreshold) {
@@ -291,7 +291,7 @@ class CycleFeedbackGenerator {
     if (fasting < 0.50 && fasting > 0.0) {
       out.add((
         text:
-            'Tu ayuno fue corto hoy. Para activar autofagia se necesitan al menos 14h continuas (Mattson 2017). Empezá mañana 30 min antes.',
+            'Tu ayuno fue corto hoy. Para activar autofagia se necesitan al menos 14h continuas (Mattson 2017). Empieza mañana 30 min antes.',
         citation: 'Mattson 2017, Ageing Res Rev',
         id: 'insight-short-fasting',
       ));

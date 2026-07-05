@@ -131,23 +131,14 @@ const Duration kCycleClosureFreshness = Duration(hours: 6);
 /// el usuario. Drive el render del CycleClosureCard en Dashboard.
 ///
 /// SPEC-149.1: watchea `cycleClosureDismissalProvider` (reactivo).
-/// SPEC-202.2: además exige que el cierre sea FRESCO — un cierre viejo (la app
-/// estuvo cerrada y el ciclo cerró por fallback en la madrugada) ya no salta
-/// como tarjeta desconectada.
-/// BUG-FIX (2026-06-13): solo se activa para cierres `manualNextFasting`.
-/// Los cierres por fallback (fallback3hAfterWindow, fallbackSleepDetected,
-/// fallbackAbsolute, protocolChanged) NO deben disparar la card pasiva —
-/// son automáticos y ocurren típicamente al abrir la app via el microtask
-/// del evaluador, desconectados de la acción consciente del usuario.
-/// El path correcto para `manualNextFasting` es `cycleClosureMomentProvider`
-/// (modal inmediato + auto-dismiss); esta card es únicamente el fallback
-/// por si el listener del Dashboard no alcanzó a dispararse.
+/// SPEC-202.2: exige que el cierre sea FRESCO (≤6h) para no mostrar la card
+/// de forma desconectada cuando la app estuvo cerrada toda la noche.
+/// Aplica a TODOS los motivos de cierre — manualNextFasting incluido
+/// (aunque ese camino también muestra el modal inmediato via
+/// `cycleClosureMomentProvider` y auto-dismiss; la card es el fallback).
 final hasUnreadCycleClosureProvider = Provider<bool>((ref) {
   final last = ref.watch(lastClosedMetabolicCycleProvider).valueOrNull;
   if (last == null) return false;
-
-  // Solo cierres conscientes (usuario inició el siguiente ayuno).
-  if (last.closureReason != ClosureReason.manualNextFasting) return false;
 
   final dismissedCycleId = ref.watch(cycleClosureDismissalProvider);
   if (dismissedCycleId == last.cycleId) return false;
