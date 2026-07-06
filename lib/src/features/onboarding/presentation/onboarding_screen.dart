@@ -23,6 +23,7 @@ import 'package:elena_app/src/features/nutrition/domain/nervous_system.dart';
 // SPEC-131: pantallas educativas para usuarios cero-contexto.
 import 'package:elena_app/src/features/onboarding/presentation/widgets/intro_screens.dart';
 // SPEC-132 Bloque E: paso opcional para conectar HealthKit / Health Connect.
+import 'package:elena_app/src/shared/providers/user_provider.dart';
 import 'package:elena_app/src/features/health_sync/application/health_auto_sync_controller.dart';
 import 'package:elena_app/src/features/health_sync/application/health_sync_providers.dart';
 import 'package:elena_app/src/core/data/app_state_repository.dart';

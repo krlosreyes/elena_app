@@ -51,3 +51,8 @@ run_ios.sh
 run_android.sh
 .flutter-plugins-dependencies
 .flutter-plugins-dependencies
+
+# Release signing — nunca en git
+android/key.properties
+*.jks
+*.keystore
