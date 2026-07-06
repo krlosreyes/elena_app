@@ -53,23 +53,26 @@ class NotificationRouter {
   static void _navigate(String payload, BuildContext context) {
     try {
       final data = jsonDecode(payload) as Map<String, dynamic>;
-      final route = data['route'] as String? ?? '/';
+      // SPEC-222 fix: no existe ruta '/' en GoRouter — usar '/dashboard'.
+      final rawRoute = data['route'] as String? ?? '/dashboard';
+      final route = rawRoute == '/' ? '/dashboard' : rawRoute;
 
       AppLogger.debug(
         '[NotificationRouter] Navegando a: $route',
       );
 
-      // GoRouter navega al route indicado.
-      // Para tabs específicos dentro del dashboard, el route '/' con
-      // queryParam 'pillar' permite scroll a la card relevante.
       GoRouter.of(context).go(route);
     } catch (e) {
       AppLogger.error(
         '[NotificationRouter] Error parseando payload: $payload',
         e,
       );
-      // Fallback: ir al dashboard sin crash.
-      GoRouter.of(context).go('/');
+      // Fallback seguro: '/dashboard' existe siempre en el router.
+      try {
+        GoRouter.of(context).go('/dashboard');
+      } catch (_) {
+        // Si hasta el fallback falla (p.ej. context desmontado), ignorar.
+      }
     }
   }
 
@@ -77,19 +80,19 @@ class NotificationRouter {
 
   /// Payload para notificaciones circadianas (wakeUp, sleep, locks).
   static String circadianPayload() =>
-      jsonEncode({'route': '/', 'category': 'circadian'});
+      jsonEncode({'route': '/dashboard', 'category': 'circadian'});
 
   /// Payload para notificaciones de alimentación (firstMeal, lastMealWarning).
   static String nutritionPayload() =>
-      jsonEncode({'route': '/', 'category': 'nutrition'});
+      jsonEncode({'route': '/dashboard', 'category': 'nutrition'});
 
   /// Payload para hitos de ayuno (12h, 16h, 18h, 24h).
   static String fastingPayload() =>
-      jsonEncode({'route': '/', 'category': 'fasting'});
+      jsonEncode({'route': '/dashboard', 'category': 'fasting'});
 
   /// Payload para hidratación.
   static String hydrationPayload() =>
-      jsonEncode({'route': '/', 'category': 'hydration'});
+      jsonEncode({'route': '/dashboard', 'category': 'hydration'});
 
   /// Payload para paywall nudges.
   static String paywallPayload() => jsonEncode({'route': '/paywall'});
@@ -101,5 +104,5 @@ class NotificationRouter {
   /// SPEC-241: payload para hitos de ayuno accionables.
   /// Incluye las horas del hito para que el router sepa cuál fue.
   static String fastingMilestonePayload({required int hours}) =>
-      jsonEncode({'route': '/', 'category': 'fasting', 'milestone_hours': hours});
+      jsonEncode({'route': '/dashboard', 'category': 'fasting', 'milestone_hours': hours});
 }

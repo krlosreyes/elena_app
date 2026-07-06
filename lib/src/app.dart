@@ -227,6 +227,21 @@ class _ElenaAppState extends ConsumerState<ElenaApp>
       } else {
         billing.logout();
       }
+
+      // SPEC-222 fix cold-start timing: el addPostFrameCallback de build()
+      // se ejecuta antes de que authState resuelva, por lo que el router
+      // intercepta la navegación y redirige a /splash. En cuanto el usuario
+      // está autenticado y el perfil está completo (isComplete), ejecutamos
+      // el flush aquí — el router ya dejará pasar la navegación al destino real.
+      final account = next.value;
+      if (account != null && account.isComplete && NotificationRouter.hasPending) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final navContext = rootNavigatorKey.currentContext;
+          if (navContext != null) {
+            NotificationRouter.flushPending(navContext);
+          }
+        });
+      }
     });
 
     return ScreenUtilInit(
