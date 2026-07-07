@@ -1,6 +1,6 @@
 # SPEC-206 — Offline-first (registrar sin conexión, sincronizar al reconectar)
 
-**Estado:** IN-PROGRESS (2026-06-11) — inc0 persistencia explícita + inc1 piloto Hidratación implementados. Pendiente: validación en device → replicar patrón al resto de pilares.
+**Estado:** IMPLEMENTED (2026-06-11) — inc0 persistencia + inc1 Hidratación + inc2 MetabolicCycleService offline-first + inc3 los 5 pilares no bloqueantes. commits 893076d b9bfc91 8cc7ff2.
 **Versión:** 0.1
 **Líder:** Carlos · **Implementación:** Claude
 **Depende de:** cloud_firestore (persistencia offline nativa).

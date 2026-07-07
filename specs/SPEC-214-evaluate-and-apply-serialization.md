@@ -1,6 +1,6 @@
 # SPEC-214 — Serializar evaluateAndApply: eliminar race condition del ciclo metabólico
 
-**Estado:** APPROVED-DESIGN (2026-06-14)
+**Estado:** IMPLEMENTED (2026-06-14) — evaluateAndApply serializado con flag _evaluating + try/finally. commit f4a73b8.
 **Versión:** 1.0
 **Tipo:** Bug P1 — Race condition entre trigger de 10s y tap de usuario en evaluateAndApply.
 **Líder:** Carlos · **Implementación:** Claude

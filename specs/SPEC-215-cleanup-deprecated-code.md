@@ -1,6 +1,6 @@
 # SPEC-215 — Limpieza de código deprecated y duplicados
 
-**Estado:** APPROVED-DESIGN (2026-06-14)
+**Estado:** IMPLEMENTED (2026-06-14) — fuente canónica fastingHoursForProtocol + deprecados eliminados. commit 5215720.
 **Versión:** 1.0
 **Tipo:** Deuda técnica P2 — Código muerto que confunde y genera warnings de compilación.
 **Líder:** Carlos · **Implementación:** Claude

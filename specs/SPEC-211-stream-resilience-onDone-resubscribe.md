@@ -1,6 +1,6 @@
 # SPEC-211 — Resiliencia de streams: onDone + onError en todos los notifiers
 
-**Estado:** APPROVED-DESIGN (2026-06-14)
+**Estado:** IMPLEMENTED (2026-06-14) — onDone+onError en todos los notifiers con stream Dart. commit a2f72dd.
 **Versión:** 1.0
 **Tipo:** Bug P1 — Streams se cierran silenciosamente tras token refresh / reconexión Firestore.
 **Líder:** Carlos · **Implementación:** Claude

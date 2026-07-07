@@ -1,6 +1,6 @@
 # SPEC-217 — Migrar fasting_history a subcolección users/{uid}/fasting_history
 
-**Estado:** APPROVED-DESIGN (2026-06-14)
+**Estado:** IMPLEMENTED (2026-06-22) — fasting_history migrado a subcolección users/{uid}/fasting_history. FasterHistoryMigrator one-shot. commit 4050244.
 **Versión:** 1.0
 **Tipo:** Deuda técnica P2 — Colección plana diverge del patrón de todos los demás pilares.
 **Líder:** Carlos · **Implementación:** Claude

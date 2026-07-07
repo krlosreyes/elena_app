@@ -1,6 +1,6 @@
 # SPEC-210 — removeLastMeal cycle-aware (corrección ventana calendárica)
 
-**Estado:** APPROVED-DESIGN (2026-06-14)
+**Estado:** IMPLEMENTED (2026-06-14) — removeLastMeal cycle-aware. commit 53e6484.
 **Versión:** 1.0
 **Tipo:** Bug P0 — "Deshacer última comida" puede borrar comida del ciclo anterior.
 **Líder:** Carlos · **Implementación:** Claude

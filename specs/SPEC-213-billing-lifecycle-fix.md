@@ -1,6 +1,6 @@
 # SPEC-213 — Lifecycle correcto del servicio de billing (RevenueCat)
 
-**Estado:** APPROVED-DESIGN (2026-06-14)
+**Estado:** IMPLEMENTED (2026-06-14) — StreamController lifecycle fixed. commit 483d444.
 **Versión:** 1.0
 **Tipo:** Bug P1 — Memory leak: StreamController y listener de RevenueCat nunca se cierran.
 **Líder:** Carlos · **Implementación:** Claude

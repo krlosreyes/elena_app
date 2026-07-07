@@ -1,6 +1,6 @@
 # SPEC-207 — Borrado de cuenta en cascada (GDPR / derecho al olvido)
 
-**Estado:** APPROVED-DESIGN (2026-06-14)
+**Estado:** IMPLEMENTED (2026-06-14) — GDPR delete account cascade + tests. commit d62d31a.
 **Versión:** 1.0
 **Tipo:** Seguridad / Privacidad — P0 bloqueante para usuarios reales.
 **Líder:** Carlos · **Implementación:** Claude

@@ -1,6 +1,6 @@
 # SPEC-209 — Unificar SleepNotifier: eliminar globalSleepProvider
 
-**Estado:** APPROVED-DESIGN (2026-06-14)
+**Estado:** IMPLEMENTED (2026-06-14) — globalSleepProvider eliminado, fuente única de sueño. commit 1522773.
 **Versión:** 1.0
 **Tipo:** Bug P0 — IMR calculado con datos de sueño del usuario anterior en logout/login.
 **Líder:** Carlos · **Implementación:** Claude

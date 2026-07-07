@@ -1,6 +1,6 @@
 # SPEC-216 — Garantizar reset de isSaving con try/finally en notifiers
 
-**Estado:** APPROVED-DESIGN (2026-06-14)
+**Estado:** IMPLEMENTED (2026-06-14) — isSaving try/finally guard en SleepNotifier.saveManualSleep. commit 597865f.
 **Versión:** 1.0
 **Tipo:** Bug P1 — Spinner de guardado puede quedar activo indefinidamente.
 **Líder:** Carlos · **Implementación:** Claude

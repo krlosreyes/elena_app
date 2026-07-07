@@ -1,6 +1,6 @@
 # SPEC-201 — Observaciones honestas y accionables (rework del motor causal)
 
-**Estado:** APPROVED-DESIGN (2026-06-10) — diseño para revisión de Carlos. Sin implementar.
+**Estado:** IMPLEMENTED (2026-06-11) — RF-01/02/03/05 implementados. `ObservationDetector` + `observation_detector.dart` + `observation_tile.dart`. Reemplaza `CausalInsightDetector`. commit 15fc542.
 **Versión:** 0.1 (draft)
 **Tipo:** Análisis — calidad de insights. Reemplaza correlaciones espurias por observaciones auto-referenciales + accionables.
 **Líder:** Carlos

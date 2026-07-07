@@ -1,6 +1,6 @@
 # SPEC-212 — Logout limpio: invalidar todos los providers en signOut()
 
-**Estado:** APPROVED-DESIGN (2026-06-14)
+**Estado:** IMPLEMENTED (2026-06-14) — signOut invalida todos los providers (pilares + ciclos + progreso). Verificado en auth_controller.dart.
 **Versión:** 1.0
 **Tipo:** Bug P1 — Datos del usuario anterior visibles por un frame en logout/login.
 **Líder:** Carlos · **Implementación:** Claude

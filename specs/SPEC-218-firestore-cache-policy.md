@@ -1,6 +1,6 @@
 # SPEC-218 — Política de caché Firestore: límite y limpieza periódica
 
-**Estado:** APPROVED-DESIGN (2026-06-14)
+**Estado:** IMPLEMENTED (2026-06-14) — cacheSizeBytes: 100 MB en main.dart. Verificado.
 **Versión:** 1.0
 **Tipo:** Deuda técnica P2 — Caché ilimitada puede agotar almacenamiento en dispositivos.
 **Líder:** Carlos · **Implementación:** Claude

@@ -1,6 +1,6 @@
 # SPEC-208 — Preservar fastingCompleted después de cerrar el ayuno
 
-**Estado:** APPROVED-DESIGN (2026-06-14)
+**Estado:** IMPLEMENTED (2026-06-14) — fasting completed preserved post-close. commit cc25c6d.
 **Versión:** 1.0
 **Tipo:** Bug P0 — Score del Día incorrecto. Corrección de datos.
 **Líder:** Carlos · **Implementación:** Claude
