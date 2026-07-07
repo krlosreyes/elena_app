@@ -26,7 +26,13 @@ const Duration kFallbackAfterWindowGrace = Duration(hours: 3);
 const Duration kSleepFallbackMinSinceMeal = Duration(hours: 2);
 
 /// Límite absoluto desde `startedAt` que dispara `fallbackAbsolute`.
-const Duration kAbsoluteCycleLimit = Duration(hours: 28);
+///
+/// SPEC-245 (2026-07-07): subido de 28h a 50h para soportar ayunos
+/// extendidos (Eat Stop Eat 36h, ayunos de 48h, etc.) sin corte prematuro.
+/// El sistema es protocolo-agnóstico: el cierre normal es siempre
+/// `manualNextFasting` (tap consciente del usuario). Este límite es solo
+/// red de seguridad para ciclos que quedaron huérfanos sin acción del usuario.
+const Duration kAbsoluteCycleLimit = Duration(hours: 50);
 
 class MetabolicCycleResolver {
   MetabolicCycleResolver._();

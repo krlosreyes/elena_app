@@ -120,7 +120,7 @@ final closedCycleScoreSeriesProvider =
       );
     }
 
-    final points = TemporalAggregator.aggregate(
+    final closedPoints = TemporalAggregator.aggregate(
       items: inRange,
       timestampOf: (c) => c.closedAt!,
       valueOf: (c) => c.dailyScore!.toDouble(),
@@ -128,10 +128,49 @@ final closedCycleScoreSeriesProvider =
       mode: mode,
     );
     AppLogger.debug(
-      '[closedCycleScoreSeries] → ${points.length} puntos agregados '
+      '[closedCycleScoreSeries] → ${closedPoints.length} puntos agregados '
       '(mode=$mode)',
     );
-    yield MetricSeries(label: 'Score del día', unit: '', points: points);
+
+    // SPEC-245 (2026-07-07): punto "en vivo" del ciclo abierto.
+    //
+    // Un ayuno extendido (p.ej. 33h) permanece abierto mientras el usuario
+    // sigue en ayuno — la gráfica mostraba un gap entre el último ciclo
+    // cerrado y hoy. Ahora el liveScore del ciclo abierto se agrega como
+    // punto de hoy para que el usuario vea su progreso en tiempo real.
+    //
+    // Solo se agrega si:
+    //   1. Hay ciclo abierto con liveScore stampado (evaluador lo actualiza
+    //      cada ~10s vía SPEC-227).
+    //   2. El timestamp de hoy está dentro del rango seleccionado.
+    //   3. No hay ya un punto de ciclo cerrado para hoy (evita duplicado
+    //      si el ciclo acaba de cerrar y Firestore no se actualizó todavía).
+    var allPoints = closedPoints;
+    final openCycle = ref.read(currentMetabolicCycleProvider).valueOrNull;
+    if (openCycle != null &&
+        openCycle.isOpen &&
+        openCycle.liveScore != null) {
+      final now = DateTime.now();
+      if (!now.isBefore(rangeStart)) {
+        final todayKey = _dateIso(now);
+        final alreadyHasToday =
+            closedPoints.any((p) => _dateIso(p.weekStart) == todayKey);
+        if (!alreadyHasToday) {
+          final livePoint = TimeSeriesPoint(
+            weekStart: now,
+            value: openCycle.liveScore!.toDouble(),
+            sampleCount: 1,
+          );
+          allPoints = [...closedPoints, livePoint];
+          AppLogger.debug(
+            '[closedCycleScoreSeries] + punto en vivo: '
+            'score=${openCycle.liveScore} cycleId=${openCycle.cycleId}',
+          );
+        }
+      }
+    }
+
+    yield MetricSeries(label: 'Score del día', unit: '', points: allPoints);
   }
 });
 

@@ -452,6 +452,14 @@ final sleepProvider = StateNotifierProvider<SleepNotifier, SleepState>((ref) {
 /// el usuario abre su próximo ayuno, el provider re-evalúa con la
 /// ventana del ciclo nuevo automáticamente y el sleep volverá a 0 si
 /// no pertenece al nuevo ciclo (comportamiento canónico).
+///
+/// SPEC-245 (2026-07-07): si el ciclo abrió HOY después de que el
+/// usuario ya durmió (p.ej., inició ayuno a las 10am y despertó a las
+/// 7am), el anchor del ciclo quedaría posterior al wakeUp →
+/// `belongs = false` → anillo en 0 a pesar de tener sueño real del día.
+/// Fix: usar `max(cycle.startedAt, startOfDay(now))` como effectiveAnchor.
+/// Cualquier sueño de HOY siempre se atribuye al ciclo abierto del mismo
+/// día, sin importar la hora de inicio del ayuno.
 final currentCycleSleepProvider = Provider<SleepLog?>((ref) {
   final sleep = ref.watch(sleepProvider);
   if (sleep.lastLog == null) return null;
@@ -460,7 +468,14 @@ final currentCycleSleepProvider = Provider<SleepLog?>((ref) {
   final anchor = cycle?.startedAt ??
       DayBoundaryResolver.startOfDay(DateTime.now());
 
+  // SPEC-245: si hay ciclo pero su startedAt es posterior al inicio del
+  // día local de hoy, no penalizamos sueño que sí ocurrió hoy antes de
+  // que el ciclo empezara (típico en ayunos que inician tarde en el día).
+  final todayStart = DayBoundaryResolver.startOfDay(DateTime.now());
+  final effectiveAnchor =
+      (cycle != null && anchor.isAfter(todayStart)) ? todayStart : anchor;
+
   final wokeUp = sleep.lastLog!.wokeUp;
-  final belongs = !wokeUp.isBefore(anchor);
+  final belongs = !wokeUp.isBefore(effectiveAnchor);
   return belongs ? sleep.lastLog : null;
 });

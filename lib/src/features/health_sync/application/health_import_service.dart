@@ -249,13 +249,23 @@ class HealthImportService {
         print('🩺 SLEEP sample: start=${s.start}, end=${s.end}, '
             'duration=${s.duration.inMinutes}min, source=${s.sourceName}');
       }
-      // Filtros sanos: ignorar sesiones absurdamente cortas (siestas
-      // < 30 min) que el plugin a veces reporta como ruido.
-      if (s.duration.inMinutes < 30) {
+      // SPEC-245 (2026-07-07): umbral bajado de 30 min a 5 min.
+      //
+      // Problema original: Apple Watch registra el sueño como etapas
+      // individuales (Core, Deep, REM, Awake), cada una de 15-25 min.
+      // El filtro de 30 min descartaba TODAS las etapas nocturnas del Watch,
+      // resultando en 0 sesiones importadas aunque el usuario durmiera 7h.
+      //
+      // Con 5 min: filtramos solo ruido genuino (toques accidentales,
+      // calibraciones del sensor) preservando todas las etapas reales
+      // del sueño nocturno. Las etapas individuales se guardan como
+      // SleepLogs separados — el más largo (o el más reciente) es el
+      // que aparece en el anillo via watchLatest(orderBy: wokeUp desc).
+      if (s.duration.inMinutes < 5) {
         skippedShort++;
         if (kDebugMode) {
           // ignore: avoid_print
-          print('🩺 SLEEP SKIP <30min: ${s.duration.inMinutes}min');
+          print('🩺 SLEEP SKIP <5min: ${s.duration.inMinutes}min');
         }
         continue;
       }

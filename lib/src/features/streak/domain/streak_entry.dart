@@ -103,8 +103,19 @@ class StreakEntry {
   /// dos no cumple el estándar mínimo de "día metabólico real".
   ///
   /// AASM 2015, Sutton 2018 Cell Metab, Walker 2017, Spiegel 1999 Lancet.
+  ///
+  /// SPEC-245 escape hatch (2026-07-07): 4+ pilares siempre califican
+  /// independientemente de cuáles son. Completar 4/5 pilares representa
+  /// adherencia sólida al protocolo completo — exigir adicionalmente
+  /// fasting/sleep en entradas históricas escritas antes de que el sueño
+  /// sincronizara (Apple Watch) produciría rachas de 0 o 1 de forma
+  /// retroactiva. Con esta regla:
+  ///   - 3 pilares + fasting o sueño → califica (regla principal)
+  ///   - 4+ pilares independiente → califica (alta adherencia)
+  ///   - 3 pilares solo con hid+ej+nut → NO califica (sin ancla metabólica)
   bool get qualifiesForStreak =>
-      pillarsCompleted >= 3 && (fastingCompleted || sleepCompleted);
+      pillarsCompleted >= 3 &&
+      (fastingCompleted || sleepCompleted || pillarsCompleted >= 4);
 
   /// True si el día cumple con el estándar de Engagement (SPEC-07):
   /// IMR >= 60 Y mínimo 3 pilares completados.

@@ -268,6 +268,28 @@ Future<void> _evaluate(
     }
   }
 
+  // SPEC-245 (2026-07-07): Guard adicional contra fallback3hAfterWindow
+  // durante ayunos extendidos voluntarios.
+  //
+  // Problema: un usuario haciendo un ayuno de 33h con protocolo OMAD (23h)
+  // supera el targetFastingHours guard anterior. A las 26h (23h + 3h grace)
+  // el fallback3hAfterWindow dispara y corta el ciclo aunque el usuario
+  // aún está en su ayuno consciente.
+  //
+  // Fix: si fastingProvider.isActive = true, el usuario está explícitamente
+  // en ayuno → la ventana de alimentación definitivamente no aplica todavía.
+  // Anulamos effectiveWindowClose independientemente de la duración del ciclo.
+  if (effectiveWindowClose != null) {
+    final fastingState = ref.read(fastingProvider);
+    if (fastingState.isActive) {
+      AppLogger.debug(
+        '[evaluator] SPEC-245: ayuno activo → ignorando windowEnd '
+        '(ayuno extendido voluntario)',
+      );
+      effectiveWindowClose = null;
+    }
+  }
+
   final input = MetabolicCycleEvaluationInput(
     now: now,
     currentProtocol: user.fastingProtocol,
