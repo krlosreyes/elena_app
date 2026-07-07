@@ -223,11 +223,6 @@ Future<void> _evaluate(
   final sleepState = ref.read(sleepProvider);
   final nutritionState = ref.read(nutritionProvider);
 
-  // Sleep detectado tras última comida: si sleepState tiene un log con
-  // fellAsleep populado, lo marcamos como detectado. Conservador para
-  // evitar disparos espurios.
-  final sleepDetected = sleepState.lastLog != null;
-
   // SPEC-174 (2026-06-04): timestamp de la última comida del usuario.
   // Activa el trigger `fallbackSleepDetected` (resolver:75) que antes
   // jamás disparaba porque pasábamos `lastMealTime: null` hardcoded.
@@ -237,6 +232,25 @@ Future<void> _evaluate(
   final lastMealTime = nutritionState.todayLogs.isEmpty
       ? null
       : nutritionState.todayLogs.last.timestamp;
+
+  // SPEC-245 BUG-FIX (2026-07-07): `sleepDetected` requiere que el sueño
+  // más reciente haya comenzado DESPUÉS de la última comida del ciclo.
+  //
+  // Bug original: `lastLog != null` siempre era true cuando había cualquier
+  // log histórico, pero era un falso positivo — podía ser sueño de la noche
+  // anterior. Tras SPEC-245 (import de etapas Apple Watch más agresivo),
+  // `lastLog` siempre existe → `fallbackSleepDetected` se disparaba durante
+  // el día al acumular 2h desde la última comida, cerrando el ciclo y
+  // mandando la notificación "Tu día metabólico cerró" a deshora.
+  //
+  // Fix: solo marcar como detectado si `fellAsleep > lastMealTime`. Esto
+  // garantiza semántica correcta: el usuario comió, luego se fue a dormir
+  // → fin del ciclo. Si no hubo comida en el ciclo (`lastMealTime = null`),
+  // el trigger queda desactivado (usuario en ayuno completo — no cerrar).
+  final lastSleepLog = sleepState.lastLog;
+  final sleepDetected = lastSleepLog != null &&
+      lastMealTime != null &&
+      lastSleepLog.fellAsleep.isAfter(lastMealTime!);
 
   // SPEC-229 BUG-B: Guard contra fallback3hAfterWindow prematuro.
   //
