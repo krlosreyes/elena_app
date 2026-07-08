@@ -16,7 +16,17 @@ Future<DocumentReference<Map<String, dynamic>>> seedFastingInterval(
   DateTime? endTime,
   bool isFasting = true,
 }) {
-  return firestore.collection('fasting_history').add({
+  // SPEC-255 (2026-07-08): el path plano 'fasting_history' quedó stale
+  // desde la migración SPEC-217 (2026-06-14), que movió el source real a
+  // la subcolección users/{uid}/fasting_history. Sembrar en el path viejo
+  // hacía que el source real (que ya lee del path nuevo) no encontrara
+  // nada — 12 tests fallaban con "No hay intervalo abierto"/null pese a
+  // que la lógica de negocio era correcta.
+  return firestore
+      .collection('users')
+      .doc(userId)
+      .collection('fasting_history')
+      .add({
     'userId': userId,
     'startTime': Timestamp.fromDate(startTime),
     'endTime': endTime == null ? null : Timestamp.fromDate(endTime),

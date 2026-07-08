@@ -24,7 +24,7 @@ void main() {
       final correctedStart = DateTime(2026, 5, 14, 18, 0);
 
       // Sembrar un intervalo abierto.
-      final docRef = await firestore.collection('fasting_history').add({
+      final docRef = await firestore.collection('users').doc(userId).collection('fasting_history').add({
         'userId': userId,
         'startTime': Timestamp.fromDate(originalStart),
         'endTime': null,
@@ -53,7 +53,7 @@ void main() {
       final correctedStart = DateTime(2026, 5, 14, 18, 0);
 
       // Intervalo cerrado (debe quedar intacto).
-      final closedRef = await firestore.collection('fasting_history').add({
+      final closedRef = await firestore.collection('users').doc(userId).collection('fasting_history').add({
         'userId': userId,
         'startTime': Timestamp.fromDate(closedStart),
         'endTime': Timestamp.fromDate(closedEnd),
@@ -61,7 +61,7 @@ void main() {
       });
 
       // Intervalo abierto (debe corregirse).
-      final openRef = await firestore.collection('fasting_history').add({
+      final openRef = await firestore.collection('users').doc(userId).collection('fasting_history').add({
         'userId': userId,
         'startTime': Timestamp.fromDate(openStart),
         'endTime': null,
@@ -93,14 +93,14 @@ void main() {
       final otherStart = DateTime(2026, 5, 14, 17, 0);
       final correctedStart = DateTime(2026, 5, 14, 18, 0);
 
-      final mineRef = await firestore.collection('fasting_history').add({
+      final mineRef = await firestore.collection('users').doc(userId).collection('fasting_history').add({
         'userId': userId,
         'startTime': Timestamp.fromDate(mineStart),
         'endTime': null,
         'isFasting': true,
       });
 
-      final otherRef = await firestore.collection('fasting_history').add({
+      final otherRef = await firestore.collection('users').doc('OTHER').collection('fasting_history').add({
         'userId': 'OTHER',
         'startTime': Timestamp.fromDate(otherStart),
         'endTime': null,
@@ -128,7 +128,7 @@ void main() {
 
     test('sin intervalo abierto → lanza StateError', () async {
       // Solo cerrados.
-      await firestore.collection('fasting_history').add({
+      await firestore.collection('users').doc(userId).collection('fasting_history').add({
         'userId': userId,
         'startTime': Timestamp.fromDate(DateTime(2026, 5, 13)),
         'endTime': Timestamp.fromDate(DateTime(2026, 5, 13, 20)),
@@ -157,13 +157,13 @@ void main() {
       // a las 21:00, y un ayuno abierto que corrigió a las 06:00 de
       // hoy. Por startTime descending, el cerrado de ayer 21:00 es
       // "más reciente". Pero semánticamente el abierto debe ganar.
-      await firestore.collection('fasting_history').add({
+      await firestore.collection('users').doc(userId).collection('fasting_history').add({
         'userId': userId,
         'startTime': Timestamp.fromDate(DateTime(2026, 5, 13, 21, 0)),
         'endTime': Timestamp.fromDate(DateTime(2026, 5, 14, 5, 0)),
         'isFasting': false,
       });
-      await firestore.collection('fasting_history').add({
+      await firestore.collection('users').doc(userId).collection('fasting_history').add({
         'userId': userId,
         'startTime': Timestamp.fromDate(DateTime(2026, 5, 14, 6, 0)),
         'endTime': null,
@@ -178,13 +178,13 @@ void main() {
     });
 
     test('sin doc abierto → devuelve el más reciente cerrado', () async {
-      await firestore.collection('fasting_history').add({
+      await firestore.collection('users').doc(userId).collection('fasting_history').add({
         'userId': userId,
         'startTime': Timestamp.fromDate(DateTime(2026, 5, 13, 6, 0)),
         'endTime': Timestamp.fromDate(DateTime(2026, 5, 13, 14, 0)),
         'isFasting': true,
       });
-      await firestore.collection('fasting_history').add({
+      await firestore.collection('users').doc(userId).collection('fasting_history').add({
         'userId': userId,
         'startTime': Timestamp.fromDate(DateTime(2026, 5, 13, 14, 0)),
         'endTime': Timestamp.fromDate(DateTime(2026, 5, 13, 21, 0)),
@@ -218,13 +218,13 @@ void main() {
       final fantasmaStart = DateTime(2026, 5, 13, 21, 0);
       final correctedStart = DateTime(2026, 5, 14, 6, 0);
 
-      final ayunoRef = await firestore.collection('fasting_history').add({
+      final ayunoRef = await firestore.collection('users').doc(userId).collection('fasting_history').add({
         'userId': userId,
         'startTime': Timestamp.fromDate(ayunoStart),
         'endTime': null,
         'isFasting': true,
       });
-      final fantasmaRef = await firestore.collection('fasting_history').add({
+      final fantasmaRef = await firestore.collection('users').doc(userId).collection('fasting_history').add({
         'userId': userId,
         'startTime': Timestamp.fromDate(fantasmaStart),
         'endTime': null,
@@ -255,14 +255,14 @@ void main() {
     test(
         'streamLatest con ayuno abierto + ventana fantasma abierta → '
         'emite el ayuno', () async {
-      await firestore.collection('fasting_history').add({
+      await firestore.collection('users').doc(userId).collection('fasting_history').add({
         'userId': userId,
         'startTime': Timestamp.fromDate(DateTime(2026, 5, 14, 8, 0)),
         'endTime': null,
         'isFasting': true,
       });
       // Ventana fantasma con startTime MAYOR (más reciente en el orden).
-      await firestore.collection('fasting_history').add({
+      await firestore.collection('users').doc(userId).collection('fasting_history').add({
         'userId': userId,
         'startTime': Timestamp.fromDate(DateTime(2026, 5, 14, 20, 0)),
         'endTime': null,
@@ -280,7 +280,7 @@ void main() {
         'streamLatest sin ayuno abierto pero con ventana abierta → emite '
         'la ventana', () async {
       // Caso normal: usuario en ventana de comida (sin ayuno en curso).
-      await firestore.collection('fasting_history').add({
+      await firestore.collection('users').doc(userId).collection('fasting_history').add({
         'userId': userId,
         'startTime': Timestamp.fromDate(DateTime(2026, 5, 14, 13, 0)),
         'endTime': null,
@@ -297,13 +297,13 @@ void main() {
     const userId = 'user-1';
 
     test('emite el último ayuno cerrado del usuario', () async {
-      await firestore.collection('fasting_history').add({
+      await firestore.collection('users').doc(userId).collection('fasting_history').add({
         'userId': userId,
         'startTime': Timestamp.fromDate(DateTime(2026, 5, 13, 20, 0)),
         'endTime': Timestamp.fromDate(DateTime(2026, 5, 14, 12, 0)),
         'isFasting': true,
       });
-      await firestore.collection('fasting_history').add({
+      await firestore.collection('users').doc(userId).collection('fasting_history').add({
         'userId': userId,
         'startTime': Timestamp.fromDate(DateTime(2026, 5, 14, 12, 0)),
         'endTime': Timestamp.fromDate(DateTime(2026, 5, 14, 20, 0)),
@@ -320,7 +320,7 @@ void main() {
     });
 
     test('ignora ayuno abierto (endTime null)', () async {
-      await firestore.collection('fasting_history').add({
+      await firestore.collection('users').doc(userId).collection('fasting_history').add({
         'userId': userId,
         'startTime': Timestamp.fromDate(DateTime(2026, 5, 14, 8, 0)),
         'endTime': null,
@@ -332,7 +332,7 @@ void main() {
     });
 
     test('ignora ventanas de comida (isFasting=false) cerradas', () async {
-      await firestore.collection('fasting_history').add({
+      await firestore.collection('users').doc(userId).collection('fasting_history').add({
         'userId': userId,
         'startTime': Timestamp.fromDate(DateTime(2026, 5, 14, 12, 0)),
         'endTime': Timestamp.fromDate(DateTime(2026, 5, 14, 20, 0)),
