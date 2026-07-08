@@ -155,6 +155,78 @@ que usaban ids largos tipo `uuid`) puede romper tests preexistentes con
 fixtures de datos distintos. Verificar con la suite completa, no solo con
 los tests nuevos, antes de reportar "listo".
 
+## 6.2 SPEC-253.1 — bug real encontrado en la propia guardia (commit pendiente)
+
+Tras el fix de regresión de §6.1, Carlos reprodujo el bug de nuevo con
+capturas de pantalla: registró el desayuno (visible en el historial),
+registró el almuerzo por el flujo normal "Registrar" (no edición), y el
+desayuno volvió a desaparecer — contador "1 Comidas" en vez de 2, guardia
+de SPEC-253 aparentemente sin efecto.
+
+**Auditoría línea por línea** (a pedido explícito de Carlos: "analiza todo
+el código de nutrición línea por línea") de todo el pipeline: botón
+"Registrar" en `comidas_pillar_card.dart` (confirmado: NO pasa
+`logToReplaceId`, llama `PlateRatioSheet.show(context)` limpio) →
+`plate_ratio_sheet.dart._submit()` (confirmado: `oldId == null` → llama
+`notifier.logMeal()`, nunca `replaceMeal()`, para el flujo "Registrar") →
+`nutrition_notifier.dart` completo → `nutrition_repository_impl.dart` →
+`firestore_nutrition_v1_source.dart` (query `where timestamp >= since,
+orderBy timestamp`, sin `.limit()`) → `nutrition_log_mapper.dart`
+(`_validate`, incluida la tolerancia de `FutureTimestamp`) →
+`metabolic_cycle_evaluator_provider.dart` completo (400+ líneas: el pulso
+de 10s, el guard de `liveScore`, las condiciones de cierre/reapertura) →
+`metabolic_cycle_service.dart` (confirmado otra vez: reapertura automática
+de ciclo SOLO en `manualNextFasting`/`protocolChanged`) →
+`daily_reset_service.dart` (confirmado: `resetDaily()` de nutrición solo
+se dispara desde el timer de medianoche o desde el evaluador cuando
+`hasClosure && hasOpening`) → `meal_history_sheet.dart` (confirmado: lee
+directo de `nutritionProvider.state.todayLogs`, sin query propia — el bug
+está genuinamente en el state del notifier, no en el sheet).
+
+**Bug real encontrado**: en la implementación original de la guardia
+(§3), el baseline (`confirmedForThisSubscription`) era una variable
+**local** dentro de `_subscribeFor()`, reseteada a `const []` en **cada
+llamada** a ese método. Pero `_subscribeFor()` se vuelve a llamar, con el
+**mismo** `since` (no una transición real de ventana), desde:
+
+- `onDone` del stream — Firestore puede cerrar y tener que reabrir el
+  listener por un blip de red, refresh de token, o reconexión del
+  cliente. Esto es común en uso real de un dispositivo móvil (cambio de
+  wifi a datos, un instante en background, etc.) y prácticamente
+  imposible de reproducir en un emulador con conexión estable — por eso
+  los tests (con `FakeNutritionRepository`, sin red real) nunca lo
+  atraparon.
+- El listener de usuario, en el primer fire.
+
+Si esa reconexión ocurre justo entre dos registros de comida, el
+**primer snapshot de la nueva suscripción** puede llegar incompleto
+mientras el SDK de Firestore reconcilia la caché local con el servidor —
+y como el baseline ya estaba en `const []` por el reset de
+`_subscribeFor`, la guardia no tenía nada que preservar. Exactamente el
+síntoma: la guardia funcionaba perfecto en los tests (una sola
+suscripción, sin reconexiones) pero no protegía en el device real,
+donde SÍ hay reconexiones del stream.
+
+**Fix**: el baseline pasa de variable local a **campo de instancia**
+(`_baseline`, `_baselineSince`), indexado por `since`. Ahora
+`_subscribeFor()` solo limpia el baseline cuando `since` **cambia de
+verdad** (transición real de Día Metabólico) o cuando se pide
+explícitamente vía el nuevo parámetro `forceFreshBaseline` (usado en:
+login de un usuario nuevo, y `resetDaily()`). Una reconexión del stream
+para la MISMA ventana (`onDone` → `_subscribeFor(_currentCycleStartedAt)`
+sin `forceFreshBaseline`) ahora **hereda** el baseline existente — la
+guardia lo sigue protegiendo aunque el primer snapshot post-reconexión
+venga incompleto.
+
+**Limitación honesta**: este escenario (reconexión de stream a mitad de
+sesión) es difícil de reproducir de forma determinística en
+`FakeNutritionRepository` (stream in-memory sin blips de red reales), así
+que no se agregó un test automatizado que ejercite el `onDone` real —
+los 3 tests de §5 siguen cubriendo el comportamiento de merge dentro de
+una misma suscripción, que es lo que SÍ es testeable de forma
+determinística. La verificación real de este fix depende de la
+reproducción en device de Carlos.
+
 ## 7. Seguimiento
 
 Si el bug persistiera incluso con esta guardia (lo cual indicaría que la

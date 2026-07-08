@@ -123,6 +123,32 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
   // del stream/ventana de Firestore — ver `_mergeWithBaseline`.
   final Set<String> _explicitlyRemovedIds = {};
 
+  // SPEC-253.1 (fix de regresión real, 2026-07-08): baseline de logs
+  // confirmados, ahora a nivel de NOTIFIER (no local a `_subscribeFor`).
+  //
+  // Bug encontrado en revisión línea por línea tras el segundo reporte de
+  // Carlos (comida desaparece pese a la guardia v1): la v1 de la guardia
+  // guardaba el baseline en una variable LOCAL dentro de `_subscribeFor`,
+  // reseteándolo a `const []` en CADA llamada a ese método — incluyendo
+  // `onDone` (reconexión del stream de Firestore por blip de red, cambio
+  // de token, o cierre del listener) y el listener de usuario, que
+  // vuelven a llamar `_subscribeFor` con el MISMO `since` (misma ventana,
+  // no una transición real de ciclo). Si la reconexión ocurre justo entre
+  // dos registros de comida (plausible: cambio de red, app a background
+  // un instante, refresh de token), el primer snapshot de la NUEVA
+  // suscripción puede venir incompleto de la reconciliación de caché
+  // local — y como el baseline ya estaba vacío por el reset, la guardia
+  // no tenía nada que preservar. Exactamente el síntoma reportado.
+  //
+  // Fix: el baseline ahora vive a nivel de instancia, indexado por
+  // `since`. Solo se limpia cuando `since` CAMBIA de verdad (nueva
+  // ventana — transición real de Día Metabólico, SPEC-149) o cuando se
+  // fuerza explícitamente (nuevo usuario, `resetDaily()`). Una
+  // resuscripción con el MISMO `since` (reconexión, blip de red) hereda
+  // el baseline existente — la guardia sigue protegiendo.
+  DateTime? _baselineSince;
+  List<NutritionLog> _baseline = const [];
+
   void _init() {
     // Escucha cambios de usuario para targetMeals, perfil circadiano y stream.
     _ref.listen<AsyncValue<UserModel?>>(
@@ -139,7 +165,9 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
           _circadianProfile = user.profile;
           if (_activeUserId != user.id) {
             _activeUserId = user.id;
-            _subscribeFor(_currentCycleStartedAt);
+            // SPEC-253.1: usuario nuevo (login) — forzar baseline fresco
+            // aunque `since` coincida por casualidad con el de otro usuario.
+            _subscribeFor(_currentCycleStartedAt, forceFreshBaseline: true);
           }
           // Recalcula con los nuevos parámetros del usuario.
           final updated = _recalculate(state.todayLogs, user.mealsPerDay);
@@ -192,7 +220,7 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
   /// nutrition_logs en Firestore — bug post-SPEC-194 al quitar el
   /// placeholder. Cuando el usuario inicie el próximo ayuno, el
   /// listener al cycle re-suscribe automáticamente con la nueva ventana.
-  void _subscribeFor(DateTime? cycleStartedAt) {
+  void _subscribeFor(DateTime? cycleStartedAt, {bool forceFreshBaseline = false}) {
     final userId = _activeUserId;
     if (userId == null) return;
     _logsSub?.cancel();
@@ -204,27 +232,26 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
     // útil para depurar futuras regresiones de la ventana de consulta.
     AppLogger.debug(
       '[nutritionDebug] _subscribeFor: cycleStartedAt=$cycleStartedAt '
-      '→ since=$since (${cycleStartedAt == null ? "fallback startOfDay" : "cycle.startedAt"})',
+      '→ since=$since (${cycleStartedAt == null ? "fallback startOfDay" : "cycle.startedAt"}) '
+      'forceFreshBaseline=$forceFreshBaseline baselineSince=$_baselineSince',
     );
 
-    // SPEC-253 (fix definitivo): baseline de ESTA suscripción. Se resetea
-    // en cada llamada a `_subscribeFor` (nueva ventana = nueva baseline),
-    // así que una transición LEGÍTIMA de ciclo metabólico sigue pudiendo
-    // angostar la vista (comportamiento cycle-aware intencional de la
-    // Constitución del Día Metabólico). Pero DENTRO de la misma
-    // suscripción — la misma query, la misma ventana — si un snapshot
-    // posterior trae menos logs que uno anterior sin que el usuario haya
-    // pedido borrarlos, es una anomalía transitoria del listener/caché de
-    // Firestore, no una eliminación real. Ver `_mergeWithBaseline`.
-    List<NutritionLog> confirmedForThisSubscription = const [];
+    // SPEC-253.1: solo limpiar el baseline si la VENTANA cambió de verdad
+    // (transición real de ciclo/Día Metabólico) o si se pide explícitamente
+    // (nuevo usuario, resetDaily). Si `since` es el mismo que la última vez
+    // (p.ej. reconexión del stream por blip de red vía `onDone`), el
+    // baseline se preserva — ver comentario en el campo `_baseline`.
+    if (forceFreshBaseline || since != _baselineSince) {
+      _baseline = const [];
+      _baselineSince = since;
+    }
 
     final repo = _ref.read(nutritionRepositoryProvider);
     _logsSub = repo.watchSinceLogs(userId, since).listen(
       (logs) {
         if (!mounted) return;
-        final merged =
-            _mergeWithBaseline(confirmedForThisSubscription, logs);
-        confirmedForThisSubscription = merged;
+        final merged = _mergeWithBaseline(_baseline, logs);
+        _baseline = merged;
         AppLogger.debug(
           '[nutritionDebug] snapshot recibido: ${logs.length} logs '
           '(merge final: ${merged.length}) → '
@@ -241,6 +268,11 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
         // BUGFIX (2026-06-14): Firestore puede cerrar el stream por
         // reconexión, cambio de token o error irrecuperable. Si no
         // re-suscribimos, los logs nuevos nunca llegan al estado.
+        //
+        // SPEC-253.1: NO forzar baseline fresco acá — es la misma ventana,
+        // solo se reconecta el listener. El baseline (`_baseline` a nivel
+        // de instancia) sigue protegiendo contra un primer snapshot
+        // incompleto de la reconciliación de caché tras reconectar.
         if (mounted) _subscribeFor(_currentCycleStartedAt);
       },
     );
@@ -686,7 +718,10 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
       nutritionScore: 0.0,
       windowAdherence: 0.0,
     );
-    _subscribeFor(_currentCycleStartedAt);
+    // SPEC-253.1: reset explícito — forzar baseline fresco aunque `since`
+    // termine coincidiendo con el anterior (p.ej. reset por medianoche
+    // dentro del mismo ciclo sin cambio de ventana).
+    _subscribeFor(_currentCycleStartedAt, forceFreshBaseline: true);
   }
 
   @override
