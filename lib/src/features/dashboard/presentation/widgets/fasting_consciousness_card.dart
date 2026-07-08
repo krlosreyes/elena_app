@@ -17,7 +17,9 @@ import 'package:elena_app/src/features/dashboard/application/fasting_notifier.da
 import 'package:elena_app/src/features/dashboard/domain/fasting_status.dart';
 import 'package:elena_app/src/features/dashboard/domain/relative_day_label.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/early_fasting_end_dialog.dart';
+import 'package:elena_app/src/features/dashboard/presentation/widgets/new_cycle_meals_warning_dialog.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/protocol_selector_sheet.dart';
+import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 
 class FastingConsciousnessCard extends ConsumerWidget {
@@ -514,6 +516,19 @@ class FastingConsciousnessCard extends ConsumerWidget {
     }
 
     // No activo: iniciar.
+    // SPEC-254: avisar si iniciar el ayuno va a sacar de la vista comidas
+    // ya registradas en el ciclo actual (ver
+    // new_cycle_meals_warning_dialog.dart — el mecanismo NO es pérdida de
+    // datos, es la ventana cycle-aware del Día Metabólico moviéndose a un
+    // ciclo nuevo, sin aviso previo al usuario).
+    final mealsCount = ref.read(nutritionProvider).todayLogs.length;
+    if (mealsCount > 0) {
+      final confirm = await NewCycleMealsWarningDialog.show(
+        context,
+        mealsCount: mealsCount,
+      );
+      if (confirm != true) return;
+    }
     await ref.read(fastingProvider.notifier).startFasting();
   }
 

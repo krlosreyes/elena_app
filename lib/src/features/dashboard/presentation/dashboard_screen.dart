@@ -33,6 +33,7 @@ import 'package:elena_app/src/features/dashboard/presentation/widgets/hydration_
 import 'package:elena_app/src/features/dashboard/presentation/widgets/sleep_pillar_card.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/comidas_pillar_card.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/fasting_consciousness_card.dart';
+import 'package:elena_app/src/features/dashboard/presentation/widgets/new_cycle_meals_warning_dialog.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/celebration_overlay.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/clock_explainer_sheet.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
@@ -267,6 +268,20 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     onStartNextFasting: fastingState.isActive
                         ? null
                         : () async {
+                            // SPEC-254: avisar si iniciar el ayuno va a
+                            // sacar de la vista comidas ya registradas
+                            // en el ciclo actual (ver
+                            // new_cycle_meals_warning_dialog.dart).
+                            final mealsCount =
+                                ref.read(nutritionProvider).todayLogs.length;
+                            if (mealsCount > 0) {
+                              final confirm =
+                                  await NewCycleMealsWarningDialog.show(
+                                context,
+                                mealsCount: mealsCount,
+                              );
+                              if (confirm != true) return;
+                            }
                             await ref
                                 .read(fastingProvider.notifier)
                                 .startFasting();
