@@ -1,7 +1,7 @@
 # SPEC-252 — Editar una comida la eliminaba sin guardar la nueva versión
 
-**Estado:** IMPLEMENTED
-**Versión:** 1.0
+**Estado:** IMPLEMENTED (verificado con `flutter analyze` + `flutter test`)
+**Versión:** 1.1
 **Fecha:** 2026-07-08
 **Autor:** Claude (líder de proyecto) + Carlos (reporte de bug en device)
 **Pilar:** Nutrición
@@ -58,8 +58,10 @@ flutter test test/features/nutrition
 
 - [x] Editar la comida más reciente (caso típico del botón "Editar plato") guarda la nueva versión sin perder el registro.
 - [x] Editar una comida con un horario que choca con OTRA comida real sigue bloqueado (protección de intervalo intacta) y el log original no se pierde en ese caso.
+- [x] `flutter analyze` sin issues nuevos (67 preexistentes, 0 en archivos de este SPEC).
+- [x] `flutter test test/features/nutrition` sin regresiones nuevas: 316 passed (subió de 314 tras SPEC-251 a 316 — los 2 tests nuevos de SPEC-252 pasan). Los mismos 5 fallos preexistentes de la brecha de test documentada en SPEC-251 §4 siguen ahí, sin relación con este fix.
 - [ ] Validación manual en device por Carlos: editar el desayuno y confirmar que la nueva versión queda guardada; registrar desayuno + almuerzo por separado y confirmar que ambos coexisten.
 
 ## 8. Resultado
 
-Implementado y testeado con fakes. Pendiente `flutter analyze`/`flutter test` y validación manual en device por Carlos.
+Implementado, testeado y verificado. `git push` a `mvp-core-clean` confirmado (commit `94ee42f`). `flutter analyze` y `flutter test test/features/nutrition` corridos por Carlos: sin regresiones atribuibles a este SPEC — los 2 tests nuevos pasan, el conteo total sube de 314 a 316, y los 5 fallos restantes son la misma brecha de test preexistente ya documentada en SPEC-251 (no relacionada con `replaceMeal`). Pendiente: validación manual en device/simulador.
