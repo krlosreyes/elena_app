@@ -141,6 +141,15 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
       (previous, next) {
         next.whenData((cycle) {
           final newSince = cycle?.startedAt;
+          // SPEC-253 (diagnóstico temporal): loguea cada emisión de
+          // currentMetabolicCycleProvider para detectar transiciones de
+          // ciclo (cierre/apertura) durante una sesión de registro de
+          // comidas. Quitar tras diagnosticar.
+          AppLogger.debug(
+            '[nutritionDebug] currentMetabolicCycleProvider emitió: '
+            'cycleId=${cycle?.cycleId} startedAt=$newSince '
+            '(anterior=$_currentCycleStartedAt, logsSub==null=${_logsSub == null})',
+          );
           // SPEC-178.bugfix2 (2026-06-05): si el primer fire emite con
           // cycle == null, newSince == _currentCycleStartedAt (ambos null)
           // y la igualdad bloqueaba la suscripción inicial. Subscribe
@@ -175,10 +184,24 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
     _logsSub = null;
     final since = cycleStartedAt ??
         DayBoundaryResolver.startOfDay(DateTime.now());
+    // SPEC-253 (diagnóstico temporal): reporte de Carlos — registrar una
+    // segunda comida hace desaparecer la primera. Logueamos la ventana de
+    // consulta y cada snapshot recibido para determinar si el doc viejo
+    // sigue llegando de Firestore (bug de UI/mapper) o si la ventana
+    // `since` lo excluye (bug de ciclo metabólico) o si genuinamente deja
+    // de estar en la respuesta (borrado real). Quitar tras diagnosticar.
+    AppLogger.debug(
+      '[nutritionDebug] _subscribeFor: cycleStartedAt=$cycleStartedAt '
+      '→ since=$since (${cycleStartedAt == null ? "fallback startOfDay" : "cycle.startedAt"})',
+    );
     final repo = _ref.read(nutritionRepositoryProvider);
     _logsSub = repo.watchSinceLogs(userId, since).listen(
       (logs) {
         if (!mounted) return;
+        AppLogger.debug(
+          '[nutritionDebug] snapshot recibido: ${logs.length} logs → '
+          '${logs.map((l) => "${l.label}@${l.timestamp} (id=${l.id.substring(0, 8)})").join(", ")}',
+        );
         state = _recalculate(logs, state.targetMeals);
       },
       onError: (Object e) {
