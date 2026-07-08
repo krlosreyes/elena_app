@@ -19,6 +19,7 @@
 
 import 'dart:async';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elena_app/src/core/engine/metabolic_state_provider.dart';
@@ -138,6 +139,20 @@ final imrPersistenceProvider = Provider<void>((ref) {
           .read(userProfileRepositoryProvider)
           .updateCurrentImr(uid, imrToCanonicalMap(toWrite))
           .catchError((Object error, StackTrace stack) {
+        // SPEC-250: `not-found` es una carrera esperada, no un fallo.
+        // SPEC-248b borra el doc `users/{uid}` ANTES de eliminar la
+        // sesión de Auth; mientras tanto Dashboard sigue montado (la
+        // navegación a /login ocurre recién cuando deleteAccount()
+        // completo resuelve) y este provider puede seguir vivo con un
+        // write debounced pendiente. Loguear eso como warning sería
+        // ruido — se degrada a info y no interrumpe nada.
+        if (error is FirebaseException && error.code == 'not-found') {
+          AppLogger.info(
+            '[imrPersistence] Doc ausente al escribir imr.current '
+            '(probable borrado de cuenta en curso, SPEC-248b): $error',
+          );
+          return;
+        }
         AppLogger.warning(
           '[imrPersistence] No se persistió imr.current: $error',
           error,

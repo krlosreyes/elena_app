@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/core/providers/shared_preferences_provider.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
@@ -169,12 +171,38 @@ class ProfileController extends StateNotifier<ProfileEditState> {
   /// (antes solo se limpiaba en el catch, dejando el spinner colgado).
   /// Invalidar `authStateProvider` para que el stream re-emita el
   /// estado de no-autenticado y el router redirija a /login.
-  Future<void> deleteAccount() async {
+  ///
+  /// SPEC-250: `AuthRepository.deleteAccount()` encadena ~18 llamadas a
+  /// Firestore (borrado de 15 subcolecciones + doc raíz + legacy +
+  /// Auth), ninguna con timeout propio. Si una sola se queda esperando
+  /// respuesta de red (el `await` que no resuelve hasta reconectar,
+  /// causa raíz ya documentada en SPEC-206), el spinner de "Eliminar
+  /// cuenta" queda trabado indefinidamente — reproducido por Carlos en
+  /// simulador de Xcode. El `.timeout()` acota el peor caso: si no
+  /// resuelve en `timeout`, se libera la UI con un mensaje y el
+  /// usuario puede reintentar. La operación original sigue corriendo
+  /// en background (best-effort, ya cubierto por la Cloud Function
+  /// `onUserDeleted` de SPEC-207/248 como red de seguridad) — no se
+  /// cancela, solo se deja de esperar por ella.
+  Future<void> deleteAccount({
+    Duration timeout = const Duration(seconds: 25),
+  }) async {
     state = state.copyWith(isSaving: true, errorMessage: null);
     try {
-      await ref.read(authRepositoryProvider).deleteAccount();
+      await ref.read(authRepositoryProvider).deleteAccount().timeout(timeout);
       ref.invalidate(authStateProvider);
       state = state.copyWith(isSaving: false);
+    } on TimeoutException {
+      // No relanzamos el TimeoutException crudo: profile_screen.dart
+      // muestra `e.toString()` directo en un SnackBar (no lee
+      // `state.errorMessage`), y el toString() de TimeoutException es
+      // ilegible para el usuario ("TimeoutException after 0:00:25...").
+      // Mismo patrón que firebase_auth_repository.dart usa para
+      // 'requires-recent-login': Exception con mensaje en español.
+      const message = 'La eliminación está tardando más de lo esperado. '
+          'Verifica tu conexión e intenta de nuevo.';
+      state = state.copyWith(isSaving: false, errorMessage: message);
+      throw Exception(message);
     } catch (e) {
       state = state.copyWith(
         isSaving: false,
