@@ -108,6 +108,14 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
   String? _activeUserId;
   DateTime? _currentCycleStartedAt;
 
+  // SPEC-253: ids que ESTE notifier pidió eliminar explícitamente (vía
+  // deleteMealById, replaceMeal o removeLastMeal). Un id en este set puede
+  // desaparecer legítimamente de un snapshot futuro. Cualquier OTRO log
+  // que el usuario vio en pantalla y que un snapshot posterior "olvida"
+  // sin que el usuario lo haya borrado se trata como anomalía transitoria
+  // del stream/ventana de Firestore — ver `_mergeWithBaseline`.
+  final Set<String> _explicitlyRemovedIds = {};
+
   void _init() {
     // Escucha cambios de usuario para targetMeals, perfil circadiano y stream.
     _ref.listen<AsyncValue<UserModel?>>(
@@ -184,25 +192,38 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
     _logsSub = null;
     final since = cycleStartedAt ??
         DayBoundaryResolver.startOfDay(DateTime.now());
-    // SPEC-253 (diagnóstico temporal): reporte de Carlos — registrar una
-    // segunda comida hace desaparecer la primera. Logueamos la ventana de
-    // consulta y cada snapshot recibido para determinar si el doc viejo
-    // sigue llegando de Firestore (bug de UI/mapper) o si la ventana
-    // `since` lo excluye (bug de ciclo metabólico) o si genuinamente deja
-    // de estar en la respuesta (borrado real). Quitar tras diagnosticar.
+    // SPEC-253: diagnóstico (Carlos reportó comidas desapareciendo al
+    // registrar/editar). Se deja el logging — es barato y sigue siendo
+    // útil para depurar futuras regresiones de la ventana de consulta.
     AppLogger.debug(
       '[nutritionDebug] _subscribeFor: cycleStartedAt=$cycleStartedAt '
       '→ since=$since (${cycleStartedAt == null ? "fallback startOfDay" : "cycle.startedAt"})',
     );
+
+    // SPEC-253 (fix definitivo): baseline de ESTA suscripción. Se resetea
+    // en cada llamada a `_subscribeFor` (nueva ventana = nueva baseline),
+    // así que una transición LEGÍTIMA de ciclo metabólico sigue pudiendo
+    // angostar la vista (comportamiento cycle-aware intencional de la
+    // Constitución del Día Metabólico). Pero DENTRO de la misma
+    // suscripción — la misma query, la misma ventana — si un snapshot
+    // posterior trae menos logs que uno anterior sin que el usuario haya
+    // pedido borrarlos, es una anomalía transitoria del listener/caché de
+    // Firestore, no una eliminación real. Ver `_mergeWithBaseline`.
+    List<NutritionLog> confirmedForThisSubscription = const [];
+
     final repo = _ref.read(nutritionRepositoryProvider);
     _logsSub = repo.watchSinceLogs(userId, since).listen(
       (logs) {
         if (!mounted) return;
+        final merged =
+            _mergeWithBaseline(confirmedForThisSubscription, logs);
+        confirmedForThisSubscription = merged;
         AppLogger.debug(
-          '[nutritionDebug] snapshot recibido: ${logs.length} logs → '
-          '${logs.map((l) => "${l.label}@${l.timestamp} (id=${l.id.substring(0, 8)})").join(", ")}',
+          '[nutritionDebug] snapshot recibido: ${logs.length} logs '
+          '(merge final: ${merged.length}) → '
+          '${merged.map((l) => "${l.label}@${l.timestamp} (id=${l.id.substring(0, 8)})").join(", ")}',
         );
-        state = _recalculate(logs, state.targetMeals);
+        state = _recalculate(merged, state.targetMeals);
       },
       onError: (Object e) {
         // Error transitorio de red o permiso. Mantener estado previo;
@@ -216,6 +237,47 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
         if (mounted) _subscribeFor(_currentCycleStartedAt);
       },
     );
+  }
+
+  /// SPEC-253: guardia definitiva contra pérdida silenciosa de datos.
+  ///
+  /// Causa raíz reportada por Carlos (2026-07-08): registrar o editar una
+  /// comida hacía desaparecer OTRA comida ya visible, incluso después de
+  /// reiniciar la app — es decir, el snapshot de Firestore para la MISMA
+  /// query/ventana dejaba de incluir un doc que un snapshot anterior sí
+  /// traía, sin que el usuario hubiera pedido borrarlo. El mecanismo
+  /// exacto (listener de Firestore, caché local, o alguna interacción con
+  /// el ciclo metabólico) no se pudo confirmar con certeza vía logs, pero
+  /// el síntoma es inequívoco: datos que el usuario ve, desaparecen solos.
+  ///
+  /// En vez de seguir apostando a diagnosticar la causa exacta, esta
+  /// guardia hace la garantía explícita: un log que el usuario vio en
+  /// pantalla NUNCA desaparece de la vista salvo que el propio notifier
+  /// haya pedido borrarlo (`_explicitlyRemovedIds`). Si Firestore reporta
+  /// un log de menos sin que nosotros lo hayamos borrado, lo preservamos
+  /// y logueamos un warning — preferimos un log "zombie" temporal (que se
+  /// autocorrige en el próximo snapshot completo) a que el usuario pierda
+  /// el registro de lo que comió.
+  List<NutritionLog> _mergeWithBaseline(
+    List<NutritionLog> baseline,
+    List<NutritionLog> fresh,
+  ) {
+    if (baseline.isEmpty) return fresh;
+    final freshIds = fresh.map((l) => l.id).toSet();
+    final missing = baseline.where(
+      (old) =>
+          !freshIds.contains(old.id) &&
+          !_explicitlyRemovedIds.contains(old.id),
+    );
+    if (missing.isEmpty) return fresh;
+    AppLogger.warning(
+      '[nutrition] SPEC-253: el snapshot de Firestore no trae '
+      '${missing.length} log(s) que el usuario no borró explícitamente — '
+      'se preservan en el state para evitar pérdida visual de datos. '
+      'ids: ${missing.map((l) => '${l.label}@${l.timestamp}').join(", ")}',
+    );
+    return [...fresh, ...missing]
+      ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
   }
 
   // ─── API pública ─────────────────────────────────────────────────────────
@@ -408,6 +470,14 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
     // Fallback a startOfDay si no hay ciclo activo (primer uso del día).
     final since = _currentCycleStartedAt ??
         DayBoundaryResolver.startOfDay(DateTime.now());
+    // SPEC-253: el repo borra "el más reciente dentro de `since`" en el
+    // servidor — coincide con `state.todayLogs.last` porque el notifier
+    // usa la misma ventana. Lo marcamos como explícitamente eliminado
+    // ANTES del borrado para que la guardia de `_mergeWithBaseline` no lo
+    // preserve por error cuando el snapshot deje de traerlo.
+    if (state.todayLogs.isNotEmpty) {
+      _explicitlyRemovedIds.add(state.todayLogs.last.id);
+    }
     // SPEC-206 (offline-first): borrado no bloqueante. El stream refleja la
     // lista actualizada desde la caché al instante; sincroniza al reconectar.
     unawaited(repo.removeLastMeal(userId, since: since).catchError((Object e) {
@@ -489,6 +559,12 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
     final userId = _activeUserId;
     if (userId == null) return;
 
+    // SPEC-253: marcar oldId como explícitamente eliminado ANTES de
+    // llamar a logMeal — así la guardia de `_mergeWithBaseline` sabe que
+    // su desaparición del próximo snapshot es intencional (edición), no
+    // una anomalía a preservar.
+    _explicitlyRemovedIds.add(oldId);
+
     // Registrar el nuevo primero. `replacingLogId` excluye el log viejo
     // de la validación de intervalo (SPEC-252) — sin esto, comparar contra
     // sí mismo siempre da un delta ≈0 y bloquea el registro.
@@ -536,6 +612,11 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
   Future<void> deleteMealById(String mealId) async {
     final userId = _activeUserId;
     if (userId == null) return;
+
+    // SPEC-253: marcar como explícitamente eliminado — la guardia de
+    // `_mergeWithBaseline` no debe "resucitar" este log cuando el
+    // próximo snapshot deje de traerlo.
+    _explicitlyRemovedIds.add(mealId);
 
     // Borrado optimista: quitar del cache local antes del round-trip.
     if (mounted) {

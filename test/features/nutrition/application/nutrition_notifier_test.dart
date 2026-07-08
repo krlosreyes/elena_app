@@ -479,4 +479,137 @@ void main() {
               'logMeal falla por un choque real con otra comida');
     });
   });
+
+  // ── SPEC-253: guardia definitiva contra pérdida silenciosa de datos.
+  // Carlos reportó (2026-07-08) que registrar o editar una comida hacía
+  // desaparecer OTRA comida ya visible, incluso tras reiniciar la app —
+  // sin usar "Editar" (descartando SPEC-252 como causa) y sin que el
+  // usuario pidiera borrar nada. La causa exacta (listener/caché de
+  // Firestore) no se pudo confirmar con certeza, así que se blindó el
+  // notifier: un log que el usuario vio en pantalla nunca desaparece de
+  // la vista salvo que el propio notifier haya pedido borrarlo. ─────────
+  group('NutritionNotifier guardia anti-pérdida-de-datos (SPEC-253)', () {
+    late FakeNutritionRepository fakeRepo;
+    late ProviderContainer container;
+
+    setUp(() {
+      fakeRepo = FakeNutritionRepository();
+      container = ProviderContainer(
+        overrides: [
+          nutritionRepositoryProvider.overrideWithValue(fakeRepo),
+          currentUserStreamProvider
+              .overrideWith((ref) => Stream.value(_user())),
+          fastingProvider.overrideWith(
+            (ref) => throw StateError('fastingProvider boom (simulado)'),
+          ),
+        ],
+      );
+      container.read(nutritionProvider);
+    });
+
+    tearDown(() {
+      container.dispose();
+      fakeRepo.dispose();
+    });
+
+    test(
+        'si un snapshot posterior omite un log sin que el usuario lo haya '
+        'borrado, el log se preserva en el state (no desaparece solo)',
+        () async {
+      await Future<void>.delayed(Duration.zero);
+      final desayuno = NutritionLog(
+        id: 'log-desayuno',
+        timestamp: DateTime(2026, 5, 1, 8, 0),
+        label: 'Desayuno',
+        withinCircadianWindow: true,
+      );
+      final almuerzo = NutritionLog(
+        id: 'log-almuerzo',
+        timestamp: DateTime(2026, 5, 1, 13, 0),
+        label: 'Almuerzo',
+        withinCircadianWindow: true,
+      );
+      // Snapshot 1: ambas comidas visibles (como en el reporte de Carlos
+      // tras registrar el desayuno).
+      fakeRepo.emit([desayuno, almuerzo]);
+      await Future<void>.delayed(Duration.zero);
+      expect(container.read(nutritionProvider).todayLogs.length, 2);
+
+      // Snapshot 2: Firestore (por la razón que sea — la anomalía que
+      // reportó Carlos) deja de incluir el desayuno, SIN que el notifier
+      // haya pedido borrarlo. Simulamos esto emitiendo directamente desde
+      // el fake, sin pasar por deleteMealById/removeLastMeal/replaceMeal.
+      fakeRepo.emit([almuerzo]);
+      await Future<void>.delayed(Duration.zero);
+
+      final logs = container.read(nutritionProvider).todayLogs;
+      expect(logs.map((l) => l.id), contains('log-desayuno'),
+          reason: 'SPEC-253: un log que el usuario vio no debe '
+              'desaparecer solo — la guardia debe preservarlo');
+      expect(logs.map((l) => l.id), contains('log-almuerzo'));
+      expect(logs.length, 2);
+    });
+
+    test(
+        'un borrado explícito (deleteMealById) sí reduce la lista — la '
+        'guardia no resucita logs que el usuario pidió eliminar',
+        () async {
+      await Future<void>.delayed(Duration.zero);
+      final desayuno = NutritionLog(
+        id: 'log-desayuno',
+        timestamp: DateTime(2026, 5, 1, 8, 0),
+        label: 'Desayuno',
+        withinCircadianWindow: true,
+      );
+      final almuerzo = NutritionLog(
+        id: 'log-almuerzo',
+        timestamp: DateTime(2026, 5, 1, 13, 0),
+        label: 'Almuerzo',
+        withinCircadianWindow: true,
+      );
+      fakeRepo.emit([desayuno, almuerzo]);
+      await Future<void>.delayed(Duration.zero);
+      expect(container.read(nutritionProvider).todayLogs.length, 2);
+
+      await container
+          .read(nutritionProvider.notifier)
+          .deleteMealById('log-desayuno');
+      await Future<void>.delayed(Duration.zero);
+
+      final logs = container.read(nutritionProvider).todayLogs;
+      expect(logs.map((l) => l.id), isNot(contains('log-desayuno')),
+          reason: 'SPEC-253: un borrado explícito SÍ debe reflejarse — '
+              'la guardia solo protege contra desapariciones no pedidas');
+      expect(logs.map((l) => l.id), contains('log-almuerzo'));
+      expect(logs.length, 1);
+    });
+
+    test(
+        'removeLastMeal marca el último log como explícitamente '
+        'eliminado — la guardia no lo preserva', () async {
+      await Future<void>.delayed(Duration.zero);
+      final desayuno = NutritionLog(
+        id: 'log-desayuno',
+        timestamp: DateTime(2026, 5, 1, 8, 0),
+        label: 'Desayuno',
+        withinCircadianWindow: true,
+      );
+      final almuerzo = NutritionLog(
+        id: 'log-almuerzo',
+        timestamp: DateTime(2026, 5, 1, 13, 0),
+        label: 'Almuerzo',
+        withinCircadianWindow: true,
+      );
+      fakeRepo.emit([desayuno, almuerzo]);
+      await Future<void>.delayed(Duration.zero);
+
+      await container.read(nutritionProvider.notifier).removeLastMeal();
+      await Future<void>.delayed(Duration.zero);
+
+      final logs = container.read(nutritionProvider).todayLogs;
+      expect(logs.map((l) => l.id), isNot(contains('log-almuerzo')),
+          reason: 'removeLastMeal debe borrar el más reciente '
+              '(almuerzo) y la guardia no debe resucitarlo');
+    });
+  });
 }
