@@ -234,6 +234,16 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
     int? totalSlots,
     // SPEC-BUG6: ids de alimentos del PlateBuilder para pre-cargar edición.
     List<String> plateItemIds = const [],
+    // SPEC-252: id del log que esta llamada va a REEMPLAZAR (modo edición
+    // vía `replaceMeal`). Se excluye de `state.todayLogs` al calcular
+    // `lastMealAt` y al armar la lista optimista — sin esto, editar la
+    // comida más reciente comparaba el intervalo contra SÍ MISMA (delta
+    // ≈ 0 < 2h), disparaba `MealTooSoonException` incondicionalmente
+    // (el bloqueo no respeta `forceLog`), y el log nunca se re-creaba —
+    // pero `replaceMeal` ya había disparado el borrado del viejo antes de
+    // llamar aquí. Resultado: editar una comida la eliminaba sin guardar
+    // la nueva versión. Ver SPEC-252.
+    String? replacingLogId,
   }) async {
     final userId = _activeUserId;
     if (userId == null) return;
@@ -245,7 +255,13 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
     // SPEC-137 E.5: validar intervalo entre comidas. Día de permitidos
     // suspende la regla. Si el log es retroactivo (mealTime en el
     // pasado), validamos contra el timestamp ingresado, no contra now.
-    final lastMealAt = MealIntervalRules.lastMealOf(state.todayLogs);
+    //
+    // SPEC-252: excluir `replacingLogId` — el log que se está editando
+    // no debe contar como "última comida" de sí mismo.
+    final logsForIntervalCheck = replacingLogId == null
+        ? state.todayLogs
+        : state.todayLogs.where((l) => l.id != replacingLogId).toList();
+    final lastMealAt = MealIntervalRules.lastMealOf(logsForIntervalCheck);
     final check = MealIntervalRules.check(
       lastMealAt: lastMealAt,
       attemptAt: timestamp,
@@ -306,7 +322,13 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
     // Antes: si el stream tenía un error silenciado, el conteo quedaba
     // en 0 aunque el write fuera exitoso.
     if (mounted) {
-      final optimisticLogs = List<NutritionLog>.from(state.todayLogs)..add(log);
+      // SPEC-252: en modo edición, quitar el log viejo del cache local
+      // ANTES de agregar el nuevo — evita un duplicado transitorio
+      // (viejo + nuevo) hasta que el stream de Firestore reconcilie.
+      final optimisticBase = replacingLogId == null
+          ? state.todayLogs
+          : state.todayLogs.where((l) => l.id != replacingLogId).toList();
+      final optimisticLogs = List<NutritionLog>.from(optimisticBase)..add(log);
       state = _recalculate(optimisticLogs, state.targetMeals);
     }
 
@@ -399,11 +421,30 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
     }
   }
 
-  /// Reemplaza un log existente (editar plato): elimina el log con [oldId]
-  /// y registra uno nuevo con los parámetros provistos.
+  /// Reemplaza un log existente (editar plato): registra la nueva versión
+  /// y, si se guarda correctamente, elimina el log viejo con [oldId].
   ///
-  /// La eliminación es no bloqueante (offline-first). El stream re-emite
-  /// la lista corregida al instante desde la caché de Firestore.
+  /// SPEC-252 (bugfix crítico): el orden se invirtió respecto a la versión
+  /// original. Antes se eliminaba `oldId` INCONDICIONALMENTE (fire-and-
+  /// forget) y RECIÉN DESPUÉS se intentaba crear el nuevo log. Pero
+  /// `logMeal()` valida el intervalo entre comidas usando `state.todayLogs`
+  /// — que todavía contenía el log viejo (la eliminación es asíncrona,
+  /// no había actualización optimista de por medio) — así que el intervalo
+  /// se calculaba entre el nuevo timestamp y EL MISMO log que se estaba
+  /// reemplazando. Como editar normalmente no cambia demasiado la hora,
+  /// el delta era ≈0 → `MealIntervalCheck.blocked` (<2h) → `logMeal()`
+  /// lanzaba `MealTooSoonException` INCONDICIONALMENTE (el bloqueo no
+  /// respeta `forceLog`, ver comentario en `logMeal`). Resultado: el log
+  /// viejo ya se había borrado, pero el nuevo nunca se creaba — editar
+  /// una comida la eliminaba sin guardar nada.
+  ///
+  /// Ahora: (1) `logMeal()` se llama primero, pasando `replacingLogId:
+  /// oldId` para que excluya ese log al validar el intervalo (ver
+  /// `logMeal`); (2) solo si `logMeal()` no lanzó excepción, se dispara
+  /// la eliminación del log viejo (no bloqueante, offline-first). Si
+  /// `logMeal()` falla por cualquier motivo real (p.ej. choca con OTRA
+  /// comida existente), el log viejo se conserva intacto — no hay
+  /// pérdida de datos.
   Future<void> replaceMeal({
     required String oldId,
     String? label,
@@ -425,18 +466,9 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
     final userId = _activeUserId;
     if (userId == null) return;
 
-    // Eliminar el viejo primero (no bloqueante).
-    unawaited(
-      _ref
-          .read(nutritionRepositoryProvider)
-          .deleteMealById(userId, oldId)
-          .catchError((Object e) {
-        AppLogger.error('replaceMeal: eliminación del viejo falló', e);
-      }),
-    );
-
-    // Registrar el nuevo (forceLog=true salta la validación de intervalo
-    // porque el usuario ya tenía ese slot ocupado).
+    // Registrar el nuevo primero. `replacingLogId` excluye el log viejo
+    // de la validación de intervalo (SPEC-252) — sin esto, comparar contra
+    // sí mismo siempre da un delta ≈0 y bloquea el registro.
     await logMeal(
       label: label,
       mealTime: mealTime,
@@ -453,6 +485,18 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
       upfSlots: upfSlots,
       totalSlots: totalSlots,
       plateItemIds: plateItemIds,
+      replacingLogId: oldId,
+    );
+
+    // Solo si el registro anterior no lanzó: eliminar el log viejo.
+    // No bloqueante (offline-first) — el stream reconcilia la lista.
+    unawaited(
+      _ref
+          .read(nutritionRepositoryProvider)
+          .deleteMealById(userId, oldId)
+          .catchError((Object e) {
+        AppLogger.error('replaceMeal: eliminación del viejo falló', e);
+      }),
     );
   }
 

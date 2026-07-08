@@ -15,6 +15,7 @@ import 'dart:async';
 import 'package:elena_app/src/features/dashboard/application/fasting_notifier.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
 import 'package:elena_app/src/features/nutrition/data/nutrition_repository_impl.dart';
+import 'package:elena_app/src/features/nutrition/domain/meal_interval_rules.dart';
 import 'package:elena_app/src/features/nutrition/domain/nutrition_log.dart';
 import 'package:elena_app/src/features/nutrition/domain/nutrition_repository.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
@@ -373,6 +374,109 @@ void main() {
       expect(container.read(nutritionProvider).todayLogs, isEmpty,
           reason: 'SPEC-251 Fix 1: el borrado debe persistir en el repo '
               'aunque la lógica de notificaciones falle');
+    });
+  });
+
+  // ── SPEC-252: editar una comida (replaceMeal) no debe eliminarla sin
+  // guardar la nueva versión. Bug: el intervalo se validaba contra el
+  // MISMO log que se estaba reemplazando (delta ≈0 → blocked siempre),
+  // y el log viejo ya se había borrado antes de que esa validación
+  // corriera. Ver causa raíz completa en el docstring de `replaceMeal`. ──
+  group('NutritionNotifier.replaceMeal (SPEC-252)', () {
+    late FakeNutritionRepository fakeRepo;
+    late ProviderContainer container;
+
+    setUp(() {
+      fakeRepo = FakeNutritionRepository();
+      container = ProviderContainer(
+        overrides: [
+          nutritionRepositoryProvider.overrideWithValue(fakeRepo),
+          currentUserStreamProvider
+              .overrideWith((ref) => Stream.value(_user())),
+          fastingProvider.overrideWith(
+            (ref) => throw StateError('fastingProvider boom (simulado)'),
+          ),
+        ],
+      );
+      container.read(nutritionProvider);
+    });
+
+    tearDown(() {
+      container.dispose();
+      fakeRepo.dispose();
+    });
+
+    test(
+        'replaceMeal guarda la nueva versión aunque el horario coincida '
+        'con el del log original (antes: MealTooSoonException contra sí '
+        'mismo y pérdida del dato)', () async {
+      await Future<void>.delayed(Duration.zero);
+      final original = NutritionLog(
+        id: 'log-original',
+        timestamp: DateTime(2026, 5, 1, 13, 0),
+        label: 'Almuerzo',
+        withinCircadianWindow: true,
+      );
+      fakeRepo.emit([original]);
+      await Future<void>.delayed(Duration.zero);
+
+      await container.read(nutritionProvider.notifier).replaceMeal(
+            oldId: 'log-original',
+            label: 'Almuerzo',
+            // Mismo timestamp que el original — antes de SPEC-252 esto
+            // disparaba MealTooSoonException al comparar contra sí mismo.
+            mealTime: DateTime(2026, 5, 1, 13, 0),
+          );
+      await Future<void>.delayed(Duration.zero);
+
+      expect(fakeRepo.savedMeals.length, 1,
+          reason: 'SPEC-252: la nueva versión debe guardarse aunque su '
+              'horario coincida con el del log que reemplaza');
+      final logs = container.read(nutritionProvider).todayLogs;
+      expect(logs.length, 1,
+          reason: 'no debe quedar en 0 (dato perdido) ni en 2 (duplicado)');
+      expect(logs.first.id, isNot('log-original'),
+          reason: 'el log viejo debe haberse eliminado');
+    });
+
+    test(
+        'replaceMeal preserva el log original si logMeal falla por chocar '
+        'con OTRA comida real (no la que se está reemplazando)', () async {
+      await Future<void>.delayed(Duration.zero);
+      final earlier = NutritionLog(
+        id: 'log-desayuno',
+        timestamp: DateTime(2026, 5, 1, 8, 0),
+        label: 'Desayuno',
+        withinCircadianWindow: true,
+      );
+      final original = NutritionLog(
+        id: 'log-original',
+        timestamp: DateTime(2026, 5, 1, 13, 0),
+        label: 'Almuerzo',
+        withinCircadianWindow: true,
+      );
+      fakeRepo.emit([earlier, original]);
+      await Future<void>.delayed(Duration.zero);
+
+      // Editar el log 'log-original' pero moviendo su hora a 8:10 — a
+      // <2h de 'log-desayuno' (una comida DISTINTA, no la que se edita).
+      // Este bloqueo es un comportamiento correcto y debe preservarse.
+      await expectLater(
+        container.read(nutritionProvider.notifier).replaceMeal(
+              oldId: 'log-original',
+              label: 'Almuerzo',
+              mealTime: DateTime(2026, 5, 1, 8, 10),
+            ),
+        throwsA(isA<MealTooSoonException>()),
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      expect(fakeRepo.savedMeals, isEmpty,
+          reason: 'no debe haberse guardado ninguna versión nueva');
+      final logs = container.read(nutritionProvider).todayLogs;
+      expect(logs.map((l) => l.id), contains('log-original'),
+          reason: 'SPEC-252: el log original NO debe perderse cuando '
+              'logMeal falla por un choque real con otra comida');
     });
   });
 }
