@@ -34,6 +34,13 @@ import 'package:elena_app/src/features/nutrition/domain/nutrition_log.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 
+// SPEC-253 (fix de regresión, 2026-07-08): helper para loguear un id
+// truncado sin reventar con RangeError cuando el id es más corto que 8
+// caracteres (p. ej. ids de fixtures de test como 'log-1'). El bug
+// original hacía `l.id.substring(0, 8)` directo, que en Dart lanza si el
+// string tiene menos de 8 caracteres — rompía tests que usan ids cortos.
+String _shortId(String id) => id.length > 8 ? id.substring(0, 8) : id;
+
 // ─── State ────────────────────────────────────────────────────────────────────
 
 class NutritionState {
@@ -221,7 +228,7 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
         AppLogger.debug(
           '[nutritionDebug] snapshot recibido: ${logs.length} logs '
           '(merge final: ${merged.length}) → '
-          '${merged.map((l) => "${l.label}@${l.timestamp} (id=${l.id.substring(0, 8)})").join(", ")}',
+          '${merged.map((l) => "${l.label}@${l.timestamp} (id=${_shortId(l.id)})").join(", ")}',
         );
         state = _recalculate(merged, state.targetMeals);
       },
