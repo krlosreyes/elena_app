@@ -108,9 +108,9 @@ Notas de diseño:
 - [x] Si el timeout se dispara, el usuario ve un mensaje legible en español, no un `toString()` crudo de `TimeoutException`.
 - [x] El error `not-found` durante borrado de cuenta ya no se loguea como `warning` (se degrada a `info`).
 - [x] Cualquier otro código de error en `updateCurrentImr` sigue logueándose como `warning` (sin regresión de visibilidad).
-- [ ] `flutter analyze` sin warnings nuevos.
-- [ ] `flutter test` sin regresiones, con test nuevo cubriendo el timeout de `deleteAccount()`.
-- [ ] Validación manual en simulador de Xcode: reproducir el escenario original (o forzar el timeout con `timeout: Duration(seconds: 1)` puntualmente) y confirmar que el spinner se libera.
+- [x] `flutter analyze` sin warnings nuevos. Verificado por Carlos 2026-07-08: 67 issues preexistentes (ninguno en los 2 archivos tocados por este SPEC ni en el test nuevo).
+- [x] `flutter test` sin regresiones, con test nuevo cubriendo el timeout de `deleteAccount()`. Verificado 2026-07-08: 1639 passing / 3 skipped / 40 failing — los 40 son preexistentes en archivos no relacionados (`watch_action_handler`, `feature_gate_test` parámetro `isInTrial`, `AnalysisRange.d30/all`, `SuggestionType.simplify`, timeouts de `paywall_screen_test`, tests de `fasting_interval` con fake_cloud_firestore, etc.). `profile_controller_delete_account_test.dart` (3 tests nuevos) no aparece en la lista de fallos.
+- [ ] Validación manual en simulador de Xcode: reproducir el escenario original (o forzar el timeout con `timeout: Duration(seconds: 1)` puntualmente) y confirmar que el spinner se libera. Pendiente — requiere reproducir el borrado de cuenta real en device.
 
 **Nota de cobertura:** Fix B (silenciar `not-found`) no tiene test automatizado dedicado — requeriría simular el `Timer` de debounce de 15s de `imrPersistenceProvider` (`fakeAsync`, no presente hoy como dependencia del proyecto) para llegar al `catchError`. Es un cambio de severidad de log, no de comportamiento funcional; se verifica por lectura de código + `flutter analyze`. Mismo criterio que SPEC-83 aplicó para su Bug C (bug de integración Firebase, verificación manual en vez de mock).
 
@@ -129,4 +129,4 @@ Agregar `.timeout()` individual a cada una de las ~18 llamadas dentro de `fireba
 
 ## 9. Resultado
 
-Implementado 2026-07-08. Pendiente: `flutter analyze`, `flutter test` con test nuevo, y validación manual en device por Carlos.
+Implementado, commiteado (`33c6cf2`) y pusheado a `origin/mvp-core-clean` 2026-07-08. `flutter analyze` y `flutter test` corridos por Carlos: sin regresiones atribuibles a este SPEC. Pendiente únicamente la validación manual en simulador de Xcode del escenario original (borrar cuenta, confirmar que el spinner ya no se traba).
