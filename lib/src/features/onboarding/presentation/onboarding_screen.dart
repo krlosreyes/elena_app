@@ -276,13 +276,23 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     if (account == null) return;
 
     // SPEC-247 fix: prefill se computa ANTES de clasificar al usuario.
-    // Un signup directo en la app genera rawProfile mínimo {id, name, email}
-    // → prefill vacío. Un usuario MR trae datos biométricos del sitio web
-    // → prefill no vacío. Esta distinción determina cold install vs MR.
+    // La distinción MR vs signup directo NO puede basarse en prefill.isEmpty
+    // porque prefill.name se llena con {name} del rawProfile del signup,
+    // haciendo filledCount=1 para cualquier usuario. La distinción correcta
+    // es si el rawProfile contiene datos BIOMÉTRICOS (weight/height/waist/
+    // gender/birthYear/etc.) que solo provienen del sitio MR, nunca del signup.
     final prefill = OnboardingPrefill.from(account.rawProfile);
+    final hasMrBiometricData = prefill.weight != null ||
+        prefill.height != null ||
+        prefill.waistCircumference != null ||
+        prefill.neckCircumference != null ||
+        prefill.pantSize != null ||
+        prefill.shirtSize != null ||
+        prefill.birthYear != null ||
+        prefill.gender != null;
 
     _isReturningMrUser = account.profileStatus == AppProfileStatus.partialProfile &&
-        !prefill.isEmpty;
+        hasMrBiometricData;
     if (_isReturningMrUser) {
       // Primera vez que un usuario MR entra a la app.
       telemetry.mrUserFirstLogin();
@@ -337,14 +347,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         bodyFatMeasured;
 
     // SPEC-131/247: usuarios cero-contexto ven las pantallas educativas.
-    // SPEC-247 fix: un signup directo produce partialProfile (el doc Firestore
-    // se crea de inmediato con seed mínimo {id, name, email}). Se detecta como
-    // cold install cuando prefill está vacío, lo que indica que NO vino de MR.
-    // Los usuarios MR tienen prefill no vacío (biometría + hábitos del sitio).
+    // Cold install = newProfile (sin doc Firestore) O partialProfile SIN datos
+    // biométricos de MR. Un signup directo solo trae {id, name, email} en
+    // rawProfile → hasMrBiometricData = false → es cold install.
     final isColdInstall =
         account.profileStatus == AppProfileStatus.newProfile ||
         (account.profileStatus == AppProfileStatus.partialProfile &&
-            prefill.isEmpty);
+            !hasMrBiometricData);
 
     // SPEC-132: el step de Health solo aplica si la plataforma lo
     // soporta. En Web/Desktop el plugin no funciona, así que lo
