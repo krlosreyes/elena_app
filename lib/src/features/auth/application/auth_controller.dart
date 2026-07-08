@@ -22,6 +22,9 @@ import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.
 import 'package:elena_app/src/features/progress/application/progress_notifier.dart';
 import 'package:elena_app/src/features/streak/application/streak_notifier.dart';
 import 'package:elena_app/src/features/engagement/application/engagement_service.dart';
+// SPEC-247: el tour persiste en SharedPreferences — limpiarlo en signOut
+// garantiza que un usuario nuevo en el mismo dispositivo vea el tour.
+import 'package:elena_app/src/features/onboarding/application/app_tour_notifier.dart';
 
 class AuthController extends StateNotifier<AsyncValue<void>> {
   AuthController({required this.repository, required Ref ref})
@@ -106,6 +109,12 @@ class AuthController extends StateNotifier<AsyncValue<void>> {
     _ref.invalidate(last7ClosedCyclesProvider);
     _ref.invalidate(last14ClosedCyclesProvider);
     _ref.invalidate(progressProvider);
+
+    // SPEC-247: limpiar el flag del tour en SharedPreferences al cerrar sesión.
+    // El tour vive en SharedPreferences (no en Firestore), por eso no basta
+    // con invalidar providers — si no se limpia, el próximo usuario en el mismo
+    // dispositivo nunca verá el tour aunque sea su primera vez.
+    await _ref.read(appTourProvider.notifier).forceReset();
 
     state = await AsyncValue.guard(() => repository.signOut());
   }
