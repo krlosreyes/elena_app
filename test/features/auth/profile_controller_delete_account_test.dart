@@ -112,6 +112,30 @@ void main() {
       expect(state.errorMessage, contains('boom'));
       expect(state.errorMessage, isNot(contains('tardando')));
     });
+
+    test(
+        'SPEC-250 inc3: error real (ej. requires-recent-login) también '
+        'dispara signOut() local — mismo recovery que el timeout, no solo '
+        'ese camino (repro Carlos, simulador Xcode, 2026-07-08, 2do caso)',
+        () async {
+      final repo = _FakeAuthRepository()..shouldThrow = true;
+      container = ProviderContainer(overrides: [
+        authRepositoryProvider.overrideWithValue(repo),
+      ]);
+
+      await expectLater(
+        container.read(profileControllerProvider.notifier).deleteAccount(
+              timeout: const Duration(seconds: 5),
+            ),
+        throwsA(isA<Exception>()),
+      );
+
+      expect(repo.signOutCalled, isTrue,
+          reason: 'requires-recent-login solo puede ocurrir DESPUÉS de que '
+              'Firestore ya fue borrado (pasos 1-3 son best-effort y nunca '
+              'lanzan) — sin signOut(), ProfileScreen queda igual de '
+              'colgado que en el caso de timeout');
+    });
   });
 }
 

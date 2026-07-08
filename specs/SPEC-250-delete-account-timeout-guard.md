@@ -1,7 +1,7 @@
 # SPEC-250 — Timeout guard en eliminar cuenta + silenciar not-found esperado en IMR persistence
 
-**Estado:** IMPLEMENTED (inc1 + inc2)
-**Versión:** 1.1
+**Estado:** IMPLEMENTED (inc1 + inc2 + inc3)
+**Versión:** 1.2
 **Fecha:** 2026-07-08
 **Tipo:** Bugfix
 **Rama:** mvp-core-clean
@@ -111,7 +111,8 @@ Notas de diseño:
 - [x] `flutter analyze` sin warnings nuevos. Verificado por Carlos 2026-07-08: 67 issues preexistentes (ninguno en los 2 archivos tocados por este SPEC ni en el test nuevo).
 - [x] `flutter test` sin regresiones, con test nuevo cubriendo el timeout de `deleteAccount()`. Verificado 2026-07-08: 1639 passing / 3 skipped / 40 failing — los 40 son preexistentes en archivos no relacionados (`watch_action_handler`, `feature_gate_test` parámetro `isInTrial`, `AnalysisRange.d30/all`, `SuggestionType.simplify`, timeouts de `paywall_screen_test`, tests de `fasting_interval` con fake_cloud_firestore, etc.). `profile_controller_delete_account_test.dart` (3 tests nuevos) no aparece en la lista de fallos.
 - [x] Validación manual en simulador de Xcode (inc1): reproducida por Carlos 2026-07-08 — reveló el bug de inc2 (spinner infinito en `ProfileScreen`, ver §7.1).
-- [ ] Validación manual en simulador de Xcode (inc2): reintentar "ELIMINAR CUENTA" tras este fix y confirmar que, si se dispara el timeout, la app redirige a `/login` en vez de quedar con el body de Perfil en spinner infinito. Pendiente.
+- [x] Validación manual en simulador de Xcode (inc2): reproducida por Carlos 2026-07-08 — el fix de inc2 solo cubría el camino de `TimeoutException`; `requires-recent-login` (camino de error genérico) seguía sin recovery. Reveló inc3 (ver §7.2).
+- [ ] Validación manual en simulador de Xcode (inc3): reintentar "ELIMINAR CUENTA" (con sesión antigua, para forzar `requires-recent-login`, o esperando el timeout) y confirmar que la app redirige a `/login` en cualquiera de los dos casos, sin dejar `ProfileScreen` en spinner infinito. Pendiente.
 
 **Nota de cobertura:** Fix B (silenciar `not-found`) no tiene test automatizado dedicado — requeriría simular el `Timer` de debounce de 15s de `imrPersistenceProvider` (`fakeAsync`, no presente hoy como dependencia del proyecto) para llegar al `catchError`. Es un cambio de severidad de log, no de comportamiento funcional; se verifica por lectura de código + `flutter analyze`. Mismo criterio que SPEC-83 aplicó para su Bug C (bug de integración Firebase, verificación manual en vez de mock).
 
@@ -166,6 +167,68 @@ ref.invalidate(authStateProvider);
 
 Test agregado: `profile_controller_delete_account_test.dart` — nuevo caso verifica que `signOutCalled` sea `true` tras el timeout.
 
+## 7.2. inc3 — el recovery de inc2 estaba mal alcanzado: cualquier error, no solo timeout (2026-07-08)
+
+Carlos reprodujo el mismo spinner infinito de `ProfileScreen` una TERCERA vez, ahora con un mensaje visible en un `SnackBar` rojo:
+
+> "Exception: Por seguridad, tu sesión es muy antigua. Cierra sesión, vuelve a iniciar sesión y vuelve a intentar eliminar la cuenta."
+
+Este es el mensaje exacto de `firebase_auth_repository.dart:213-216` para `FirebaseAuthException.code == 'requires-recent-login'` — Firebase Auth exige un login reciente (~5 min) para operaciones sensibles como borrar la cuenta, y la sesión de prueba de Carlos ya la excedía.
+
+**Por qué inc2 no lo cubrió.** El `SnackBar` con este mensaje SÍ se mostró correctamente — el bug real es que `ProfileScreen` seguía sin desmontarse. Causa: este error **no pasa por el `.timeout()`** en absoluto. `FirebaseAuthRepository.deleteAccount()` (`firebase_auth_repository.dart:177-221`) tiene esta estructura:
+
+```dart
+Future<void> deleteAccount() async {
+  // 1. Borrar 15 subcolecciones — try/catch que traga TODO, nunca lanza.
+  // 2. Borrar doc raíz users/{uid} — try/catch que traga TODO, nunca lanza.
+  // 3. Borrar fasting_history legacy — try/catch que traga TODO, nunca lanza.
+  // 4. user.delete() de Firebase Auth — el ÚNICO paso que puede lanzar.
+  try {
+    await user.delete();
+  } on FirebaseAuthException catch (e) {
+    if (e.code == 'requires-recent-login') {
+      throw Exception('Por seguridad...');
+    }
+    throw _handleAuthException(e);
+  } catch (_) {
+    throw Exception('Error técnico al eliminar la cuenta de autenticación.');
+  }
+  // 5. signOut() local.
+}
+```
+
+Los pasos 1-3 están envueltos en `try { } catch (_) { /* best-effort */ }` — **nunca relanzan**, pase lo que pase. El único punto de todo el método que puede lanzar una excepción real es el paso 4. Esto significa algo importante: **cualquier excepción que llegue al `catch (e)` de `ProfileController.deleteAccount()` — no solo un timeout — implica que Firestore ya fue borrado**, porque los pasos 1-3 ya corrieron (best-effort) antes de siquiera intentar el paso 4.
+
+El fix de inc2 (`signOut()` + `invalidate(authStateProvider)`) solo estaba dentro del bloque `on TimeoutException`. El `catch (e)` genérico —que es el que atrapa `requires-recent-login`— seguía sin ese recovery: solo seteaba `errorMessage` y hacía `rethrow`. Resultado: mismo bug, camino distinto.
+
+**Fix.** Se extrae la lógica de recovery a un método compartido `_recoverFromPartialDelete()` y se llama desde **ambos** catch — el de `TimeoutException` y el genérico:
+
+```dart
+} on TimeoutException {
+  const message = '...';
+  await _recoverFromPartialDelete();
+  state = state.copyWith(isSaving: false, errorMessage: message);
+  throw Exception(message);
+} catch (e) {
+  await _recoverFromPartialDelete();
+  state = state.copyWith(isSaving: false, errorMessage: e.toString());
+  rethrow;
+}
+
+Future<void> _recoverFromPartialDelete() async {
+  try {
+    await ref.read(authRepositoryProvider).signOut();
+  } catch (_) {
+    // Best-effort.
+  }
+  ref.invalidate(authStateProvider);
+}
+```
+
+Efecto colateral positivo: el propio mensaje de `requires-recent-login` le pide al usuario "cierra sesión, vuelve a iniciar sesión y reintenta" — pero antes de este fix no tenía forma de cerrar sesión desde una pantalla congelada en un spinner. Ahora la sesión se cierra sola, así que el usuario puede seguir la instrucción del mensaje sin fricción adicional.
+
+Tests agregados: dos casos nuevos en `profile_controller_delete_account_test.dart` verifican `signOutCalled == true` tanto en el camino de timeout como en el de error genérico (simulando `requires-recent-login`).
+
 ## 8. Riesgos
 
 - Si el timeout de 25s se dispara pero el borrado eventualmente completa en background, el usuario podría ver "tardó mucho, reintenta" y luego, al reintentar, encontrarse ya sin cuenta (Auth ya borrado) — el segundo intento fallaría con `user-not-found` o similar. Es un estado transitorio aceptable dado que ya era el comportamiento best-effort preexistente; no lo introduce este fix.
@@ -175,4 +238,8 @@ Test agregado: `profile_controller_delete_account_test.dart` — nuevo caso veri
 
 inc1 implementado, commiteado (`33c6cf2`, `86f2bf0`) y pusheado a `origin/mvp-core-clean` 2026-07-08. `flutter analyze` y `flutter test` corridos por Carlos: sin regresiones atribuibles a este SPEC.
 
-inc2 (signOut + invalidate en el timeout, fix del spinner infinito de `ProfileScreen`) implementado 2026-07-08 tras validación manual de Carlos que reveló el gap. Pendiente: commit+push de inc2 y re-validación en device.
+inc2 (signOut + invalidate en el timeout) implementado y commiteado (`d2375b6`) 2026-07-08, pero solo cubría el camino de `TimeoutException` — insuficiente, según reveló la siguiente validación de Carlos.
+
+inc3 (recovery generalizado a `_recoverFromPartialDelete()`, llamado desde AMBOS catch — timeout y error genérico, incluyendo `requires-recent-login`) implementado 2026-07-08. Esta es la cobertura completa: dado que `FirebaseAuthRepository.deleteAccount()` solo puede lanzar desde su paso 4 (Auth), y los pasos 1-3 (Firestore) son best-effort y nunca relanzan, CUALQUIER excepción capturada en `ProfileController.deleteAccount()` implica que Firestore ya está borrado — por lo tanto el recovery debe aplicar siempre, no solo en timeout.
+
+Pendiente: commit+push de inc3 y validación manual final en device (forzar tanto timeout como `requires-recent-login` y confirmar redirect a `/login` en ambos).

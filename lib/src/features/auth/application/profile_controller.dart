@@ -172,18 +172,25 @@ class ProfileController extends StateNotifier<ProfileEditState> {
   /// Invalidar `authStateProvider` para que el stream re-emita el
   /// estado de no-autenticado y el router redirija a /login.
   ///
-  /// SPEC-250: `AuthRepository.deleteAccount()` encadena ~18 llamadas a
-  /// Firestore (borrado de 15 subcolecciones + doc raíz + legacy +
-  /// Auth), ninguna con timeout propio. Si una sola se queda esperando
-  /// respuesta de red (el `await` que no resuelve hasta reconectar,
-  /// causa raíz ya documentada en SPEC-206), el spinner de "Eliminar
-  /// cuenta" queda trabado indefinidamente — reproducido por Carlos en
-  /// simulador de Xcode. El `.timeout()` acota el peor caso: si no
-  /// resuelve en `timeout`, se libera la UI con un mensaje y el
-  /// usuario puede reintentar. La operación original sigue corriendo
-  /// en background (best-effort, ya cubierto por la Cloud Function
-  /// `onUserDeleted` de SPEC-207/248 como red de seguridad) — no se
-  /// cancela, solo se deja de esperar por ella.
+  /// SPEC-250 inc1: `AuthRepository.deleteAccount()` encadena ~18
+  /// llamadas a Firestore (borrado de 15 subcolecciones + doc raíz +
+  /// legacy + Auth), ninguna con timeout propio. Si una sola se queda
+  /// esperando respuesta de red (el `await` que no resuelve hasta
+  /// reconectar, causa raíz ya documentada en SPEC-206), el spinner de
+  /// "Eliminar cuenta" queda trabado indefinidamente — reproducido por
+  /// Carlos en simulador de Xcode. El `.timeout()` acota el peor caso.
+  ///
+  /// SPEC-250 inc3 (repro Carlos 2026-07-08, dos veces — ver
+  /// `_recoverFromPartialDelete`): CUALQUIER excepción que llegue hasta
+  /// acá, no solo el timeout, implica que Firestore ya fue borrado.
+  /// `FirebaseAuthRepository.deleteAccount` ejecuta sus pasos 1-3
+  /// (subcolecciones + doc raíz + legacy) envueltos en try/catch que
+  /// nunca relanza ("best-effort") — así que SIEMPRE corren antes de
+  /// llegar al paso 4 (`user.delete()` de Firebase Auth), que es el
+  /// ÚNICO punto que puede lanzar (p.ej. `requires-recent-login` si la
+  /// sesión tiene más de ~5 min). Por eso el recovery de
+  /// `_recoverFromPartialDelete()` se aplica en AMBOS catch — timeout y
+  /// error real — no solo en el de timeout.
   Future<void> deleteAccount({
     Duration timeout = const Duration(seconds: 25),
   }) async {
@@ -201,49 +208,54 @@ class ProfileController extends StateNotifier<ProfileEditState> {
       // 'requires-recent-login': Exception con mensaje en español.
       const message = 'La eliminación está tardando más de lo esperado. '
           'Verifica tu conexión e intenta de nuevo.';
-
-      // SPEC-250 inc2 (repro Carlos, simulador Xcode, 2026-07-08): el
-      // timeout solo liberaba `isSaving` (el spinner del botón), pero
-      // dejaba `ProfileScreen` colgado en OTRO spinner infinito e
-      // independiente. Causa: `currentUserStreamProvider` deja de
-      // emitir el usuario en cuanto `users/{uid}` se borra (paso 2 de
-      // SPEC-248b, que corre temprano y rápido), pero `authStateProvider`
-      // sigue reportando la sesión como completa porque nadie lo
-      // invalida hasta que el `deleteAccount()` completo resuelve — y
-      // si el paso lento es justo `user.delete()` (paso 4, Auth), esa
-      // invalidación nunca llega. Resultado: `ProfileScreen.build`
-      // (línea ~90) queda con `user == null` para siempre → spinner sin
-      // salida.
-      //
-      // Si llegamos a este timeout, es muy probable que el doc ya esté
-      // borrado (25s alcanza de sobra para los pasos 1-3, que son
-      // rápidos) aunque la sesión de Auth siga viva. Forzamos un
-      // signOut() LOCAL (no vuelve a intentar borrar nada, solo cierra
-      // la sesión en el dispositivo) e invalidamos authStateProvider
-      // para que el router mande a /login y ProfileScreen se desmonte.
-      // Si el paso 4 (Auth) sí llegó a completarse en background, este
-      // signOut() es un no-op adicional inofensivo. Si no completó, la
-      // cuenta de Auth queda residual sin doc de Firestore — mismo
-      // riesgo aceptado ya documentado en SPEC-83 para
-      // 'requires-recent-login', cubierto por la Cloud Function
-      // onUserDeleted (SPEC-207/248) si el borrado de Auth eventualmente
-      // se completa.
-      try {
-        await ref.read(authRepositoryProvider).signOut();
-      } catch (_) {
-        // Best-effort — no bloqueamos la salida del usuario por esto.
-      }
-      ref.invalidate(authStateProvider);
-
+      await _recoverFromPartialDelete();
       state = state.copyWith(isSaving: false, errorMessage: message);
       throw Exception(message);
     } catch (e) {
+      // SPEC-250 inc3: mismo recovery que el timeout — ver doc del
+      // método. Este catch también atrapa 'requires-recent-login'
+      // (Firestore ya borrado, solo Auth falló) y cualquier otro error
+      // real del paso 4.
+      await _recoverFromPartialDelete();
       state = state.copyWith(
         isSaving: false,
         errorMessage: e.toString(),
       );
       rethrow;
     }
+  }
+
+  /// SPEC-250 inc2+inc3: cuando `deleteAccount()` del repo falla o hace
+  /// timeout, `users/{uid}` casi con certeza ya fue borrado (ver doc de
+  /// `deleteAccount` arriba), pero `authStateProvider` nunca se invalida
+  /// en un camino de error — solo en el éxito. Sin este recovery,
+  /// `currentUserStreamProvider` queda emitiendo `null` para siempre y
+  /// `ProfileScreen.build` (línea ~90, `if (user == null) return
+  /// CircularProgressIndicator()`) se queda en un spinner sin salida,
+  /// reproducido dos veces por Carlos en simulador de Xcode
+  /// (2026-07-08): una vía timeout, otra vía `requires-recent-login`.
+  ///
+  /// `signOut()` local (no reintenta borrar nada, solo cierra la sesión
+  /// en el dispositivo) + invalidar `authStateProvider` fuerza al router
+  /// a mandar a `/login` y desmonta la pantalla rota. Es además
+  /// coherente con el propio mensaje de `requires-recent-login`
+  /// ("cierra sesión, vuelve a iniciar sesión y reintenta"): antes el
+  /// usuario no tenía cómo cerrar sesión desde una pantalla congelada en
+  /// un spinner; ahora la sesión se cierra sola y puede seguir la
+  /// instrucción.
+  ///
+  /// Riesgo aceptado (ya documentado en SPEC-83 para este mismo caso):
+  /// si el paso 4 (Auth) no llegó a completarse, la cuenta de Auth queda
+  /// residual sin doc de Firestore — cubierto por la Cloud Function
+  /// `onUserDeleted` (SPEC-207/248) si el borrado eventualmente se
+  /// completa, o por un reintento manual del usuario tras re-login.
+  Future<void> _recoverFromPartialDelete() async {
+    try {
+      await ref.read(authRepositoryProvider).signOut();
+    } catch (_) {
+      // Best-effort — no bloqueamos la salida del usuario por esto.
+    }
+    ref.invalidate(authStateProvider);
   }
 
   void clearFeedback() {
