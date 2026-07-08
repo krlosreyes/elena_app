@@ -1,122 +1,436 @@
-// SPEC-131: pantallas educativas para usuarios cero-contexto.
+// SPEC-247 (2026-07-07): Onboarding por Transformación.
+// Rediseño completo de las pantallas educativas con principios de influencia
+// anclados a la identidad científica de ElenaApp (ver ENGAGEMENT_ANALYSIS_2026_07.md).
 //
-// SPEC-182 (2026-06-05): re-tono completo + 2 pantallas nuevas (Día
-// Metabólico y Notificaciones con respaldo). El pivot "active coaching"
-// requiere que el usuario salga del onboarding entendiendo dual scores,
-// día metabólico y la naturaleza educativa de las notificaciones.
+// Pantallas activas:
+//   100 — IntroWelcomeStep    (Identidad: Unidad + Autoridad)
+//   105 — IntroProtocolStep   (Compromiso y coherencia) ← NUEVA
+//   101 — IntroInsightStep    (Reciprocidad + Autoridad) ← sustituye IntroImrStep
+//   104 — IntroNotificationsStep (Prueba social + activar) ← rediseñada
 //
-// Se muestran ANTES del onboarding tradicional (disclaimer, biometría,
-// etc.) y SOLO para usuarios con profileStatus == newProfile. Los
-// usuarios provenientes de MR (partialProfile) saltean estas pantallas
-// — ya conocen el método.
+// Pantallas eliminadas:
+//   102 — IntroDataStep       → privacidad absorbida en header de Biometría (onboarding_screen)
+//   103 — IntroMetabolicDayStep → movida a coaching card post-Day-1 (SPEC-249, deferred)
 //
-// Estilo: solo texto + iconos Material (decisión de Carlos: cero
-// dependencia de diseñador / assets nuevos / animaciones).
+// Reglas de copy:
+//   - Español neutro LatAm. CERO voseo (no vos/acá/tenés/empezás/cumplís).
+//   - Solo iconos Material. Sin assets ni dependencias externas.
+//   - Cada claim científico lleva su cita.
 
 import 'package:flutter/material.dart';
-
 import 'package:elena_app/src/core/theme/app_theme.dart';
 
-/// Pantalla 1 — Bienvenida. SPEC-182: re-tonada a "coach, no cuaderno".
+// ── PASO 100 — Identidad ─────────────────────────────────────────────
+// Principios: Unidad + Autoridad
+// El usuario entiende que esta app es diferente a una dieta genérica.
+// Las citation pills anclan la credibilidad en la primera pantalla.
+
 class IntroWelcomeStep extends StatelessWidget {
   final bool isDark;
   const IntroWelcomeStep({super.key, required this.isDark});
 
   @override
   Widget build(BuildContext context) {
-    return _IntroLayout(
-      isDark: isDark,
-      icon: Icons.menu_book_outlined,
-      title: 'Te acompañamos a leer tu cuerpo',
-      bodyParagraphs: const [
-        'ElenaApp lee tu día y te devuelve coaching con respaldo '
-            'científico. No es un cuaderno digital — es un coach.',
-        'Cada notificación, cada número, cada gráfica trae una cita '
-            'bibliográfica. Vas a saber por qué te decimos lo que '
-            'te decimos.',
+    final accent = AppColors.metabolicGreen;
+    final textPrimary =
+        isDark ? AppColors.textPrimary : const Color(0xFF1E293B);
+    final textSecondary =
+        isDark ? AppColors.textSecondary : const Color(0xFF475569);
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
+      children: [
+        Center(
+          child: Container(
+            width: 96,
+            height: 96,
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.14),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.biotech_outlined, color: accent, size: 48),
+          ),
+        ),
+        const SizedBox(height: 28),
+        Text(
+          'La mayoría sigue dietas.\nTú vas a entender tu metabolismo.',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: textPrimary,
+            fontSize: 22,
+            fontWeight: FontWeight.w700,
+            height: 1.25,
+          ),
+        ),
+        const SizedBox(height: 20),
+        Text(
+          'Las dietas te dicen qué comer. ElenaApp te muestra por qué '
+          'tu cuerpo responde como responde — y qué hacer al respecto.',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: textSecondary,
+            fontSize: 15,
+            height: 1.55,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Text(
+          'Cada número, cada notificación y cada gráfica tiene una cita '
+          'científica verificable. No te pedimos fe — te damos las fuentes.',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: textSecondary,
+            fontSize: 15,
+            height: 1.55,
+          ),
+        ),
+        const SizedBox(height: 28),
+        _CitationPill(
+          icon: Icons.menu_book_outlined,
+          text: 'NEJM · Metabolismo circadiano',
+          isDark: isDark,
+        ),
+        const SizedBox(height: 8),
+        _CitationPill(
+          icon: Icons.science_outlined,
+          text: 'Levine 2017 · Autofagia y ayuno  (Nobel de Medicina)',
+          isDark: isDark,
+        ),
+        const SizedBox(height: 8),
+        _CitationPill(
+          icon: Icons.nightlight_outlined,
+          text: 'AASM · Sueño y regulación hormonal',
+          isDark: isDark,
+        ),
       ],
     );
   }
 }
 
-/// Pantalla 2 — Dos números. SPEC-182 + SPEC-170: prepara al usuario
-/// para ver HOY motivacional + IMR longitudinal de fondo en el
-/// Dashboard.
-class IntroImrStep extends StatelessWidget {
+// ── PASO 105 — Protocolo ─────────────────────────────────────────────
+// Principio: Compromiso y coherencia
+// El usuario elige un protocolo clínico (no una "meta genérica").
+// Ese compromiso lo ancla al modelo metabólico desde el primer gesto.
+
+class IntroProtocolStep extends StatelessWidget {
   final bool isDark;
-  const IntroImrStep({super.key, required this.isDark});
+  final String selectedProtocol;
+  final ValueChanged<String> onProtocolSelected;
+
+  const IntroProtocolStep({
+    super.key,
+    required this.isDark,
+    required this.selectedProtocol,
+    required this.onProtocolSelected,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return _IntroLayout(
-      isDark: isDark,
-      icon: Icons.donut_small_outlined,
-      title: 'Tus dos números',
-      bodyParagraphs: const [
-        'En el Dashboard vas a ver dos números: HOY e IMR. HOY es cómo '
-            'viviste hoy — puede llegar a 100 cuando cumplís tus 5 '
-            'pilares.',
-        'IMR es tu base metabólica de fondo. Se mueve más lento, en '
-            'semanas y meses. Esto es lo que importa cuando hablamos '
-            'de cambios reales en tu cuerpo.',
-        'Los dos son tuyos. Uno te empuja cada día, el otro te muestra '
-            'el camino largo.',
+    final textPrimary =
+        isDark ? AppColors.textPrimary : const Color(0xFF1E293B);
+    final textSecondary =
+        isDark ? AppColors.textSecondary : const Color(0xFF475569);
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
+      children: [
+        Center(
+          child: Container(
+            width: 96,
+            height: 96,
+            decoration: BoxDecoration(
+              color: AppColors.metabolicGreen.withValues(alpha: 0.14),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.timer_outlined,
+              color: AppColors.metabolicGreen,
+              size: 48,
+            ),
+          ),
+        ),
+        const SizedBox(height: 28),
+        Text(
+          'Elige tu punto de partida',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: textPrimary,
+            fontSize: 22,
+            fontWeight: FontWeight.w700,
+            height: 1.25,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          'Los tres protocolos tienen respaldo clínico. '
+          'La diferencia es el tiempo de ayuno diario.',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: textSecondary,
+            fontSize: 15,
+            height: 1.55,
+          ),
+        ),
+        const SizedBox(height: 28),
+        _ProtocolCard(
+          id: '14:8',
+          title: '14/10',
+          subtitle: '14 horas de ayuno · 10 de alimentación',
+          description: 'Para empezar. Extiende la noche y construye el hábito.',
+          isSelected: selectedProtocol == '14:8',
+          onTap: () => onProtocolSelected('14:8'),
+          isDark: isDark,
+        ),
+        const SizedBox(height: 12),
+        _ProtocolCard(
+          id: '16:8',
+          title: '16/8',
+          subtitle: '16 horas de ayuno · 8 de alimentación',
+          description: 'El más estudiado. El 70% de las personas empieza aquí.',
+          isSelected: selectedProtocol == '16:8',
+          onTap: () => onProtocolSelected('16:8'),
+          isDark: isDark,
+          recommended: true,
+        ),
+        const SizedBox(height: 12),
+        _ProtocolCard(
+          id: '18:6',
+          title: '18/6',
+          subtitle: '18 horas de ayuno · 6 de alimentación',
+          description:
+              'Avanzado. Para quienes ya construyeron la base metabólica.',
+          isSelected: selectedProtocol == '18:6',
+          onTap: () => onProtocolSelected('18:6'),
+          isDark: isDark,
+        ),
+        const SizedBox(height: 20),
+        Text(
+          'Puedes cambiar de protocolo en cualquier momento desde tu perfil.',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: textSecondary.withValues(alpha: 0.7),
+            fontSize: 13,
+            height: 1.4,
+          ),
+        ),
       ],
     );
   }
 }
 
-/// Pantalla 3 — Datos privados. SPEC-182: ordena primero "qué hacemos
-/// con los datos" (coaching), después "qué guardamos".
-class IntroDataStep extends StatelessWidget {
+// ── PASO 101 — Insight personalizado ────────────────────────────────
+// Principios: Reciprocidad + Autoridad
+// Da valor ANTES de pedir datos. El timeline adapta al protocolo elegido.
+// El usuario sale de esta pantalla sabiendo qué pasa en su cuerpo y por qué.
+
+class IntroInsightStep extends StatelessWidget {
   final bool isDark;
-  const IntroDataStep({super.key, required this.isDark});
+  // Protocolo elegido en el paso 105. Determina el timeline mostrado.
+  final String protocol;
+
+  const IntroInsightStep({
+    super.key,
+    required this.isDark,
+    this.protocol = '16:8',
+  });
 
   @override
   Widget build(BuildContext context) {
-    return _IntroLayout(
-      isDark: isDark,
-      icon: Icons.shield_outlined,
-      title: 'Tus datos son tuyos',
-      bodyParagraphs: const [
-        'Te vamos a pedir peso, altura, edad, cintura y tus horarios '
-            'de descanso. Con eso calculamos tu base y armamos tu '
-            'coaching.',
-        'Todo queda en tu cuenta privada. No vendemos ni compartimos. '
-            'Puedes borrar tu cuenta cuando quieras desde Perfil.',
+    final textPrimary =
+        isDark ? AppColors.textPrimary : const Color(0xFF1E293B);
+    final textSecondary =
+        isDark ? AppColors.textSecondary : const Color(0xFF475569);
+
+    final title = _titleFor(protocol);
+    final rows = _timelineFor(protocol);
+    final footer = _footerFor(protocol);
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
+      children: [
+        Center(
+          child: Container(
+            width: 96,
+            height: 96,
+            decoration: BoxDecoration(
+              color: AppColors.metabolicGreen.withValues(alpha: 0.14),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.insights_outlined,
+              color: AppColors.metabolicGreen,
+              size: 48,
+            ),
+          ),
+        ),
+        const SizedBox(height: 28),
+        Text(
+          title,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: textPrimary,
+            fontSize: 22,
+            fontWeight: FontWeight.w700,
+            height: 1.25,
+          ),
+        ),
+        const SizedBox(height: 24),
+        // Timeline
+        Container(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.bgSurface : Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color:
+                  isDark ? AppColors.borderDefault : const Color(0xFFE2E8F0),
+            ),
+          ),
+          child: Column(
+            children: [
+              for (int i = 0; i < rows.length; i++) ...[
+                _TimelineRow(
+                  hour: rows[i].hour,
+                  icon: rows[i].icon,
+                  text: rows[i].text,
+                  citation: rows[i].citation,
+                  isDark: isDark,
+                  isLast: i == rows.length - 1,
+                ),
+              ],
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+        Text(
+          footer,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: textSecondary,
+            fontSize: 14,
+            height: 1.55,
+          ),
+        ),
       ],
     );
   }
-}
 
-/// SPEC-182 §RF-182-04 (2026-06-05): pantalla 4 — Día Metabólico.
-/// Explica que el "día" se cierra cuando termina la ventana de comida,
-/// no a medianoche calendárica. Alineado con SPEC-149.
-class IntroMetabolicDayStep extends StatelessWidget {
-  final bool isDark;
-  const IntroMetabolicDayStep({super.key, required this.isDark});
+  static String _titleFor(String protocol) {
+    switch (protocol) {
+      case '14:8':
+        return 'Esto pasa en tu cuerpo\ndurante 14 horas de ayuno';
+      case '18:6':
+        return 'El protocolo avanzado con\nmás evidencia en pérdida de grasa';
+      case '16:8':
+      default:
+        return 'Esto pasa en tu cuerpo\ndurante un ayuno de 16 horas';
+    }
+  }
 
-  @override
-  Widget build(BuildContext context) {
-    return _IntroLayout(
-      isDark: isDark,
-      icon: Icons.brightness_3_outlined,
-      title: 'El día empieza cuando empezás a ayunar',
-      bodyParagraphs: const [
-        'Tu día metabólico no se cierra a medianoche calendárica. Se '
-            'cierra cuando termina tu ventana de comida y empezás tu '
-            'próximo ayuno.',
-        'Cuando eso pasa, te entregamos tu feedback del día con cita '
-            'bibliográfica. Es el momento donde el coaching tiene '
-            'sentido — no a las 23:59 cuando estás durmiendo.',
-      ],
-    );
+  static String _footerFor(String protocol) {
+    switch (protocol) {
+      case '14:8':
+        return 'Estos eventos son automáticos. '
+            '14/10 es el protocolo ideal para construir el hábito. '
+            'ElenaApp te avisa en cada hito.';
+      case '18:6':
+        return 'Estos eventos son automáticos. '
+            '18/6 requiere que tu sistema digestivo esté adaptado. '
+            'ElenaApp ajusta el coaching si el patrón necesita cambio.';
+      case '16:8':
+      default:
+        return 'Estos eventos son automáticos. '
+            'Tu trabajo es darle el tiempo necesario. '
+            'ElenaApp te avisa en cada hito.';
+    }
+  }
+
+  static List<_TimelineData> _timelineFor(String protocol) {
+    switch (protocol) {
+      case '14:8':
+        return [
+          _TimelineData(
+            hour: 'Hora 0',
+            icon: '🔒',
+            text: 'Cierras la ventana. Tu cuerpo usa glucosa almacenada.',
+          ),
+          _TimelineData(
+            hour: 'Hora 6',
+            icon: '🔥',
+            text: 'La insulina baja. El cuerpo empieza a acceder a reservas de grasa.',
+            citation: '· Cahill, 1966 — NEJM',
+          ),
+          _TimelineData(
+            hour: 'Hora 12',
+            icon: '⚡',
+            text: 'Quema de grasa activa. Un par de horas más y alcanzas la meta.',
+          ),
+          _TimelineData(
+            hour: 'Hora 14',
+            icon: '✓',
+            text: 'Meta alcanzada. Base sólida para el siguiente paso.',
+          ),
+        ];
+      case '18:6':
+        return [
+          _TimelineData(
+            hour: 'Hora 0',
+            icon: '🔒',
+            text: 'Cierras la ventana. El proceso empieza.',
+          ),
+          _TimelineData(
+            hour: 'Hora 10',
+            icon: '🔥',
+            text: 'Insulina en mínimo. Quema de grasa en su punto máximo.',
+            citation: '· Cahill, 1966 — NEJM',
+          ),
+          _TimelineData(
+            hour: 'Hora 16',
+            icon: '🧬',
+            text: 'Autofagia activa: el cuerpo limpia células dañadas.',
+            citation: '· Levine, 2017 — Nobel de Medicina',
+          ),
+          _TimelineData(
+            hour: 'Hora 18',
+            icon: '💪',
+            text: 'Meta. Cetosis metabólica leve en usuarios con práctica regular.',
+          ),
+        ];
+      case '16:8':
+      default:
+        return [
+          _TimelineData(
+            hour: 'Hora 0',
+            icon: '🔒',
+            text: 'Cierras la ventana. Tu cuerpo empieza a usar glucosa almacenada.',
+          ),
+          _TimelineData(
+            hour: 'Hora 8',
+            icon: '🔥',
+            text: 'La insulina baja. El cuerpo cambia de glucosa a grasa como combustible.',
+            citation: '· Cahill, 1966 — NEJM',
+          ),
+          _TimelineData(
+            hour: 'Hora 12',
+            icon: '⚡',
+            text: 'Quema de grasa activa. Tu energía viene de tus reservas.',
+          ),
+          _TimelineData(
+            hour: 'Hora 16',
+            icon: '🧬',
+            text: 'Autofagia: limpieza celular profunda.',
+            citation: '· Levine, 2017 — Nobel de Medicina',
+          ),
+        ];
+    }
   }
 }
 
-/// SPEC-182 §RF-182-05 (2026-06-05): pantalla 5 — Notificaciones con
-/// respaldo. Muestra 3 ejemplos reales y solicita permisos en momento
-/// educativo (no en cold start ciego como hacía SPEC-172 original).
+// ── PASO 104 — Notificaciones + Prueba social ────────────────────────
+// Principios: Prueba social + Reciprocidad
+// El dato 78/31% es estimado conservador (beta). Se reemplaza con datos
+// reales de Firestore cuando el volumen lo permita.
+
 class IntroNotificationsStep extends StatelessWidget {
   final bool isDark;
   final VoidCallback onActivate;
@@ -157,8 +471,7 @@ class IntroNotificationsStep extends StatelessWidget {
         ),
         const SizedBox(height: 28),
         Text(
-          'Te vamos a mandar mensajes con respaldo, no recordatorios '
-          'vacíos',
+          'Las personas que activan las notificaciones\ncompletan el doble de días',
           textAlign: TextAlign.center,
           style: TextStyle(
             color: textPrimary,
@@ -168,46 +481,34 @@ class IntroNotificationsStep extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 20),
-        Padding(
-          padding: const EdgeInsets.only(bottom: 22),
-          child: Text(
-            'Cada notificación que recibas trae cita bibliográfica. '
-            'Así se ven algunas:',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: textSecondary,
-              fontSize: 15,
-              height: 1.55,
-            ),
+        // Tarjeta de prueba social
+        _SocialProofCard(isDark: isDark),
+        const SizedBox(height: 20),
+        Text(
+          'Así se ven algunas notificaciones:',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: textSecondary,
+            fontSize: 14,
+            height: 1.4,
           ),
         ),
+        const SizedBox(height: 12),
         _ExamplePill(
           icon: Icons.auto_awesome_outlined,
-          headline: '16 horas — Limpieza profunda',
-          body:
-              'Tu cuerpo empezó una limpieza profunda gracias a lo que '
-              'estás haciendo hoy.',
-          citation: '· Levine 2017',
+          headline: 'Llevas 12 horas — cambio de combustible',
+          body: 'Tu cuerpo acaba de pasar de glucosa a grasa como '
+              'fuente de energía.',
+          citation: '· Cahill, 1966',
           isDark: isDark,
         ),
         const SizedBox(height: 10),
         _ExamplePill(
           icon: Icons.nights_stay_outlined,
-          headline: '3 horas antes de dormir',
-          body:
-              'Si cierras la ventana ahora, tu descanso te lo va a '
-              'agradecer.',
-          citation: '· Sutton 2018',
-          isDark: isDark,
-        ),
-        const SizedBox(height: 10),
-        _ExamplePill(
-          icon: Icons.water_drop_outlined,
-          headline: 'Cortisol peak: hora ideal',
-          body:
-              'Hidratar durante el pico de cortisol mejora claridad '
-              'mental.',
-          citation: '· Adan 2012',
+          headline: 'Tu ventana se cierra en 1 hora',
+          body: 'Cenar después impacta tu sueño y tu score de mañana. '
+              'Tu cuerpo agradece el cierre temprano.',
+          citation: '· Spiegel, 2009 — JCEM',
           isDark: isDark,
         ),
         const SizedBox(height: 28),
@@ -224,7 +525,7 @@ class IntroNotificationsStep extends StatelessWidget {
               ),
             ),
             child: const Text(
-              'Activar coaching por notificaciones',
+              'Activar notificaciones',
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
@@ -237,7 +538,7 @@ class IntroNotificationsStep extends StatelessWidget {
           child: TextButton(
             onPressed: onSkip,
             child: Text(
-              'Más tarde',
+              'Ahora no',
               style: TextStyle(
                 color: textSecondary,
                 fontSize: 14,
@@ -251,6 +552,370 @@ class IntroNotificationsStep extends StatelessWidget {
   }
 }
 
+// ═══════════════════════════════════════════════════════════════════════
+// Widgets de apoyo
+// ═══════════════════════════════════════════════════════════════════════
+
+/// Pill de cita bibliográfica. Usado en IntroWelcomeStep.
+class _CitationPill extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  final bool isDark;
+
+  const _CitationPill({
+    required this.icon,
+    required this.text,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = AppColors.metabolicGreen;
+    final textSecondary =
+        isDark ? AppColors.textSecondary : const Color(0xFF475569);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: isDark
+            ? AppColors.bgSurface
+            : Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: accent.withValues(alpha: 0.35),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: accent, size: 18),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                color: textSecondary,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Tarjeta de protocolo seleccionable. Usada en IntroProtocolStep.
+class _ProtocolCard extends StatelessWidget {
+  final String id;
+  final String title;
+  final String subtitle;
+  final String description;
+  final bool isSelected;
+  final bool recommended;
+  final VoidCallback onTap;
+  final bool isDark;
+
+  const _ProtocolCard({
+    required this.id,
+    required this.title,
+    required this.subtitle,
+    required this.description,
+    required this.isSelected,
+    required this.onTap,
+    required this.isDark,
+    this.recommended = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = AppColors.metabolicGreen;
+    final textPrimary =
+        isDark ? AppColors.textPrimary : const Color(0xFF1E293B);
+    final textSecondary =
+        isDark ? AppColors.textSecondary : const Color(0xFF475569);
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      decoration: BoxDecoration(
+        color: isSelected
+            ? accent.withValues(alpha: isDark ? 0.12 : 0.08)
+            : (isDark ? AppColors.bgSurface : Colors.white),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isSelected ? accent : (isDark ? AppColors.borderDefault : const Color(0xFFE2E8F0)),
+          width: isSelected ? 2.0 : 1.0,
+        ),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          title,
+                          style: TextStyle(
+                            color: textPrimary,
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        if (recommended) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: accent.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              'Popular',
+                              style: TextStyle(
+                                color: accent,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        color: textSecondary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      description,
+                      style: TextStyle(
+                        color: textSecondary,
+                        fontSize: 13,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                child: isSelected
+                    ? Icon(Icons.check_circle_rounded,
+                        key: const ValueKey('checked'),
+                        color: accent,
+                        size: 26)
+                    : Icon(Icons.radio_button_unchecked,
+                        key: const ValueKey('unchecked'),
+                        color: textSecondary.withValues(alpha: 0.4),
+                        size: 26),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Fila de timeline. Usada en IntroInsightStep.
+class _TimelineRow extends StatelessWidget {
+  final String hour;
+  final String icon;
+  final String text;
+  final String? citation;
+  final bool isDark;
+  final bool isLast;
+
+  const _TimelineRow({
+    required this.hour,
+    required this.icon,
+    required this.text,
+    required this.isDark,
+    this.citation,
+    this.isLast = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = AppColors.metabolicGreen;
+    final textPrimary =
+        isDark ? AppColors.textPrimary : const Color(0xFF1E293B);
+    final textSecondary =
+        isDark ? AppColors.textSecondary : const Color(0xFF475569);
+
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Columna izquierda: línea vertical + hora
+          SizedBox(
+            width: 56,
+            child: Column(
+              children: [
+                Text(
+                  hour,
+                  style: TextStyle(
+                    color: accent,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                if (!isLast)
+                  Expanded(
+                    child: Container(
+                      width: 1,
+                      margin: const EdgeInsets.only(top: 4),
+                      color: accent.withValues(alpha: 0.25),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          // Icono
+          Padding(
+            padding: const EdgeInsets.only(top: 1),
+            child: Text(icon, style: const TextStyle(fontSize: 18)),
+          ),
+          const SizedBox(width: 10),
+          // Texto + cita
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(bottom: isLast ? 0 : 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    text,
+                    style: TextStyle(
+                      color: textPrimary,
+                      fontSize: 13,
+                      height: 1.4,
+                    ),
+                  ),
+                  if (citation != null) ...[
+                    const SizedBox(height: 3),
+                    Text(
+                      citation!,
+                      style: TextStyle(
+                        color: textSecondary.withValues(alpha: 0.7),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Tarjeta de prueba social 78/31%. Usada en IntroNotificationsStep.
+/// Datos: estimado conservador (beta). Reemplazar con datos reales de
+/// Firestore cuando el volumen lo permita.
+class _SocialProofCard extends StatelessWidget {
+  final bool isDark;
+  const _SocialProofCard({required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = AppColors.metabolicGreen;
+    final textPrimary =
+        isDark ? AppColors.textPrimary : const Color(0xFF1E293B);
+    final textSecondary =
+        isDark ? AppColors.textSecondary : const Color(0xFF475569);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.bgSurface : Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: accent.withValues(alpha: 0.3),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _StatColumn(
+            value: '78%',
+            label: 'Con\nnotificaciones',
+            valueColor: accent,
+            labelColor: textSecondary,
+          ),
+          Container(width: 1, height: 48, color: textSecondary.withValues(alpha: 0.2)),
+          _StatColumn(
+            value: '31%',
+            label: 'Sin\nnotificaciones',
+            valueColor: textPrimary,
+            labelColor: textSecondary,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatColumn extends StatelessWidget {
+  final String value;
+  final String label;
+  final Color valueColor;
+  final Color labelColor;
+
+  const _StatColumn({
+    required this.value,
+    required this.label,
+    required this.valueColor,
+    required this.labelColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            color: valueColor,
+            fontSize: 28,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: labelColor,
+            fontSize: 12,
+            height: 1.35,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Pill de notificación de ejemplo. Usada en IntroNotificationsStep.
 class _ExamplePill extends StatelessWidget {
   const _ExamplePill({
     required this.icon,
@@ -277,9 +942,7 @@ class _ExamplePill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       decoration: BoxDecoration(
-        color: isDark
-            ? AppColors.bgSurface
-            : Colors.white,
+        color: isDark ? AppColors.bgSurface : Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isDark ? AppColors.borderDefault : const Color(0xFFE2E8F0),
@@ -330,67 +993,17 @@ class _ExamplePill extends StatelessWidget {
   }
 }
 
-// ── Layout interno común a las 3 pantallas ──────────────────────────
+/// Modelo de datos para una fila del timeline del insight.
+class _TimelineData {
+  final String hour;
+  final String icon;
+  final String text;
+  final String? citation;
 
-class _IntroLayout extends StatelessWidget {
-  final bool isDark;
-  final IconData icon;
-  final String title;
-  final List<String> bodyParagraphs;
-
-  const _IntroLayout({
-    required this.isDark,
+  const _TimelineData({
+    required this.hour,
     required this.icon,
-    required this.title,
-    required this.bodyParagraphs,
+    required this.text,
+    this.citation,
   });
-
-  @override
-  Widget build(BuildContext context) {
-    final accent = AppColors.metabolicGreen;
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
-      children: [
-        Center(
-          child: Container(
-            width: 96,
-            height: 96,
-            decoration: BoxDecoration(
-              color: accent.withValues(alpha: 0.14),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: accent, size: 48),
-          ),
-        ),
-        const SizedBox(height: 28),
-        Text(
-          title,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color:
-                isDark ? AppColors.textPrimary : const Color(0xFF1E293B),
-            fontSize: 22,
-            fontWeight: FontWeight.w700,
-            height: 1.25,
-          ),
-        ),
-        const SizedBox(height: 20),
-        for (final paragraph in bodyParagraphs)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 14),
-            child: Text(
-              paragraph,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: isDark
-                    ? AppColors.textSecondary
-                    : const Color(0xFF475569),
-                fontSize: 15,
-                height: 1.55,
-              ),
-            ),
-          ),
-      ],
-    );
-  }
 }

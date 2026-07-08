@@ -77,15 +77,20 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   //   102 = Por qué pedimos estos datos
   List<int> _activeSteps = const [0, 1, 2, 3];
 
-  // SPEC-182 (2026-06-05): se agregan 103 (Día Metabólico) al bloque
-  // intro y 104 (Notificaciones con respaldo) como paso post-hábitos.
-  static const int _kIntroMetabolicDayId = 103;
+  // SPEC-247 (2026-07-07): flujo intro rediseñado con principios de influencia
+  // anclados a identidad ElenaApp. 4 pantallas vs 5 anteriores.
+  //   100 — Identidad (Unidad + Autoridad)
+  //   105 — Protocolo (Compromiso y coherencia) ← NUEVA
+  //   101 — Insight personalizado (Reciprocidad) ← sustituye "Tus dos números"
+  //   104 — Notificaciones + Prueba social (después de Hábitos, sin cambio de posición)
+  // Eliminados: 102 ("Tus datos son tuyos") → privacidad en header Biometría.
+  //             103 ("Día Metabólico") → coaching card post-Day-1 (SPEC-249).
+  static const int _kIntroProtocolStepId = 105;
   static const int _kIntroNotificationsId = 104;
   static const List<int> _kIntroStepIds = [
     100,
+    _kIntroProtocolStepId,
     101,
-    102,
-    _kIntroMetabolicDayId,
   ];
 
   // SPEC-132 Bloque E: id del paso "Conectar Apple Health / Health
@@ -436,24 +441,30 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final state = ref.watch(onboardingControllerProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // SPEC-84 + SPEC-131: PageView solo con los pasos activos. Los
-    // educativos (100-102) preceden a los tradicionales (0-3) cuando
-    // el usuario es cero-contexto.
+    // SPEC-247: PageView solo con los pasos activos. Los educativos
+    // (100, 105, 101) preceden a los tradicionales (0-3) para cold install.
     final pages = _activeSteps.map((index) {
       switch (index) {
         case 100:
+          // Identidad: Unidad + Autoridad. Citation pills con NEJM/Levine/AASM.
           return IntroWelcomeStep(isDark: isDark);
+        case _kIntroProtocolStepId: // 105
+          // Compromiso y coherencia: el usuario elige su protocolo clínico.
+          // El callback actualiza _fastingProtocol para pre-poblar paso 3.
+          return IntroProtocolStep(
+            isDark: isDark,
+            selectedProtocol: _fastingProtocol,
+            onProtocolSelected: (p) => setState(() => _fastingProtocol = p),
+          );
         case 101:
-          return IntroImrStep(isDark: isDark);
-        case 102:
-          return IntroDataStep(isDark: isDark);
-        case 103:
-          // SPEC-182 §RF-182-04: Día Metabólico.
-          return IntroMetabolicDayStep(isDark: isDark);
+          // Reciprocidad: insight científico personalizado al protocolo elegido.
+          return IntroInsightStep(
+            isDark: isDark,
+            protocol: _fastingProtocol,
+          );
         case 104:
-          // SPEC-182 §RF-182-05: Notificaciones con respaldo. Dos CTAs
-          // — activar dispara requestPermissions, "más tarde" avanza
-          // sin pedirlos.
+          // SPEC-247: Notificaciones con prueba social 78/31%. Dos CTAs
+          // — activar dispara requestPermissions, "ahora no" avanza.
           return IntroNotificationsStep(
             isDark: isDark,
             onActivate: _activateNotifications,
@@ -671,7 +682,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           _header("Hardware Base", "Identidad y Antropometría", isDark),
           _stepHelperLine(
             'Estas medidas nos sirven para estimar tu composición '
-            'corporal sin pedirte que adivines tu % de grasa.',
+            'corporal sin pedirte que adivines tu % de grasa. '
+            'Quedan en tu cuenta privada — no se comparten.',
             isDark,
           ),
           _simpleSelector(

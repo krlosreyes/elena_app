@@ -1,8 +1,14 @@
-// SPEC-182 §RF-182-08 (2026-06-05): widget tests de las pantallas
-// re-tonadas + las 2 nuevas (Día Metabólico y Notificaciones).
+// SPEC-247 (2026-07-07): widget tests para las pantallas de onboarding
+// rediseñadas con principios Cialdini anclados a identidad ElenaApp.
 //
-// Validan que el copy nuevo se renderiza y que los CTAs del paso 104
-// disparan los callbacks correctos.
+// Cubre:
+//   100 — IntroWelcomeStep    (Identidad: Unidad + Autoridad)
+//   105 — IntroProtocolStep   (Compromiso y coherencia)
+//   101 — IntroInsightStep    (Reciprocidad — adaptado por protocolo)
+//   104 — IntroNotificationsStep (Prueba social + callbacks)
+//
+// Los tests de clases eliminadas (IntroImrStep, IntroDataStep,
+// IntroMetabolicDayStep) fueron removidos en este SPEC.
 
 import 'package:elena_app/src/features/onboarding/presentation/widgets/intro_screens.dart';
 import 'package:flutter/material.dart';
@@ -15,59 +21,174 @@ Widget _wrap(Widget child) => MaterialApp(
       ),
     );
 
+// Viewport extendido para ListView con botones en el fondo.
+void _bigViewport(WidgetTester tester) {
+  tester.view.physicalSize = const Size(1080, 2600);
+  tester.view.devicePixelRatio = 1.0;
+}
+
 void main() {
-  group('SPEC-182 — IntroWelcomeStep', () {
-    testWidgets('renderea el headline coach-not-tracker', (tester) async {
-      await tester.pumpWidget(
-        _wrap(const IntroWelcomeStep(isDark: true)),
+  // ── Paso 100: Identidad ─────────────────────────────────────────────
+  group('SPEC-247 — IntroWelcomeStep (Identidad)', () {
+    testWidgets('renderea headline de identidad metabólica', (tester) async {
+      await tester.pumpWidget(_wrap(const IntroWelcomeStep(isDark: true)));
+      expect(
+        find.textContaining('La mayoría sigue dietas'),
+        findsOneWidget,
       );
-      expect(find.text('Te acompañamos a leer tu cuerpo'), findsOneWidget);
-      expect(find.textContaining('No es un cuaderno digital'),
-          findsOneWidget);
+      expect(
+        find.textContaining('entender tu metabolismo'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('renderea al menos una citation pill con NEJM', (tester) async {
+      await tester.pumpWidget(_wrap(const IntroWelcomeStep(isDark: true)));
+      expect(find.textContaining('NEJM'), findsWidgets);
+    });
+
+    testWidgets('renderea citation pill de Levine 2017', (tester) async {
+      await tester.pumpWidget(_wrap(const IntroWelcomeStep(isDark: true)));
+      expect(find.textContaining('Levine 2017'), findsWidgets);
+    });
+
+    testWidgets('renderea sin voseo', (tester) async {
+      await tester.pumpWidget(_wrap(const IntroWelcomeStep(isDark: true)));
+      // Asegura que el copy no contiene argentinismos.
+      expect(find.textContaining('empezás'), findsNothing);
+      expect(find.textContaining('cumplís'), findsNothing);
+      expect(find.textContaining('tenés'), findsNothing);
     });
   });
 
-  group('SPEC-182 — IntroImrStep (Dos números)', () {
-    testWidgets('renderea HOY + IMR con texto explicativo', (tester) async {
+  // ── Paso 105: Protocolo ─────────────────────────────────────────────
+  group('SPEC-247 — IntroProtocolStep (Compromiso)', () {
+    testWidgets('renderea los 3 protocolos', (tester) async {
       await tester.pumpWidget(
-        _wrap(const IntroImrStep(isDark: true)),
+        _wrap(IntroProtocolStep(
+          isDark: true,
+          selectedProtocol: '16:8',
+          onProtocolSelected: (_) {},
+        )),
       );
-      expect(find.text('Tus dos números'), findsOneWidget);
-      expect(find.textContaining('HOY es cómo viviste hoy'),
-          findsOneWidget);
-      expect(find.textContaining('IMR es tu base metabólica'),
-          findsOneWidget);
+      expect(find.textContaining('14/10'), findsWidgets);
+      expect(find.textContaining('16/8'), findsWidgets);
+      expect(find.textContaining('18/6'), findsWidgets);
     });
-  });
 
-  group('SPEC-182 — IntroDataStep', () {
-    testWidgets('renderea privacidad con tono nuevo', (tester) async {
+    testWidgets('16:8 tiene badge Popular', (tester) async {
       await tester.pumpWidget(
-        _wrap(const IntroDataStep(isDark: true)),
+        _wrap(IntroProtocolStep(
+          isDark: true,
+          selectedProtocol: '16:8',
+          onProtocolSelected: (_) {},
+        )),
       );
-      expect(find.text('Tus datos son tuyos'), findsOneWidget);
-      expect(find.textContaining('No vendemos ni compartimos'),
-          findsOneWidget);
+      expect(find.text('Popular'), findsOneWidget);
     });
-  });
 
-  group('SPEC-182 §RF-182-04 — IntroMetabolicDayStep', () {
-    testWidgets('renderea headline + body del Día Metabólico',
+    testWidgets('tap en 14:8 dispara onProtocolSelected con "14:8"',
         (tester) async {
+      String? selected;
       await tester.pumpWidget(
-        _wrap(const IntroMetabolicDayStep(isDark: true)),
+        _wrap(IntroProtocolStep(
+          isDark: true,
+          selectedProtocol: '16:8',
+          onProtocolSelected: (p) => selected = p,
+        )),
       );
-      expect(find.text('El día empieza cuando empezás a ayunar'),
-          findsOneWidget);
-      expect(find.textContaining('no se cierra a medianoche'),
-          findsOneWidget);
-      expect(find.textContaining('feedback del día con cita'),
-          findsOneWidget);
+      // Tap en la tarjeta del 14/10.
+      await tester.tap(find.textContaining('14/10').first);
+      await tester.pump();
+      expect(selected, equals('14:8'));
+    });
+
+    testWidgets('tap en 18:6 dispara onProtocolSelected con "18:6"',
+        (tester) async {
+      String? selected;
+      await tester.pumpWidget(
+        _wrap(IntroProtocolStep(
+          isDark: true,
+          selectedProtocol: '16:8',
+          onProtocolSelected: (p) => selected = p,
+        )),
+      );
+      await tester.tap(find.textContaining('18/6').first);
+      await tester.pump();
+      expect(selected, equals('18:6'));
+    });
+
+    testWidgets('nota de cambio en perfil visible', (tester) async {
+      await tester.pumpWidget(
+        _wrap(IntroProtocolStep(
+          isDark: true,
+          selectedProtocol: '16:8',
+          onProtocolSelected: (_) {},
+        )),
+      );
+      expect(
+        find.textContaining('Puedes cambiar de protocolo'),
+        findsOneWidget,
+      );
     });
   });
 
-  group('SPEC-182 §RF-182-05 — IntroNotificationsStep', () {
-    testWidgets('renderea 3 ejemplos con cita', (tester) async {
+  // ── Paso 101: Insight personalizado ────────────────────────────────
+  group('SPEC-247 — IntroInsightStep (Reciprocidad)', () {
+    testWidgets('protocolo 16:8 muestra timeline de 16 horas', (tester) async {
+      _bigViewport(tester);
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        _wrap(const IntroInsightStep(isDark: true, protocol: '16:8')),
+      );
+      expect(find.textContaining('16 horas'), findsWidgets);
+      expect(find.textContaining('Cahill'), findsWidgets);
+      expect(find.textContaining('Levine'), findsWidgets);
+    });
+
+    testWidgets('protocolo 14:8 muestra timeline de 14 horas', (tester) async {
+      _bigViewport(tester);
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        _wrap(const IntroInsightStep(isDark: true, protocol: '14:8')),
+      );
+      expect(find.textContaining('14 horas'), findsWidgets);
+      expect(find.textContaining('Cahill'), findsWidgets);
+    });
+
+    testWidgets('protocolo 18:6 menciona autofagia y Levine', (tester) async {
+      _bigViewport(tester);
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        _wrap(const IntroInsightStep(isDark: true, protocol: '18:6')),
+      );
+      expect(find.textContaining('18'), findsWidgets);
+      expect(find.textContaining('Levine'), findsWidgets);
+    });
+
+    testWidgets('default (sin protocolo) usa 16:8', (tester) async {
+      _bigViewport(tester);
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        _wrap(const IntroInsightStep(isDark: true)),
+      );
+      expect(find.textContaining('16 horas'), findsWidgets);
+    });
+
+    testWidgets('renderea sin voseo', (tester) async {
+      await tester.pumpWidget(
+        _wrap(const IntroInsightStep(isDark: true, protocol: '16:8')),
+      );
+      expect(find.textContaining('empezás'), findsNothing);
+      expect(find.textContaining('cumplís'), findsNothing);
+    });
+  });
+
+  // ── Paso 104: Notificaciones + Prueba social ─────────────────────
+  group('SPEC-247 — IntroNotificationsStep (Prueba social)', () {
+    testWidgets('renderea dato 78% visible', (tester) async {
+      _bigViewport(tester);
+      addTearDown(tester.view.reset);
       await tester.pumpWidget(
         _wrap(IntroNotificationsStep(
           isDark: true,
@@ -75,21 +196,27 @@ void main() {
           onSkip: () {},
         )),
       );
-      expect(find.text('16 horas — Limpieza profunda'), findsOneWidget);
-      expect(find.text('3 horas antes de dormir'), findsOneWidget);
-      expect(find.text('Cortisol peak: hora ideal'), findsOneWidget);
-      // Citas en el formato "· Autor Año".
-      expect(find.text('· Levine 2017'), findsOneWidget);
-      expect(find.text('· Sutton 2018'), findsOneWidget);
-      expect(find.text('· Adan 2012'), findsOneWidget);
+      expect(find.text('78%'), findsOneWidget);
+      expect(find.text('31%'), findsOneWidget);
     });
 
-    testWidgets('tap "Activar coaching" dispara onActivate', (tester) async {
-      // El paso es scrollable (ListView): con el viewport chico de test los
-      // botones del fondo no se construyen. Agrandamos el viewport para que
-      // se rendericen y sean tappables (triage 2026-06-07).
-      tester.view.physicalSize = const Size(1080, 2600);
-      tester.view.devicePixelRatio = 1.0;
+    testWidgets('renderea 2 ejemplos con cita', (tester) async {
+      _bigViewport(tester);
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        _wrap(IntroNotificationsStep(
+          isDark: true,
+          onActivate: () {},
+          onSkip: () {},
+        )),
+      );
+      expect(find.textContaining('Cahill'), findsWidgets);
+      expect(find.textContaining('Spiegel'), findsWidgets);
+    });
+
+    testWidgets('tap "Activar notificaciones" dispara onActivate',
+        (tester) async {
+      _bigViewport(tester);
       addTearDown(tester.view.reset);
       var activated = false;
       await tester.pumpWidget(
@@ -99,14 +226,13 @@ void main() {
           onSkip: () {},
         )),
       );
-      await tester.tap(find.text('Activar coaching por notificaciones'));
+      await tester.tap(find.text('Activar notificaciones'));
       await tester.pump();
       expect(activated, isTrue);
     });
 
-    testWidgets('tap "Más tarde" dispara onSkip', (tester) async {
-      tester.view.physicalSize = const Size(1080, 2600);
-      tester.view.devicePixelRatio = 1.0;
+    testWidgets('tap "Ahora no" dispara onSkip', (tester) async {
+      _bigViewport(tester);
       addTearDown(tester.view.reset);
       var skipped = false;
       await tester.pumpWidget(
@@ -116,7 +242,7 @@ void main() {
           onSkip: () => skipped = true,
         )),
       );
-      await tester.tap(find.text('Más tarde'));
+      await tester.tap(find.text('Ahora no'));
       await tester.pump();
       expect(skipped, isTrue);
     });
