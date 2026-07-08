@@ -130,6 +130,31 @@ normal de "Registrar", y también editar una comida existente — verificar
 que ninguna comida previa desaparece del historial ni del contador, con y
 sin restart de la app.
 
+## 6.1 Fix de regresión (mismo día, commit `01a5faf`)
+
+Carlos corrió los checks tras el commit `d59bdcd` y reportó 9 tests
+fallando (`flutter test test/features/nutrition`), cuando lo esperado
+eran las 5 fallas preexistentes documentadas en §6. Causa: el logging de
+diagnóstico en `_subscribeFor` hacía `l.id.substring(0, 8)` sin chequear
+longitud — los tests viejos usan ids cortos (`'log-1'`, `'log-2'`, etc.),
+y Dart lanza `RangeError` si `substring(0, 8)` se llama sobre un string de
+menos de 8 caracteres. Esto rompió 4 tests preexistentes que no tenían
+relación con SPEC-253 (`Cuando el repo emite logs, el state los refleja`,
+`nutritionScore se recalcula cuando llegan logs`, `windowAdherence baja
+cuando hay logs fuera de ventana`, `resetDaily limpia el cache local sin
+tocar el repo`).
+
+Fix: helper `_shortId(String id) => id.length > 8 ? id.substring(0, 8) :
+id`, usado en el log de diagnóstico. Las 5 fallas restantes son las
+preexistentes de siempre (infra de test, Firebase `[core/no-app]`) — no
+relacionadas con este cambio ni con SPEC-253.
+
+**Lección**: código nuevo que solo se ejecuta en el camino de éxito de un
+snapshot (no cubierto por los primeros tests escritos para SPEC-253,
+que usaban ids largos tipo `uuid`) puede romper tests preexistentes con
+fixtures de datos distintos. Verificar con la suite completa, no solo con
+los tests nuevos, antes de reportar "listo".
+
 ## 7. Seguimiento
 
 Si el bug persistiera incluso con esta guardia (lo cual indicaría que la
