@@ -1,7 +1,7 @@
 # SPEC-250 — Timeout guard en eliminar cuenta + silenciar not-found esperado en IMR persistence
 
-**Estado:** IMPLEMENTED
-**Versión:** 1.0
+**Estado:** IMPLEMENTED (inc1 + inc2)
+**Versión:** 1.1
 **Fecha:** 2026-07-08
 **Tipo:** Bugfix
 **Rama:** mvp-core-clean
@@ -110,7 +110,8 @@ Notas de diseño:
 - [x] Cualquier otro código de error en `updateCurrentImr` sigue logueándose como `warning` (sin regresión de visibilidad).
 - [x] `flutter analyze` sin warnings nuevos. Verificado por Carlos 2026-07-08: 67 issues preexistentes (ninguno en los 2 archivos tocados por este SPEC ni en el test nuevo).
 - [x] `flutter test` sin regresiones, con test nuevo cubriendo el timeout de `deleteAccount()`. Verificado 2026-07-08: 1639 passing / 3 skipped / 40 failing — los 40 son preexistentes en archivos no relacionados (`watch_action_handler`, `feature_gate_test` parámetro `isInTrial`, `AnalysisRange.d30/all`, `SuggestionType.simplify`, timeouts de `paywall_screen_test`, tests de `fasting_interval` con fake_cloud_firestore, etc.). `profile_controller_delete_account_test.dart` (3 tests nuevos) no aparece en la lista de fallos.
-- [ ] Validación manual en simulador de Xcode: reproducir el escenario original (o forzar el timeout con `timeout: Duration(seconds: 1)` puntualmente) y confirmar que el spinner se libera. Pendiente — requiere reproducir el borrado de cuenta real en device.
+- [x] Validación manual en simulador de Xcode (inc1): reproducida por Carlos 2026-07-08 — reveló el bug de inc2 (spinner infinito en `ProfileScreen`, ver §7.1).
+- [ ] Validación manual en simulador de Xcode (inc2): reintentar "ELIMINAR CUENTA" tras este fix y confirmar que, si se dispara el timeout, la app redirige a `/login` en vez de quedar con el body de Perfil en spinner infinito. Pendiente.
 
 **Nota de cobertura:** Fix B (silenciar `not-found`) no tiene test automatizado dedicado — requeriría simular el `Timer` de debounce de 15s de `imrPersistenceProvider` (`fakeAsync`, no presente hoy como dependencia del proyecto) para llegar al `catchError`. Es un cambio de severidad de log, no de comportamiento funcional; se verifica por lectura de código + `flutter analyze`. Mismo criterio que SPEC-83 aplicó para su Bug C (bug de integración Firebase, verificación manual en vez de mock).
 
@@ -122,6 +123,49 @@ Agregar `.timeout()` individual a cada una de las ~18 llamadas dentro de `fireba
 - El límite global de 25s ya resuelve el síntoma reportado (UI trabada) sin necesitar saber cuál paso falló — la Cloud Function limpia el resto igual.
 - Queda como mejora futura si este timeout global resulta insuficiente en device real (out of scope de este SPEC).
 
+## 7.1. inc2 — spinner infinito en ProfileScreen tras el timeout (2026-07-08)
+
+Validación manual en simulador de Xcode (Carlos reintentó "ELIMINAR CUENTA" tras el inc1): la pantalla Perfil quedó con un spinner de página completa, sin AppBar de acciones ni contenido — screenshot confirmado.
+
+**Causa raíz.** `ProfileScreen.build` (`profile_screen.dart:86-95`) renderiza:
+
+```dart
+body: userAsync.when(
+  loading: () => const Center(child: CircularProgressIndicator()),
+  error: (e, _) => Center(child: Text('Error: $e')),
+  data: (user) {
+    if (user == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    return _ProfileBody(user: user);
+  },
+),
+```
+
+`userAsync` es `currentUserStreamProvider` (`shared/providers/user_provider.dart`), que emite `null` en tres casos: sin cuenta, perfil incompleto, o — el relevante aquí — el stream `watchProfile(uid)` (listener vivo de Firestore) emite `null` porque el doc ya no existe.
+
+El paso 2 de `FirebaseAuthRepository.deleteAccount` (SPEC-248b) borra `users/{uid}` temprano y rápido. `currentUserStreamProvider` reacciona a eso **al instante** vía su listener de Firestore. Pero `authStateProvider` — de donde `ProfileScreen` obtendría la señal para dejar de existir vía el router — es un stream de `FirebaseAuth.authStateChanges()` que NO se re-evalúa por cambios en Firestore; solo se refresca cuando `ref.invalidate(authStateProvider)` se llama explícitamente, algo que en el código (antes de inc2) solo pasaba en el camino exitoso de `deleteAccount()`, DESPUÉS de que los ~18 pasos completos resuelven.
+
+Si el paso lento es justo el último (`user.delete()` de Firebase Auth, paso 4) — el caso más probable dado que es la única llamada de un SDK distinto (`firebase_auth`, no `cloud_firestore`) en toda la cadena — entonces: el doc ya está borrado (`user == null` para siempre), pero `authStateProvider` sigue reportando la cuenta como completa indefinidamente. El fix del timeout (Fix A, inc1) libera `isSaving` a los 25s, pero eso solo desbloquea el spinner del **botón**; el spinner del **body** de `ProfileScreen` es independiente y no tenía ninguna salida.
+
+**Fix.** En el bloque `on TimeoutException` de `ProfileController.deleteAccount()`, además de liberar `isSaving`, se agrega:
+
+```dart
+try {
+  await ref.read(authRepositoryProvider).signOut();
+} catch (_) {
+  // Best-effort.
+}
+ref.invalidate(authStateProvider);
+```
+
+`signOut()` termina la sesión local de Firebase Auth (no intenta borrar nada de nuevo). Esto hace que `authStateChanges()` emita `null`, el router redirige a `/login`, y `ProfileScreen` se desmonta — cerrando el spinner infinito. Es seguro porque:
+
+- Si el paso 4 (Auth) sí completó en background mientras esperábamos, este `signOut()` es redundante e inofensivo.
+- Si no completó, la cuenta de Auth queda residual sin doc de Firestore — mismo riesgo que SPEC-83 ya documentó y aceptó para el caso `requires-recent-login`, cubierto por la Cloud Function `onUserDeleted` (SPEC-207/248) si el borrado de Auth eventualmente se completa en background.
+
+Test agregado: `profile_controller_delete_account_test.dart` — nuevo caso verifica que `signOutCalled` sea `true` tras el timeout.
+
 ## 8. Riesgos
 
 - Si el timeout de 25s se dispara pero el borrado eventualmente completa en background, el usuario podría ver "tardó mucho, reintenta" y luego, al reintentar, encontrarse ya sin cuenta (Auth ya borrado) — el segundo intento fallaría con `user-not-found` o similar. Es un estado transitorio aceptable dado que ya era el comportamiento best-effort preexistente; no lo introduce este fix.
@@ -129,4 +173,6 @@ Agregar `.timeout()` individual a cada una de las ~18 llamadas dentro de `fireba
 
 ## 9. Resultado
 
-Implementado, commiteado (`33c6cf2`) y pusheado a `origin/mvp-core-clean` 2026-07-08. `flutter analyze` y `flutter test` corridos por Carlos: sin regresiones atribuibles a este SPEC. Pendiente únicamente la validación manual en simulador de Xcode del escenario original (borrar cuenta, confirmar que el spinner ya no se traba).
+inc1 implementado, commiteado (`33c6cf2`, `86f2bf0`) y pusheado a `origin/mvp-core-clean` 2026-07-08. `flutter analyze` y `flutter test` corridos por Carlos: sin regresiones atribuibles a este SPEC.
+
+inc2 (signOut + invalidate en el timeout, fix del spinner infinito de `ProfileScreen`) implementado 2026-07-08 tras validación manual de Carlos que reveló el gap. Pendiente: commit+push de inc2 y re-validación en device.

@@ -201,6 +201,40 @@ class ProfileController extends StateNotifier<ProfileEditState> {
       // 'requires-recent-login': Exception con mensaje en español.
       const message = 'La eliminación está tardando más de lo esperado. '
           'Verifica tu conexión e intenta de nuevo.';
+
+      // SPEC-250 inc2 (repro Carlos, simulador Xcode, 2026-07-08): el
+      // timeout solo liberaba `isSaving` (el spinner del botón), pero
+      // dejaba `ProfileScreen` colgado en OTRO spinner infinito e
+      // independiente. Causa: `currentUserStreamProvider` deja de
+      // emitir el usuario en cuanto `users/{uid}` se borra (paso 2 de
+      // SPEC-248b, que corre temprano y rápido), pero `authStateProvider`
+      // sigue reportando la sesión como completa porque nadie lo
+      // invalida hasta que el `deleteAccount()` completo resuelve — y
+      // si el paso lento es justo `user.delete()` (paso 4, Auth), esa
+      // invalidación nunca llega. Resultado: `ProfileScreen.build`
+      // (línea ~90) queda con `user == null` para siempre → spinner sin
+      // salida.
+      //
+      // Si llegamos a este timeout, es muy probable que el doc ya esté
+      // borrado (25s alcanza de sobra para los pasos 1-3, que son
+      // rápidos) aunque la sesión de Auth siga viva. Forzamos un
+      // signOut() LOCAL (no vuelve a intentar borrar nada, solo cierra
+      // la sesión en el dispositivo) e invalidamos authStateProvider
+      // para que el router mande a /login y ProfileScreen se desmonte.
+      // Si el paso 4 (Auth) sí llegó a completarse en background, este
+      // signOut() es un no-op adicional inofensivo. Si no completó, la
+      // cuenta de Auth queda residual sin doc de Firestore — mismo
+      // riesgo aceptado ya documentado en SPEC-83 para
+      // 'requires-recent-login', cubierto por la Cloud Function
+      // onUserDeleted (SPEC-207/248) si el borrado de Auth eventualmente
+      // se completa.
+      try {
+        await ref.read(authRepositoryProvider).signOut();
+      } catch (_) {
+        // Best-effort — no bloqueamos la salida del usuario por esto.
+      }
+      ref.invalidate(authStateProvider);
+
       state = state.copyWith(isSaving: false, errorMessage: message);
       throw Exception(message);
     } catch (e) {

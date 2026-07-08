@@ -53,6 +53,28 @@ void main() {
       expect(state.errorMessage, isNot(contains('TimeoutException')));
     });
 
+    test(
+        'SPEC-250 inc2: timeout dispara signOut() local — evita que '
+        'ProfileScreen quede colgado en currentUserStreamProvider == null '
+        '(repro Carlos, simulador Xcode, 2026-07-08)', () async {
+      final repo = _FakeAuthRepository()..neverResolveDelete = true;
+      container = ProviderContainer(overrides: [
+        authRepositoryProvider.overrideWithValue(repo),
+      ]);
+
+      await expectLater(
+        container.read(profileControllerProvider.notifier).deleteAccount(
+              timeout: const Duration(milliseconds: 50),
+            ),
+        throwsA(isA<Exception>()),
+      );
+
+      expect(repo.signOutCalled, isTrue,
+          reason: 'El timeout debe cerrar la sesión local para que el '
+              'router redirija a /login y ProfileScreen se desmonte, en '
+              'vez de quedar con user == null para siempre');
+    });
+
     test('deleteAccount() del repo resuelve rápido → sin error, isSaving false',
         () async {
       final repo = _FakeAuthRepository();
@@ -100,6 +122,7 @@ class _FakeAuthRepository implements AuthRepository {
   bool neverResolveDelete = false;
   bool shouldThrow = false;
   bool deleteCalled = false;
+  bool signOutCalled = false;
 
   @override
   Stream<AppAccount?> get authStateChanges => Stream.value(null);
@@ -143,7 +166,9 @@ class _FakeAuthRepository implements AuthRepository {
       throw UnimplementedError();
 
   @override
-  Future<void> signOut() async {}
+  Future<void> signOut() async {
+    signOutCalled = true;
+  }
 
   @override
   Future<AppAccount> signUpWithEmail({
