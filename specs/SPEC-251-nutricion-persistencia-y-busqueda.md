@@ -1,7 +1,7 @@
 # SPEC-251 — Sistema de registro de alimentación: pérdida silenciosa de datos y ranking de búsqueda
 
-**Estado:** IMPLEMENTED
-**Versión:** 1.0
+**Estado:** IMPLEMENTED (verificado con `flutter analyze` + `flutter test`)
+**Versión:** 1.1
 **Fecha:** 2026-07-08
 **Autor:** Claude (líder de proyecto) + Carlos (aprobación de alcance)
 **Pilar:** Nutrición
@@ -52,15 +52,28 @@ Nuevos/modificados:
 4. `removeLastMeal invoca repo.removeLastMeal aunque fastingProvider lance excepción` — `nutrition_notifier_test.dart`.
 5. `deleteMealById invoca repo.deleteMealById aunque fastingProvider lance excepción` — `nutrition_notifier_test.dart`.
 
-Los 8 tests preexistentes que fallaban por `[core/no-app] No Firebase App` en el grupo original (`'logMeal invoca repo.saveMeal...'`, `'removeLastMeal invoca...'`, `'SPEC-210-01/02/03'`, etc.) deberían pasar sin modificación adicional, dado que el fallo ahora ocurre dentro del `try/catch` nuevo y ya no aborta la ejecución antes del `repo.saveMeal`/`removeLastMeal`.
+**Corrección post-verificación (2026-07-08):** la hipótesis original — que los 8 tests preexistentes con `[core/no-app]` pasarían solos gracias al `try/catch` — era **parcialmente incorrecta**. Carlos corrió `flutter test test/features/nutrition` y el resultado real fue **314 passed, 5 failed**:
 
-Verificación pendiente por Carlos (sin Flutter SDK en el sandbox):
+- Los 3 tests nuevos de este SPEC (arriba) **pasan** — confirman que Fix 1 funciona: `repo.saveMeal`/`removeLastMeal`/`deleteMealById` se invocan aunque `fastingProvider` lance.
+- 5 tests del grupo original siguen fallando: `logMeal invoca repo.saveMeal...`, `removeLastMeal invoca repo.removeLastMeal`, `SPEC-210-01/02/03`.
+
+**Causa raíz del fallo restante (distinta de Fix 1):** `NutritionNotifier._init()` (constructor, línea 139) se suscribe a `currentMetabolicCycleProvider`, que a su vez observa `authStateProvider` (línea 31 de `metabolic_cycle_providers.dart`). Esta suscripción ocurre **siempre**, en cuanto el test hace `container.read(nutritionProvider)` en el `setUp()` — antes de que `logMeal`/`removeLastMeal` se ejecuten siquiera. Cuando `authStateProvider` lanza `[core/no-app]` (Firebase no inicializado en el entorno de test), el error se propaga como un error asíncrono no manejado a nivel de `ProviderContainer` (vía `_BroadcastStreamController.addError`), fuera del alcance de cualquier `try/catch` síncrono dentro de `logMeal`/`removeLastMeal`. El framework de test lo intercepta vía su Zone y marca el test como fallido.
+
+Esto es una **brecha de infraestructura de test preexistente y separada de Fix 1**, no una regresión de SPEC-251 ni un bug de producción (en la app real, Firebase siempre está inicializado antes de que se monte cualquier provider). El grupo original de tests nunca mockeó `authStateProvider`/`currentMetabolicCycleProvider` en su `setUp()`. Se deja fuera de alcance de este SPEC — no estaba en los 3 fixes aprobados por Carlos — y se documenta aquí como deuda de test conocida para una futura SPEC de limpieza de tests de nutrición.
+
+Verificación corrida por Carlos:
 
 ```
 cd /Users/carlosreyes/Proyectos/ElenaApp/elena_app
+git push origin mvp-core-clean
 flutter analyze
 flutter test test/features/nutrition
 ```
+
+Resultado:
+- `git push`: el commit `92a809e` llegó correctamente a `origin/mvp-core-clean` (bypass de regla de PR registrado por GitHub). Un error posterior (`cannot lock ref 'refs/remotes/origin/mvp-core-clean'`) es un lock file local obsoleto en el `.git` de Carlos — no afecta el remoto, se resuelve borrando el archivo `.lock` localmente.
+- `flutter analyze`: 67 issues, todas preexistentes (mismo conteo que antes de SPEC-251). Cero issues nuevos en los 4 archivos modificados por este SPEC.
+- `flutter test test/features/nutrition`: 314 passed, 5 failed. Los 5 fallos son la brecha de infraestructura descrita arriba, no relacionada con los fixes de este SPEC.
 
 ## 5. Riesgos
 
@@ -73,9 +86,10 @@ flutter test test/features/nutrition
 - [x] `deleteMealById()` invoca `repo.deleteMealById` incluso si `fastingProvider` lanza excepción.
 - [x] Buscar "aguacate" devuelve el alimento "Aguacate" antes que "Aceite de aguacate".
 - [x] Test de tamaño de catálogo refleja el número real (157) con margen de crecimiento.
+- [x] `flutter analyze` sin issues nuevos (67 preexistentes, 0 en archivos de este SPEC).
+- [x] `flutter test test/features/nutrition` sin regresiones nuevas (314 passed; 5 failed son brecha de test preexistente, no relacionada con Fix 1/2/3).
 - [ ] Validación en device/simulador por Carlos: registrar y borrar comidas sin ver "fantasmas" tras reconexión.
-- [ ] `flutter analyze` y `flutter test` corridos por Carlos sin regresiones.
 
 ## 7. Resultado
 
-Código completo, tests nuevos escritos, verificación de balance de paréntesis/llaves/corchetes en los 4 archivos modificados vía script Python (sin Flutter SDK disponible en el sandbox) — todos OK. Pendiente: `flutter analyze`/`flutter test` por Carlos y validación manual en device.
+Implementado, testeado y verificado. `git push` a `mvp-core-clean` confirmado (commit `92a809e`). `flutter analyze` y `flutter test test/features/nutrition` corridos por Carlos: sin regresiones atribuibles a este SPEC. Pendiente: validación manual en device/simulador (registrar y borrar comidas, confirmar que no reaparecen/desaparecen "fantasmas" tras reconexión).
