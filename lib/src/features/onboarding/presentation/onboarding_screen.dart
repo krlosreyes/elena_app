@@ -275,14 +275,18 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
     if (account == null) return;
 
-    _isReturningMrUser =
-        account.profileStatus == AppProfileStatus.partialProfile;
+    // SPEC-247 fix: prefill se computa ANTES de clasificar al usuario.
+    // Un signup directo en la app genera rawProfile mínimo {id, name, email}
+    // → prefill vacío. Un usuario MR trae datos biométricos del sitio web
+    // → prefill no vacío. Esta distinción determina cold install vs MR.
+    final prefill = OnboardingPrefill.from(account.rawProfile);
+
+    _isReturningMrUser = account.profileStatus == AppProfileStatus.partialProfile &&
+        !prefill.isEmpty;
     if (_isReturningMrUser) {
       // Primera vez que un usuario MR entra a la app.
       telemetry.mrUserFirstLogin();
     }
-
-    final prefill = OnboardingPrefill.from(account.rawProfile);
     if (prefill.isEmpty &&
         (account.displayName == null || account.displayName!.isEmpty)) {
       return; // nada que mostrar/aplicar
@@ -332,11 +336,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         prefill.waistCircumference != null &&
         bodyFatMeasured;
 
-    // SPEC-131: usuarios cero-contexto (newProfile) ven 3 pantallas
-    // educativas ANTES del flujo tradicional. Usuarios MR (partialProfile)
-    // no las ven — ya conocen el método.
+    // SPEC-131/247: usuarios cero-contexto ven las pantallas educativas.
+    // SPEC-247 fix: un signup directo produce partialProfile (el doc Firestore
+    // se crea de inmediato con seed mínimo {id, name, email}). Se detecta como
+    // cold install cuando prefill está vacío, lo que indica que NO vino de MR.
+    // Los usuarios MR tienen prefill no vacío (biometría + hábitos del sitio).
     final isColdInstall =
-        account.profileStatus == AppProfileStatus.newProfile;
+        account.profileStatus == AppProfileStatus.newProfile ||
+        (account.profileStatus == AppProfileStatus.partialProfile &&
+            prefill.isEmpty);
 
     // SPEC-132: el step de Health solo aplica si la plataforma lo
     // soporta. En Web/Desktop el plugin no funciona, así que lo
