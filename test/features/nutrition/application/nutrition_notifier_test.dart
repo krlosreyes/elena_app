@@ -12,6 +12,7 @@
 
 import 'dart:async';
 
+import 'package:elena_app/src/features/dashboard/application/fasting_notifier.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
 import 'package:elena_app/src/features/nutrition/data/nutrition_repository_impl.dart';
 import 'package:elena_app/src/features/nutrition/domain/nutrition_log.dart';
@@ -287,6 +288,91 @@ void main() {
       expect(fakeRepo.removeLastCount, 1,
           reason: 'El repo siempre se invoca (sin-op decisión del repo)');
       expect(container.read(nutritionProvider).todayLogs, isEmpty);
+    });
+  });
+
+  // ── SPEC-251 Fix 1: la persistencia no debe abortarse si falla la lógica de
+  // notificaciones (fastingProvider). Antes del fix, logMeal/deleteMealById
+  // leían fastingProvider ANTES de invocar al repo — si esa lectura lanzaba,
+  // repo.saveMeal/deleteMealById nunca se llamaban aunque el state local
+  // optimista ya se hubiera actualizado (pérdida silenciosa de datos). ──────
+  group('NutritionNotifier resiliente a fallos en fastingProvider (SPEC-251)',
+      () {
+    late FakeNutritionRepository fakeRepo;
+    late ProviderContainer container;
+
+    setUp(() {
+      fakeRepo = FakeNutritionRepository();
+      container = ProviderContainer(
+        overrides: [
+          nutritionRepositoryProvider.overrideWithValue(fakeRepo),
+          currentUserStreamProvider
+              .overrideWith((ref) => Stream.value(_user())),
+          // Simula el mismo tipo de fallo que motivó el fix: leer
+          // fastingProvider lanza (p.ej. authRepositoryProvider construye
+          // FirebaseAuth.instance sin app inicializada en test).
+          fastingProvider.overrideWith(
+            (ref) => throw StateError('fastingProvider boom (simulado)'),
+          ),
+        ],
+      );
+      container.read(nutritionProvider);
+    });
+
+    tearDown(() {
+      container.dispose();
+      fakeRepo.dispose();
+    });
+
+    test(
+        'logMeal invoca repo.saveMeal aunque fastingProvider lance excepción',
+        () async {
+      await Future<void>.delayed(Duration.zero);
+      fakeRepo.emit(const []);
+      await Future<void>.delayed(Duration.zero);
+
+      await container
+          .read(nutritionProvider.notifier)
+          .logMeal(label: 'Almuerzo', mealTime: DateTime(2026, 5, 1, 13));
+
+      expect(fakeRepo.savedMeals.length, 1,
+          reason: 'SPEC-251 Fix 1: la persistencia debe ocurrir aunque la '
+              'lógica de notificaciones (fastingProvider) falle');
+      expect(fakeRepo.savedMeals.first.label, 'Almuerzo');
+    });
+
+    test(
+        'removeLastMeal invoca repo.removeLastMeal aunque fastingProvider '
+        'lance excepción', () async {
+      await Future<void>.delayed(Duration.zero);
+      await container.read(nutritionProvider.notifier).removeLastMeal();
+
+      expect(fakeRepo.removeLastCount, 1,
+          reason: 'SPEC-251: removeLastMeal ya despachaba el repo antes de '
+              'leer fastingProvider; se cubre aquí por consistencia');
+    });
+
+    test(
+        'deleteMealById invoca repo.deleteMealById aunque fastingProvider '
+        'lance excepción', () async {
+      await Future<void>.delayed(Duration.zero);
+      final log = NutritionLog(
+        id: 'log-del-1',
+        timestamp: DateTime(2026, 5, 1, 13),
+        label: 'Almuerzo',
+        withinCircadianWindow: true,
+      );
+      fakeRepo.emit([log]);
+      await Future<void>.delayed(Duration.zero);
+
+      await container
+          .read(nutritionProvider.notifier)
+          .deleteMealById('log-del-1');
+      await Future<void>.delayed(Duration.zero);
+
+      expect(container.read(nutritionProvider).todayLogs, isEmpty,
+          reason: 'SPEC-251 Fix 1: el borrado debe persistir en el repo '
+              'aunque la lógica de notificaciones falle');
     });
   });
 }

@@ -279,6 +279,25 @@ class Food {
     return false;
   }
 
+  /// SPEC-251: especificidad de este alimento frente a [normalizedQuery]
+  /// (ya normalizado — ver [_normalize]). Menor valor = coincidencia más
+  /// específica. Se usa como desempate cuando dos alimentos tienen el
+  /// mismo [qualityScore]: sin esto, buscar "aguacate" podía devolver
+  /// "Aceite de aguacate" antes que "Aguacate" — ambos con score 100,
+  /// desempatados solo alfabéticamente ("Aceite..." < "Aguacate").
+  int matchSpecificity(String normalizedQuery) {
+    final normalizedName = _normalize(name);
+    if (normalizedName == normalizedQuery) return 0;
+    if (normalizedName.startsWith(normalizedQuery)) return 1;
+    for (final alias in searchAliases) {
+      if (_normalize(alias) == normalizedQuery) return 2;
+    }
+    for (final alias in searchAliases) {
+      if (_normalize(alias).startsWith(normalizedQuery)) return 3;
+    }
+    return 4;
+  }
+
   static String _normalize(String s) {
     final lower = s.toLowerCase().trim();
     const accents = {
@@ -1313,10 +1332,19 @@ class FoodCatalog {
   /// alfabético como tiebreaker. Útil para el TextField del buscador.
   static List<Food> search(String query, {int limit = 8}) {
     if (query.trim().isEmpty) return const [];
+    final normalizedQuery = Food._normalize(query);
     final matches = all.where((f) => f.matchesQuery(query)).toList();
     matches.sort((a, b) {
       final byScore = b.qualityScore.compareTo(a.qualityScore);
       if (byScore != 0) return byScore;
+      // SPEC-251: entre alimentos con el mismo score, prioriza la
+      // coincidencia más específica (nombre exacto > nombre empieza-con
+      // > alias exacto > alias empieza-con > substring) antes de caer
+      // al orden alfabético.
+      final bySpecificity = a
+          .matchSpecificity(normalizedQuery)
+          .compareTo(b.matchSpecificity(normalizedQuery));
+      if (bySpecificity != 0) return bySpecificity;
       return a.name.compareTo(b.name);
     });
     return matches.take(limit).toList(growable: false);

@@ -317,23 +317,41 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
     );
     _ref.read(coachingCompletionProvider).onPillarActivity(Pillar.nutrition);
 
-    // SPEC-137 E.5: notificación de próxima comida (local, no requiere red).
-    // Guard de ayuno: si el usuario está ayunando activamente, no agendar
-    // "Tu próxima comida es a las HH:MM" — es incoherente con el ayuno.
-    final isFastingNow = _ref.read(fastingProvider).isActive;
-    if (isCheatDay || isFastingNow) {
-      unawaited(NotificationScheduler.cancelNextMealReminder());
-    } else {
-      final nextAt = timestamp.add(MealIntervalRules.recommendedInterval);
-      unawaited(NotificationScheduler.scheduleNextMealReminder(
-        nextMealAt: nextAt,
-        leadTime: MealIntervalRules.notificationLeadTime,
-      ));
-    }
-
+    // SPEC-251: el guardado real se dispara PRIMERO. Antes, la lectura de
+    // `fastingProvider` (bloque de abajo, solo necesaria para decidir la
+    // notificación de próxima comida) ocurría ANTES de este `saveMeal`.
+    // Si esa lectura lanzaba una excepción, `logMeal()` abortaba sin
+    // haber llamado nunca a `repo.saveMeal` — pero el estado local
+    // optimista (arriba) ya mostraba la comida como guardada. Resultado:
+    // una comida "fantasma" que el usuario ve en pantalla pero que nunca
+    // llegó a Firestore, y que desaparece al re-sincronizar el stream.
     unawaited(repo.saveMeal(userId, log).catchError((Object e) {
       AppLogger.error('Persistencia de comida falló (reintenta al sync)', e);
     }));
+
+    // SPEC-137 E.5: notificación de próxima comida (local, no requiere
+    // red). Guard de ayuno: si el usuario está ayunando activamente, no
+    // agendar "Tu próxima comida es a las HH:MM" — es incoherente con el
+    // ayuno. Envuelto en try/catch (SPEC-251): un fallo acá — por
+    // ejemplo si `fastingProvider` está en estado de error — nunca debe
+    // impedir el guardado de arriba, que ya se disparó.
+    try {
+      final isFastingNow = _ref.read(fastingProvider).isActive;
+      if (isCheatDay || isFastingNow) {
+        unawaited(NotificationScheduler.cancelNextMealReminder());
+      } else {
+        final nextAt = timestamp.add(MealIntervalRules.recommendedInterval);
+        unawaited(NotificationScheduler.scheduleNextMealReminder(
+          nextMealAt: nextAt,
+          leadTime: MealIntervalRules.notificationLeadTime,
+        ));
+      }
+    } catch (e) {
+      AppLogger.warning(
+        'logMeal: no se pudo evaluar/agendar notificación de próxima comida',
+        e,
+      );
+    }
   }
 
   /// Elimina el último registro del ciclo actual (acción "deshacer").
@@ -354,18 +372,29 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
     // SPEC-137 E.5: si después de remover queda alguna comida hoy,
     // re-agendar la notificación con la nueva "última comida". Si no
     // queda ninguna, o si el usuario está ayunando, cancelar.
-    final remaining = state.todayLogs.length > 1
-        ? state.todayLogs.sublist(0, state.todayLogs.length - 1)
-        : <NutritionLog>[];
-    final lastAt = MealIntervalRules.lastMealOf(remaining);
-    final isFastingNow = _ref.read(fastingProvider).isActive;
-    if (lastAt == null || isFastingNow) {
-      await NotificationScheduler.cancelNextMealReminder();
-    } else {
-      final nextAt = lastAt.add(MealIntervalRules.recommendedInterval);
-      await NotificationScheduler.scheduleNextMealReminder(
-        nextMealAt: nextAt,
-        leadTime: MealIntervalRules.notificationLeadTime,
+    // SPEC-251: try/catch defensivo — un fallo al leer `fastingProvider`
+    // no debe propagarse como si `removeLastMeal()` hubiera fallado (el
+    // borrado de arriba ya se disparó de forma independiente).
+    try {
+      final remaining = state.todayLogs.length > 1
+          ? state.todayLogs.sublist(0, state.todayLogs.length - 1)
+          : <NutritionLog>[];
+      final lastAt = MealIntervalRules.lastMealOf(remaining);
+      final isFastingNow = _ref.read(fastingProvider).isActive;
+      if (lastAt == null || isFastingNow) {
+        await NotificationScheduler.cancelNextMealReminder();
+      } else {
+        final nextAt = lastAt.add(MealIntervalRules.recommendedInterval);
+        await NotificationScheduler.scheduleNextMealReminder(
+          nextMealAt: nextAt,
+          leadTime: MealIntervalRules.notificationLeadTime,
+        );
+      }
+    } catch (e) {
+      AppLogger.warning(
+        'removeLastMeal: no se pudo evaluar/agendar notificación de '
+        'próxima comida',
+        e,
       );
     }
   }
@@ -449,20 +478,12 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
       state = _recalculate(updated, state.targetMeals);
     }
 
-    // Reajustar notificación de próxima comida.
-    final remaining = state.todayLogs;
-    final lastAt = MealIntervalRules.lastMealOf(remaining);
-    final isFastingNow = _ref.read(fastingProvider).isActive;
-    if (lastAt == null || isFastingNow) {
-      unawaited(NotificationScheduler.cancelNextMealReminder());
-    } else {
-      final nextAt = lastAt.add(MealIntervalRules.recommendedInterval);
-      unawaited(NotificationScheduler.scheduleNextMealReminder(
-        nextMealAt: nextAt,
-        leadTime: MealIntervalRules.notificationLeadTime,
-      ));
-    }
-
+    // SPEC-251: el borrado real en Firestore se dispara ANTES de la
+    // lógica de notificación (misma corrección que en `logMeal`). Antes,
+    // si la lectura de `fastingProvider` de abajo lanzaba, este borrado
+    // nunca se ejecutaba — el usuario veía la comida desaparecer en la
+    // UI (state optimista de arriba) pero seguía viva en Firestore, y
+    // reaparecía en el próximo snapshot del stream.
     unawaited(
       _ref
           .read(nutritionRepositoryProvider)
@@ -471,6 +492,30 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
         AppLogger.error('deleteMealById: Firestore falló (reintenta al sync)', e);
       }),
     );
+
+    // Reajustar notificación de próxima comida. Envuelto en try/catch:
+    // un fallo acá nunca debe impedir el borrado de arriba, que ya se
+    // disparó.
+    try {
+      final remaining = state.todayLogs;
+      final lastAt = MealIntervalRules.lastMealOf(remaining);
+      final isFastingNow = _ref.read(fastingProvider).isActive;
+      if (lastAt == null || isFastingNow) {
+        unawaited(NotificationScheduler.cancelNextMealReminder());
+      } else {
+        final nextAt = lastAt.add(MealIntervalRules.recommendedInterval);
+        unawaited(NotificationScheduler.scheduleNextMealReminder(
+          nextMealAt: nextAt,
+          leadTime: MealIntervalRules.notificationLeadTime,
+        ));
+      }
+    } catch (e) {
+      AppLogger.warning(
+        'deleteMealById: no se pudo evaluar/agendar notificación de '
+        'próxima comida',
+        e,
+      );
+    }
   }
 
   /// SPEC-58 + SPEC-149.2: Reset idempotente disparado al cierre del

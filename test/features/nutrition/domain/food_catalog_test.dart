@@ -5,12 +5,15 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('FoodCatalog estructura general', () {
-    test('catalogo entre 70 y 120 alimentos', () {
-      // SPEC-137 E.6 ampló el catálogo a ~100 con caldos, semillas,
-      // comidas rápidas y bebidas. Margen superior 120 para crecimiento
-      // futuro razonable sin romper el test.
-      expect(FoodCatalog.all.length, greaterThanOrEqualTo(70));
-      expect(FoodCatalog.all.length, lessThanOrEqualTo(120));
+    test('catalogo entre 130 y 180 alimentos', () {
+      // SPEC-137 E.6 amplió el catálogo a ~100 con caldos, semillas,
+      // comidas rápidas y bebidas. SPEC-251 (2026-07-08): actualizado el
+      // rango — el catálogo creció a 157 (cocina LatAm/Colombia-Caribe,
+      // ver header de food_catalog.dart) sin que este test se hubiera
+      // actualizado, dejándolo en rojo. Margen 130-180 para crecimiento
+      // futuro razonable sin romper el test de nuevo.
+      expect(FoodCatalog.all.length, greaterThanOrEqualTo(130));
+      expect(FoodCatalog.all.length, lessThanOrEqualTo(180));
     });
 
     test('hay al menos 20 de cada categoria', () {
@@ -291,6 +294,22 @@ void main() {
     test('respeta el limit del parametro', () {
       final results = FoodCatalog.search('a', limit: 3);
       expect(results.length, lessThanOrEqualTo(3));
+    });
+
+    // SPEC-251: "Aguacate" (score 100) y "Aceite de aguacate" (score 100)
+    // empatan en qualityScore. Sin desempate por especificidad, el orden
+    // alfabético hacía ganar a "Aceite de aguacate" ("Ac..." < "Ag...").
+    // El usuario que busca "aguacate" espera el alimento, no el aceite.
+    test(
+        'SPEC-251: coincidencia exacta de nombre gana sobre substring '
+        'aunque ambos tengan el mismo score', () {
+      final results = FoodCatalog.search('aguacate');
+      expect(results.first.id, 'aguacate',
+          reason: 'nombre exacto debe ganar sobre "Aceite de aguacate" '
+              '(substring), aunque ambos tengan qualityScore 100');
+      expect(results.map((f) => f.id), contains('aceite_aguacate'),
+          reason: 'el aceite sigue apareciendo en resultados, solo no '
+              'debe ir primero');
     });
   });
 
