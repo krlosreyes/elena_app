@@ -155,18 +155,57 @@ class FirebaseAuthRepository implements AuthRepository {
     }
   }
 
-  // SPEC-83: invertido el orden de operaciones. Antes borrabamos
-  // Firestore primero y luego Auth, dejando estado inconsistente cuando
-  // `user.delete()` lanzaba `requires-recent-login` (sesión vieja).
-  // Ahora: Auth primero. Si Auth falla, Firestore queda intacto y el
-  // usuario puede reintentar tras re-loguearse.
+  // SPEC-248b: Orden correcto — Firestore PRIMERO, Auth DESPUÉS.
+  //
+  // El orden anterior (Auth → Firestore) era incorrecto: una vez que
+  // `user.delete()` se ejecuta, el token de Auth queda inválido y las
+  // reglas de Firestore rechazan cualquier write posterior. Resultado:
+  // subcollections nunca se borraban del cliente.
+  //
+  // Nuevo orden:
+  //   1. Borrar subcollections de users/{uid} (mientras auth es válido)
+  //   2. Borrar doc raíz users/{uid}
+  //   3. Borrar fasting_history plana (legacy SPEC-50.4)
+  //   4. Eliminar Auth — dispara Cloud Function onUserDeleted como red de seguridad
+  //   5. signOut local
+  //
+  // Si el paso 4 falla con requires-recent-login: Auth sigue existiendo pero
+  // Firestore ya está limpio. El usuario puede reintentar sin inconsistencia.
+  // La Cloud Function onUserDeleted (SPEC-207/248) actúa como red de seguridad
+  // para datos creados en el intervalo o si el cliente falla a medio camino.
   @override
   Future<void> deleteAccount() async {
     final user = _auth.currentUser;
     if (user == null) return;
     final uid = user.uid;
 
-    // 1. Eliminar usuario de Firebase Auth.
+    // 1. Borrar todas las subcollections MIENTRAS el usuario está autenticado.
+    //    Las reglas de Firestore requieren request.auth válido para writes.
+    for (final sub in _kUserSubcollections) {
+      try {
+        await _deleteSubcollection(uid, sub);
+      } catch (_) {
+        // Best-effort. La Cloud Function onUserDeleted lo limpia si falla.
+      }
+    }
+
+    // 2. Borrar doc raíz users/{uid}.
+    try {
+      await _firestore.collection('users').doc(uid).delete();
+    } catch (_) {
+      // Best-effort.
+    }
+
+    // 3. Borrar fasting_history plana legacy (SPEC-50.4 / SPEC-217 transición).
+    try {
+      await _deleteFastingHistoryForUser(uid);
+    } catch (_) {
+      // Best-effort.
+    }
+
+    // 4. Eliminar cuenta de Firebase Auth.
+    //    Esto dispara la Cloud Function onUserDeleted (SPEC-207/248) como
+    //    red de seguridad para cualquier dato residual.
     try {
       await user.delete();
     } on FirebaseAuthException catch (e) {
@@ -181,44 +220,48 @@ class FirebaseAuthRepository implements AuthRepository {
       throw Exception('Error técnico al eliminar la cuenta de autenticación.');
     }
 
-    // 2. Eliminar doc principal del usuario en Firestore.
-    //
-    // Si esto falla, el usuario ya está eliminado de Auth pero queda un
-    // doc huérfano en `users/{uid}`. Logueamos warning pero NO
-    // propagamos la excepción: para el usuario la cuenta ya está
-    // eliminada (no puede entrar). La limpieza del doc huérfano se
-    // puede hacer manualmente o en una Cloud Function futura.
-    try {
-      await _firestore.collection('users').doc(uid).delete();
-    } catch (_) {
-      // Best-effort. No bloquea el flujo.
-    }
-
-    // 3. Best-effort: borrar fasting_history plana (colección SPEC-50.4).
-    //
-    // La Cloud Function `onUserDeleted` (SPEC-207) hace el borrado completo en
-    // background. Este bloque es un intento previo desde el cliente para
-    // adelantar la limpieza antes de que el user pierda auth. Si falla, la
-    // Cloud Function lo completa igualmente.
-    //
-    // Límite de 400 docs por batch (Firestore permite 500; dejamos margen).
-    try {
-      await _deleteFastingHistoryForUser(uid);
-    } catch (_) {
-      // Best-effort. La Cloud Function SPEC-207 garantiza el borrado final.
-    }
-
-    // 4. Cerrar sesión local para limpiar caches de Firebase Auth.
+    // 5. Cerrar sesión local para limpiar caches de Firebase Auth.
     try {
       await _auth.signOut();
     } catch (_) {
       // Best-effort.
     }
+  }
 
-    // NOTA SPEC-207: las subcolecciones bajo `users/{uid}` y la colección
-    // plana `fasting_history` son eliminadas por la Cloud Function
-    // `onUserDeleted` que se dispara automáticamente al llamar `user.delete()`
-    // arriba. El paso 3 es una aceleración best-effort desde el cliente.
+  /// Subcolecciones bajo users/{uid} que se borran en cascada.
+  /// Debe mantenerse sincronizado con USER_SUBCOLLECTIONS en functions/src/index.ts.
+  static const _kUserSubcollections = [
+    'sleep_history',
+    'nutrition_history',
+    'hydration_history',
+    'exercise_history',
+    'biometric_history',
+    'metabolic_cycles',
+    'daily_summary',
+    'streak_history',
+    'imr_history',
+    'protocol_adjustments',
+    'app_state',
+    'fasting_checkins',
+    'sleep_routines',
+    'post_reads',
+    'fasting_history',
+  ];
+
+  /// Borra todos los documentos de una subcollection en batches de 400.
+  Future<void> _deleteSubcollection(String uid, String subcollection) async {
+    const batchSize = 400;
+    final col =
+        _firestore.collection('users').doc(uid).collection(subcollection);
+    var snapshot = await col.limit(batchSize).get();
+    while (snapshot.docs.isNotEmpty) {
+      final batch = _firestore.batch();
+      for (final doc in snapshot.docs) {
+        batch.delete(doc.reference);
+      }
+      await batch.commit();
+      snapshot = await col.limit(batchSize).get();
+    }
   }
 
   /// Borra los documentos de `fasting_history` donde `userId == uid`.
