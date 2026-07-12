@@ -242,12 +242,13 @@ class GoalSuggestionEngine {
     String statusLabel;
     if (roundedDays <= 1) {
       statusLabel = 'Sin protocolo activo';
-    } else if (roundedDays < 4)
+    } else if (roundedDays < 4) {
       statusLabel = 'Adherencia baja';
-    else if (roundedDays < 6)
+    } else if (roundedDays < 6) {
       statusLabel = 'Adherencia moderada';
-    else
+    } else {
       statusLabel = 'Alta consistencia';
+    }
 
     return GoalSuggestion(
       type: GoalType.fastingDaysPerWeek,
@@ -319,9 +320,14 @@ class GoalSuggestionEngine {
     final bool outOfRange = current < 30;
 
     // El statusLabel refleja el TIPO de ejercicio, no solo el volumen.
+    // BUGFIX (SPEC-244 auditoría 2026-07-12): sin actividad real, el label
+    // debe seguir marcando "(estimado)" — principio de honestidad ("no
+    // afirmamos un nivel" sin dato real). SPEC-244 introdujo el protocolo
+    // por zona pero perdió el marcador al enfocar el label en el tipo de
+    // ejercicio; lo restauramos sin perder la info de zona.
     String statusLabel;
     if (!hasReal) {
-      statusLabel = proto.typeLabel;
+      statusLabel = '${proto.typeLabel} (estimado)';
     } else if (current < 15) {
       statusLabel = 'Sin actividad · ${proto.typeLabel}';
     } else if (current < 30) {
@@ -524,12 +530,13 @@ class GoalSuggestionEngine {
     String statusLabel;
     if (current < 6) {
       statusLabel = 'Privación crónica de sueño';
-    } else if (current < 7)
+    } else if (current < 7) {
       statusLabel = 'Por debajo del rango óptimo';
-    else if (current <= 9)
+    } else if (current <= 9) {
       statusLabel = 'En rango óptimo';
-    else
+    } else {
       statusLabel = 'Sueño excesivo';
+    }
 
     return GoalSuggestion(
       type: GoalType.sleepHoursPerNight,

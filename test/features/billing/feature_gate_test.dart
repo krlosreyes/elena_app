@@ -12,7 +12,7 @@ import 'fake_billing_service.dart';
 void main() {
   group('FeatureGate (puro)', () {
     test('Free: solo lo básico; coaching 1/día', () {
-      const g = FeatureGate(isPremium: false);
+      const g = FeatureGate(isPremium: false, isInTrial: false);
       expect(g.cycleFeedbackAllowed, false);
       expect(g.analyticsHistoryAllowed, false);
       expect(g.autoSyncAllowed, false);
@@ -22,7 +22,7 @@ void main() {
     });
 
     test('Premium: todo permitido, coaching ilimitado', () {
-      const g = FeatureGate(isPremium: true);
+      const g = FeatureGate(isPremium: true, isInTrial: false);
       expect(g.cycleFeedbackAllowed, true);
       expect(g.analyticsHistoryAllowed, true);
       expect(g.autoSyncAllowed, true);
@@ -33,7 +33,16 @@ void main() {
 
   group('gating inerte cuando el cobro no está habilitado', () {
     test('billingEnabled=false → todos premium (no se gatea nada)', () {
-      final container = ProviderContainer(); // sin overrides → enabled=false
+      // BUGFIX (auditoría 2026-07-12): `billingEnabledProvider` cambió su
+      // default de `false` a `kDebugMode` (fix real: "gating invisible" —
+      // ver commit "fix(SPEC-197/198): billingEnabledProvider=kDebugMode
+      // por defecto"). `flutter test` corre siempre con kDebugMode=true,
+      // así que un `ProviderContainer()` sin overrides YA NO representa
+      // el caso "billing deshabilitado" — hay que forzarlo explícitamente
+      // para probar esa rama.
+      final container = ProviderContainer(
+        overrides: [billingEnabledProvider.overrideWithValue(false)],
+      );
       addTearDown(container.dispose);
       expect(container.read(isPremiumProvider), true);
       expect(container.read(featureGateProvider).analyticsHistoryAllowed, true);

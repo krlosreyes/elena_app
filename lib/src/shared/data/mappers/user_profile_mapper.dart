@@ -91,9 +91,17 @@ Map<String, dynamic> userToCanonicalMirror(UserModel user) {
   final String genderCanonical =
       user.gender.toUpperCase() == 'M' ? 'male' : 'female';
   // SPEC-215: fuente canónica (shared/utils/fasting_protocol.dart).
-  // 'Ninguno' → null; el mirror canónico lo reporta como 0 al backend MR.
-  final int? fastingHours =
-      fastingHoursForProtocol(user.fastingProtocol) ?? 0;
+  // BUGFIX (auditoría 2026-07-12): 'Ninguno' es una elección legítima del
+  // usuario (sin ventana de ayuno) → se reporta como 0 al backend MR. Un
+  // protocolo NO reconocido (dato corrupto/inválido) es distinto — no
+  // "inventamos" un 0 para eso, se preserva `null` tal como lo hace
+  // fastingHoursForProtocol. Antes el `?? 0` conflaba ambos casos y
+  // reportaba 0 también para protocolos inválidos, ocultando datos
+  // corruptos como si fueran "sin ayuno" (viola el principio de datos
+  // científicos y verificables del proyecto).
+  final int? fastingHours = user.fastingProtocol == 'Ninguno'
+      ? 0
+      : fastingHoursForProtocol(user.fastingProtocol);
   final double? lastMealHour = _toHourFloat(user.profile.lastMealGoal);
 
   return <String, dynamic>{

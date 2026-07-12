@@ -246,11 +246,14 @@ void main() {
       expect(result, isNull);
     });
 
-    test('fallbackAbsolute dispara con 28h sin nada', () {
+    test('fallbackAbsolute dispara con 50h sin nada (SPEC-245)', () {
+      // SPEC-245 (2026-07-07): límite subido de 28h a 50h para soportar
+      // ayunos extendidos (Eat Stop Eat 36h, ayunos de 48h) sin corte
+      // prematuro. Este test usaba el límite viejo de 28h.
       final cycle = _openCycle(startedAt: DateTime(2026, 6, 1, 21, 0));
       final result = MetabolicCycleResolver.shouldClose(
         openCycle: cycle,
-        now: DateTime(2026, 6, 3, 2, 0),
+        now: DateTime(2026, 6, 3, 23, 0), // 50h desde start
         currentProtocol: '16:8',
         expectedWindowCloseTime: null,
         lastMealTime: null,
@@ -366,11 +369,11 @@ void main() {
       expect(result, ClosureReason.fallbackSleepDetected);
     });
 
-    test('fallbackAbsolute en EXACTAMENTE 28h → cierra', () {
+    test('fallbackAbsolute en EXACTAMENTE 50h → cierra (SPEC-245)', () {
       final cycle = _openCycle(startedAt: DateTime(2026, 6, 1, 21, 0));
       final result = MetabolicCycleResolver.shouldClose(
         openCycle: cycle,
-        now: DateTime(2026, 6, 3, 1, 0), // 28h exactas
+        now: DateTime(2026, 6, 3, 23, 0), // 50h exactas
         currentProtocol: '16:8',
         expectedWindowCloseTime: null,
         lastMealTime: null,
@@ -381,11 +384,11 @@ void main() {
       expect(result, ClosureReason.fallbackAbsolute);
     });
 
-    test('fallbackAbsolute en 27h59m → todavía NO cierra', () {
+    test('fallbackAbsolute en 49h59m → todavía NO cierra (SPEC-245)', () {
       final cycle = _openCycle(startedAt: DateTime(2026, 6, 1, 21, 0));
       final result = MetabolicCycleResolver.shouldClose(
         openCycle: cycle,
-        now: DateTime(2026, 6, 3, 0, 59),
+        now: DateTime(2026, 6, 3, 22, 59),
         currentProtocol: '16:8',
         expectedWindowCloseTime: null,
         lastMealTime: null,
@@ -413,11 +416,14 @@ void main() {
     });
 
     test('Prioridad: fallback3hAfterWindow gana sobre fallbackAbsolute', () {
-      // Ciclo de >28h Y >3h post-ventana: gana el de la ventana (orden 4<5).
+      // SPEC-245: límite absoluto es 50h (no 28h) — para que este test siga
+      // probando la precedencia real (orden 4<5) ambos triggers deben poder
+      // dispararse a la vez. Ciclo de >50h Y >3h post-ventana: gana el de
+      // la ventana.
       final cycle = _openCycle(startedAt: DateTime(2026, 6, 1, 21, 0));
       final result = MetabolicCycleResolver.shouldClose(
         openCycle: cycle,
-        now: DateTime(2026, 6, 3, 2, 0), // 29h desde start
+        now: DateTime(2026, 6, 4, 0, 0), // 51h desde start
         currentProtocol: '16:8',
         expectedWindowCloseTime: DateTime(2026, 6, 2, 19, 0), // >3h pasados
         lastMealTime: null,

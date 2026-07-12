@@ -36,7 +36,6 @@ const _zeroPillars = CyclePillarsCompleted(
 class _FakeRepo implements MetabolicCycleRepository {
   int fetchCallCount = 0;
   bool shouldHang = false; // si true, fetchOpenCycle no completa hasta signal
-  final _hangCompleter = <Future<void> Function()>[];
   MetabolicCycle? stubbedOpen;
 
   @override
@@ -54,13 +53,6 @@ class _FakeRepo implements MetabolicCycleRepository {
 
   @override
   Stream<MetabolicCycle?> watchOpenCycle(String userId) => Stream.value(null);
-
-  @override
-  Stream<List<MetabolicCycle>> watchClosedCycles(String userId, {int? limit}) =>
-      Stream.value([]);
-
-  @override
-  Future<List<MetabolicCycle>> fetchClosedCycles(String userId, {int? limit}) async => [];
 
   @override
   Stream<MetabolicCycle?> watchLastClosed(String userId) => Stream.value(null);
@@ -120,8 +112,24 @@ void main() {
       final repo = _FakeRepo()..shouldHang = true; // primera call es lenta
       final svc = MetabolicCycleService(repository: repo);
 
+      // BUGFIX (auditoría 2026-07-12): con `_input()` default (sin ayuno
+      // nuevo, sin ciclo abierto) el "Caso 1" del servicio devuelve noop()
+      // legítimamente — nada que hacer. Eso hacía que resultA.isNoop
+      // también diera `true`, no por el guard de concurrencia sino porque
+      // A, procesada de verdad, no tenía ningún cambio de estado que
+      // aplicar. `isNoop` no distingue "descartada por concurrencia" de
+      // "no había nada que hacer". Para probar el guard de SPEC-214 de
+      // verdad, A debe recibir un input que produzca un cambio real
+      // (abrir un ciclo nuevo) — así isNoop==false en A refleja que sí
+      // se procesó, y isNoop==true en B refleja que el guard la descartó.
+      final openingInput = _input(
+        newFasting: true,
+        startedAt: DateTime(2026, 6, 14, 10, 0),
+      );
+
       // Lanzamos las dos llamadas sin await para que sean concurrentes
-      final futureA = svc.evaluateAndApply(userId: 'u1', input: _input());
+      final futureA =
+          svc.evaluateAndApply(userId: 'u1', input: openingInput);
       // B llega mientras A todavía está en fetchOpenCycle (simulado lento)
       final futureB = svc.evaluateAndApply(userId: 'u1', input: _input());
 
@@ -132,6 +140,10 @@ void main() {
       expect(repo.fetchCallCount, 1,
           reason:
               'La llamada concurrente no debe llamar fetchOpenCycle (SPEC-214)');
+      expect(resultA.isNoop, isFalse,
+          reason: 'La primera llamada debe procesar normalmente (no es noop)');
+      expect(resultA.opened, isNotNull,
+          reason: 'A abrió un ciclo nuevo — evidencia de que sí procesó');
       expect(resultB.isNoop, isTrue,
           reason: 'La llamada concurrente debe devolver noop');
     });

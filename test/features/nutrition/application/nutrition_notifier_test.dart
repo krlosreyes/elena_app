@@ -86,6 +86,60 @@ class FakeNutritionRepository implements NutritionRepository {
   }
 }
 
+/// TEST-03 (auditoría pre-producción 2026-07-11): repo cuyo `saveMeal`
+/// NUNCA resuelve, replicando el mismo patrón `_HangingSaveRepo` de
+/// test/features/metabolic_cycle/application/metabolic_cycle_service_test.dart
+/// (SPEC-206) para verificar que logMeal no se cuelga si el dispositivo
+/// está offline y el write de Firestore queda pendiente.
+class _HangingNutritionRepository implements NutritionRepository {
+  final saved = <NutritionLog>[];
+
+  // BUGFIX (2026-07-11): antes usaba `Stream.value(const [])`, que emite
+  // una vez y LUEGO COMPLETA. Firestore real (`.snapshots()`) nunca
+  // completa por sí solo, pero este stream sí — y el `onDone` de
+  // `NutritionNotifier._subscribeFor` re-suscribe incondicionalmente al
+  // cerrarse el stream. Resultado real (visto en `flutter test`): loop
+  // infinito síncrono subscribe→emit→complete→onDone→resubscribe, que
+  // nunca cede el control y cuelga el test suite imprimiendo el mismo par
+  // de logs de debug indefinidamente. Ninguno de los dos tests que usan
+  // este fake depende de que el stream emita algo — solo verifican que
+  // saveMeal/removeLastMeal no bloqueen — así que un stream que nunca
+  // emite y nunca completa es suficiente y elimina el loop de raíz.
+  // `.broadcast()` — igual que en `FakeNutritionRepository` de arriba —
+  // porque `_subscribeFor` puede terminar suscribiéndose más de una vez
+  // (listener de usuario + listener de ciclo metabólico, ambos con
+  // `fireImmediately: true`); un controller single-subscription lanzaría
+  // "Stream has already been listened to" en ese caso.
+  final _neverEmits = StreamController<List<NutritionLog>>.broadcast();
+
+  @override
+  Stream<List<NutritionLog>> watchTodayLogs(String userId) => _neverEmits.stream;
+
+  @override
+  Stream<List<NutritionLog>> watchSinceLogs(
+    String userId,
+    DateTime since, {
+    DateTime? until,
+  }) =>
+      _neverEmits.stream;
+
+  @override
+  Future<void> saveMeal(String userId, NutritionLog log) {
+    saved.add(log);
+    return Completer<void>().future; // nunca completa
+  }
+
+  @override
+  Future<void> removeLastMeal(String userId, {required DateTime since}) {
+    return Completer<void>().future; // nunca completa
+  }
+
+  @override
+  Future<void> deleteMealById(String userId, String mealId) {
+    return Completer<void>().future; // nunca completa
+  }
+}
+
 // ─── User stream stub ────────────────────────────────────────────────────────
 
 UserModel _user({int mealsPerDay = 3}) => UserModel(
@@ -610,6 +664,56 @@ void main() {
       expect(logs.map((l) => l.id), isNot(contains('log-almuerzo')),
           reason: 'removeLastMeal debe borrar el más reciente '
               '(almuerzo) y la guardia no debe resucitarlo');
+    });
+  });
+
+  // ── TEST-03 (auditoría 2026-07-11): SPEC-206 offline-first ──────────────
+  group('NutritionNotifier — SPEC-206 offline-first (write no bloqueante)',
+      () {
+    late _HangingNutritionRepository hangingRepo;
+    late ProviderContainer container;
+
+    setUp(() {
+      hangingRepo = _HangingNutritionRepository();
+      container = ProviderContainer(
+        overrides: [
+          nutritionRepositoryProvider.overrideWithValue(hangingRepo),
+          currentUserStreamProvider
+              .overrideWith((ref) => Stream.value(_user())),
+          fastingProvider.overrideWith(
+            (ref) => throw StateError('fastingProvider boom (simulado)'),
+          ),
+        ],
+      );
+      container.read(nutritionProvider);
+    });
+
+    tearDown(() => container.dispose());
+
+    test(
+        'logMeal con repo colgado (offline) no bloquea — retorna dentro '
+        'del timeout', () async {
+      await Future<void>.delayed(Duration.zero);
+
+      await container
+          .read(nutritionProvider.notifier)
+          .logMeal(label: 'Almuerzo', mealTime: DateTime(2026, 5, 1, 13))
+          .timeout(const Duration(seconds: 2));
+
+      expect(hangingRepo.saved.length, 1,
+          reason: 'el write se intentó (quedó pendiente en la caché) '
+              'aunque el Future del server nunca resuelva');
+    });
+
+    test(
+        'removeLastMeal con repo colgado no bloquea — retorna dentro '
+        'del timeout', () async {
+      await Future<void>.delayed(Duration.zero);
+
+      await container
+          .read(nutritionProvider.notifier)
+          .removeLastMeal()
+          .timeout(const Duration(seconds: 2));
     });
   });
 }

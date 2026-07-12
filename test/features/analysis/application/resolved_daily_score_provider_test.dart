@@ -1,8 +1,12 @@
-// SPEC-219 (2026-06-14): blinda resolvedDailyScoreSeriesProvider.
+// SPEC-219 rev2 (2026-06-17): blinda resolvedDailyScoreSeriesProvider.
 //
 // Regla de negocio crítica que estos tests protegen:
 //   1. Cuando hay ciclos metabólicos cerrados con score → usarlos.
-//   2. Cuando los ciclos están vacíos o cargando → fallback a streak.
+//   2. Cuando los ciclos están vacíos o cargando → serie vacía, SIN
+//      fallback a streak calendárico (el fallback se eliminó en rev2
+//      porque el streak es un snapshot en vivo del día calendario que
+//      produce scores distintos al del cierre del ciclo metabólico —
+//      mezclarlos hacía parpadear el chart entre dos fuentes).
 //
 // Si estos tests fallan, alguien rompió la jerarquía de fuentes del
 // Score del Día. El tile de Progreso y el detalle mostrarán datos
@@ -76,7 +80,7 @@ void main() {
     );
 
     test(
-      'cae a streak cuando ciclos cerrados no tienen puntos',
+      'retorna serie vacía cuando ciclos cerrados no tienen puntos (rev2, sin fallback)',
       () async {
         final closed = MetricSeries.empty(label: 'Score del día', unit: '');
         final streak = _series([55.0, 60.0]);
@@ -87,14 +91,14 @@ void main() {
 
         final result = container.read(resolvedDailyScoreSeriesProvider);
 
-        expect(result.points.length, 2,
-            reason: 'ciclos vacíos → debe usar los 2 puntos del streak');
-        expect(result.points.first.value, 55.0);
+        expect(result.points, isEmpty,
+            reason: 'ciclos vacíos → serie vacía, SPEC-219 rev2 eliminó el '
+                'fallback a streak');
       },
     );
 
     test(
-      'cae a streak mientras ciclos cerrados aún están cargando',
+      'retorna serie vacía mientras ciclos cerrados aún están cargando (rev2, sin fallback)',
       () async {
         // StreamController que nunca emite → el StreamProvider queda en
         // AsyncLoading permanente. No podemos usar `.future` aquí porque
@@ -120,10 +124,11 @@ void main() {
 
         final result = container.read(resolvedDailyScoreSeriesProvider);
 
-        // isLoading → .valueOrNull == null → fallback a streak.
-        expect(result.points.length, 1,
-            reason: 'isLoading en ciclos → fallback a streak');
-        expect(result.points.first.value, 42.0);
+        // isLoading → .valueOrNull == null → serie vacía (rev2 eliminó
+        // el fallback a streak: mezclar snapshot en vivo con cierre de
+        // ciclo producía scores inconsistentes en el chart).
+        expect(result.points, isEmpty,
+            reason: 'isLoading en ciclos → serie vacía, sin fallback a streak');
       },
     );
 

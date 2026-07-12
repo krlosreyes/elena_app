@@ -225,7 +225,32 @@ void main() {
       expect(sleepRepo.saved.first.id, 'hk_sleep_sleep-uuid-1');
     });
 
-    test('siesta < 30 min se descarta como ruido', () async {
+    test('sesión < 5 min se descarta como ruido (SPEC-245)', () async {
+      // SPEC-245 (2026-07-07): umbral bajado de 30 min a 5 min. Apple
+      // Watch registra el sueño como etapas individuales (Core/Deep/REM/
+      // Awake) de 15-25 min cada una — el filtro viejo de 30 min las
+      // descartaba TODAS, resultando en 0 sesiones importadas aunque el
+      // usuario durmiera 7h. Este test comprobaba el umbral viejo con
+      // una siesta de 20 min; con el umbral actual de 5 min esa siesta
+      // ya no es ruido, así que la muestra se acorta a 3 min.
+      final summary = await service.importResult(
+        userId,
+        _resultWith({
+          HealthMetric.sleepSession: [
+            _sleepSample(
+              fellAsleep: DateTime(2026, 5, 26, 14),
+              wokeUp: DateTime(2026, 5, 26, 14, 3),
+            ),
+          ],
+        }),
+      );
+      expect(summary.sleepSessionsImported, 0);
+      expect(sleepRepo.saved, isEmpty);
+    });
+
+    test(
+        'siesta de 20 min SÍ se importa (por encima del umbral de 5 min, SPEC-245)',
+        () async {
       final summary = await service.importResult(
         userId,
         _resultWith({
@@ -237,8 +262,8 @@ void main() {
           ],
         }),
       );
-      expect(summary.sleepSessionsImported, 0);
-      expect(sleepRepo.saved, isEmpty);
+      expect(summary.sleepSessionsImported, 1);
+      expect(sleepRepo.saved, isNotEmpty);
     });
 
     test('id determinístico cuando hay uuid', () async {

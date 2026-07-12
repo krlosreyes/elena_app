@@ -62,8 +62,11 @@ void main() {
       final s = ex(_user(), recent: 42);
       expect(s.currentValue, 42);
       expect(s.currentStatusLabel, isNot(contains('estimado')));
-      // target = (42+10) acotado 30–60 = 52 → redondeo 5 = 50
-      expect(s.suggestedTarget, 50);
+      // SPEC-244: target ya no es un flat "+10 acotado 30-60" — depende del
+      // protocolo por zona grasa. Usuario default (M, bf 20% → zona
+      // Promedio, minTarget 35): target = (42+5) acotado [35,75] = 47 →
+      // redondeo a múltiplo de 5 = 45.
+      expect(s.suggestedTarget, 45.0);
     });
   });
 
