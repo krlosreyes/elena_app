@@ -46,6 +46,12 @@ void main() {
     // quedaba en `EntitlementStatus.free()` — de ahí `isPremium == false`.
     await tester.tap(find.text('Mensual'));
     await tester.pump();
+    // El CTA queda fuera del viewport chico por defecto de flutter_test
+    // (800x600) — el contenido vive en un SingleChildScrollView largo.
+    // `ensureVisible` lo scrollea antes de tapear; sin esto, `tap()` le
+    // pega a un offset fuera del árbol renderizado y falla en silencio
+    // (warnIfMissed) sin llegar nunca a invocar `_buySelected()`.
+    await tester.ensureVisible(find.text('Reactivar mi acceso'));
     await tester.tap(find.text('Reactivar mi acceso'));
     await tester.pumpAndSettle();
 
