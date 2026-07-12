@@ -36,10 +36,20 @@ void main() {
     await tester.pumpWidget(_wrap(fake));
     await tester.pumpAndSettle();
 
-    // El stream debe quedar en premium tras la compra.
+    // BUGFIX (auditoría 2026-07-12): tapear la tarjeta "Mensual" solo
+    // cambia `_selectedIndex` (ver `_buildPlanSelector` en
+    // paywall_screen.dart) — no dispara la compra. El botón que llama a
+    // `_buySelected()` es el CTA principal, cuyo label es dinámico según
+    // el estado de trial (isInTrialProvider/trialDaysRemainingProvider,
+    // sin override en este test → sin trial → "Reactivar mi acceso").
+    // Sin este segundo tap, `purchase()` nunca se invocaba y el status
+    // quedaba en `EntitlementStatus.free()` — de ahí `isPremium == false`.
     await tester.tap(find.text('Mensual'));
+    await tester.pump();
+    await tester.tap(find.text('Reactivar mi acceso'));
     await tester.pumpAndSettle();
 
+    // El stream debe quedar en premium tras la compra.
     final status = await fake.customerInfoStream().first;
     expect(status.isPremium, true);
   });
@@ -65,8 +75,13 @@ void main() {
     await tester.pumpWidget(_wrap(fake));
     await tester.pumpAndSettle();
 
+    // BUGFIX (auditoría 2026-07-12): el test esperaba un copy distinto
+    // ('ahora mismo') al que realmente pinta paywall_screen.dart ('en este
+    // momento'). Este mismatch estaba enmascarado por el timeout de
+    // pumpAndSettle que causaba el AnimationController _shimmer muerto
+    // (ver fix de arriba) — nunca llegaba a evaluarse el `expect`.
     expect(
-      find.text('Los planes no están disponibles ahora mismo.'),
+      find.text('Los planes no están disponibles en este momento.'),
       findsOneWidget,
     );
   });

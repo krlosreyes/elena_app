@@ -169,6 +169,17 @@ void main() {
           nutritionRepositoryProvider.overrideWithValue(fakeRepo),
           currentUserStreamProvider
               .overrideWith((ref) => Stream.value(_user())),
+          // BUGFIX (auditoría 2026-07-12): logMeal/removeLastMeal leen
+          // fastingProvider (SPEC-251) para la lógica de notificaciones.
+          // Sin este override, la cadena real de fastingProvider construye
+          // FirebaseAuth.instance/FirebaseFirestore.instance sin que
+          // Firebase esté inicializado en flutter_test, lanzando
+          // FirebaseException(core/no-app) — Flutter lo reporta como
+          // fallo del test aunque los `expect` ya hayan pasado. Mismo
+          // patrón ya usado en los grupos SPEC-251/252/253 más abajo.
+          fastingProvider.overrideWith(
+            (ref) => throw StateError('fastingProvider boom (simulado)'),
+          ),
         ],
       );
       // Forzar la inicialización del notifier.
