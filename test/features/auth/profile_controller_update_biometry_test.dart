@@ -11,6 +11,7 @@
 // (los preserva el baseline al aplicarlo), y el estado del notifier
 // refleja éxito/error.
 
+import 'package:elena_app/src/core/providers/shared_preferences_provider.dart';
 import 'package:elena_app/src/features/auth/application/profile_controller.dart';
 import 'package:elena_app/src/features/progress/application/biometric_history_service.dart';
 import 'package:elena_app/src/features/progress/data/biometric_repository.dart';
@@ -20,16 +21,28 @@ import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   group('SPEC-88 + SPEC-143 — ProfileController.updateBiometry', () {
     late _CapturingHistoryService captured;
     late ProviderContainer container;
 
-    setUp(() {
+    setUp(() async {
       captured = _CapturingHistoryService();
+      // BUGFIX (auditoría 2026-07-12): FB-06 (2026-07-11) hizo
+      // `updateBiometry` offline-first/fire-and-forget — tras un write
+      // exitoso, persiste la fecha del lock semanal en
+      // `sharedPreferencesProvider` (ver ProfileController.updateBiometry,
+      // el `.then()` después de `updateFromProfileEdit`). Este test no lo
+      // overrideaba, así que cualquier caso de éxito disparaba
+      // `UnimplementedError: sharedPreferencesProvider must be overridden
+      // in main.dart` en la cadena unawaited.
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
       container = ProviderContainer(overrides: [
         biometricHistoryServiceProvider.overrideWithValue(captured),
+        sharedPreferencesProvider.overrideWithValue(prefs),
       ]);
     });
 
@@ -95,7 +108,18 @@ void main() {
       expect(state.errorMessage, isNull);
     });
 
-    test('error del servicio → estado con errorMessage', () async {
+    test(
+        'error del servicio en background NO bloquea ni marca error visible '
+        '(offline-first, FB-06)', () async {
+      // BUGFIX (auditoría 2026-07-12): este test verificaba el contrato
+      // pre-FB-06, donde `updateBiometry` esperaba el write y mostraba
+      // errorMessage si fallaba. FB-06 (2026-07-11) lo hizo fire-and-forget
+      // (unawaited): el estado se marca "guardado" ANTES de intentar el
+      // write real, y si falla en background solo se loguea vía
+      // AppLogger.error — mismo patrón que el resto de los flujos
+      // offline-first del proyecto (ver biometric_checkin_sheet.dart
+      // _save: catchError solo loguea, no toca ningún estado observable).
+      // Con ese contrato, ya no hay errorMessage que verificar.
       captured.shouldFail = true;
       final user = _testUser();
       await container
@@ -104,7 +128,8 @@ void main() {
 
       final state = container.read(profileControllerProvider);
       expect(state.isSaving, isFalse);
-      expect(state.errorMessage, contains('biométricos'));
+      expect(state.savedSuccessfully, isTrue);
+      expect(state.errorMessage, isNull);
     });
   });
 }

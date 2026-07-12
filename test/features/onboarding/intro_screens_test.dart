@@ -119,6 +119,14 @@ void main() {
     });
 
     testWidgets('nota de cambio en perfil visible', (tester) async {
+      // BUGFIX (auditoría 2026-07-12): la nota va DESPUÉS de las 3 tarjetas
+      // de protocolo dentro de un ListView — en el viewport chico por
+      // defecto de flutter_test, ese texto queda fuera del cache extent y
+      // el sliver nunca lo infla en el árbol, así que `find` no lo
+      // encontraba (mismo motivo por el que otros tests de este archivo ya
+      // usan `_bigViewport` para contenido al fondo de un ListView).
+      _bigViewport(tester);
+      addTearDown(tester.view.reset);
       await tester.pumpWidget(
         _wrap(IntroProtocolStep(
           isDark: true,

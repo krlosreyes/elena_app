@@ -14,8 +14,6 @@
 // Lógica de negocio intacta: telemetría SPEC-193, purchase / restore /
 // cancel / error, FakeBillingService compatible.
 
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -71,8 +69,7 @@ class PaywallScreen extends ConsumerStatefulWidget {
   ConsumerState<PaywallScreen> createState() => _PaywallScreenState();
 }
 
-class _PaywallScreenState extends ConsumerState<PaywallScreen>
-    with SingleTickerProviderStateMixin {
+class _PaywallScreenState extends ConsumerState<PaywallScreen> {
   List<BillingPackage> _packages = const [];
   bool _loading = true;
   bool _busy = false;
@@ -82,27 +79,22 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen>
   /// mayor valor percibido y mejor precio por mes.
   int _selectedIndex = 1;
 
-  late final AnimationController _shimmer;
-
   @override
   void initState() {
     super.initState();
-    _shimmer = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1800),
-    )..repeat();
-
+    // BUGFIX (auditoría 2026-07-12): había un `AnimationController _shimmer`
+    // con `..repeat()` (loop infinito) que nunca se consumía en el árbol de
+    // widgets — ningún AnimatedBuilder/Transform lo leía. Código muerto que
+    // además rompía cualquier widget test con `pumpAndSettle()`: Flutter no
+    // puede detectar "estado estable" mientras una animación sigue
+    // repitiéndose para siempre, así que el test cuelga hasta el timeout.
+    // Se quita el controller (y el mixin SingleTickerProviderStateMixin que
+    // solo existía para darle vsync) — no había efecto visual que preservar.
     AnalyticsService.logEvent(
       AnalyticsEvents.paywallShown,
       params: {AnalyticsParams.feature: widget.trigger},
     );
     _loadPackages();
-  }
-
-  @override
-  void dispose() {
-    _shimmer.dispose();
-    super.dispose();
   }
 
   Future<void> _loadPackages() async {
@@ -187,7 +179,6 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen>
   /// Línea de precio + disclaimer bajo el botón CTA (context-aware).
   String _disclaimerText(bool isInTrial, int daysRemaining) {
     if (_packages.isEmpty) return '';
-    final pkg = _packages[_selectedIndex];
     if (isInTrial && daysRemaining > 0) {
       return 'Se cobra al vencer tu prueba · Cancela cuando quieras';
     }
@@ -204,14 +195,14 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen>
           (p) => p.period == BillingPeriod.annual);
 
       // Extraer número del priceString (ej. "US$4.99/mes" → 4.99).
-      double _parsePrice(String s) {
+      double parsePrice(String s) {
         final match = RegExp(r'[\d,]+\.?\d*').firstMatch(s);
         if (match == null) return 0;
         return double.tryParse(match.group(0)!.replaceAll(',', '')) ?? 0;
       }
 
-      final mPrice = _parsePrice(monthly.priceString);
-      final aPrice = _parsePrice(annual.priceString);
+      final mPrice = parsePrice(monthly.priceString);
+      final aPrice = parsePrice(annual.priceString);
       if (mPrice <= 0 || aPrice <= 0) return null;
       final saving = ((mPrice * 12 - aPrice) / (mPrice * 12) * 100).round();
       if (saving <= 0) return null;

@@ -11,6 +11,7 @@ import 'package:elena_app/src/core/orchestrator/biological_phases.dart';
 import 'package:elena_app/src/core/providers/shared_preferences_provider.dart';
 import 'package:elena_app/src/features/billing/application/billing_providers.dart';
 import 'package:elena_app/src/features/billing/application/feature_gate.dart';
+import 'package:elena_app/src/features/coaching/application/coaching_fatigue_notifier.dart';
 import 'package:elena_app/src/features/coaching/application/coaching_providers.dart';
 import 'package:elena_app/src/features/coaching/domain/action_source.dart';
 import 'package:elena_app/src/features/coaching/domain/coaching_action.dart';
@@ -60,7 +61,21 @@ Widget _wrap(
     overrides: [
       coachingSelectionProvider.overrideWith((ref) => selection),
       sharedPreferencesProvider.overrideWithValue(prefs),
-      featureGateProvider.overrideWithValue(FeatureGate(isPremium: premium)),
+      featureGateProvider.overrideWithValue(
+          FeatureGate(isPremium: premium, isInTrial: false)),
+      // BUGFIX (auditoría 2026-07-12): `coachingFatigueProvider` (leído por
+      // NextBestActionCard) hace `ref.read(appStateRepositoryProvider)`
+      // incondicionalmente, que construye `AppStateRepository()` con
+      // `FirebaseFirestore.instance` por default — y también watchea
+      // `currentUserStreamProvider`, que cuelga de `authStateProvider`
+      // (FirebaseAuth.instance). Ninguno de los dos estaba overrideado acá,
+      // así que el widget explotaba con `FirebaseException: [core/no-app]`
+      // al montar. Overrideamos el provider completo con un notifier
+      // construido directo desde `prefs` (repo/uid null) — el propio
+      // `CoachingFatigueNotifier` ya sabe saltarse la reconciliación con
+      // Firestore cuando repo o uid son null, así que esto reproduce el
+      // comportamiento real sin tocar Firebase.
+      coachingFatigueProvider.overrideWith((ref) => CoachingFatigueNotifier(prefs)),
     ],
     child: const MaterialApp(home: Scaffold(body: NextBestActionCard())),
   );
