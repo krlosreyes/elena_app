@@ -24,8 +24,8 @@ import 'package:elena_app/src/features/analysis/domain/nutrition_pie_data.dart';
 import 'package:elena_app/src/features/analysis/presentation/monthly_calendar_screen.dart';
 // SPEC-168.4: tile compacto del overview con sparkline + tap a detalle.
 import 'package:elena_app/src/features/analysis/presentation/widgets/pillar_overview_tile.dart';
-// SPEC-256: card de racha (RF-01) + heatmap de 12 semanas (RF-02).
-import 'package:elena_app/src/features/analysis/presentation/widgets/streak_heatmap.dart';
+// SPEC-256: card de racha (RF-01) + gráfico de barras de 30 días (RF-02).
+import 'package:elena_app/src/features/analysis/presentation/widgets/streak_bar_chart.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/streak_summary_card.dart';
 import 'package:elena_app/src/features/streak/application/streak_notifier.dart';
 import 'package:elena_app/src/features/streak/domain/streak_engine.dart';
@@ -306,14 +306,15 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
   /// header de Hoy — Progreso (revisión histórica) no tenía ninguna
   /// vista de racha. `StreakSummaryCard` ya existía pero nunca se había
   /// montado en ningún árbol de widgets (RF-01). Se agrega junto al
-  /// heatmap de 12 semanas (RF-02).
+  /// gráfico de barras de 30 días (RF-02 v2 — reemplazó al heatmap
+  /// estilo GitHub original, que no comunicaba bien en mobile).
   List<Widget> _buildStreakSection() {
     final streakHistory = ref.watch(streakProvider.select((s) => s.history));
     final protectedDates = StreakEngine.computeProtectedDates(streakHistory);
     return [
       const StreakSummaryCard(),
       const SizedBox(height: 10),
-      StreakHeatmap(
+      StreakBarChart(
         history: streakHistory,
         protectedDates: protectedDates,
       ),

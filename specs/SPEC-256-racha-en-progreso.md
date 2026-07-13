@@ -1,7 +1,7 @@
 # SPEC-256 — Seguimiento visual de la racha en Progreso
 
-**Estado:** IMPLEMENTED (2026-07-13) — ver §8 Notas de implementación
-**Versión:** 1.0
+**Estado:** IMPLEMENTED (2026-07-13) — ver §8 y §9 Notas de implementación
+**Versión:** 1.2 — v2 del gráfico (barras) reemplazó al heatmap original tras feedback
 **Líder:** Carlos · **Investigación y propuesta:** Claude
 **Depende de:** SPEC-255 (racha comprensible y sostenible — ya implementado), SPEC-112 (calendario mensual), SPEC-113 (heatmap por pilar, hoy código muerto)
 **Prioridad:** Media-alta — gap real de producto, no solo mejora cosmética (ver §1)
@@ -97,4 +97,14 @@ Para pintar los días protegidos hubo que exponer esa información: `StreakEngin
 
 **Sin tests nuevos** (mismo motivo que SPEC-255: no había tests previos de `analysis_screen.dart` en la porción de overview, ni de `streak_engine.dart` sobre los que apoyarse para esta pieza específica). `flutter analyze`/`test`/`build` pendientes de Carlos — sandbox sin SDK de Flutter.
 
-**REDISEÑO (2026-07-13, mismo día) — feedback directo: "esta gráfica es un asco, no comunica nada".** Screenshot real reveló 4 bugs concretos en la v1: (1) labels de día (L/X/V) desalineados de las celdas — vivían en dos `Column` hermanas con distinto ritmo vertical; (2) `SingleChildScrollView` + `Expanded` dejaba la mayor parte de la card vacía (12 semanas de celdas de 13px caben sobradas sin scroll); (3) labels de mes cortados ("ab"/"r") por muy poco ancho; (4) el degradado continuo de alpha para "registró pero no calificó" se veía como un café/oliva sucio sobre el fondo oscuro, no como "naranja tenue". Fix: una sola fila por día de semana (label y celdas en el mismo `Row`, imposible desalinear), `LayoutBuilder` calcula el tamaño de celda para llenar el ancho disponible sin scroll, columna de mes = celda+gap completos, y dos colores SÓLIDOS y distintos (naranja = calificó, gris pizarra = registró sin calificar) en vez de una mezcla continua. Se agregó también un anillo blanco sutil en la celda de "hoy" para orientar al usuario.
+**REDISEÑO v1 (2026-07-13, mismo día) — feedback directo: "esta gráfica es un asco, no comunica nada".** Screenshot real reveló 4 bugs concretos en la v1: (1) labels de día (L/X/V) desalineados de las celdas — vivían en dos `Column` hermanas con distinto ritmo vertical; (2) `SingleChildScrollView` + `Expanded` dejaba la mayor parte de la card vacía (12 semanas de celdas de 13px caben sobradas sin scroll); (3) labels de mes cortados ("ab"/"r") por muy poco ancho; (4) el degradado continuo de alpha para "registró pero no calificó" se veía como un café/oliva sucio sobre el fondo oscuro, no como "naranja tenue". Fix: una sola fila por día de semana (label y celdas en el mismo `Row`, imposible desalinear), `LayoutBuilder` calcula el tamaño de celda para llenar el ancho disponible sin scroll, columna de mes = celda+gap completos, y dos colores SÓLIDOS y distintos (naranja = calificó, gris pizarra = registró sin calificar) en vez de una mezcla continua. Se agregó también un anillo blanco sutil en la celda de "hoy" para orientar al usuario.
+
+## 9. Cambio de tipo de gráfico (v2, mismo día): heatmap → barras
+
+El fix de alineación/color de v1 **no fue suficiente** — feedback: "no mejoró nada, necesitamos otro tipo de gráfico". Diagnóstico de fondo (no un bug puntual esta vez): una grilla de celdas pequeñas tipo GitHub es un patrón visual **ajeno al lenguaje de esta app**. El resto de Análisis (los 8 tiles de detalle, `bar_chart_card.dart`/SPEC-163) usa consistentemente "barras + eje + línea de referencia" — un patrón que el usuario ya sabe leer en esta misma pantalla. Meter un segundo lenguaje visual (grilla de cuadraditos de color) para un solo widget nuevo obligaba al usuario a aprender un código nuevo, y en una card angosta de mobile las celdas de ~13-20px son intrínsecamente difíciles de comparar entre sí de un vistazo.
+
+**Reemplazo:** `pillars_heatmap.dart` → borrado. `streak_heatmap.dart` → borrado. Nuevo `streak_bar_chart.dart`: gráfico de barras de 30 días, altura = pilares completados (escala fija 0-5, no dinámica — así "3" siempre cae en el mismo lugar), con una **línea de referencia horizontal punteada en 3** (el mínimo de racha). La lectura es directa: la barra cruza la línea o no la cruza, sin memorizar qué color significa qué. Naranja sólido = calificó, gris pizarra sólido = registró pero no llegó al mínimo, sin barra (solo un tick plano en la base) = sin registro ese día, punto ámbar sobre la barra = día perdonado por una reserva. Eje X con 3 labels (inicio del rango, mitad, "hoy").
+
+Mismos datos que v1 (`streakProvider.history` + `StreakEngine.computeProtectedDates`), ningún cambio en la capa de dominio — esto fue puramente un cambio de widget de presentación.
+
+Lección para memoria del proyecto: cuando una visualización nueva no sigue el lenguaje visual ya establecido en la misma pantalla, corregir bugs puntuales (alineación, color) no alcanza — el problema es la elección del tipo de gráfico en sí, no la implementación.
