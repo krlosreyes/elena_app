@@ -110,16 +110,26 @@ class AdaptiveSuggestionCard extends ConsumerWidget {
                   onPressed: () =>
                       _showConfirmationDialog(context, ref, suggestion),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryColor,
+                    // SPEC-257-BUG-01: el botón usaba "Subir de Nivel"
+                    // fijo, sin importar `suggestion.type`. Con
+                    // `simplify` real (SPEC-257 Eje B) esto confundía —
+                    // el usuario creía estar subiendo cuando en realidad
+                    // confirmaba una BAJADA de protocolo, y al tocarlo
+                    // varias veces terminaba en el protocolo más simple.
+                    backgroundColor: suggestion.type == SuggestionType.simplify
+                        ? const Color(0xFFF59E0B)
+                        : primaryColor,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                     elevation: 0,
                   ),
-                  child: const Text(
-                    'Subir de Nivel',
-                    style: TextStyle(
+                  child: Text(
+                    suggestion.type == SuggestionType.simplify
+                        ? 'Simplificar Protocolo'
+                        : 'Subir de Nivel',
+                    style: const TextStyle(
                       fontWeight: FontWeight.w800,
                       fontSize: 13,
                     ),
@@ -154,10 +164,12 @@ class AdaptiveSuggestionCard extends ConsumerWidget {
               style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
             ),
             const SizedBox(height: 20),
-            const Text(
-              '¿Deseas aplicar estos cambios a tu protocolo actual?',
-              style:
-                  TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+            Text(
+              suggestion.type == SuggestionType.simplify
+                  ? '¿Deseas bajar tu protocolo a ${suggestion.newProtocol ?? "un nivel más simple"}?'
+                  : '¿Deseas aplicar estos cambios a tu protocolo actual?',
+              style: const TextStyle(
+                  color: Colors.white, fontWeight: FontWeight.w600),
             ),
           ],
         ),
@@ -188,6 +200,25 @@ class AdaptiveSuggestionCard extends ConsumerWidget {
                   newFastingProtocol: suggestion.newProtocol,
                   newExerciseGoal: suggestion.newExerciseGoal,
                 );
+
+                // SPEC-257-BUG-01 (fix): tras aplicar un cambio,
+                // `adaptiveProvider` se re-evalúa casi de inmediato
+                // porque `currentUserStreamProvider` emite el nuevo
+                // `fastingProtocol` — pero `engagementProvider` NO
+                // cambia (la adherencia semanal depende del historial
+                // de días ya registrados, no del protocolo). Con
+                // engagement todavía en `critico`, `simplify` volvía a
+                // disparar OTRA sugerencia un nivel más abajo, y la
+                // card reaparecía de inmediato: 3 confirmaciones
+                // seguidas terminaban en el protocolo más simple sin
+                // que el usuario lo pidiera. Se descarta la sugerencia
+                // por el resto del día calendárico (mismo mecanismo que
+                // "Ahora no") — mañana, si la condición real persiste
+                // (adherencia sigue baja o hay un nuevo síntoma
+                // reportado), vuelve a evaluarse desde cero.
+                ref
+                    .read(uiInteractionProvider.notifier)
+                    .dismissAdaptiveSuggestion();
 
                 AppLogger.info('[AdaptiveEngine] Protocolo actualizado');
               }
