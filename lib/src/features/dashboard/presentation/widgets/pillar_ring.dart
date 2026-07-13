@@ -28,6 +28,7 @@ class PillarRing extends StatelessWidget {
     this.isSelected = false,
     this.completed = false,
     this.showPercent = false,
+    this.isStreakAnchor = false,
   });
 
   final IconData icon;
@@ -43,6 +44,12 @@ class PillarRing extends StatelessWidget {
   /// cada pilar sin necesidad de tocarlo. El % se redondea al entero
   /// más cercano y se clampea a [0, 100].
   final bool showPercent;
+
+  /// SPEC-255 RF-07: true cuando este pilar (ayuno o sueño) es el ancla
+  /// que aún falta hoy para calificar para la racha (regla "3/5 con
+  /// ayuno o sueño"). Muestra una marca sutil — no es un estado de error,
+  /// solo una pista de qué pilar mueve más la aguja hoy.
+  final bool isStreakAnchor;
 
   @override
   Widget build(BuildContext context) {
@@ -84,6 +91,26 @@ class PillarRing extends StatelessWidget {
                   ),
                 ),
                 Icon(icon, color: color, size: 22),
+                // SPEC-255 RF-07: pista de pilar-ancla — solo mientras no
+                // esté completado (una vez el check verde aparece, la
+                // pista ya no aporta nada).
+                if (isStreakAnchor && !completed)
+                  Positioned(
+                    left: 0,
+                    top: 0,
+                    child: Container(
+                      width: 12,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF59E0B),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: const Color(0xFF1E293B),
+                          width: 1.5,
+                        ),
+                      ),
+                    ),
+                  ),
                 if (completed)
                   Positioned(
                     right: 2,

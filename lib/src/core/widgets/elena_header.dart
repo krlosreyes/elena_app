@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/streak/application/streak_notifier.dart';
+import 'package:elena_app/src/features/streak/presentation/widgets/streak_explainer_sheet.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 
 class ElenaHeader extends ConsumerWidget {
@@ -70,7 +71,15 @@ class ElenaHeader extends ConsumerWidget {
             ),
             // Racha como protagonista del header (IMR removido por redundante;
             // vive en Análisis). Se oculta si aún no hay racha.
-            _StreakBadge(days: streakState.currentStreak),
+            // SPEC-255 RF-01: tap abre el explainer de la regla de racha.
+            InkWell(
+              onTap: () => showStreakExplainerSheet(context),
+              borderRadius: BorderRadius.circular(16),
+              child: _StreakBadge(
+                days: streakState.currentStreak,
+                protected: streakState.streakHasProtectedDay,
+              ),
+            ),
           ],
         );
       },
@@ -84,7 +93,12 @@ class ElenaHeader extends ConsumerWidget {
 /// aún no hay racha (0 días) para no desmotivar.
 class _StreakBadge extends StatelessWidget {
   final int days;
-  const _StreakBadge({required this.days});
+
+  /// SPEC-255 RF-02: true si esta racha incluye un día perdonado por una
+  /// reserva — muestra un pequeño escudo junto a la flama.
+  final bool protected;
+
+  const _StreakBadge({required this.days, this.protected = false});
 
   @override
   Widget build(BuildContext context) {
@@ -126,6 +140,14 @@ class _StreakBadge extends StatelessWidget {
               letterSpacing: 0.6,
             ),
           ),
+          if (protected) ...[
+            const SizedBox(width: 5),
+            Icon(
+              Icons.shield_rounded,
+              color: const Color(0xFFF59E0B).withValues(alpha: 0.9),
+              size: 14,
+            ),
+          ],
         ],
       ),
     );

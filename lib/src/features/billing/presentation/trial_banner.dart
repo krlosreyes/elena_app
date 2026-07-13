@@ -10,8 +10,11 @@
 //
 // Fases:
 //   Días 8–14 (verde, slim)   : "lo tienes todo, N días más"
-//   Días 4–7  (amarillo, slim): "N días para mantener tu racha"
+//   Días 4–7  (amarillo, slim): "N días para asegurar coaching e historial"
 //   Días 1–3  (naranja, alto) : menciona coaching + historial IMR + HK explícitos
+//
+// Nota (SPEC-255 RF-05): la racha NUNCA estuvo gateada por feature_gate.dart
+// — es gratis en todos los tiers. El copy no debe insinuar lo contrario.
 //   Día 1     (naranja, alto) : llamado final, urgencia máxima
 
 import 'package:flutter/material.dart';
@@ -158,7 +161,7 @@ class TrialBanner extends ConsumerWidget {
       return 'Solo te quedan $daysRemaining días — después perderás el acceso';
     }
     if (daysRemaining <= 7) {
-      return '$daysRemaining días para asegurar tu racha y coaching';
+      return '$daysRemaining días para asegurar coaching e historial';
     }
     return 'Tienes acceso completo a Elena — te quedan $daysRemaining días';
   }

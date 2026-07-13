@@ -60,9 +60,14 @@ class _CelebrationOverlayState extends ConsumerState<CelebrationOverlay>
 
   void _show(CelebrationEvent event) {
     _currentEvent = event;
+    // SPEC-255: el mensaje de reencuadre (streakBroken) es más largo y más
+    // importante de leer con calma que un banner de "3/5 pilares" — le
+    // damos más tiempo antes de auto-descartar.
+    final visibleDuration = event.type == CelebrationType.streakBroken
+        ? const Duration(seconds: 6)
+        : const Duration(seconds: 3);
     _controller.forward().then((_) {
-      // Auto-dismiss a los 3 segundos
-      Future.delayed(const Duration(seconds: 3), () {
+      Future.delayed(visibleDuration, () {
         if (mounted && _currentEvent == event) _dismiss();
       });
     });
@@ -162,33 +167,75 @@ class _CelebrationBanner extends StatelessWidget {
   }
 
   String get _icon {
-    if (event.pillarsCompleted >= 5) return '⭐';
-    if (event.pillarsCompleted >= 4) return '💪';
-    if (event.currentStreak > 1) return '🔥';
-    return '🎯';
+    switch (event.type) {
+      case CelebrationType.streakMilestone:
+        return '🏆';
+      case CelebrationType.streakBroken:
+        return '🌱';
+      case CelebrationType.streakThreshold:
+        if (event.pillarsCompleted >= 5) return '⭐';
+        if (event.pillarsCompleted >= 4) return '💪';
+        if (event.currentStreak > 1) return '🔥';
+        return '🎯';
+    }
   }
 
   String get _title {
-    final p = event.pillarsCompleted;
-    return '$p/5 pilares';
+    switch (event.type) {
+      case CelebrationType.streakMilestone:
+        return 'Día ${event.currentStreak} de racha';
+      case CelebrationType.streakBroken:
+        return 'Tu racha se pausó';
+      case CelebrationType.streakThreshold:
+        final p = event.pillarsCompleted;
+        return '$p/5 pilares';
+    }
   }
 
   String get _subtitle {
-    if (event.pillarsCompleted >= 5) {
-      return 'Día perfecto. Tu cuerpo lo nota.';
+    switch (event.type) {
+      case CelebrationType.streakMilestone:
+        // SPEC-255: nombrar el hito sin insinuar automaticidad (Lally 2010:
+        // el promedio real para que un hábito se vuelva automático es 66
+        // días, no 21 — evitamos prometer algo que no es cierto).
+        return _milestoneSubtitle(event.currentStreak);
+      case CelebrationType.streakBroken:
+        // SPEC-255 RF-03: reencuadre autocompasivo, no de culpa. La racha
+        // más larga queda como logro permanente — se lo recordamos aquí.
+        return 'Fueron ${event.currentStreak} días reales. Tu récord sigue en pie. Hoy es un buen día para empezar de nuevo.';
+      case CelebrationType.streakThreshold:
+        if (event.pillarsCompleted >= 5) {
+          return 'Día perfecto. Tu cuerpo lo nota.';
+        }
+        if (event.pillarsCompleted == 4) {
+          return 'Casi perfecto. Vas muy bien.';
+        }
+        if (event.currentStreak > 1) {
+          return 'Día ${event.currentStreak} consecutivo. Sigue así.';
+        }
+        return '¡Hoy cuentas para tu racha!';
     }
-    if (event.pillarsCompleted == 4) {
-      return 'Casi perfecto. Vas muy bien.';
-    }
-    if (event.currentStreak > 1) {
-      return 'Día ${event.currentStreak} consecutivo. Sigue así.';
-    }
-    return '¡Hoy cuentas para tu racha!';
+  }
+
+  static String _milestoneSubtitle(int days) {
+    if (days >= 100) return '100 días. Esto ya es parte de quién eres.';
+    if (days >= 60) return '60 días de consistencia real.';
+    if (days >= 30) return 'Un mes entero cuidándote. Se nota.';
+    if (days >= 14) return 'Dos semanas seguidas. Vas construyendo el hábito.';
+    if (days >= 7) return 'Una semana completa. Sigue así.';
+    return 'Primeros días — la base de todo lo que viene.';
   }
 
   Color get _backgroundColor {
-    if (event.pillarsCompleted >= 5) return const Color(0xFF10B981); // verde
-    if (event.pillarsCompleted >= 4) return const Color(0xFF818CF8); // indigo
-    return AppColors.metabolicGreen;
+    switch (event.type) {
+      case CelebrationType.streakMilestone:
+        return const Color(0xFFF59E0B); // ámbar/dorado — hito
+      case CelebrationType.streakBroken:
+        return const Color(0xFF64748B); // slate — calma, no alarma
+      case CelebrationType.streakThreshold:
+        if (event.pillarsCompleted >= 5) return const Color(0xFF10B981);
+        if (event.pillarsCompleted >= 4) return const Color(0xFF818CF8);
+        return AppColors.metabolicGreen;
+    }
   }
 }

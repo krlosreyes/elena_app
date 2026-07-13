@@ -1,0 +1,312 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:elena_app/src/core/theme/app_theme.dart';
+import 'package:elena_app/src/core/engine/imr_persistence_provider.dart';
+import 'package:elena_app/src/features/dashboard/application/hydration_notifier.dart';
+import 'package:elena_app/src/features/dashboard/application/sleep_notifier.dart';
+import 'package:elena_app/src/features/dashboard/domain/fasting_status.dart';
+import 'package:elena_app/src/features/dashboard/domain/selected_pillar.dart';
+import 'package:elena_app/src/features/dashboard/presentation/widgets/daily_score_explainer_sheet.dart';
+import 'package:elena_app/src/features/dashboard/presentation/widgets/dual_score_ring.dart';
+import 'package:elena_app/src/features/dashboard/presentation/widgets/pillar_ring.dart';
+import 'package:elena_app/src/features/exercise/application/exercise_state.dart';
+import 'package:elena_app/src/features/goals/application/pillar_goal_providers.dart';
+import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
+import 'package:elena_app/src/features/onboarding/application/tour_targets_provider.dart';
+import 'package:elena_app/src/features/streak/application/daily_score_provider.dart';
+import 'package:elena_app/src/features/streak/application/streak_notifier.dart';
+
+/// Fila horizontal de 5 anillos circulares — uno por pilar.
+/// Cada anillo es interactivo y abre su sheet de input correspondiente.
+/// El pilar de Ayuno está visualmente destacado cuando está activo.
+///
+/// SPEC-140.1: el header ahora incluye el Score del Día (agregado de
+/// los 5 pilares), el delta vs ayer y el icono ⓘ que abre el
+/// explainer educativo. Cada PillarRing muestra su % bajo el label.
+///
+/// SPEC-119: extraído de `_buildPillarsRow` en `dashboard_screen.dart`
+/// (ARCH-03). `_selectedPillar` y el `setState` del State original se
+/// reemplazaron por los parámetros `selectedPillar` + `onSelectPillar`
+/// — la única diferencia mecánica necesaria para vivir fuera del State.
+/// El resto del cuerpo es idéntico al método original.
+class DashboardPillarsRow extends ConsumerWidget {
+  const DashboardPillarsRow({
+    super.key,
+    required this.fastingState,
+    required this.sleep,
+    required this.hydration,
+    required this.exercise,
+    required this.nutrition,
+    required this.selectedPillar,
+    required this.onSelectPillar,
+  });
+
+  final FastingState fastingState;
+  final SleepState sleep;
+  final HydrationState hydration;
+  final ExerciseState exercise;
+  final NutritionState nutrition;
+  final SelectedPillar selectedPillar;
+  final ValueChanged<SelectedPillar> onSelectPillar;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // SPEC-194 (2026-06-06): se eliminó el placeholder "Tu día
+    // metabólico aún no empezó". Bloqueaba la app cuando había
+    // desync entre ayuno activo y ciclo cerrado, y el bootstrap
+    // retroactivo (SPEC-193) ya repara esos casos sin bloquear la UI.
+    // Los rings vuelven a estar siempre visibles, alimentados por
+    // los providers DISPLAY cycle-aware con fallback a legacy.
+
+    // SPEC-171 (2026-06-04): usa los providers DISPLAY anclados al ciclo
+    // metabólico. Cuando hay ciclo abierto con protocolo conocido, el
+    // score y el delta reflejan el ciclo en vivo, no el día calendárico.
+    // Fallback al legacy cuando no hay ciclo o protocolo == 'Ninguno'.
+    final dailyScore = ref.watch(displayDailyScoreProvider);
+    final delta = ref.watch(displayDailyScoreDeltaProvider);
+
+    // SPEC-175 (2026-06-04): la regla "el sleep pertenece al ciclo"
+    // vive en `currentCycleSleepProvider`. Si no pertenece, devuelve
+    // null y el ring queda en 0. La regla canónica es:
+    //   wokeUp ∈ [startedAt - 18h, startedAt)
+    // Histórico: SPEC-149.2.bugfix2 introdujo la ventana 18h previas;
+    // SPEC-149.2.bugfix3 agregó el límite superior `< startedAt` para
+    // que el sleep post-startedAt no contara al ciclo recién abierto;
+    // SPEC-175 movió la lógica a un provider derivado limpio.
+    final cycleSleep = ref.watch(currentCycleSleepProvider);
+    // BUGFIX objetivos: meta de sueño desde "Mis objetivos" (SoT) con
+    // fallback a 8h. Antes el progreso usaba 8h y el completado 7h hardcoded;
+    // ahora ambos siguen el objetivo del usuario.
+    final sleepTargetH = ref.watch(effectiveSleepGoalProvider);
+    final sleepProgress = cycleSleep == null
+        ? 0.0
+        : (cycleSleep.duration.inMinutes / (sleepTargetH * 60)).clamp(0.0, 1.0);
+    final sleepCompleted =
+        cycleSleep != null && cycleSleep.duration.inHours >= sleepTargetH;
+
+    // SPEC-255 RF-07: pista de pilar-ancla. Ayuno/Sueño son los únicos
+    // pilares que desbloquean la vía "3/5 con ancla" — se resalta el que
+    // aún falta mientras el día no califique todavía por esa vía (una
+    // vez alguno de los dos se completa, o el día ya calificó por la vía
+    // "4+/5", la pista deja de mostrarse en ambos).
+    final todayEntry = ref.watch(streakProvider.select((s) => s.todayEntry));
+    final todayQualifies = todayEntry?.qualifiesForStreak ?? false;
+    final fastingAnchorDone = todayEntry?.fastingCompleted ?? false;
+    final sleepAnchorDone = todayEntry?.sleepCompleted ?? false;
+    final showAnchorHint =
+        !todayQualifies && !fastingAnchorDone && !sleepAnchorDone;
+
+    // SPEC-140.2: el Score del Día vive como HEADLINE dentro del card
+    // de pilares. El label "PILARES HOY" se elimina (los 5 rings con
+    // sus iconos son autodescriptivos). El divider separa visualmente
+    // el agregado (TU DÍA) del desglose (5 pilares).
+    return Container(
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E293B),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Fila 1: label TU DÍA + ⓘ alineados a los extremos.
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                // SPEC-230: renombrado a "PROGRESO HOY" para distinguir
+                // claramente el Score del Día (cambio diario) del IMR
+                // (Índice Metabólico Real, cambio semanal/mensual).
+                'PROGRESO HOY',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.45),
+                  fontSize: 10,
+                  letterSpacing: 1.5,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              GestureDetector(
+                key: const Key('daily_score_info_button'),
+                behavior: HitTestBehavior.opaque,
+                onTap: () => showDailyScoreExplainerSheet(context),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 2,
+                  ),
+                  child: Icon(
+                    Icons.info_outline,
+                    color: Colors.white.withValues(alpha: 0.50),
+                    size: 16,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          // SPEC-170 (2026-06-04): dos rings adyacentes HOY + IMR
+          // reemplazan el número grande 36pt. Cada uno con score, label
+          // y sub-label propio. Tap en cualquiera abre el ExplainerSheet
+          // único que cubre ambos.
+          // SPEC-243 fix: key compartida con AppTourOverlay para calcular
+          // posición real del spotlight "Progreso Hoy" (scoreCard).
+          DualScoreRing(
+            key: ref.read(dualScoreRingKeyProvider),
+            dailyScore: dailyScore,
+            dailyDelta: delta,
+            // PERF-01: antes 3x `ref.watch(displayedImrProvider)` sobre el
+            // objeto completo. Cada línea usa un único campo primitivo
+            // (score/zone/isPartialBiometrics), así que se separan en
+            // `.select()` — solo reconstruye si ese campo puntual cambia.
+            imrScore: ref.watch(displayedImrProvider.select((s) => s.score)),
+            imrZone: ref.watch(displayedImrProvider.select((s) => s.zone)),
+            // SPEC-229: biometrías parciales → sublabel "estimado" en el IMR ring.
+            imrIsPartial: ref.watch(displayedImrProvider
+                .select((s) => s.localFull?.isPartialBiometrics ?? false)),
+            onTap: () => showDailyScoreExplainerSheet(context),
+          ),
+          const SizedBox(height: 12),
+          // Frase motivacional centrada bajo los rings (SPEC-140.3).
+          // SPEC-114-app (2026-07-12, P1-B/C del informe de producto):
+          // el copy de score bajo ahora es condicional a la antigüedad
+          // de la cuenta — ver `_dailyScoreMotivation`.
+          Center(
+            child: Text(
+              _dailyScoreMotivation(
+                dailyScore,
+                ref.watch(streakProvider.select((s) => s.history.length)),
+              ),
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.70),
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                height: 1.0,
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+          // Divider sutil entre headline y rings.
+          Container(
+            height: 1,
+            color: Colors.white.withValues(alpha: 0.08),
+          ),
+          const SizedBox(height: 14),
+          // Fila de los 5 pilares con % bajo cada label.
+          // SPEC-243 fix: key compartida con AppTourOverlay para calcular
+          // posición real del spotlight de cada pilar (localToGlobal).
+          Row(
+            key: ref.read(pillarRowKeyProvider),
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              PillarRing(
+                icon: Icons.timer_rounded,
+                color: AppColors.metabolicGreen,
+                progress: fastingState.progressPercentage,
+                label: 'Ayuno',
+                isSelected: selectedPillar == SelectedPillar.ayuno,
+                completed: fastingState.progressPercentage >= 1.0,
+                showPercent: true,
+                isStreakAnchor: showAnchorHint,
+                onTap: () => onSelectPillar(SelectedPillar.ayuno),
+              ),
+              PillarRing(
+                icon: Icons.nightlight_round,
+                color: const Color(0xFF818CF8),
+                progress: sleepProgress,
+                label: 'Sueño',
+                isSelected: selectedPillar == SelectedPillar.sueno,
+                completed: sleepCompleted,
+                showPercent: true,
+                isStreakAnchor: showAnchorHint,
+                onTap: () => onSelectPillar(SelectedPillar.sueno),
+              ),
+              PillarRing(
+                icon: Icons.water_drop_rounded,
+                color: Colors.blueAccent,
+                progress: hydration.progressPercentage,
+                label: 'Hidratación',
+                isSelected: selectedPillar == SelectedPillar.hidratacion,
+                completed: hydration.isGoalReached,
+                showPercent: true,
+                onTap: () => onSelectPillar(SelectedPillar.hidratacion),
+              ),
+              Builder(builder: (_) {
+                // SPEC-113.bugfix: usar `user.exerciseGoalMinutes`
+                // (default 20) como meta diaria. Antes el progress se
+                // dividía por 60 y el "completed" se gatillaba en 30
+                // — ambos hardcoded y desalineados con el objetivo
+                // real sugerido al usuario.
+                // BUGFIX objetivos: meta desde "Mis objetivos" (SoT) con
+                // fallback a UserModel/default.
+                final goal =
+                    ref.watch(effectiveExerciseGoalProvider).clamp(1, 240);
+                final progress =
+                    (exercise.todayMinutes / goal.toDouble()).clamp(0.0, 1.0);
+                return PillarRing(
+                  icon: Icons.fitness_center_rounded,
+                  color: Colors.tealAccent,
+                  progress: progress,
+                  label: 'Ejercicio',
+                  isSelected: selectedPillar == SelectedPillar.ejercicio,
+                  completed: exercise.todayMinutes >= goal,
+                  showPercent: true,
+                  onTap: () => onSelectPillar(SelectedPillar.ejercicio),
+                );
+              }),
+              // SPEC-105: si hay ayuno activo, el PillarRing de Comidas
+              // se ve tenue (opacity 0.5) para señal visual consistente
+              // con el bloqueo. Sigue tappable — el usuario puede entrar
+              // a la card y ver el banner explicativo.
+              Opacity(
+                opacity: fastingState.isActive ? 0.5 : 1.0,
+                child: PillarRing(
+                  icon: Icons.restaurant_rounded,
+                  color: Colors.orangeAccent,
+                  progress: nutrition.progressPercentage,
+                  label: 'Comidas',
+                  isSelected: selectedPillar == SelectedPillar.comidas,
+                  completed:
+                      nutrition.mealsLoggedToday >= nutrition.targetMeals,
+                  showPercent: true,
+                  onTap: () => onSelectPillar(SelectedPillar.comidas),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// SPEC-140.3: frase motivacional adaptativa según el Score del Día.
+  /// 6 rangos calibrados para tono ElenaApp (encouraging, no
+  /// infantilizing, brand voice metabólica). El usuario ve un mensaje
+  /// que ancla el número en sentido emocional.
+  ///
+  /// SPEC-114-app (2026-07-12): el informe de producto (C2, causa
+  /// crítica de activación) identificó que el rango score<30 mostraba
+  /// siempre "Vas empezando" — un copy neutro que un usuario en su
+  /// primer día lee como "estoy fallando", cuando en realidad un score
+  /// bajo a las 2h de su primer ayuno es matemáticamente esperado (el
+  /// score promedia 5 pilares que aún no puede completar). El fix es
+  /// una capa de presentación: no toca el cálculo del score, solo hace
+  /// el copy condicional a cuántos días de historial de streak tiene
+  /// la cuenta (`historyDays` = `streakProvider.history.length`).
+  ///   - historyDays == 0 (día 0, sin ningún registro previo): mensaje
+  ///     directivo que apunta a la primera acción (arrancar el ayuno).
+  ///   - historyDays 1-3 (pocos datos): mensaje que dirige a sumar los
+  ///     pilares de menor fricción (sueño, hidratación) hoy.
+  ///   - historyDays >= 4 (patrón visible, score sigue bajo): se
+  ///     mantiene el copy original — ahí sí es una señal real de baja
+  ///     adherencia, no un artefacto de cold-start.
+  String _dailyScoreMotivation(int score, int historyDays) {
+    if (score >= 100) return 'Día perfecto';
+    if (score >= 85) return 'Casi al tope';
+    if (score >= 70) return 'Excelente día';
+    if (score >= 50) return 'Buen avance';
+    if (score >= 30) return 'Sumando';
+    if (historyDays == 0) return 'Tu primer día: arranca el ayuno';
+    if (historyDays < 4) return 'En camino: suma sueño e hidratación';
+    return 'Vas empezando';
+  }
+}

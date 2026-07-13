@@ -2,6 +2,33 @@ import 'package:elena_app/src/core/services/day_boundary_resolver.dart';
 import 'package:elena_app/src/features/streak/domain/streak_entry.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
+// SPEC-255 RF-02: resultado de una racha "protegida" (con reservas/freeze).
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Resultado de [StreakEngine.computeCurrentStreakWithFreezes]. Solo debe
+/// usarse para el número que ve el usuario (header/card) — NUNCA para
+/// alimentar [StreakEngine.computeAdherenceTrend] ni el IMR longitudinal,
+/// que siguen usando [StreakEngine.computeCurrentStreak] sin protección.
+class StreakFreezeState {
+  /// Racha visible al usuario: cuenta días reales Y días perdonados por
+  /// una reserva.
+  final int currentStreak;
+
+  /// Reservas disponibles ahora mismo (0-2). Se gana 1 cada 7 días
+  /// consecutivos REALES (sin usar reserva), tope 2.
+  final int freezesAvailable;
+
+  /// True si algún día de la cadena actual fue perdonado por una reserva.
+  final bool currentStreakHasProtectedDay;
+
+  const StreakFreezeState({
+    required this.currentStreak,
+    required this.freezesAvailable,
+    required this.currentStreakHasProtectedDay,
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // StreakEngine — Motor de cómputo puro (sin estado, sin side-effects)
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -114,6 +141,123 @@ class StreakEngine {
     }
 
     return streak;
+  }
+
+  /// SPEC-255 RF-02: versión "protegida" de [computeCurrentStreak] — perdona
+  /// UN día no calificado dentro de la cadena si hay una reserva disponible.
+  /// No perdona huecos de calendario (>1 día) ni dos días seguidos sin
+  /// calificar. Nunca usada para IMR/adherencia — solo para el número
+  /// motivacional que ve el usuario.
+  ///
+  /// Mecánica (§6 Fase 3 del spec): cada 7 días CONSECUTIVOS reales
+  /// (sin usar reserva) que califican, se gana 1 reserva, tope 2. Gratis
+  /// para todos los tiers — no repite el problema de credibilidad de RF-05.
+  ///
+  /// Propiedad clave de no-regresión: mientras un usuario nunca acumule
+  /// 7 días reales consecutivos, `protectedDates` queda vacío y el
+  /// resultado es IDÉNTICO a [computeCurrentStreak].
+  static StreakFreezeState computeCurrentStreakWithFreezes(
+    List<StreakEntry> history,
+  ) {
+    if (history.isEmpty) {
+      return const StreakFreezeState(
+        currentStreak: 0,
+        freezesAvailable: 0,
+        currentStreakHasProtectedDay: false,
+      );
+    }
+
+    // Paso 1 (adelante, cronológico): marcar qué fechas quedan protegidas
+    // y calcular cuántas reservas quedan disponibles al final.
+    final ascending = _sortedAscending(history);
+    final protectedDates = <String>{};
+    int banked = 0;
+    int consecutiveRealQualifying = 0;
+    DateTime? prevDate;
+
+    for (final entry in ascending) {
+      final d = DateTime.tryParse(entry.date);
+      if (d == null) continue;
+
+      final isNextCalendarDay =
+          prevDate != null && d.difference(prevDate!).inDays == 1;
+
+      if (prevDate != null && !isNextCalendarDay) {
+        // Hueco de calendario (>1 día): rompe la racha de días reales
+        // usada para ganar reservas.
+        consecutiveRealQualifying = 0;
+      }
+
+      if (entry.qualifiesForStreak) {
+        consecutiveRealQualifying++;
+      } else if (isNextCalendarDay && banked > 0) {
+        // Perdona este día puntual — consume una reserva.
+        banked--;
+        protectedDates.add(entry.date);
+        consecutiveRealQualifying = 0; // no fue una completación real
+      } else {
+        consecutiveRealQualifying = 0;
+      }
+
+      if (consecutiveRealQualifying > 0 &&
+          consecutiveRealQualifying % 7 == 0 &&
+          banked < 2) {
+        banked++;
+      }
+
+      prevDate = d;
+    }
+
+    // Paso 2 (atrás, igual que computeCurrentStreak): un día cuenta si
+    // califica O fue protegido por una reserva.
+    final descending = _sortedDescending(history);
+    final today = _todayKey();
+    final yesterday =
+        _dateKey(DateTime.now().subtract(const Duration(days: 1)));
+
+    bool countsForStreak(StreakEntry e) =>
+        e.qualifiesForStreak || protectedDates.contains(e.date);
+
+    int start = 0;
+    if (descending.isNotEmpty &&
+        descending.first.date == today &&
+        !countsForStreak(descending.first)) {
+      start = 1;
+    }
+
+    int streak = 0;
+    String? expectedDate;
+    bool hasProtectedDay = false;
+
+    for (int i = start; i < descending.length; i++) {
+      final entry = descending[i];
+      if (!countsForStreak(entry)) break;
+
+      if (expectedDate == null) {
+        if (entry.date != today && entry.date != yesterday && i == start) {
+          break;
+        }
+        expectedDate = entry.date;
+        streak++;
+      } else {
+        final expected =
+            DateTime.parse(expectedDate).subtract(const Duration(days: 1));
+        if (entry.date == _dateKey(expected)) {
+          if (protectedDates.contains(entry.date)) hasProtectedDay = true;
+          streak++;
+          expectedDate = entry.date;
+        } else {
+          break;
+        }
+      }
+      if (protectedDates.contains(entry.date)) hasProtectedDay = true;
+    }
+
+    return StreakFreezeState(
+      currentStreak: streak,
+      freezesAvailable: banked,
+      currentStreakHasProtectedDay: hasProtectedDay,
+    );
   }
 
   /// Calcula la racha más larga de toda la historia.

@@ -45,6 +45,16 @@ class AnalyticsEvents {
   static const String coachingActionCompleted = 'coaching_action_completed';
   static const String coachingFeedbackShown = 'coaching_feedback_shown';
 
+  // ── Racha (SPEC-255) ───────────────────────────────────────────────────
+  /// El usuario cruzó un hito de racha (3/7/14/30/60/100 días).
+  static const String streakMilestoneReached = 'streak_milestone_reached';
+  /// Una racha activa se rompió (sin reserva disponible para protegerla).
+  static const String streakBroken = 'streak_broken';
+  /// Una reserva de racha (freeze) perdonó un día no calificado.
+  static const String streakFreezeUsed = 'streak_freeze_used';
+  /// El usuario abrió el explainer de "qué cuenta para mi racha".
+  static const String streakExplainerOpened = 'streak_explainer_opened';
+
   /// Lista completa para tests de unicidad (SPEC-193 §6).
   static const List<String> all = [
     appOpen,
@@ -69,6 +79,10 @@ class AnalyticsEvents {
     coachingActionFollowed,
     coachingActionCompleted,
     coachingFeedbackShown,
+    streakMilestoneReached,
+    streakBroken,
+    streakFreezeUsed,
+    streakExplainerOpened,
   ];
 }
 
@@ -95,4 +109,12 @@ class AnalyticsParams {
   /// SPEC-197: qué feature gateada topó el usuario Free (coaching, analytics,
   /// auto_sync, cycle_feedback).
   static const String feature = 'feature';
+
+  /// SPEC-255: hito de racha cruzado (3/7/14/30/60/100 — ya es un bucket
+  /// discreto por diseño, no un valor continuo).
+  static const String milestoneDays = 'milestone_days';
+
+  /// SPEC-255: bucket de la longitud de racha rota (evita reportar el día
+  /// exacto en crudo, consistente con la regla de buckets del §2.4).
+  static const String streakLengthBucket = 'streak_length_bucket';
 }

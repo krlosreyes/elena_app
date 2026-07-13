@@ -12,7 +12,9 @@ import 'package:elena_app/src/features/dashboard/application/hydration_notifier.
 import 'package:elena_app/src/features/dashboard/domain/sleep_quality_calculator.dart';
 import 'package:elena_app/src/features/exercise/application/exercise_notifier.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
+import 'package:elena_app/src/core/analytics/analytics_events.dart';
 import 'package:elena_app/src/core/providers/celebration_providers.dart';
+import 'package:elena_app/src/core/services/analytics_service.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/core/services/day_boundary_resolver.dart';
 import 'package:elena_app/src/core/services/firestore_errors.dart';
@@ -51,6 +53,15 @@ class StreakState {
   /// Historial de los últimos 30 días (para visualización).
   final List<StreakEntry> history;
 
+  /// SPEC-255 RF-02: reservas de racha disponibles (0-2). `currentStreak`
+  /// ya las tiene aplicadas (es la versión "protegida" — ver
+  /// [StreakEngine.computeCurrentStreakWithFreezes]).
+  final int freezesAvailable;
+
+  /// SPEC-255 RF-02: true si la racha actual incluye un día perdonado
+  /// por una reserva — para mostrar un indicador sutil en la UI.
+  final bool streakHasProtectedDay;
+
   /// Si hoy ya califica para la racha.
   bool get todayCompleted => todayEntry?.qualifiesForStreak ?? false;
 
@@ -65,6 +76,8 @@ class StreakState {
     this.weeklyQualityScore = 0.0,
     this.todayEntry,
     this.history = const [],
+    this.freezesAvailable = 0,
+    this.streakHasProtectedDay = false,
   });
 
   StreakState copyWith({
@@ -75,6 +88,8 @@ class StreakState {
     double? weeklyQualityScore,
     StreakEntry? todayEntry,
     List<StreakEntry>? history,
+    int? freezesAvailable,
+    bool? streakHasProtectedDay,
   }) =>
       StreakState(
         currentStreak: currentStreak ?? this.currentStreak,
@@ -84,6 +99,9 @@ class StreakState {
         weeklyQualityScore: weeklyQualityScore ?? this.weeklyQualityScore,
         todayEntry: todayEntry ?? this.todayEntry,
         history: history ?? this.history,
+        freezesAvailable: freezesAvailable ?? this.freezesAvailable,
+        streakHasProtectedDay:
+            streakHasProtectedDay ?? this.streakHasProtectedDay,
       );
 }
 
@@ -109,6 +127,15 @@ class StreakNotifier extends StateNotifier<StreakState> {
   /// usamos los valores ACTUALES sin maxMag para que el score sea dinámico:
   /// si el usuario borra vasos de agua, el score baja inmediatamente.
   bool _resetInProgress = false;
+
+  /// SPEC-255: evita emitir celebraciones de hito/ruptura en el primer
+  /// _rebuildState de la sesión (cuando el historial recién cargado ya
+  /// trae una racha existente — sin esto, abrir la app con racha=10
+  /// dispararía de golpe los hitos 3 y 7 de forma espuria).
+  bool _celebrationBaselineSet = false;
+
+  /// SPEC-255 RF-04: hitos nombrados de racha.
+  static const List<int> _kStreakMilestones = [3, 7, 14, 30, 60, 100];
 
   /// Llamado por DailyResetService ANTES de resetear los pilares.
   void beginReset() => _resetInProgress = true;
@@ -438,14 +465,23 @@ class StreakNotifier extends StateNotifier<StreakState> {
     // SPEC-53: calidad continua de los últimos 7 días.
     final newQualityScore = StreakEngine.computeWeeklyQualityScore(history);
 
+    // SPEC-255 RF-02: racha "protegida" (con reservas) — SOLO para el
+    // número que ve el usuario. computeAdherenceTrend (IMR longitudinal)
+    // sigue usando computeCurrentStreak sin protección, sin cambios aquí.
+    final freezeState = StreakEngine.computeCurrentStreakWithFreezes(history);
+    final prevStreak = state.currentStreak;
+    final prevProtected = state.streakHasProtectedDay;
+
     state = state.copyWith(
       history: history,
       todayEntry: todayEntry,
-      currentStreak: StreakEngine.computeCurrentStreak(history),
+      currentStreak: freezeState.currentStreak,
       longestStreak: StreakEngine.computeLongestStreak(history),
       weeklyAdherence: newAdherence,
       weeklyEngagementRate: newEngagement,
       weeklyQualityScore: newQualityScore,
+      freezesAvailable: freezeState.freezesAvailable,
+      streakHasProtectedDay: freezeState.currentStreakHasProtectedDay,
     );
 
     // Persistir el ratio global solo si cambió (evita loops circulares)
@@ -453,6 +489,61 @@ class StreakNotifier extends StateNotifier<StreakState> {
       _persistAdherence(newAdherence);
       AppLogger.debug('📈 Adherencia semanal actualizada: $newAdherence');
     }
+
+    // SPEC-255: hitos/ruptura de racha — edge-triggered, saltado en el
+    // primer rebuild de la sesión (ver _celebrationBaselineSet).
+    if (_celebrationBaselineSet) {
+      _maybeEmitStreakCelebration(prevStreak, freezeState.currentStreak);
+      if (!prevProtected && freezeState.currentStreakHasProtectedDay) {
+        unawaited(AnalyticsService.logEvent(AnalyticsEvents.streakFreezeUsed));
+      }
+    } else {
+      _celebrationBaselineSet = true;
+    }
+  }
+
+  /// SPEC-255 RF-03/RF-04: detecta transiciones de racha (hito cruzado o
+  /// ruptura) y emite el evento de celebración correspondiente. Edge-
+  /// triggered — solo dispara en el cambio, no en cada rebuild.
+  void _maybeEmitStreakCelebration(int prevStreak, int newStreak) {
+    if (newStreak > prevStreak) {
+      for (final milestone in _kStreakMilestones) {
+        if (newStreak >= milestone && prevStreak < milestone) {
+          _ref.read(celebrationEventProvider.notifier).state = CelebrationEvent(
+            type: CelebrationType.streakMilestone,
+            pillarsCompleted: 0,
+            currentStreak: newStreak,
+            timestamp: DateTime.now(),
+          );
+          unawaited(AnalyticsService.logEvent(
+            AnalyticsEvents.streakMilestoneReached,
+            params: {AnalyticsParams.milestoneDays: milestone},
+          ));
+          break; // un solo evento aunque se salte más de un hito
+        }
+      }
+    } else if (newStreak == 0 && prevStreak > 0) {
+      _ref.read(celebrationEventProvider.notifier).state = CelebrationEvent(
+        type: CelebrationType.streakBroken,
+        pillarsCompleted: 0,
+        currentStreak: prevStreak,
+        timestamp: DateTime.now(),
+      );
+      unawaited(AnalyticsService.logEvent(
+        AnalyticsEvents.streakBroken,
+        params: {AnalyticsParams.streakLengthBucket: _bucketStreak(prevStreak)},
+      ));
+    }
+  }
+
+  /// SPEC-193 §2.4: bucket, no valor crudo.
+  static String _bucketStreak(int days) {
+    if (days >= 60) return '60+';
+    if (days >= 30) return '30-59';
+    if (days >= 14) return '14-29';
+    if (days >= 7) return '7-13';
+    if (days >= 3) return '3-6';
+    return '1-2';
   }
 
   // ── Persistencia ────────────────────────────────────────────────────────────

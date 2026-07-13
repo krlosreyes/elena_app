@@ -233,7 +233,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
     } else if (isInTrial && daysRemaining > 0) {
       subtitle =
           'Te quedan $daysRemaining ${daysRemaining == 1 ? 'día' : 'días'} '
-          '— suscríbete para no perder tu racha.';
+          '— suscríbete para no perder el coaching y tu historial.';
       featuresHeader = 'NO PIERDAS EL ACCESO A';
       ctaLabel = 'Suscribirme ahora';
       subtitleColor = const Color(0xFFFB923C); // naranja urgente
