@@ -33,7 +33,11 @@ class AnalyticsService {
       return;
     }
     try {
-      await _instance?.setAnalyticsCollectionEnabled(true);
+      // AUD-02 (auditoría pre-producción 2026-07-12): gatear a release,
+      // igual que CrashlyticsService.init(). Antes se pasaba `true` fijo,
+      // por lo que builds de debug/QA contaminaban las métricas de
+      // producción desde el día 1.
+      await _instance?.setAnalyticsCollectionEnabled(kReleaseMode);
     } catch (e, s) {
       AppLogger.warning('[AnalyticsService] init falló: $e');
       AppLogger.error('[AnalyticsService] init', e, s);

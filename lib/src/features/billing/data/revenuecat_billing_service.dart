@@ -14,12 +14,14 @@ import 'package:purchases_flutter/purchases_flutter.dart'
     hide PurchaseResult;
 
 import 'package:elena_app/src/core/services/app_logger.dart';
+import 'package:elena_app/src/core/services/crashlytics_service.dart';
 import 'package:elena_app/src/features/billing/application/billing_service.dart';
+import 'package:elena_app/src/features/billing/data/revenuecat_mapper.dart';
 import 'package:elena_app/src/features/billing/domain/billing_package.dart';
 import 'package:elena_app/src/features/billing/domain/entitlement_status.dart';
 
-/// Identificador del entitlement en el dashboard de RevenueCat (SPEC-196 §2.2).
-const String kPremiumEntitlementId = 'Premium';
+export 'package:elena_app/src/features/billing/data/revenuecat_mapper.dart'
+    show kPremiumEntitlementId;
 
 class RevenueCatBillingService implements BillingService {
   RevenueCatBillingService({required this.apiKey, this.debugLogging = false});
@@ -111,18 +113,26 @@ class RevenueCatBillingService implements BillingService {
       if (rcPkg == null) {
         return PurchaseResult.error('Paquete no disponible.');
       }
-      final result = await Purchases.purchasePackage(rcPkg);
+      final result =
+          await Purchases.purchase(PurchaseParams.package(rcPkg));
       final status = _mapCustomerInfo(result.customerInfo);
       _last = status;
       if (!_controller.isClosed) _controller.add(status);
       return PurchaseResult.success(status);
-    } on PlatformException catch (e) {
+    } on PlatformException catch (e, s) {
       final code = PurchasesErrorHelper.getErrorCode(e);
       if (code == PurchasesErrorCode.purchaseCancelledError) {
         return PurchaseResult.cancelled();
       }
+      // AUD-03 (auditoría pre-producción 2026-07-12): antes este catch
+      // retornaba el error a la UI sin dejar rastro en AppLogger ni
+      // Crashlytics — cero visibilidad de fallos de pago reales.
+      AppLogger.warning('RevenueCat purchase falló (code=$code): $e');
+      CrashlyticsService.recordError(e, s, reason: 'billing_purchase_failed');
       return PurchaseResult.error(e.message ?? 'Error de compra.');
-    } catch (e) {
+    } catch (e, s) {
+      AppLogger.warning('RevenueCat purchase falló: $e');
+      CrashlyticsService.recordError(e, s, reason: 'billing_purchase_failed');
       return PurchaseResult.error('$e');
     }
   }
@@ -135,53 +145,24 @@ class RevenueCatBillingService implements BillingService {
       _last = status;
       if (!_controller.isClosed) _controller.add(status);
       return PurchaseResult.success(status);
-    } catch (e) {
+    } catch (e, s) {
+      // AUD-03: mismo fix que purchase() — loggear antes de propagar el error.
+      AppLogger.warning('RevenueCat restore falló: $e');
+      CrashlyticsService.recordError(e, s, reason: 'billing_restore_failed');
       return PurchaseResult.error('No se pudieron restaurar las compras: $e');
     }
   }
 
   // ─── Mapeo SDK → dominio ──────────────────────────────────────────────────
+  // TEST-01 (auditoría 2026-07-11): el mapeo real vive ahora en
+  // revenuecat_mapper.dart (funciones puras, testeables sin mockear
+  // `Purchases`). Estos métodos quedan como wrappers finos por
+  // compatibilidad con el resto de esta clase.
 
-  EntitlementStatus _mapCustomerInfo(CustomerInfo info) {
-    final ent = info.entitlements.all[kPremiumEntitlementId];
-    if (ent == null || !ent.isActive) return const EntitlementStatus.free();
+  EntitlementStatus _mapCustomerInfo(CustomerInfo info) =>
+      mapCustomerInfoToEntitlementStatus(info);
 
-    final exp = ent.expirationDate != null
-        ? DateTime.tryParse(ent.expirationDate!)
-        : null;
-    final isTrial = ent.periodType == PeriodType.trial ||
-        ent.periodType == PeriodType.intro;
-
-    return EntitlementStatus(
-      isPremium: true,
-      willRenew: ent.willRenew,
-      expiration: exp,
-      activeProductId: ent.productIdentifier,
-      source: isTrial ? EntitlementSource.trial : EntitlementSource.paid,
-    );
-  }
-
-  BillingPackage _mapPackage(Package p) {
-    final sp = p.storeProduct;
-    return BillingPackage(
-      id: p.identifier,
-      productId: sp.identifier,
-      title: sp.title,
-      priceString: sp.priceString,
-      period: _mapPeriod(p.packageType),
-    );
-  }
-
-  BillingPeriod _mapPeriod(PackageType type) {
-    switch (type) {
-      case PackageType.monthly:
-        return BillingPeriod.monthly;
-      case PackageType.annual:
-        return BillingPeriod.annual;
-      default:
-        return BillingPeriod.unknown;
-    }
-  }
+  BillingPackage _mapPackage(Package p) => mapRevenueCatPackage(p);
 
   // SPEC-213: cierra el StreamController y remueve el listener del SDK.
   // Llamado por ref.onDispose en billing_providers.dart.

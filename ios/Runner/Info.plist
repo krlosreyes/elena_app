@@ -36,14 +36,33 @@
 		<key>NSAllowsArbitraryLoads</key>
 		<false/>
 	</dict>
-	<key>NSCameraUsageDescription</key>
-	<string>ElenaApp requiere acceso a la cámara para escanear alimentos y actualizar tu foto de perfil de progreso biométrico.</string>
 	<key>NSHealthShareUsageDescription</key>
 	<string>ElenaApp sincroniza con Apple Health para leer tu peso, sueño y actividad física, y así calcular tu IMR sin pedirte que ingreses todo manualmente.</string>
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>ElenaApp puede registrar en Apple Health los datos que ingresas manualmente en la app, para que tu historial esté unificado.</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>ElenaApp requiere acceso a la galería para subir registros visuales a tu progreso de coaching.</string>
+	<!-- REL-01 (auditoría 2026-07-11): NSCameraUsageDescription y
+	     NSPhotoLibraryUsageDescription se retiraron — no hay ningún flujo
+	     de cámara/galería implementado en lib/ (sin image_picker ni camera
+	     en pubspec.yaml). Declarar permisos sin funcionalidad real detrás
+	     es un riesgo bajo Apple Guideline 5.1.1 y confunde la revisión del
+	     Privacy Nutrition Label. Si se implementa "foto de perfil" o
+	     "escanear alimentos" en un release futuro, reintroducir la(s)
+	     clave(s) correspondiente(s) en ESE momento, junto con el flujo real.
+	     AUD-05 (auditoría 2026-07-12) — REVERTIDO el mismo día: se había
+	     retirado NSHealthUpdateUsageDescription razonando por grep de
+	     HealthDataAccess.WRITE/writeData en lib/ (capa Dart). Error de
+	     método: App Store Connect valida contra los símbolos de HealthKit
+	     enlazados en el BINARIO compilado (el plugin `health` nativo
+	     referencia APIs de escritura de HKHealthStore internamente aunque
+	     la app nunca las invoque desde Dart), no contra el código fuente
+	     de la app. Validation failed (409) al subir el build 1.0.0+17:
+	     "Missing purpose string... should contain a
+	     NSHealthUpdateUsageDescription key". Se restaura la clave.
+	     A diferencia de Cámara/Galería (REL-01, sin SDK nativo de por
+	     medio), este caso NO es seguro de retirar solo con grep de Dart —
+	     cualquier permiso respaldado por un plugin nativo (HealthKit,
+	     etc.) debe verificarse con una validación real de Transporter/
+	     Xcode antes de asumir que es seguro quitarlo. -->
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
