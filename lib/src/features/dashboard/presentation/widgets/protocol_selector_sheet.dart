@@ -10,6 +10,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:elena_app/src/core/theme/app_theme.dart';
+import 'package:elena_app/src/features/streak/domain/fasting_eligibility.dart';
 
 /// Metadata estática por protocolo. Nivel de dificultad + descripción
 /// usada en el sheet. Las descripciones citan el marco bibliográfico
@@ -99,10 +100,18 @@ class ProtocolSelectorSheet extends StatelessWidget {
   final String currentProtocol;
   final String? recommendedProtocol;
 
+  /// SPEC-257 Eje A: tope médico calculado por `FastingEligibility.assess`.
+  /// `null` (fallback conservador) trata el sheet como si no hubiera
+  /// gate — nunca oculta protocolos ya visibles por falta de dato, para
+  /// no regresar una UI que antes funcionaba si algún caller aún no
+  /// pasa el parámetro.
+  final FastingEligibility? eligibility;
+
   const ProtocolSelectorSheet({
     super.key,
     required this.currentProtocol,
     this.recommendedProtocol,
+    this.eligibility,
   });
 
   /// Helper estático: muestra el sheet y resuelve con el protocolo
@@ -111,6 +120,7 @@ class ProtocolSelectorSheet extends StatelessWidget {
     BuildContext context, {
     required String currentProtocol,
     String? recommendedProtocol,
+    FastingEligibility? eligibility,
   }) {
     return showModalBottomSheet<String>(
       context: context,
@@ -124,6 +134,7 @@ class ProtocolSelectorSheet extends StatelessWidget {
         child: ProtocolSelectorSheet(
           currentProtocol: currentProtocol,
           recommendedProtocol: recommendedProtocol,
+          eligibility: eligibility,
         ),
       ),
     );
@@ -180,11 +191,29 @@ class ProtocolSelectorSheet extends StatelessWidget {
                   final isRecommended = recommendedProtocol != null &&
                       info.code == recommendedProtocol &&
                       !isCurrent;
+                  // SPEC-257 Eje A: un protocolo por encima del tope médico
+                  // queda visible (transparencia — el usuario ve la
+                  // escalera completa) pero no seleccionable.
+                  final isLocked =
+                      eligibility != null && !eligibility!.allows(info.code);
                   return _ProtocolItem(
                     info: info,
                     isCurrent: isCurrent,
                     isRecommended: isRecommended,
-                    onTap: () => Navigator.of(ctx).pop(info.code),
+                    isLocked: isLocked,
+                    lockReason: eligibility?.reason,
+                    onTap: isLocked
+                        ? () => ScaffoldMessenger.of(ctx).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  eligibility?.reason ??
+                                      'Este protocolo no está disponible '
+                                          'todavía para tu perfil.',
+                                ),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            )
+                        : () => Navigator.of(ctx).pop(info.code),
                   );
                 },
               ),
@@ -200,18 +229,24 @@ class _ProtocolItem extends StatelessWidget {
   final _ProtocolInfo info;
   final bool isCurrent;
   final bool isRecommended;
+  final bool isLocked;
+  final String? lockReason;
   final VoidCallback onTap;
 
   const _ProtocolItem({
     required this.info,
     required this.isCurrent,
     required this.isRecommended,
+    this.isLocked = false,
+    this.lockReason,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    return Opacity(
+      opacity: isLocked ? 0.45 : 1.0,
+      child: InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(14),
       child: Container(
@@ -292,11 +327,22 @@ class _ProtocolItem extends StatelessWidget {
                           label: 'RECOMENDADO',
                           color: Color(0xFF60A5FA),
                         ),
+                      // SPEC-257 Eje A: badge visible en vez de ocultar el
+                      // protocolo del todo — transparencia sobre por qué
+                      // no está disponible hoy.
+                      if (isLocked)
+                        const _Badge(
+                          label: 'NO DISPONIBLE',
+                          color: Color(0xFF94A3B8),
+                        ),
                     ],
                   ),
-                  if (isCurrent || isRecommended) const SizedBox(height: 6),
+                  if (isCurrent || isRecommended || isLocked)
+                    const SizedBox(height: 6),
                   Text(
-                    info.description,
+                    isLocked && lockReason != null
+                        ? lockReason!
+                        : info.description,
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.white.withValues(alpha: 0.75),
@@ -314,9 +360,19 @@ class _ProtocolItem extends StatelessWidget {
                   color: AppColors.metabolicGreen,
                   size: 20,
                 ),
+              )
+            else if (isLocked)
+              Padding(
+                padding: const EdgeInsets.only(left: 8),
+                child: Icon(
+                  Icons.lock_rounded,
+                  color: Colors.white.withValues(alpha: 0.35),
+                  size: 18,
+                ),
               ),
           ],
         ),
+      ),
       ),
     );
   }

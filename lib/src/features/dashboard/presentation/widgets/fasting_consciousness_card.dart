@@ -10,6 +10,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:elena_app/src/core/providers/shared_preferences_provider.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/auth/application/profile_controller.dart';
 import 'package:elena_app/src/features/dashboard/application/fasting_history_provider.dart';
@@ -20,6 +21,9 @@ import 'package:elena_app/src/features/dashboard/presentation/widgets/early_fast
 import 'package:elena_app/src/features/dashboard/presentation/widgets/new_cycle_meals_warning_dialog.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/protocol_selector_sheet.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
+import 'package:elena_app/src/features/nutrition/domain/nervous_system.dart';
+import 'package:elena_app/src/features/streak/domain/fasting_eligibility.dart';
+import 'package:elena_app/src/features/streak/domain/fasting_symptom_log.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 
 class FastingConsciousnessCard extends ConsumerWidget {
@@ -488,6 +492,57 @@ class FastingConsciousnessCard extends ConsumerWidget {
     );
   }
 
+  /// SPEC-257 §4 Eje D: pregunta breve tras un cierre anticipado —
+  /// mareo, temblor o palpitaciones son la señal de alarma dura que
+  /// Suárez describe (fuente primaria: preguntaleafrank.com "El Ayuno
+  /// Intermitente", "quítese" ante esos síntomas). Un "sí" se persiste
+  /// en `FastingSymptomLog` (SharedPreferences, ventana de 7 días) y
+  /// `AdaptiveEngine` lo lee para sugerir `simplify` de inmediato —
+  /// sin esperar a que la adherencia semanal caiga lo bastante como
+  /// para que `EngagementLevel.critico` lo detecte por su cuenta.
+  Future<void> _askHypoglycemiaSymptoms(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final reported = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E293B),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          'Antes de seguir…',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900),
+        ),
+        content: const Text(
+          '¿Sentiste mareo, temblor o palpitaciones antes de terminar el '
+          'ayuno? Nos ayuda a ajustar tu protocolo si hace falta.',
+          style: TextStyle(color: Colors.white70, height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Prefiero no decir'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text(
+              'Sí, tuve síntomas',
+              style: TextStyle(
+                color: Colors.orange,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (reported == true) {
+      await FastingSymptomLog.reportHypoglycemia(
+        ref.read(sharedPreferencesProvider),
+      );
+    }
+  }
+
   Future<void> _handleFastingPrimaryTap(
     BuildContext context,
     WidgetRef ref,
@@ -511,6 +566,14 @@ class FastingConsciousnessCard extends ConsumerWidget {
         await ref
             .read(fastingProvider.notifier)
             .confirmManualFastingEnd(DateTime.now());
+        // SPEC-257 Eje D: solo se pregunta por síntomas cuando el
+        // usuario termina el ayuno ANTES de tiempo — es la situación
+        // real que Suárez describe (romper por malestar), no un cierre
+        // normal al llegar al 100%. Pregunta corta, opcional, sin
+        // bloquear: "prefiero no decir" es una opción legítima.
+        if (context.mounted) {
+          await _askHypoglycemiaSymptoms(context, ref);
+        }
       }
       return;
     }
@@ -598,18 +661,81 @@ class FastingConsciousnessCard extends ConsumerWidget {
       return;
     }
 
+    // SPEC-257 Eje A: gate médico calculado sobre el usuario actual —
+    // se lee ANTES de abrir el sheet para poder pintar los protocolos
+    // fuera de alcance como bloqueados en vez de dejar que el usuario
+    // los elija y recién rechazarlos después.
+    final userForGate = ref.read(currentUserStreamProvider).valueOrNull;
+    final eligibility =
+        userForGate == null ? null : FastingEligibility.assess(userForGate);
+
     final selected = await ProtocolSelectorSheet.show(
       context,
       currentProtocol: currentProtocol,
+      eligibility: eligibility,
     );
     if (selected == null || selected == currentProtocol) return;
 
     final user = ref.read(currentUserStreamProvider).valueOrNull;
     if (user == null) return;
 
+    // SPEC-257 Eje C: antes este guardrail solo vivía en el onboarding
+    // (§RF-137-08.D, salto exacto a 20:4). Un usuario Excitado podía
+    // subir de protocolo desde el dashboard sin aviso — el mismo riesgo
+    // que Suárez describe (tensión, sueño peor, adherencia rota) pero
+    // sin la señal. Se generaliza aquí con la misma regla que
+    // `onboarding_screen._handleProtocolChange`: cualquier salto que
+    // suba de nivel y quede por encima de 16:8, con SN Excitado o
+    // `unknown` (tratado como Excitado solo para esta decisión).
+    int rank(String p) => FastingEligibility.ladder.indexOf(p);
+    final declaredNS = NervousSystem.fromPersistenceKey(user.nervousSystem);
+    final guardrailNS =
+        declaredNS == NervousSystem.unknown ? NervousSystem.excited : declaredNS;
+    final isUpwardPastSixteenEight =
+        rank(selected) > rank('16:8') && rank(selected) > rank(currentProtocol);
+    final warningKey = '$selected-on-excited';
+    final needsGuardrail = guardrailNS == NervousSystem.excited &&
+        isUpwardPastSixteenEight &&
+        user.protocolWarningAccepted != warningKey;
+
+    String finalProtocol = selected;
+    String? warningToAccept;
+    if (needsGuardrail && context.mounted) {
+      final choice = await showDialog<String>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: AppColors.surfaceDark,
+          title: const Text('🤔 Una sugerencia honesta'),
+          content: Text(
+            'Las personas con perfil Excitado (sueño superficial, '
+            'tensión baseline, apetito matutino bajo) suelen tolerar '
+            '$selected mejor después de adaptarse con 16:8 unas semanas.\n\n'
+            'Empezar directo con $selected puede aumentar tu tensión, '
+            'empeorar tu sueño y romper la adherencia. No es '
+            'prohibición — es algo que hemos visto.',
+            style: const TextStyle(color: Colors.white70),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop('16:8'),
+              child: const Text('Empezar con 16:8'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(selected),
+              child: Text('Mantener $selected'),
+            ),
+          ],
+        ),
+      );
+      if (choice == null) return; // usuario cerró el diálogo — no aplicar nada
+      finalProtocol = choice;
+      if (choice == selected) warningToAccept = warningKey;
+    }
+
     await ref.read(profileControllerProvider.notifier).updateFastingProtocol(
           currentUser: user,
-          protocol: selected,
+          protocol: finalProtocol,
+          protocolWarningAccepted: warningToAccept,
         );
   }
 

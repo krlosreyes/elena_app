@@ -10,11 +10,14 @@ import 'package:elena_app/src/features/dashboard/presentation/widgets/daily_scor
 import 'package:elena_app/src/features/dashboard/presentation/widgets/dual_score_ring.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/pillar_ring.dart';
 import 'package:elena_app/src/features/exercise/application/exercise_state.dart';
+import 'package:elena_app/src/features/goals/application/goal_notifier.dart';
 import 'package:elena_app/src/features/goals/application/pillar_goal_providers.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
 import 'package:elena_app/src/features/onboarding/application/tour_targets_provider.dart';
 import 'package:elena_app/src/features/streak/application/daily_score_provider.dart';
 import 'package:elena_app/src/features/streak/application/streak_notifier.dart';
+import 'package:elena_app/src/features/streak/domain/fasting_schedule.dart';
+import 'package:elena_app/src/shared/providers/user_provider.dart';
 
 /// Fila horizontal de 5 anillos circulares — uno por pilar.
 /// Cada anillo es interactivo y abre su sheet de input correspondiente.
@@ -95,6 +98,21 @@ class DashboardPillarsRow extends ConsumerWidget {
     final sleepAnchorDone = todayEntry?.sleepCompleted ?? false;
     final showAnchorHint =
         !todayQualifies && !fastingAnchorDone && !sleepAnchorDone;
+
+    // SPEC-257 §3.1: re-deriva el mismo cálculo que `StreakNotifier` usa
+    // para decidir si hoy es un día de descanso PROGRAMADO (nivel Novato,
+    // 12:12/14:10 con frecuencia semanal reducida). Es intencional que
+    // no se lea de `todayEntry` — el ring necesita el estado de HOY en
+    // tiempo real, no el último valor persistido, igual que el resto de
+    // esta fila re-deriva `fastingState`/`sleep`/etc. desde sus notifiers.
+    final currentProtocol =
+        ref.watch(currentUserStreamProvider).valueOrNull?.fastingProtocol ??
+            'Ninguno';
+    final isFastingRestDay = FastingSchedule.isRestDay(
+      date: DateTime.now(),
+      protocol: currentProtocol,
+      goals: ref.watch(goalsProvider),
+    );
 
     // SPEC-140.2: el Score del Día vive como HEADLINE dentro del card
     // de pilares. El label "PILARES HOY" se elimina (los 5 rings con
@@ -201,12 +219,23 @@ class DashboardPillarsRow extends ConsumerWidget {
               PillarRing(
                 icon: Icons.timer_rounded,
                 color: AppColors.metabolicGreen,
-                progress: fastingState.progressPercentage,
+                // SPEC-257 §3.1: en día de descanso programado el anillo
+                // se muestra cubierto (100%) — no hay ventana de ayuno
+                // que cumplir hoy, así que el 0% real confundiría más
+                // que ayudaría. `completed` se deja en false a propósito:
+                // la insignia de "descanso" (isRestDay) toma precedencia
+                // visual sobre el check verde dentro de `PillarRing`.
+                progress: isFastingRestDay
+                    ? 1.0
+                    : fastingState.progressPercentage,
                 label: 'Ayuno',
                 isSelected: selectedPillar == SelectedPillar.ayuno,
-                completed: fastingState.progressPercentage >= 1.0,
-                showPercent: true,
-                isStreakAnchor: showAnchorHint,
+                completed:
+                    !isFastingRestDay &&
+                        fastingState.progressPercentage >= 1.0,
+                showPercent: !isFastingRestDay,
+                isStreakAnchor: showAnchorHint && !isFastingRestDay,
+                isRestDay: isFastingRestDay,
                 onTap: () => onSelectPillar(SelectedPillar.ayuno),
               ),
               PillarRing(

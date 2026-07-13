@@ -40,6 +40,8 @@ import 'package:elena_app/src/features/goals/presentation/goal_setup_screen.dart
     show GoalDraft, GoalSuggestionCard;
 // SPEC-243: tour interactivo post-onboarding.
 import 'package:elena_app/src/features/onboarding/application/app_tour_notifier.dart';
+import 'package:elena_app/src/features/onboarding/presentation/widgets/onboarding_step_ui.dart';
+import 'package:elena_app/src/features/streak/domain/fasting_eligibility.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -163,6 +165,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   // que aceptó la advertencia para no repetirla en futuros cambios.
   String? _protocolWarningAccepted;
 
+  // SPEC-257 Eje A: las 4 últimas opciones son nuevas — antes las
+  // patologías declaradas aquí se guardaban en `UserModel.pathologies`
+  // pero no restringían ningún protocolo (ver SPEC-257 §1, "gap más
+  // importante"). Ahora `FastingEligibility.assess` las lee para
+  // calcular el tope real. Se usan las constantes de
+  // `FastingPathologyFlags` como fuente única del string exacto.
   final List<String> _pathologyOptions = [
     "Ninguna",
     "Prediabetes",
@@ -172,7 +180,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     "Hipotiroidismo",
     "SOP",
     "Anemia",
-    "Resistencia Insulina"
+    "Resistencia Insulina",
+    FastingPathologyFlags.embarazoLactancia,
+    FastingPathologyFlags.trastornoAlimentario,
+    FastingPathologyFlags.diabetesMedicada,
+    FastingPathologyFlags.supervisionMedicaActiva,
   ];
 
   // SPEC-137 F: las 5 preguntas calibradas con sus opciones.
@@ -608,7 +620,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         // SPEC-76: consume la lista canonicalizada de
         // `health_disclaimer.dart`. Cambios al texto pasan por allá.
         ...kHealthDisclaimerConditions.map(
-          (c) => _DisclaimerItem(
+          (c) => DisclaimerItem(
             icon: c.icon,
             title: c.title,
             body: c.body,
@@ -696,12 +708,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           _greetingHeader(isDark),
           if (_prefill.filledCount > 0)
             PrefillChip(filledCount: _prefill.filledCount),
-          _header("Hardware Base", "Identidad y Antropometría", isDark),
-          _stepHelperLine(
-            'Estas medidas nos sirven para estimar tu composición '
-            'corporal sin pedirte que adivines tu % de grasa. '
-            'Quedan en tu cuenta privada — no se comparten.',
-            isDark,
+          OnboardingStepHeader(
+              title: "Hardware Base",
+              sub: "Identidad y Antropometría",
+              isDark: isDark),
+          OnboardingStepHelperLine(
+            text: 'Estas medidas nos sirven para estimar tu composición '
+                'corporal sin pedirte que adivines tu % de grasa. '
+                'Quedan en tu cuenta privada — no se comparten.',
+            isDark: isDark,
           ),
           _simpleSelector(
               "Nacimiento", DateFormat('dd/MM/yyyy').format(_birthDate),
@@ -752,7 +767,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       _weightTouched = true;
                     }),
                   )),
-          _sectionTitle("TALLAS (INFERENCIA)", isDark),
+          OnboardingSectionTitle(title: "TALLAS (INFERENCIA)", isDark: isDark),
           Row(children: [
             Expanded(
                 child: _pickerSelector(
@@ -788,7 +803,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                           },
                         ))),
           ]),
-          _sectionTitle("MEDIDAS CRÍTICAS IMR", isDark),
+          OnboardingSectionTitle(
+              title: "MEDIDAS CRÍTICAS IMR", isDark: isDark),
           _pickerSelector(
               label: "Cintura",
               displayValue: "${_waist.toInt()} cm",
@@ -822,11 +838,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   Widget _buildStepCircadian(bool isDark) => ListView(
         padding: const EdgeInsets.all(24),
         children: [
-          _header("Ritmo Circadiano", "Sincronización horaria", isDark),
-          _stepHelperLine(
-            'Tu reloj biológico decide cuándo el ayuno funciona mejor. '
-            'Vamos a alinear tu ventana de comida con tus horarios reales.',
-            isDark,
+          OnboardingStepHeader(
+              title: "Ritmo Circadiano",
+              sub: "Sincronización horaria",
+              isDark: isDark),
+          OnboardingStepHelperLine(
+            text: 'Tu reloj biológico decide cuándo el ayuno funciona mejor. '
+                'Vamos a alinear tu ventana de comida con tus horarios reales.',
+            isDark: isDark,
           ),
           _simpleSelector("Despertar", _wakeUpTime.format(context), () async {
             final time = await showTimePicker(
@@ -838,7 +857,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 await showTimePicker(context: context, initialTime: _sleepTime);
             if (time != null) setState(() => _sleepTime = time);
           }, isDark),
-          _sectionTitle("VENTANA DE ALIMENTACIÓN", isDark),
+          OnboardingSectionTitle(
+              title: "VENTANA DE ALIMENTACIÓN", isDark: isDark),
           _simpleSelector("Primera Comida", _firstMealGoal.format(context),
               () async {
             final time = await showTimePicker(
@@ -870,11 +890,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   Widget _buildStepHabits(bool isDark) => ListView(
         padding: const EdgeInsets.all(24),
         children: [
-          _header("Protocolo", "Hábitos metabólicos", isDark),
-          _stepHelperLine(
-            'Ya tenemos tu perfil físico. Ahora vamos a conocerte un '
-            'poco más y a elegir cómo quieres ayunar.',
-            isDark,
+          OnboardingStepHeader(
+              title: "Protocolo", sub: "Hábitos metabólicos", isDark: isDark),
+          OnboardingStepHelperLine(
+            text: 'Ya tenemos tu perfil físico. Ahora vamos a conocerte un '
+                'poco más y a elegir cómo quieres ayunar.',
+            isDark: isDark,
           ),
           // SPEC-137 F: 3.A — 5 preguntas del sistema nervioso.
           _buildSnSection(isDark),
@@ -909,16 +930,35 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         ],
       );
 
-  /// SPEC-137 F: maneja el cambio de protocolo. Si el usuario está
-  /// clasificado Excitado y elige 20:4, dispara dialog de incongruencia
-  /// (§RF-137-08.D) antes de aplicar el cambio.
-  void _handleProtocolChange(String newProtocol) {
-    final isExcitedPicking20_4 =
-        _classifiedNervousSystem == NervousSystem.excited &&
-            newProtocol == '20:4' &&
-            _protocolWarningAccepted != '20:4-on-excited';
+  /// Rank en la escalera canónica (`FastingEligibility.ladder`) — única
+  /// fuente de verdad del orden, compartida con Eje A/B. `-1` para
+  /// strings desconocidos (no debería pasar con las opciones de este
+  /// selector).
+  static int _protocolRank(String protocol) =>
+      FastingEligibility.ladder.indexOf(protocol);
 
-    if (isExcitedPicking20_4) {
+  /// SPEC-137 F + SPEC-257 Eje C: maneja el cambio de protocolo. Antes
+  /// el guardrail solo cubría el salto exacto a 20:4 con SN=Excitado
+  /// declarado — dejaba pasar sin aviso a alguien Excitado que subiera
+  /// directo a 18:6, y a quien no respondió las 5 preguntas del SN
+  /// (`unknown`) se le trataba como si no hubiera riesgo. SPEC-257 §4
+  /// Eje C generaliza: cualquier salto que suba de nivel Y quede por
+  /// encima de 16:8 dispara el aviso, y `unknown` se trata como
+  /// Excitado (conservador) SOLO para esta decisión — no cambia lo que
+  /// se persiste en `nervousSystem`.
+  void _handleProtocolChange(String newProtocol) {
+    final guardrailNS = _classifiedNervousSystem == NervousSystem.unknown
+        ? NervousSystem.excited
+        : _classifiedNervousSystem;
+    final isUpwardPastSixteenEight =
+        _protocolRank(newProtocol) > _protocolRank('16:8') &&
+            _protocolRank(newProtocol) > _protocolRank(_fastingProtocol);
+    final warningKey = '$newProtocol-on-excited';
+    final needsGuardrail = guardrailNS == NervousSystem.excited &&
+        isUpwardPastSixteenEight &&
+        _protocolWarningAccepted != warningKey;
+
+    if (needsGuardrail) {
       showDialog<void>(
         context: context,
         builder: (ctx) => AlertDialog(
@@ -927,11 +967,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   ? AppColors.bgElevated
                   : Colors.white,
           title: const Text('🤔 Una sugerencia honesta'),
-          content: const Text(
+          content: Text(
             'Las personas con perfil Excitado (sueño superficial, '
             'tensión baseline, apetito matutino bajo) suelen tolerar '
-            '20:4 mejor después de adaptarse con 16:8 unas semanas.\n\n'
-            'Empezar directo con 20:4 puede aumentar tu tensión, '
+            '$newProtocol mejor después de adaptarse con 16:8 unas semanas.\n\n'
+            'Empezar directo con $newProtocol puede aumentar tu tensión, '
             'empeorar tu sueño y romper la adherencia. No es '
             'prohibición — es algo que hemos visto.',
           ),
@@ -946,10 +986,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             TextButton(
               onPressed: () {
                 Navigator.of(ctx).pop();
-                _protocolWarningAccepted = '20:4-on-excited';
-                _applyProtocolChange('20:4');
+                _protocolWarningAccepted = warningKey;
+                _applyProtocolChange(newProtocol);
               },
-              child: const Text('Mantener 20:4'),
+              child: Text('Mantener $newProtocol'),
             ),
           ],
         ),
@@ -1371,7 +1411,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         coherent ? calculatedBodyFat : (isMale ? 15.0 : 25.0);
     final String confidence = coherent ? 'ALTA' : 'MEDIA';
 
-    return UserModel(
+    final rawModel = UserModel(
       id: account?.uid ?? '',
       name: account?.displayName ?? 'Usuario',
       age: age,
@@ -1409,6 +1449,19 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         lastMealGoal: _timeToDateTime(_lastMealGoal),
       ),
     );
+
+    // SPEC-257 Eje A: el paso educativo (105, "IntroProtocolStep") elige
+    // `_fastingProtocol` ANTES de que el paso de patologías (3) capture
+    // `_pathologies` — así que no se puede gatear en el momento de la
+    // elección. Este es el único punto donde ambos ya existen: se
+    // calcula la elegibilidad sobre el modelo recién construido y se
+    // recorta el protocolo si hace falta, para que Firestore nunca
+    // reciba una combinación que el propio gate luego rechazaría.
+    final eligibility = FastingEligibility.assess(rawModel);
+    final clampedProtocol = eligibility.clamp(rawModel.fastingProtocol);
+    return clampedProtocol == rawModel.fastingProtocol
+        ? rawModel
+        : rawModel.copyWith(fastingProtocol: clampedProtocol);
   }
 
   /// SPEC-168.0.A v2: persiste TODOS los drafts del paso 5 del
@@ -1791,52 +1844,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     );
   }
 
-  // ─── Stepper legacy (solo si queda algún callsite fuera de medidas) ────────
-
-  Widget _stepperSelector(
-      {required String label,
-      required double value,
-      required String unit,
-      required double min,
-      required double max,
-      required Function(double) onChanged,
-      required bool isDark,
-      // Ancho del bloque valor central. Reducir a 48 cuando el stepper
-      // se renderiza en columna estrecha (ej. fila Camisa/Pant.).
-      double valueBoxWidth = 65}) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E293B) : Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-              color: isDark ? Colors.white10 : const Color(0xFFE2E8F0))),
-      child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-        Text(label,
-            style: TextStyle(
-                fontWeight: FontWeight.w600,
-                color: isDark ? Colors.white70 : const Color(0xFF475569),
-                fontSize: 14)),
-        Row(children: [
-          _circleButton(Icons.remove,
-              () => value > min ? onChanged(value - 1) : null, isDark),
-          SizedBox(
-              width: valueBoxWidth,
-              child: Center(
-                  child: Text("${value.toInt()}$unit",
-                      style: TextStyle(
-                          fontWeight: FontWeight.w800,
-                          color:
-                              isDark ? Colors.white : const Color(0xFF0F172A),
-                          fontSize: 16)))),
-          _circleButton(Icons.add,
-              () => value < max ? onChanged(value + 1) : null, isDark),
-        ])
-      ]),
-    );
-  }
-
   // Fix overflow 1.9px: el segundo Text se desbordaba cuando `value`
   // era largo (p.ej. lista de patologías). Flexible + ellipsis previene
   // el RenderFlex overflow sin cambiar el layout.
@@ -1884,20 +1891,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           ),
         ),
       );
-
-  Widget _circleButton(IconData icon, VoidCallback? onTap, bool isDark) =>
-      InkWell(
-          onTap: onTap,
-          child: Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: isDark ? Colors.white10 : const Color(0xFFF1F5F9)),
-              child: Icon(icon,
-                  size: 18,
-                  color: onTap == null
-                      ? Colors.grey
-                      : (isDark ? Colors.white : const Color(0xFF0F172A)))));
 
   Widget _buildBottomNavigation(AsyncValue state, bool isDark) {
     // SPEC-70.8 / SPEC-84: el botón SIGUIENTE se deshabilita SOLO
@@ -2106,61 +2099,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 ]));
   }
 
-  Widget _header(String title, String sub, bool isDark) =>
-      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(title,
-            style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.w900,
-                color: isDark ? Colors.white : const Color(0xFF0F172A),
-                letterSpacing: -1)),
-        Text(sub,
-            style: TextStyle(
-                color: isDark ? Colors.white38 : const Color(0xFF64748B),
-                fontSize: 15,
-                fontWeight: FontWeight.w500)),
-        const SizedBox(height: 24)
-      ]);
-
-  /// SPEC-131: línea explicativa contextual debajo del header de cada
-  /// paso. Da contexto al usuario cero-contexto sobre POR QUÉ pedimos
-  /// estos datos sin invadir visualmente.
-  Widget _stepHelperLine(String text, bool isDark) => Padding(
-        padding: const EdgeInsets.only(bottom: 20, top: 0),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          decoration: BoxDecoration(
-            color: AppColors.metabolicGreen.withValues(alpha: 0.10),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: AppColors.metabolicGreen.withValues(alpha: 0.25),
-            ),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(
-                Icons.lightbulb_outline,
-                color: AppColors.metabolicGreen,
-                size: 18,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  text,
-                  style: TextStyle(
-                    color: isDark
-                        ? AppColors.textSecondary
-                        : const Color(0xFF475569),
-                    fontSize: 13,
-                    height: 1.45,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
+  // SPEC-119: `_header` → OnboardingStepHeader, `_stepHelperLine` →
+  // OnboardingStepHelperLine, `_sectionTitle` → OnboardingSectionTitle
+  // (widgets/onboarding_step_ui.dart). Extraído en ARCH-03 — eran
+  // funciones puras (solo String/bool), sin dependencias de estado.
 
   // SPEC-74 §RF-74-02/03: header con saludo contextual.
   //   - Usuario MR con displayName: "Hola {nombre}, completemos tu perfil metabólico"
@@ -2208,85 +2150,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     );
   }
 
-  Widget _sectionTitle(String title, bool isDark) => Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Text(title,
-          style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w900,
-              color: const Color(0xFF10B981),
-              letterSpacing: 1.5)));
+  // SPEC-119: `_sectionTitle` → OnboardingSectionTitle
+  // (widgets/onboarding_step_ui.dart). Extraído en ARCH-03.
 }
 
-/// SPEC-70.8: tarjeta individual de cada contraindicación. Reusable para
-/// los 5 items listados en el paso 0 del onboarding (T1D, TCA, IRC,
-/// embarazo/lactancia, sarcopenia >75).
-class _DisclaimerItem extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String body;
-  final bool isDark;
-
-  const _DisclaimerItem({
-    required this.icon,
-    required this.title,
-    required this.body,
-    required this.isDark,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final textPrimary = isDark ? Colors.white : Colors.black87;
-    final textSecondary =
-        (isDark ? Colors.white : Colors.black87).withValues(alpha: 0.65);
-    final iconColor =
-        isDark ? const Color(0xFF10B981) : const Color(0xFF0F172A);
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: iconColor.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            alignment: Alignment.center,
-            child: Icon(icon, color: iconColor, size: 18),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                    color: textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  body,
-                  style: TextStyle(
-                    fontSize: 11.5,
-                    height: 1.45,
-                    color: textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+// SPEC-119: `_DisclaimerItem` → DisclaimerItem (público)
+// (widgets/onboarding_step_ui.dart). Extraído en ARCH-03 sin cambios
+// de comportamiento.
 
 // SPEC-137 F: estructura de datos para las 5 preguntas SN.
 class _SnQuestion {

@@ -10,6 +10,7 @@
 
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/features/goals/domain/user_goal.dart';
+import 'package:elena_app/src/features/streak/domain/fasting_schedule.dart';
 
 // ─── Protocolo de ejercicio (SPEC-244) ───────────────────────────────────────
 //
@@ -227,11 +228,57 @@ class GoalSuggestionEngine {
   // ─── Días de ayuno por semana ───────────────────────────────────────────────
   //
   // Usamos weeklyAdherence (0.0–1.0 × 7 días) para estimar los días actuales.
-  // Sugerimos +1 día si está por debajo de 5, con tope en 6 días/sem.
-
+  //
+  // SPEC-257 LIMPIEZA: para protocolos de nivel Novato (12:12/14:10) esta
+  // sugerencia usaba el mismo modelo "más días es mejor, tope 6" que el
+  // resto de la escalera — directamente contradice la fuente primaria de
+  // SPEC-257 (Suárez: esquema canónico "2 de 5", 2-3 días/semana, con
+  // opción de subir a 3; ningún respaldo científico para recomendar 5-6
+  // días/semana a un principiante). Peor: `FastingSchedule` ya lee este
+  // mismo goal para decidir qué días son de descanso — sugerir un valor
+  // fuera de [2,4] entrenaba al usuario hacia un número que el propio
+  // anillo de descanso iba a recortar en silencio. Ahora la sugerencia
+  // respeta el mismo rango que ejecuta el ring. 16:8+ no cambia: ahí
+  // "días/semana" mide adherencia a un hábito DIARIO (Fung y Suárez lo
+  // tratan como ventana diaria, no frecuencia reducida — ver SPEC-257 §3.1
+  // "Solo aplica a nivel Novato"), así que más días sigue siendo mejor.
   static GoalSuggestion _fastingDaysSuggestion(UserModel user) {
     final double currentDays = (user.weeklyAdherence * 7).clamp(0.0, 7.0);
     final int roundedDays = currentDays.round();
+
+    if (FastingSchedule.isNovatoTier(user.fastingProtocol)) {
+      final int targetDays = roundedDays >= FastingSchedule.maxDaysPerWeek
+          ? FastingSchedule.maxDaysPerWeek
+          : (roundedDays + 1).clamp(
+              FastingSchedule.minDaysPerWeek,
+              FastingSchedule.maxDaysPerWeek,
+            );
+      final bool outOfRange = roundedDays < FastingSchedule.minDaysPerWeek ||
+          roundedDays > FastingSchedule.maxDaysPerWeek;
+      final String statusLabel = roundedDays <= 1
+          ? 'Sin protocolo activo'
+          : roundedDays < FastingSchedule.minDaysPerWeek
+              ? 'Por debajo del esquema recomendado'
+              : roundedDays > FastingSchedule.maxDaysPerWeek
+                  ? 'Por encima del esquema recomendado'
+                  : 'En el esquema recomendado';
+      return GoalSuggestion(
+        type: GoalType.fastingDaysPerWeek,
+        currentValue: currentDays,
+        suggestedTarget: targetDays.toDouble(),
+        rationale:
+            'Tu adherencia actual es ${currentDays.toStringAsFixed(1)} días/semana. '
+            'Para ${user.fastingProtocol}, el esquema con más respaldo no es '
+            'diario: ${FastingSchedule.minDaysPerWeek}-${FastingSchedule.maxDaysPerWeek} '
+            'días no consecutivos por semana, con los días restantes de '
+            'descanso programado — así se instala el hábito sin exigir una '
+            'ventana de ayuno los 7 días.',
+        shouldActivate: outOfRange,
+        currentStatusLabel: statusLabel,
+      );
+    }
+
+    // 16:8+ : sin cambios — hábito diario, más días es mejor.
     // SPEC-203.1 (auditoría onboarding): piso de 3 días/sem. Antes el
     // principiante (0 días) recibía una meta de solo 2 — poco ambiciosa para
     // instalar el hábito. 3 es la dosis mínima que genera adaptación visible.

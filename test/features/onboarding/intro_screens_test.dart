@@ -87,7 +87,14 @@ void main() {
       expect(find.text('Popular'), findsOneWidget);
     });
 
-    testWidgets('tap en 14:8 dispara onProtocolSelected con "14:8"',
+    // SPEC-257 LIMPIEZA: el id real de la card 14/10 era '14:8' — bug
+    // (14+8=22, no 24h) que este test enshrined en vez de atrapar. El
+    // string no coincidía con ningún protocolo del catálogo real
+    // (`FastingEligibility.ladder`), así que un usuario Novato que
+    // elegía "14/10" en su primer gesto de onboarding quedaba invisible
+    // para el gate médico y para el mecanismo de días de descanso
+    // (SPEC-257 §3.1). Corregido a '14:10'.
+    testWidgets('tap en 14:10 dispara onProtocolSelected con "14:10"',
         (tester) async {
       String? selected;
       await tester.pumpWidget(
@@ -100,7 +107,7 @@ void main() {
       // Tap en la tarjeta del 14/10.
       await tester.tap(find.textContaining('14/10').first);
       await tester.pump();
-      expect(selected, equals('14:8'));
+      expect(selected, equals('14:10'));
     });
 
     testWidgets('tap en 18:6 dispara onProtocolSelected con "18:6"',
@@ -154,11 +161,11 @@ void main() {
       expect(find.textContaining('Levine'), findsWidgets);
     });
 
-    testWidgets('protocolo 14:8 muestra timeline de 14 horas', (tester) async {
+    testWidgets('protocolo 14:10 muestra timeline de 14 horas', (tester) async {
       _bigViewport(tester);
       addTearDown(tester.view.reset);
       await tester.pumpWidget(
-        _wrap(const IntroInsightStep(isDark: true, protocol: '14:8')),
+        _wrap(const IntroInsightStep(isDark: true, protocol: '14:10')),
       );
       expect(find.textContaining('14 horas'), findsWidgets);
       expect(find.textContaining('Cahill'), findsWidgets);

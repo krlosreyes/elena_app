@@ -18,6 +18,8 @@ import 'package:elena_app/src/core/services/analytics_service.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/core/services/day_boundary_resolver.dart';
 import 'package:elena_app/src/core/services/firestore_errors.dart';
+import 'package:elena_app/src/features/goals/application/goal_notifier.dart';
+import 'package:elena_app/src/features/streak/domain/fasting_schedule.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -281,6 +283,22 @@ class StreakNotifier extends StateNotifier<StreakState> {
     final double fastingMagnitude = _fastingTargetHours(currentProtocol) > 0
         ? fastingHours / _fastingTargetHours(currentProtocol)
         : 0.0;
+
+    // SPEC-257 §3.1: día de descanso programado (solo protocolos Novato,
+    // 12:12/14:10). En estos días NO se penaliza el pilar Ayuno — se deja
+    // `fastingMagnitude` en null para que `dailyQualityScore` (SPEC-65)
+    // renormalice sobre los 4 pilares restantes, exactamente el mecanismo
+    // que ya usa para entradas legacy sin magnitudes. `fastingCompleted`
+    // se mantiene en su valor real (false, honesto: no hubo ayuno hoy) —
+    // el anillo distingue "descanso" de "incompleto" en la capa de UI
+    // (`dashboard_pillars_row.dart`), re-derivando el mismo cálculo.
+    final bool isFastingRestDay = FastingSchedule.isRestDay(
+      date: DateTime.now(),
+      protocol: currentProtocol,
+      goals: _ref.read(goalsProvider),
+    );
+    final double? fastingMagnitudeOrNull =
+        isFastingRestDay ? null : fastingMagnitude;
     final double? sleepQualityScore = sleep.lastLog == null
         ? null
         : SleepQualityCalculator.calculate(
@@ -372,8 +390,8 @@ class StreakNotifier extends StateNotifier<StreakState> {
       nutritionLogged: nutritionOk,
       imrScore: state.todayEntry?.imrScore ?? 0,
       fastingMagnitude: _resetInProgress
-          ? hwm(prev?.fastingMagnitude, fastingMagnitude)
-          : fastingMagnitude,
+          ? hwm(prev?.fastingMagnitude, fastingMagnitudeOrNull)
+          : fastingMagnitudeOrNull,
       sleepQualityScore: _resetInProgress
           ? hwm(prev?.sleepQualityScore, sleepQualityScore)
           : sleepQualityScore,

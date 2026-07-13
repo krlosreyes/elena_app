@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/core/providers/shared_preferences_provider.dart';
+import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
 import 'package:elena_app/src/features/progress/application/biometric_history_service.dart';
 import 'package:elena_app/src/features/progress/domain/biometric_delta.dart';
@@ -97,51 +98,76 @@ class ProfileController extends StateNotifier<ProfileEditState> {
       errorMessage: null,
       savedSuccessfully: false,
     );
-    try {
-      // SPEC-143: la edición de biometría desde Profile pasa por el
-      // servicio canónico. Garantiza dos cosas que el `saveProfile`
-      // anterior no daba: (a) versionado automático en
-      // `biometric_history/{today}` con `source: 'profile_edit'`, y
-      // (b) escritura atómica de ambos lugares vía WriteBatch.
-      //
-      // La signature pública se preserva — los callsites de Profile
-      // no necesitan saber del refactor.
-      final delta = BiometricDelta(
-        weight: weight,
-        waistCircumference: waistCircumference,
-        neckCircumference: neckCircumference,
-        bodyFatPercentage: bodyFatPercentage,
-      );
-      await ref.read(biometricHistoryServiceProvider).updateFromProfileEdit(
-            currentUser: currentUser,
-            delta: delta,
-          );
-      // SPEC-BUG7: persiste la fecha del edit para el lock semanal.
-      // Se guarda DESPUÉS de la escritura exitosa — si el write falla,
-      // el lock no se activa y el usuario puede reintentar.
-      await ref
-          .read(sharedPreferencesProvider)
-          .setString(BiometricLockService.kLastEditKey,
-              DateTime.now().toIso8601String());
-      state = state.copyWith(isSaving: false, savedSuccessfully: true);
-    } catch (e) {
-      state = state.copyWith(
-        isSaving: false,
-        errorMessage: 'Error al guardar los datos biométricos.',
-      );
-    }
+
+    // SPEC-143: la edición de biometría desde Profile pasa por el
+    // servicio canónico. Garantiza dos cosas que el `saveProfile`
+    // anterior no daba: (a) versionado automático en
+    // `biometric_history/{today}` con `source: 'profile_edit'`, y
+    // (b) escritura atómica de ambos lugares vía WriteBatch.
+    //
+    // La signature pública se preserva — los callsites de Profile
+    // no necesitan saber del refactor.
+    //
+    // FB-06 (auditoría independiente 2026-07-11): antes este método hacía
+    // `await` directo a la escritura Firestore, sin el patrón offline-first
+    // (unawaited+catchError) que SPEC-206 ya aplicó al check-in sheet — si
+    // el dispositivo estaba offline, `batch.commit()` nunca resolvía y la
+    // pantalla de Perfil quedaba con el spinner de guardado colgado
+    // indefinidamente. Se replica ahora el mismo patrón fire-and-forget: el
+    // estado se marca "guardado" de inmediato (consistente con lo que el
+    // usuario ve en el resto de los pilares) y la escritura real continúa
+    // en segundo plano.
+    final delta = BiometricDelta(
+      weight: weight,
+      waistCircumference: waistCircumference,
+      neckCircumference: neckCircumference,
+      bodyFatPercentage: bodyFatPercentage,
+    );
+
+    state = state.copyWith(isSaving: false, savedSuccessfully: true);
+
+    unawaited(
+      ref
+          .read(biometricHistoryServiceProvider)
+          .updateFromProfileEdit(currentUser: currentUser, delta: delta)
+          .then((_) {
+        // SPEC-BUG7: persiste la fecha del edit para el lock semanal.
+        // Se guarda DESPUÉS de la escritura exitosa — si el write falla,
+        // el lock no se activa y el usuario puede reintentar.
+        return ref.read(sharedPreferencesProvider).setString(
+            BiometricLockService.kLastEditKey,
+            DateTime.now().toIso8601String());
+      }).catchError((Object e) {
+        // flutter analyze (2026-07-11, primera corrida real): el `.then`
+        // previo retorna `Future<bool>` (de `setString`), así que
+        // `catchError` debe devolver un `bool` para no dejar la cadena en
+        // un estado que "podría completar normalmente" sin valor.
+        AppLogger.error('[ProfileController] updateBiometry falló', e);
+        return false;
+      }),
+    );
   }
 
   /// Actualiza el protocolo de ayuno del usuario y lo persiste en Firestore.
+  ///
+  /// SPEC-257 Eje C: `protocolWarningAccepted` opcional — se pasa cuando
+  /// el usuario confirmó el guardrail de sistema nervioso desde el
+  /// dashboard (mismo campo que el onboarding usa para no repetir el
+  /// aviso una vez aceptado).
   Future<void> updateFastingProtocol({
     required UserModel currentUser,
     required String protocol,
+    String? protocolWarningAccepted,
   }) async {
     state = state.copyWith(
         isSaving: true, errorMessage: null, savedSuccessfully: false);
 
     try {
-      final updatedUser = currentUser.copyWith(fastingProtocol: protocol);
+      final updatedUser = currentUser.copyWith(
+        fastingProtocol: protocol,
+        protocolWarningAccepted:
+            protocolWarningAccepted ?? currentUser.protocolWarningAccepted,
+      );
       await ref.read(userProfileRepositoryProvider).saveProfile(updatedUser);
 
       state = state.copyWith(isSaving: false, savedSuccessfully: true);

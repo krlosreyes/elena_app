@@ -172,13 +172,23 @@ class IntroProtocolStep extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 28),
+        // SPEC-257 LIMPIEZA: el id de esta card era '14:8' — no suma 24h
+        // (14+8=22) y, más grave, no coincide con ningún string del
+        // catálogo real (`FastingEligibility.ladder`, `ProtocolSelectorSheet`,
+        // `FastingSchedule.novatoTierProtocols`). Un usuario que elegía
+        // "14/10" en su primer gesto de onboarding quedaba persistido con
+        // un protocolo fantasma: invisible para el gate médico, la
+        // escalera de auto-progresión y el mecanismo de días de descanso
+        // programado (§3.1) — exactamente el usuario Novato al que ese
+        // mecanismo apunta. El label ya decía "14/10" — se corrige el id
+        // para que coincida.
         _ProtocolCard(
-          id: '14:8',
+          id: '14:10',
           title: '14/10',
           subtitle: '14 horas de ayuno · 10 de alimentación',
           description: 'Para empezar. Extiende la noche y construye el hábito.',
-          isSelected: selectedProtocol == '14:8',
-          onTap: () => onProtocolSelected('14:8'),
+          isSelected: selectedProtocol == '14:10',
+          onTap: () => onProtocolSelected('14:10'),
           isDark: isDark,
         ),
         const SizedBox(height: 12),
@@ -317,7 +327,7 @@ class IntroInsightStep extends StatelessWidget {
 
   static String _titleFor(String protocol) {
     switch (protocol) {
-      case '14:8':
+      case '14:10':
         return 'Esto pasa en tu cuerpo\ndurante 14 horas de ayuno';
       case '18:6':
         return 'El protocolo avanzado con\nmás evidencia en pérdida de grasa';
@@ -329,7 +339,7 @@ class IntroInsightStep extends StatelessWidget {
 
   static String _footerFor(String protocol) {
     switch (protocol) {
-      case '14:8':
+      case '14:10':
         return 'Estos eventos son automáticos. '
             '14/10 es el protocolo ideal para construir el hábito. '
             'ElenaApp te avisa en cada hito.';
@@ -347,7 +357,7 @@ class IntroInsightStep extends StatelessWidget {
 
   static List<_TimelineData> _timelineFor(String protocol) {
     switch (protocol) {
-      case '14:8':
+      case '14:10':
         return [
           _TimelineData(
             hour: 'Hora 0',

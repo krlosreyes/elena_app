@@ -29,6 +29,7 @@ class PillarRing extends StatelessWidget {
     this.completed = false,
     this.showPercent = false,
     this.isStreakAnchor = false,
+    this.isRestDay = false,
   });
 
   final IconData icon;
@@ -38,6 +39,14 @@ class PillarRing extends StatelessWidget {
   final VoidCallback onTap;
   final bool isSelected;
   final bool completed;
+
+  /// SPEC-257 §3.1: true cuando hoy es un día de descanso PROGRAMADO
+  /// (nivel Novato, 12:12/14:10 con frecuencia semanal reducida — ver
+  /// `FastingSchedule`). El anillo se muestra cubierto (100%) pero con
+  /// una insignia distinta al check verde de "completado": Ayuno es
+  /// pilar-ancla (SPEC-255 RF-07) y pintar un descanso idéntico a un
+  /// ayuno real falsearía el histórico. Solo aplica al ring de Ayuno.
+  final bool isRestDay;
 
   /// SPEC-140.1: si true, renderiza el % del progreso como segunda línea
   /// bajo el label. Permite que el usuario vea el peso individual de
@@ -111,7 +120,28 @@ class PillarRing extends StatelessWidget {
                       ),
                     ),
                   ),
-                if (completed)
+                if (isRestDay)
+                  // SPEC-257 §3.1: insignia distinta de "completado" —
+                  // gris/luna en vez de check verde, para no falsear el
+                  // histórico de un pilar-ancla.
+                  Positioned(
+                    right: 2,
+                    bottom: 2,
+                    child: Container(
+                      width: 16,
+                      height: 16,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.35),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.bedtime_rounded,
+                        color: Color(0xFF1E293B),
+                        size: 10,
+                      ),
+                    ),
+                  )
+                else if (completed)
                   Positioned(
                     right: 2,
                     bottom: 2,
