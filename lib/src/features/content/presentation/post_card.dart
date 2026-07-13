@@ -6,6 +6,7 @@
 
 import 'package:flutter/material.dart';
 
+import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/features/content/domain/post.dart';
 import 'package:elena_app/src/features/content/presentation/post_ui.dart';
 
@@ -36,7 +37,19 @@ class _Thumb extends StatelessWidget {
             fit: BoxFit.cover,
             loadingBuilder: (ctx, w, progress) =>
                 progress == null ? w : placeholder,
-            errorBuilder: (ctx, _, __) => placeholder,
+            // Antes esto se tragaba el fallo en silencio: la imagen se
+            // reemplazaba por el emoji del pilar y nadie se enteraba de que
+            // la URL original nunca cargó. Ahora queda logueado (Crashlytics
+            // en prod vía AppLogger) para poder detectar y corregir la causa
+            // en el editorial/Storage en vez de que el placeholder la tape
+            // para siempre (bug reportado 2026-07-13).
+            errorBuilder: (ctx, error, __) {
+              AppLogger.warning(
+                'Imagen de artículo no cargó (post=${post.id}, pilar=${post.pillar.name}): $url',
+                error,
+              );
+              return placeholder;
+            },
           );
     return ClipRRect(borderRadius: BorderRadius.circular(12), child: child);
   }

@@ -130,3 +130,28 @@ Salida: `PersonalizedFeed { Observation? context, Post? forYou, List<Post> more 
 - ¿Cuántos docs hay en `metamorfosis_posts`? Si crece mucho, paginar el fetch.
 - ¿Todos los pilares tienen al menos 1 post publicado? Si falta alguno, el matching cae a "recientes" para ese pilar (degradación correcta).
 - ¿El resultado del quiz alimenta IMR/gamificación? → diferido a v1.1.
+
+---
+
+## 10. Fix: imágenes de artículos no cargaban (2026-07-13)
+
+**Síntoma reportado por Carlos** (screenshot): en "Para ti" (Dashboard) todos los artículos mostraban el emoji del pilar (💧 Hidratación, 🥦 Nutrición) en vez de la imagen real, tanto en la tarjeta destacada como en las compactas.
+
+**Mecanismo confirmado por lectura de código:** `_Thumb` (`post_card.dart`) y la portada de `PostReaderScreen` usan `Image.network(url, errorBuilder: (...) => placeholder)`. Ese `errorBuilder` se traga CUALQUIER fallo de carga (URL inválida, 403, esquema no-http, etc.) sin loguear nada — el síntoma es indistinguible entre "no hay imagen" y "la imagen falló al cargar".
+
+**Causa raíz más probable (no verificable desde el sandbox, sin acceso a Firestore/Storage de producción):** el doc real de ejemplo (`post_test.dart`, capturado 2026-06-11) guarda `images[0]` como `https://storage.googleapis.com/<bucket>/<ruta>` — la URL directa de la API de Cloud Storage, que requiere que el objeto/bucket tenga lectura pública (IAM `allUsers`) para que un `GET` anónimo (como el que hace `Image.network`, sin el SDK de Firebase Storage — la app no tiene `firebase_storage` como dependencia) funcione. Dos escenarios posibles, ambos con el mismo síntoma (fallo del 100% de las imágenes, no algunas):
+1. El editorial guarda la referencia `gs://bucket/ruta` (formato interno del SDK de Storage) en vez de una URL http — `Image.network` ni siquiera puede intentar un request válido con ese esquema.
+2. El bucket/objeto de Storage no tiene lectura pública habilitada, y el `GET` anónimo devuelve 403.
+
+**Fix aplicado (código, este repo):**
+- `Post.fromMap` ahora tolera `images[]` con Maps (`{url:...}`/`{src:...}`/`{downloadUrl:...}`) además de strings planos — un Map ahí antes producía `.toString()` → `"Instance of '_Map'"`, una URL inválida garantizada.
+- `Post.fromMap` normaliza automáticamente `gs://bucket/ruta` al endpoint público de descarga `https://firebasestorage.googleapis.com/v0/b/<bucket>/o/<ruta-encoded>?alt=media`, que si el bucket tiene Storage Security Rules de lectura pública para esa ruta, sí es fetcheable por `Image.network`.
+- `_Thumb` (post_card.dart) y la portada de `PostReaderScreen` ahora loguean vía `AppLogger.warning` (llega a Crashlytics en release) la URL exacta que falló, en vez de tragarse el error — así un fallo futuro es diagnosticable en vez de invisible para siempre detrás del placeholder.
+
+**Lo que el código NO puede resolver, pendiente de verificación por Carlos:**
+- Si el escenario real es "bucket/objeto sin lectura pública" (no `gs://` sino ya una URL https que igual da 403), el fix de normalización no alcanza — hay que revisar las Storage Security Rules del proyecto en Firebase Console (`allow read: if true` para la ruta de `posts/`, o equivalente) y/o el ACL del bucket. Este repo no tiene `storage.rules` versionado, así que esa config vive solo en consola.
+- Confirmar en Firestore (`metamorfosis_posts`) qué shape tiene `images[]` realmente en producción hoy, para saber cuál de los dos escenarios aplica.
+
+**Why:** Carlos pidió una "corrección completa para que no se pierda la imagen original del artículo" — el código ahora es robusto ante los 2 shapes de datos rotos más probables Y hace visible cualquier fallo restante (antes invisible), pero la causa raíz final depende de una config de infraestructura (Storage) que no es auditable desde el sandbox.
+
+**How to apply:** si el bug persiste después de este fix, el primer paso es mirar los logs/Crashlytics por el mensaje `"Imagen de artículo no cargó"` — va a traer la URL exacta que falló, lo que dice de inmediato si es un problema de shape de dato o de permisos de Storage.

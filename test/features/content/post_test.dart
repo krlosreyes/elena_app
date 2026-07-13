@@ -112,6 +112,52 @@ void main() {
       expect(p.imageUrl, isNull);
     });
 
+    // Bug reportado 2026-07-13: todos los artículos del feed caían al
+    // placeholder de emoji del pilar en vez de mostrar la imagen real.
+    test('images[] con Map {url: ...} en vez de string se extrae igual', () {
+      final p = Post.fromMap({
+        ..._realishDoc(),
+        'images': [
+          {'url': 'https://storage.googleapis.com/elena/posts/img-2.jpeg'},
+        ],
+      });
+      expect(p.imageUrl, 'https://storage.googleapis.com/elena/posts/img-2.jpeg');
+    });
+
+    test('images[] con Map {src: ...} (shape alterno) se extrae igual', () {
+      final p = Post.fromMap({
+        ..._realishDoc(),
+        'images': [
+          {'src': 'https://storage.googleapis.com/elena/posts/img-3.jpeg'},
+        ],
+      });
+      expect(p.imageUrl, 'https://storage.googleapis.com/elena/posts/img-3.jpeg');
+    });
+
+    test('images[] con referencia gs:// se normaliza a URL descargable', () {
+      final p = Post.fromMap({
+        ..._realishDoc(),
+        'images': ['gs://elena-app-prod.appspot.com/posts/img-4.jpeg'],
+      });
+      expect(
+        p.imageUrl,
+        'https://firebasestorage.googleapis.com/v0/b/elena-app-prod.appspot.com/o/posts%2Fimg-4.jpeg?alt=media',
+      );
+    });
+
+    test('images[] con gs:// sin ruta (solo bucket) → imageUrl null', () {
+      final p = Post.fromMap({
+        ..._realishDoc(),
+        'images': ['gs://elena-app-prod.appspot.com'],
+      });
+      expect(p.imageUrl, isNull);
+    });
+
+    test('images[] con URL https ya válida no se toca', () {
+      final p = Post.fromMap(_realishDoc());
+      expect(p.imageUrl, 'https://storage.googleapis.com/elena/posts/img-1.jpeg');
+    });
+
     test('title cae a metadata si falta top-level', () {
       final doc = {..._realishDoc()}..remove('title');
       final p = Post.fromMap(doc);

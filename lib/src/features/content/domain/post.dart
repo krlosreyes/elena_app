@@ -140,6 +140,45 @@ class Post {
     return (words / 200).ceil().clamp(1, 99);
   }
 
+  /// Extrae la URL de un elemento de `images[]`. El editorial normalmente
+  /// entrega strings planos, pero toleramos también `{url: "..."}` /
+  /// `{src: "..."}` / `{downloadUrl: "..."}` por si el shape cambia — antes
+  /// un Map ahí producía `"Instance of '_Map<...>'"` vía `.toString()`, una
+  /// URL inválida que garantizaba que la imagen nunca cargara (bug
+  /// reportado 2026-07-13: todos los artículos caían al placeholder de
+  /// emoji del pilar).
+  static String? _extractImageUrl(Object? e) {
+    if (e is String) return e;
+    if (e is Map) {
+      final v = e['url'] ?? e['src'] ?? e['downloadUrl'];
+      return v?.toString();
+    }
+    return e?.toString();
+  }
+
+  /// Normaliza referencias de Firebase Storage. El editorial a veces guarda
+  /// `gs://bucket/ruta` (referencia interna del SDK de Storage, NO una URL
+  /// http) en vez del link descargable — `Image.network` no puede resolver
+  /// `gs://` en absoluto (ni siquiera intenta un request HTTP válido), así
+  /// que TODAS las imágenes fallarían igual, que es exactamente el síntoma
+  /// reportado. La convertimos al endpoint público de descarga de Firebase
+  /// Storage (`?alt=media`). URLs que ya son http(s) se devuelven sin tocar.
+  static String? _normalizeImageUrl(String raw) {
+    final url = raw.trim();
+    if (url.isEmpty) return null;
+    if (url.startsWith('gs://')) {
+      final withoutScheme = url.substring(5);
+      final slash = withoutScheme.indexOf('/');
+      if (slash == -1) return null;
+      final bucket = withoutScheme.substring(0, slash);
+      final path = withoutScheme.substring(slash + 1);
+      if (path.isEmpty) return null;
+      final encodedPath = Uri.encodeComponent(path);
+      return 'https://firebasestorage.googleapis.com/v0/b/$bucket/o/$encodedPath?alt=media';
+    }
+    return url;
+  }
+
   /// Parser desde el doc de Firestore (o desde la caché, mismo shape). El
   /// `id` se inyecta como campo `'id'` del map (doc.id) por el data source.
   static Post fromMap(Map<String, dynamic> map) {
@@ -154,7 +193,8 @@ class Post {
     }
 
     final images = (map['images'] as List?)
-        ?.map((e) => e?.toString())
+        ?.map(_extractImageUrl)
+        .map((e) => e == null ? null : _normalizeImageUrl(e))
         .where((e) => e != null && e.isNotEmpty)
         .cast<String>()
         .toList();

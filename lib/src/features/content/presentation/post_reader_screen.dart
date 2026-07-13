@@ -7,6 +7,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
 import 'package:elena_app/src/features/content/application/post_providers.dart';
 import 'package:elena_app/src/features/content/domain/post.dart';
@@ -67,7 +68,16 @@ class _PostReaderScreenState extends ConsumerState<PostReaderScreen> {
                   height: 190,
                   width: double.infinity,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                  // Mismo bug que en post_card.dart: antes fallaba en
+                  // silencio (portada desaparecía sin dejar rastro). Ahora
+                  // queda logueado para poder detectar la causa real.
+                  errorBuilder: (_, error, ___) {
+                    AppLogger.warning(
+                      'Imagen de portada no cargó (post=${post.id}): ${post.imageUrl}',
+                      error,
+                    );
+                    return const SizedBox.shrink();
+                  },
                 ),
               ),
             const SizedBox(height: 16),
