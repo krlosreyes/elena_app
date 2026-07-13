@@ -24,6 +24,11 @@ import 'package:elena_app/src/features/analysis/domain/nutrition_pie_data.dart';
 import 'package:elena_app/src/features/analysis/presentation/monthly_calendar_screen.dart';
 // SPEC-168.4: tile compacto del overview con sparkline + tap a detalle.
 import 'package:elena_app/src/features/analysis/presentation/widgets/pillar_overview_tile.dart';
+// SPEC-256: card de racha (RF-01) + heatmap de 12 semanas (RF-02).
+import 'package:elena_app/src/features/analysis/presentation/widgets/streak_heatmap.dart';
+import 'package:elena_app/src/features/analysis/presentation/widgets/streak_summary_card.dart';
+import 'package:elena_app/src/features/streak/application/streak_notifier.dart';
+import 'package:elena_app/src/features/streak/domain/streak_engine.dart';
 
 class AnalysisScreen extends ConsumerStatefulWidget {
   const AnalysisScreen({super.key});
@@ -289,7 +294,29 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
       // SPEC-114-app (2026-07-12): "Para ti" (SPEC-205) se promovió al
       // Dashboard (ver dashboard_screen.dart) por baja visibilidad acá —
       // no se duplica en las dos pantallas.
+      const SizedBox(height: 28),
+      _sectionTitle('Tu racha'),
+      const SizedBox(height: 12),
+      ..._buildStreakSection(),
       const SizedBox(height: 10),
+    ];
+  }
+
+  /// SPEC-256: la racha vivía SOLO como número en tiempo real en el
+  /// header de Hoy — Progreso (revisión histórica) no tenía ninguna
+  /// vista de racha. `StreakSummaryCard` ya existía pero nunca se había
+  /// montado en ningún árbol de widgets (RF-01). Se agrega junto al
+  /// heatmap de 12 semanas (RF-02).
+  List<Widget> _buildStreakSection() {
+    final streakHistory = ref.watch(streakProvider.select((s) => s.history));
+    final protectedDates = StreakEngine.computeProtectedDates(streakHistory);
+    return [
+      const StreakSummaryCard(),
+      const SizedBox(height: 10),
+      StreakHeatmap(
+        history: streakHistory,
+        protectedDates: protectedDates,
+      ),
     ];
   }
 

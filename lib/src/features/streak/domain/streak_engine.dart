@@ -169,44 +169,9 @@ class StreakEngine {
 
     // Paso 1 (adelante, cronológico): marcar qué fechas quedan protegidas
     // y calcular cuántas reservas quedan disponibles al final.
-    final ascending = _sortedAscending(history);
-    final protectedDates = <String>{};
-    int banked = 0;
-    int consecutiveRealQualifying = 0;
-    DateTime? prevDate;
-
-    for (final entry in ascending) {
-      final d = DateTime.tryParse(entry.date);
-      if (d == null) continue;
-
-      final isNextCalendarDay =
-          prevDate != null && d.difference(prevDate!).inDays == 1;
-
-      if (prevDate != null && !isNextCalendarDay) {
-        // Hueco de calendario (>1 día): rompe la racha de días reales
-        // usada para ganar reservas.
-        consecutiveRealQualifying = 0;
-      }
-
-      if (entry.qualifiesForStreak) {
-        consecutiveRealQualifying++;
-      } else if (isNextCalendarDay && banked > 0) {
-        // Perdona este día puntual — consume una reserva.
-        banked--;
-        protectedDates.add(entry.date);
-        consecutiveRealQualifying = 0; // no fue una completación real
-      } else {
-        consecutiveRealQualifying = 0;
-      }
-
-      if (consecutiveRealQualifying > 0 &&
-          consecutiveRealQualifying % 7 == 0 &&
-          banked < 2) {
-        banked++;
-      }
-
-      prevDate = d;
-    }
+    final forward = _forwardPassProtection(history);
+    final protectedDates = forward.protectedDates;
+    final banked = forward.banked;
 
     // Paso 2 (atrás, igual que computeCurrentStreak): un día cuenta si
     // califica O fue protegido por una reserva.
@@ -258,6 +223,65 @@ class StreakEngine {
       freezesAvailable: banked,
       currentStreakHasProtectedDay: hasProtectedDay,
     );
+  }
+
+  /// SPEC-256 RF-02: set de fechas ('yyyy-MM-dd') perdonadas por una
+  /// reserva en TODO el historial (no solo la cadena actual) — para
+  /// pintar el heatmap de racha en Progreso. Reusa el mismo cálculo
+  /// forward que [computeCurrentStreakWithFreezes] (§ misma mecánica,
+  /// una sola fuente de verdad).
+  static Set<String> computeProtectedDates(List<StreakEntry> history) {
+    if (history.isEmpty) return const {};
+    return _forwardPassProtection(history).protectedDates;
+  }
+
+  /// Paso 1 compartido por [computeCurrentStreakWithFreezes] y
+  /// [computeProtectedDates]: recorre el historial en orden cronológico
+  /// y devuelve qué fechas quedaron protegidas por una reserva, más
+  /// cuántas reservas quedan disponibles al final del historial.
+  static ({Set<String> protectedDates, int banked}) _forwardPassProtection(
+    List<StreakEntry> history,
+  ) {
+    final ascending = _sortedAscending(history);
+    final protectedDates = <String>{};
+    int banked = 0;
+    int consecutiveRealQualifying = 0;
+    DateTime? prevDate;
+
+    for (final entry in ascending) {
+      final d = DateTime.tryParse(entry.date);
+      if (d == null) continue;
+
+      final isNextCalendarDay =
+          prevDate != null && d.difference(prevDate!).inDays == 1;
+
+      if (prevDate != null && !isNextCalendarDay) {
+        // Hueco de calendario (>1 día): rompe la racha de días reales
+        // usada para ganar reservas.
+        consecutiveRealQualifying = 0;
+      }
+
+      if (entry.qualifiesForStreak) {
+        consecutiveRealQualifying++;
+      } else if (isNextCalendarDay && banked > 0) {
+        // Perdona este día puntual — consume una reserva.
+        banked--;
+        protectedDates.add(entry.date);
+        consecutiveRealQualifying = 0; // no fue una completación real
+      } else {
+        consecutiveRealQualifying = 0;
+      }
+
+      if (consecutiveRealQualifying > 0 &&
+          consecutiveRealQualifying % 7 == 0 &&
+          banked < 2) {
+        banked++;
+      }
+
+      prevDate = d;
+    }
+
+    return (protectedDates: protectedDates, banked: banked);
   }
 
   /// Calcula la racha más larga de toda la historia.
