@@ -10,7 +10,6 @@ import 'package:elena_app/src/core/theme/app_icons.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/analysis/application/analysis_range_provider.dart';
 import 'package:elena_app/src/features/analysis/application/analysis_series_providers.dart';
-import 'package:elena_app/src/features/content/presentation/for_you_section.dart';
 // SPEC-168.1: helper para formatear el dateRange del card de Nutrición pie.
 import 'package:elena_app/src/features/analysis/application/chart_hero_computer.dart';
 // SPEC-168.5.4: distribución pie A vs E.
@@ -23,7 +22,6 @@ import 'package:elena_app/src/features/analysis/domain/metric_series.dart';
 // SPEC-168.5.4: domain del pie chart de Nutrición.
 import 'package:elena_app/src/features/analysis/domain/nutrition_pie_data.dart';
 import 'package:elena_app/src/features/analysis/presentation/monthly_calendar_screen.dart';
-import 'package:elena_app/src/features/analysis/presentation/widgets/transformation_card.dart';
 // SPEC-168.4: tile compacto del overview con sparkline + tap a detalle.
 import 'package:elena_app/src/features/analysis/presentation/widgets/pillar_overview_tile.dart';
 
@@ -288,10 +286,10 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
       _exerciseTile(exerciseSeries),
       const SizedBox(height: 10),
       _sleepTile(sleepSeries),
-      const SizedBox(height: 36),
-      // SPEC-205: "Tus tendencias" → "Para ti" (feed de artículos
-      // personalizado). Sección autocontenida (observa su propio provider).
-      const ForYouSection(),
+      // SPEC-114-app (2026-07-12): "Para ti" (SPEC-205) se promovió al
+      // Dashboard (ver dashboard_screen.dart) por baja visibilidad acá —
+      // no se duplica en las dos pantallas.
+      const SizedBox(height: 10),
     ];
   }
 
