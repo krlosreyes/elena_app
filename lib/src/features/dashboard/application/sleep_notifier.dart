@@ -144,7 +144,9 @@ class SleepNotifier extends StateNotifier<SleepState> {
   Future<void> updateSleepConsciousness() async {
     final userAsync = _ref.read(currentUserStreamProvider);
 
-    await userAsync.whenData((user) async {
+    // NOTA: whenData() no retorna Future real; el await no espera el
+    // callback interno (bug pre-existente, ver auditoría).
+    userAsync.whenData((user) async {
       if (user == null) return;
 
       final now = DateTime.now();
@@ -460,20 +462,43 @@ final sleepProvider = StateNotifierProvider<SleepNotifier, SleepState>((ref) {
 /// Fix: usar `max(cycle.startedAt, startOfDay(now))` como effectiveAnchor.
 /// Cualquier sueño de HOY siempre se atribuye al ciclo abierto del mismo
 /// día, sin importar la hora de inicio del ayuno.
+///
+/// BUG-02 (2026-07-13, Carlos: "al terminar el día metabólico el
+/// anillo de sueño no se resetea a cero"): el relajamiento de SPEC-245
+/// no distinguía "primer ciclo del día" de "segundo ciclo del mismo
+/// día calendárico" (usuario cierra un ciclo y abre otro más tarde,
+/// mismo día). En ambos casos `cycle.startedAt.isAfter(todayStart)` es
+/// true, así que el mismo retroceso a medianoche se aplicaba también
+/// al ciclo nuevo — colando el sleep de esta madrugada, que ya
+/// pertenecía al ciclo recién cerrado, hacia el ciclo que se acaba de
+/// abrir. Fix: el relajamiento SOLO aplica si este es el primer ciclo
+/// abierto hoy — si `lastClosedMetabolicCycleProvider` ya cerró un
+/// ciclo hoy, ese ciclo ya "reclamó" el sueño de esta noche y el
+/// nuevo arranca limpio con la regla estricta canónica de SPEC-188 v2
+/// (`wokeUp >= cycle.startedAt`), sin importar si eso da 0.
 final currentCycleSleepProvider = Provider<SleepLog?>((ref) {
   final sleep = ref.watch(sleepProvider);
   if (sleep.lastLog == null) return null;
 
   final cycle = ref.watch(currentMetabolicCycleProvider).valueOrNull;
-  final anchor = cycle?.startedAt ??
-      DayBoundaryResolver.startOfDay(DateTime.now());
-
-  // SPEC-245: si hay ciclo pero su startedAt es posterior al inicio del
-  // día local de hoy, no penalizamos sueño que sí ocurrió hoy antes de
-  // que el ciclo empezara (típico en ayunos que inician tarde en el día).
   final todayStart = DayBoundaryResolver.startOfDay(DateTime.now());
+  final anchor = cycle?.startedAt ?? todayStart;
+
+  // BUG-02: si ya hubo un ciclo cerrado HOY, este no es el primer
+  // ciclo del día — no se relaja el anchor, el sleep de esta noche
+  // pertenece al ciclo cerrado, no al que se acaba de abrir.
+  final lastClosed = ref.watch(lastClosedMetabolicCycleProvider).valueOrNull;
+  final hasClosedCycleToday = lastClosed?.closedAt != null &&
+      !lastClosed!.closedAt!.isBefore(todayStart);
+
+  // SPEC-245: si hay ciclo, es el primero de hoy, y su startedAt es
+  // posterior al inicio del día local, no penalizamos sueño que sí
+  // ocurrió hoy antes de que el ciclo empezara (típico en ayunos que
+  // inician tarde en el día).
   final effectiveAnchor =
-      (cycle != null && anchor.isAfter(todayStart)) ? todayStart : anchor;
+      (cycle != null && anchor.isAfter(todayStart) && !hasClosedCycleToday)
+          ? todayStart
+          : anchor;
 
   final wokeUp = sleep.lastLog!.wokeUp;
   final belongs = !wokeUp.isBefore(effectiveAnchor);
