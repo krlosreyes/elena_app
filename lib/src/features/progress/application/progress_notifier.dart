@@ -156,13 +156,16 @@ class ProgressNotifier extends StateNotifier<ProgressState> {
     );
   }
 
-  // ─── API pública ────────────────────────────────────────────────────────────
-
-  /// Guarda un nuevo check-in biométrico.
-  Future<void> saveCheckIn(BiometricCheckIn checkIn) async {
-    await _ref.read(biometricRepositoryProvider).saveCheckIn(checkIn);
-    // El stream actualizará el estado automáticamente
-  }
+  // FB-10 (auditoría independiente 2026-07-11): se retiró el método público
+  // `saveCheckIn` de este notifier. Llamaba directo a
+  // `BiometricRepository.saveCheckIn` (solo escribe `biometric_history/{date}`)
+  // sin pasar por `BiometricHistoryService`, que además sincroniza
+  // `users/{uid}.weight` atómicamente vía batch — el propio docstring de
+  // `applyBiometricUpdate` en `biometric_repository.dart` advertía que el
+  // llamador canónico es `BiometricHistoryService`. Grep confirmó cero
+  // consumidores externos de este método (código muerto). El check-in real
+  // de la UI ya pasa por `BiometricHistoryService` vía
+  // `biometric_checkin_sheet.dart`.
 
   @override
   void dispose() {
@@ -176,4 +179,28 @@ class ProgressNotifier extends StateNotifier<ProgressState> {
 final progressProvider =
     StateNotifierProvider<ProgressNotifier, ProgressState>((ref) {
   return ProgressNotifier(ref);
+});
+
+// ─── Recordatorio de check-in biométrico (7 días) ──────────────────────────
+//
+// Carlos pidió (2026-07-13): recordar al usuario actualizar peso/medidas
+// al llegar al día 7 desde su último registro biométrico. `biometricHistory`
+// siempre tiene al menos una entrada para un usuario activo — el onboarding
+// escribe un baseline (SPEC-143, `onboarding_controller.dart`) y
+// `biometricBackfillProvider` cubre a los que existían antes de eso — así
+// que "última entrada" es una fuente confiable, sin necesitar un campo
+// `createdAt` en `UserModel` (que no existe y no se puede agregar sin
+// build_runner). Recurrente: cada nuevo check-in reinicia el contador.
+const int kBiometricReminderIntervalDays = 7;
+
+/// true si pasaron >= 7 días desde el último check-in biométrico
+/// registrado. `false` si el historial está vacío (edge case defensivo —
+/// no debería ocurrir en un usuario con sesión activa, pero evita
+/// mostrar el recordatorio con un dato ausente).
+final biometricReminderDueProvider = Provider<bool>((ref) {
+  final history = ref.watch(progressProvider).biometricHistory;
+  if (history.isEmpty) return false;
+  final lastCheckIn = history.last.createdAt;
+  final daysSince = DateTime.now().difference(lastCheckIn).inDays;
+  return daysSince >= kBiometricReminderIntervalDays;
 });

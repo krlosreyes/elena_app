@@ -22,17 +22,20 @@ class UiInteractionState {
   final bool isEngagementBannerDismissed;
   final bool isAdaptiveSuggestionDismissed;
   final bool isHydrationCoachDismissed;
+  final bool isBiometricReminderDismissed;
 
   const UiInteractionState({
     this.isEngagementBannerDismissed = false,
     this.isAdaptiveSuggestionDismissed = false,
     this.isHydrationCoachDismissed = false,
+    this.isBiometricReminderDismissed = false,
   });
 
   UiInteractionState copyWith({
     bool? isEngagementBannerDismissed,
     bool? isAdaptiveSuggestionDismissed,
     bool? isHydrationCoachDismissed,
+    bool? isBiometricReminderDismissed,
   }) {
     return UiInteractionState(
       isEngagementBannerDismissed:
@@ -41,6 +44,8 @@ class UiInteractionState {
           isAdaptiveSuggestionDismissed ?? this.isAdaptiveSuggestionDismissed,
       isHydrationCoachDismissed:
           isHydrationCoachDismissed ?? this.isHydrationCoachDismissed,
+      isBiometricReminderDismissed:
+          isBiometricReminderDismissed ?? this.isBiometricReminderDismissed,
     );
   }
 }
@@ -53,6 +58,7 @@ class UiInteractionState {
 String _engagementKey(String day) => 'ui_dismiss_engagement_$day';
 String _adaptiveKey(String day) => 'ui_dismiss_adaptive_$day';
 String _hydrationCoachKey(String day) => 'ui_dismiss_hydration_coach_$day';
+String _biometricReminderKey(String day) => 'ui_dismiss_biometric_reminder_$day';
 
 class UiInteractionNotifier extends StateNotifier<UiInteractionState> {
   final Ref _ref;
@@ -73,6 +79,8 @@ class UiInteractionNotifier extends StateNotifier<UiInteractionState> {
           prefs.getBool(_adaptiveKey(day)) ?? false,
       isHydrationCoachDismissed:
           prefs.getBool(_hydrationCoachKey(day)) ?? false,
+      isBiometricReminderDismissed:
+          prefs.getBool(_biometricReminderKey(day)) ?? false,
     );
   }
 
@@ -95,6 +103,16 @@ class UiInteractionNotifier extends StateNotifier<UiInteractionState> {
     final prefs = _ref.read(sharedPreferencesProvider);
     await prefs.setBool(_hydrationCoachKey(_todayKey()), true);
     state = state.copyWith(isHydrationCoachDismissed: true);
+  }
+
+  /// Carlos (2026-07-13): usuario descarta el recordatorio de check-in
+  /// biométrico (7 días desde el último registro). Reaparece mañana si
+  /// la condición sigue activa — mismo patrón día-calendario que el
+  /// resto de banners. No lo "apaga" para siempre: solo pospone un día.
+  Future<void> dismissBiometricReminder() async {
+    final prefs = _ref.read(sharedPreferencesProvider);
+    await prefs.setBool(_biometricReminderKey(_todayKey()), true);
+    state = state.copyWith(isBiometricReminderDismissed: true);
   }
 
   /// SPEC-194: ya no se necesita reset manual. La clave incluye el día,

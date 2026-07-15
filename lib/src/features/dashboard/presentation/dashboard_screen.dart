@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/core/engine/imr_persistence_provider.dart';
 import 'package:elena_app/src/core/engine/metabolic_state_provider.dart';
 import 'package:elena_app/src/core/widgets/elena_header.dart';
@@ -10,53 +9,44 @@ import 'package:elena_app/src/features/dashboard/application/eating_window_provi
 import 'package:elena_app/src/features/dashboard/application/fasting_notifier.dart';
 import 'package:elena_app/src/features/dashboard/application/sleep_notifier.dart';
 import 'package:elena_app/src/features/dashboard/application/hydration_notifier.dart';
-import 'package:elena_app/src/features/dashboard/domain/fasting_status.dart';
+import 'package:elena_app/src/features/dashboard/domain/selected_pillar.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/circadian_clock.dart';
-import 'package:elena_app/src/features/dashboard/presentation/widgets/pillar_ring.dart';
-import 'package:elena_app/src/features/dashboard/presentation/widgets/dual_score_ring.dart';
+import 'package:elena_app/src/features/dashboard/presentation/widgets/dashboard_bottom_nav.dart';
+import 'package:elena_app/src/features/dashboard/presentation/widgets/dashboard_fasting_overlays.dart';
+import 'package:elena_app/src/features/dashboard/presentation/widgets/dashboard_pillars_row.dart';
+import 'package:elena_app/src/features/dashboard/presentation/widgets/dashboard_selected_pillar_card.dart';
+import 'package:elena_app/src/features/dashboard/presentation/widgets/imr_longitudinal_card.dart';
+import 'package:elena_app/src/features/dashboard/presentation/widgets/metabolic_alert_banner.dart';
 import 'package:elena_app/src/features/exercise/application/exercise_notifier.dart';
-import 'package:elena_app/src/features/exercise/application/exercise_state.dart';
 import 'package:elena_app/src/features/engagement/presentation/widgets/engagement_banner.dart';
 import 'package:elena_app/src/features/adaptive/presentation/widgets/adaptive_suggestion_card.dart';
-import 'package:elena_app/src/features/billing/application/billing_providers.dart';
 import 'package:elena_app/src/features/billing/presentation/paywall_auto_trigger.dart';
-import 'package:elena_app/src/features/billing/presentation/paywall_launcher.dart';
-import 'package:elena_app/src/features/billing/presentation/premium_lock.dart';
 import 'package:elena_app/src/features/billing/presentation/trial_banner.dart';
+import 'package:elena_app/src/features/content/presentation/for_you_section.dart';
 import 'package:elena_app/src/features/coaching/presentation/widgets/cycle_coaching_feedback_card.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/interactive_coaching_card.dart';
 import 'package:elena_app/src/features/coaching/presentation/widgets/check_in_card.dart';
 import 'package:elena_app/src/features/coaching/presentation/widgets/wake_up_quality_overlay.dart';
-import 'package:elena_app/src/features/goals/application/pillar_goal_providers.dart';
-import 'package:elena_app/src/features/dashboard/presentation/widgets/exercise_pillar_card.dart';
-import 'package:elena_app/src/features/dashboard/presentation/widgets/hydration_pillar_card.dart';
-import 'package:elena_app/src/features/dashboard/presentation/widgets/sleep_pillar_card.dart';
-import 'package:elena_app/src/features/dashboard/presentation/widgets/comidas_pillar_card.dart';
-import 'package:elena_app/src/features/dashboard/presentation/widgets/fasting_consciousness_card.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/new_cycle_meals_warning_dialog.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/celebration_overlay.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/clock_explainer_sheet.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
 import 'package:elena_app/src/features/progress/application/biometric_backfill_provider.dart';
-import 'package:elena_app/src/features/dashboard/presentation/widgets/daily_score_explainer_sheet.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_bootstrap_provider.dart';
 import 'package:elena_app/src/features/metabolic_cycle/presentation/widgets/cycle_closure_card.dart';
 import 'package:elena_app/src/features/metabolic_cycle/presentation/widgets/cycle_detail_sheet.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart';
 import 'package:elena_app/src/features/metabolic_cycle/domain/metabolic_cycle.dart';
-import 'package:elena_app/src/features/streak/application/daily_score_provider.dart';
 // SPEC-137 E.5: banner countdown 30 min antes de la próxima comida.
 import 'package:elena_app/src/features/nutrition/presentation/widgets/next_meal_banner.dart';
 import 'package:elena_app/src/features/onboarding/application/app_tour_notifier.dart';
 import 'package:elena_app/src/features/onboarding/application/tour_targets_provider.dart';
+import 'package:elena_app/src/features/progress/presentation/widgets/biometric_reminder_banner.dart';
 
 // SPEC-88 fix: BodyCompositionCard y GoalsDashboardWidget se retiraron
 // del Dashboard. La primera vive ahora en Profile; la segunda queda
 // accesible vía `/goals/setup`. Los imports se mantuvieron eliminados
 // para evitar dependencias huérfanas.
-/// SPEC-72.4: pilar seleccionado en la fila "PILARES HOY".
-/// Determina qué tarjeta de soporte se renderiza debajo.
-enum SelectedPillar { ayuno, sueno, hidratacion, ejercicio, comidas }
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -311,6 +301,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   // en hitos 4/8/12/16h con 6 opciones de sentimiento. Se
                   // oculta sola si no hay hito activo o si ya respondió.
                   const CheckInCard(),
+
+                  // Carlos (2026-07-13): recordatorio de actualizar peso/
+                  // medidas — 7 días desde el último check-in biométrico.
+                  // Se oculta sola si no aplica o si ya se descartó hoy.
+                  const BiometricReminderBanner(),
                   const SizedBox(height: 16),
 
                   Stack(
@@ -343,9 +338,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       if (sleepState.isWaitingForWakeUp)
                         const WakeUpQualityOverlay(),
                       if (fastingState.isWaitingForFastingEnd)
-                        _buildFastingEndOverlay(context, ref, fastingState),
+                        FastingEndOverlay(state: fastingState),
                       if (fastingState.isWaitingForFeedingEnd)
-                        _buildFeedingEndOverlay(context, ref, fastingState),
+                        FeedingEndOverlay(state: fastingState),
                     ],
                   ),
 
@@ -380,7 +375,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   const SizedBox(height: 10),
 
                   if (fastingState.metabolicAlert != null) ...[
-                    _buildMetabolicAlertBanner(fastingState.metabolicAlert!),
+                    MetabolicAlertBanner(message: fastingState.metabolicAlert!),
                     const SizedBox(height: 12),
                   ],
 
@@ -399,14 +394,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   // El % por pilar y el score van en _buildPillarsRow.
                   // El card separado anterior se eliminó por redundancia
                   // visual con los anillos de cada pilar.
-                  _buildPillarsRow(
-                    context: context,
-                    ref: ref,
+                  DashboardPillarsRow(
                     fastingState: fastingState,
                     sleep: sleepState,
                     hydration: hydrationState,
                     exercise: exerciseState,
                     nutrition: nutritionState,
+                    selectedPillar: _selectedPillar,
+                    onSelectPillar: (p) => setState(() => _selectedPillar = p),
                   ),
                   // SPEC-140.3: gap reducido de 24 → 14 para que la card
                   // del pilar seleccionado se sienta como continuación
@@ -415,22 +410,25 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
                   // Tarjeta de soporte del pilar seleccionado.
                   // Cambia dinámicamente al tocar un anillo de la fila "PILARES HOY".
-                  _buildSelectedPillarCard(
-                    context: context,
-                    ref: ref,
+                  DashboardSelectedPillarCard(
+                    selectedPillar: _selectedPillar,
                     fastingState: fastingState,
                     sleep: sleepState,
                     hydration: hydrationState,
                     exercise: exerciseState,
                     nutrition: nutritionState,
-                    user: user,
+                    onSelectPillar: (p) {
+                      if (mounted) {
+                        setState(() => _selectedPillar = p);
+                      }
+                    },
                   ),
                   const SizedBox(height: 14),
 
                   // GAP-2: bloqueo visible del IMR longitudinal en el Dashboard.
                   // Free: ve el card atenuado con candado + CTA "Desbloquear".
                   // Premium: ve el IMR actual + zona + enlace a Análisis.
-                  _buildImrLongitudinalCard(context, ref),
+                  const ImrLongitudinalCard(),
                   const SizedBox(height: 20),
 
                   // SPEC-88 fix: BodyCompositionCard, GoalsDashboardWidget
@@ -441,6 +439,27 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   // dedicadas (/goals/setup y /progress) — el atajo en
                   // Dashboard se considera ruido visual.
                   const SizedBox(height: 10),
+
+                  // SPEC-114-app (2026-07-12, hallazgo A2 del informe de
+                  // producto): el feed "Para ti" (SPEC-205) es el
+                  // diferencial científico más defendible frente a la
+                  // competencia, pero vivía únicamente enterrado dentro
+                  // de la pantalla de Análisis — invisible para un
+                  // usuario en su primera semana. Se promueve al
+                  // Dashboard, después del IMR, como cierre natural del
+                  // scroll (no compite por atención con el ayuno/pilares
+                  // que van arriba). El widget ya maneja sus propios
+                  // estados de loading/vacío, así que no agrega ruido
+                  // cuando todavía no hay contenido personalizado.
+                  Container(
+                    padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1E293B),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const ForYouSection(),
+                  ),
+                  const SizedBox(height: 10),
                 ],
               ),
             ),
@@ -449,7 +468,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           const CelebrationOverlay(),
           ],
           ),
-          bottomNavigationBar: _buildBottomNav(context),
+          bottomNavigationBar: const DashboardBottomNav(),
         );
       },
     );
@@ -476,243 +495,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   // SPEC-104: `_buildPhaseIndicators` y `_phaseIndicatorTile` eliminados
   // junto con la card que renderizaban. Ver razones en el callsite.
 
-  /// Fila horizontal de 5 anillos circulares — uno por pilar.
-  /// Cada anillo es interactivo y abre su sheet de input correspondiente.
-  /// El pilar de Ayuno está visualmente destacado cuando está activo.
-  ///
-  /// SPEC-140.1: el header ahora incluye el Score del Día (agregado de
-  /// los 5 pilares), el delta vs ayer y el icono ⓘ que abre el
-  /// explainer educativo. Cada PillarRing muestra su % bajo el label.
-  Widget _buildPillarsRow({
-    required BuildContext context,
-    required WidgetRef ref,
-    required FastingState fastingState,
-    required SleepState sleep,
-    required HydrationState hydration,
-    required ExerciseState exercise,
-    required NutritionState nutrition,
-  }) {
-    // SPEC-194 (2026-06-06): se eliminó el placeholder "Tu día
-    // metabólico aún no empezó". Bloqueaba la app cuando había
-    // desync entre ayuno activo y ciclo cerrado, y el bootstrap
-    // retroactivo (SPEC-193) ya repara esos casos sin bloquear la UI.
-    // Los rings vuelven a estar siempre visibles, alimentados por
-    // los providers DISPLAY cycle-aware con fallback a legacy.
-
-    // SPEC-171 (2026-06-04): usa los providers DISPLAY anclados al ciclo
-    // metabólico. Cuando hay ciclo abierto con protocolo conocido, el
-    // score y el delta reflejan el ciclo en vivo, no el día calendárico.
-    // Fallback al legacy cuando no hay ciclo o protocolo == 'Ninguno'.
-    final dailyScore = ref.watch(displayDailyScoreProvider);
-    final delta = ref.watch(displayDailyScoreDeltaProvider);
-
-    // SPEC-175 (2026-06-04): la regla "el sleep pertenece al ciclo"
-    // vive en `currentCycleSleepProvider`. Si no pertenece, devuelve
-    // null y el ring queda en 0. La regla canónica es:
-    //   wokeUp ∈ [startedAt - 18h, startedAt)
-    // Histórico: SPEC-149.2.bugfix2 introdujo la ventana 18h previas;
-    // SPEC-149.2.bugfix3 agregó el límite superior `< startedAt` para
-    // que el sleep post-startedAt no contara al ciclo recién abierto;
-    // SPEC-175 movió la lógica a un provider derivado limpio.
-    final cycleSleep = ref.watch(currentCycleSleepProvider);
-    // BUGFIX objetivos: meta de sueño desde "Mis objetivos" (SoT) con
-    // fallback a 8h. Antes el progreso usaba 8h y el completado 7h hardcoded;
-    // ahora ambos siguen el objetivo del usuario.
-    final sleepTargetH = ref.watch(effectiveSleepGoalProvider);
-    final sleepProgress = cycleSleep == null
-        ? 0.0
-        : (cycleSleep.duration.inMinutes / (sleepTargetH * 60)).clamp(0.0, 1.0);
-    final sleepCompleted =
-        cycleSleep != null && cycleSleep.duration.inHours >= sleepTargetH;
-
-    // SPEC-140.2: el Score del Día vive como HEADLINE dentro del card
-    // de pilares. El label "PILARES HOY" se elimina (los 5 rings con
-    // sus iconos son autodescriptivos). El divider separa visualmente
-    // el agregado (TU DÍA) del desglose (5 pilares).
-    return Container(
-      padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Fila 1: label TU DÍA + ⓘ alineados a los extremos.
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                // SPEC-230: renombrado a "PROGRESO HOY" para distinguir
-                // claramente el Score del Día (cambio diario) del IMR
-                // (Índice Metabólico Real, cambio semanal/mensual).
-                'PROGRESO HOY',
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.45),
-                  fontSize: 10,
-                  letterSpacing: 1.5,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              GestureDetector(
-                key: const Key('daily_score_info_button'),
-                behavior: HitTestBehavior.opaque,
-                onTap: () => showDailyScoreExplainerSheet(context),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 4,
-                    vertical: 2,
-                  ),
-                  child: Icon(
-                    Icons.info_outline,
-                    color: Colors.white.withValues(alpha: 0.50),
-                    size: 16,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          // SPEC-170 (2026-06-04): dos rings adyacentes HOY + IMR
-          // reemplazan el número grande 36pt. Cada uno con score, label
-          // y sub-label propio. Tap en cualquiera abre el ExplainerSheet
-          // único que cubre ambos.
-          // SPEC-243 fix: key compartida con AppTourOverlay para calcular
-          // posición real del spotlight "Progreso Hoy" (scoreCard).
-          DualScoreRing(
-            key: ref.read(dualScoreRingKeyProvider),
-            dailyScore: dailyScore,
-            dailyDelta: delta,
-            imrScore: ref.watch(displayedImrProvider).score,
-            imrZone: ref.watch(displayedImrProvider).zone,
-            // SPEC-229: biometrías parciales → sublabel "estimado" en el IMR ring.
-            imrIsPartial:
-                ref.watch(displayedImrProvider).localFull?.isPartialBiometrics ??
-                    false,
-            onTap: () => showDailyScoreExplainerSheet(context),
-          ),
-          const SizedBox(height: 12),
-          // Frase motivacional centrada bajo los rings (SPEC-140.3).
-          Center(
-            child: Text(
-              _dailyScoreMotivation(dailyScore),
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.70),
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                height: 1.0,
-              ),
-            ),
-          ),
-          const SizedBox(height: 14),
-          // Divider sutil entre headline y rings.
-          Container(
-            height: 1,
-            color: Colors.white.withValues(alpha: 0.08),
-          ),
-          const SizedBox(height: 14),
-          // Fila de los 5 pilares con % bajo cada label.
-          // SPEC-243 fix: key compartida con AppTourOverlay para calcular
-          // posición real del spotlight de cada pilar (localToGlobal).
-          Row(
-            key: ref.read(pillarRowKeyProvider),
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              PillarRing(
-                icon: Icons.timer_rounded,
-                color: AppColors.metabolicGreen,
-                progress: fastingState.progressPercentage,
-                label: 'Ayuno',
-                isSelected: _selectedPillar == SelectedPillar.ayuno,
-                completed: fastingState.progressPercentage >= 1.0,
-                showPercent: true,
-                onTap: () =>
-                    setState(() => _selectedPillar = SelectedPillar.ayuno),
-              ),
-              PillarRing(
-                icon: Icons.nightlight_round,
-                color: const Color(0xFF818CF8),
-                progress: sleepProgress,
-                label: 'Sueño',
-                isSelected: _selectedPillar == SelectedPillar.sueno,
-                completed: sleepCompleted,
-                showPercent: true,
-                onTap: () =>
-                    setState(() => _selectedPillar = SelectedPillar.sueno),
-              ),
-              PillarRing(
-                icon: Icons.water_drop_rounded,
-                color: Colors.blueAccent,
-                progress: hydration.progressPercentage,
-                label: 'Hidratación',
-                isSelected: _selectedPillar == SelectedPillar.hidratacion,
-                completed: hydration.isGoalReached,
-                showPercent: true,
-                onTap: () => setState(
-                    () => _selectedPillar = SelectedPillar.hidratacion),
-              ),
-              Builder(builder: (_) {
-                // SPEC-113.bugfix: usar `user.exerciseGoalMinutes`
-                // (default 20) como meta diaria. Antes el progress se
-                // dividía por 60 y el "completed" se gatillaba en 30
-                // — ambos hardcoded y desalineados con el objetivo
-                // real sugerido al usuario.
-                // BUGFIX objetivos: meta desde "Mis objetivos" (SoT) con
-                // fallback a UserModel/default.
-                final goal =
-                    ref.watch(effectiveExerciseGoalProvider).clamp(1, 240);
-                final progress =
-                    (exercise.todayMinutes / goal.toDouble()).clamp(0.0, 1.0);
-                return PillarRing(
-                  icon: Icons.fitness_center_rounded,
-                  color: Colors.tealAccent,
-                  progress: progress,
-                  label: 'Ejercicio',
-                  isSelected: _selectedPillar == SelectedPillar.ejercicio,
-                  completed: exercise.todayMinutes >= goal,
-                  showPercent: true,
-                  onTap: () => setState(
-                      () => _selectedPillar = SelectedPillar.ejercicio),
-                );
-              }),
-              // SPEC-105: si hay ayuno activo, el PillarRing de Comidas
-              // se ve tenue (opacity 0.5) para señal visual consistente
-              // con el bloqueo. Sigue tappable — el usuario puede entrar
-              // a la card y ver el banner explicativo.
-              Opacity(
-                opacity: fastingState.isActive ? 0.5 : 1.0,
-                child: PillarRing(
-                  icon: Icons.restaurant_rounded,
-                  color: Colors.orangeAccent,
-                  progress: nutrition.progressPercentage,
-                  label: 'Comidas',
-                  isSelected: _selectedPillar == SelectedPillar.comidas,
-                  completed:
-                      nutrition.mealsLoggedToday >= nutrition.targetMeals,
-                  showPercent: true,
-                  onTap: () =>
-                      setState(() => _selectedPillar = SelectedPillar.comidas),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// SPEC-140.3: frase motivacional adaptativa según el Score del Día.
-  /// 6 rangos calibrados para tono ElenaApp (encouraging, no
-  /// infantilizing, brand voice metabólica). El usuario ve un mensaje
-  /// que ancla el número en sentido emocional.
-  String _dailyScoreMotivation(int score) {
-    if (score >= 100) return 'Día perfecto';
-    if (score >= 85) return 'Casi al tope';
-    if (score >= 70) return 'Excelente día';
-    if (score >= 50) return 'Buen avance';
-    if (score >= 30) return 'Sumando';
-    return 'Vas empezando';
-  }
+  // SPEC-119: fila de anillos por pilar → DashboardPillarsRow
+  // (widgets/dashboard_pillars_row.dart). Extraído en ARCH-03/PERF-01.
 
   // SPEC-170 (2026-06-04): _buildDailyScoreDelta retirado. El delta del
   // Score del Día ahora vive como sub-label dentro del DualScoreRing
@@ -740,32 +524,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   //  Cada tarjeta tiene su propia paleta y CTAs específicas.
   // ───────────────────────────────────────────────────────────────────────
 
-  Widget _buildSelectedPillarCard({
-    required BuildContext context,
-    required WidgetRef ref,
-    required FastingState fastingState,
-    required SleepState sleep,
-    required HydrationState hydration,
-    required ExerciseState exercise,
-    required NutritionState nutrition,
-    required user,
-  }) {
-    return switch (_selectedPillar) {
-      SelectedPillar.ayuno => FastingConsciousnessCard(state: fastingState),
-      SelectedPillar.sueno => SleepPillarCard(state: sleep),
-      SelectedPillar.hidratacion => HydrationPillarCard(state: hydration),
-      SelectedPillar.ejercicio => ExercisePillarCard(state: exercise),
-      SelectedPillar.comidas => ComidasPillarCard(
-          state: nutrition,
-          isFastingActive: fastingState.isActive,
-          onGoToFasting: () {
-            if (mounted) {
-              setState(() => _selectedPillar = SelectedPillar.ayuno);
-            }
-          },
-        ),
-    };
-  }
+  // SPEC-119: dispatcher del pilar seleccionado → DashboardSelectedPillarCard
+  // (widgets/dashboard_selected_pillar_card.dart). Extraído en ARCH-03/PERF-01.
 
   // ─── SUEÑO: "Soporte Metabólico" ──────────────────────────────────────
   // SPEC-119: card de Sueño → SleepPillarCard (widgets/sleep_pillar_card.dart).
@@ -802,380 +562,23 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   // anillos circulares interactivos. La lógica de tap (abrir sheets, sumar
   // agua) se preservó intacta dentro de _pillarRing.onTap.
 
-  // --- OVERLAYS Y PICKERS SE MANTIENEN ---
-
-  Widget _buildFastingEndOverlay(
-      BuildContext context, WidgetRef ref, FastingState state) {
-    // SPEC-151: dos opciones legítimas. Terminar abre el flujo de cierre
-    // (time picker + persistir + abrir ventana). Continuar silencia el
-    // overlay y deja el ayuno activo en overtime — el usuario cerrará
-    // desde la card normal del dashboard cuando decida.
-    return _buildBaseOverlay(
-      context: context,
-      icon: Icons.emoji_events_rounded,
-      iconColor: AppColors.metabolicGreen,
-      title: "¡META ALCANZADA!",
-      subtitle: "Has completado tus ${state.targetHours}h de ayuno.",
-      buttonLabel: "TERMINAR AYUNO",
-      isSaving: state.isSaving,
-      onConfirm: () => _showManualTimePicker(context, ref, isFeeding: false),
-      secondaryButtonLabel: "CONTINUAR AYUNANDO",
-      onSecondary: () =>
-          ref.read(fastingProvider.notifier).continueFastingPastTarget(),
-    );
-  }
-
-  Widget _buildFeedingEndOverlay(
-      BuildContext context, WidgetRef ref, FastingState state) {
-    return _buildBaseOverlay(
-      context: context,
-      icon: Icons.timer_off_rounded,
-      iconColor: Colors.orangeAccent,
-      title: "FIN DE VENTANA",
-      subtitle: "Tu ventana de alimentación ha terminado.",
-      buttonLabel: "CONFIRMAR CIERRE",
-      isSaving: state.isSaving,
-      onConfirm: () => _showManualTimePicker(context, ref, isFeeding: true),
-    );
-  }
+  // SPEC-119: overlays de fin de ayuno/ventana + time picker →
+  // widgets/dashboard_fasting_overlays.dart (FastingEndOverlay,
+  // FeedingEndOverlay, showManualTimePicker). Extraído en ARCH-03.
 
   // SPEC-234: _buildWakeUpOverlay reemplazado por WakeUpQualityOverlay
   // (widget stateful con flujo "¿Ya despertaste?" → "¿Cómo dormiste?").
-
-  Widget _buildBaseOverlay({
-    required BuildContext context,
-    required IconData icon,
-    required Color iconColor,
-    required String title,
-    required String subtitle,
-    required String buttonLabel,
-    required bool isSaving,
-    required VoidCallback onConfirm,
-    // SPEC-151: botón secundario opcional. Si ambos labels y callbacks
-    // son provistos, se renderiza debajo del primario con estilo
-    // outlined para indicar acción alternativa.
-    String? secondaryButtonLabel,
-    VoidCallback? onSecondary,
-  }) {
-    final hasSecondary =
-        secondaryButtonLabel != null && onSecondary != null;
-    return Container(
-      padding: const EdgeInsets.all(20),
-      margin: const EdgeInsets.symmetric(horizontal: 40),
-      decoration: BoxDecoration(
-          color: const Color(0xFF0F172A).withValues(alpha: 0.98),
-          borderRadius: BorderRadius.circular(30),
-          border: Border.all(color: iconColor, width: 2),
-          boxShadow: [
-            BoxShadow(color: iconColor.withValues(alpha: 0.2), blurRadius: 15)
-          ]),
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Icon(icon, color: iconColor, size: 28),
-        const SizedBox(height: 12),
-        Text(title,
-            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13)),
-        const SizedBox(height: 8),
-        Text(subtitle,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-                fontSize: 10, color: Colors.white.withValues(alpha: 0.7))),
-        const SizedBox(height: 16),
-        SizedBox(
-            width: double.infinity,
-            height: 42,
-            child: ElevatedButton(
-                onPressed: isSaving ? null : onConfirm,
-                style: ElevatedButton.styleFrom(
-                    backgroundColor: iconColor,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12))),
-                child: isSaving
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                            color: Colors.white, strokeWidth: 2))
-                    : Text(buttonLabel,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            fontSize: 12)))),
-        if (hasSecondary) ...[
-          const SizedBox(height: 10),
-          SizedBox(
-            width: double.infinity,
-            height: 42,
-            child: OutlinedButton(
-              onPressed: isSaving ? null : onSecondary,
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(
-                  color: iconColor.withValues(alpha: 0.5),
-                  width: 1.5,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: Text(
-                secondaryButtonLabel,
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: iconColor,
-                  fontSize: 12,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ]),
-    );
-  }
-
-  /// SPEC-102 / SPEC-102.1: fila sutil con hora de inicio (izquierda)
-  /// y hora estimada de fin (derecha) del ayuno activo.
-  ///
-  /// Cada endpoint puede llevar un sufijo `·ayer` / `·mañana` /
-  /// `·hace N días` / `·en N días` calculado SIEMPRE respecto a "hoy"
-  /// (DateTime.now()), no al otro endpoint. Esto evita el bug de
-  /// mostrar "·mañana" en un ayuno que comenzó ayer y termina hoy.
-  /// SPEC-119: texto compacto del próximo hito metabólico para la
-  /// columna "HITO SIGUIENTE" de la tarjeta de ayuno. Formato:
-  /// `Quema de grasa en 7h 48m` o `Fase final` si ya pasamos el último.
-
-  Future<void> _showManualTimePicker(BuildContext context, WidgetRef ref,
-      {required bool isFeeding}) async {
-    final DateTime now = DateTime.now();
-    final fastingState = ref.read(fastingProvider);
-    final Color primaryColor =
-        isFeeding ? Colors.orangeAccent : AppColors.metabolicGreen;
-    final DateTime? pickedDate = await showDatePicker(
-        context: context,
-        initialDate: now,
-        firstDate: now.subtract(const Duration(days: 7)),
-        lastDate: now.add(const Duration(days: 1)),
-        builder: (context, child) => Theme(
-            data: ThemeData.dark().copyWith(
-                colorScheme: ColorScheme.dark(primary: primaryColor),
-                dialogTheme:
-                    DialogThemeData(backgroundColor: const Color(0xFF1E293B))),
-            child: child!));
-    if (pickedDate == null) return;
-    final TimeOfDay? pickedTime = await showTimePicker(
-        context: context,
-        initialTime: TimeOfDay.fromDateTime(now),
-        builder: (context, child) => Theme(
-            data: ThemeData.dark().copyWith(
-                colorScheme: ColorScheme.dark(primary: primaryColor),
-                dialogTheme:
-                    DialogThemeData(backgroundColor: const Color(0xFF1E293B))),
-            child: child!));
-    if (pickedTime == null) return;
-    final DateTime finalDateTime = DateTime(pickedDate.year, pickedDate.month,
-        pickedDate.day, pickedTime.hour, pickedTime.minute);
-    if (isFeeding) {
-      ref.read(fastingProvider.notifier).confirmFeedingEnd(finalDateTime);
-    } else {
-      if (fastingState.isActive) {
-        ref
-            .read(fastingProvider.notifier)
-            .confirmManualFastingEnd(finalDateTime);
-      } else {
-        ref.read(fastingProvider.notifier).startFastingManual(finalDateTime);
-      }
-    }
-  }
-
-  Widget _buildMetabolicAlertBanner(String message) {
-    return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-            color: Colors.redAccent.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.redAccent.withValues(alpha: 0.2))),
-        child: Row(children: [
-          const Icon(Icons.warning_amber_rounded,
-              color: Colors.redAccent, size: 16),
-          const SizedBox(width: 10),
-          Expanded(
-              child: Text(message,
-                  style: const TextStyle(
-                      color: Colors.redAccent,
-                      fontSize: 9,
-                      fontWeight: FontWeight.bold)))
-        ]));
-  }
 
   // SPEC-72.2: _buildEngagementBanner eliminado. Reemplazado por
   // EngagementBanner widget en features/engagement/presentation/widgets/
   // que añade dismiss por sesión.
 
-  /// GAP-2: card "IMR Longitudinal" visible en el Dashboard principal.
-  ///
-  /// Free → atenuado con candado + "Desbloquear" que abre el paywall.
-  /// Premium → muestra IMR actual + zona + acceso directo a Análisis.
-  ///
-  /// Objetivo: el usuario Free ve inmediatamente que hay valor adicional
-  /// bloqueado y puede convertirse en ese momento sin salir del flujo.
-  Widget _buildImrLongitudinalCard(BuildContext context, WidgetRef ref) {
-    final gate = ref.watch(featureGateProvider);
-    final imr = ref.watch(displayedImrProvider);
+  // SPEC-119: banner de alerta metabólica → MetabolicAlertBanner
+  // (widgets/metabolic_alert_banner.dart). Extraído en ARCH-03.
 
-    final content = Container(
-      padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    Icons.trending_up_rounded,
-                    color: AppColors.metabolicGreen,
-                    size: 18,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'IMR LONGITUDINAL',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.45),
-                      fontSize: 10,
-                      letterSpacing: 1.5,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-              if (gate.analyticsHistoryAllowed)
-                GestureDetector(
-                  onTap: () => context.go('/analysis'),
-                  child: Text(
-                    'Ver detalle →',
-                    style: TextStyle(
-                      color: AppColors.metabolicGreen,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _ImrStatColumn(
-                label: 'IMR Actual',
-                value: imr.score.toString(),
-                accent: AppColors.metabolicGreen,
-              ),
-              _ImrStatColumn(
-                label: 'Zona',
-                value: imr.zone.isNotEmpty ? imr.zone : '—',
-                accent: Colors.white,
-              ),
-              _ImrStatColumn(
-                label: 'Tendencia',
-                value: '7 días',
-                accent: Colors.white,
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Text(
-            'Tu IMR longitudinal refleja tu estado metabólico real. '
-            'Sube con ciclos bien ejecutados, semana a semana.',
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.white.withValues(alpha: 0.50),
-              height: 1.45,
-            ),
-          ),
-        ],
-      ),
-    );
+  // SPEC-119: card "IMR Longitudinal" → ImrLongitudinalCard
+  // (widgets/imr_longitudinal_card.dart). Extraído en ARCH-03/PERF-01.
 
-    return PremiumLock(
-      isLocked: !gate.analyticsHistoryAllowed,
-      label: 'IMR Longitudinal',
-      onUpgrade: () => openPaywall(
-        context,
-        ref,
-        feature: GatedFeature.analyticsHistory,
-      ),
-      child: content,
-    );
-  }
-
-  Widget _buildBottomNav(BuildContext context) {
-    final String location = GoRouterState.of(context).matchedLocation;
-    int currentIndex = 0;
-    if (location.startsWith('/analysis')) currentIndex = 1;
-    if (location.startsWith('/profile')) currentIndex = 2;
-    return BottomNavigationBar(
-        backgroundColor: const Color(0xFF0F172A),
-        selectedItemColor: AppColors.metabolicGreen,
-        unselectedItemColor: Colors.grey.withValues(alpha: 0.5),
-        currentIndex: currentIndex,
-        type: BottomNavigationBarType.fixed,
-        onTap: (index) {
-          if (index == 0) context.go('/dashboard');
-          // SPEC-197: gate vive dentro de AnalysisScreen (blur overlay).
-          // Todos los usuarios navegan; free users ven el soft gate allí.
-          if (index == 1) context.go('/analysis');
-          if (index == 2) context.go('/profile');
-        },
-        items: const [
-          BottomNavigationBarItem(
-              icon: Icon(Icons.grid_view_rounded), label: "Hoy"),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.insights_rounded), label: "Progreso"),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: "Perfil")
-        ]);
-  }
-}
-
-/// Columna de stat para el card IMR Longitudinal.
-class _ImrStatColumn extends StatelessWidget {
-  const _ImrStatColumn({
-    required this.label,
-    required this.value,
-    required this.accent,
-  });
-
-  final String label;
-  final String value;
-  final Color accent;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          value,
-          style: TextStyle(
-            color: accent,
-            fontSize: 22,
-            fontWeight: FontWeight.w900,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.45),
-            fontSize: 10,
-            letterSpacing: 0.8,
-          ),
-        ),
-      ],
-    );
-  }
+  // SPEC-119: bottom nav → DashboardBottomNav
+  // (widgets/dashboard_bottom_nav.dart). Extraído en ARCH-03.
 }
