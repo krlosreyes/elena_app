@@ -14,7 +14,9 @@ import 'package:elena_app/src/features/auth/presentation/widgets/profile_goals_s
 import 'package:elena_app/src/features/auth/presentation/widgets/profile_identity_card.dart';
 import 'package:elena_app/src/features/auth/presentation/widgets/profile_legal_section.dart';
 import 'package:elena_app/src/features/auth/presentation/widgets/profile_protocol_card.dart';
+import 'package:elena_app/src/features/badges/presentation/widgets/avances_header.dart';
 import 'package:elena_app/src/features/badges/presentation/widgets/badge_gallery.dart';
+import 'package:elena_app/src/features/badges/presentation/widgets/tu_camino_timeline.dart';
 import 'package:elena_app/src/features/dashboard/domain/optimal_schedule.dart';
 import 'package:elena_app/src/features/health_sync/presentation/health_sync_card.dart';
 import 'package:elena_app/src/features/profile/application/biometric_lock_provider.dart';
@@ -668,8 +670,17 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
         // Propuesta "Sistema de Insignias" §6: galería de identidad,
         // no solo mecánica de progreso — grid de 10 categorías, cada
         // una con su nivel más alto ganado; tocar abre el detalle.
+        //
+        // Rediseño "Avances / Tu camino" (15-jul): se agrega el
+        // encabezado de tres cifras y la línea de tiempo cronológica
+        // ANTES de la galería — mismo lugar, experiencia ampliada, sin
+        // pantalla nueva ni ítem de navegación adicional (Propuesta §6).
         _buildSectionTitle('Insignias'),
         const SizedBox(height: 10),
+        const AvancesHeader(),
+        const SizedBox(height: 18),
+        const TuCaminoTimeline(),
+        const SizedBox(height: 18),
         const BadgeGallery(),
         const SizedBox(height: 24),
 

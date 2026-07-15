@@ -27,8 +27,50 @@ import 'package:elena_app/src/features/progress/domain/biometric_delta.dart';
 import 'package:elena_app/src/features/streak/domain/streak_engine.dart';
 import 'package:elena_app/src/features/streak/domain/streak_entry.dart';
 
+/// Propuesta "Avances / Tu camino" (15-jul): insignia no ganada más
+/// cercana en una categoría de progreso contable, para mostrar como
+/// próxima meta en la línea de tiempo ("te faltan N días").
+class BadgeProgress {
+  final BadgeDefinition definition;
+  final int currentValue;
+
+  /// Siempre > 0 — cuánto falta para alcanzar [definition.threshold].
+  final int remaining;
+
+  const BadgeProgress({
+    required this.definition,
+    required this.currentValue,
+    required this.remaining,
+  });
+}
+
 class BadgeEngine {
   BadgeEngine._();
+
+  /// Conteo actual por categoría de progreso contable (todas menos
+  /// `bienvenida`/`resiliencia`, que son binarias por naturaleza — no
+  /// tienen una "distancia" numérica, se ganan o no se ganan). Factorizado
+  /// como método propio porque tanto [evaluate] como [nextClosest]
+  /// necesitan exactamente el mismo conteo — mantenerlo en un solo lugar
+  /// evita que ambos terminen midiendo la misma categoría de forma
+  /// distinta si el criterio cambia más adelante.
+  static Map<String, int> _categoryCounts(
+    List<StreakEntry> fullStreakHistory,
+    List<BiometricCheckIn> biometricHistory,
+  ) {
+    return {
+      BadgeCategory.racha: StreakEngine.computeLongestStreak(fullStreakHistory),
+      BadgeCategory.ayuno: fullStreakHistory.where((e) => e.fastingCompleted).length,
+      BadgeCategory.sueno: fullStreakHistory.where((e) => e.sleepCompleted).length,
+      BadgeCategory.hidratacion: fullStreakHistory.where((e) => e.hydrationCompleted).length,
+      BadgeCategory.ejercicio: fullStreakHistory.where((e) => e.exerciseLogged).length,
+      BadgeCategory.nutricion: fullStreakHistory.where((e) => e.nutritionLogged).length,
+      BadgeCategory.imr: fullStreakHistory.where((e) => e.imrScore >= 60).length,
+      BadgeCategory.checkin: biometricHistory
+          .where((c) => c.source == BiometricSource.checkinSheet)
+          .length,
+    };
+  }
 
   /// Evalúa el estado completo y devuelve solo las insignias NUEVAS
   /// (que no están en [alreadyUnlockedIds]) que ya corresponden ahora.
@@ -73,52 +115,24 @@ class BadgeEngine {
       ));
     }
 
-    // ── Racha: mejor racha histórica (no la actual — una insignia no se
-    // pierde si la racha se rompe después de haberla ganado) ───────────
-    final longest = StreakEngine.computeLongestStreak(fullStreakHistory);
-    checkThresholdCategory(BadgeCategory.racha, longest, contextKey: 'streakLength');
-
-    // ── 5 pilares: días completados (dato booleano ya validado) ─────────
-    checkThresholdCategory(
-      BadgeCategory.ayuno,
-      fullStreakHistory.where((e) => e.fastingCompleted).length,
-    );
-    checkThresholdCategory(
-      BadgeCategory.sueno,
-      fullStreakHistory.where((e) => e.sleepCompleted).length,
-    );
-    checkThresholdCategory(
-      BadgeCategory.hidratacion,
-      fullStreakHistory.where((e) => e.hydrationCompleted).length,
-    );
-    checkThresholdCategory(
-      BadgeCategory.ejercicio,
-      fullStreakHistory.where((e) => e.exerciseLogged).length,
-    );
-    checkThresholdCategory(
-      BadgeCategory.nutricion,
-      fullStreakHistory.where((e) => e.nutritionLogged).length,
-    );
-
-    // ── Transformación: días con IMR ≥ 60 ────────────────────────────────
-    checkThresholdCategory(
-      BadgeCategory.imr,
-      fullStreakHistory.where((e) => e.imrScore >= 60).length,
-    );
-
-    // ── Autoconocimiento: check-ins REALES (excluye backfill/baseline/
-    // sync automático — solo cuenta cuando el usuario mismo lo hizo desde
-    // el sheet de check-in, para que la insignia sea "pertinente" y no
-    // un artefacto de datos generados por el sistema) ───────────────────
-    final realCheckIns = biometricHistory
-        .where((c) => c.source == BiometricSource.checkinSheet)
-        .length;
-    checkThresholdCategory(BadgeCategory.checkin, realCheckIns, contextKey: 'checkIns');
+    final counts = _categoryCounts(fullStreakHistory, biometricHistory);
+    // Racha usa un contextKey distinto ('streakLength') al resto
+    // ('daysCompleted' por defecto) — todas las demás categorías de
+    // counts comparten el default.
+    checkThresholdCategory(BadgeCategory.racha, counts[BadgeCategory.racha]!, contextKey: 'streakLength');
+    checkThresholdCategory(BadgeCategory.ayuno, counts[BadgeCategory.ayuno]!);
+    checkThresholdCategory(BadgeCategory.sueno, counts[BadgeCategory.sueno]!);
+    checkThresholdCategory(BadgeCategory.hidratacion, counts[BadgeCategory.hidratacion]!);
+    checkThresholdCategory(BadgeCategory.ejercicio, counts[BadgeCategory.ejercicio]!);
+    checkThresholdCategory(BadgeCategory.nutricion, counts[BadgeCategory.nutricion]!);
+    checkThresholdCategory(BadgeCategory.imr, counts[BadgeCategory.imr]!);
+    checkThresholdCategory(BadgeCategory.checkin, counts[BadgeCategory.checkin]!, contextKey: 'checkIns');
 
     // ── Resiliencia: volviste a 7+ días de racha después de haber roto
     // una racha más larga. Un solo nivel — usa datos ya calculados por
     // StreakEngine (computeLongestStreak + computeCurrentStreakWithFreezes),
     // sin reimplementar la reconstrucción día a día del historial. ───────
+    final longest = counts[BadgeCategory.racha]!;
     if (isNew('resiliencia_1')) {
       final currentProtected =
           StreakEngine.computeCurrentStreakWithFreezes(fullStreakHistory)
@@ -138,5 +152,44 @@ class BadgeEngine {
     }
 
     return newly;
+  }
+
+  /// Propuesta "Avances / Tu camino" (15-jul): la insignia no ganada más
+  /// cercana entre todas las categorías de progreso contable — para
+  /// mostrar como el nodo bloqueado al final de la línea de tiempo, con
+  /// la distancia real ("te faltan 4 días"). Deliberadamente NO considera
+  /// `bienvenida` (se gana casi siempre el día uno, no hay "camino" que
+  /// mostrar) ni `resiliencia` (su condición no es una distancia contable
+  /// — es "romper una racha larga y volver a 7", no algo que se acerque
+  /// gradualmente).
+  static BadgeProgress? nextClosest({
+    required List<StreakEntry> fullStreakHistory,
+    required List<BiometricCheckIn> biometricHistory,
+    required Set<String> alreadyUnlockedIds,
+  }) {
+    final counts = _categoryCounts(fullStreakHistory, biometricHistory);
+    BadgeProgress? closest;
+
+    for (final entry in counts.entries) {
+      final pending = BadgeCatalog.forCategory(entry.key)
+          .where((d) => !alreadyUnlockedIds.contains(d.badgeId))
+          .toList()
+        ..sort((a, b) => a.threshold.compareTo(b.threshold));
+      if (pending.isEmpty) continue;
+
+      final next = pending.first;
+      final remaining = next.threshold - entry.value;
+      // Si ya se alcanzó el umbral, `evaluate()` la habrá otorgado en la
+      // misma pasada — no debería quedar pendiente con remaining <= 0,
+      // pero se descarta por seguridad en vez de mostrar una distancia
+      // negativa o cero como "próxima meta".
+      if (remaining <= 0) continue;
+
+      if (closest == null || remaining < closest.remaining) {
+        closest = BadgeProgress(definition: next, currentValue: entry.value, remaining: remaining);
+      }
+    }
+
+    return closest;
   }
 }

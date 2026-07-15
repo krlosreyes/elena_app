@@ -40,12 +40,26 @@ class BadgeState {
 
   final bool isLoading;
 
-  const BadgeState({this.earned = const [], this.isLoading = true});
+  /// Propuesta "Avances / Tu camino" (15-jul): la insignia no ganada más
+  /// cercana, calculada acá (no en el widget) porque este notifier es el
+  /// único lugar que tiene el historial ANCHO de racha (`_fullHistory`,
+  /// sin el recorte de 90 días de `streakProvider`) — recalcularla en la
+  /// UI con el historial acotado subcontaría a usuarios veteranos, el
+  /// mismo error que ya se evitó al diseñar `evaluate()`.
+  final BadgeProgress? nextProgress;
 
-  BadgeState copyWith({List<EarnedBadge>? earned, bool? isLoading}) =>
+  const BadgeState({this.earned = const [], this.isLoading = true, this.nextProgress});
+
+  BadgeState copyWith({
+    List<EarnedBadge>? earned,
+    bool? isLoading,
+    BadgeProgress? nextProgress,
+    bool clearNextProgress = false,
+  }) =>
       BadgeState(
         earned: earned ?? this.earned,
         isLoading: isLoading ?? this.isLoading,
+        nextProgress: clearNextProgress ? null : (nextProgress ?? this.nextProgress),
       );
 
   Set<String> get earnedIds => earned.map((b) => b.badgeId).toSet();
@@ -165,11 +179,28 @@ class BadgeNotifier extends StateNotifier<BadgeState> {
     if (uid == null || !_badgesLoaded || !_historyLoaded) return;
 
     final biometricHistory = _ref.read(progressProvider).biometricHistory;
+
     final newlyUnlocked = BadgeEngine.evaluate(
       fullStreakHistory: _fullHistory,
       biometricHistory: biometricHistory,
       alreadyUnlockedIds: state.earnedIds,
     );
+
+    // "Próxima insignia" se recalcula en cada pasada (no solo cuando hay
+    // insignias nuevas: la distancia restante cambia todos los días aunque
+    // no se gane nada nuevo) y contra el set de IDs YA incluyendo lo recién
+    // desbloqueado en esta misma pasada — si no, el nodo "próxima meta" de
+    // la línea de tiempo podría señalar por un instante una insignia que
+    // el usuario acaba de ganar.
+    final earnedIdsAfterThisPass = {...state.earnedIds, ...newlyUnlocked.map((b) => b.badgeId)};
+    final nextProgress = BadgeEngine.nextClosest(
+      fullStreakHistory: _fullHistory,
+      biometricHistory: biometricHistory,
+      alreadyUnlockedIds: earnedIdsAfterThisPass,
+    );
+    if (mounted) {
+      state = state.copyWith(nextProgress: nextProgress, clearNextProgress: nextProgress == null);
+    }
 
     if (newlyUnlocked.isEmpty) {
       _baselineSet = true;

@@ -4,32 +4,20 @@
 // todos sus niveles (ganados a color, pendientes en silueta) — mismo
 // patrón visual de "grid con estado bloqueado/desbloqueado" que usan
 // Duolingo y Apple Fitness (ver Propuesta §2.1).
+//
+// Rediseño "Avances / Tu camino" (15-jul): las tarjetas pasaban de fila
+// plana (ícono cuadrado + texto en línea) a un tratamiento tipo medalla
+// (círculo + texto debajo) — mismo lenguaje visual que los nodos de
+// TuCaminoTimeline, para que ambas pantallas se sientan como una sola
+// experiencia. La metadata de categoría (ícono/color/nombre) se movió a
+// badge_category_meta.dart porque ahora la comparten dos widgets.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elena_app/src/features/badges/application/badge_notifier.dart';
 import 'package:elena_app/src/features/badges/domain/badge_definition.dart';
-
-class _CategoryMeta {
-  final String displayName;
-  final IconData icon;
-  final Color color;
-  const _CategoryMeta(this.displayName, this.icon, this.color);
-}
-
-const Map<String, _CategoryMeta> _kCategoryMeta = {
-  BadgeCategory.racha: _CategoryMeta('Racha', Icons.local_fire_department_rounded, Color(0xFFF97316)),
-  BadgeCategory.ayuno: _CategoryMeta('Ayuno consciente', Icons.hourglass_bottom_rounded, Color(0xFF22D3EE)),
-  BadgeCategory.sueno: _CategoryMeta('Sueño reparador', Icons.nightlight_round, Color(0xFF818CF8)),
-  BadgeCategory.hidratacion: _CategoryMeta('Hidratación constante', Icons.water_drop_rounded, Colors.blueAccent),
-  BadgeCategory.ejercicio: _CategoryMeta('Movimiento', Icons.directions_run_rounded, Color(0xFF34D399)),
-  BadgeCategory.nutricion: _CategoryMeta('Nutrición consciente', Icons.restaurant_rounded, Color(0xFFF59E0B)),
-  BadgeCategory.imr: _CategoryMeta('Transformación', Icons.trending_up_rounded, Color(0xFF10B981)),
-  BadgeCategory.checkin: _CategoryMeta('Autoconocimiento', Icons.monitor_weight_outlined, Color(0xFFEC4899)),
-  BadgeCategory.resiliencia: _CategoryMeta('Resiliencia', Icons.spa_rounded, Color(0xFF14B8A6)),
-  BadgeCategory.bienvenida: _CategoryMeta('Bienvenida', Icons.emoji_events_rounded, Color(0xFFFBBF24)),
-};
+import 'package:elena_app/src/features/badges/presentation/badge_category_meta.dart';
 
 class BadgeGallery extends ConsumerWidget {
   const BadgeGallery({super.key});
@@ -46,7 +34,7 @@ class BadgeGallery extends ConsumerWidget {
         crossAxisCount: 2,
         mainAxisSpacing: 12,
         crossAxisSpacing: 12,
-        childAspectRatio: 2.4,
+        childAspectRatio: 0.95,
       ),
       itemCount: BadgeCategory.all.length,
       itemBuilder: (context, i) {
@@ -65,7 +53,7 @@ class _CategoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final meta = _kCategoryMeta[category]!;
+    final meta = kBadgeCategoryMeta[category]!;
     final defs = BadgeCatalog.forCategory(category);
     final earnedInCategory = defs.where((d) => earnedIds.contains(d.badgeId)).toList();
     final hasAny = earnedInCategory.isNotEmpty;
@@ -78,51 +66,48 @@ class _CategoryCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(14),
       onTap: () => _showCategorySheet(context, category, earnedIds),
       child: Container(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
         decoration: BoxDecoration(
           color: const Color(0xFF1E293B),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: color.withValues(alpha: hasAny ? 0.4 : 0.15)),
         ),
-        child: Row(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 38,
-              height: 38,
+              width: 52,
+              height: 52,
               decoration: BoxDecoration(
+                shape: BoxShape.circle,
                 color: color.withValues(alpha: hasAny ? 0.18 : 0.08),
-                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: color.withValues(alpha: hasAny ? 0.6 : 0.2), width: 1.5),
               ),
-              child: Icon(meta.icon, color: color, size: 19),
+              child: Icon(meta.icon, color: color, size: 24),
             ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    meta.displayName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.85),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    hasAny ? highest!.name.split('—').last.trim() : 'Sin desbloquear',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: hasAny ? color : Colors.white.withValues(alpha: 0.35),
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
+            const SizedBox(height: 10),
+            Text(
+              meta.displayName,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.85),
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              hasAny ? highest!.name.split('—').last.trim() : 'Sin desbloquear',
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: hasAny ? color : Colors.white.withValues(alpha: 0.35),
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],
@@ -149,7 +134,7 @@ class _CategoryDetailSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final meta = _kCategoryMeta[category]!;
+    final meta = kBadgeCategoryMeta[category]!;
     final defs = BadgeCatalog.forCategory(category);
 
     return DraggableScrollableSheet(
