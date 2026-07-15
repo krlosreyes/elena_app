@@ -38,7 +38,17 @@ class AvancesHeader extends ConsumerWidget {
     final constancyPct = (streak.weeklyAdherence.clamp(0.0, 1.0) * 100).round();
 
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+      // AvancesHeader es un ítem directo de la lista vertical de Perfil
+      // (SliverList) — la altura que recibe siempre llega SIN acotar
+      // (0..Infinity), porque en una lista vertical la altura del ítem la
+      // decide el propio ítem. `crossAxisAlignment.stretch` en un Row
+      // exige estirar los hijos exactamente a la altura del propio Row,
+      // lo que fuerza a este Row a reportar altura infinita hacia arriba
+      // — mismo tipo de excepción de layout que ya se corrigió en
+      // TuCaminoTimeline, pero en el eje contrario. Las tres _StatCard
+      // ya comparten estructura/padding, así que terminan con la misma
+      // altura de forma natural sin necesitar stretch.
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
           child: _StatCard(
