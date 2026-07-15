@@ -17,7 +17,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/features/badges/application/badge_notifier.dart';
 import 'package:elena_app/src/features/badges/domain/badge_definition.dart';
 import 'package:elena_app/src/features/badges/domain/badge_engine.dart';
-import 'package:elena_app/src/features/badges/domain/earned_badge.dart';
 import 'package:elena_app/src/features/badges/presentation/badge_category_meta.dart';
 
 class TuCaminoTimeline extends ConsumerWidget {
