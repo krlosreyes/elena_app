@@ -275,7 +275,7 @@ class StreakEngine {
       if (d == null) continue;
 
       final isNextCalendarDay =
-          prevDate != null && d.difference(prevDate!).inDays == 1;
+          prevDate != null && d.difference(prevDate).inDays == 1;
 
       if (prevDate != null && !isNextCalendarDay) {
         // Hueco de calendario (>1 día): rompe la racha de días reales
