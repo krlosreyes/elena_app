@@ -14,9 +14,7 @@ import 'package:elena_app/src/features/auth/presentation/widgets/profile_goals_s
 import 'package:elena_app/src/features/auth/presentation/widgets/profile_identity_card.dart';
 import 'package:elena_app/src/features/auth/presentation/widgets/profile_legal_section.dart';
 import 'package:elena_app/src/features/auth/presentation/widgets/profile_protocol_card.dart';
-import 'package:elena_app/src/features/badges/presentation/widgets/avances_header.dart';
-import 'package:elena_app/src/features/badges/presentation/widgets/badge_gallery.dart';
-import 'package:elena_app/src/features/badges/presentation/widgets/tu_camino_timeline.dart';
+import 'package:elena_app/src/features/badges/presentation/widgets/profile_badges_entry_card.dart';
 import 'package:elena_app/src/features/dashboard/domain/optimal_schedule.dart';
 import 'package:elena_app/src/features/health_sync/presentation/health_sync_card.dart';
 import 'package:elena_app/src/features/profile/application/biometric_lock_provider.dart';
@@ -667,21 +665,21 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
         const SizedBox(height: 24),
 
         // ── Sistema de insignias (2026-07-15) ────────────────────────
-        // Propuesta "Sistema de Insignias" §6: galería de identidad,
-        // no solo mecánica de progreso — grid de 10 categorías, cada
-        // una con su nivel más alto ganado; tocar abre el detalle.
-        //
-        // Rediseño "Avances / Tu camino" (15-jul): se agrega el
-        // encabezado de tres cifras y la línea de tiempo cronológica
-        // ANTES de la galería — mismo lugar, experiencia ampliada, sin
-        // pantalla nueva ni ítem de navegación adicional (Propuesta §6).
+        // Propuesta "Sistema de Insignias" §6 + rediseño "Avances / Tu
+        // camino" (15-jul): originalmente los 3 widgets (header de
+        // cifras + timeline + galería) vivían inline acá. Feedback de
+        // Carlos: alargaba demasiado el scroll de Perfil y mezclaba
+        // contenido de identidad/celebración con configuración de
+        // cuenta. Se evaluó fusionar con las pantallas de "progreso"
+        // existentes (tab Progreso → /analysis, revisión histórica NO
+        // motivacional por diseño; y /progress "Mi Avance", evolución
+        // biométrica) y se descartó — ninguna encaja en tono, ambas ya
+        // están densas. Ahora Perfil solo muestra un resumen; el
+        // contenido completo vive en su propia pantalla
+        // (badges_screen.dart, ruta /profile/badges).
         _buildSectionTitle('Insignias'),
         const SizedBox(height: 10),
-        const AvancesHeader(),
-        const SizedBox(height: 18),
-        const TuCaminoTimeline(),
-        const SizedBox(height: 18),
-        const BadgeGallery(),
+        const ProfileBadgesEntryCard(),
         const SizedBox(height: 24),
 
         // ── SPEC-132: sincronización con Apple Health / Health Connect

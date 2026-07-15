@@ -31,6 +31,9 @@ import 'package:elena_app/src/features/profile/presentation/body_composition_scr
 import 'package:elena_app/src/features/goals/presentation/goal_setup_screen.dart';
 // SPEC-15: Road Map de Avance Personal
 import 'package:elena_app/src/features/progress/presentation/progress_screen.dart';
+// 15-jul: pantalla independiente de insignias/gamificación — antes vivía
+// embebida en Perfil (ver comentario en badges_screen.dart).
+import 'package:elena_app/src/features/badges/presentation/badges_screen.dart';
 // SPEC-234: rutina nocturna guiada
 import 'package:elena_app/src/features/coaching/presentation/sleep_routine_screen.dart';
 
@@ -146,6 +149,13 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/profile/disclaimer',
         name: 'disclaimer',
         builder: (context, state) => const DisclaimerScreen(),
+      ),
+      // 15-jul: insignias/gamificación — empujada desde la card de
+      // resumen en Perfil (mismo patrón que /profile/body-composition).
+      GoRoute(
+        path: '/profile/badges',
+        name: 'profile-badges',
+        builder: (context, state) => const BadgesScreen(),
       ),
       // SPEC-77: pantallas legales (privacy + terms).
       GoRoute(
