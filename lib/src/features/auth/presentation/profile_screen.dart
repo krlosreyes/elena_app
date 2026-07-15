@@ -14,7 +14,6 @@ import 'package:elena_app/src/features/auth/presentation/widgets/profile_goals_s
 import 'package:elena_app/src/features/auth/presentation/widgets/profile_identity_card.dart';
 import 'package:elena_app/src/features/auth/presentation/widgets/profile_legal_section.dart';
 import 'package:elena_app/src/features/auth/presentation/widgets/profile_protocol_card.dart';
-import 'package:elena_app/src/features/badges/presentation/widgets/profile_badges_entry_card.dart';
 import 'package:elena_app/src/features/dashboard/domain/optimal_schedule.dart';
 import 'package:elena_app/src/features/health_sync/presentation/health_sync_card.dart';
 import 'package:elena_app/src/features/profile/application/biometric_lock_provider.dart';
@@ -665,22 +664,11 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
         const SizedBox(height: 24),
 
         // ── Sistema de insignias (2026-07-15) ────────────────────────
-        // Propuesta "Sistema de Insignias" §6 + rediseño "Avances / Tu
-        // camino" (15-jul): originalmente los 3 widgets (header de
-        // cifras + timeline + galería) vivían inline acá. Feedback de
-        // Carlos: alargaba demasiado el scroll de Perfil y mezclaba
-        // contenido de identidad/celebración con configuración de
-        // cuenta. Se evaluó fusionar con las pantallas de "progreso"
-        // existentes (tab Progreso → /analysis, revisión histórica NO
-        // motivacional por diseño; y /progress "Mi Avance", evolución
-        // biométrica) y se descartó — ninguna encaja en tono, ambas ya
-        // están densas. Ahora Perfil solo muestra un resumen; el
-        // contenido completo vive en su propia pantalla
-        // (badges_screen.dart, ruta /profile/badges).
-        _buildSectionTitle('Insignias'),
-        const SizedBox(height: 10),
-        const ProfileBadgesEntryCard(),
-        const SizedBox(height: 24),
+        // La card de entrada se sacó de Perfil (15-jul, segunda vuelta
+        // de feedback de Carlos): ya no vive acá — se movió como
+        // primera card del tab "Progreso" (/analysis), ver
+        // analysis_screen.dart. Perfil no referencia insignias en
+        // absoluto ahora — la única entrada al sistema es desde ahí.
 
         // ── SPEC-132: sincronización con Apple Health / Health Connect
         _buildSectionTitle('Salud'),

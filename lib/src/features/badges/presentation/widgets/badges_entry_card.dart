@@ -1,10 +1,12 @@
-// Card de entrada compacta para la sección "Insignias" de Perfil (15-jul,
-// rediseño "pantalla independiente" — ver comentario en badges_screen.dart
-// para el porqué). Reemplaza al bloque de 3 widgets (AvancesHeader +
-// TuCaminoTimeline + BadgeGallery) que antes vivía inline en el ListView
-// de Perfil. Esta card solo resume el estado (insignias ganadas + racha
-// actual) y navega a la pantalla completa — el resto de Perfil vuelve a
-// ser una lista corta de configuración.
+// Card de entrada compacta al sistema de insignias (15-jul, segunda
+// vuelta de feedback de Carlos). Primero vivió en Perfil (ver
+// project_badges_dedicated_screen); Carlos pidió sacarla de ahí también y
+// ponerla como primera card del tab "Progreso" (AnalysisScreen,
+// /analysis) — es el lugar donde ya vive la sección "Tu racha", así que
+// insignias queda junto a su pariente conceptual más cercana en vez de
+// en un settings screen. Resume el estado (insignias ganadas + racha
+// actual) y navega a la pantalla completa (badges_screen.dart,
+// /profile/badges — la ruta no cambió, solo quién enlaza a ella).
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,8 +16,8 @@ import 'package:elena_app/src/features/badges/application/badge_notifier.dart';
 import 'package:elena_app/src/features/badges/domain/badge_definition.dart';
 import 'package:elena_app/src/features/streak/application/streak_notifier.dart';
 
-class ProfileBadgesEntryCard extends ConsumerWidget {
-  const ProfileBadgesEntryCard({super.key});
+class BadgesEntryCard extends ConsumerWidget {
+  const BadgesEntryCard({super.key});
 
   static const _color = Color(0xFFFBBF24);
 

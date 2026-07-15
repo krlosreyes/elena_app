@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:elena_app/src/core/theme/app_icons.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/analysis/application/analysis_range_provider.dart';
+import 'package:elena_app/src/features/badges/presentation/widgets/badges_entry_card.dart';
 import 'package:elena_app/src/features/analysis/application/analysis_series_providers.dart';
 // SPEC-168.1: helper para formatear el dateRange del card de Nutrición pie.
 import 'package:elena_app/src/features/analysis/application/chart_hero_computer.dart';
@@ -21,7 +22,6 @@ import 'package:elena_app/src/features/analysis/domain/hero_aggregation.dart';
 import 'package:elena_app/src/features/analysis/domain/metric_series.dart';
 // SPEC-168.5.4: domain del pie chart de Nutrición.
 import 'package:elena_app/src/features/analysis/domain/nutrition_pie_data.dart';
-import 'package:elena_app/src/features/analysis/presentation/monthly_calendar_screen.dart';
 // SPEC-168.4: tile compacto del overview con sparkline + tap a detalle.
 import 'package:elena_app/src/features/analysis/presentation/widgets/pillar_overview_tile.dart';
 // SPEC-256: card de racha (RF-01) + gráfico de barras de 30 días (RF-02).
@@ -116,6 +116,14 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
             children: [
               // Header in-page estilo Apple.
               _buildPageHeader(context),
+              const SizedBox(height: 20),
+              // 15-jul: primera card del tab, feedback de Carlos —
+              // insignias se sacó de Perfil y se puso acá, junto a "Tu
+              // racha" más abajo (su pariente conceptual), en vez de
+              // en un settings screen. Providers propios (badges +
+              // streak), independiente del resto del contenido — se
+              // muestra aunque `firstLoad` siga cargando las series.
+              const BadgesEntryCard(),
               const SizedBox(height: 28),
               if (firstLoad)
                 _buildLoading()
@@ -168,58 +176,31 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
   }
 
   Widget _buildPageHeader(BuildContext context) {
-    return Row(
+    // 15-jul: se quitó el botón de calendario (esquina superior derecha)
+    // — Carlos: "no aporta nada". Abría MonthlyCalendarScreen, que no
+    // estaba enlazada desde ningún otro lugar de la app; queda el
+    // archivo sin uso por si se retoma más adelante, pero sin entry
+    // point visible.
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Progreso',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 34,
-                  fontWeight: FontWeight.w800,
-                  height: 1.05,
-                  letterSpacing: -0.5,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                _todayLabel(),
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.55),
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
+        const Text(
+          'Progreso',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 34,
+            fontWeight: FontWeight.w800,
+            height: 1.05,
+            letterSpacing: -0.5,
           ),
         ),
-        // SPEC-168.4.1: el botón "Tendencias →" se eliminó. Ahora cada
-        // tendencia vive dentro del detalle de su pilar (debajo del
-        // chart). El usuario ve tendencia + chart juntos en contexto.
-        GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (_) => const MonthlyCalendarScreen(),
-              fullscreenDialog: true,
-            ),
-          ),
-          child: Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: const Color(0xFF1A1A1C),
-              borderRadius: BorderRadius.circular(19),
-            ),
-            child: Icon(
-              Icons.calendar_month_rounded,
-              color: Colors.white.withValues(alpha: 0.85),
-              size: 18,
-            ),
+        const SizedBox(height: 6),
+        Text(
+          _todayLabel(),
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.55),
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ],

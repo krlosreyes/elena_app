@@ -13,10 +13,15 @@
 // evolución biométrica/IMR). Ambas ya están densas y ninguna encaja en
 // tono con insignias — se descartó a propósito, no por omisión.
 //
-// Solución: pantalla propia, empujada desde Perfil (mismo patrón que
-// /profile/body-composition), con su propio AppBar. Perfil solo muestra
-// una card de entrada compacta (ProfileBadgesEntryCard) con el resumen.
-// El contenido interno (los 3 widgets) no cambió — solo se reubicó.
+// Solución: pantalla propia, con su propio AppBar. La ruta (/profile/badges)
+// no cambió, pero quién enlaza a ella sí: en la primera vuelta, Perfil
+// mostraba una card de entrada compacta. Segunda vuelta de feedback
+// (mismo día): Carlos pidió sacarla también de Perfil y ponerla como
+// primera card del tab "Progreso" (AnalysisScreen) — insignias queda
+// junto a "Tu racha", su pariente conceptual más cercana, en vez de en
+// un settings screen. Ver BadgesEntryCard (widgets/badges_entry_card.dart)
+// para el widget de entrada. El contenido interno de esta pantalla (los
+// 3 widgets) no cambió — solo se reubicó quién navega a ella.
 
 import 'package:flutter/material.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
