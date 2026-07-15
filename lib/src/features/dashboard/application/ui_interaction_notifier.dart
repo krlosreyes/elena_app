@@ -24,11 +24,15 @@ class UiInteractionState {
   final bool isHydrationCoachDismissed;
   final bool isBiometricReminderDismissed;
 
+  /// Propuesta "racha protagonista" (2026-07-15, P4).
+  final bool isStreakAtRiskDismissed;
+
   const UiInteractionState({
     this.isEngagementBannerDismissed = false,
     this.isAdaptiveSuggestionDismissed = false,
     this.isHydrationCoachDismissed = false,
     this.isBiometricReminderDismissed = false,
+    this.isStreakAtRiskDismissed = false,
   });
 
   UiInteractionState copyWith({
@@ -36,6 +40,7 @@ class UiInteractionState {
     bool? isAdaptiveSuggestionDismissed,
     bool? isHydrationCoachDismissed,
     bool? isBiometricReminderDismissed,
+    bool? isStreakAtRiskDismissed,
   }) {
     return UiInteractionState(
       isEngagementBannerDismissed:
@@ -46,6 +51,8 @@ class UiInteractionState {
           isHydrationCoachDismissed ?? this.isHydrationCoachDismissed,
       isBiometricReminderDismissed:
           isBiometricReminderDismissed ?? this.isBiometricReminderDismissed,
+      isStreakAtRiskDismissed:
+          isStreakAtRiskDismissed ?? this.isStreakAtRiskDismissed,
     );
   }
 }
@@ -59,6 +66,7 @@ String _engagementKey(String day) => 'ui_dismiss_engagement_$day';
 String _adaptiveKey(String day) => 'ui_dismiss_adaptive_$day';
 String _hydrationCoachKey(String day) => 'ui_dismiss_hydration_coach_$day';
 String _biometricReminderKey(String day) => 'ui_dismiss_biometric_reminder_$day';
+String _streakAtRiskKey(String day) => 'ui_dismiss_streak_at_risk_$day';
 
 class UiInteractionNotifier extends StateNotifier<UiInteractionState> {
   final Ref _ref;
@@ -81,6 +89,8 @@ class UiInteractionNotifier extends StateNotifier<UiInteractionState> {
           prefs.getBool(_hydrationCoachKey(day)) ?? false,
       isBiometricReminderDismissed:
           prefs.getBool(_biometricReminderKey(day)) ?? false,
+      isStreakAtRiskDismissed:
+          prefs.getBool(_streakAtRiskKey(day)) ?? false,
     );
   }
 
@@ -113,6 +123,15 @@ class UiInteractionNotifier extends StateNotifier<UiInteractionState> {
     final prefs = _ref.read(sharedPreferencesProvider);
     await prefs.setBool(_biometricReminderKey(_todayKey()), true);
     state = state.copyWith(isBiometricReminderDismissed: true);
+  }
+
+  /// Propuesta "racha protagonista" (2026-07-15, P4): usuario descarta el
+  /// aviso de racha en riesgo por hoy. Reaparece mañana si la condición
+  /// sigue activa — mismo patrón día-calendario que el resto de banners.
+  Future<void> dismissStreakAtRisk() async {
+    final prefs = _ref.read(sharedPreferencesProvider);
+    await prefs.setBool(_streakAtRiskKey(_todayKey()), true);
+    state = state.copyWith(isStreakAtRiskDismissed: true);
   }
 
   /// SPEC-194: ya no se necesita reset manual. La clave incluye el día,

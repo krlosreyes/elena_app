@@ -42,6 +42,8 @@ import 'package:elena_app/src/features/nutrition/presentation/widgets/next_meal_
 import 'package:elena_app/src/features/onboarding/application/app_tour_notifier.dart';
 import 'package:elena_app/src/features/onboarding/application/tour_targets_provider.dart';
 import 'package:elena_app/src/features/progress/presentation/widgets/biometric_reminder_banner.dart';
+import 'package:elena_app/src/features/streak/presentation/widgets/streak_today_widget.dart';
+import 'package:elena_app/src/features/streak/presentation/widgets/streak_at_risk_banner.dart';
 
 // SPEC-88 fix: BodyCompositionCard y GoalsDashboardWidget se retiraron
 // del Dashboard. La primera vive ahora en Profile; la segunda queda
@@ -230,6 +232,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   const SizedBox(height: 10),
                   const ElenaHeader(title: "Metamorfosis Real"),
                   const SizedBox(height: 10),
+
+                  // Propuesta "racha protagonista" (2026-07-15, P1): la
+                  // racha ahora vive en el Dashboard, no solo en Análisis.
+                  // Primer elemento bajo el header — mismo lugar donde
+                  // Duolingo muestra su llama en cada apertura de la app.
+                  const StreakTodayWidget(),
+
+                  // P4: aviso de racha en riesgo — solo aparece en horario
+                  // de tarde/noche si hoy todavía no calificó y hay una
+                  // racha activa en juego. Se oculta sola el resto del día.
+                  const StreakAtRiskBanner(),
 
                   // BANNER DE ENGAGEMENT (SPEC-07 + SPEC-72.2 dismiss por sesión)
                   const EngagementBanner(),

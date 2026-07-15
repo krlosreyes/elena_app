@@ -235,6 +235,28 @@ class StreakEngine {
     return _forwardPassProtection(history).protectedDates;
   }
 
+  /// Propuesta "racha protagonista" (2026-07-15, P3): encuentra el día
+  /// más reciente que causó la ruptura de la racha — el primero (de más
+  /// reciente a más antiguo) que no calificó y tampoco fue perdonado por
+  /// una reserva. Se usa para explicar POR QUÉ se rompió la racha, no
+  /// solo QUE se rompió (ver [StreakEntry.missReason]).
+  ///
+  /// `null` si no hay ningún día así en el historial (defensivo — no
+  /// debería ocurrir cuando se llama justo tras detectar una ruptura,
+  /// pero evita un crash si el caller lo hace en otro momento).
+  static StreakEntry? findBreakingEntry(
+    List<StreakEntry> history,
+    Set<String> protectedDates,
+  ) {
+    final descending = _sortedDescending(history);
+    for (final entry in descending) {
+      if (!entry.qualifiesForStreak && !protectedDates.contains(entry.date)) {
+        return entry;
+      }
+    }
+    return null;
+  }
+
   /// Paso 1 compartido por [computeCurrentStreakWithFreezes] y
   /// [computeProtectedDates]: recorre el historial en orden cronológico
   /// y devuelve qué fechas quedaron protegidas por una reserva, más

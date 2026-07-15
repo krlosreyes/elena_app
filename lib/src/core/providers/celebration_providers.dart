@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:elena_app/src/features/streak/domain/streak_entry.dart';
+
 // ─────────────────────────────────────────────────────────────────────────────
 // SPEC-220: Celebración al cruzar umbral 3/5 pilares
 // ─────────────────────────────────────────────────────────────────────────────
@@ -30,11 +32,23 @@ class CelebrationEvent {
 
   final DateTime timestamp;
 
+  /// Propuesta "racha protagonista" (2026-07-15, P3): motivo estructurado
+  /// por el que se rompió la racha — solo presente cuando
+  /// `type == streakBroken` y se pudo identificar el día causante. `null`
+  /// en los demás casos, o si no se encontró el día (defensivo).
+  final StreakMissReason? breakReason;
+
+  /// P3: etiqueta legible del día que rompió la racha ("ayer", "el 12 de
+  /// julio"). Acompaña a [breakReason] — mismo alcance.
+  final String? breakDayLabel;
+
   const CelebrationEvent({
     required this.type,
     required this.pillarsCompleted,
     required this.currentStreak,
     required this.timestamp,
+    this.breakReason,
+    this.breakDayLabel,
   });
 
   /// Copy para el caso del pilar extra (4/5, 5/5).
@@ -43,6 +57,18 @@ class CelebrationEvent {
       case CelebrationType.streakMilestone:
         return '🏆 Día $currentStreak — nuevo hito de racha.';
       case CelebrationType.streakBroken:
+        // P3: si se identificó el día y el motivo, explicarlo — si no,
+        // caer al mensaje genérico original (mismo comportamiento previo).
+        final reason = breakReason;
+        final day = breakDayLabel;
+        if (reason != null && day != null) {
+          final cause = reason.isAnchorIssue
+              ? 'sin ayuno ni sueño'
+              : (reason.missingPillarsCount == 1
+                  ? 'con 1 pilar menos del mínimo de 3'
+                  : 'con ${reason.missingPillarsCount} pilares menos del mínimo de 3');
+          return 'Tu racha de $currentStreak días se pausó: $day quedaste $cause. Lo que aprendiste no se borró.';
+        }
         return 'Tu racha de $currentStreak días se pausó. Lo que aprendiste no se borró.';
       case CelebrationType.streakThreshold:
         if (pillarsCompleted >= 5) {

@@ -435,8 +435,17 @@ class StreakNotifier extends StateNotifier<StreakState> {
 
     // SPEC-220: Celebración al cruzar umbral 3/5 (o subir a 4/5, 5/5).
     // Solo emitir si el pilar completado subió Y estamos en ≥3.
-    if (newEntry.pillarsCompleted >= 3 &&
-        newEntry.pillarsCompleted > prevPillars) {
+    //
+    // FIX (2026-07-15, propuesta "racha protagonista"): antes disparaba
+    // con `pillarsCompleted >= 3` sin verificar `qualifiesForStreak` — el
+    // sistema podía festejar "¡Hoy cuentas para tu racha!" en un día que
+    // en realidad NO calificaba (3 pilares sin ayuno ni sueño, la regla
+    // de "ancla" — ver StreakEntry.qualifiesForStreak). Ahora exige
+    // `qualifiesForStreak` explícitamente: la celebración solo se dispara
+    // cuando el día realmente cuenta para la racha.
+    if (newEntry.pillarsCompleted > prevPillars &&
+        newEntry.pillarsCompleted >= 3 &&
+        newEntry.qualifiesForStreak) {
       _ref.read(celebrationEventProvider.notifier).state = CelebrationEvent(
         type: CelebrationType.streakThreshold,
         pillarsCompleted: newEntry.pillarsCompleted,
@@ -541,17 +550,44 @@ class StreakNotifier extends StateNotifier<StreakState> {
         }
       }
     } else if (newStreak == 0 && prevStreak > 0) {
+      // P3 (2026-07-15): identificar el día y motivo específico de la
+      // ruptura — reutiliza StreakEngine.computeProtectedDates (misma
+      // fuente que ya usa computeCurrentStreakWithFreezes, ver §
+      // findBreakingEntry) y StreakEntry.missReason (única fuente del
+      // "por qué", compartida con el widget de HOY y el bar chart).
+      final protectedDates = StreakEngine.computeProtectedDates(state.history);
+      final breakingEntry =
+          StreakEngine.findBreakingEntry(state.history, protectedDates);
       _ref.read(celebrationEventProvider.notifier).state = CelebrationEvent(
         type: CelebrationType.streakBroken,
         pillarsCompleted: 0,
         currentStreak: prevStreak,
         timestamp: DateTime.now(),
+        breakReason: breakingEntry?.missReason,
+        breakDayLabel:
+            breakingEntry != null ? _formatDayLabel(breakingEntry.date) : null,
       );
       unawaited(AnalyticsService.logEvent(
         AnalyticsEvents.streakBroken,
         params: {AnalyticsParams.streakLengthBucket: _bucketStreak(prevStreak)},
       ));
     }
+  }
+
+  /// P3: etiqueta legible en español para el día que rompió la racha.
+  static String _formatDayLabel(String isoDate) {
+    final date = DateTime.tryParse(isoDate);
+    if (date == null) return 'ese día';
+    final today = DayBoundaryResolver.startOfDay(DateTime.now());
+    final yesterday = today.subtract(const Duration(days: 1));
+    final d = DateTime(date.year, date.month, date.day);
+    if (d == today) return 'hoy';
+    if (d == yesterday) return 'ayer';
+    const months = [
+      'ene', 'feb', 'mar', 'abr', 'may', 'jun',
+      'jul', 'ago', 'sep', 'oct', 'nov', 'dic',
+    ];
+    return 'el ${d.day} de ${months[d.month - 1]}';
   }
 
   /// SPEC-193 §2.4: bucket, no valor crudo.
@@ -651,4 +687,28 @@ class StreakNotifier extends StateNotifier<StreakState> {
 final streakProvider =
     StateNotifierProvider<StreakNotifier, StreakState>((ref) {
   return StreakNotifier(ref);
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Propuesta "racha protagonista" (2026-07-15, P4): aviso de racha en riesgo
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// True si conviene avisar que la racha está en riesgo hoy: horario de
+/// tarde/noche, el día todavía no calificó, hay una racha activa real en
+/// juego, Y no hay una reserva disponible que la proteja automáticamente
+/// (si `freezesAvailable > 0`, el forward-pass de
+/// [StreakEngine.computeCurrentStreakWithFreezes] va a perdonar el día de
+/// todos modos — avisar ahí generaría ansiedad sin motivo real).
+///
+/// Umbral horario (18:00): juicio de ingeniería — no hay una hora de
+/// cierre única porque el Día Metabólico se ancla al usuario, no al reloj
+/// (METABOLIC_DAY_CONSTITUTION §9). 18:00 da margen razonable para
+/// actuar sin sentirse prematuro.
+final streakAtRiskProvider = Provider<bool>((ref) {
+  final streak = ref.watch(streakProvider);
+  final todayQualifies = streak.todayEntry?.qualifiesForStreak ?? false;
+  if (todayQualifies) return false;
+  if (streak.currentStreak <= 0) return false;
+  if (streak.freezesAvailable > 0) return false;
+  return DateTime.now().hour >= 18;
 });

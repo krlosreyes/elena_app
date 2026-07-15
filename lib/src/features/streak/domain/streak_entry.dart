@@ -117,6 +117,29 @@ class StreakEntry {
       pillarsCompleted >= 3 &&
       (fastingCompleted || sleepCompleted || pillarsCompleted >= 4);
 
+  /// Propuesta "racha protagonista" (2026-07-15): motivo estructurado por
+  /// el que este día NO calificó para la racha, o `null` si sí calificó.
+  ///
+  /// Única fuente de verdad del "por qué" — reutilizada por el indicador
+  /// de HOY en Dashboard, el mensaje de racha rota y el detalle del
+  /// histórico de 30 días. Antes cada UI tenía que reinventar su propia
+  /// lectura de `qualifiesForStreak`; ahora todas leen de acá, así que no
+  /// pueden divergir entre sí.
+  ///
+  /// Devuelve un objeto estructurado (no un String ya redactado) porque
+  /// cada UI necesita su propio tiempo verbal: el indicador de HOY habla
+  /// en presente ("te falta..."), el mensaje de racha rota habla en
+  /// pasado ("te faltó..."), el detalle del histórico habla en tercera
+  /// persona sobre un día pasado ("ese día completó...").
+  StreakMissReason? get missReason {
+    if (qualifiesForStreak) return null;
+    if (pillarsCompleted < 3) {
+      return StreakMissReason.tooFewPillars(3 - pillarsCompleted);
+    }
+    // pillarsCompleted >= 3 pero sin ancla (ni ayuno ni sueño).
+    return const StreakMissReason.noAnchor();
+  }
+
   /// True si el día cumple con el estándar de Engagement (SPEC-07):
   /// IMR >= 60 Y mínimo 3 pilares completados.
   bool get isEngaged => imrScore >= 60 && qualifiesForStreak;
@@ -286,4 +309,36 @@ class StreakEntry {
 
   @override
   int get hashCode => date.hashCode;
+}
+
+/// Propuesta "racha protagonista" (2026-07-15): motivo estructurado por el
+/// que un día no calificó para la racha — ver [StreakEntry.missReason].
+///
+/// Dos casos posibles bajo la regla actual (`qualifiesForStreak`):
+/// - [tooFewPillars]: no llegó a los 3 pilares mínimos.
+/// - [noAnchor]: llegó a 3 pilares, pero ninguno fue ayuno o sueño.
+///
+/// No se modela con Freezed (evita build_runner) — clase simple e
+/// inmutable, suficiente para este caso de dos variantes.
+class StreakMissReason {
+  /// Pilares que faltaron para llegar al mínimo de 3. `null` cuando el
+  /// motivo es [noAnchor] (ya había 3, el problema es cuáles).
+  final int? missingPillarsCount;
+
+  const StreakMissReason.tooFewPillars(this.missingPillarsCount);
+
+  const StreakMissReason.noAnchor() : missingPillarsCount = null;
+
+  /// True si el motivo es "3 pilares mínimos sin ayuno ni sueño" en vez
+  /// de "no llegó a 3 pilares".
+  bool get isAnchorIssue => missingPillarsCount == null;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is StreakMissReason &&
+          missingPillarsCount == other.missingPillarsCount;
+
+  @override
+  int get hashCode => missingPillarsCount.hashCode;
 }

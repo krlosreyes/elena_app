@@ -82,15 +82,32 @@ class StreakBarChart extends StatelessWidget {
               ),
             )
           else
-            SizedBox(
-              height: 150,
-              child: CustomPaint(
-                size: Size.infinite,
-                painter: _StreakBarsPainter(
+            // Propuesta "racha protagonista" (2026-07-15, P5): el chart ya
+            // tenía los datos pero no era interactivo — tocar una barra
+            // ahora abre el desglose de ese día específico (los 5 pilares
+            // y por qué calificó o no), en vez de dejar que el usuario
+            // adivine el significado de un color.
+            LayoutBuilder(
+              builder: (context, constraints) => GestureDetector(
+                onTapUp: (details) => _handleDayTap(
+                  context: context,
+                  localDx: details.localPosition.dx,
+                  width: constraints.maxWidth,
                   days: days,
                   byDate: byDate,
                   protectedDates: protectedDates,
-                  today: today,
+                ),
+                child: SizedBox(
+                  height: 150,
+                  child: CustomPaint(
+                    size: Size.infinite,
+                    painter: _StreakBarsPainter(
+                      days: days,
+                      byDate: byDate,
+                      protectedDates: protectedDates,
+                      today: today,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -140,6 +157,45 @@ class StreakBarChart extends StatelessWidget {
           style: TextStyle(color: Colors.white.withValues(alpha: 0.40), fontSize: 10),
         ),
       ],
+    );
+  }
+
+  /// P5: traduce la posición X del tap al día correspondiente. La
+  /// geometría (barGap, yAxisRightWidth) DEBE coincidir con
+  /// `_StreakBarsPainter` (mismo archivo) — están duplicadas acá en vez
+  /// de compartidas porque `_StreakBarsPainter` es privada y esto evita
+  /// acoplar el gesture-handling al ciclo de vida del painter.
+  static void _handleDayTap({
+    required BuildContext context,
+    required double localDx,
+    required double width,
+    required List<DateTime> days,
+    required Map<String, StreakEntry> byDate,
+    required Set<String> protectedDates,
+  }) {
+    const barGap = 2.5; // debe coincidir con _StreakBarsPainter._barGap
+    const yAxisRightWidth = 20.0; // debe coincidir con _StreakBarsPainter._yAxisRightWidth
+    final n = days.length;
+    if (n == 0) return;
+    final plotRight = width - yAxisRightWidth;
+    final totalGap = barGap * (n - 1);
+    final barWidth = (plotRight - totalGap) / n;
+    if (barWidth <= 0) return;
+
+    final idx = (localDx / (barWidth + barGap)).floor().clamp(0, n - 1);
+    final date = days[idx];
+    final key = DayBoundaryResolver.dayKeyIso(date);
+    final entry = byDate[key];
+    final isProtected = protectedDates.contains(key);
+
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _DayDetailSheet(
+        date: date,
+        entry: entry,
+        isProtected: isProtected,
+      ),
     );
   }
 }
@@ -299,4 +355,168 @@ class _StreakBarsPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _StreakBarsPainter old) =>
       old.days != days || old.byDate != byDate || old.protectedDates != protectedDates;
+}
+
+/// P5 (2026-07-15): bottom sheet con el desglose de un día específico del
+/// histórico — qué pilares se completaron y por qué el día calificó o no
+/// para la racha. Usa `StreakEntry.missReason` (misma fuente que el
+/// widget de HOY en Dashboard y el mensaje de racha rota) para que la
+/// explicación nunca contradiga a las otras dos.
+class _DayDetailSheet extends StatelessWidget {
+  final DateTime date;
+  final StreakEntry? entry;
+  final bool isProtected;
+
+  const _DayDetailSheet({
+    required this.date,
+    required this.entry,
+    required this.isProtected,
+  });
+
+  static const _months = [
+    'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+    'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final entry = this.entry;
+    final qualifies = entry?.qualifiesForStreak ?? false;
+    final label = '${date.day} de ${_months[date.month - 1]}';
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 28),
+      decoration: const BoxDecoration(
+        color: Color(0xFF0F172A),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 18),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 8),
+          _statusChip(qualifies: qualifies, isProtected: isProtected, hasEntry: entry != null),
+          const SizedBox(height: 18),
+          if (entry == null)
+            Text(
+              'No hay registro para este día.',
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 13),
+            )
+          else ...[
+            _pillarRow('Ayuno', entry.fastingCompleted),
+            _pillarRow('Sueño', entry.sleepCompleted),
+            _pillarRow('Hidratación', entry.hydrationCompleted),
+            _pillarRow('Ejercicio', entry.exerciseLogged),
+            _pillarRow('Nutrición', entry.nutritionLogged),
+            const SizedBox(height: 14),
+            Text(
+              _whyText(qualifies: qualifies, isProtected: isProtected, entry: entry),
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.65),
+                fontSize: 12,
+                height: 1.4,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _statusChip({
+    required bool qualifies,
+    required bool isProtected,
+    required bool hasEntry,
+  }) {
+    if (!hasEntry) return _chip('Sin registro', const Color(0xFF64748B));
+    if (isProtected) return _chip('Protegido por una reserva', const Color(0xFFF59E0B));
+    return qualifies
+        ? _chip('Calificó para la racha', Colors.orange)
+        : _chip('No llegó al mínimo', const Color(0xFF64748B));
+  }
+
+  Widget _chip(String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w700),
+      ),
+    );
+  }
+
+  Widget _pillarRow(String label, bool completed) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Row(
+        children: [
+          Icon(
+            completed ? Icons.check_circle_rounded : Icons.circle_outlined,
+            size: 18,
+            color: completed
+                ? const Color(0xFF34D399)
+                : Colors.white.withValues(alpha: 0.30),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            label,
+            style: TextStyle(
+              color: completed ? Colors.white : Colors.white.withValues(alpha: 0.45),
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _whyText({
+    required bool qualifies,
+    required bool isProtected,
+    required StreakEntry entry,
+  }) {
+    if (isProtected) {
+      return 'Este día no llegó al mínimo, pero una reserva lo protegió '
+          'automáticamente — tu racha siguió sin interrupción.';
+    }
+    if (qualifies) {
+      return 'Completó al menos 3 pilares, incluyendo ayuno o sueño '
+          '(o 4 o más en total) — cuenta para la racha.';
+    }
+    final reason = entry.missReason;
+    if (reason == null) return '';
+    if (reason.isAnchorIssue) {
+      return 'Completó 3 pilares, pero sin ayuno ni sueño — los que más '
+          'cuentan para la racha.';
+    }
+    final n = reason.missingPillarsCount!;
+    return n == 1
+        ? 'Le faltó 1 pilar para llegar al mínimo de 3.'
+        : 'Le faltaron $n pilares para llegar al mínimo de 3.';
+  }
 }

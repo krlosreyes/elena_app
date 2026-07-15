@@ -202,6 +202,21 @@ class _CelebrationBanner extends StatelessWidget {
       case CelebrationType.streakBroken:
         // SPEC-255 RF-03: reencuadre autocompasivo, no de culpa. La racha
         // más larga queda como logro permanente — se lo recordamos aquí.
+        //
+        // P3 (2026-07-15): cuando se identificó el día y motivo exactos
+        // de la ruptura, lo explicitamos — antes el mensaje era genérico
+        // y no decía QUÉ faltó, dejando al usuario sin el aprendizaje.
+        final reason = event.breakReason;
+        final day = event.breakDayLabel;
+        if (reason != null && day != null) {
+          final cause = reason.isAnchorIssue
+              ? 'sin ayuno ni sueño — los que más cuentan para la racha'
+              : (reason.missingPillarsCount == 1
+                  ? 'con 1 pilar menos del mínimo de 3'
+                  : 'con ${reason.missingPillarsCount} pilares menos del mínimo de 3');
+          return 'Fueron ${event.currentStreak} días reales — $day quedaste $cause. '
+              'Tu récord sigue en pie. Hoy es un buen día para empezar de nuevo.';
+        }
         return 'Fueron ${event.currentStreak} días reales. Tu récord sigue en pie. Hoy es un buen día para empezar de nuevo.';
       case CelebrationType.streakThreshold:
         if (event.pillarsCompleted >= 5) {
