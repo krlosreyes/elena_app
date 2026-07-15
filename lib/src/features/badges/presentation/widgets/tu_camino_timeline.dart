@@ -114,6 +114,13 @@ class _TimelineNode extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
+      // Este widget es cada ítem de un ListView.builder horizontal
+      // (TuCaminoTimeline) — el eje principal (ancho) llega SIN acotar
+      // desde el slot de la lista. Sin `min`, el Row por defecto
+      // (MainAxisSize.max) intenta reportar un ancho infinito hacia
+      // arriba, lo que Flutter no permite y tira una excepción de
+      // layout — eso fue lo que dejó la pantalla de Perfil en blanco.
+      mainAxisSize: MainAxisSize.min,
       children: [
         if (showConnector)
           Container(
