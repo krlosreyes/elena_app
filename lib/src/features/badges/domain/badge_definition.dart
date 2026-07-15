@@ -35,9 +35,21 @@ class BadgeCategory {
   /// Whitelist cerrada — también se usa para validar `category` en
   /// firestore.rules, así un cliente comprometido no puede inventar
   /// categorías arbitrarias.
+  ///
+  /// Orden (15-jul, feedback de Carlos): `BadgeGallery` recorre esta
+  /// lista tal cual para pintar el grid, y debe verse en el mismo orden
+  /// que `TuCaminoTimeline` — que ordena por `unlockedAt` real del
+  /// usuario. "Bienvenida" es la primera insignia que cualquier usuario
+  /// gana (al completar onboarding), así que va primero acá también en
+  /// vez de al final; el resto sigue el orden típico de aparición
+  /// (racha y ayuno se ganan temprano, imr/checkin/resiliencia son
+  /// logros más tardíos). El orden es un valor fijo de catálogo, no se
+  /// deriva dinámicamente por usuario — dos usuarios distintos pueden
+  /// ganar las insignias en secuencias distintas, pero el grid (a
+  /// diferencia del timeline) no es por-usuario.
   static const List<String> all = [
-    racha, ayuno, sueno, hidratacion, ejercicio, nutricion,
-    imr, checkin, resiliencia, bienvenida,
+    bienvenida, racha, ayuno, sueno, hidratacion, ejercicio, nutricion,
+    imr, checkin, resiliencia,
   ];
 }
 
