@@ -8,11 +8,14 @@ import 'package:elena_app/src/core/engine/longitudinal_imr_provider.dart';
 import 'package:elena_app/src/features/auth/application/profile_controller.dart';
 import 'package:elena_app/src/features/auth/presentation/widgets/data_group_card.dart';
 import 'package:elena_app/src/features/auth/presentation/widgets/edit_biometry_value_sheet.dart';
+import 'package:elena_app/src/features/auth/presentation/widgets/profile_bottom_nav.dart';
+import 'package:elena_app/src/features/auth/presentation/widgets/profile_danger_zone_actions.dart';
+import 'package:elena_app/src/features/auth/presentation/widgets/profile_goals_section.dart';
+import 'package:elena_app/src/features/auth/presentation/widgets/profile_identity_card.dart';
+import 'package:elena_app/src/features/auth/presentation/widgets/profile_legal_section.dart';
+import 'package:elena_app/src/features/auth/presentation/widgets/profile_protocol_card.dart';
+import 'package:elena_app/src/features/badges/presentation/widgets/badge_gallery.dart';
 import 'package:elena_app/src/features/dashboard/domain/optimal_schedule.dart';
-import 'package:elena_app/src/features/analysis/domain/imr_explanation.dart';
-import 'package:elena_app/src/features/goals/application/goal_notifier.dart';
-import 'package:elena_app/src/features/goals/domain/user_goal.dart';
-import 'package:elena_app/src/features/goals/presentation/goal_icons.dart';
 import 'package:elena_app/src/features/health_sync/presentation/health_sync_card.dart';
 import 'package:elena_app/src/features/profile/application/biometric_lock_provider.dart';
 import 'package:elena_app/src/features/profile/domain/biometric_lock_service.dart';
@@ -93,31 +96,12 @@ class ProfileScreen extends ConsumerWidget {
           return _ProfileBody(user: user);
         },
       ),
-      bottomNavigationBar: _buildBottomNav(context),
+      bottomNavigationBar: const ProfileBottomNav(),
     );
   }
 
-  Widget _buildBottomNav(BuildContext context) {
-    return BottomNavigationBar(
-      backgroundColor: AppColors.backgroundDark,
-      selectedItemColor: const Color(0xFF10B981),
-      unselectedItemColor: Colors.grey.withValues(alpha: 0.5),
-      currentIndex: 2,
-      type: BottomNavigationBarType.fixed,
-      onTap: (index) {
-        if (index == 0) context.go('/dashboard');
-        if (index == 1) context.go('/analysis');
-        if (index == 2) context.go('/profile');
-      },
-      items: const [
-        BottomNavigationBarItem(
-            icon: Icon(Icons.grid_view_rounded), label: 'Hoy'),
-        BottomNavigationBarItem(
-            icon: Icon(Icons.insights_rounded), label: 'Progreso'),
-        BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Perfil'),
-      ],
-    );
-  }
+  // SPEC-119: bottom nav → ProfileBottomNav
+  // (widgets/profile_bottom_nav.dart). Extraído en ARCH-03.
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -508,10 +492,10 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
       children: [
         // ── Identidad + IMR ─────────────────────────────────────────
-        _buildIdentityCard(badgeImr),
+        ProfileIdentityCard(user: widget.user, imrResult: badgeImr),
         if (showLongitudinalDisclaimer) ...[
           const SizedBox(height: 8),
-          _buildLongitudinalDisclaimer(),
+          const ProfileLongitudinalDisclaimer(),
         ],
         const SizedBox(height: 24),
 
@@ -666,7 +650,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
         // (chip clickable en la card "Ayuno Consciente").
         _buildSectionTitle('Protocolo de ayuno'),
         const SizedBox(height: 10),
-        _buildProtocolCard(context),
+        ProfileProtocolCard(protocol: widget.user.fastingProtocol),
         const SizedBox(height: 24),
 
         // ── SPEC-168.0.B: Mis objetivos ─────────────────────────────
@@ -677,7 +661,16 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
         // vacío con CTA "Configurar objetivos".
         _buildSectionTitle('Mis objetivos'),
         const SizedBox(height: 10),
-        _buildGoalsSection(context),
+        const ProfileGoalsSection(),
+        const SizedBox(height: 24),
+
+        // ── Sistema de insignias (2026-07-15) ────────────────────────
+        // Propuesta "Sistema de Insignias" §6: galería de identidad,
+        // no solo mecánica de progreso — grid de 10 categorías, cada
+        // una con su nivel más alto ganado; tocar abre el detalle.
+        _buildSectionTitle('Insignias'),
+        const SizedBox(height: 10),
+        const BadgeGallery(),
         const SizedBox(height: 24),
 
         // ── SPEC-132: sincronización con Apple Health / Health Connect
@@ -693,7 +686,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
         // iconos coloreados, tipografía secundaria.
         _buildSectionTitle('Legal'),
         const SizedBox(height: 6),
-        _buildLegalGroup(context),
+        const ProfileLegalSection(),
         const SizedBox(height: 28),
 
         // ── Ayuda ────────────────────────────────────────────────────
@@ -748,108 +741,13 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
         const SizedBox(height: 28),
 
         // ── Acciones destructivas (text buttons sutiles) ────────────
-        _buildLogoutTextButton(context),
-        const SizedBox(height: 4),
-        _buildDeleteAccountTextButton(context),
+        const ProfileDangerZoneActions(),
       ],
     );
   }
 
-  /// Card del protocolo de ayuno: protocolo activo + detalle inline
-  /// (h ayuno · h ventana) + link sutil a la pantalla "Hoy" donde se
-  /// edita el protocolo.
-  Widget _buildProtocolCard(BuildContext context) {
-    final protocol = widget.user.fastingProtocol;
-    final parts = protocol.split(':');
-    final fastingHours =
-        parts.isNotEmpty ? (int.tryParse(parts.first) ?? 16) : 16;
-    final feedingHours = parts.length > 1 ? (int.tryParse(parts[1]) ?? 8) : 8;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surfaceDark,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.borderDefault),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(18, 14, 18, 6),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Activo',
-                  style: TextStyle(
-                    color: Color(0xFF94A3B8),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                Text(
-                  protocol,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.3,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(18, 0, 18, 12),
-            child: Text(
-              '${fastingHours}h ayuno · ${feedingHours}h ventana',
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.38),
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          Container(
-            height: 1,
-            margin: const EdgeInsets.symmetric(horizontal: 18),
-            color: AppColors.borderSubtle,
-          ),
-          InkWell(
-            // SPEC-116: query param `pillar=ayuno` para que el
-            // Dashboard abra directamente con la card de Ayuno
-            // seleccionada (el chip de protocolo vive ahí).
-            onTap: () => context.go('/dashboard?pillar=ayuno'),
-            borderRadius: const BorderRadius.only(
-              bottomLeft: Radius.circular(14),
-              bottomRight: Radius.circular(14),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-              child: Row(
-                children: [
-                  const Text(
-                    'Cambiar protocolo',
-                    style: TextStyle(
-                      color: AppColors.metabolicGreen,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const Spacer(),
-                  Icon(
-                    Icons.arrow_forward_rounded,
-                    color: AppColors.metabolicGreen.withValues(alpha: 0.8),
-                    size: 16,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // SPEC-119: card del protocolo de ayuno → ProfileProtocolCard
+  // (widgets/profile_protocol_card.dart). Extraído en ARCH-03.
 
   String _formatBodyFat(double? value) {
     if (value == null) return 'Sin medir';
@@ -883,448 +781,23 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
     }
   }
 
-  // ── Widgets ──────────────────────────────────────────────────────────────
-
-  Widget _buildIdentityCard(DisplayedImr imrResult) {
-    final zoneColor = _zoneColor(imrResult.zone);
-    // SPEC-116: sin border coloreado. El badge IMR ya comunica el
-    // estado clínico. Subtítulo de la card incluye "Expediente
-    // metabólico" como branding clínico recuperado del AppBar.
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceDark,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.borderDefault),
-      ),
-      child: Row(
-        children: [
-          // Avatar
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.metabolicGreen.withValues(alpha: 0.12),
-            ),
-            child: const Icon(Icons.person_rounded,
-                color: AppColors.metabolicGreen, size: 26),
-          ),
-          const SizedBox(width: 14),
-          // Nombre + patologías
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  widget.user.name,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 17,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  widget.user.pathologies.isEmpty
-                      ? 'Expediente metabólico'
-                      : widget.user.pathologies.join(' · '),
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.white.withValues(alpha: 0.45),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 10),
-          // IMR badge
-          Column(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: zoneColor, width: 2),
-                ),
-                child: Center(
-                  child: Text(
-                    '${imrResult.score}',
-                    style: TextStyle(
-                      fontSize: 19,
-                      fontWeight: FontWeight.w800,
-                      color: zoneColor,
-                      height: 1.0,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 5),
-              Text(
-                IMRZoneColors.displayLabel(imrResult.zone),
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 8.5,
-                  fontWeight: FontWeight.w800,
-                  color: zoneColor,
-                  letterSpacing: 0.4,
-                ),
-              ),
-              // SPEC-229: badge "datos incompletos" cuando el bloque
-              // Estructura usa valores poblacionales (50% del IMR).
-              if (imrResult.localFull?.isPartialBiometrics == true)
-                const Padding(
-                  padding: EdgeInsets.only(top: 3),
-                  child: Text(
-                    'estimado',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 7.5,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFFF59E0B),
-                      letterSpacing: 0.2,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// SPEC-141 §RF-141-13 (2026-06-05): banner visible cuando el badge
-  /// está mostrando el IMR longitudinal (feature flag ON). Sin firma
-  /// clínica todavía → mostrar disclaimer transparente.
-  Widget _buildLongitudinalDisclaimer() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF59E0B).withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: const Color(0xFFF59E0B).withValues(alpha: 0.30),
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(
-            Icons.science_outlined,
-            color: Color(0xFFF59E0B),
-            size: 16,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              'IMR longitudinal en validación clínica — '
-              'tu número refleja tendencia, no diagnóstico.',
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.80),
-                fontSize: 11,
-                height: 1.4,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // SPEC-119: identity card + longitudinal disclaimer →
+  // ProfileIdentityCard + ProfileLongitudinalDisclaimer
+  // (widgets/profile_identity_card.dart). Extraído en ARCH-03.
+  // `_zoneColor` (delegador de una línea a `AppColors.imrZoneColor`)
+  // se inlineó dentro del widget nuevo.
 
   // SPEC-98: el grid 2×4 y la card "Recomendado para ti" se removieron
   // del Perfil. El protocolo se cambia desde el Dashboard (chip clickable
   // en la card "Ayuno Consciente"). Los métodos `_buildProtocolSelector`,
   // `_buildRecommendedProtocolCard` y `_recommendedProtocol` se eliminaron.
 
-  // SPEC-117: grupo legal redesigned como footer plano "presente pero
-  // no protagonista". Sin border, sin background coloreado, sin
-  // iconos. Solo filas de texto con chevron sutil + divisores
-  // delgadísimos. Tipografía secundaria (alpha 0.7) y sub más tenue
-  // (alpha 0.4) para que el bloque "respire" abajo en la pantalla.
-  Widget _buildLegalGroup(BuildContext context) {
-    return Column(
-      children: [
-        _legalRow(
-          context: context,
-          title: 'Condiciones médicas',
-          subtitle: 'Poblaciones de riesgo del IMR',
-          route: '/profile/disclaimer',
-        ),
-        _legalDivider(),
-        _legalRow(
-          context: context,
-          title: 'Política de privacidad',
-          subtitle: 'Cómo manejamos tus datos',
-          route: '/legal/privacy',
-        ),
-        _legalDivider(),
-        _legalRow(
-          context: context,
-          title: 'Términos de uso',
-          subtitle: 'Condiciones del servicio',
-          route: '/legal/terms',
-        ),
-      ],
-    );
-  }
+  // SPEC-119: grupo legal → ProfileLegalSection
+  // (widgets/profile_legal_section.dart). Extraído en ARCH-03.
 
-  Widget _legalRow({
-    required BuildContext context,
-    required String title,
-    required String subtitle,
-    required String route,
-  }) {
-    return InkWell(
-      onTap: () => context.push(route),
-      borderRadius: BorderRadius.circular(8),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white.withValues(alpha: 0.70),
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w400,
-                      color: Colors.white.withValues(alpha: 0.34),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(
-              Icons.chevron_right_rounded,
-              color: Colors.white.withValues(alpha: 0.24),
-              size: 18,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _legalDivider() {
-    return Container(
-      height: 1,
-      margin: const EdgeInsets.symmetric(horizontal: 4),
-      color: Colors.white.withValues(alpha: 0.04),
-    );
-  }
-
-  // SPEC-116: logout y delete account pasan a text buttons sutiles
-  // (estilo Apple Settings). El logout era verde sólido — pelea por
-  // atención con CTAs primarios. Ahora ambos botones son textuales,
-  // ancho completo pero sin fill, con el delete en rojo opaco como
-  // señal de acción crítica.
-  Widget _buildLogoutTextButton(BuildContext context) {
-    return TextButton(
-      onPressed: () => _confirmLogout(context),
-      style: TextButton.styleFrom(
-        minimumSize: const Size.fromHeight(48),
-        foregroundColor: Colors.white.withValues(alpha: 0.85),
-      ),
-      child: const Text(
-        'Cerrar sesión',
-        style: TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDeleteAccountTextButton(BuildContext context) {
-    return TextButton(
-      onPressed: () => _confirmDeleteAccount(context),
-      style: TextButton.styleFrom(
-        minimumSize: const Size.fromHeight(48),
-        foregroundColor: Colors.redAccent.withValues(alpha: 0.85),
-      ),
-      child: const Text(
-        'Eliminar cuenta',
-        style: TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
-
-  // ── Diálogos ─────────────────────────────────────────────────────────────
-
-  void _confirmLogout(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surfaceDark,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Cerrar sesión',
-            style: TextStyle(fontWeight: FontWeight.w900)),
-        content: const Text(
-          '¿Estás seguro que deseas cerrar sesión?',
-          style: TextStyle(color: Color(0xFF94A3B8)),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('CANCELAR',
-                style: TextStyle(color: Color(0xFF94A3B8))),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              // CA-02-03: Firebase cierra sesión y el guard redirige a /login
-              await ref.read(profileControllerProvider.notifier).signOut();
-              if (context.mounted) context.go('/login');
-            },
-            child: const Text('CERRAR SESIÓN',
-                style: TextStyle(
-                    color: Color(0xFF10B981), fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Diálogo de doble confirmación con campo de texto "ELIMINAR" (CA-02-04)
-  void _confirmDeleteAccount(BuildContext context) {
-    final confirmController = TextEditingController();
-    bool isEnabled = false;
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setModalState) => AlertDialog(
-          backgroundColor: AppColors.surfaceDark,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Row(
-            children: [
-              Icon(Icons.warning_amber_rounded,
-                  color: Colors.redAccent, size: 20),
-              SizedBox(width: 8),
-              Text('Eliminar cuenta',
-                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Esta acción es permanente. Se eliminarán tu cuenta y todos tus datos metabólicos de Firestore.',
-                style: TextStyle(
-                    color: Color(0xFF94A3B8), fontSize: 13, height: 1.4),
-              ),
-              const SizedBox(height: 20),
-              const Text(
-                'Escribe ELIMINAR para confirmar:',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: confirmController,
-                autofocus: true,
-                textCapitalization: TextCapitalization.characters,
-                decoration: InputDecoration(
-                  hintText: 'ELIMINAR',
-                  hintStyle:
-                      const TextStyle(color: Color(0xFF475569), fontSize: 13),
-                  filled: true,
-                  fillColor: AppColors.backgroundDark,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0xFF334155)),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Colors.redAccent),
-                  ),
-                ),
-                onChanged: (val) {
-                  setModalState(() {
-                    isEnabled = val.trim().toUpperCase() == 'ELIMINAR';
-                  });
-                },
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                confirmController.dispose();
-                Navigator.pop(ctx);
-              },
-              child: const Text('CANCELAR',
-                  style: TextStyle(color: Color(0xFF94A3B8))),
-            ),
-            TextButton(
-              onPressed: isEnabled
-                  ? () async {
-                      Navigator.pop(ctx);
-                      // SPEC-83 fix: capturar el messenger ANTES del
-                      // await para no depender del context tras el
-                      // delete (la pantalla deja de existir cuando
-                      // currentUserStreamProvider emite null).
-                      final messenger = ScaffoldMessenger.of(context);
-                      final goRouter = GoRouter.of(context);
-                      try {
-                        await ref
-                            .read(profileControllerProvider.notifier)
-                            .deleteAccount();
-                        messenger.showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Cuenta eliminada. Hasta pronto.',
-                            ),
-                            backgroundColor: Color(0xFF10B981),
-                            duration: Duration(seconds: 3),
-                          ),
-                        );
-                        goRouter.go('/login');
-                      } catch (e) {
-                        messenger.showSnackBar(
-                          SnackBar(
-                            content: Text(e.toString()),
-                            backgroundColor: Colors.redAccent,
-                            duration: const Duration(seconds: 5),
-                          ),
-                        );
-                      }
-                    }
-                  : null,
-              child: Text(
-                'ELIMINAR CUENTA',
-                style: TextStyle(
-                  color: isEnabled
-                      ? Colors.redAccent
-                      : Colors.redAccent.withValues(alpha: 0.3),
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  // SPEC-119: logout/delete account (botones + diálogos) →
+  // ProfileDangerZoneActions (widgets/profile_danger_zone_actions.dart).
+  // Extraído en ARCH-03.
 
   // ── Helpers ──────────────────────────────────────────────────────────────
 
@@ -1346,236 +819,11 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
     );
   }
 
-  // UI #2: color del IMR desde la rampa calma única (sin rojo de alarma).
-  Color _zoneColor(String zone) => AppColors.imrZoneColor(zone);
-
-  /// SPEC-168.0.B + SPEC-168.0.A v2 (Opción B, Carlos 2026-06-03):
-  /// card de "Mis objetivos" que lista **todos** los goals del usuario
-  /// (activos + inactivos) con CTA a /goals/setup. Los inactivos se
-  /// renderizan atenuados con badge "Sin activar". El estado vacío
-  /// solo aparece cuando el usuario nunca pasó por el step 5 del
-  /// onboarding (caso legacy pre-SPEC-168) ni configuró desde Perfil.
-  Widget _buildGoalsSection(BuildContext context) {
-    final goalsMap = ref.watch(goalsProvider);
-    final allGoals = goalsMap.values.toList()
-      ..sort((a, b) => a.type.index.compareTo(b.type.index));
-
-    if (allGoals.isEmpty) {
-      return _buildGoalsEmptyState(context);
-    }
-    return _buildGoalsListCard(context, allGoals);
-  }
-
-  /// Estado vacío: usuario que omitió onboarding o legacy pre-SPEC-168.
-  /// Invita a configurar con narrativa coaching ("Elena tiene
-  /// recomendaciones listas").
-  Widget _buildGoalsEmptyState(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surfaceDark,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.borderDefault),
-      ),
-      padding: const EdgeInsets.fromLTRB(18, 22, 18, 18),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Aún no configuraste tus objetivos.',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Elena tiene recomendaciones listas basadas en tus datos.',
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.55),
-              fontSize: 13,
-              height: 1.35,
-            ),
-          ),
-          const SizedBox(height: 14),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () => context.push('/goals/setup'),
-              icon: const Icon(Icons.tune_rounded, size: 18),
-              label: const Text('Configurar objetivos'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.metabolicGreen,
-                side: BorderSide(
-                  color: AppColors.metabolicGreen.withValues(alpha: 0.6),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                textStyle: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Card con lista de goals (activos + inactivos) + CTA "Editar
-  /// objetivos" en footer. Sigue el patrón de `_buildProtocolCard`
-  /// (header + filas + divisor + InkWell de acción al fondo).
-  Widget _buildGoalsListCard(
-    BuildContext context,
-    List<UserGoal> allGoals,
-  ) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surfaceDark,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.borderDefault),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          for (int i = 0; i < allGoals.length; i++) ...[
-            if (i > 0)
-              Container(
-                height: 1,
-                margin: const EdgeInsets.symmetric(horizontal: 18),
-                color: AppColors.borderSubtle,
-              ),
-            _buildGoalRow(allGoals[i]),
-          ],
-          Container(
-            height: 1,
-            margin: const EdgeInsets.symmetric(horizontal: 18),
-            color: AppColors.borderSubtle,
-          ),
-          InkWell(
-            onTap: () => context.push('/goals/setup'),
-            borderRadius: const BorderRadius.only(
-              bottomLeft: Radius.circular(14),
-              bottomRight: Radius.circular(14),
-            ),
-            child: Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-              child: Row(
-                children: [
-                  const Text(
-                    'Editar objetivos',
-                    style: TextStyle(
-                      color: AppColors.metabolicGreen,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const Spacer(),
-                  Icon(
-                    Icons.arrow_forward_rounded,
-                    color: AppColors.metabolicGreen.withValues(alpha: 0.8),
-                    size: 16,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Fila individual de un goal: emoji + label + valor + unit en línea.
-  /// SPEC-168.0.A v2 Opción B: si el goal está inactivo, atenuamos el
-  /// row con opacidad reducida y agregamos badge "Sin activar" en
-  /// lugar de la unidad. El usuario tap "Editar objetivos" para
-  /// activar o ajustar.
-  Widget _buildGoalRow(UserGoal goal) {
-    final double opacity = goal.isActive ? 1.0 : 0.45;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(18, 12, 18, 12),
-      child: Opacity(
-        opacity: opacity,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Row(
-                children: [
-                  Icon(goalIcon(goal.type),
-                      size: 16, color: Colors.white.withValues(alpha: 0.85)),
-                  const SizedBox(width: 10),
-                  Flexible(
-                    child: Text(
-                      goal.label,
-                      style: const TextStyle(
-                        color: Color(0xFF94A3B8),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (goal.isActive)
-              Text(
-                '${_formatGoalValue(goal)} ${goal.unit}',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.2,
-                ),
-              )
-            else
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    '${_formatGoalValue(goal)} ${goal.unit}',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.55),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 7, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      'Sin activar',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.65),
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.3,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// Formateo del valor numérico del goal: enteros sin decimales,
-  /// fracciones con 1 decimal. Coherente con la presentación en
-  /// `goalsProgressDashboard`.
-  String _formatGoalValue(UserGoal goal) {
-    final v = goal.targetValue;
-    if (v == v.roundToDouble()) return v.toStringAsFixed(0);
-    return v.toStringAsFixed(1);
-  }
+  // SPEC-119: sección "Mis objetivos" (_buildGoalsSection +
+  // _buildGoalsEmptyState + _buildGoalsListCard + _buildGoalRow +
+  // _formatGoalValue + `_zoneColor`, delegador de una línea a
+  // `AppColors.imrZoneColor`) → ProfileGoalsSection
+  // (widgets/profile_goals_section.dart). Extraído en ARCH-03.
 }
 
 // SPEC-117: las clases DataGroupCard, DataRow y DataRowKind se

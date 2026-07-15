@@ -48,10 +48,10 @@ service cloud.firestore {
       // Validación: cycleId del payload debe coincidir con el path,
       // dailyScore en rango [0, 100] cuando esté presente.
       //
-      // NOTA: igual que con imr_history (SPEC-143), la regla específica
-      // queda como documentación de intent — la catch-all `/{allPaths=**}`
-      // más abajo no enforza esta validación. La validación efectiva vive
-      // client-side en MetabolicCycleService.
+      // FB-01 (2026-07-11): la catch-all `/{allPaths=**}` de más abajo
+      // excluye explícitamente este path de su condición de create/update,
+      // por lo que esta validación de rango sí se enforza server-side (ver
+      // nota completa en el bloque de imr_history, unas líneas más abajo).
       match /metabolic_cycles/{cycleId} {
         allow read: if isOwner(userId);
         allow write: if isOwner(userId)
@@ -71,15 +71,15 @@ service cloud.firestore {
       // (SPEC-141). Validación estricta: weekISO del payload debe
       // coincidir con el path, y totalScore debe estar en rango [0, 100].
       //
-      // NOTA IMPORTANTE: Firestore Rules evalúa allow rules con OR
-      // entre matches concurrentes. La regla catch-all de subcolecciones
-      // (`match /{allPaths=**}`) más abajo también matchea este path y
-      // es menos restrictiva. Por lo tanto, esta validación específica
-      // hoy NO se enforza server-side — actúa como documentación de
-      // intent y queda lista para cuando una SPEC futura reescriba las
-      // rules con paths explícitos en lugar de catch-all. La validación
-      // efectiva vive client-side en BiometricHistoryService y
-      // WeeklyImrSnapshotService (SPEC-141).
+      // FB-01 (auditoría 2026-07-11, corregido 2026-07-11): la regla
+      // catch-all de subcolecciones (`match /{allPaths=**}`) más abajo
+      // excluye explícitamente 'metabolic_cycles' e 'imr_history' de su
+      // condición de create/update, para que esta validación estricta
+      // sea la ÚNICA vía de escritura server-side para ambos paths (antes
+      // quedaba neutralizada por la semántica OR entre matches). La
+      // validación client-side en BiometricHistoryService y
+      // WeeklyImrSnapshotService sigue existiendo como primera línea de
+      // defensa; esta regla es ahora la segunda línea real.
       match /imr_history/{weekISO} {
         allow read: if isOwner(userId);
         allow write: if isOwner(userId)
@@ -88,6 +88,31 @@ service cloud.firestore {
                      && request.resource.data.totalScore is number
                      && request.resource.data.totalScore >= 0
                      && request.resource.data.totalScore <= 100;
+      }
+
+      // Sistema de insignias (2026-07-15): users/{uid}/badges/{badgeId}.
+      // Una EarnedBadge es un HECHO PERMANENTE (ver earned_badge.dart) —
+      // a diferencia de metabolic_cycles/imr_history (que sí aceptan
+      // `update` para correcciones), acá la única operación permitida es
+      // `create`. Sin `update` ni `delete`: ni un bug del cliente ni un
+      // usuario que manipule la app pueden modificar o borrar una
+      // insignia ya otorgada. Esta es la garantía de integridad que pidió
+      // Carlos — vive en el servidor, no en la buena fe del cliente.
+      //
+      // Validación: badgeId del payload debe coincidir con el path, y
+      // category debe ser una de la whitelist cerrada (mismo catálogo que
+      // BadgeCategory.all en badge_definition.dart) — un cliente
+      // comprometido no puede inventar una categoría arbitraria.
+      match /badges/{badgeId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId)
+                     && withinSizeLimit()
+                     && request.resource.data.badgeId == badgeId
+                     && request.resource.data.category in [
+                          'racha', 'ayuno', 'sueno', 'hidratacion',
+                          'ejercicio', 'nutricion', 'imr', 'checkin',
+                          'resiliencia', 'bienvenida'
+                        ];
       }
 
       // Subcolecciones (logs de sueño, hidratación, ejercicio, etc.):
@@ -102,33 +127,57 @@ service cloud.firestore {
       // (sleep, hidratación, ejercicio, etc.).
       // Separamos create/update (necesitan size check) de delete
       // (solo requiere ownership).
+      //
+      // FB-01 (2026-07-11): 'metabolic_cycles' e 'imr_history' quedan
+      // excluidos de create/update aquí a propósito — sus reglas
+      // específicas de arriba (líneas ~55-91) son la única vía de
+      // escritura válida para esos dos paths, para que la validación de
+      // rango [0,100] no quede neutralizada por esta regla más laxa.
+      //
+      // Insignias (2026-07-15): 'badges' queda excluido de create/update
+      // Y de delete — si no lo excluyéramos de delete, esta regla más
+      // laxa (que sí permite delete a cualquier dueño) neutralizaría la
+      // inmutabilidad que acabamos de definir arriba, por la misma
+      // semántica OR entre matches que documenta la nota de FB-01.
       match /{allPaths=**} {
         allow read: if isOwner(userId);
-        allow create, update: if isOwner(userId) && withinSizeLimit();
-        allow delete: if isOwner(userId);
+        allow create, update: if isOwner(userId)
+                     && withinSizeLimit()
+                     && allPaths[0] != 'metabolic_cycles'
+                     && allPaths[0] != 'imr_history'
+                     && allPaths[0] != 'badges';
+        allow delete: if isOwner(userId) && allPaths[0] != 'badges';
       }
     }
 
     // 2. user_food_suggestions: catálogo global de sugerencias.
-    //    Cualquier autenticado lee (autocompletado). Escritura abierta
-    //    a autenticados (seed + last_shown updates).
-    //    Out of scope SPEC-81: rate limiting para anti-spam — futura
-    //    SPEC con Cloud Functions.
+    //    FB-02 (auditoría 2026-07-11): sin consumidores activos en el
+    //    cliente (grep de `.collection('user_food_suggestions')` en
+    //    lib/ = 0 resultados) — se deja lectura abierta a autenticados
+    //    por si algún flujo la reactiva, pero la escritura se restringe
+    //    a Cloud Functions / rol admin (custom claim) para evitar que
+    //    cualquier cuenta autenticada pueda envenenar o hacer spam del
+    //    catálogo global. Si esta colección vuelve a poblarse desde la
+    //    app, reintroducir aquí una regla de ownership real en vez de
+    //    reabrir el write a signedIn().
     match /user_food_suggestions/{docId} {
       allow read: if signedIn();
-      allow write: if signedIn() && withinSizeLimit();
+      allow write: if request.auth.token.admin == true;
     }
 
     // 3. master_food_db: catálogo maestro de alimentos.
+    //    FB-02: mismo criterio que user_food_suggestions — sin
+    //    consumidores activos en lib/, escritura restringida a admin.
     match /master_food_db/{docId} {
       allow read: if signedIn();
-      allow write: if signedIn() && withinSizeLimit();
+      allow write: if request.auth.token.admin == true;
     }
 
     // 4. master_exercises_db: catálogo maestro de ejercicios.
+    //    FB-02: mismo criterio — escritura restringida a admin.
     match /master_exercises_db/{docId} {
       allow read: if signedIn();
-      allow write: if signedIn() && withinSizeLimit();
+      allow write: if request.auth.token.admin == true;
     }
 
     // 5. metamorfosis_posts: contenido público (blog/educativo).
@@ -136,12 +185,26 @@ service cloud.firestore {
     //    SPEC-205: el cliente puede actualizar SOLO el mapa `analytics`
     //    (contador de vistas/engagement) y `views` nunca puede bajar. Esto
     //    habilita incrementViews desde la app sin exponer el contenido.
+    //
+    //    FB-08 (auditoría independiente 2026-07-11): la condición original
+    //    leía `resource.data.analytics.views` sin verificar que el campo
+    //    `analytics` existiera. Un post creado (vía consola/CMS) sin ese
+    //    mapa preseed hacía que la regla lanzara un error de evaluación de
+    //    campo inexistente y denegara SIEMPRE la escritura — incrementViews
+    //    fallaba en silencio (permission-denied atrapado y logueado como
+    //    warning) para ese post, indefinidamente. Se añade el chequeo
+    //    `!('analytics' in resource.data)` como vía alterna válida, más
+    //    `is number` para blindar el tipo del nuevo valor.
     match /metamorfosis_posts/{postId} {
       allow read: if true;
       allow create, delete: if false;
       allow update: if signedIn()
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['analytics'])
-        && request.resource.data.analytics.views >= resource.data.analytics.views;
+        && request.resource.data.analytics.views is number
+        && (
+          !('analytics' in resource.data)
+          || request.resource.data.analytics.views >= resource.data.analytics.views
+        );
     }
 
     // 6. fasting_history plana (SPEC-50.4 schema legacy).

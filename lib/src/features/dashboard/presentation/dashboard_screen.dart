@@ -42,6 +42,7 @@ import 'package:elena_app/src/features/nutrition/presentation/widgets/next_meal_
 import 'package:elena_app/src/features/onboarding/application/app_tour_notifier.dart';
 import 'package:elena_app/src/features/onboarding/application/tour_targets_provider.dart';
 import 'package:elena_app/src/features/progress/presentation/widgets/biometric_reminder_banner.dart';
+import 'package:elena_app/src/features/badges/application/badge_notifier.dart';
 import 'package:elena_app/src/features/streak/presentation/widgets/streak_today_widget.dart';
 import 'package:elena_app/src/features/streak/presentation/widgets/streak_at_risk_banner.dart';
 
@@ -147,6 +148,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     // una escritura inicial con los valores actuales. One-shot por sesión.
     // Mismo patrón side-effect-only que imrPersistenceProvider.
     ref.watch(biometricBackfillProvider);
+
+    // Sistema de insignias (2026-07-15): BadgeNotifier evalúa en vivo si
+    // corresponde alguna insignia nueva cada vez que cambia el historial
+    // de racha o biométrico. Side-effect-only, mismo patrón que
+    // imrPersistenceProvider/biometricBackfillProvider — el watch solo lo
+    // mantiene vivo, no se usa su valor de retorno acá (la UI que sí lo
+    // necesita, como la galería en Perfil, hace su propio watch).
+    ref.watch(badgeProvider);
 
     // SPEC-202.2: el "momento" de cierre del día. Cuando inicias tu próximo
     // ayuno y eso cierra el ciclo anterior, presentamos su feedback de

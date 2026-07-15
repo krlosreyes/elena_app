@@ -55,6 +55,10 @@ class AnalyticsEvents {
   /// El usuario abrió el explainer de "qué cuenta para mi racha".
   static const String streakExplainerOpened = 'streak_explainer_opened';
 
+  // ── Insignias (2026-07-15) ──────────────────────────────────────────────
+  /// El usuario desbloqueó una insignia nueva (ver BadgeEngine/BadgeCatalog).
+  static const String badgeUnlocked = 'badge_unlocked';
+
   /// Lista completa para tests de unicidad (SPEC-193 §6).
   static const List<String> all = [
     appOpen,
@@ -83,6 +87,7 @@ class AnalyticsEvents {
     streakBroken,
     streakFreezeUsed,
     streakExplainerOpened,
+    badgeUnlocked,
   ];
 }
 
@@ -117,4 +122,12 @@ class AnalyticsParams {
   /// SPEC-255: bucket de la longitud de racha rota (evita reportar el día
   /// exacto en crudo, consistente con la regla de buckets del §2.4).
   static const String streakLengthBucket = 'streak_length_bucket';
+
+  /// Insignias (2026-07-15): badgeId del catálogo cerrado (ej. 'racha_30')
+  /// — no es PII ni un valor continuo, es un identificador de un catálogo
+  /// fijo de ~38 valores, seguro de reportar tal cual.
+  static const String badgeId = 'badge_id';
+
+  /// Insignias: categoría de la insignia (ver BadgeCategory.all).
+  static const String badgeCategory = 'badge_category';
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/core/providers/celebration_providers.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
+import 'package:elena_app/src/features/badges/domain/badge_definition.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SPEC-220: Banner de celebración al cruzar umbral 3/5 pilares
@@ -177,6 +178,8 @@ class _CelebrationBanner extends StatelessWidget {
         if (event.pillarsCompleted >= 4) return '💪';
         if (event.currentStreak > 1) return '🔥';
         return '🎯';
+      case CelebrationType.badgeUnlocked:
+        return '🎖️';
     }
   }
 
@@ -189,6 +192,9 @@ class _CelebrationBanner extends StatelessWidget {
       case CelebrationType.streakThreshold:
         final p = event.pillarsCompleted;
         return '$p/5 pilares';
+      case CelebrationType.badgeUnlocked:
+        final def = event.badge != null ? BadgeCatalog.byId(event.badge!.badgeId) : null;
+        return def != null ? 'Nueva insignia: ${def.name}' : 'Nueva insignia';
     }
   }
 
@@ -229,6 +235,9 @@ class _CelebrationBanner extends StatelessWidget {
           return 'Día ${event.currentStreak} consecutivo. Sigue así.';
         }
         return '¡Hoy cuentas para tu racha!';
+      case CelebrationType.badgeUnlocked:
+        final def = event.badge != null ? BadgeCatalog.byId(event.badge!.badgeId) : null;
+        return def?.description ?? 'Sigue así — cada pilar cuenta.';
     }
   }
 
@@ -251,6 +260,8 @@ class _CelebrationBanner extends StatelessWidget {
         if (event.pillarsCompleted >= 5) return const Color(0xFF10B981);
         if (event.pillarsCompleted >= 4) return const Color(0xFF818CF8);
         return AppColors.metabolicGreen;
+      case CelebrationType.badgeUnlocked:
+        return const Color(0xFF7C3AED); // violeta — distingue insignia de racha
     }
   }
 }

@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:elena_app/src/features/badges/domain/badge_definition.dart';
+import 'package:elena_app/src/features/badges/domain/earned_badge.dart';
 import 'package:elena_app/src/features/streak/domain/streak_entry.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -17,6 +19,10 @@ enum CelebrationType {
   /// SPEC-255 RF-03: una racha activa se rompió sin reserva disponible.
   /// Mensaje de reencuadre autocompasivo, no de culpa.
   streakBroken,
+
+  /// Sistema de insignias (2026-07-15): el usuario desbloqueó una
+  /// insignia nueva (ver BadgeEngine/BadgeCatalog).
+  badgeUnlocked,
 }
 
 /// Evento one-shot de celebración emitido por StreakNotifier.
@@ -42,6 +48,10 @@ class CelebrationEvent {
   /// julio"). Acompaña a [breakReason] — mismo alcance.
   final String? breakDayLabel;
 
+  /// Sistema de insignias (2026-07-15): la insignia recién desbloqueada —
+  /// solo presente cuando `type == badgeUnlocked`.
+  final EarnedBadge? badge;
+
   const CelebrationEvent({
     required this.type,
     required this.pillarsCompleted,
@@ -49,6 +59,7 @@ class CelebrationEvent {
     required this.timestamp,
     this.breakReason,
     this.breakDayLabel,
+    this.badge,
   });
 
   /// Copy para el caso del pilar extra (4/5, 5/5).
@@ -81,6 +92,10 @@ class CelebrationEvent {
           return '🔥 3/5 — Día $currentStreak consecutivo. Sigue así.';
         }
         return '🎯 3/5 — ¡Hoy cuentas para tu racha!';
+      case CelebrationType.badgeUnlocked:
+        final def = badge != null ? BadgeCatalog.byId(badge!.badgeId) : null;
+        if (def == null) return '🎖️ Nueva insignia desbloqueada.';
+        return '🎖️ ${def.name} — ${def.description}';
     }
   }
 }
