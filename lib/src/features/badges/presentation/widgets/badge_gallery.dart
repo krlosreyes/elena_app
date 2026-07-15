@@ -30,8 +30,16 @@ class BadgeGallery extends ConsumerWidget {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       padding: EdgeInsets.zero,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
+      // 15-jul: era SliverGridDelegateWithFixedCrossAxisCount(2 columnas).
+      // Eso hace que el ancho de cada card sea "mitad de pantalla" sin
+      // tope — en el build web de Carlos (ventana de Chrome ancha) cada
+      // card terminaba gigante, con el ícono de 52px perdido en medio de
+      // muchísimo espacio vacío. MaxCrossAxisExtent pone un techo fijo al
+      // ancho de card (168) sin importar qué tan ancha sea la pantalla;
+      // en un teléfono real (~380-430px) sigue dando 2 columnas, igual
+      // que antes.
+      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 168,
         mainAxisSpacing: 12,
         crossAxisSpacing: 12,
         childAspectRatio: 0.95,
