@@ -348,20 +348,62 @@ class StreakNotifier extends StateNotifier<StreakState> {
     //   - _resetInProgress = false (cambio normal del usuario):
     //       usar valores directos — el score refleja la realidad actual.
     final prev = state.todayEntry;
-    final bool fastingOk = _resetInProgress
-        ? (rawFasting || (prev?.fastingCompleted ?? false))
-        : rawFasting;
+
+    // FIX (2026-07-16, auditoría racha/ciclos — Carlos: "la gráfica no
+    // coincide con los círculos que he cerrado"): `prev` solo es una
+    // base válida para "no perder progreso ya ganado hoy" si de verdad
+    // es la entrada de HOY. Justo después de medianoche, antes de que
+    // este método corra con la fecha nueva, `state.todayEntry` todavía
+    // puede ser la entrada de AYER — usarla sin filtrar cuela el
+    // cumplimiento de ayer hacia el día nuevo (o, a la inversa, un
+    // `prev` de otro día nunca debería "proteger" nada de hoy). Este
+    // guard aplica al resto del método.
+    final StreakEntry? prevToday =
+        (prev != null && prev.date == _todayKey) ? prev : null;
+
+    // Ayuno — FIX central de esta auditoría. Un día calendario puede
+    // contener MÁS DE UN ciclo de ayuno: el usuario cierra uno y arranca
+    // el siguiente el mismo día (protocolos cortos, o simplemente cerrar
+    // temprano y volver a empezar — ver METABOLIC_DAY_CONSTITUTION, el
+    // Día Metabólico se ancla al usuario, no al reloj). `startFastingManual`
+    // resetea `completedToday`/`closedProgressToday` a 0 al abrir el
+    // ciclo nuevo (correcto: el anillo de ESE ciclo no debe arrancar en
+    // 100%). Pero como `fastingOk` fuera de `_resetInProgress` usaba
+    // `rawFasting` a secas —derivado SOLO del ciclo activo/actual—, ese
+    // reset hacía caer `rawFasting` a false aunque el ciclo anterior YA
+    // hubiera completado el ayuno más temprano ESE MISMO DÍA. Como
+    // `_persistToday` escribe con `SetOptions(merge:true)` pero
+    // `fastingCompleted` SIEMPRE viaja en el payload (no es un campo
+    // omitible como las magnitudes), la escritura sobreescribía
+    // Firestore con `fastingCompleted:false` — borrando en la racha el
+    // día que el usuario acababa de cerrar bien. Reproducible: cerrar un
+    // ayuno completo, arrancar el siguiente el mismo día → la racha de
+    // HOY se rompe en Firestore aunque el usuario haya cumplido.
+    //
+    // Fix: dentro del mismo día calendario, el ayuno calificado es
+    // monotónico — una vez true, se mantiene true sin importar el
+    // estado del ciclo siguiente. Ya NO depende de `_resetInProgress`
+    // (esa ventana solo cubre el reset automático de medianoche, no un
+    // ciclo nuevo que el usuario abre a mitad del día).
+    final bool fastingOk =
+        rawFasting || (prevToday?.fastingCompleted ?? false);
+
+    // Sueño/hidratación/ejercicio/nutrición: ninguno de los 4 se resetea
+    // por abrir un ciclo de ayuno nuevo (solo `FastingNotifier` toca sus
+    // propios flags en `startFastingManual`) — el HWM sigue acotado a la
+    // ventana real de `_resetInProgress` (reset automático de
+    // medianoche), ahora también con el guard `prevToday`.
     final bool sleepOk = _resetInProgress
-        ? (rawSleep || (prev?.sleepCompleted ?? false))
+        ? (rawSleep || (prevToday?.sleepCompleted ?? false))
         : rawSleep;
     final bool hydrationOk = _resetInProgress
-        ? (rawHydration || (prev?.hydrationCompleted ?? false))
+        ? (rawHydration || (prevToday?.hydrationCompleted ?? false))
         : rawHydration;
     final bool exerciseOk = _resetInProgress
-        ? (rawExercise || (prev?.exerciseLogged ?? false))
+        ? (rawExercise || (prevToday?.exerciseLogged ?? false))
         : rawExercise;
     final bool nutritionOk = _resetInProgress
-        ? (rawNutrition || (prev?.nutritionLogged ?? false))
+        ? (rawNutrition || (prevToday?.nutritionLogged ?? false))
         : rawNutrition;
 
     // SPEC-242: helper HWM solo usado cuando _resetInProgress = true.
@@ -388,25 +430,31 @@ class StreakNotifier extends StateNotifier<StreakState> {
       hydrationCompleted: hydrationOk,
       exerciseLogged: exerciseOk,
       nutritionLogged: nutritionOk,
-      imrScore: state.todayEntry?.imrScore ?? 0,
-      fastingMagnitude: _resetInProgress
-          ? hwm(prev?.fastingMagnitude, fastingMagnitudeOrNull)
-          : fastingMagnitudeOrNull,
+      imrScore: prevToday?.imrScore ?? 0,
+      // Ayuno: mismo razonamiento que `fastingOk` arriba — HWM
+      // incondicional (no gateado por `_resetInProgress`) para que la
+      // magnitud tampoco caiga a ~0 cuando arranca el segundo ciclo del
+      // día. Sin esto, `dailyQualityScore` de hoy se hundiría igual
+      // aunque `fastingCompleted` ya quedara protegido arriba.
+      fastingMagnitude: hwm(prevToday?.fastingMagnitude, fastingMagnitudeOrNull),
       sleepQualityScore: _resetInProgress
-          ? hwm(prev?.sleepQualityScore, sleepQualityScore)
+          ? hwm(prevToday?.sleepQualityScore, sleepQualityScore)
           : sleepQualityScore,
       hydrationMagnitude: _resetInProgress
-          ? hwm(prev?.hydrationMagnitude, hydrationMagnitude)
+          ? hwm(prevToday?.hydrationMagnitude, hydrationMagnitude)
           : hydrationMagnitude,
       exerciseMagnitude: _resetInProgress
-          ? hwm(prev?.exerciseMagnitude, exerciseMagnitude)
+          ? hwm(prevToday?.exerciseMagnitude, exerciseMagnitude)
           : exerciseMagnitude,
       nutritionMagnitude: _resetInProgress
-          ? hwm(prev?.nutritionMagnitude, nutritionMagnitude)
+          ? hwm(prevToday?.nutritionMagnitude, nutritionMagnitude)
           : nutritionMagnitude,
     );
 
-    // Solo actualizar si algo cambió (evita loops reactivos)
+    // Solo actualizar si algo cambió (evita loops reactivos). Comparación
+    // contra `prev` crudo (no `prevToday`): si `prev` es de ayer, el
+    // `date` ya difiere de `newEntry.date` y esto nunca produce un falso
+    // "sin cambios" — no necesita el guard de fecha.
     if (prev == newEntry) return;
 
     // Historial actualizado con la nueva entrada de hoy
@@ -423,10 +471,10 @@ class StreakNotifier extends StateNotifier<StreakState> {
     //   3. SPEC-229 BUG-D: alguna magnitud subió significativamente (> 0.1)
     //      Sin esto, si la app se mata mid-day las magnitudes in-memory se
     //      pierden y el evaluador lee valores stale al reiniciar.
-    final prevQualified = prev?.qualifiesForStreak ?? false;
-    final prevPillars = prev?.pillarsCompleted ?? 0;
-    final magnitudeDeltaSignificant = prev != null &&
-        _anyMagnitudeRose(prev, newEntry, threshold: 0.1);
+    final prevQualified = prevToday?.qualifiesForStreak ?? false;
+    final prevPillars = prevToday?.pillarsCompleted ?? 0;
+    final magnitudeDeltaSignificant = prevToday != null &&
+        _anyMagnitudeRose(prevToday, newEntry, threshold: 0.1);
     if (newEntry.qualifiesForStreak != prevQualified ||
         newEntry.pillarsCompleted != prevPillars ||
         magnitudeDeltaSignificant) {
