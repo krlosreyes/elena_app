@@ -4,12 +4,18 @@
 //
 // 17-jul: rediseño a pedido de Carlos — la pantalla mostraba todo el
 // contenido inline (tiles de resultados, tiles de hábitos, racha) en un
-// solo scroll largo. Se colapsó a 4 cards de entrada (mismo patrón que
+// solo scroll largo. Se colapsó a cards de entrada (mismo patrón que
 // BadgesEntryCard, que ya vivía acá desde el 15-jul): Insignias, Tus
-// Resultados, Tus Hábitos, Tu racha. Cada card resume su sección y el
-// tap navega a su propia pantalla de detalle (resultados_detail_screen,
-// habitos_detail_screen, racha_detail_screen). El contenido de cada
-// sección no cambió — solo se movió de archivo y quedó detrás de un tap.
+// Resultados, Tus Hábitos. Cada card resume su sección y el tap navega
+// a su propia pantalla de detalle (resultados_detail_screen,
+// habitos_detail_screen). El contenido de cada sección no cambió —
+// solo se movió de archivo y quedó detrás de un tap.
+//
+// 17-jul (3ra vuelta): la card "Tu racha" se quitó de acá — duplicaba
+// el badge de racha del header (ElenaHeader), que ahora navega directo
+// a RachaDetailScreen (/analysis/racha, sigue existiendo, sigue
+// registrada en el router — solo perdió esta segunda entrada). Un solo
+// punto de entrada a la racha en toda la app.
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -17,7 +23,6 @@ import 'package:go_router/go_router.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/badges/presentation/widgets/badges_entry_card.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/habitos_entry_card.dart';
-import 'package:elena_app/src/features/analysis/presentation/widgets/racha_entry_card.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/results_entry_card.dart';
 // 17-jul (2da vuelta): WeeklyCoachingCard existía desde SPEC-153 pero
 // quedó huérfana cuando SPEC-168.4 reemplazó el diseño de tabs viejo —
@@ -50,17 +55,16 @@ class AnalysisScreen extends StatelessWidget {
               // Header in-page estilo Apple.
               _buildPageHeader(context),
               const SizedBox(height: 20),
-              // 17-jul: las 4 cards de entrada, en el orden que Carlos
+              // 17-jul: las cards de entrada, en el orden que Carlos
               // pidió — Insignias primero (venía del 15-jul), luego
-              // Resultados, Hábitos y Racha.
+              // Resultados y Hábitos. Racha se quitó (ver comentario
+              // arriba, 3ra vuelta) — vive solo en el header ahora.
               const BadgesEntryCard(),
               const SizedBox(height: 12),
               const ResultsEntryCard(),
               const SizedBox(height: 12),
               const HabitosEntryCard(),
-              const SizedBox(height: 12),
-              const RachaEntryCard(),
-              // 17-jul (2da vuelta): contenido real debajo de las 4 cards
+              // 17-jul (2da vuelta): contenido real debajo de las cards
               // para que la pantalla no se sienta vacía — ver comentario
               // en el import de WeeklyCoachingCard arriba.
               const SizedBox(height: 28),

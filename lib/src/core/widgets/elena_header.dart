@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/streak/application/streak_notifier.dart';
-import 'package:elena_app/src/features/streak/presentation/widgets/streak_explainer_sheet.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 
 class ElenaHeader extends ConsumerWidget {
@@ -71,9 +70,19 @@ class ElenaHeader extends ConsumerWidget {
             ),
             // Racha como protagonista del header (IMR removido por redundante;
             // vive en Análisis). Se oculta si aún no hay racha.
-            // SPEC-255 RF-01: tap abre el explainer de la regla de racha.
+            //
+            // 17-jul: antes convivía con StreakTodayWidget (card debajo del
+            // header, mismo dato "X días de racha" repetido dos veces en
+            // Dashboard) y el tap de ambos abría el mismo sheet de reglas
+            // — ninguno llevaba a la data real. Carlos pidió dejar un solo
+            // indicador: este badge absorbe el texto de StreakTodayWidget
+            // (ya no "X DÍAS" sino "X días de racha") y el tap ahora navega
+            // directo al detalle con el gráfico de 30 días
+            // (RachaDetailScreen, /analysis/racha) en vez de abrir el
+            // explainer. Las reglas de la racha se quitaron de acá — siguen
+            // accesibles vía el ⓘ dentro de esa pantalla (StreakSummaryCard).
             InkWell(
-              onTap: () => showStreakExplainerSheet(context),
+              onTap: () => context.push('/analysis/racha'),
               borderRadius: BorderRadius.circular(16),
               child: _StreakBadge(
                 days: streakState.currentStreak,
@@ -103,7 +112,9 @@ class _StreakBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (days < 1) return const SizedBox.shrink();
-    final String label = days == 1 ? "DÍA" : "DÍAS";
+    // 17-jul: texto heredado de StreakTodayWidget (el card que este badge
+    // reemplaza) — "X días de racha" en vez del "X DÍAS" terso original.
+    final String label = '$days ${days == 1 ? "día" : "días"} de racha';
     const color = Colors.orange;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
@@ -122,22 +133,12 @@ class _StreakBadge extends StatelessWidget {
           ),
           const SizedBox(width: 6),
           Text(
-            "$days",
+            label,
             style: const TextStyle(
               color: color,
-              fontSize: 17,
-              fontWeight: FontWeight.w900,
-              height: 1.0,
-            ),
-          ),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              color: color.withValues(alpha: 0.85),
-              fontSize: 10,
+              fontSize: 13,
               fontWeight: FontWeight.w800,
-              letterSpacing: 0.6,
+              height: 1.0,
             ),
           ),
           if (protected) ...[

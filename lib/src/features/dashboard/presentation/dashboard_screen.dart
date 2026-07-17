@@ -45,7 +45,6 @@ import 'package:elena_app/src/features/onboarding/application/app_tour_notifier.
 import 'package:elena_app/src/features/onboarding/application/tour_targets_provider.dart';
 import 'package:elena_app/src/features/progress/presentation/widgets/biometric_reminder_banner.dart';
 import 'package:elena_app/src/features/badges/application/badge_notifier.dart';
-import 'package:elena_app/src/features/streak/presentation/widgets/streak_today_widget.dart';
 import 'package:elena_app/src/features/streak/presentation/widgets/streak_at_risk_banner.dart';
 
 // SPEC-88 fix: BodyCompositionCard y GoalsDashboardWidget se retiraron
@@ -245,10 +244,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   const SizedBox(height: 10),
 
                   // Propuesta "racha protagonista" (2026-07-15, P1): la
-                  // racha ahora vive en el Dashboard, no solo en Análisis.
-                  // Primer elemento bajo el header — mismo lugar donde
-                  // Duolingo muestra su llama en cada apertura de la app.
-                  const StreakTodayWidget(),
+                  // racha vive en el Dashboard, no solo en Análisis —
+                  // mismo lugar donde Duolingo muestra su llama en cada
+                  // apertura de la app.
+                  //
+                  // 17-jul: StreakTodayWidget (card "X días de racha" que
+                  // iba acá) se quitó — duplicaba el badge de ElenaHeader
+                  // (mismo dato, mismo tap-target hacia el sheet de
+                  // reglas). El badge del header absorbió su texto y ahora
+                  // es el único punto de entrada, con tap directo al
+                  // detalle (/analysis/racha) en vez del sheet de reglas.
+                  // Archivo streak_today_widget.dart queda sin uso, no se
+                  // borra por si se retoma.
 
                   // P4: aviso de racha en riesgo — solo aparece en horario
                   // de tarde/noche si hoy todavía no calificó y hay una
