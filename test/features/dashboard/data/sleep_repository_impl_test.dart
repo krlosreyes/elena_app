@@ -177,6 +177,45 @@ void main() {
     expect(result, isNull);
   });
 
+  test(
+      '17-jul: sin manual, siesta vespertina con wokeUp más tardío YA NO le gana al sueño real (bug de Carlos)',
+      () async {
+    // Este es el escenario que "manual gana" no cubría: sin ningún
+    // manual esa noche, dos automáticos compiten y antes ganaba
+    // ciegamente el de `wokeUp` más tardío — la siesta de las 3pm le
+    // ganaba al sueño real de esa madrugada. Con el filtro "nocturno y
+    // de calidad" la siesta queda descartada antes de competir.
+    final future = repo.watchLatest(userId).first;
+    source.emit([
+      _doc(
+        id: 'hk_sleep_siesta',
+        fellAsleep: DateTime(2026, 5, 27, 14),
+        wokeUp: DateTime(2026, 5, 27, 15, 30),
+      ),
+      _doc(
+        id: 'hk_sleep_real',
+        fellAsleep: DateTime(2026, 5, 26, 23),
+        wokeUp: DateTime(2026, 5, 27, 7),
+      ),
+    ]);
+    final result = await future;
+    expect(result?.id, 'hk_sleep_real');
+  });
+
+  test('17-jul: solo hay una siesta capturada (sin sueño nocturno real) → null, no la siesta',
+      () async {
+    final future = repo.watchLatest(userId).first;
+    source.emit([
+      _doc(
+        id: 'hk_sleep_siesta',
+        fellAsleep: DateTime(2026, 5, 27, 14),
+        wokeUp: DateTime(2026, 5, 27, 15, 30),
+      ),
+    ]);
+    final result = await future;
+    expect(result, isNull);
+  });
+
   test('doc corrupto se descarta en silencio, el resto se resuelve igual', () async {
     // "Corrupto" en el sentido que el mapper realmente rechaza: el
     // constructor de SleepLog valida rangos de los campos SPEC-69

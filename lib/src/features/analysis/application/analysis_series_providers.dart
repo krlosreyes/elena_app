@@ -24,11 +24,10 @@ import 'package:elena_app/src/features/analysis/domain/aggregation_mode.dart';
 import 'package:elena_app/src/features/analysis/domain/metric_series.dart';
 import 'package:elena_app/src/features/analysis/domain/time_series_point.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
-import 'package:elena_app/src/features/dashboard/application/fasting_notifier.dart'
-    show fastingProvider;
 import 'package:elena_app/src/features/dashboard/data/fasting_interval_repository_impl.dart';
 import 'package:elena_app/src/features/dashboard/data/hydration_repository_impl.dart';
 import 'package:elena_app/src/features/dashboard/data/sleep_repository_impl.dart';
+import 'package:elena_app/src/features/dashboard/domain/sleep_quality_classifier.dart';
 import 'package:elena_app/src/features/exercise/data/exercise_repository_impl.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart';
 import 'package:elena_app/src/features/nutrition/data/nutrition_repository_impl.dart';
@@ -50,9 +49,6 @@ final cycleClosureBumpProvider = Provider<String?>((ref) {
   final lastClosed = ref.watch(lastClosedMetabolicCycleProvider).valueOrNull;
   return lastClosed?.cycleId;
 });
-
-/// Umbral para considerar un día de ayuno "cumplido" (≥95% del target).
-const double _kFastingCompletedThreshold = 0.95;
 
 String _dateIso(DateTime dt) =>
     '${dt.year.toString().padLeft(4, '0')}-'
@@ -296,7 +292,6 @@ final bodyFatSeriesProvider =
   await for (final history in repo.watchHistory(account.uid)) {
     final filtered = history.where((c) {
       if (c.bodyFatPercentage == null) return false;
-      if (rangeStart == null) return true;
       final ts = DateTime.parse(c.date);
       return ts.isAfter(rangeStart) || ts == rangeStart;
     }).toList();
@@ -324,12 +319,10 @@ final weightSeriesProvider =
   final mode = _currentMode(ref);
   final repo = ref.watch(biometricRepositoryProvider);
   await for (final history in repo.watchHistory(account.uid)) {
-    final filtered = rangeStart == null
-        ? history
-        : history.where((c) {
-            final ts = DateTime.parse(c.date);
-            return ts.isAfter(rangeStart) || ts == rangeStart;
-          }).toList();
+    final filtered = history.where((c) {
+      final ts = DateTime.parse(c.date);
+      return ts.isAfter(rangeStart) || ts == rangeStart;
+    }).toList();
     final points = TemporalAggregator.aggregate(
       items: filtered,
       timestampOf: (c) => DateTime.parse(c.date),
@@ -527,8 +520,14 @@ final sleepHabitSeriesProvider =
       // SPEC-168.4.7: 2000 cubre ~5 años de uso diario sin egress
       // problemático y elimina el corte silencioso para rango "Todo".
       .watchRecent(account.uid, limit: 2000)) {
+    // 17-jul (Carlos: "solo tenemos en cuenta el sueño nocturno y de
+    // calidad"): sin este filtro, una siesta y el sueño real de la
+    // misma noche caen en el mismo bucket diario y `avg` los diluye
+    // (7h reales + 0.5h de siesta = 3.75h reportadas). Ver
+    // SleepQualityClassifier.
     final filtered = logs
         .where((l) => !l.wokeUp.isBefore(rangeStart))
+        .where(SleepQualityClassifier.isNocturnalQualitySleep)
         .toList();
     final points = TemporalAggregator.aggregate(
       items: filtered,
@@ -542,17 +541,6 @@ final sleepHabitSeriesProvider =
 });
 
 // ─── Helpers internos ──────────────────────────────────────────────────
-
-String _unitForDaysCount(AggregationMode mode) {
-  switch (mode) {
-    case AggregationMode.daily:
-      return ''; // sin unidad — 0 o 1 (cumplió o no)
-    case AggregationMode.weekly:
-      return 'd/sem';
-    case AggregationMode.monthly:
-      return 'd/mes';
-  }
-}
 
 class _DayLiters {
   final DateTime date;

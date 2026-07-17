@@ -13,6 +13,7 @@ import 'package:elena_app/src/features/dashboard/data/mappers/sleep_log_mapper.d
 import 'package:elena_app/src/features/dashboard/data/sources/firestore_sleep_v1_source.dart';
 import 'package:elena_app/src/features/dashboard/data/sources/sleep_data_source.dart';
 import 'package:elena_app/src/features/dashboard/domain/sleep_log.dart';
+import 'package:elena_app/src/features/dashboard/domain/sleep_quality_classifier.dart';
 import 'package:elena_app/src/features/dashboard/domain/sleep_repository.dart';
 
 class SleepRepositoryImpl implements SleepRepository {
@@ -69,8 +70,26 @@ class SleepRepositoryImpl implements SleepRepository {
       return null;
     }
 
+    // 17-jul (Carlos: "solo tenemos en cuenta el sueño nocturno y de
+    // calidad"): descartamos siestas y fragmentos ANTES de agrupar por
+    // noche. Sin esto, una siesta vespertina comparte noche de
+    // atribución con el sueño real y, al no haber manual, gana por
+    // tener `wokeUp` más tardío — ver SleepQualityClassifier para el
+    // caso completo. Esta resolución alimenta también Score del día e
+    // IMR (ambos leen `sleep.lastLog`), así que el filtro los protege
+    // a los tres por cascada.
+    final qualified =
+        recent.where(SleepQualityClassifier.isNocturnalQualitySleep).toList();
+    if (qualified.isEmpty) {
+      AppLogger.debug(
+        '[SleepRepositoryImpl] watchLatest: ${recent.length} docs en '
+        'ventana, ninguno nocturno-de-calidad (solo siestas/fragmentos)',
+      );
+      return null;
+    }
+
     final byNight = <String, List<SleepLog>>{};
-    for (final log in recent) {
+    for (final log in qualified) {
       final night = DayBoundaryResolver.attributionDayKey(
         start: log.fellAsleep,
         end: log.wokeUp,
