@@ -24,6 +24,10 @@ import 'package:elena_app/src/features/analysis/presentation/analysis_screen.dar
 // SPEC-168.4: pantalla detalle de un pilar (overview → chart completo).
 import 'package:elena_app/src/features/analysis/presentation/analysis_pillar_detail_screen.dart';
 import 'package:elena_app/src/features/analysis/presentation/daily_score_detail_screen.dart';
+// 17-jul: pantallas de detalle de las cards colapsadas de Progreso.
+import 'package:elena_app/src/features/analysis/presentation/resultados_detail_screen.dart';
+import 'package:elena_app/src/features/analysis/presentation/habitos_detail_screen.dart';
+import 'package:elena_app/src/features/analysis/presentation/racha_detail_screen.dart';
 import 'package:elena_app/src/features/analysis/domain/chart_metric.dart';
 // SPEC-12: Composición Corporal
 import 'package:elena_app/src/features/profile/presentation/body_composition_screen.dart';
@@ -130,6 +134,24 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/analysis/daily-score',
         name: 'analysis-daily-score',
         builder: (context, state) => const DailyScoreDetailScreen(),
+      ),
+      // 17-jul: Progreso se colapsó a 4 cards (Insignias, Tus Resultados,
+      // Tus Hábitos, Tu racha) — estas 3 rutas son el detalle de cada una
+      // (Insignias ya tenía la suya: /profile/badges).
+      GoRoute(
+        path: '/analysis/resultados',
+        name: 'analysis-resultados',
+        builder: (context, state) => const ResultadosDetailScreen(),
+      ),
+      GoRoute(
+        path: '/analysis/habitos',
+        name: 'analysis-habitos',
+        builder: (context, state) => const HabitosDetailScreen(),
+      ),
+      GoRoute(
+        path: '/analysis/racha',
+        name: 'analysis-racha',
+        builder: (context, state) => const RachaDetailScreen(),
       ),
       // SPEC-137 §RF-137-12: vista semanal del pilar Nutrición.
       // Navegable desde el botón "Ver semana →" del card "Nutrición
