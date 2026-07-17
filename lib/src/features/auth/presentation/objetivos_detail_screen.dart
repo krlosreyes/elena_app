@@ -30,10 +30,10 @@ class ObjetivosDetailScreen extends StatelessWidget {
         ),
         centerTitle: false,
       ),
-      body: const SafeArea(
+      body: SafeArea(
         child: ListView(
-          padding: EdgeInsets.fromLTRB(20, 12, 20, 40),
-          children: [
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
+          children: const [
             ProfileGoalsSection(),
           ],
         ),
