@@ -40,6 +40,9 @@ import 'package:elena_app/src/features/progress/presentation/progress_screen.dar
 import 'package:elena_app/src/features/badges/presentation/badges_screen.dart';
 // SPEC-234: rutina nocturna guiada
 import 'package:elena_app/src/features/coaching/presentation/sleep_routine_screen.dart';
+// 17-jul: "Para ti" (SPEC-205) rebautizado "Aprende con Elena" y colapsado
+// en Dashboard — ver aprende_entry_card.dart.
+import 'package:elena_app/src/features/content/presentation/aprende_detail_screen.dart';
 
 /// SPEC-222: llave global del navigator raíz para deeplink routing
 /// desde notificaciones (cold start + foreground).
@@ -152,6 +155,13 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/analysis/racha',
         name: 'analysis-racha',
         builder: (context, state) => const RachaDetailScreen(),
+      ),
+      // 17-jul: detalle de "Aprende con Elena" (antes "Para ti") — card
+      // colapsada en Dashboard, ver aprende_entry_card.dart.
+      GoRoute(
+        path: '/aprende',
+        name: 'aprende',
+        builder: (context, state) => const AprendeDetailScreen(),
       ),
       // SPEC-137 §RF-137-12: vista semanal del pilar Nutrición.
       // Navegable desde el botón "Ver semana →" del card "Nutrición

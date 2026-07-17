@@ -22,7 +22,9 @@ import 'package:elena_app/src/features/engagement/presentation/widgets/engagemen
 import 'package:elena_app/src/features/adaptive/presentation/widgets/adaptive_suggestion_card.dart';
 import 'package:elena_app/src/features/billing/presentation/paywall_auto_trigger.dart';
 import 'package:elena_app/src/features/billing/presentation/trial_banner.dart';
-import 'package:elena_app/src/features/content/presentation/for_you_section.dart';
+// 17-jul: "Para ti" se colapsó en una card de entrada renombrada
+// "Aprende con Elena" — ver comentario junto a su uso más abajo.
+import 'package:elena_app/src/features/content/presentation/widgets/aprende_entry_card.dart';
 import 'package:elena_app/src/features/coaching/presentation/widgets/cycle_coaching_feedback_card.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/interactive_coaching_card.dart';
 import 'package:elena_app/src/features/coaching/presentation/widgets/check_in_card.dart';
@@ -470,17 +472,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   // usuario en su primera semana. Se promueve al
                   // Dashboard, después del IMR, como cierre natural del
                   // scroll (no compite por atención con el ayuno/pilares
-                  // que van arriba). El widget ya maneja sus propios
-                  // estados de loading/vacío, así que no agrega ruido
-                  // cuando todavía no hay contenido personalizado.
-                  Container(
-                    padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1E293B),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const ForYouSection(),
-                  ),
+                  // que van arriba).
+                  //
+                  // 17-jul: Carlos pidió colapsarlo en una card de entrada
+                  // (mismo patrón que Progreso) y renombrarlo — "Para ti"
+                  // no comunicaba qué había adentro. "Aprende con Elena"
+                  // ata el contenido educativo a la voz de la app. El
+                  // detalle completo (línea de contexto + artículos) vive
+                  // ahora en AprendeDetailScreen (/aprende).
+                  const AprendeEntryCard(),
                   const SizedBox(height: 10),
                 ],
               ),

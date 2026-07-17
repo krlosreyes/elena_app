@@ -1,4 +1,10 @@
-// SPEC-205 inc3: sección "Para ti" — reemplaza "Tus tendencias" en Análisis.
+// SPEC-205 inc3: feed "Para ti" — reemplaza "Tus tendencias" en Análisis.
+//
+// 17-jul: rebautizado "Aprende con Elena" y sacado del scroll de Dashboard
+// — ver AprendeEntryCard (card colapsada) + AprendeDetailScreen (pantalla
+// de detalle que envuelve este widget). El título propio se quitó de acá
+// porque ahora vive en el AppBar de AprendeDetailScreen — este widget
+// vuelve a ser solo el contenido (línea de contexto + artículos).
 //
 // Combina la observación de dato más fuerte (línea de contexto) con artículos
 // emparejados al estado del usuario. Autocontenida: observa
@@ -21,36 +27,22 @@ class ForYouSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final feedAsync = ref.watch(personalizedFeedProvider);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const Text(
-          'Para ti',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 19,
-            fontWeight: FontWeight.w900,
+    return feedAsync.when(
+      loading: () => const Padding(
+        padding: EdgeInsets.symmetric(vertical: 16),
+        child: Center(
+          child: SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(
+                strokeWidth: 2, color: Color(0xFF818CF8)),
           ),
         ),
-        const SizedBox(height: 12),
-        feedAsync.when(
-          loading: () => const Padding(
-            padding: EdgeInsets.symmetric(vertical: 16),
-            child: Center(
-              child: SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(
-                    strokeWidth: 2, color: Color(0xFF818CF8)),
-              ),
-            ),
-          ),
-          error: (_, __) => _muted(
-            'No pudimos cargar el contenido. Revisa tu conexión.',
-          ),
-          data: (feed) => _content(context, feed),
-        ),
-      ],
+      ),
+      error: (_, __) => _muted(
+        'No pudimos cargar el contenido. Revisa tu conexión.',
+      ),
+      data: (feed) => _content(context, feed),
     );
   }
 
