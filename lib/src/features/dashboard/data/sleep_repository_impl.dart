@@ -7,6 +7,7 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:elena_app/src/core/services/day_boundary_resolver.dart';
 import 'package:elena_app/src/features/dashboard/data/mappers/sleep_log_mapper.dart';
 import 'package:elena_app/src/features/dashboard/data/sources/firestore_sleep_v1_source.dart';
 import 'package:elena_app/src/features/dashboard/data/sources/sleep_data_source.dart';
@@ -23,23 +24,78 @@ class SleepRepositoryImpl implements SleepRepository {
   })  : _source = source,
         _mapper = mapper;
 
+  /// 17-jul (bulletproofing, Carlos: "el anillo de sueño no muestra el
+  /// dato correcto"): ventana de documentos recientes que evaluamos
+  /// para resolver "cuál es el sueño vigente". No usamos `streamLatest`
+  /// del source (que es literalmente "el doc con wokeUp más tardío",
+  /// SIN importar su origen) porque eso deja a cualquier documento
+  /// automático viejo con un wokeUp posterior al del registro real del
+  /// usuario ganando PARA SIEMPRE — incluyendo datos que ya quedaron
+  /// mal escritos en Firestore ANTES del guard "manual gana" agregado a
+  /// `HealthImportService`. Ese guard solo previene escrituras futuras;
+  /// no repara lo que ya existe. 10 alcanza sobrado para cubrir varias
+  /// noches de historial reciente, incluyendo duplicados.
+  static const int _kLatestResolutionWindow = 10;
+
   @override
   Stream<SleepLog?> watchLatest(String userId) {
-    return _source.streamLatest(userId).map((map) {
-      if (map == null) return null;
-      // El source inyecta `__docId`; el resto del map es el body.
-      final docId = map['__docId'] as String? ?? '';
-      final body = Map<String, dynamic>.from(map)..remove('__docId');
-      try {
-        return _mapper.fromMap(body, docId: docId);
-      } catch (_) {
-        // Si un doc viejo está corrupto o malformado, NO crasheamos
-        // toda la app — emitimos null y dejamos que el siguiente
-        // snapshot intente de nuevo. La validación falló se loguea
-        // arriba (en el mapper) si fuera el caso.
-        return null;
+    // Resolvemos "el sueño vigente" a partir de la ventana reciente en
+    // vez de confiar ciegamente en un solo doc — ver `_resolveLatest`.
+    // Esta resolución corre en cada emisión del stream (lectura), así
+    // que autorepara datos viejos corruptos sin necesitar migrar
+    // Firestore.
+    return watchRecent(userId, limit: _kLatestResolutionWindow)
+        .map(_resolveLatest);
+  }
+
+  /// Agrupa [recent] por noche de atribución (mismo criterio que
+  /// `SleepNotifier._attributionDocId`: día del punto medio del
+  /// intervalo `[fellAsleep, wokeUp]`) y devuelve el sueño vigente de
+  /// la noche MÁS RECIENTE.
+  ///
+  /// Dentro de esa noche, un registro MANUAL (`id` empieza con
+  /// `sleep_` — el mismo prefijo que usan `confirmManualWakeUp` y
+  /// `saveManualSleep`) gana sobre cualquier registro automático
+  /// (`hk_*` de HealthKit/Health Connect, `sh_*` de Samsung Health) de
+  /// esa misma noche, sin importar cuál tenga el `wokeUp` más tardío.
+  /// Si no hay manual, gana el automático con `wokeUp` más tardío
+  /// dentro de la noche (comportamiento previo, sin cambios).
+  ///
+  /// `null` si [recent] está vacía.
+  static SleepLog? _resolveLatest(List<SleepLog> recent) {
+    if (recent.isEmpty) return null;
+
+    final byNight = <String, List<SleepLog>>{};
+    for (final log in recent) {
+      final night = DayBoundaryResolver.attributionDayKey(
+        start: log.fellAsleep,
+        end: log.wokeUp,
+      );
+      byNight.putIfAbsent(night, () => []).add(log);
+    }
+
+    // Claves en formato YYYYMMDD — comparación de string coincide con
+    // orden cronológico, no hace falta parsear a DateTime.
+    final latestNight =
+        byNight.keys.reduce((a, b) => a.compareTo(b) >= 0 ? a : b);
+    final candidates = byNight[latestNight]!;
+
+    SleepLog? manual;
+    SleepLog? bestAuto;
+    for (final log in candidates) {
+      final isManual = log.id.startsWith('sleep_');
+      if (isManual) {
+        if (manual == null || log.wokeUp.isAfter(manual.wokeUp)) {
+          manual = log;
+        }
+      } else {
+        if (bestAuto == null || log.wokeUp.isAfter(bestAuto.wokeUp)) {
+          bestAuto = log;
+        }
       }
-    });
+    }
+
+    return manual ?? bestAuto;
   }
 
   @override
