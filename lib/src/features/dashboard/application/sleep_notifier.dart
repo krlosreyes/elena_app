@@ -12,6 +12,7 @@ import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
 import 'package:elena_app/src/features/dashboard/application/fasting_notifier.dart';
 import 'package:elena_app/src/features/dashboard/data/sleep_repository_impl.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart';
+import 'package:elena_app/src/features/metabolic_cycle/domain/metabolic_cycle.dart';
 import '../domain/sleep_log.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
@@ -514,14 +515,85 @@ final sleepProvider = StateNotifierProvider<SleepNotifier, SleepState>((ref) {
 /// ciclo hoy, ese ciclo ya "reclamó" el sueño de esta noche y el
 /// nuevo arranca limpio con la regla estricta canónica de SPEC-188 v2
 /// (`wokeUp >= cycle.startedAt`), sin importar si eso da 0.
+/// 17-jul: lógica PURA (sin Riverpod, sin `DateTime.now()` implícito —
+/// recibe `now` explícito) que decide si el último sueño conocido
+/// pertenece al "día metabólico" vigente. Extraída de
+/// `currentCycleSleepProvider` para poder testearla directamente sin
+/// un `ProviderContainer` completo — esta lógica lleva 3 rondas de
+/// bugs en la misma sesión (SPEC-245, BUG-02, y el "MUESTRA CERO"
+/// reportado por Carlos) y nunca tuvo cobertura de tests.
+class SleepCycleMembership {
+  SleepCycleMembership._();
+
+  /// Ventana de "sueño vigente" cuando NO hay ciclo metabólico abierto.
+  /// Ver comentario extenso en el branch `cycle == null` de [resolve].
+  static const Duration noCycleWindow = Duration(hours: 20);
+
+  /// Devuelve [lastLog] si pertenece al día metabólico vigente, o
+  /// `null` si pertenece a un ciclo/noche anterior.
+  static SleepLog? resolve({
+    required SleepLog lastLog,
+    required MetabolicCycle? cycle,
+    required MetabolicCycle? lastClosedCycle,
+    required DateTime now,
+  }) {
+    final wokeUp = lastLog.wokeUp;
+
+    // 17-jul (Carlos: "MUESTRA CERO" — confirmó que NO tiene ayuno en
+    // curso, está en ventana de alimentación; el sueño de Apple Watch
+    // sí está en Firestore, confirmado porque Hábitos lo muestra vía
+    // watchRecent). Repasé cada rama del anchor viejo para este caso
+    // exacto (sin ciclo) y en el papel `wokeUp >= todayStart` debería
+    // dar `true` — no logré reproducir estáticamente por qué fallaba.
+    //
+    // En vez de seguir buscando el bug exacto en una comparación de
+    // calendario (que YA causó 2 bugs previos en la rama CON ciclo:
+    // SPEC-245 y BUG-02, ambos por el mismo patrón "medianoche
+    // local"), simplifico esta rama a algo que no puede tener ese tipo
+    // de bug: sin ciclo abierto no hay ningún "día metabólico" real al
+    // que anclar nada, así que mostramos el sueño más reciente si
+    // ocurrió dentro de las últimas 20h — ventana de duración pura,
+    // sin comparar contra ningún límite de calendario (medianoche,
+    // DST, etc.).
+    if (cycle == null) {
+      final elapsed = now.difference(wokeUp);
+      // `elapsed` negativo = wokeUp en el futuro (dato corrupto/reloj
+      // mal puesto) — no lo mostramos tampoco.
+      final belongs = !elapsed.isNegative && elapsed <= noCycleWindow;
+      return belongs ? lastLog : null;
+    }
+
+    final todayStart = DayBoundaryResolver.startOfDay(now);
+    final anchor = cycle.startedAt;
+
+    // BUG-02: si ya hubo un ciclo cerrado HOY, este no es el primer
+    // ciclo del día — no se relaja el anchor, el sleep de esta noche
+    // pertenece al ciclo cerrado, no al que se acaba de abrir.
+    final hasClosedCycleToday = lastClosedCycle?.closedAt != null &&
+        !lastClosedCycle!.closedAt!.isBefore(todayStart);
+
+    // SPEC-245: si es el primer ciclo de hoy y su startedAt es
+    // posterior al inicio del día local, no penalizamos sueño que sí
+    // ocurrió hoy antes de que el ciclo empezara (típico en ayunos que
+    // inician tarde en el día).
+    final effectiveAnchor =
+        (anchor.isAfter(todayStart) && !hasClosedCycleToday)
+            ? todayStart
+            : anchor;
+
+    final belongs = !wokeUp.isBefore(effectiveAnchor);
+    return belongs ? lastLog : null;
+  }
+}
+
 final currentCycleSleepProvider = Provider<SleepLog?>((ref) {
   final sleep = ref.watch(sleepProvider);
   if (sleep.lastLog == null) {
     // 17-jul (diagnóstico, Carlos: "el anillo muestra cero"): log para
     // distinguir en producción "no hay dato en absoluto" (este caso) de
-    // "hay dato pero belongs=false" (log de abajo). Sin esto, ambos
-    // casos son indistinguibles desde afuera — los dos producen 0 en
-    // el anillo pero la causa y el fix son completamente distintos.
+    // "hay dato pero no pertenece al día vigente" (log de abajo). Sin
+    // esto, ambos casos son indistinguibles desde afuera — los dos
+    // producen 0 en el anillo pero la causa y el fix son distintos.
     AppLogger.debug(
       '[currentCycleSleepProvider] sleep.lastLog es null — SleepNotifier '
       'todavía no tiene ningún registro (stream sin datos o sin '
@@ -531,37 +603,23 @@ final currentCycleSleepProvider = Provider<SleepLog?>((ref) {
   }
 
   final cycle = ref.watch(currentMetabolicCycleProvider).valueOrNull;
-  final todayStart = DayBoundaryResolver.startOfDay(DateTime.now());
-  final anchor = cycle?.startedAt ?? todayStart;
-
-  // BUG-02: si ya hubo un ciclo cerrado HOY, este no es el primer
-  // ciclo del día — no se relaja el anchor, el sleep de esta noche
-  // pertenece al ciclo cerrado, no al que se acaba de abrir.
   final lastClosed = ref.watch(lastClosedMetabolicCycleProvider).valueOrNull;
-  final hasClosedCycleToday = lastClosed?.closedAt != null &&
-      !lastClosed!.closedAt!.isBefore(todayStart);
 
-  // SPEC-245: si hay ciclo, es el primero de hoy, y su startedAt es
-  // posterior al inicio del día local, no penalizamos sueño que sí
-  // ocurrió hoy antes de que el ciclo empezara (típico en ayunos que
-  // inician tarde en el día).
-  final effectiveAnchor =
-      (cycle != null && anchor.isAfter(todayStart) && !hasClosedCycleToday)
-          ? todayStart
-          : anchor;
+  final resolved = SleepCycleMembership.resolve(
+    lastLog: sleep.lastLog!,
+    cycle: cycle,
+    lastClosedCycle: lastClosed,
+    now: DateTime.now(),
+  );
 
-  final wokeUp = sleep.lastLog!.wokeUp;
-  final belongs = !wokeUp.isBefore(effectiveAnchor);
   // 17-jul (diagnóstico): visibilidad completa de la decisión — la
   // próxima vez que el anillo muestre algo inesperado, este log dice
-  // exactamente qué dato había y por qué se aceptó/rechazó, sin tener
-  // que reproducir el bug a ciegas otra vez.
+  // exactamente qué dato había y qué se resolvió, sin tener que
+  // reproducir el bug a ciegas otra vez.
   AppLogger.debug(
     '[currentCycleSleepProvider] lastLog.id=${sleep.lastLog!.id} '
-    'wokeUp=$wokeUp cycleId=${cycle?.cycleId} '
-    'cycleStartedAt=${cycle?.startedAt} todayStart=$todayStart '
-    'hasClosedCycleToday=$hasClosedCycleToday '
-    'effectiveAnchor=$effectiveAnchor belongs=$belongs',
+    'wokeUp=${sleep.lastLog!.wokeUp} cycleId=${cycle?.cycleId} '
+    'cycleStartedAt=${cycle?.startedAt} resolved=${resolved?.id}',
   );
-  return belongs ? sleep.lastLog : null;
+  return resolved;
 });
