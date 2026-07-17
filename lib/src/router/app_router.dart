@@ -43,6 +43,13 @@ import 'package:elena_app/src/features/coaching/presentation/sleep_routine_scree
 // 17-jul: "Para ti" (SPEC-205) rebautizado "Aprende con Elena" y colapsado
 // en Dashboard — ver aprende_entry_card.dart.
 import 'package:elena_app/src/features/content/presentation/aprende_detail_screen.dart';
+// 17-jul (2da vuelta, rediseño Perfil): pantallas de detalle de las cards
+// colapsadas de "Configuración" en Perfil — ver comentario en
+// biometricos_detail_screen.dart.
+import 'package:elena_app/src/features/auth/presentation/biometricos_detail_screen.dart';
+import 'package:elena_app/src/features/auth/presentation/ritmos_circadianos_detail_screen.dart';
+import 'package:elena_app/src/features/auth/presentation/protocolo_detail_screen.dart';
+import 'package:elena_app/src/features/auth/presentation/objetivos_detail_screen.dart';
 
 /// SPEC-222: llave global del navigator raíz para deeplink routing
 /// desde notificaciones (cold start + foreground).
@@ -188,6 +195,30 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/profile/badges',
         name: 'profile-badges',
         builder: (context, state) => const BadgesScreen(),
+      ),
+      // 17-jul (2da vuelta, rediseño Perfil): "Datos biométricos", "Ritmos
+      // circadianos", "Protocolo de ayuno" y "Mis objetivos" pasaron de
+      // secciones siempre expandidas en Perfil a cards colapsadas + estas
+      // 4 pantallas de detalle propias — mismo patrón que /profile/badges.
+      GoRoute(
+        path: '/profile/biometricos',
+        name: 'profile-biometricos',
+        builder: (context, state) => const BiometricosDetailScreen(),
+      ),
+      GoRoute(
+        path: '/profile/ritmos',
+        name: 'profile-ritmos',
+        builder: (context, state) => const RitmosCircadianosDetailScreen(),
+      ),
+      GoRoute(
+        path: '/profile/protocolo',
+        name: 'profile-protocolo',
+        builder: (context, state) => const ProtocoloDetailScreen(),
+      ),
+      GoRoute(
+        path: '/profile/objetivos',
+        name: 'profile-objetivos',
+        builder: (context, state) => const ObjetivosDetailScreen(),
       ),
       // SPEC-77: pantallas legales (privacy + terms).
       GoRoute(
