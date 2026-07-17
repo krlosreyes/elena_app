@@ -7,6 +7,7 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/core/services/day_boundary_resolver.dart';
 import 'package:elena_app/src/features/dashboard/data/mappers/sleep_log_mapper.dart';
 import 'package:elena_app/src/features/dashboard/data/sources/firestore_sleep_v1_source.dart';
@@ -63,7 +64,10 @@ class SleepRepositoryImpl implements SleepRepository {
   ///
   /// `null` si [recent] está vacía.
   static SleepLog? _resolveLatest(List<SleepLog> recent) {
-    if (recent.isEmpty) return null;
+    if (recent.isEmpty) {
+      AppLogger.debug('[SleepRepositoryImpl] watchLatest: ventana vacía');
+      return null;
+    }
 
     final byNight = <String, List<SleepLog>>{};
     for (final log in recent) {
@@ -95,7 +99,17 @@ class SleepRepositoryImpl implements SleepRepository {
       }
     }
 
-    return manual ?? bestAuto;
+    final resolved = manual ?? bestAuto;
+    // 17-jul (diagnóstico, Carlos: "el anillo muestra cero"): visibilidad
+    // de qué ventana llegó y qué se resolvió — si `resolved` es null acá
+    // a pesar de que `recent` no estaba vacío, es un bug de esta función
+    // (no debería pasar: todo grupo no vacío produce manual o bestAuto).
+    AppLogger.debug(
+      '[SleepRepositoryImpl] watchLatest: ${recent.length} docs en '
+      'ventana, noche más reciente=$latestNight '
+      '(${candidates.length} candidatos), resuelto=${resolved?.id}',
+    );
+    return resolved;
   }
 
   @override

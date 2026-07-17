@@ -516,7 +516,19 @@ final sleepProvider = StateNotifierProvider<SleepNotifier, SleepState>((ref) {
 /// (`wokeUp >= cycle.startedAt`), sin importar si eso da 0.
 final currentCycleSleepProvider = Provider<SleepLog?>((ref) {
   final sleep = ref.watch(sleepProvider);
-  if (sleep.lastLog == null) return null;
+  if (sleep.lastLog == null) {
+    // 17-jul (diagnóstico, Carlos: "el anillo muestra cero"): log para
+    // distinguir en producción "no hay dato en absoluto" (este caso) de
+    // "hay dato pero belongs=false" (log de abajo). Sin esto, ambos
+    // casos son indistinguibles desde afuera — los dos producen 0 en
+    // el anillo pero la causa y el fix son completamente distintos.
+    AppLogger.debug(
+      '[currentCycleSleepProvider] sleep.lastLog es null — SleepNotifier '
+      'todavía no tiene ningún registro (stream sin datos o sin '
+      'resolver aún).',
+    );
+    return null;
+  }
 
   final cycle = ref.watch(currentMetabolicCycleProvider).valueOrNull;
   final todayStart = DayBoundaryResolver.startOfDay(DateTime.now());
@@ -540,5 +552,16 @@ final currentCycleSleepProvider = Provider<SleepLog?>((ref) {
 
   final wokeUp = sleep.lastLog!.wokeUp;
   final belongs = !wokeUp.isBefore(effectiveAnchor);
+  // 17-jul (diagnóstico): visibilidad completa de la decisión — la
+  // próxima vez que el anillo muestre algo inesperado, este log dice
+  // exactamente qué dato había y por qué se aceptó/rechazó, sin tener
+  // que reproducir el bug a ciegas otra vez.
+  AppLogger.debug(
+    '[currentCycleSleepProvider] lastLog.id=${sleep.lastLog!.id} '
+    'wokeUp=$wokeUp cycleId=${cycle?.cycleId} '
+    'cycleStartedAt=${cycle?.startedAt} todayStart=$todayStart '
+    'hasClosedCycleToday=$hasClosedCycleToday '
+    'effectiveAnchor=$effectiveAnchor belongs=$belongs',
+  );
   return belongs ? sleep.lastLog : null;
 });
