@@ -19,6 +19,15 @@ import 'package:elena_app/src/features/badges/presentation/widgets/badges_entry_
 import 'package:elena_app/src/features/analysis/presentation/widgets/habitos_entry_card.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/racha_entry_card.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/results_entry_card.dart';
+// 17-jul (2da vuelta): WeeklyCoachingCard existía desde SPEC-153 pero
+// quedó huérfana cuando SPEC-168.4 reemplazó el diseño de tabs viejo —
+// nadie la volvió a enlazar. Se rescata acá para llenar el espacio
+// debajo de las 4 cards con contenido real (compara la semana vs la
+// anterior por pilar + insight accionable con cita bibliográfica), en
+// vez de dejarlo vacío. Autocontenida (ConsumerWidget con su propio
+// loading/empty state) — no requiere que AnalysisScreen deje de ser
+// StatelessWidget.
+import 'package:elena_app/src/features/analysis/presentation/widgets/weekly_coaching_card.dart';
 
 class AnalysisScreen extends StatelessWidget {
   const AnalysisScreen({super.key});
@@ -51,6 +60,11 @@ class AnalysisScreen extends StatelessWidget {
               const HabitosEntryCard(),
               const SizedBox(height: 12),
               const RachaEntryCard(),
+              // 17-jul (2da vuelta): contenido real debajo de las 4 cards
+              // para que la pantalla no se sienta vacía — ver comentario
+              // en el import de WeeklyCoachingCard arriba.
+              const SizedBox(height: 28),
+              const WeeklyCoachingCard(),
             ],
           ),
         ),
