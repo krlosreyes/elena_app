@@ -6,6 +6,7 @@ import 'package:elena_app/src/core/config/feature_flags.dart';
 import 'package:elena_app/src/core/engine/imr_persistence_provider.dart';
 import 'package:elena_app/src/core/engine/longitudinal_imr_provider.dart';
 import 'package:elena_app/src/features/auth/application/profile_controller.dart';
+import 'package:elena_app/src/features/auth/presentation/widgets/achievement_showcase_card.dart';
 import 'package:elena_app/src/features/auth/presentation/widgets/data_group_card.dart';
 import 'package:elena_app/src/features/auth/presentation/widgets/edit_biometry_value_sheet.dart';
 import 'package:elena_app/src/features/auth/presentation/widgets/profile_bottom_nav.dart';
@@ -14,6 +15,13 @@ import 'package:elena_app/src/features/auth/presentation/widgets/profile_goals_s
 import 'package:elena_app/src/features/auth/presentation/widgets/profile_identity_card.dart';
 import 'package:elena_app/src/features/auth/presentation/widgets/profile_legal_section.dart';
 import 'package:elena_app/src/features/auth/presentation/widgets/profile_protocol_card.dart';
+// 17-jul (Propuesta "un Perfil que da orgullo abrir", P2): card de
+// transformación 30 días vs hoy — existía desde SPEC-148 pero quedó
+// huérfana cuando el tab viejo de Análisis se reemplazó (ver
+// project_aprende_con_elena_2026_07_17 en memoria, mismo hallazgo que
+// desenterró WeeklyCoachingCard). Encaja en Perfil: es exactamente el
+// tipo de "mira cómo cambiaste" que pediste.
+import 'package:elena_app/src/features/analysis/presentation/widgets/transformation_card.dart';
 import 'package:elena_app/src/features/dashboard/domain/optimal_schedule.dart';
 import 'package:elena_app/src/features/health_sync/presentation/health_sync_card.dart';
 import 'package:elena_app/src/features/profile/application/biometric_lock_provider.dart';
@@ -496,11 +504,30 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
           const SizedBox(height: 8),
           const ProfileLongitudinalDisclaimer(),
         ],
+        const SizedBox(height: 16),
+
+        // 17-jul (Propuesta "un Perfil que da orgullo abrir", P1 + P2):
+        // "Tu identidad" — lo que el usuario YA logró, arriba de
+        // cualquier tabla de configuración. Vitrina de insignias/racha
+        // primero (lo más reciente que ganó), transformación de 30 días
+        // después (cómo cambió). Ambas cards son autocontenidas —
+        // observan sus propios providers, no necesitan datos de acá.
+        const AchievementShowcaseCard(),
+        const SizedBox(height: 16),
+        const TransformationCardLive(),
         const SizedBox(height: 24),
 
         // ── Composición corporal (SPEC-88) ──────────────────────────
         const BodyCompositionCard(),
-        const SizedBox(height: 28),
+        const SizedBox(height: 32),
+
+        // 17-jul (P4): a partir de acá, todo es configuración — datos,
+        // ritmos, protocolo, objetivos, salud, legal, ayuda. Título
+        // propio para que la separación de "quién sos / qué lograste"
+        // (arriba) vs "ajustes" (abajo) sea explícita, no solo
+        // implícita en el orden.
+        _buildSectionTitle('Configuración'),
+        const SizedBox(height: 12),
 
         // ── Datos biométricos (colapsable) ──────────────────────────
         // SPEC-117: disclosure group con preview de 1 línea. El
@@ -558,6 +585,12 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
                       widget.user.gender == 'M' ? 'Masculino' : 'Femenino'),
                   ProfileDataRow.readonly(
                       'Estatura', '${widget.user.height.toInt()} cm'),
+                  // 17-jul (P0): las condiciones médicas se sacaron del
+                  // subtítulo de identidad (ver profile_identity_card.dart)
+                  // — acá es su lugar clínico correcto, junto al resto de
+                  // los datos que alimentan `fasting_eligibility.dart`.
+                  ProfileDataRow.readonly(
+                      'Condiciones', widget.user.pathologies.join(' · ')),
                   ProfileDataRow.editable(
                     label: 'Peso',
                     value: '${widget.user.weight.toInt()} kg',
