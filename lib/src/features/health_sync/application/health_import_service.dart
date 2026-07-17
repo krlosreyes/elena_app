@@ -13,9 +13,8 @@
 //   4. Conteo por métrica — retorna `HealthImportSummary` para que la
 //      UI pueda mostrar "Importados: 3 pesos, 2 sesiones de sueño".
 
-import 'package:flutter/foundation.dart' show kDebugMode;
-
 import 'package:elena_app/src/core/services/app_logger.dart';
+import 'package:elena_app/src/core/services/day_boundary_resolver.dart';
 import 'package:elena_app/src/features/dashboard/domain/sleep_log.dart';
 import 'package:elena_app/src/features/health_sync/application/samsung_health_service.dart'
     as samsung_health;
@@ -25,7 +24,10 @@ import 'package:elena_app/src/features/exercise/domain/exercise_repository.dart'
 import 'package:elena_app/src/features/health_sync/domain/health_metric.dart';
 import 'package:elena_app/src/features/health_sync/domain/health_sample.dart';
 import 'package:elena_app/src/features/health_sync/domain/health_sync_result.dart';
-import 'package:elena_app/src/features/progress/data/biometric_repository.dart';
+// ARCH-05 (auditoría 2026-07-11): este servicio solo necesita el tipo
+// (contrato), no el provider Firestore, así que apunta a domain/ en vez de
+// data/ — inversión de dependencia entre features (health_sync → progress).
+import 'package:elena_app/src/features/progress/domain/biometric_repository.dart';
 import 'package:elena_app/src/features/progress/domain/biometric_checkin.dart';
 
 /// Resumen de cuántos samples se persistieron efectivamente.
@@ -243,12 +245,12 @@ class HealthImportService {
     int imported = 0;
     int skippedShort = 0;
     int skippedInvalid = 0;
+    int skippedManualExists = 0;
     for (final s in samples) {
-      if (kDebugMode) {
-        // ignore: avoid_print
-        print('🩺 SLEEP sample: start=${s.start}, end=${s.end}, '
-            'duration=${s.duration.inMinutes}min, source=${s.sourceName}');
-      }
+      AppLogger.debug(
+        'HealthImport[sleep]: start=${s.start}, end=${s.end}, '
+        'duration=${s.duration.inMinutes}min, source=${s.sourceName}',
+      );
       // SPEC-245 (2026-07-07): umbral bajado de 30 min a 5 min.
       //
       // Problema original: Apple Watch registra el sueño como etapas
@@ -263,10 +265,36 @@ class HealthImportService {
       // que aparece en el anillo via watchLatest(orderBy: wokeUp desc).
       if (s.duration.inMinutes < 5) {
         skippedShort++;
-        if (kDebugMode) {
-          // ignore: avoid_print
-          print('🩺 SLEEP SKIP <5min: ${s.duration.inMinutes}min');
-        }
+        AppLogger.debug(
+          'HealthImport[sleep]: skip <5min (${s.duration.inMinutes}min)',
+        );
+        continue;
+      }
+
+      // 17-jul: "regla 1" (manual gana sobre auto) — documentada arriba
+      // en el header del archivo pero solo se aplicaba a peso
+      // (`_fetchByDate`). Sueño escribía SIN ese chequeo, y como el
+      // Dashboard elige qué mostrar por `wokeUp` más reciente sin
+      // importar el origen (`watchLatest`), un sync automático que
+      // corriera DESPUÉS de que el usuario registrara su sueño a mano
+      // (o confirmara "ya desperté") podía desplazar silenciosamente
+      // ese registro si el sample del wearable tenía un `wokeUp` más
+      // tardío (típico: una etapa "despierto" espuria del reloj). Bug
+      // reportado por Carlos como "el pilar de sueño no se actualiza".
+      //
+      // Fix: antes de escribir, chequeamos si ya existe el doc MANUAL
+      // de esa noche (mismo id determinístico que usa
+      // `SleepNotifier._attributionDocId`: `sleep_<attributionDayKey>`).
+      // Si existe, el sample automático se descarta — el usuario ya
+      // registró esa noche explícitamente y esa entrada no se pisa.
+      final manualDocId = _manualSleepIdFor(s.start, s.end);
+      final existingManual = await _sleepRepo.getById(userId, manualDocId);
+      if (existingManual != null) {
+        skippedManualExists++;
+        AppLogger.debug(
+          'HealthImport[sleep]: skip — ya existe registro manual '
+          '$manualDocId, no se pisa',
+        );
         continue;
       }
 
@@ -290,10 +318,22 @@ class HealthImportService {
     }
     AppLogger.info(
       'HealthImport[sleep]: importados $imported, '
-      'saltados $skippedShort siestas <30min, $skippedInvalid inválidos',
+      'saltados $skippedShort <5min, $skippedManualExists ya manual, '
+      '$skippedInvalid inválidos',
     );
     return imported;
   }
+
+  /// Id determinístico del registro MANUAL de la noche a la que
+  /// pertenece `[fellAsleep, wokeUp]` — mismo esquema que
+  /// `SleepNotifier._attributionDocId` (día de atribución = punto medio
+  /// del intervalo). Usado para el guard "manual gana sobre auto": si
+  /// ya existe un doc con este id, el sample automático no se importa.
+  String _manualSleepIdFor(DateTime fellAsleep, DateTime wokeUp) =>
+      'sleep_${DayBoundaryResolver.attributionDayKey(
+        start: fellAsleep,
+        end: wokeUp,
+      )}';
 
   // ─── Pasos → ExerciseLog implícito ───────────────────────────────
 
@@ -539,11 +579,28 @@ class HealthImportService {
     );
     int imported = 0;
     int skippedShort = 0;
+    int skippedManualExists = 0;
     for (final s in sessions) {
       if (s.durationMinutes < 30) {
         skippedShort++;
         continue;
       }
+
+      // 17-jul: mismo guard "manual gana sobre auto" que `_importSleep`
+      // — ver comentario ahí. Samsung Health es un segundo camino de
+      // ingesta (SPEC-239, fallback cuando Health Connect no trae
+      // sueño) y necesita la misma protección.
+      final manualDocId = _manualSleepIdFor(s.start, s.end);
+      final existingManual = await _sleepRepo.getById(userId, manualDocId);
+      if (existingManual != null) {
+        skippedManualExists++;
+        AppLogger.debug(
+          'HealthImport[samsung_sleep]: skip — ya existe registro '
+          'manual $manualDocId, no se pisa',
+        );
+        continue;
+      }
+
       final id = 'sh_sleep_${s.start.toIso8601String()}';
       final assumedLastMeal = s.start.subtract(const Duration(hours: 3));
       try {
@@ -562,12 +619,8 @@ class HealthImportService {
     }
     AppLogger.info(
       'HealthImport[samsung_sleep]: importados $imported, '
-      'saltados $skippedShort <30min',
+      'saltados $skippedShort <30min, $skippedManualExists ya manual',
     );
-    if (kDebugMode) {
-      // ignore: avoid_print
-      print('🩺 SH IMPORT: $imported sesiones importadas');
-    }
     return imported;
   }
 

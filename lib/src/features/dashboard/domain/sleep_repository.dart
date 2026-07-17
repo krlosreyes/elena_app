@@ -33,6 +33,13 @@ abstract class SleepRepository {
   /// silencio (mismo patrón que `watchLatest`).
   Stream<List<SleepLog>> watchRecent(String userId, {int limit = 7});
 
+  /// 17-jul: lectura puntual por id (no stream). `null` si no existe o
+  /// si el doc está corrupto (mismo criterio silencioso que
+  /// `watchLatest`/`watchRecent`). Usado por `HealthImportService` para
+  /// el guard "manual gana sobre auto" — ver comentario en
+  /// `sleep_data_source.dart`.
+  Future<SleepLog?> getById(String userId, String docId);
+
   /// Persiste o sobrescribe un ciclo de sueño usando `log.id` como
   /// clave. Idempotente: re-llamar con el mismo `log` produce el mismo
   /// estado en Firestore (no duplica).

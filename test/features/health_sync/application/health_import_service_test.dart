@@ -9,8 +9,11 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:elena_app/src/core/services/day_boundary_resolver.dart';
 import 'package:elena_app/src/features/dashboard/domain/sleep_log.dart';
 import 'package:elena_app/src/features/dashboard/domain/sleep_repository.dart';
+import 'package:elena_app/src/features/health_sync/application/samsung_health_service.dart'
+    as samsung_health;
 import 'package:elena_app/src/features/exercise/domain/exercise_log.dart';
 import 'package:elena_app/src/features/exercise/domain/exercise_repository.dart';
 import 'package:elena_app/src/features/health_sync/application/health_import_service.dart';
@@ -42,6 +45,17 @@ class _FakeSleepRepository implements SleepRepository {
   @override
   Stream<List<SleepLog>> watchRecent(String userId, {int limit = 7}) =>
       const Stream.empty();
+
+  /// 17-jul: nuevo método del contrato (guard "manual gana sobre
+  /// auto"). Simula el `.set()` idempotente de Firestore por id —
+  /// busca el guardado más reciente con ese id dentro de `saved`.
+  @override
+  Future<SleepLog?> getById(String userId, String docId) async {
+    for (final log in saved.reversed) {
+      if (log.id == docId) return log;
+    }
+    return null;
+  }
 }
 
 class _FakeExerciseRepository implements ExerciseRepository {
@@ -299,6 +313,101 @@ void main() {
         sleepRepo.saved.first.lastMealTime,
         DateTime(2026, 5, 26, 20),
       );
+    });
+
+    // 17-jul: "manual gana sobre auto" (Carlos reportó "sueño sigue sin
+    // actualizar" — un sync automático posterior desplazaba en el
+    // Dashboard lo que el usuario acababa de registrar a mano, porque
+    // watchLatest elige por `wokeUp` más reciente sin importar origen).
+    test(
+        'sample de wearable se descarta si ya existe registro manual de esa noche',
+        () async {
+      final fellAsleep = DateTime(2026, 5, 26, 23);
+      final wokeUp = DateTime(2026, 5, 27, 7);
+      final manualDocId = 'sleep_${DayBoundaryResolver.attributionDayKey(
+        start: fellAsleep,
+        end: wokeUp,
+      )}';
+      // Simula que el usuario ya confirmó su sueño a mano ANTES de que
+      // corra el auto-sync.
+      sleepRepo.saved.add(SleepLog(
+        id: manualDocId,
+        fellAsleep: fellAsleep,
+        wokeUp: wokeUp,
+        lastMealTime: fellAsleep.subtract(const Duration(hours: 4)),
+      ));
+
+      final summary = await service.importResult(
+        userId,
+        _resultWith({
+          HealthMetric.sleepSession: [
+            // Mismo intervalo de noche, pero un `wokeUp` más tardío —
+            // el escenario real que desplazaba el dato manual antes
+            // del fix (watchLatest hubiera elegido este por ser más
+            // reciente).
+            _sleepSample(
+              fellAsleep: fellAsleep,
+              wokeUp: wokeUp.add(const Duration(minutes: 45)),
+              uuid: 'watch-etapa-espuria',
+            ),
+          ],
+        }),
+      );
+
+      expect(summary.sleepSessionsImported, 0);
+      expect(sleepRepo.saved.length, 1);
+      expect(sleepRepo.saved.single.id, manualDocId);
+    });
+
+    test(
+        'sin registro manual, el sample de wearable sí se importa (comportamiento normal)',
+        () async {
+      final summary = await service.importResult(
+        userId,
+        _resultWith({
+          HealthMetric.sleepSession: [
+            _sleepSample(
+              fellAsleep: DateTime(2026, 5, 26, 23),
+              wokeUp: DateTime(2026, 5, 27, 7),
+              uuid: 'watch-normal',
+            ),
+          ],
+        }),
+      );
+      expect(summary.sleepSessionsImported, 1);
+      expect(sleepRepo.saved, isNotEmpty);
+    });
+
+    test(
+        'Samsung Health: sesión se descarta si ya existe registro manual de esa noche',
+        () async {
+      final start = DateTime(2026, 5, 26, 23);
+      final end = DateTime(2026, 5, 27, 7);
+      final manualDocId = 'sleep_${DayBoundaryResolver.attributionDayKey(
+        start: start,
+        end: end,
+      )}';
+      sleepRepo.saved.add(SleepLog(
+        id: manualDocId,
+        fellAsleep: start,
+        wokeUp: end,
+        lastMealTime: start.subtract(const Duration(hours: 4)),
+      ));
+
+      final imported = await service.importSamsungSleep(userId, [
+        samsung_health.SamsungSleepSession(
+          start: start,
+          end: end.add(const Duration(minutes: 30)),
+          durationMinutes: end
+                  .add(const Duration(minutes: 30))
+                  .difference(start)
+                  .inMinutes,
+        ),
+      ]);
+
+      expect(imported, 0);
+      expect(sleepRepo.saved.length, 1);
+      expect(sleepRepo.saved.single.id, manualDocId);
     });
   });
 

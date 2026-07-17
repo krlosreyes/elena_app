@@ -63,6 +63,24 @@ class SleepRepositoryImpl implements SleepRepository {
     });
   }
 
+  // 17-jul: lectura puntual por id — ver comentario en el contrato.
+  @override
+  Future<SleepLog?> getById(String userId, String docId) async {
+    final map = await _source.fetchById(userId: userId, docId: docId);
+    if (map == null) return null;
+    final resolvedDocId = map['__docId'] as String? ?? docId;
+    final body = Map<String, dynamic>.from(map)..remove('__docId');
+    try {
+      return _mapper.fromMap(body, docId: resolvedDocId);
+    } catch (_) {
+      // Mismo criterio que watchLatest/watchRecent: doc corrupto → null,
+      // no crashear. El caller (guard "manual gana") trata esto igual
+      // que "no existe" — conservador: si no podemos confirmar que hay
+      // un manual válido, no bloqueamos el import automático.
+      return null;
+    }
+  }
+
   @override
   Future<void> save(String userId, SleepLog log) async {
     final data = _mapper.toMap(log);

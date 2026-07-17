@@ -25,6 +25,17 @@ abstract class SleepDataSource {
     required int limit,
   });
 
+  /// 17-jul: lectura puntual (no stream) de UN documento por su id.
+  /// Usado por `HealthImportService` para el guard "manual gana sobre
+  /// auto" — antes de escribir un sample de HealthKit/Health Connect,
+  /// hay que poder chequear si ya existe el doc manual de esa noche
+  /// (`sleep_<attributionDayKey>`) sin suscribirse a un stream.
+  /// Devuelve `null` si el doc no existe.
+  Future<Map<String, dynamic>?> fetchById({
+    required String userId,
+    required String docId,
+  });
+
   /// Persiste o sobrescribe un documento de sueño usando `docId` como
   /// clave. Idempotente: re-llamar con el mismo `data` produce el
   /// mismo estado (no duplica).

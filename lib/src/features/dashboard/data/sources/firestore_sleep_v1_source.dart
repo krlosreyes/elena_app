@@ -57,6 +57,23 @@ class FirestoreSleepV1Source implements SleepDataSource {
     });
   }
 
+  // 17-jul: lectura puntual por id — ver comentario en el contrato
+  // (`sleep_data_source.dart`). Usa `.get()` normal de Firestore, que
+  // sirve de la caché local si está disponible (offline-first) y del
+  // servidor si no.
+  @override
+  Future<Map<String, dynamic>?> fetchById({
+    required String userId,
+    required String docId,
+  }) async {
+    final doc = await _collection(userId).doc(docId).get();
+    if (!doc.exists) return null;
+    final data = doc.data();
+    if (data == null) return null;
+    final map = Map<String, dynamic>.from(data);
+    return {...map, '__docId': doc.id};
+  }
+
   @override
   Future<void> persist({
     required String userId,

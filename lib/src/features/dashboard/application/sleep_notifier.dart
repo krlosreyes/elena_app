@@ -55,6 +55,15 @@ class SleepNotifier extends StateNotifier<SleepState> {
   // mostrarse UNA sola vez por día.
   StreamSubscription? _sleepSubscription;
 
+  // 17-jul: bulletproofing del stream de sueño (Carlos: "sueño sigue
+  // sin actualizar"). `onDone` re-suscribe, pero Firestore NO garantiza
+  // que todo error termine el stream con `onDone` — algunos errores
+  // (p.ej. permission-denied transitorio por refresh de token, ver
+  // feedback_appcheck_watchsince_bugs) pueden dejar el stream "vivo"
+  // para Dart pero mudo para siempre. Este timer reintenta activamente
+  // tras un breve delay en vez de depender solo de `onDone`.
+  Timer? _reconnectTimer;
+
   SleepNotifier(this._ref) : super(SleepState()) {
     _init();
   }
@@ -88,6 +97,8 @@ class SleepNotifier extends StateNotifier<SleepState> {
         } else {
           // SPEC-11: Usuario cerró sesión — cancelar suscripción activa y
           // limpiar el estado para que el próximo usuario vea datos en blanco.
+          _reconnectTimer?.cancel();
+          _reconnectTimer = null;
           _sleepSubscription?.cancel();
           _sleepSubscription = null;
           if (mounted) state = SleepState();
@@ -97,6 +108,11 @@ class SleepNotifier extends StateNotifier<SleepState> {
   }
 
   void _initSleepSubscription(String userId) {
+    // 17-jul: cancelar cualquier reintento pendiente antes de re-suscribir
+    // — evita que un timer viejo dispare una segunda suscripción duplicada
+    // sobre la que estamos por crear acá mismo.
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
     _sleepSubscription?.cancel();
     // SPEC-50: consumimos sleepRepositoryProvider en lugar de
     // userRepositoryProvider — Sleep ya no vive en el repo monolítico.
@@ -110,6 +126,15 @@ class SleepNotifier extends StateNotifier<SleepState> {
       },
       onError: (Object e) {
         AppLogger.warning('[SleepNotifier] stream error (transitorio): $e');
+        // 17-jul (bulletproofing, Carlos: "sueño sigue sin actualizar"):
+        // antes solo se logueaba acá. `onDone` re-suscribe, pero
+        // Firestore NO garantiza que todo error dispare `onDone` — si
+        // no lo dispara, el stream queda "vivo" en Dart pero mudo para
+        // siempre y el pilar deja de reflejar registros nuevos hasta
+        // reiniciar la app. Reintentamos activamente con un pequeño
+        // delay (evita martillar Firestore en loop si el error es
+        // persistente, p.ej. permission-denied real).
+        _scheduleReconnect(userId);
       },
       onDone: () {
         if (mounted) _initSleepSubscription(userId);
@@ -117,8 +142,21 @@ class SleepNotifier extends StateNotifier<SleepState> {
     );
   }
 
+  /// 17-jul: reintento de suscripción tras un error del stream. Delay
+  /// fijo de 5s — suficiente para que un token de auth en refresh
+  /// transitorio se resuelva, sin ser tan agresivo como para saturar
+  /// Firestore si el error persiste (en ese caso, cada reintento vuelve
+  /// a fallar y a reprogramarse, con el mismo delay entre intentos).
+  void _scheduleReconnect(String userId) {
+    _reconnectTimer?.cancel();
+    _reconnectTimer = Timer(const Duration(seconds: 5), () {
+      if (mounted) _initSleepSubscription(userId);
+    });
+  }
+
   @override
   void dispose() {
+    _reconnectTimer?.cancel();
     _sleepSubscription?.cancel();
     super.dispose();
   }
