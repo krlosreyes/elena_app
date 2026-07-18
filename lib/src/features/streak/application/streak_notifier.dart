@@ -9,6 +9,7 @@ import 'package:elena_app/src/shared/providers/user_provider.dart';
 import 'package:elena_app/src/features/dashboard/application/fasting_notifier.dart';
 import 'package:elena_app/src/features/dashboard/application/sleep_notifier.dart';
 import 'package:elena_app/src/features/dashboard/application/hydration_notifier.dart';
+import 'package:elena_app/src/features/dashboard/data/fasting_interval_repository_impl.dart';
 import 'package:elena_app/src/features/dashboard/domain/sleep_quality_calculator.dart';
 import 'package:elena_app/src/features/exercise/application/exercise_notifier.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
@@ -116,6 +117,16 @@ class StreakNotifier extends StateNotifier<StreakState> {
   String? _userId;
   StreamSubscription? _historySub;
 
+  /// 17-jul ("sistema coherente"): historial de ayunos CERRADOS,
+  /// fuente de verdad de "¿el ayuno de hoy calificó?" — ver
+  /// `StreakEngine.bestCompletedFastingHoursToday`. 20 cubre varios
+  /// ciclos de ayuno/ventanas de alimentación intercalados de sobra
+  /// para el día de hoy (el filtro `isFasting`/`endTime` es client-side
+  /// en el repo, así que el límite debe cubrir intervalos mixtos).
+  static const int _kFastingHistoryWindow = 20;
+  StreamSubscription? _fastingHistorySub;
+  List<FastingInterval> _recentCompletedFasting = const [];
+
   /// SPEC-230 BUG-E: flag para evitar que _evaluateToday() persista
   /// magnitudes en 0 antes de que el stream de Firestore entregue el
   /// historial real. Sin esto, un pilar que emite en cold-start crea
@@ -173,6 +184,9 @@ class StreakNotifier extends StateNotifier<StreakState> {
         if (user == null) {
           _historySub?.cancel();
           _historySub = null;
+          _fastingHistorySub?.cancel();
+          _fastingHistorySub = null;
+          _recentCompletedFasting = const [];
           _userId = null;
           _historyLoaded = false; // SPEC-230 BUG-E: reset en logout
           return;
@@ -180,6 +194,7 @@ class StreakNotifier extends StateNotifier<StreakState> {
         if (_userId != user.id) {
           _userId = user.id;
           _subscribeToHistory();
+          _subscribeToFastingHistory();
         }
       });
     }, fireImmediately: true);
@@ -227,6 +242,43 @@ class StreakNotifier extends StateNotifier<StreakState> {
     );
   }
 
+  /// 17-jul ("sistema coherente"): historial de ayunos CERRADOS — fuente
+  /// de verdad de "¿el ayuno de hoy calificó?" (ver
+  /// `StreakEngine.bestCompletedFastingHoursToday`). Independiente del
+  /// stream de `watchHistory` (racha) y del estado en vivo de
+  /// `FastingNotifier` — un tercer stream, pero cada uno cubre una
+  /// pregunta distinta: este es el único que sobrevive un restart de la
+  /// app o la apertura de un segundo ciclo el mismo día sin depender de
+  /// que la memoria del notifier se mantenga intacta.
+  void _subscribeToFastingHistory() {
+    _fastingHistorySub?.cancel();
+    if (_userId == null) return;
+
+    final repo = _ref.read(fastingIntervalRepositoryProvider);
+    _fastingHistorySub = repo
+        .watchRecentCompleted(_userId!, limit: _kFastingHistoryWindow)
+        .listen(
+      (intervals) {
+        _recentCompletedFasting = intervals;
+        // Re-evaluar con el historial de ayunos actualizado — cubre el
+        // caso donde el ack de un cierre de ciclo llega DESPUÉS de que
+        // el usuario ya arrancó el siguiente ayuno.
+        _evaluateToday();
+      },
+      onError: (e) {
+        if (_userId == null || FirestoreErrors.isPermissionDenied(e)) {
+          AppLogger.debug(
+            '[StreakNotifier] Stream de fasting_history cerrado tras logout: $e',
+          );
+        } else {
+          AppLogger.error(
+            '[StreakNotifier] Error en historial de ayunos', e,
+          );
+        }
+      },
+    );
+  }
+
   // ── Evaluación de hoy ───────────────────────────────────────────────────────
 
   void _evaluateToday() {
@@ -250,25 +302,34 @@ class StreakNotifier extends StateNotifier<StreakState> {
     final String currentProtocol =
         userModel?.fastingProtocol ?? (_userId != null ? '16:8' : 'Ninguno');
 
-    // SPEC-208: preservar el progreso del ayuno DESPUÉS de cerrarlo.
-    // Bug previo: cuando !isActive, fastingHours = 0.0 → al registrar
-    // agua/comida después de cerrar el ayuno, _evaluateToday() sobreescribía
-    // fastingCompleted: true → false en Firestore.
-    // Fix: usar completedToday / closedProgressToday que FastingNotifier
-    // preserva al cerrar el ayuno.
-    final double fastingHours;
-    if (fasting.isActive) {
-      // Ayuno en curso: duración real acumulada.
-      fastingHours = fasting.duration.inSeconds / 3600.0;
-    } else if (fasting.completedToday == true) {
-      // Ayuno cerrado y completado: target completo → magnitude ≥ 1.0.
-      fastingHours = _fastingTargetHours(currentProtocol);
-    } else {
-      // Ayuno cerrado sin completar, o sin ayuno hoy.
-      fastingHours =
-          (fasting.closedProgressToday ?? 0.0) *
-          _fastingTargetHours(currentProtocol);
-    }
+    // 17-jul ("sistema coherente", reemplaza el fix SPEC-208): fuente de
+    // verdad de horas de ayuno de HOY = máximo entre el ciclo ACTIVO en
+    // curso (progreso en vivo, no aparece en el historial hasta que se
+    // cierra) y el MEJOR ciclo ya CERRADO hoy según el historial
+    // persistido (`StreakEngine.bestCompletedFastingHoursToday`, ver
+    // `_recentCompletedFasting`/`_subscribeToFastingHistory`).
+    //
+    // Antes: `completedToday`/`closedProgressToday` de `FastingNotifier`
+    // — banderas que solo recuerdan el ÚLTIMO ciclo cerrado y se
+    // resetean a cada apertura nueva (`startFastingManual`). Un día con
+    // 2+ ciclos (Día Metabólico multi-ciclo) dependía entonces de que
+    // esas banderas sobrevivieran intactas en memoria hasta el próximo
+    // cierre — causa raíz de 3 bugs de racha esta sesión (16-jul y dos
+    // más el 17-jul, ver `StreakEngine.reconcileTodayWithLocal`).
+    // Consultar el historial persistido da la misma respuesta sin
+    // importar cuántos ciclos se hayan abierto/cerrado hoy ni si la app
+    // se reinició entre medio — es la fuente de verdad, no una copia en
+    // memoria de ella.
+    final double liveActiveFastingHours =
+        fasting.isActive ? fasting.duration.inSeconds / 3600.0 : 0.0;
+    final double bestClosedFastingHoursToday =
+        StreakEngine.bestCompletedFastingHoursToday(
+      recentCompleted: _recentCompletedFasting,
+      now: DateTime.now(),
+    );
+    final double fastingHours = liveActiveFastingHours > bestClosedFastingHoursToday
+        ? liveActiveFastingHours
+        : bestClosedFastingHoursToday;
 
     // FIX: Duration.inHours trunca al entero (6:59 → 6, no 6.98).
     // Usar inSeconds/3600.0 para precisión decimal.
@@ -361,30 +422,25 @@ class StreakNotifier extends StateNotifier<StreakState> {
     final StreakEntry? prevToday =
         (prev != null && prev.date == _todayKey) ? prev : null;
 
-    // Ayuno — FIX central de esta auditoría. Un día calendario puede
-    // contener MÁS DE UN ciclo de ayuno: el usuario cierra uno y arranca
-    // el siguiente el mismo día (protocolos cortos, o simplemente cerrar
-    // temprano y volver a empezar — ver METABOLIC_DAY_CONSTITUTION, el
-    // Día Metabólico se ancla al usuario, no al reloj). `startFastingManual`
-    // resetea `completedToday`/`closedProgressToday` a 0 al abrir el
-    // ciclo nuevo (correcto: el anillo de ESE ciclo no debe arrancar en
-    // 100%). Pero como `fastingOk` fuera de `_resetInProgress` usaba
-    // `rawFasting` a secas —derivado SOLO del ciclo activo/actual—, ese
-    // reset hacía caer `rawFasting` a false aunque el ciclo anterior YA
-    // hubiera completado el ayuno más temprano ESE MISMO DÍA. Como
-    // `_persistToday` escribe con `SetOptions(merge:true)` pero
-    // `fastingCompleted` SIEMPRE viaja en el payload (no es un campo
-    // omitible como las magnitudes), la escritura sobreescribía
-    // Firestore con `fastingCompleted:false` — borrando en la racha el
-    // día que el usuario acababa de cerrar bien. Reproducible: cerrar un
-    // ayuno completo, arrancar el siguiente el mismo día → la racha de
-    // HOY se rompe en Firestore aunque el usuario haya cumplido.
+    // Ayuno. Desde el 17-jul, `rawFasting` (arriba, derivado de
+    // `fastingHours`) YA combina el ciclo activo en curso con el mejor
+    // ciclo cerrado hoy según el historial persistido — ver el
+    // comentario extenso sobre `bestClosedFastingHoursToday`. Ese es
+    // ahora el mecanismo PRIMARIO que resuelve el escenario multi-ciclo
+    // (16-jul: `completedToday` se perdía al abrir un segundo ayuno el
+    // mismo día).
     //
-    // Fix: dentro del mismo día calendario, el ayuno calificado es
-    // monotónico — una vez true, se mantiene true sin importar el
-    // estado del ciclo siguiente. Ya NO depende de `_resetInProgress`
-    // (esa ventana solo cubre el reset automático de medianoche, no un
-    // ciclo nuevo que el usuario abre a mitad del día).
+    // El OR con `prevToday?.fastingCompleted` que sigue abajo es una
+    // red de seguridad SECUNDARIA para una ventana distinta y más
+    // angosta: el instante exacto en que un ciclo se cierra y el
+    // siguiente arranca, el write a `fasting_history` es asíncrono
+    // (`unawaited`) y `_evaluateToday()` puede correr ANTES de que ese
+    // ack vuelva por `watchRecentCompleted` — en ese hueco puntual,
+    // `bestClosedFastingHoursToday` todavía no lo sabe, pero
+    // `state.todayEntry` (calculado más temprano hoy, cuando el primer
+    // ciclo SÍ se evaluó con el historial ya sincronizado) sigue
+    // teniéndolo. Monotónico dentro del día calendario — una vez true,
+    // se mantiene true.
     final bool fastingOk =
         rawFasting || (prevToday?.fastingCompleted ?? false);
 
@@ -722,6 +778,7 @@ class StreakNotifier extends StateNotifier<StreakState> {
   @override
   void dispose() {
     _historySub?.cancel();
+    _fastingHistorySub?.cancel();
     super.dispose();
   }
 

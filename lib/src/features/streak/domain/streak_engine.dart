@@ -1,5 +1,7 @@
 import 'package:elena_app/src/core/services/day_boundary_resolver.dart';
 import 'package:elena_app/src/features/streak/domain/streak_entry.dart';
+import 'package:elena_app/src/shared/domain/models/user_model.dart'
+    show FastingInterval;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SPEC-255 RF-02: resultado de una racha "protegida" (con reservas/freeze).
@@ -501,6 +503,52 @@ class StreakEngine {
     final activeFrac = (activeDays90 / 90.0).clamp(0.0, 1.0);
     final raw = 0.55 * streakNorm + 0.45 * activeFrac;
     return raw.clamp(0.0, 1.0);
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Fuente de verdad de "ayuno completado hoy" (17-jul, "sistema coherente")
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /// 17-jul (Carlos: "necesitamos corregir y tener un sistema coherente"):
+  /// deriva la mejor duración de ayuno CERRADO hoy directo del historial
+  /// persistido (`fasting_history`, fuente de verdad), en vez de las
+  /// banderas transitorias `completedToday`/`closedProgressToday` de
+  /// `FastingNotifier` — que viven solo en memoria/el doc del ciclo
+  /// activo y se resetean cada vez que se abre un ciclo nuevo (Día
+  /// Metabólico multi-ciclo). Esas banderas fueron la raíz de 3 bugs de
+  /// racha esta sesión (16-jul, y dos más el 17-jul) porque "recordar
+  /// que un ciclo anterior ya cumplió hoy" dependía de que la memoria
+  /// del notifier sobreviviera intacta — un solo snapshot desordenado o
+  /// un restart bastaba para perderlo. Consultar el historial persistido
+  /// hace que la respuesta sea la misma sin importar cuántos ciclos se
+  /// hayan abierto/cerrado hoy o si la app se reinició entre medio.
+  ///
+  /// Recorre [recentCompleted] (intervalos de ayuno YA CERRADOS,
+  /// `endTime` no nulo) y devuelve la duración en horas del que más
+  /// cerca estuvo/superó el objetivo entre los que iniciaron HOY (mismo
+  /// día calendario que [now]). `0.0` si ninguno inició hoy.
+  ///
+  /// No sustituye el cómputo del ciclo ACTIVO (en curso) — ese sigue
+  /// siendo `fasting.duration` en vivo, porque un intervalo abierto no
+  /// aparece en [recentCompleted] hasta que se cierra. El caller combina
+  /// ambos tomando el máximo (ver `StreakNotifier._evaluateToday`).
+  static double bestCompletedFastingHoursToday({
+    required List<FastingInterval> recentCompleted,
+    required DateTime now,
+  }) {
+    final todayKey = DayBoundaryResolver.dayKeyIso(now);
+    double best = 0.0;
+    for (final interval in recentCompleted) {
+      if (!interval.isFasting) continue;
+      final end = interval.endTime;
+      if (end == null) continue;
+      if (DayBoundaryResolver.dayKeyIso(interval.startTime) != todayKey) {
+        continue;
+      }
+      final hours = end.difference(interval.startTime).inSeconds / 3600.0;
+      if (hours > best) best = hours;
+    }
+    return best;
   }
 
   // ─────────────────────────────────────────────────────────────────────────
