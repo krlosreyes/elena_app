@@ -20,6 +20,8 @@ import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/core/services/day_boundary_resolver.dart';
 import 'package:elena_app/src/core/services/firestore_errors.dart';
 import 'package:elena_app/src/features/goals/application/goal_notifier.dart';
+import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart'
+    show currentMetabolicCycleProvider;
 import 'package:elena_app/src/features/streak/domain/fasting_schedule.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 
@@ -161,10 +163,45 @@ class StreakNotifier extends StateNotifier<StreakState> {
     _evaluateToday();
   }
 
-  /// Clave de fecha de hoy 'yyyy-MM-dd'.
-  /// SPEC-138: delega en la fuente única del día.
-  static String get _todayKey =>
-      DayBoundaryResolver.dayKeyIso(DateTime.now());
+  /// 18-jul ("Día Metabólico: dos sistemas de día en paralelo" — hallazgo
+  /// central de la auditoría): ancla de "hoy" para la racha.
+  ///
+  /// ANTES: `DateTime.now()` — un StreakEntry.date es un día CALENDARIO.
+  /// Un día metabólico que cruza medianoche (ayuno nocturno extendido
+  /// mientras el usuario duerme) partía su desempeño en DOS entradas
+  /// (una por cada lado de la medianoche), cada una evaluada por separado
+  /// contra el umbral de ≥3 pilares — el mismo desempeño real podía
+  /// resultar en 0, 1 o 2 días acreditados según en qué lado de la
+  /// medianoche cayó cada actividad. Viola METABOLIC_DAY_CONSTITUTION.md
+  /// §1 ("cero referencia al reloj del calendario") y §2.1 ("crossing
+  /// medianoche NO crea/cierra nada").
+  ///
+  /// AHORA: si hay un ciclo metabólico abierto, "hoy" es el día en que
+  /// ESE CICLO empezó (`cycle.startedAt`) — el mismo ancla que ya usan
+  /// los 5 pilares para su ventana de datos (`watchSince`, SPEC-149.2).
+  /// Mientras el ciclo siga abierto, cada llamada a `_evaluateToday()`
+  /// (cada ~10s vía el pulso metabólico, o en cada cambio de pilar)
+  /// escribe SIEMPRE al mismo StreakEntry — sin importar cuántas
+  /// medianoches cruce. Al abrir un ciclo nuevo, `_todayKey` cambia de
+  /// inmediato al día del ciclo nuevo — la entrada anterior queda
+  /// congelada con el desempeño real del día metabólico que cerró.
+  ///
+  /// Sin ciclo abierto (protocolo "Ninguno", o el hueco entre el cierre
+  /// de un ciclo y el próximo ayuno): fallback a `DateTime.now()` — el
+  /// mismo fallback documentado en METABOLIC_DAY_CONSTITUTION.md §4 para
+  /// todos los providers cycle-aware.
+  String get _todayKey => DayBoundaryResolver.dayKeyIso(_todayAnchor);
+
+  /// Ancla de tiempo detrás de [_todayKey] — expuesta por separado porque
+  /// `StreakEngine.computeCurrentStreak`/`computeCurrentStreakWithFreezes`
+  /// necesitan el `DateTime` real (no solo la clave string) para su propio
+  /// chequeo de frescura "hoy o ayer" (ver parámetro `asOf` en
+  /// `streak_engine.dart`). Sin pasar esta misma ancla al engine, un
+  /// ciclo abierto que empezó ayer (cruzando medianoche) se vería como
+  /// "racha vieja" y se descartaría por error.
+  DateTime get _todayAnchor =>
+      _ref.read(currentMetabolicCycleProvider).valueOrNull?.startedAt ??
+      DateTime.now();
 
   StreakNotifier(this._ref) : super(const StreakState()) {
     _init();
@@ -613,7 +650,10 @@ class StreakNotifier extends StateNotifier<StreakState> {
     // SPEC-255 RF-02: racha "protegida" (con reservas) — SOLO para el
     // número que ve el usuario. computeAdherenceTrend (IMR longitudinal)
     // sigue usando computeCurrentStreak sin protección, sin cambios aquí.
-    final freezeState = StreakEngine.computeCurrentStreakWithFreezes(history);
+    final freezeState = StreakEngine.computeCurrentStreakWithFreezes(
+      history,
+      asOf: _todayAnchor,
+    );
     final prevStreak = state.currentStreak;
     final prevProtected = state.streakHasProtectedDay;
 

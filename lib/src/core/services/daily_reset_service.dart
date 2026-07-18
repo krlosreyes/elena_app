@@ -71,13 +71,14 @@ class DailyResetNotifier extends StateNotifier<void> {
   }
 
   /// Bootstrap: chequea si pasó medianoche desde la última sesión y, si así,
-  /// dispara el reset. Después arma el timer hacia la próxima medianoche.
+  /// dispara la red de seguridad calendárica. Después arma el timer hacia
+  /// la próxima medianoche.
   Future<void> _bootstrap() async {
     try {
       final prefs = _ref.read(sharedPreferencesProvider);
       final passed = await DailyResetService.hasPassedMidnight(prefs);
       if (passed) {
-        await triggerDailyReset();
+        await triggerCalendarSafetyNet();
       }
     } catch (e) {
       AppLogger.warning('SPEC-58 bootstrap falló', e);
@@ -86,7 +87,8 @@ class DailyResetNotifier extends StateNotifier<void> {
   }
 
   /// Programa un Timer one-shot hasta las 00:00:00 del día siguiente.
-  /// Al disparar: triggerDailyReset() + re-armar para el siguiente día.
+  /// Al disparar: red de seguridad calendárica + re-armar para el
+  /// siguiente día.
   void _scheduleMidnightTimer() {
     _midnightTimer?.cancel();
     final now = DateTime.now();
@@ -94,35 +96,80 @@ class DailyResetNotifier extends StateNotifier<void> {
     final duration = nextMidnight.difference(now);
 
     AppLogger.debug(
-      'SPEC-58: próximo reset programado en ${duration.inMinutes} min.',
+      'SPEC-58: próximo chequeo de medianoche en ${duration.inMinutes} min.',
     );
 
     _midnightTimer = Timer(duration, () async {
       // SPEC-138 §4.4: en el cruce de medianoche con la app viva, cerramos
       // atómicamente el día que termina antes de limpiar los pilares.
-      await triggerDailyReset(flushClosingDay: true);
+      await triggerCalendarSafetyNet(flushClosingDay: true);
       if (mounted) _scheduleMidnightTimer();
     });
   }
 
-  /// SPEC-58 RF-58-02: Dispara reset de los 5 pilares.
+  /// 18-jul ("Día Metabólico: dos sistemas de día en paralelo" — hallazgo
+  /// central de la auditoría): red de seguridad puramente CALENDÁRICA.
+  ///
+  /// ANTES, este mismo timer de medianoche llamaba a `triggerDailyReset()`
+  /// — el mismo método que resetea los 5 pilares Y fuerza una
+  /// re-evaluación de la racha (`streakNotifier.beginReset()/endReset()`)
+  /// — SIN chequear si había un ciclo metabólico abierto. Eso violaba
+  /// METABOLIC_DAY_CONSTITUTION.md §1 ("cero referencia al reloj del
+  /// calendario") y §2.1 ("crossing medianoche NO crea/cierra nada"): un
+  /// ayuno que seguía activo a medianoche disparaba de todas formas un
+  /// reset de pilares (parpadeo, inofensivo porque `resetDaily()` re-
+  /// suscribe con el mismo `since` del ciclo abierto) Y una re-evaluación
+  /// forzada de `_evaluateToday()` justo en el instante en que `_todayKey`
+  /// cambiaba de día — el disparador mecánico exacto de la partición de
+  /// un día metabólico en dos `StreakEntry`.
+  ///
+  /// AHORA: lo único que sigue siendo legítimamente calendárico (por
+  /// decisión consciente, documentada en METABOLIC_DAY_CONSTITUTION.md
+  /// SPEC-192.1 como EXCEPCIÓN para `daily_summary` y sus gráficos
+  /// retrospectivos) se aísla acá: el flush del snapshot legacy de
+  /// `daily_summary` y el reseteo de descartes de banners de UI. Ninguno
+  /// de los dos toca pilares ni racha.
+  ///
+  /// El reset de pilares + racha (`triggerDailyReset`, sin cambios) queda
+  /// como responsabilidad EXCLUSIVA del cierre real de ciclo metabólico,
+  /// vía `metabolicCycleEvaluatorProvider` — que ya lo dispara
+  /// correctamente cuando `MetabolicCycleService.evaluateAndApply`
+  /// detecta cierre + apertura encadenada.
+  Future<void> triggerCalendarSafetyNet({bool flushClosingDay = false}) async {
+    try {
+      if (flushClosingDay) {
+        await _ref.read(dailySummaryPersistenceServiceProvider).flushClosingDay();
+      }
+      _ref.read(uiInteractionProvider.notifier).resetDismissals();
+      AppLogger.debug(
+        'SPEC-58: red de seguridad calendárica ejecutada '
+        '(daily_summary${flushClosingDay ? " + flush" : ""} + descartes UI). '
+        'Pilares y racha NO tocados — eso es solo responsabilidad del '
+        'cierre de ciclo metabólico.',
+      );
+    } catch (e, stackTrace) {
+      AppLogger.error(
+          'SPEC-58: error en triggerCalendarSafetyNet', e, stackTrace);
+    }
+  }
+
+  /// SPEC-58 RF-58-02: Dispara reset de los 5 pilares + racha.
   ///
   /// Idempotente (RF-58-03): cada notifier individual debe ser idempotente
   /// en su `resetDaily()`. Una segunda invocación produce el mismo state.
   ///
-  /// Llamado desde:
-  /// - bootstrap (si pasó medianoche desde la última sesión) → sin flush:
-  ///   el día previo ya quedó persistido en la sesión anterior y los streams
-  ///   re-emiten el día nuevo.
-  /// - timer al cruzar 00:00:00 → con `flushClosingDay: true` (SPEC-138 §4.4):
-  ///   sella el snapshot del día que termina antes de limpiar los pilares.
-  Future<void> triggerDailyReset({bool flushClosingDay = false}) async {
+  /// 18-jul: llamado EXCLUSIVAMENTE desde `metabolicCycleEvaluatorProvider`
+  /// al detectar un cierre de ciclo real (con apertura encadenada del
+  /// siguiente). Ya NO lo llama el timer de medianoche ni el bootstrap —
+  /// ver `triggerCalendarSafetyNet` arriba y METABOLIC_DAY_CONSTITUTION.md
+  /// §1/§2.1.
+  ///
+  /// Ya NO acepta `flushClosingDay` — ese flush es exclusivamente
+  /// calendárico (`daily_summary` legacy, SPEC-192.1) y vive en
+  /// `triggerCalendarSafetyNet`. Un cierre de ciclo metabólico nunca debe
+  /// sellar el snapshot calendárico del día — son dos relojes distintos.
+  Future<void> triggerDailyReset() async {
     try {
-      // SPEC-138 §4.4: cierre atómico del día que termina (solo path timer).
-      if (flushClosingDay) {
-        await _ref.read(dailySummaryPersistenceServiceProvider).flushClosingDay();
-      }
-
       // SPEC-242: señalar al StreakNotifier que los siguientes cambios de
       // pilar son un reset transitorio, NO acciones del usuario. Durante
       // este ventana, _evaluateToday() usa HWM para preservar el progreso

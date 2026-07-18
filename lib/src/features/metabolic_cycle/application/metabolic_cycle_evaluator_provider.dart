@@ -250,7 +250,7 @@ Future<void> _evaluate(
   final lastSleepLog = sleepState.lastLog;
   final sleepDetected = lastSleepLog != null &&
       lastMealTime != null &&
-      lastSleepLog.fellAsleep.isAfter(lastMealTime!);
+      lastSleepLog.fellAsleep.isAfter(lastMealTime);
 
   // SPEC-229 BUG-B: Guard contra fallback3hAfterWindow prematuro.
   //
@@ -331,16 +331,18 @@ Future<void> _evaluate(
     // calendárica — ahora también el momento del cierre del ciclo, sea
     // la hora que sea.
     //
-    // flushClosingDay: false porque daily_summary (SPEC-138) sigue siendo
-    // por día calendárico. Flushearlo a media tarde lo dejaría incompleto.
+    // 18-jul: triggerDailyReset ya NO acepta flushClosingDay — ese flush
+    // es exclusivamente calendárico (daily_summary legacy, SPEC-138/
+    // SPEC-192.1) y vive en DailyResetNotifier.triggerCalendarSafetyNet,
+    // separado del reset de pilares+racha. Flushear daily_summary desde
+    // acá (a media tarde, con el cierre de un ciclo) lo dejaría
+    // incompleto — son dos relojes distintos a propósito.
     if (result.hasClosure && result.hasOpening) {
       AppLogger.info(
         '[metabolicCycleEvaluator] cierre cíclico detectado — '
         'reseteando pilares in-memory para el nuevo ciclo',
       );
-      await ref
-          .read(dailyResetProvider.notifier)
-          .triggerDailyReset(flushClosingDay: false);
+      await ref.read(dailyResetProvider.notifier).triggerDailyReset();
     }
 
     // SPEC-202.2: si el cierre fue por iniciar el próximo ayuno (acción

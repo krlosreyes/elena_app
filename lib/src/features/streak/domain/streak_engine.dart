@@ -101,13 +101,25 @@ class StreakEngine {
   ///
   /// La racha no se rompe si "hoy" aún no califica — se cuenta desde ayer.
   /// Se rompe cuando hay un día no calificado o una brecha en el calendario.
-  static int computeCurrentStreak(List<StreakEntry> history) {
+  ///
+  /// [asOf] — 18-jul ("Día Metabólico: dos sistemas de día en paralelo"):
+  /// ancla de "hoy"/"ayer" para el chequeo de frescura de la racha. Por
+  /// defecto usa `DateTime.now()` (comportamiento previo, preserva
+  /// compatibilidad con `computeAdherenceTrend` y tests existentes). El
+  /// caller cycle-aware (`StreakNotifier`) debe pasar el `startedAt` del
+  /// ciclo metabólico abierto — así "hoy" coincide con la clave `date` que
+  /// realmente escriben las entradas (ver `StreakEntry.date`, ahora
+  /// anclado al día metabólico, no al reloj). Sin este parámetro, un
+  /// ciclo abierto que arrancó ayer (ayuno extendido cruzando medianoche)
+  /// se vería como "racha vieja" y se descartaría por error, aunque el
+  /// ciclo siga vivo y acumulando.
+  static int computeCurrentStreak(List<StreakEntry> history, {DateTime? asOf}) {
     if (history.isEmpty) return 0;
 
     final sorted = _sortedDescending(history);
-    final today = _todayKey();
-    final yesterday =
-        _dateKey(DateTime.now().subtract(const Duration(days: 1)));
+    final now = asOf ?? DateTime.now();
+    final today = _dateKey(now);
+    final yesterday = _dateKey(now.subtract(const Duration(days: 1)));
 
     // Punto de partida: si hoy califica, empezar desde hoy; si no, desde ayer.
     int start = 0;
@@ -158,9 +170,13 @@ class StreakEngine {
   /// Propiedad clave de no-regresión: mientras un usuario nunca acumule
   /// 7 días reales consecutivos, `protectedDates` queda vacío y el
   /// resultado es IDÉNTICO a [computeCurrentStreak].
+  ///
+  /// [asOf] — mismo propósito que en [computeCurrentStreak]: ancla
+  /// cycle-aware de "hoy"/"ayer". Ver comentario allí.
   static StreakFreezeState computeCurrentStreakWithFreezes(
-    List<StreakEntry> history,
-  ) {
+    List<StreakEntry> history, {
+    DateTime? asOf,
+  }) {
     if (history.isEmpty) {
       return const StreakFreezeState(
         currentStreak: 0,
@@ -178,9 +194,9 @@ class StreakEngine {
     // Paso 2 (atrás, igual que computeCurrentStreak): un día cuenta si
     // califica O fue protegido por una reserva.
     final descending = _sortedDescending(history);
-    final today = _todayKey();
-    final yesterday =
-        _dateKey(DateTime.now().subtract(const Duration(days: 1)));
+    final now = asOf ?? DateTime.now();
+    final today = _dateKey(now);
+    final yesterday = _dateKey(now.subtract(const Duration(days: 1)));
 
     bool countsForStreak(StreakEntry e) =>
         e.qualifiesForStreak || protectedDates.contains(e.date);
@@ -621,8 +637,6 @@ class StreakEngine {
 
   static List<StreakEntry> _sortedAscending(List<StreakEntry> history) =>
       [...history]..sort((a, b) => a.date.compareTo(b.date));
-
-  static String _todayKey() => _dateKey(DateTime.now());
 
   /// SPEC-138: delega en la fuente única del día (formato ISO `YYYY-MM-DD`).
   static String _dateKey(DateTime d) => DayBoundaryResolver.dayKeyIso(d);
