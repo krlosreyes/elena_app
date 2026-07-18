@@ -518,7 +518,21 @@ class StreakNotifier extends StateNotifier<StreakState> {
 
   // ── Estado derivado ─────────────────────────────────────────────────────────
 
-  void _rebuildState(List<StreakEntry> history) {
+  void _rebuildState(List<StreakEntry> rawHistory) {
+    // 17-jul (Carlos: "llevaba 2, cerré el día, me devolvió a uno") —
+    // ver comentario extenso en StreakEngine.reconcileTodayWithLocal.
+    // El stream de Firestore puede reemitir una foto de HOY más vieja
+    // que la que ya tenemos en memoria (ack desordenado tras escrituras
+    // rápidas, típico al cerrar un ayuno y arrancar el siguiente el
+    // mismo día). Reconciliamos ANTES de derivar todayEntry/racha para
+    // que ni el display ni `computeCurrentStreakWithFreezes` (que lee
+    // de `history` directo) hereden el retroceso.
+    final history = StreakEngine.reconcileTodayWithLocal(
+      history: rawHistory,
+      localToday: state.todayEntry,
+      todayKey: _todayKey,
+    );
+
     final todayEntry = history.firstWhere(
       (e) => e.date == _todayKey,
       orElse: () => StreakEntry(

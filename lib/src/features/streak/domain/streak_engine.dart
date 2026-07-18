@@ -504,6 +504,67 @@ class StreakEngine {
   }
 
   // ─────────────────────────────────────────────────────────────────────────
+  // Reconciliación de HOY contra snapshots desactualizados de Firestore
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /// 17-jul (Carlos: "llevaba 2, cerré el día, me devolvió a uno"): protege
+  /// el conteo de racha contra una foto de Firestore de HOY más vieja que
+  /// la que ya se calculó en memoria.
+  ///
+  /// `StreakNotifier.watchHistory` puede reemitir una versión de la
+  /// entrada de hoy desactualizada — Firestore no garantiza que los acks
+  /// de escrituras rápidas y consecutivas al mismo documento lleguen al
+  /// listener en el mismo orden en que se hicieron. Es exactamente el
+  /// mismo tipo de carrera que documenta el comentario SPEC-227 en
+  /// `metabolic_cycle_service.dart` ("StreakNotifier reseteando
+  /// fastingMagnitude antes de que el evaluador capture el snapshot"),
+  /// pero afectando la propia racha en vez del daily score del ciclo.
+  ///
+  /// Reproducible: completar un ayuno (fastingCompleted:true persiste),
+  /// arrancar el siguiente ayuno el mismo día calendario (Día Metabólico
+  /// multi-ciclo) — si el ack de la escritura del primer ayuno llega
+  /// desordenado, `_rebuildState` puede recibir un `history` donde HOY
+  /// todavía figura `fastingCompleted:false`. Como
+  /// `computeCurrentStreakWithFreezes` lee de `history` directo (no de
+  /// `state.todayEntry`), ese retroceso descalifica el día y la racha cae.
+  ///
+  /// Solo `fastingCompleted`/`fastingMagnitude` tienen garantía de
+  /// monotonía dentro del día calendario — ver el comentario extenso en
+  /// `StreakNotifier._evaluateToday` sobre por qué un día puede tener 2+
+  /// ciclos de ayuno. Los demás 4 pilares son deliberadamente "vivos"
+  /// (SPEC-242: si el usuario borra un vaso de agua, el score debe bajar
+  /// de inmediato) — esta función NO los toca, para no enmascarar una
+  /// eliminación real del usuario como si fuera un snapshot viejo.
+  ///
+  /// Si [history] no trae ninguna entrada de hoy (el doc recién creado
+  /// aún no llegó al snapshot local), se inyecta [localToday]. En
+  /// cualquier otro caso [history] se devuelve tal cual — sin copias
+  /// innecesarias cuando no hace falta reconciliar nada.
+  static List<StreakEntry> reconcileTodayWithLocal({
+    required List<StreakEntry> history,
+    required StreakEntry? localToday,
+    required String todayKey,
+  }) {
+    if (localToday == null || localToday.date != todayKey) return history;
+    if (!localToday.fastingCompleted) return history;
+
+    final idx = history.indexWhere((e) => e.date == todayKey);
+    if (idx == -1) {
+      return [localToday, ...history];
+    }
+    final incoming = history[idx];
+    if (incoming.fastingCompleted) return history;
+
+    final patched = incoming.copyWith(
+      fastingCompleted: true,
+      fastingMagnitude: localToday.fastingMagnitude,
+    );
+    final out = [...history];
+    out[idx] = patched;
+    return out;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
   // Helpers privados
   // ─────────────────────────────────────────────────────────────────────────
 
