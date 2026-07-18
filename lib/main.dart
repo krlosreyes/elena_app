@@ -67,17 +67,83 @@ Future<void> _bootstrap() async {
     );
   }
 
-  // SPEC-80: enganchar handlers de error globales lo antes posible
-  // tras inicializar Firebase. Crashlytics solo reporta en release
-  // mode mobile (web queda no soportado; debug solo loguea).
-  await CrashlyticsService.init();
+  // PERF-02 (auditoría independiente 2026-07-11): Crashlytics, Analytics y
+  // App Check no dependen entre sí (solo de Firebase.initializeApp, ya
+  // completado arriba) — antes se esperaban en serie, alargando el tiempo
+  // hasta el primer frame sin necesidad. Se paralelizan con Future.wait.
+  // SharedPreferences y NotificationService tampoco dependen entre sí ni de
+  // los anteriores, así que se lanzan en un segundo Future.wait. La única
+  // dependencia real que se preserva es: SharedPreferences debe resolver
+  // antes de leer `onboardingCompleted` más abajo.
+  await Future.wait<void>([
+    // SPEC-80: Crashlytics solo reporta en release mode mobile (web queda no
+    // soportado; debug solo loguea).
+    CrashlyticsService.init(),
+    // SPEC-193: analytics de negocio. Nunca bloquea el arranque (el servicio
+    // absorbe sus propios errores). app_open es el primer evento del embudo.
+    AnalyticsService.init().then((_) => AnalyticsService.logAppOpen()),
+    _activateAppCheck(),
+  ]);
 
-  // SPEC-193: analytics de negocio. Init tras Crashlytics; nunca bloquea
-  // el arranque (el servicio absorbe sus propios errores). app_open es el
-  // primer evento del embudo.
-  await AnalyticsService.init();
-  await AnalyticsService.logAppOpen();
+  final sharedPreferencesFuture = SharedPreferences.getInstance();
+  final notificationInitFuture = NotificationService.init();
+  await Future.wait<void>([sharedPreferencesFuture, notificationInitFuture]);
+  final sharedPreferences = await sharedPreferencesFuture;
 
+  // SPEC-172 (2026-06-04): solicitar permisos iOS post-init.
+  // En flutter_local_notifications ≥ 13 el flag `requestAlertPermission`
+  // del init NO dispara el modal nativo por sí solo en iOS reciente.
+  // Sin esta llamada explícita, iOS marca la app como "permisos denegados
+  // por default" y `zonedSchedule` se ejecuta sin error pero el sistema
+  // descarta todas las entregas. Diagnóstico en docs/PLAN_HOTFIX_2026_06_04.md §P3.
+  //
+  // SPEC-182 §RF-182-06 (2026-06-05): para usuarios NUEVOS, el prompt
+  // pasa al paso 104 del onboarding (momento educativo con 3 ejemplos
+  // de notificación y respaldo bibliográfico). Usuarios EXISTENTES
+  // (`onboardingCompleted == true`) siguen recibiendo el prompt acá en
+  // cold start — no podemos retroceder en su flujo.
+  final onboardingCompleted =
+      sharedPreferences.getBool('onboardingCompleted') ?? false;
+  if (onboardingCompleted) {
+    await NotificationService.requestPermissions();
+  }
+
+  // SPEC-196: infra de cobro (RevenueCat). La key pública por plataforma se
+  // inyecta vía --dart-define (RC_IOS_KEY / RC_ANDROID_KEY); NO se hardcodea.
+  // Si no hay key (cobro aún no habilitado) o es web, se mantiene el default
+  // FreeBillingService + gating inerte (la app funciona completa).
+  //
+  // PERF-02: NO se difiere a post-runApp en esta pasada — RevenueCat es la
+  // pieza que gatea el acceso Premium (dinero real) y moverla a un
+  // FutureProvider post-runApp requeriría un rediseño del wiring de
+  // billing_providers.dart (swap en vivo del servicio activo) que no se
+  // puede validar sin un compilador/dispositivo real en este entorno. Queda
+  // documentado como seguimiento recomendado, no aplicado a ciegas.
+  final billingOverrides = await _initBilling();
+
+  runApp(
+    ProviderScope(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+        ...billingOverrides,
+      ],
+      child: const ElenaApp(),
+    ),
+  );
+}
+
+/// SPEC fix (2026-06-08): App Check SOLO en release. En debug, el provider
+/// `AppleProvider.debug`/`AndroidProvider.debug` exige un token registrado;
+/// si no está (o el token rota al reinstalar), `exchangeDebugToken` devuelve
+/// 403 en bucle, FirebaseAuth pierde la credencial a media sesión
+/// (`Credential Changed. Current user:` vacío) → Firestore `permission-denied`
+/// → la app lo trata como logout y resetea pilares / aborta escrituras.
+/// Omitir App Check en debug elimina ese churn. Release sigue usando
+/// AppAttest / PlayIntegrity / reCAPTCHA sin cambios.
+///
+/// PERF-02: extraído a función propia para poder correrlo en paralelo con
+/// Crashlytics/Analytics vía Future.wait sin cambiar su lógica interna.
+Future<void> _activateAppCheck() async {
   // SPEC-73.1 (housekeeping): AppCheck se omite en web debug porque la
   // clave reCAPTCHA v3 placeholder produce errores ruidosos en consola
   // que el try/catch de Dart no puede atrapar (Firebase web SDK los
@@ -115,11 +181,11 @@ Future<void> _bootstrap() async {
         androidProvider: kReleaseMode
             ? AndroidProvider.playIntegrity
             : AndroidProvider.debug,
-        // ignore: deprecated_member_use
         // appAttestWithDeviceCheckFallback: si AppAttest falla (dispositivo no
         // soportado, provisioning issue, primer launch en TestFlight), cae a
         // DeviceCheck automáticamente. AppAttest puro bloqueaba Firestore con
         // 403 silencioso en algunos devices/TestFlight sin devolver error útil.
+        // ignore: deprecated_member_use
         appleProvider: kReleaseMode
             ? AppleProvider.appAttestWithDeviceCheckFallback
             : AppleProvider.debug,
@@ -134,46 +200,6 @@ Future<void> _bootstrap() async {
   } else {
     AppLogger.info('AppCheck omitido: web debug (ver SPEC-73.1).');
   }
-
-  // DT-04: SharedPreferences debe inicializarse antes de runApp.
-  final sharedPreferences = await SharedPreferences.getInstance();
-
-  // SPEC-05: Inicializar el servicio de notificaciones (timezone + canales Android).
-  await NotificationService.init();
-
-  // SPEC-172 (2026-06-04): solicitar permisos iOS post-init.
-  // En flutter_local_notifications ≥ 13 el flag `requestAlertPermission`
-  // del init NO dispara el modal nativo por sí solo en iOS reciente.
-  // Sin esta llamada explícita, iOS marca la app como "permisos denegados
-  // por default" y `zonedSchedule` se ejecuta sin error pero el sistema
-  // descarta todas las entregas. Diagnóstico en docs/PLAN_HOTFIX_2026_06_04.md §P3.
-  //
-  // SPEC-182 §RF-182-06 (2026-06-05): para usuarios NUEVOS, el prompt
-  // pasa al paso 104 del onboarding (momento educativo con 3 ejemplos
-  // de notificación y respaldo bibliográfico). Usuarios EXISTENTES
-  // (`onboardingCompleted == true`) siguen recibiendo el prompt acá en
-  // cold start — no podemos retroceder en su flujo.
-  final onboardingCompleted =
-      sharedPreferences.getBool('onboardingCompleted') ?? false;
-  if (onboardingCompleted) {
-    await NotificationService.requestPermissions();
-  }
-
-  // SPEC-196: infra de cobro (RevenueCat). La key pública por plataforma se
-  // inyecta vía --dart-define (RC_IOS_KEY / RC_ANDROID_KEY); NO se hardcodea.
-  // Si no hay key (cobro aún no habilitado) o es web, se mantiene el default
-  // FreeBillingService + gating inerte (la app funciona completa).
-  final billingOverrides = await _initBilling();
-
-  runApp(
-    ProviderScope(
-      overrides: [
-        sharedPreferencesProvider.overrideWithValue(sharedPreferences),
-        ...billingOverrides,
-      ],
-      child: const ElenaApp(),
-    ),
-  );
 }
 
 /// SPEC-196/197/198: inicializa el servicio de cobro activo.

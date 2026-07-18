@@ -80,8 +80,10 @@ void main() {
   });
 
   group('SPEC-164 — AggregationMode.forRange', () {
-    test('30D → daily', () {
-      expect(AggregationMode.forRange(AnalysisRange.d30),
+    test('1W/1M → daily', () {
+      expect(AggregationMode.forRange(AnalysisRange.w1),
+          AggregationMode.daily);
+      expect(AggregationMode.forRange(AnalysisRange.m1),
           AggregationMode.daily);
     });
     test('3M/6M → weekly', () {
@@ -90,10 +92,8 @@ void main() {
       expect(AggregationMode.forRange(AnalysisRange.m6),
           AggregationMode.weekly);
     });
-    test('1A/all → monthly', () {
+    test('1A → monthly', () {
       expect(AggregationMode.forRange(AnalysisRange.y1),
-          AggregationMode.monthly);
-      expect(AggregationMode.forRange(AnalysisRange.all),
           AggregationMode.monthly);
     });
   });

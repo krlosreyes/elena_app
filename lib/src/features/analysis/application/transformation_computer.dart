@@ -136,26 +136,6 @@ class TransformationComputer {
 
   // ─── Helpers privados ────────────────────────────────────────────────
 
-  /// Busca el último check-in cuyo `recordedAt` cae en la ventana
-  /// `[now - end, now - start]` (más viejo a más reciente).
-  static BiometricCheckIn? _latestInWindow(
-    List<BiometricCheckIn> history,
-    DateTime now, {
-    required Duration start,
-    required Duration end,
-  }) {
-    final from = now.subtract(start);
-    final to = now.subtract(end);
-    for (final c in history) {
-      final at = c.recordedAt;
-      if (at == null) continue;
-      if (at.isBefore(from)) continue;
-      if (at.isAfter(to)) continue;
-      return c;
-    }
-    return null;
-  }
-
   /// Construye un `TransformationDelta<double>` para un campo biométrico.
   static TransformationDelta<double> _biometricDelta(
     List<BiometricCheckIn> history,
@@ -251,7 +231,10 @@ class TransformationComputer {
         past = score;
         pastAge = now.difference(at).inDays;
       }
-      if (current != null && past != null) break;
+      // `current` ya quedó no-nulo en el bloque anterior (solo llegamos
+      // acá cuando `score` es no-nulo) — el analyzer marca esa mitad de
+      // la condición como redundante. Se simplifica a solo `past`.
+      if (past != null) break;
     }
 
     return TransformationDelta<int>(

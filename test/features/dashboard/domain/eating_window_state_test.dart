@@ -219,4 +219,87 @@ void main() {
       expect(state.windowStart, DateTime(2026, 5, 14, 12, 30));
     });
   });
+
+  group('EatingWindowState — firstMealLoggedToday (18-jul)', () {
+    test(
+        'usuario nuevo (sin lastInterval) registra su primer desayuno a '
+        'las 8:30am → la ventana arranca EN esa hora real, ignorando '
+        'firstMealGoal/óptimo', () {
+      // Protocolo 16:8, óptimo teórico 12:30, firstMealGoal (goal, no
+      // registro real) en 07:00 — ninguno de los dos debe ganar: el
+      // registro real de comida es la señal más confiable.
+      final state = EatingWindowState.compute(
+        lastInterval: null,
+        user: _user(
+          protocol: '16:8',
+          firstMealGoal: DateTime(2026, 5, 14, 7, 0),
+        ),
+        now: DateTime(2026, 5, 14, 9, 0),
+        firstMealLoggedToday: DateTime(2026, 5, 14, 8, 30),
+      );
+      expect(state.windowStart, DateTime(2026, 5, 14, 8, 30));
+      expect(state.windowEnd, DateTime(2026, 5, 14, 16, 30));
+    });
+
+    test(
+        'lastInterval reciente Y comida registrada, interval más temprano '
+        '→ gana el interval (comportamiento SPEC-95/96 sin regresión)', () {
+      // Flujo normal: cierra ayuno a las 12:00, come a las 12:15.
+      final state = EatingWindowState.compute(
+        lastInterval: _interval(
+          startTime: DateTime(2026, 5, 14, 12, 0),
+          isFasting: false,
+        ),
+        user: _user(protocol: '16:8'),
+        now: DateTime(2026, 5, 14, 13, 0),
+        firstMealLoggedToday: DateTime(2026, 5, 14, 12, 15),
+      );
+      expect(state.windowStart, DateTime(2026, 5, 14, 12, 0));
+    });
+
+    test(
+        'lastInterval reciente Y comida registrada, comida más temprana '
+        '→ gana la comida real (el usuario comió antes de cerrar el '
+        'ayuno en la app)', () {
+      final state = EatingWindowState.compute(
+        lastInterval: _interval(
+          startTime: DateTime(2026, 5, 14, 12, 30),
+          isFasting: false,
+        ),
+        user: _user(protocol: '16:8'),
+        now: DateTime(2026, 5, 14, 13, 0),
+        firstMealLoggedToday: DateTime(2026, 5, 14, 12, 0),
+      );
+      expect(state.windowStart, DateTime(2026, 5, 14, 12, 0));
+    });
+
+    test(
+        'lastInterval viejo (>24h, stale) pero hay comida registrada hoy '
+        '→ gana la comida real, no el óptimo/goal', () {
+      final state = EatingWindowState.compute(
+        lastInterval: _interval(
+          startTime: DateTime(2026, 5, 11, 13, 0),
+          isFasting: false,
+        ),
+        user: _user(
+          protocol: '16:8',
+          firstMealGoal: DateTime(2026, 5, 14, 9, 0),
+        ),
+        now: DateTime(2026, 5, 14, 14, 0),
+        firstMealLoggedToday: DateTime(2026, 5, 14, 8, 30),
+      );
+      expect(state.windowStart, DateTime(2026, 5, 14, 8, 30));
+    });
+
+    test(
+        'sin lastInterval y sin comida registrada → preserva el fallback '
+        'preexistente (óptimo/firstMealGoal)', () {
+      final state = EatingWindowState.compute(
+        lastInterval: null,
+        user: _user(protocol: '18:6'),
+        now: DateTime(2026, 5, 14, 16, 0),
+      );
+      expect(state.windowStart, DateTime(2026, 5, 14, 14, 30));
+    });
+  });
 }

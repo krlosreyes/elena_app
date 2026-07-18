@@ -151,7 +151,7 @@ class CoachingFatigueNotifier extends StateNotifier<CoachingFatigueState> {
     await _prefs.setString(_kKey, jsonEncode(data));
     // 2. Firestore cross-device (fire-and-forget, SPEC-206).
     if (_repo != null && _uid != null) {
-      _repo!.saveCoachingFatigue(_uid!, data);
+      _repo.saveCoachingFatigue(_uid, data);
     }
   }
 

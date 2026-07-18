@@ -13,7 +13,6 @@ import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/cycle_score_migration_service.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_service.dart';
 import 'package:elena_app/src/features/metabolic_cycle/data/metabolic_cycle_repository_impl.dart';
-import 'package:elena_app/src/features/metabolic_cycle/domain/closure_reason.dart';
 import 'package:elena_app/src/features/metabolic_cycle/domain/metabolic_cycle.dart';
 
 /// Service singleton para la sesión. NO autoDispose — debe preservar

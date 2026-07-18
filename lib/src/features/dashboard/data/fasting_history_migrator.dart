@@ -43,49 +43,62 @@ class FastingHistoryMigrator {
   Future<void> migrateIfNeeded(String uid) async {
     if (await _appState.getMigrationFlag(uid, _kMigrationKey)) return;
 
-    AppLogger.debug('[SPEC-222] Iniciando migración fasting_history → subcollección uid=$uid');
+    // SEC-07: uid truncado, nunca completo en logs.
+    AppLogger.debug(
+        '[SPEC-222] Iniciando migración fasting_history → subcollección uid=${AppLogger.truncateUid(uid)}');
 
     try {
-      // Leer todos los docs de la colección PLANA del usuario.
-      final flatSnap = await _firestore
-          .collection('fasting_history')
-          .where('userId', isEqualTo: uid)
-          .get(const GetOptions(source: Source.server));
-
-      if (flatSnap.docs.isEmpty) {
-        // Nada que migrar (cuenta nueva o ya limpia). Marcar como hecho.
-        AppLogger.debug('[SPEC-222] Sin datos en colección plana — migración trivial completada.');
-        await _appState.setMigrationFlag(uid, _kMigrationKey);
-        return;
-      }
-
-      AppLogger.debug('[SPEC-222] Migrando ${flatSnap.docs.length} docs...');
-
-      // Destino: subcolección aislada por uid (nuevo path SPEC-217).
+      // FB-12 (auditoría independiente 2026-07-11): la lectura ya no trae
+      // todos los docs del usuario en un único .get() sin límite — se pagina
+      // en páginas de 450 vía startAfterDocument para acotar memoria/latencia
+      // en usuarios con miles de ciclos históricos. Destino: subcolección
+      // aislada por uid (nuevo path SPEC-217).
+      const pageSize = 450;
       final subCol = _firestore
           .collection('users')
           .doc(uid)
           .collection('fasting_history');
 
-      // Firestore batch tiene límite de 500 ops; 2000 docs → 4 batches máx.
-      const batchSize = 450;
-      final docs = flatSnap.docs;
+      int totalMigrated = 0;
+      DocumentSnapshot<Map<String, dynamic>>? lastDoc;
+      var batchNumber = 0;
 
-      for (var i = 0; i < docs.length; i += batchSize) {
-        final chunk = docs.sublist(i, (i + batchSize).clamp(0, docs.length));
+      while (true) {
+        Query<Map<String, dynamic>> query = _firestore
+            .collection('fasting_history')
+            .where('userId', isEqualTo: uid)
+            .limit(pageSize);
+        if (lastDoc != null) {
+          query = query.startAfterDocument(lastDoc);
+        }
+
+        final page = await query.get(const GetOptions(source: Source.server));
+        if (page.docs.isEmpty) break;
+
+        batchNumber++;
         final batch = _firestore.batch();
-        for (final doc in chunk) {
+        for (final doc in page.docs) {
           // set() es idempotente: si ya existe (migración parcial previa),
           // sobreescribe con los mismos datos — sin efecto neto.
           batch.set(subCol.doc(doc.id), doc.data());
         }
         await batch.commit();
-        AppLogger.debug('[SPEC-222] Batch ${i ~/ batchSize + 1} commiteado (${chunk.length} docs).');
+        totalMigrated += page.docs.length;
+        AppLogger.debug(
+            '[SPEC-222] Página $batchNumber commiteada (${page.docs.length} docs).');
+
+        lastDoc = page.docs.last;
+        if (page.docs.length < pageSize) break; // última página
       }
 
-      // Solo marcar como hecho si TODOS los batches tuvieron éxito.
+      if (totalMigrated == 0) {
+        AppLogger.debug('[SPEC-222] Sin datos en colección plana — migración trivial completada.');
+      } else {
+        AppLogger.debug('[SPEC-222] Migración completada — $totalMigrated docs copiados.');
+      }
+
+      // Solo marcar como hecho si TODAS las páginas tuvieron éxito.
       await _appState.setMigrationFlag(uid, _kMigrationKey);
-      AppLogger.debug('[SPEC-222] Migración completada — ${docs.length} docs copiados.');
     } catch (e, st) {
       // No relanzar — el fallo se reintentará en el próximo arranque.
       AppLogger.warning('[SPEC-222] Error en migración (se reintentará): $e\n$st', e);

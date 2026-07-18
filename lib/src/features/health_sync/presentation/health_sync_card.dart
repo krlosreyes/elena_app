@@ -14,8 +14,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:io' show Platform;
 
 import 'package:android_intent_plus/android_intent.dart';
-import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb;
 
+import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/billing/application/billing_providers.dart';
 import 'package:elena_app/src/features/billing/presentation/paywall_launcher.dart';
@@ -488,10 +489,7 @@ class _HealthSyncCardState extends ConsumerState<HealthSyncCard>
 
     // Intento 1: URL scheme nativo de Samsung Health.
     try {
-      if (kDebugMode) {
-        // ignore: avoid_print
-        print('🩺 SAMSUNG OPEN: intentando shealth://');
-      }
+      AppLogger.debug('HealthSyncCard: SAMSUNG OPEN intentando shealth://');
       const intent1 = AndroidIntent(
         action: 'android.intent.action.VIEW',
         data: 'shealth://home',
@@ -499,24 +497,17 @@ class _HealthSyncCardState extends ConsumerState<HealthSyncCard>
         flags: <int>[0x10000000],
       );
       await intent1.launch();
-      if (kDebugMode) {
-        // ignore: avoid_print
-        print('🩺 SAMSUNG OPEN: shealth:// OK');
-      }
+      AppLogger.debug('HealthSyncCard: SAMSUNG OPEN shealth:// OK');
       return;
     } catch (e) {
-      if (kDebugMode) {
-        // ignore: avoid_print
-        print('🩺 SAMSUNG OPEN: shealth:// falló — $e');
-      }
+      AppLogger.debug('HealthSyncCard: SAMSUNG OPEN shealth:// falló', e);
     }
 
     // Intento 2: intent MAIN + category LAUNCHER (forma estándar de abrir apps).
     try {
-      if (kDebugMode) {
-        // ignore: avoid_print
-        print('🩺 SAMSUNG OPEN: intentando MAIN/LAUNCHER');
-      }
+      AppLogger.debug(
+        'HealthSyncCard: SAMSUNG OPEN intentando MAIN/LAUNCHER',
+      );
       const intent2 = AndroidIntent(
         action: 'android.intent.action.MAIN',
         category: 'android.intent.category.LAUNCHER',
@@ -524,23 +515,17 @@ class _HealthSyncCardState extends ConsumerState<HealthSyncCard>
         flags: <int>[0x10000000],
       );
       await intent2.launch();
-      if (kDebugMode) {
-        // ignore: avoid_print
-        print('🩺 SAMSUNG OPEN: MAIN/LAUNCHER OK');
-      }
+      AppLogger.debug('HealthSyncCard: SAMSUNG OPEN MAIN/LAUNCHER OK');
       return;
     } catch (e) {
-      if (kDebugMode) {
-        // ignore: avoid_print
-        print('🩺 SAMSUNG OPEN: MAIN/LAUNCHER falló — $e');
-      }
+      AppLogger.debug(
+        'HealthSyncCard: SAMSUNG OPEN MAIN/LAUNCHER falló',
+        e,
+      );
     }
 
     // Fallback final: Health Connect settings.
-    if (kDebugMode) {
-      // ignore: avoid_print
-      print('🩺 SAMSUNG OPEN: fallback → Health Connect');
-    }
+    AppLogger.debug('HealthSyncCard: SAMSUNG OPEN fallback → Health Connect');
     await ref.read(healthSyncServiceProvider).openHealthConnectSettings();
   }
 

@@ -11,8 +11,16 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/features/progress/domain/biometric_checkin.dart';
+import 'package:elena_app/src/features/progress/domain/biometric_repository.dart'
+    as domain;
 
-class BiometricRepository {
+// ARCH-05 (auditoría 2026-07-11): implementa el contrato
+// `domain.BiometricRepository` (domain/biometric_repository.dart). Se
+// mantiene el nombre `BiometricRepository` sin renombrar — tiene múltiples
+// consumidores que instancian/tipan por la clase concreta (verificado con
+// grep, ver informe de la tarea) — por eso el import del contrato usa
+// prefijo `domain` para evitar colisión de nombres en este archivo.
+class BiometricRepository implements domain.BiometricRepository {
   const BiometricRepository(this._firestore);
 
   final FirebaseFirestore _firestore;
@@ -29,6 +37,7 @@ class BiometricRepository {
 
   /// Guarda o sobreescribe el check-in del día dado.
   /// El ID del documento es la fecha 'yyyy-MM-dd', igual que StreakEntry.
+  @override
   Future<void> saveCheckIn(BiometricCheckIn checkIn) async {
     await _col(checkIn.userId)
         .doc(checkIn.date)
@@ -50,6 +59,7 @@ class BiometricRepository {
   ///
   /// El llamador canónico es `BiometricHistoryService`. Otros callsites
   /// deberían usar el servicio, no este método directo.
+  @override
   Future<void> applyBiometricUpdate({
     required String userId,
     required BiometricCheckIn historySnapshot,
@@ -81,6 +91,7 @@ class BiometricRepository {
   /// de uso diario y elimina el corte silencioso de data antigua que
   /// rompía el rango "Todo" en Análisis para usuarios con histórico
   /// largo. 2000 docs ordenados por date son < 2 MB egress.
+  @override
   Stream<List<BiometricCheckIn>> watchHistory(
     String userId, {
     int limit = 2000,
@@ -102,9 +113,25 @@ class BiometricRepository {
   }
 
   /// Devuelve el check-in más reciente (1 lectura — para inicialización).
+  ///
+  /// FB-03 (auditoría 2026-07-11): antes hacía `.get()` plano sin timeout
+  /// ni fallback a caché, a diferencia del patrón ya validado en
+  /// `firebase_auth_repository._buildAccount` (timeout de 6s + fallback a
+  /// `Source.cache`). Sin esto, un caller que espere este Future (backfill
+  /// al login, health import) podía colgarse indefinidamente offline.
+  @override
   Future<BiometricCheckIn?> fetchLatest(String userId) async {
-    final snap =
-        await _col(userId).orderBy('date', descending: true).limit(1).get();
+    final query = _col(userId).orderBy('date', descending: true).limit(1);
+    QuerySnapshot<Map<String, dynamic>> snap;
+    try {
+      snap = await query.get().timeout(const Duration(seconds: 6));
+    } catch (_) {
+      try {
+        snap = await query.get(const GetOptions(source: Source.cache));
+      } catch (_) {
+        return null;
+      }
+    }
     if (snap.docs.isEmpty) return null;
     try {
       return BiometricCheckIn.fromJson(snap.docs.first.data());
@@ -114,6 +141,7 @@ class BiometricRepository {
   }
 
   /// Check-in del día de hoy si existe.
+  @override
   Future<BiometricCheckIn?> fetchToday(String userId) async {
     final today = _dateKey(DateTime.now());
     return fetchByDate(userId, today);
@@ -122,8 +150,22 @@ class BiometricRepository {
   /// Check-in para una fecha específica (yyyy-MM-dd) si existe.
   /// Usado por HealthImportService para evitar sobreescribir pesos
   /// manuales en días históricos (Hallazgo-3 de auditoría 2026-07-04).
+  ///
+  /// FB-03 (auditoría 2026-07-11): mismo timeout + fallback a caché que
+  /// `fetchLatest` (ver comentario arriba).
+  @override
   Future<BiometricCheckIn?> fetchByDate(String userId, String date) async {
-    final doc = await _col(userId).doc(date).get();
+    final docRef = _col(userId).doc(date);
+    DocumentSnapshot<Map<String, dynamic>> doc;
+    try {
+      doc = await docRef.get().timeout(const Duration(seconds: 6));
+    } catch (_) {
+      try {
+        doc = await docRef.get(const GetOptions(source: Source.cache));
+      } catch (_) {
+        return null;
+      }
+    }
     if (!doc.exists || doc.data() == null) return null;
     try {
       return BiometricCheckIn.fromJson(doc.data()!);

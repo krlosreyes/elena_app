@@ -15,7 +15,8 @@ Widget _wrap(CoachingFeedback? feedback) {
     overrides: [
       coachingClosureFeedbackProvider.overrideWith((ref) => feedback),
       // SPEC-197: el feedback de cierre es Premium; el test corre como premium.
-      featureGateProvider.overrideWithValue(const FeatureGate(isPremium: true)),
+      featureGateProvider.overrideWithValue(
+          const FeatureGate(isPremium: true, isInTrial: false)),
     ],
     child: const MaterialApp(
       home: Scaffold(body: CycleCoachingFeedbackCard()),

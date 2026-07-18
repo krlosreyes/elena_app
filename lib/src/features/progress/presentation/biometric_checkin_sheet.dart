@@ -3,9 +3,12 @@
 // Campos: peso (obligatorio), %grasa (opcional), cintura (opcional), nota.
 // Diseño consistente con IMRDetailSheet.
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 import 'package:elena_app/src/core/engine/longitudinal_imr_provider.dart';
 import 'package:elena_app/src/core/engine/metabolic_state_provider.dart';
@@ -130,27 +133,42 @@ class _BiometricCheckInSheetState extends ConsumerState<BiometricCheckInSheet> {
       createdAt: today,
     );
 
-    // SPEC-143: el sheet ahora pasa por el servicio canónico, que
-    // garantiza dos cosas que `ProgressNotifier.saveCheckIn` no daba:
-    // (a) escritura atómica de `users/{uid}` + `biometric_history`,
-    // (b) versionado con `source: 'checkin_sheet'` para auditoría.
-    // El stream de progressProvider sigue captando el cambio porque
-    // escucha el snapshot de biometric_history.
-    await ref.read(biometricHistoryServiceProvider).updateFromCheckInSheet(
-          currentUser: user,
-          checkInData: checkIn,
-        );
-
-    // SPEC-141 §RF-141-12.A (2026-06-05): gatillo A — recompute
-    // forzado del IMR longitudinal tras check-in biométrico manual.
-    // El usuario acaba de entregar data nueva → recalculamos sin
-    // chequear staleness y persistimos al cache `imr.current`.
+    // SPEC-143: el sheet pasa por el servicio canónico, que garantiza
+    // (a) escritura atómica de `users/{uid}` + `biometric_history` vía
+    // WriteBatch (se mantiene intacta — solo cambia CUÁNDO se espera el
+    // ack, no la atomicidad del batch en sí), y (b) versionado con
+    // `source: 'checkin_sheet'` para auditoría. El stream de
+    // progressProvider sigue captando el cambio porque escucha el
+    // snapshot de biometric_history.
+    //
+    // FB-03 (auditoría 2026-07-11): antes esta función hacía `await`
+    // directo sobre updateFromCheckInSheet + recomputeAndPersist. Si el
+    // dispositivo estaba offline, el batch.commit() interno nunca
+    // resolvía y el sheet quedaba en `_isSaving = true` indefinidamente
+    // (mismo bug raíz que motivó SPEC-206 en Hidratación). El SDK de
+    // Firestore ya aplica la mutación a la caché local en cuanto se
+    // llama a `batch.commit()`, sin esperar el ack del servidor — por
+    // eso es seguro no bloquear la UI en ese ack: el listener de
+    // biometric_history (ProgressNotifier) refleja el cambio al toque.
     final longitudinal = ref.read(longitudinalImrProvider);
-    await ref.read(weeklyImrSnapshotServiceProvider).recomputeAndPersist(
+    final historyService = ref.read(biometricHistoryServiceProvider);
+    final snapshotService = ref.read(weeklyImrSnapshotServiceProvider);
+    unawaited(
+      historyService
+          .updateFromCheckInSheet(currentUser: user, checkInData: checkIn)
+          .then((_) {
+        // SPEC-141 §RF-141-12.A: recompute forzado del IMR longitudinal
+        // tras confirmar el check-in — encadenado para no crear una
+        // condición de carrera con el snapshot de biometría.
+        return snapshotService.recomputeAndPersist(
           userId: user.id,
           longitudinal: longitudinal,
           trigger: WeeklyImrTrigger.biometricCheckin,
         );
+      }).catchError((Object e) {
+        AppLogger.error('BiometricCheckInSheet._save falló', e);
+      }),
+    );
 
     if (mounted) {
       setState(() => _isSaving = false);

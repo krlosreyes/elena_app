@@ -8,8 +8,6 @@
 // que no rompe nada existente. Activar un flag es una decisión
 // explícita por commit, no un toggle de runtime.
 
-library feature_flags;
-
 /// SPEC-141 §RF-141-13 (2026-06-05): habilita el IMR longitudinal
 /// como score visible en el badge de Profile.
 ///

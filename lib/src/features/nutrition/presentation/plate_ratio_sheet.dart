@@ -1036,12 +1036,9 @@ class _AERatioBar extends StatelessWidget {
     if (total == 0) return const SizedBox.shrink();
 
     int tipoASlots = 0;
-    int tipoESlots = 0;
     for (final food in builder.items) {
       if (food.isTipoA) {
         tipoASlots += food.category.slots;
-      } else {
-        tipoESlots += food.category.slots;
       }
     }
 
@@ -1313,7 +1310,7 @@ class _FoodPickerSheetState extends State<_FoodPickerSheet> {
         if (!isEmpty && arrow.isNotEmpty) ...[
           const SizedBox(width: 6),
           Text(
-            '$arrow ${delta.abs() > 0.01 ? (delta * 100).round().abs().toString() + '%' : ''}',
+            '$arrow ${delta.abs() > 0.01 ? '${(delta * 100).round().abs()}%' : ''}',
             style: TextStyle(
               color: arrowColor,
               fontSize: 13,

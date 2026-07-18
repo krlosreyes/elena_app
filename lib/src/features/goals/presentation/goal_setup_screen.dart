@@ -71,19 +71,40 @@ class _GoalSetupScreenState extends ConsumerState<GoalSetupScreen> {
       recentExerciseMinPerDay: recentExercise,
     );
 
+    // CODE-04 (auditoría independiente 2026-07-11): antes se accedía con
+    // `suggestions[type]!` asumiendo que GoalSuggestionEngine.suggest siempre
+    // cubre los 7 GoalType — si un futuro SPEC agrega un valor al enum sin
+    // actualizar el motor de sugerencias, esto lanzaba
+    // "Null check operator used on a null value" al abrir la pantalla. Se
+    // reemplaza por un fallback seguro por tipo (target/current en 0, sin
+    // activar), consistente con el fallback ya usado arriba cuando
+    // `user == null`.
     _drafts = {
       for (final type in GoalType.values)
-        type: GoalDraft(
-          type: type,
-          target: existingGoals[type]?.targetValue ??
-              suggestions[type]!.suggestedTarget,
-          current: suggestions[type]!.currentValue,
-          rationale: suggestions[type]!.rationale,
-          statusLabel: suggestions[type]!.currentStatusLabel,
-          isActive: existingGoals[type]?.isActive ??
-              suggestions[type]!.shouldActivate,
-          originalSuggestion: suggestions[type]!.suggestedTarget,
-        ),
+        type: () {
+          final suggestion = suggestions[type];
+          if (suggestion == null) {
+            return GoalDraft(
+              type: type,
+              target: existingGoals[type]?.targetValue ?? 0,
+              current: 0,
+              rationale: '',
+              statusLabel: '',
+              isActive: existingGoals[type]?.isActive ?? false,
+            );
+          }
+          return GoalDraft(
+            type: type,
+            target: existingGoals[type]?.targetValue ??
+                suggestion.suggestedTarget,
+            current: suggestion.currentValue,
+            rationale: suggestion.rationale,
+            statusLabel: suggestion.currentStatusLabel,
+            isActive:
+                existingGoals[type]?.isActive ?? suggestion.shouldActivate,
+            originalSuggestion: suggestion.suggestedTarget,
+          );
+        }(),
     };
   }
 
@@ -290,7 +311,8 @@ class GoalDraft {
 // ─── Tarjeta de sugerencia ────────────────────────────────────────────────────
 
 class GoalSuggestionCard extends StatefulWidget {
-  const GoalSuggestionCard({required this.draft, required this.onChanged});
+  const GoalSuggestionCard(
+      {super.key, required this.draft, required this.onChanged});
   final GoalDraft draft;
   final ValueChanged<GoalDraft> onChanged;
 

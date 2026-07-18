@@ -63,10 +63,16 @@ class OnboardingController extends StateNotifier<AsyncValue<void>> {
       // longitudinal. Mismo patrón try/catch que el IMR baseline más
       // abajo — un fallo de denormalización no debe bloquear el cierre
       // del onboarding.
+      //
+      // FB-07 (auditoría independiente 2026-07-11): try/catch solo atrapa
+      // excepciones lanzadas, no un Future que nunca resuelve (offline). Se
+      // agrega `.timeout(...)` para que el onboarding no quede bloqueado
+      // indefinidamente si la conectividad es inestable justo al registrarse.
       try {
         await _ref
             .read(biometricHistoryServiceProvider)
-            .writeOnboardingBaseline(currentUser: user);
+            .writeOnboardingBaseline(currentUser: user)
+            .timeout(const Duration(seconds: 6));
       } catch (e) {
         AppLogger.warning(
           '[onboarding] No se persistió baseline biométrico: $e',
@@ -97,10 +103,10 @@ class OnboardingController extends StateNotifier<AsyncValue<void>> {
           );
         } else {
           final baseline = ScoreEngine.calculateBaseline(user);
-          await _repository.updateCurrentImr(
-            user.id,
-            imrToCanonicalMap(baseline),
-          );
+          // FB-07: mismo fix de timeout que el baseline biométrico de arriba.
+          await _repository
+              .updateCurrentImr(user.id, imrToCanonicalMap(baseline))
+              .timeout(const Duration(seconds: 6));
         }
       } catch (e) {
         AppLogger.warning(

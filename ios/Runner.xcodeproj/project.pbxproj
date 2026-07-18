@@ -386,23 +386,6 @@
 			shellPath = /bin/sh;
 			shellScript = "/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" build";
 		};
-		F48AD3386B9B1E7E17C4FDF9 /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-ElenaApp/Pods-ElenaApp-frameworks-${CONFIGURATION}-input-files.xcfilelist",
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-ElenaApp/Pods-ElenaApp-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-ElenaApp/Pods-ElenaApp-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
 		A1B2C3D4E5F6A7B8C9D0E1F2 /* Strip Simulator Slices */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -420,6 +403,23 @@
 			runOnlyForDeploymentPostprocessing = 1;
 			shellPath = /bin/sh;
 			shellScript = "# Fix Apple errors 91169 + 90208 for embedded frameworks.\n# 91169: simulator platform metadata in device binary.\n# 90208: framework MinimumOSVersion > app deployment target.\nAPP_MIN=\"15.0\"\nfind \"${BUILT_PRODUCTS_DIR}/${FRAMEWORKS_FOLDER_PATH}\" -name \"*.framework\" -type d | while read framework; do\n  name=$(basename \"${framework}\" .framework)\n  binary=\"${framework}/${name}\"\n  plist=\"${framework}/Info.plist\"\n  if [ -f \"$binary\" ]; then\n    if xcrun vtool -show-build \"$binary\" 2>/dev/null | grep -q \"IOSSIMULATOR\"; then\n      xcrun vtool -set-build-version ios $APP_MIN $APP_MIN -replace -output \"$binary\" \"$binary\"\n      echo \"Fixed 91169: $name\"\n    fi\n  fi\n  if [ -f \"$plist\" ]; then\n    current=$(/usr/libexec/PlistBuddy -c \"Print :MinimumOSVersion\" \"$plist\" 2>/dev/null)\n    if [ -n \"$current\" ] && [ \"$current\" != \"$APP_MIN\" ]; then\n      /usr/libexec/PlistBuddy -c \"Set :MinimumOSVersion $APP_MIN\" \"$plist\"\n      echo \"Fixed 90208: $name (was $current)\"\n    fi\n  fi\ndone\n";
+			showEnvVarsInLog = 0;
+		};
+		F48AD3386B9B1E7E17C4FDF9 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-ElenaApp/Pods-ElenaApp-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-ElenaApp/Pods-ElenaApp-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-ElenaApp/Pods-ElenaApp-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */

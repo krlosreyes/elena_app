@@ -8,6 +8,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import 'package:elena_app/src/core/services/day_boundary_resolver.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/analysis/domain/daily_summary.dart';
 
@@ -28,7 +29,9 @@ class WeeklyStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Calculamos el lunes de esta semana.
-    final today = DateTime(now.year, now.month, now.day);
+    // ARCH-04 (auditoría 2026-07-11): DayBoundaryResolver en vez de
+    // recalcular medianoche local a mano (ver mismo fix en pillars_heatmap.dart).
+    final today = DayBoundaryResolver.startOfDay(now);
     final monday = today.subtract(Duration(days: today.weekday - 1));
 
     return Padding(

@@ -5,6 +5,7 @@
 
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/features/goals/domain/user_goal.dart';
@@ -61,12 +62,31 @@ class GoalNotifier extends StateNotifier<GoalsMap> {
 
   // ─── API pública ────────────────────────────────────────────────────────────
 
-  /// Agrega o actualiza un objetivo. Persiste inmediatamente en Firestore.
+  /// Agrega o actualiza un objetivo. Persiste en Firestore.
+  ///
+  /// FB-03 (auditoría 2026-07-11): antes hacía `await` directo sobre el
+  /// write de Firestore. Si el dispositivo estaba offline, ese `await`
+  /// nunca resolvía y cualquier caller que esperara este Future (p. ej.
+  /// goal_setup_screen.dart mostrando un spinner de "guardando") quedaba
+  /// bloqueado indefinidamente — el mismo bug raíz que motivó SPEC-206.
+  /// Ahora se sigue el patrón "write no-bloqueante + listener como fuente
+  /// de verdad" ya validado en HydrationNotifier: el estado local se
+  /// actualiza de inmediato (optimista) y el write a Firestore corre en
+  /// background; `watchGoals` (la subscripción activa) reconcilia el
+  /// estado cuando el servidor confirma.
   Future<void> setGoal(UserGoal goal) async {
     if (_currentUserId == null) return;
     final updated = {...state, goal.type: goal};
     state = updated;
-    await _ref.read(goalRepositoryProvider).saveGoals(_currentUserId!, updated);
+    final userId = _currentUserId!;
+    unawaited(
+      _ref
+          .read(goalRepositoryProvider)
+          .saveGoals(userId, updated)
+          .catchError((Object e) {
+        AppLogger.error('GoalNotifier.setGoal falló', e);
+      }),
+    );
   }
 
   /// Desactiva un objetivo (lo mantiene en Firestore pero con isActive = false).
@@ -84,18 +104,40 @@ class GoalNotifier extends StateNotifier<GoalsMap> {
   }
 
   /// Elimina un objetivo completamente.
+  /// FB-03: mismo patrón no-bloqueante que setGoal (ver comentario arriba).
   Future<void> removeGoal(GoalType type) async {
     if (_currentUserId == null) return;
     final updated = Map<GoalType, UserGoal>.from(state)..remove(type);
     state = updated;
-    await _ref.read(goalRepositoryProvider).saveGoals(_currentUserId!, updated);
+    final userId = _currentUserId!;
+    unawaited(
+      _ref
+          .read(goalRepositoryProvider)
+          .saveGoals(userId, updated)
+          .catchError((Object e) {
+        AppLogger.error('GoalNotifier.removeGoal falló', e);
+      }),
+    );
   }
 
   /// Persiste todos los goals actuales (útil tras el setup masivo).
+  /// FB-03: mismo patrón no-bloqueante que setGoal (ver comentario arriba).
+  /// Los callers (goal_setup_screen.dart, onboarding_screen.dart) hacen
+  /// `await saveAll(...)` para mostrar su propio spinner local; con este
+  /// cambio ese await resuelve tan pronto el estado local se actualiza,
+  /// sin esperar la confirmación de red.
   Future<void> saveAll(Map<GoalType, UserGoal> goals) async {
     if (_currentUserId == null) return;
     state = goals;
-    await _ref.read(goalRepositoryProvider).saveGoals(_currentUserId!, goals);
+    final userId = _currentUserId!;
+    unawaited(
+      _ref
+          .read(goalRepositoryProvider)
+          .saveGoals(userId, goals)
+          .catchError((Object e) {
+        AppLogger.error('GoalNotifier.saveAll falló', e);
+      }),
+    );
   }
 
   /// Lista de goals activos ordenados por pilar.

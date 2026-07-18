@@ -113,6 +113,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       labelText: "Contraseña",
                       prefixIcon: Icon(Icons.lock_outline),
                     ),
+                    // SEC-06 (auditoría 2026-07-11): a propósito NO se sube a
+                    // 8 caracteres acá. Este validador es sobre una
+                    // contraseña EXISTENTE (login), no una nueva — subirlo
+                    // bloquearía el ingreso de cualquier cuenta ya registrada
+                    // con una contraseña de 6-7 caracteres (creadas antes de
+                    // este fix). El mínimo de 8 se aplica solo a contraseñas
+                    // NUEVAS, en register_screen.dart y set_password_screen.dart.
                     validator: (val) => (val == null || val.length < 6)
                         ? "Mínimo 6 caracteres"
                         : null,

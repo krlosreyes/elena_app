@@ -86,5 +86,6 @@ class FakeBillingService implements BillingService {
   @override
   Future<PurchaseResult> restore() async => PurchaseResult.success(_current);
 
+  @override
   void dispose() => _controller.close();
 }

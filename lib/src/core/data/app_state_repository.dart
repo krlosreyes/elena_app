@@ -57,7 +57,9 @@ class AppStateRepository {
       );
       return snap.exists ? snap.data() : null;
     } catch (e) {
-      AppLogger.warning('[AppState] read $uid/$docName falló: $e');
+      // SEC-07: uid truncado, nunca completo en logs.
+      AppLogger.warning(
+          '[AppState] read ${AppLogger.truncateUid(uid)}/$docName falló: $e');
       return null;
     }
   }
@@ -69,7 +71,9 @@ class AppStateRepository {
       _doc(uid, docName)
           .set(data, SetOptions(merge: true))
           .catchError((Object e) {
-        AppLogger.warning('[AppState] write $uid/$docName falló: $e');
+        // SEC-07: uid truncado, nunca completo en logs.
+        AppLogger.warning(
+            '[AppState] write ${AppLogger.truncateUid(uid)}/$docName falló: $e');
       }),
     );
   }

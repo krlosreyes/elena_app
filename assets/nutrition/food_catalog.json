@@ -1,0 +1,1816 @@
+[
+  {
+    "id": "pollo",
+    "name": "Pollo",
+    "category": "protein",
+    "qualityScore": 95,
+    "nova": "unprocessed",
+    "searchAliases": [],
+    "portionLabel": "100g (palma de la mano)",
+    "servingUnit": "portion100g"
+  },
+  {
+    "id": "pechuga_pavo",
+    "name": "Pechuga de pavo",
+    "category": "protein",
+    "qualityScore": 95,
+    "nova": "unprocessed",
+    "searchAliases": [],
+    "portionLabel": "100g (palma de la mano)",
+    "servingUnit": "portion100g"
+  },
+  {
+    "id": "muslo_pollo",
+    "name": "Muslo de pollo",
+    "category": "protein",
+    "qualityScore": 90,
+    "nova": "unprocessed",
+    "searchAliases": [],
+    "portionLabel": "1 muslo (~120g)",
+    "servingUnit": "unit"
+  },
+  {
+    "id": "huevo",
+    "name": "Huevo",
+    "category": "protein",
+    "qualityScore": 95,
+    "nova": "unprocessed",
+    "searchAliases": [],
+    "portionLabel": "1 huevo mediano (~50g)",
+    "servingUnit": "unit"
+  },
+  {
+    "id": "clara_huevo",
+    "name": "Clara de huevo",
+    "category": "protein",
+    "qualityScore": 98,
+    "nova": "unprocessed",
+    "searchAliases": [
+      "claras",
+      "albumina",
+      "clara"
+    ],
+    "portionLabel": "3 claras (~90g)",
+    "servingUnit": "unit"
+  },
+  {
+    "id": "carne_res",
+    "name": "Carne de res",
+    "category": "protein",
+    "qualityScore": 90,
+    "nova": "unprocessed",
+    "searchAliases": [],
+    "portionLabel": "100g (palma de la mano)",
+    "servingUnit": "portion100g"
+  },
+  {
+    "id": "cerdo",
+    "name": "Cerdo",
+    "category": "protein",
+    "qualityScore": 88,
+    "nova": "unprocessed",
+    "searchAliases": [],
+    "portionLabel": "100g (palma de la mano)",
+    "servingUnit": "portion100g"
+  },
+  {
+    "id": "pescado",
+    "name": "Pescado",
+    "category": "protein",
+    "qualityScore": 95,
+    "nova": "unprocessed",
+    "searchAliases": [],
+    "portionLabel": "100g (palma de la mano)",
+    "servingUnit": "portion100g"
+  },
+  {
+    "id": "atun",
+    "name": "Atún",
+    "category": "protein",
+    "qualityScore": 95,
+    "nova": "unprocessed",
+    "searchAliases": [],
+    "portionLabel": "½ lata (~80g)",
+    "servingUnit": "portion100g"
+  },
+  {
+    "id": "sardinas",
+    "name": "Sardinas",
+    "category": "protein",
+    "qualityScore": 95,
+    "nova": "unprocessed",
+    "searchAliases": [],
+    "portionLabel": "½ lata (~85g)",
+    "servingUnit": "portion100g"
+  },
+  {
+    "id": "salmon",
+    "name": "Salmón",
+    "category": "protein",
+    "qualityScore": 95,
+    "nova": "unprocessed",
+    "searchAliases": [],
+    "portionLabel": "100g (palma de la mano)",
+    "servingUnit": "portion100g"
+  },
+  {
+    "id": "trucha",
+    "name": "Trucha",
+    "category": "protein",
+    "qualityScore": 95,
+    "nova": "unprocessed",
+    "searchAliases": [
+      "trucha arcoiris",
+      "trucha arcoíris"
+    ],
+    "portionLabel": "100g (palma de la mano)",
+    "servingUnit": "portion100g"
+  },
+  {
+    "id": "tilapia",
+    "name": "Tilapia",
+    "category": "protein",
+    "qualityScore": 95,
+    "nova": "unprocessed",
+    "searchAliases": [
+      "mojarra",
+      "tilapia roja"
+    ],
+    "portionLabel": "100g (palma de la mano)",
+    "servingUnit": "portion100g"
+  },
+  {
+    "id": "mariscos",
+    "name": "Mariscos",
+    "category": "protein",
+    "qualityScore": 90,
+    "nova": "unprocessed",
+    "searchAliases": [
+      "camarones",
+      "camaron",
+      "langostinos"
+    ],
+    "portionLabel": "100g (~12 unidades)",
+    "servingUnit": "portion100g"
+  },
+  {
+    "id": "camaron",
+    "name": "Camarón",
+    "category": "protein",
+    "qualityScore": 92,
+    "nova": "unprocessed",
+    "searchAliases": [
+      "camarones",
+      "shrimp",
+      "gambas"
+    ],
+    "portionLabel": "100g (~10 camarones)",
+    "servingUnit": "portion100g"
+  },
+  {
+    "id": "langostino",
+    "name": "Langostino",
+    "category": "protein",
+    "qualityScore": 92,
+    "nova": "unprocessed",
+    "searchAliases": [
+      "langostinos",
+      "prawns"
+    ],
+    "portionLabel": "100g (~6 langostinos)",
+    "servingUnit": "portion100g"
+  },
+  {
+    "id": "jamon",
+    "name": "Jamón",
+    "category": "protein",
+    "qualityScore": 80,
+    "nova": "processed",
+    "searchAliases": [],
+    "portionLabel": "2 rebanadas (~40g)",
+    "servingUnit": "slice"
+  },
+  {
+    "id": "queso_campesino",
+    "name": "Queso campesino",
+    "category": "protein",
+    "qualityScore": 85,
+    "nova": "processed",
+    "searchAliases": [],
+    "portionLabel": "1 trozo (~50g)",
+    "servingUnit": "portion100g"
+  },
+  {
+    "id": "queso_mozzarella",
+    "name": "Queso mozzarella",
+    "category": "protein",
+    "qualityScore": 80,
+    "nova": "processed",
+    "searchAliases": [
+      "mozzarella",
+      "mozarela"
+    ],
+    "portionLabel": "30g (~2 rebanadas)",
+    "servingUnit": "slice"
+  },
+  {
+    "id": "yogur_griego",
+    "name": "Yogur griego",
+    "category": "protein",
+    "qualityScore": 80,
+    "nova": "processed",
+    "searchAliases": [
+      "yogurt griego"
+    ],
+    "portionLabel": "1 taza (~200g)",
+    "servingUnit": "cup"
+  },
+  {
+    "id": "kefir",
+    "name": "Kéfir",
+    "category": "protein",
+    "qualityScore": 80,
+    "nova": "processed",
+    "searchAliases": [
+      "kefir",
+      "yogur kéfir",
+      "yogur kefir"
+    ],
+    "portionLabel": "1 taza (~240ml)",
+    "servingUnit": "cup"
+  },
+  {
+    "id": "ricotta",
+    "name": "Ricotta",
+    "category": "protein",
+    "qualityScore": 75,
+    "nova": "processed",
+    "searchAliases": [
+      "requesón",
+      "requeson"
+    ],
+    "portionLabel": "¼ taza (~60g)",
+    "servingUnit": "cup"
+  },
+  {
+    "id": "suero_costeno",
+    "name": "Suero costeño",
+    "category": "protein",
+    "qualityScore": 75,
+    "nova": "processed",
+    "searchAliases": [],
+    "portionLabel": "2 cucharadas (~30g)",
+    "servingUnit": "tablespoon"
+  },
+  {
+    "id": "leche",
+    "name": "Leche",
+    "category": "protein",
+    "qualityScore": 40,
+    "nova": "unprocessed",
+    "searchAliases": [],
+    "portionLabel": "1 taza (~250ml)",
+    "servingUnit": "cup"
+  },
+  {
+    "id": "lentejas",
+    "name": "Lentejas",
+    "category": "protein",
+    "qualityScore": 70,
+    "nova": "unprocessed",
+    "searchAliases": [],
+    "portionLabel": "½ taza cocida",
+    "servingUnit": "cup"
+  },
+  {
+    "id": "frijoles",
+    "name": "Fríjoles",
+    "category": "protein",
+    "qualityScore": 70,
+    "nova": "unprocessed",
+    "searchAliases": [
+      "frijoles"
+    ],
+    "portionLabel": "½ taza cocida",
+    "servingUnit": "cup"
+  },
+  {
+    "id": "garbanzos",
+    "name": "Garbanzos",
+    "category": "protein",
+    "qualityScore": 70,
+    "nova": "unprocessed",
+    "searchAliases": [],
+    "portionLabel": "½ taza cocida",
+    "servingUnit": "cup"
+  },
+  {
+    "id": "habichuelas",
+    "name": "Habichuelas",
+    "category": "protein",
+    "qualityScore": 80,
+    "nova": "unprocessed",
+    "searchAliases": [],
+    "portionLabel": "1 taza cocida",
+    "servingUnit": "cup"
+  },
+  {
+    "id": "tofu",
+    "name": "Tofu",
+    "category": "protein",
+    "qualityScore": 85,
+    "nova": "unprocessed",
+    "searchAliases": [],
+    "portionLabel": "100g (~¼ bloque)",
+    "servingUnit": "portion100g"
+  },
+  {
+    "id": "tempeh",
+    "name": "Tempeh",
+    "category": "protein",
+    "qualityScore": 85,
+    "nova": "processed",
+    "searchAliases": [
+      "tempe"
+    ],
+    "portionLabel": "100g",
+    "servingUnit": "portion100g"
+  },
+  {
+    "id": "quinua",
+    "name": "Quinua",
+    "category": "protein",
+    "qualityScore": 65,
+    "nova": "unprocessed",
+    "searchAliases": [
+      "quinoa"
+    ],
+    "portionLabel": "½ taza cocida",
+    "servingUnit": "cup"
+  },
+  {
+    "id": "caldo_pollo",
+    "name": "Caldo de pollo",
+    "category": "protein",
+    "qualityScore": 75,
+    "nova": "unprocessed",
+    "searchAliases": [
+      "consome",
+      "consome de pollo",
+      "sopa de pollo"
+    ],
+    "portionLabel": "1 taza (~240ml)",
+    "servingUnit": "cup"
+  },
+  {
+    "id": "caldo_costilla",
+    "name": "Caldo de costilla",
+    "category": "protein",
+    "qualityScore": 75,
+    "nova": "unprocessed",
+    "searchAliases": [
+      "caldo de res",
+      "caldo de hueso",
+      "sancocho"
+    ],
+    "portionLabel": "1 taza (~240ml)",
+    "servingUnit": "cup"
+  },
+  {
+    "id": "caldo_pescado",
+    "name": "Caldo de pescado",
+    "category": "protein",
+    "qualityScore": 75,
+    "nova": "unprocessed",
+    "searchAliases": [
+      "sopa de pescado"
+    ],
+    "portionLabel": "1 taza (~240ml)",
+    "servingUnit": "cup"
+  },
+  {
+    "id": "aguacate",
+    "name": "Aguacate",
+    "category": "fat",
+    "qualityScore": 100,
+    "nova": "unprocessed",
+    "searchAliases": [
+      "palta"
+    ],
+    "portionLabel": "½ aguacate mediano (~100g)",
+    "servingUnit": "portion100g"
+  },
+  {
+    "id": "aceite_oliva",
+    "name": "Aceite de oliva",
+    "category": "fat",
+    "qualityScore": 100,
+    "nova": "unprocessed",
+    "searchAliases": [],
+    "portionLabel": "1 cucharada (~15ml)",
+    "servingUnit": "tablespoon"
+  },
+  {
+    "id": "aceite_coco",
+    "name": "Aceite de coco",
+    "category": "fat",
+    "qualityScore": 95,
+    "nova": "unprocessed",
+    "searchAliases": [],
+    "portionLabel": "1 cucharada (~14g)",
+    "servingUnit": "tablespoon"
+  },
+  {
+    "id": "aceite_aguacate",
+    "name": "Aceite de aguacate",
+    "category": "fat",
+    "qualityScore": 100,
+    "nova": "processed",
+    "searchAliases": [
+      "avocado oil"
+    ],
+    "portionLabel": "1 cucharada (~15ml)",
+    "servingUnit": "tablespoon"
+  },
+  {
+    "id": "aceite_vegetal",
+    "name": "Aceite vegetal",
+    "category": "fat",
+    "qualityScore": 60,
+    "nova": "processed",
+    "searchAliases": [],
+    "portionLabel": "1 cucharada (~15ml)",
+    "servingUnit": "tablespoon"
+  },
+  {
+    "id": "almendras",
+    "name": "Almendras",
+    "category": "fat",
+    "qualityScore": 95,
+    "nova": "unprocessed",
+    "searchAliases": [],
+    "portionLabel": "1 puñado (~28g)",
+    "servingUnit": "handful"
+  },
+  {
+    "id": "nueces",
+    "name": "Nueces",
+    "category": "fat",
+    "qualityScore": 95,
+    "nova": "unprocessed",
+    "searchAliases": [],
+    "portionLabel": "1 puñado (~30g, ~7 nueces)",
+    "servingUnit": "handful"
+  },
+  {
+    "id": "macadamia",
+    "name": "Macadamia",
+    "category": "fat",
+    "qualityScore": 95,
+    "nova": "unprocessed",
+    "searchAliases": [
+      "nueces macadamia",
+      "nuez de macadamia"
+    ],
+    "portionLabel": "1 puñado (~28g, ~11 nueces)",
+    "servingUnit": "handful"
+  },
+  {
+    "id": "avellanas",
+    "name": "Avellanas",
+    "category": "fat",
+    "qualityScore": 90,
+    "nova": "unprocessed",
+    "searchAliases": [
+      "hazelnuts"
+    ],
+    "portionLabel": "1 puñado (~28g)",
+    "servingUnit": "handful"
+  },
+  {
+    "id": "mani",
+    "name": "Maní",
+    "category": "fat",
+    "qualityScore": 80,
+    "nova": "unprocessed",
+    "searchAliases": [
+      "cacahuete"
+    ],
+    "portionLabel": "1 puñado (~28g)",
+    "servingUnit": "handful"
+  },
+  {
+    "id": "pistachos",
+    "name": "Pistachos",
+    "category": "fat",
+    "qualityScore": 90,
+    "nova": "unprocessed",
+    "searchAliases": [],
+    "portionLabel": "1 puñado (~28g)",
+    "servingUnit": "handful"
+  },
+  {
+    "id": "semillas_girasol",
+    "name": "Semillas de girasol",
+    "category": "fat",
+    "qualityScore": 90,
+    "nova": "unprocessed",
+    "searchAliases": [],
+    "portionLabel": "2 cucharadas (~20g)",
+    "servingUnit": "tablespoon"
+  },
+  {
+    "id": "semillas_calabaza",
+    "name": "Semillas de calabaza",
+    "category": "fat",
+    "qualityScore": 90,
+    "nova": "unprocessed",
+    "searchAliases": [
+      "pepitas",
+      "pipas de calabaza"
+    ],
+    "portionLabel": "2 cucharadas (~20g)",
+    "servingUnit": "tablespoon"
+  },
+  {
+    "id": "coco",
+    "name": "Coco",
+    "category": "fat",
+    "qualityScore": 85,
+    "nova": "unprocessed",
+    "searchAliases": [],
+    "portionLabel": "¼ taza rallado (~25g)",
+    "servingUnit": "cup"
+  },
+  {
+    "id": "mantequilla_almendras",
+    "name": "Mantequilla de almendras",
+    "category": "fat",
+    "qualityScore": 85,
+    "nova": "processed",
+    "searchAliases": [
+      "crema de almendras",
+      "almond butter"
+    ],
+    "portionLabel": "2 cucharadas (~32g)",
+    "servingUnit": "tablespoon"
+  },
+  {
+    "id": "tahini",
+    "name": "Tahini",
+    "category": "fat",
+    "qualityScore": 85,
+    "nova": "processed",
+    "searchAliases": [
+      "pasta de ajonjoli",
+      "pasta de sesamo",
+      "pasta de sésamo"
+    ],
+    "portionLabel": "2 cucharadas (~30g)",
+    "servingUnit": "tablespoon"
+  },
+  {
+    "id": "ajonjoli",
+    "name": "Ajonjolí",
+    "category": "fat",
+    "qualityScore": 90,
+    "nova": "unprocessed",
+    "searchAliases": [
+      "sesamo",
+      "sésamo",
+      "sesame"
+    ],
+    "portionLabel": "1 cucharada (~9g)",
+    "servingUnit": "tablespoon"
+  },
+  {
+    "id": "aceitunas",
+    "name": "Aceitunas",
+    "category": "fat",
+    "qualityScore": 95,
+    "nova": "unprocessed",
+    "searchAliases": [],
+    "portionLabel": "10 aceitunas (~35g)",
+    "servingUnit": "handful"
+  },
+  {
+    "id": "mantequilla",
+    "name": "Mantequilla",
+    "category": "fat",
+    "qualityScore": 80,
+    "nova": "culinaryIngredient",
+    "searchAliases": [],
+    "portionLabel": "1 cucharada (~14g)",
+    "servingUnit": "tablespoon"
+  },
+  {
+    "id": "ghee",
+    "name": "Ghee",
+    "category": "fat",
+    "qualityScore": 85,
+    "nova": "culinaryIngredient",
+    "searchAliases": [
+      "mantequilla clarificada",
+      "manteca clarificada"
+    ],
+    "portionLabel": "1 cucharada (~14g)",
+    "servingUnit": "tablespoon"
+  },
+  {
+    "id": "leche_coco",
+    "name": "Leche de coco",
+    "category": "fat",
+    "qualityScore": 85,
+    "nova": "processed",
+    "searchAliases": [
+      "coconut milk",
+      "crema de coco"
+    ],
+    "portionLabel": "½ taza (~120ml)",
+    "servingUnit": "cup"
+  },
+  {
+    "id": "queso_amarillo",
+    "name": "Queso amarillo",
+    "category": "fat",
+    "qualityScore": 75,
+    "nova": "processed",
+    "searchAliases": [],
+    "portionLabel": "1 rebanada (~20g)",
+    "servingUnit": "slice"
+  },
+  {
+    "id": "queso_crema",
+    "name": "Queso crema",
+    "category": "fat",
+    "qualityScore": 75,
+    "nova": "processed",
+    "searchAliases": [],
+    "portionLabel": "2 cucharadas (~30g)",
+    "servingUnit": "tablespoon"
+  },
+  {
+    "id": "crema_de_leche",
+    "name": "Crema de leche",
+    "category": "fat",
+    "qualityScore": 70,
+    "nova": "processed",
+    "searchAliases": [],
+    "portionLabel": "2 cucharadas (~30ml)",
+    "servingUnit": "tablespoon"
+  },
+  {
+    "id": "leche_entera",
+    "name": "Leche entera",
+    "category": "fat",
+    "qualityScore": 50,
+    "nova": "unprocessed",
+    "searchAliases": [],
+    "portionLabel": "1 taza (~250ml)",
+    "servingUnit": "cup"
+  },
+  {
+    "id": "tocino",
+    "name": "Tocino",
+    "category": "fat",
+    "qualityScore": 75,
+    "nova": "processed",
+    "searchAliases": [],
+    "portionLabel": "2 tiras (~30g)",
+    "servingUnit": "slice"
+  },
+  {
+    "id": "chicharron",
+    "name": "Chicharrón",
+    "category": "fat",
+    "qualityScore": 70,
+    "nova": "processed",
+    "searchAliases": [],
+    "portionLabel": "100g",
+    "servingUnit": "portion100g"
+  },
+  {
+    "id": "chorizo",
+    "name": "Chorizo",
+    "category": "fat",
+    "qualityScore": 60,
+    "nova": "processed",
+    "searchAliases": [],
+    "portionLabel": "1 chorizo (~80g)",
+    "servingUnit": "unit"
+  },
+  {
+    "id": "salchicha",
+    "name": "Salchicha",
+    "category": "fat",
+    "qualityScore": 50,
+    "nova": "ultraProcessed",
+    "searchAliases": [],
+    "portionLabel": "1 salchicha (~50g)",
+    "servingUnit": "unit"
+  },
+  {
+    "id": "mayonesa",
+    "name": "Mayonesa",
+    "category": "fat",
+    "qualityScore": 50,
+    "nova": "ultraProcessed",
+    "searchAliases": [],
+    "portionLabel": "1 cucharada (~15g)",
+    "servingUnit": "tablespoon"
+  },
+  {
+    "id": "manteca",
+    "name": "Manteca",
+    "category": "fat",
+    "qualityScore": 55,
+    "nova": "culinaryIngredient",
+    "searchAliases": [],
+    "portionLabel": "1 cucharada (~15g)",
+    "servingUnit": "tablespoon"
+  },
+  {
+    "id": "margarina",
+    "name": "Margarina",
+    "category": "fat",
+    "qualityScore": 30,
+    "nova": "ultraProcessed",
+    "searchAliases": [],
+    "portionLabel": "1 cucharada (~14g)",
+    "servingUnit": "tablespoon"
+  },
+  {
+    "id": "semillas_chia",
+    "name": "Semillas de chía",
+    "category": "fat",
+    "qualityScore": 95,
+    "nova": "unprocessed",
+    "searchAliases": [
+      "chia"
+    ],
+    "portionLabel": "1 cucharada (~12g)",
+    "servingUnit": "tablespoon"
+  },
+  {
+    "id": "linaza",
+    "name": "Linaza",
+    "category": "fat",
+    "qualityScore": 95,
+    "nova": "unprocessed",
+    "searchAliases": [
+      "lino",
+      "semillas de lino"
+    ],
+    "portionLabel": "1 cucharada (~10g)",
+    "servingUnit": "tablespoon"
+  },
+  {
+    "id": "brocoli",
+    "name": "Brócoli",
+    "category": "carb",
+    "qualityScore": 100,
+    "nova": "unprocessed",
+    "searchAliases": [],
+    "portionLabel": "1 taza (~91g)",
+    "servingUnit": "cup"
+  },
+  {
+    "id": "espinaca",
+    "name": "Espinaca",
+    "category": "carb",
+    "qualityScore": 100,
+    "nova": "unprocessed",
+    "searchAliases": [],
+    "portionLabel": "1 taza cruda (~30g)",
+    "servingUnit": "cup"
+  },
+  {
+    "id": "lechuga",
+    "name": "Lechuga",
+    "category": "carb",
+    "qualityScore": 100,
+    "nova": "unprocessed",
+    "searchAliases": [],
+    "portionLabel": "2 tazas (~85g)",
+    "servingUnit": "cup"
+  },
+  {
+    "id": "tomate",
+    "name": "Tomate",
+    "category": "carb",
+    "qualityScore": 95,
+    "nova": "unprocessed",
+    "searchAliases": [],
+    "portionLabel": "1 tomate mediano (~123g)",
+    "servingUnit": "unit"
+  },
+  {
+    "id": "pepino",
+    "name": "Pepino",
+    "category": "carb",
+    "qualityScore": 100,
+    "nova": "unprocessed",
+    "searchAliases": [],
+    "portionLabel": "½ pepino (~150g)",
+    "servingUnit": "unit"
+  },
+  {
+    "id": "calabacin",
+    "name": "Calabacín",
+    "category": "carb",
+    "qualityScore": 100,
+    "nova": "unprocessed",
+    "searchAliases": [
+      "zucchini",
+      "zapallito"
+    ],
+    "portionLabel": "1 taza en cubos (~113g)",
+    "servingUnit": "cup"
+  },
+  {
+    "id": "coliflor",
+    "name": "Coliflor",
+    "category": "carb",
+    "qualityScore": 100,
+    "nova": "unprocessed",
+    "searchAliases": [],
+    "portionLabel": "1 taza en floretes (~100g)",
+    "servingUnit": "cup"
+  },
+  {
+    "id": "pimiento",
+    "name": "Pimiento",
+    "category": "carb",
+    "qualityScore": 95,
+    "nova": "unprocessed",
+    "searchAliases": [
+      "morron",
+      "aji dulce"
+    ],
+    "portionLabel": "1 pimiento mediano (~119g)",
+    "servingUnit": "unit"
+  },
+  {
+    "id": "zanahoria",
+    "name": "Zanahoria",
+    "category": "carb",
+    "qualityScore": 75,
+    "nova": "unprocessed",
+    "searchAliases": [],
+    "portionLabel": "1 zanahoria mediana (~61g)",
+    "servingUnit": "unit"
+  },
+  {
+    "id": "cebolla",
+    "name": "Cebolla",
+    "category": "carb",
+    "qualityScore": 90,
+    "nova": "unprocessed",
+    "searchAliases": [],
+    "portionLabel": "½ cebolla mediana (~55g)",
+    "servingUnit": "unit"
+  },
+  {
+    "id": "apio",
+    "name": "Apio",
+    "category": "carb",
+    "qualityScore": 100,
+    "nova": "unprocessed",
+    "searchAliases": [],
+    "portionLabel": "2 ramas (~80g)",
+    "servingUnit": "unit"
+  },
+  {
+    "id": "champinones",
+    "name": "Champiñones",
+    "category": "carb",
+    "qualityScore": 95,
+    "nova": "unprocessed",
+    "searchAliases": [
+      "hongos",
+      "setas",
+      "mushrooms",
+      "champiñones"
+    ],
+    "portionLabel": "1 taza (~70g)",
+    "servingUnit": "cup"
+  },
+  {
+    "id": "berenjena",
+    "name": "Berenjena",
+    "category": "carb",
+    "qualityScore": 95,
+    "nova": "unprocessed",
+    "searchAliases": [
+      "aubergine",
+      "eggplant"
+    ],
+    "portionLabel": "1 taza en cubos (~82g)",
+    "servingUnit": "cup"
+  },
+  {
+    "id": "kale",
+    "name": "Kale",
+    "category": "carb",
+    "qualityScore": 100,
+    "nova": "unprocessed",
+    "searchAliases": [
+      "col rizada",
+      "berza"
+    ],
+    "portionLabel": "1 taza (~67g)",
+    "servingUnit": "cup"
+  },
+  {
+    "id": "acelga",
+    "name": "Acelga",
+    "category": "carb",
+    "qualityScore": 100,
+    "nova": "unprocessed",
+    "searchAliases": [
+      "chard"
+    ],
+    "portionLabel": "1 taza (~36g)",
+    "servingUnit": "cup"
+  },
+  {
+    "id": "cilantro",
+    "name": "Cilantro",
+    "category": "carb",
+    "qualityScore": 100,
+    "nova": "unprocessed",
+    "searchAliases": [
+      "coriander"
+    ],
+    "portionLabel": "¼ taza (~4g)",
+    "servingUnit": "handful"
+  },
+  {
+    "id": "ajo",
+    "name": "Ajo",
+    "category": "carb",
+    "qualityScore": 95,
+    "nova": "unprocessed",
+    "searchAliases": [
+      "garlic"
+    ],
+    "portionLabel": "1 diente (~3g)",
+    "servingUnit": "unit"
+  },
+  {
+    "id": "jengibre",
+    "name": "Jengibre",
+    "category": "carb",
+    "qualityScore": 95,
+    "nova": "unprocessed",
+    "searchAliases": [
+      "ginger",
+      "gengibre"
+    ],
+    "portionLabel": "1 cucharadita (~5g)",
+    "servingUnit": "tablespoon"
+  },
+  {
+    "id": "remolacha",
+    "name": "Remolacha",
+    "category": "carb",
+    "qualityScore": 45,
+    "nova": "unprocessed",
+    "searchAliases": [
+      "betabel",
+      "beet",
+      "betarraga"
+    ],
+    "portionLabel": "1 remolacha mediana (~100g)",
+    "servingUnit": "unit"
+  },
+  {
+    "id": "fresa",
+    "name": "Fresa",
+    "category": "carb",
+    "qualityScore": 80,
+    "nova": "unprocessed",
+    "searchAliases": [
+      "frutilla"
+    ],
+    "portionLabel": "1 taza (~150g)",
+    "servingUnit": "cup"
+  },
+  {
+    "id": "frambuesa",
+    "name": "Frambuesa",
+    "category": "carb",
+    "qualityScore": 80,
+    "nova": "unprocessed",
+    "searchAliases": [],
+    "portionLabel": "1 taza (~123g)",
+    "servingUnit": "cup"
+  },
+  {
+    "id": "arandanos",
+    "name": "Arándanos",
+    "category": "carb",
+    "qualityScore": 70,
+    "nova": "unprocessed",
+    "searchAliases": [
+      "blueberries"
+    ],
+    "portionLabel": "1 taza (~148g)",
+    "servingUnit": "cup"
+  },
+  {
+    "id": "mora",
+    "name": "Mora",
+    "category": "carb",
+    "qualityScore": 70,
+    "nova": "unprocessed",
+    "searchAliases": [
+      "blackberry",
+      "zarzamora",
+      "moras"
+    ],
+    "portionLabel": "1 taza (~144g)",
+    "servingUnit": "cup"
+  },
+  {
+    "id": "uchuva",
+    "name": "Uchuva",
+    "category": "carb",
+    "qualityScore": 60,
+    "nova": "unprocessed",
+    "searchAliases": [
+      "uvilla",
+      "physalis",
+      "cape gooseberry"
+    ],
+    "portionLabel": "1 taza (~100g)",
+    "servingUnit": "cup"
+  },
+  {
+    "id": "manzana",
+    "name": "Manzana",
+    "category": "carb",
+    "qualityScore": 65,
+    "nova": "unprocessed",
+    "searchAliases": [],
+    "portionLabel": "1 manzana mediana (~182g)",
+    "servingUnit": "unit"
+  },
+  {
+    "id": "pera",
+    "name": "Pera",
+    "category": "carb",
+    "qualityScore": 50,
+    "nova": "unprocessed",
+    "searchAliases": [
+      "pear"
+    ],
+    "portionLabel": "1 pera mediana (~178g)",
+    "servingUnit": "unit"
+  },
+  {
+    "id": "durazno",
+    "name": "Durazno",
+    "category": "carb",
+    "qualityScore": 50,
+    "nova": "unprocessed",
+    "searchAliases": [
+      "melocoton",
+      "melocotón",
+      "peach"
+    ],
+    "portionLabel": "1 durazno mediano (~150g)",
+    "servingUnit": "unit"
+  },
+  {
+    "id": "kiwi",
+    "name": "Kiwi",
+    "category": "carb",
+    "qualityScore": 60,
+    "nova": "unprocessed",
+    "searchAliases": [],
+    "portionLabel": "1 kiwi mediano (~77g)",
+    "servingUnit": "unit"
+  },
+  {
+    "id": "guayaba",
+    "name": "Guayaba",
+    "category": "carb",
+    "qualityScore": 55,
+    "nova": "unprocessed",
+    "searchAliases": [
+      "guava"
+    ],
+    "portionLabel": "1 guayaba mediana (~90g)",
+    "servingUnit": "unit"
+  },
+  {
+    "id": "limon",
+    "name": "Limón",
+    "category": "carb",
+    "qualityScore": 90,
+    "nova": "unprocessed",
+    "searchAliases": [
+      "lima",
+      "lemon"
+    ],
+    "portionLabel": "1 limón mediano (~58g)",
+    "servingUnit": "unit"
+  },
+  {
+    "id": "uvas",
+    "name": "Uvas",
+    "category": "carb",
+    "qualityScore": 35,
+    "nova": "unprocessed",
+    "searchAliases": [
+      "grapes",
+      "uva"
+    ],
+    "portionLabel": "1 taza (~150g)",
+    "servingUnit": "cup"
+  },
+  {
+    "id": "mandarina",
+    "name": "Mandarina",
+    "category": "carb",
+    "qualityScore": 45,
+    "nova": "unprocessed",
+    "searchAliases": [
+      "tangerina"
+    ],
+    "portionLabel": "1 mandarina mediana (~88g)",
+    "servingUnit": "unit"
+  },
+  {
+    "id": "naranja",
+    "name": "Naranja",
+    "category": "carb",
+    "qualityScore": 40,
+    "nova": "unprocessed",
+    "searchAliases": [
+      "china",
+      "orange"
+    ],
+    "portionLabel": "1 naranja mediana (~131g)",
+    "servingUnit": "unit"
+  },
+  {
+    "id": "banano",
+    "name": "Banano",
+    "category": "carb",
+    "qualityScore": 25,
+    "nova": "unprocessed",
+    "searchAliases": [
+      "banana",
+      "guineo"
+    ],
+    "portionLabel": "1 banano mediano (~118g)",
+    "servingUnit": "unit"
+  },
+  {
+    "id": "mango",
+    "name": "Mango",
+    "category": "carb",
+    "qualityScore": 20,
+    "nova": "unprocessed",
+    "searchAliases": [],
+    "portionLabel": "1 taza en cubos (~165g)",
+    "servingUnit": "cup"
+  },
+  {
+    "id": "papaya",
+    "name": "Papaya",
+    "category": "carb",
+    "qualityScore": 30,
+    "nova": "unprocessed",
+    "searchAliases": [
+      "lechosa",
+      "fruta bomba",
+      "mamon"
+    ],
+    "portionLabel": "1 taza en cubos (~140g)",
+    "servingUnit": "cup"
+  },
+  {
+    "id": "pina",
+    "name": "Piña",
+    "category": "carb",
+    "qualityScore": 25,
+    "nova": "unprocessed",
+    "searchAliases": [
+      "ananas",
+      "pina"
+    ],
+    "portionLabel": "1 taza en cubos (~165g)",
+    "servingUnit": "cup"
+  },
+  {
+    "id": "maracuya",
+    "name": "Maracuyá",
+    "category": "carb",
+    "qualityScore": 40,
+    "nova": "unprocessed",
+    "searchAliases": [
+      "passion fruit",
+      "parchita"
+    ],
+    "portionLabel": "1 maracuyá (~18g pulpa)",
+    "servingUnit": "unit"
+  },
+  {
+    "id": "melon",
+    "name": "Melón",
+    "category": "carb",
+    "qualityScore": 25,
+    "nova": "unprocessed",
+    "searchAliases": [
+      "cantalupo",
+      "cantaloupe"
+    ],
+    "portionLabel": "1 taza en cubos (~160g)",
+    "servingUnit": "cup"
+  },
+  {
+    "id": "sandia",
+    "name": "Sandía",
+    "category": "carb",
+    "qualityScore": 20,
+    "nova": "unprocessed",
+    "searchAliases": [
+      "patilla",
+      "watermelon"
+    ],
+    "portionLabel": "1 taza en cubos (~154g)",
+    "servingUnit": "cup"
+  },
+  {
+    "id": "platano",
+    "name": "Plátano",
+    "category": "carb",
+    "qualityScore": 20,
+    "nova": "unprocessed",
+    "searchAliases": [],
+    "portionLabel": "½ plátano (~75g)",
+    "servingUnit": "unit"
+  },
+  {
+    "id": "avena",
+    "name": "Avena",
+    "category": "carb",
+    "qualityScore": 35,
+    "nova": "unprocessed",
+    "searchAliases": [],
+    "portionLabel": "½ taza cruda (~40g)",
+    "servingUnit": "cup"
+  },
+  {
+    "id": "arroz_integral",
+    "name": "Arroz integral",
+    "category": "carb",
+    "qualityScore": 30,
+    "nova": "unprocessed",
+    "searchAliases": [],
+    "portionLabel": "½ taza cocido",
+    "servingUnit": "cup"
+  },
+  {
+    "id": "pan_integral",
+    "name": "Pan integral",
+    "category": "carb",
+    "qualityScore": 30,
+    "nova": "processed",
+    "searchAliases": [],
+    "portionLabel": "1 rebanada (~30g)",
+    "servingUnit": "slice"
+  },
+  {
+    "id": "papa",
+    "name": "Papa",
+    "category": "carb",
+    "qualityScore": 10,
+    "nova": "unprocessed",
+    "searchAliases": [],
+    "portionLabel": "1 papa mediana (~150g)",
+    "servingUnit": "unit"
+  },
+  {
+    "id": "papa_criolla",
+    "name": "Papa criolla",
+    "category": "carb",
+    "qualityScore": 12,
+    "nova": "unprocessed",
+    "searchAliases": [],
+    "portionLabel": "3 papas criollas (~100g)",
+    "servingUnit": "unit"
+  },
+  {
+    "id": "yuca",
+    "name": "Yuca",
+    "category": "carb",
+    "qualityScore": 10,
+    "nova": "unprocessed",
+    "searchAliases": [],
+    "portionLabel": "½ taza cocida (~75g)",
+    "servingUnit": "cup"
+  },
+  {
+    "id": "batata_camote",
+    "name": "Batata / camote",
+    "category": "carb",
+    "qualityScore": 18,
+    "nova": "unprocessed",
+    "searchAliases": [],
+    "portionLabel": "½ batata mediana (~100g)",
+    "servingUnit": "unit"
+  },
+  {
+    "id": "tapioca",
+    "name": "Tapioca",
+    "category": "carb",
+    "qualityScore": 10,
+    "nova": "unprocessed",
+    "searchAliases": [],
+    "portionLabel": "¼ taza seca (~40g)",
+    "servingUnit": "cup"
+  },
+  {
+    "id": "maiz",
+    "name": "Maíz",
+    "category": "carb",
+    "qualityScore": 15,
+    "nova": "unprocessed",
+    "searchAliases": [],
+    "portionLabel": "½ taza / ½ mazorca",
+    "servingUnit": "cup"
+  },
+  {
+    "id": "mazorca",
+    "name": "Mazorca",
+    "category": "carb",
+    "qualityScore": 15,
+    "nova": "unprocessed",
+    "searchAliases": [
+      "elote",
+      "choclo",
+      "corn"
+    ],
+    "portionLabel": "1 mazorca (~200g)",
+    "servingUnit": "unit"
+  },
+  {
+    "id": "arroz",
+    "name": "Arroz",
+    "category": "carb",
+    "qualityScore": 10,
+    "nova": "unprocessed",
+    "searchAliases": [
+      "arroz blanco"
+    ],
+    "portionLabel": "½ taza cocido",
+    "servingUnit": "cup"
+  },
+  {
+    "id": "pan",
+    "name": "Pan",
+    "category": "carb",
+    "qualityScore": 8,
+    "nova": "processed",
+    "searchAliases": [],
+    "portionLabel": "1 tajada (~35g)",
+    "servingUnit": "slice"
+  },
+  {
+    "id": "pasta",
+    "name": "Pasta",
+    "category": "carb",
+    "qualityScore": 10,
+    "nova": "unprocessed",
+    "searchAliases": [],
+    "portionLabel": "½ taza cocida (~80g)",
+    "servingUnit": "cup"
+  },
+  {
+    "id": "arepa",
+    "name": "Arepa",
+    "category": "carb",
+    "qualityScore": 15,
+    "nova": "unprocessed",
+    "searchAliases": [],
+    "portionLabel": "1 arepa mediana (~80g)",
+    "servingUnit": "unit"
+  },
+  {
+    "id": "tortilla",
+    "name": "Tortilla",
+    "category": "carb",
+    "qualityScore": 12,
+    "nova": "unprocessed",
+    "searchAliases": [],
+    "portionLabel": "1 tortilla mediana (~45g)",
+    "servingUnit": "unit"
+  },
+  {
+    "id": "harina",
+    "name": "Harina",
+    "category": "carb",
+    "qualityScore": 8,
+    "nova": "unprocessed",
+    "searchAliases": [],
+    "portionLabel": "¼ taza (~30g)",
+    "servingUnit": "cup"
+  },
+  {
+    "id": "galletas",
+    "name": "Galletas",
+    "category": "carb",
+    "qualityScore": 5,
+    "nova": "ultraProcessed",
+    "searchAliases": [],
+    "portionLabel": "4-5 galletas (~30g)",
+    "servingUnit": "handful"
+  },
+  {
+    "id": "cereal",
+    "name": "Cereal",
+    "category": "carb",
+    "qualityScore": 10,
+    "nova": "ultraProcessed",
+    "searchAliases": [
+      "cereal de caja"
+    ],
+    "portionLabel": "1 taza (~30g)",
+    "servingUnit": "cup"
+  },
+  {
+    "id": "granola",
+    "name": "Granola",
+    "category": "carb",
+    "qualityScore": 20,
+    "nova": "ultraProcessed",
+    "searchAliases": [
+      "muesli"
+    ],
+    "portionLabel": "¼ taza (~30g)",
+    "servingUnit": "cup"
+  },
+  {
+    "id": "pandebono",
+    "name": "Pandebono",
+    "category": "carb",
+    "qualityScore": 8,
+    "nova": "processed",
+    "searchAliases": [],
+    "portionLabel": "1 pandebono (~50g)",
+    "servingUnit": "unit"
+  },
+  {
+    "id": "bunuelo",
+    "name": "Buñuelo",
+    "category": "carb",
+    "qualityScore": 8,
+    "nova": "processed",
+    "searchAliases": [
+      "buñuelo"
+    ],
+    "portionLabel": "1 buñuelo mediano (~50g)",
+    "servingUnit": "unit"
+  },
+  {
+    "id": "patacon",
+    "name": "Patacón",
+    "category": "carb",
+    "qualityScore": 10,
+    "nova": "processed",
+    "searchAliases": [
+      "tostones",
+      "patacon pisao"
+    ],
+    "portionLabel": "2 patacones (~80g)",
+    "servingUnit": "unit"
+  },
+  {
+    "id": "tostadas",
+    "name": "Tostadas",
+    "category": "carb",
+    "qualityScore": 10,
+    "nova": "processed",
+    "searchAliases": [
+      "toast"
+    ],
+    "portionLabel": "2 tostadas (~30g)",
+    "servingUnit": "slice"
+  },
+  {
+    "id": "azucar",
+    "name": "Azúcar",
+    "category": "carb",
+    "qualityScore": 0,
+    "nova": "culinaryIngredient",
+    "searchAliases": [],
+    "portionLabel": "1 cucharada (~12g)",
+    "servingUnit": "tablespoon"
+  },
+  {
+    "id": "panela",
+    "name": "Panela",
+    "category": "carb",
+    "qualityScore": 0,
+    "nova": "culinaryIngredient",
+    "searchAliases": [
+      "piloncillo",
+      "rapadura"
+    ],
+    "portionLabel": "1 cucharada rallada (~15g)",
+    "servingUnit": "tablespoon"
+  },
+  {
+    "id": "miel",
+    "name": "Miel",
+    "category": "carb",
+    "qualityScore": 5,
+    "nova": "culinaryIngredient",
+    "searchAliases": [],
+    "portionLabel": "1 cucharada (~21g)",
+    "servingUnit": "tablespoon"
+  },
+  {
+    "id": "chocolate",
+    "name": "Chocolate",
+    "category": "carb",
+    "qualityScore": 10,
+    "nova": "processed",
+    "searchAliases": [],
+    "portionLabel": "1 cuadro (~28g)",
+    "servingUnit": "handful"
+  },
+  {
+    "id": "bocadillo",
+    "name": "Bocadillo",
+    "category": "carb",
+    "qualityScore": 5,
+    "nova": "processed",
+    "searchAliases": [
+      "bocadillo de guayaba",
+      "dulce de guayaba"
+    ],
+    "portionLabel": "1 cuadro (~30g)",
+    "servingUnit": "unit"
+  },
+  {
+    "id": "arequipe",
+    "name": "Arequipe",
+    "category": "carb",
+    "qualityScore": 0,
+    "nova": "ultraProcessed",
+    "searchAliases": [
+      "dulce de leche",
+      "manjar",
+      "cajeta"
+    ],
+    "portionLabel": "2 cucharadas (~40g)",
+    "servingUnit": "tablespoon"
+  },
+  {
+    "id": "hummus",
+    "name": "Hummus",
+    "category": "carb",
+    "qualityScore": 70,
+    "nova": "processed",
+    "searchAliases": [
+      "pure de garbanzo",
+      "pasta de garbanzo"
+    ],
+    "portionLabel": "2 cucharadas (~30g)",
+    "servingUnit": "tablespoon"
+  },
+  {
+    "id": "pizza",
+    "name": "Pizza",
+    "category": "carb",
+    "qualityScore": 5,
+    "nova": "ultraProcessed",
+    "searchAliases": [],
+    "portionLabel": "1 porción (1/8 pizza)",
+    "servingUnit": "slice"
+  },
+  {
+    "id": "hamburguesa",
+    "name": "Hamburguesa",
+    "category": "carb",
+    "qualityScore": 5,
+    "nova": "ultraProcessed",
+    "searchAliases": [
+      "burger"
+    ],
+    "portionLabel": "1 hamburguesa",
+    "servingUnit": "unit"
+  },
+  {
+    "id": "salchipapa",
+    "name": "Salchipapa",
+    "category": "carb",
+    "qualityScore": 3,
+    "nova": "ultraProcessed",
+    "searchAliases": [
+      "salchipapas"
+    ],
+    "portionLabel": "1 porción",
+    "servingUnit": "unit"
+  },
+  {
+    "id": "sandwich",
+    "name": "Sandwich",
+    "category": "carb",
+    "qualityScore": 10,
+    "nova": "ultraProcessed",
+    "searchAliases": [
+      "sandwch",
+      "emparedado"
+    ],
+    "portionLabel": "1 sándwich",
+    "servingUnit": "unit"
+  },
+  {
+    "id": "empanada",
+    "name": "Empanada",
+    "category": "carb",
+    "qualityScore": 5,
+    "nova": "ultraProcessed",
+    "searchAliases": [
+      "empanadita"
+    ],
+    "portionLabel": "1 empanada",
+    "servingUnit": "unit"
+  },
+  {
+    "id": "chips",
+    "name": "Chips",
+    "category": "carb",
+    "qualityScore": 5,
+    "nova": "ultraProcessed",
+    "searchAliases": [
+      "papas fritas",
+      "crisps",
+      "papas de paquete"
+    ],
+    "portionLabel": "1 paquete pequeño (~30g)",
+    "servingUnit": "handful"
+  },
+  {
+    "id": "galletas_dulces",
+    "name": "Galletas dulces",
+    "category": "carb",
+    "qualityScore": 3,
+    "nova": "ultraProcessed",
+    "searchAliases": [
+      "cookies"
+    ],
+    "portionLabel": "3-4 galletas (~30g)",
+    "servingUnit": "handful"
+  },
+  {
+    "id": "galletas_saladas",
+    "name": "Galletas saladas",
+    "category": "carb",
+    "qualityScore": 8,
+    "nova": "ultraProcessed",
+    "searchAliases": [
+      "crackers"
+    ],
+    "portionLabel": "5-6 galletas (~30g)",
+    "servingUnit": "handful"
+  },
+  {
+    "id": "tinto",
+    "name": "Tinto",
+    "category": "carb",
+    "qualityScore": 100,
+    "nova": "unprocessed",
+    "searchAliases": [
+      "café",
+      "cafe",
+      "café negro",
+      "café solo"
+    ],
+    "portionLabel": "1 taza (240ml)",
+    "servingUnit": "cup"
+  },
+  {
+    "id": "cafe_leche",
+    "name": "Café con leche",
+    "category": "carb",
+    "qualityScore": 35,
+    "nova": "unprocessed",
+    "searchAliases": [
+      "cafe con leche",
+      "latte"
+    ],
+    "portionLabel": "1 taza (240ml)",
+    "servingUnit": "cup"
+  },
+  {
+    "id": "capuchino",
+    "name": "Capuchino",
+    "category": "carb",
+    "qualityScore": 35,
+    "nova": "unprocessed",
+    "searchAliases": [
+      "cappuccino"
+    ],
+    "portionLabel": "1 taza (240ml)",
+    "servingUnit": "cup"
+  },
+  {
+    "id": "chocolate_caliente",
+    "name": "Chocolate caliente",
+    "category": "carb",
+    "qualityScore": 5,
+    "nova": "ultraProcessed",
+    "searchAliases": [
+      "chocolate con leche",
+      "choco caliente"
+    ],
+    "portionLabel": "1 taza (240ml)",
+    "servingUnit": "cup"
+  },
+  {
+    "id": "jugo_leche",
+    "name": "Jugo en leche",
+    "category": "carb",
+    "qualityScore": 10,
+    "nova": "unprocessed",
+    "searchAliases": [
+      "batido",
+      "licuado con leche"
+    ],
+    "portionLabel": "1 vaso (240ml)",
+    "servingUnit": "cup"
+  },
+  {
+    "id": "jugo_agua",
+    "name": "Jugo en agua",
+    "category": "carb",
+    "qualityScore": 15,
+    "nova": "unprocessed",
+    "searchAliases": [
+      "jugo natural",
+      "licuado con agua"
+    ],
+    "portionLabel": "1 vaso (240ml)",
+    "servingUnit": "cup"
+  },
+  {
+    "id": "agua_de_panela",
+    "name": "Agua de panela",
+    "category": "carb",
+    "qualityScore": 5,
+    "nova": "culinaryIngredient",
+    "searchAliases": [
+      "agua panela",
+      "guarapo de panela"
+    ],
+    "portionLabel": "1 vaso (240ml)",
+    "servingUnit": "cup"
+  },
+  {
+    "id": "limonada",
+    "name": "Limonada",
+    "category": "carb",
+    "qualityScore": 10,
+    "nova": "unprocessed",
+    "searchAliases": [
+      "limonada de panela",
+      "lemonade"
+    ],
+    "portionLabel": "1 vaso (240ml)",
+    "servingUnit": "cup"
+  },
+  {
+    "id": "gaseosa",
+    "name": "Gaseosa",
+    "category": "carb",
+    "qualityScore": 0,
+    "nova": "ultraProcessed",
+    "searchAliases": [
+      "refresco",
+      "soda",
+      "bebida gaseosa"
+    ],
+    "portionLabel": "1 lata (355ml)",
+    "servingUnit": "cup"
+  },
+  {
+    "id": "cocacola",
+    "name": "Coca-Cola",
+    "category": "carb",
+    "qualityScore": 0,
+    "nova": "ultraProcessed",
+    "searchAliases": [
+      "coca",
+      "cola"
+    ],
+    "portionLabel": "1 lata (355ml)",
+    "servingUnit": "cup"
+  }
+]

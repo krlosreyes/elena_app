@@ -17,7 +17,7 @@
 import 'dart:async' show TimeoutException;
 import 'dart:io' show Platform;
 
-import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:health/health.dart' as hp;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:android_intent_plus/android_intent.dart';
@@ -456,10 +456,6 @@ class HealthSyncService {
         AppLogger.info(
           'HealthSync: ${metric.label}/${type.name} → ${points.length} samples',
         );
-        if (kDebugMode && metric == HealthMetric.sleepSession) {
-          // ignore: avoid_print
-          print('🩺 SLEEP/${type.name} → ${points.length} muestras');
-        }
         allPoints.addAll(points);
       } on TimeoutException {
         AppLogger.warning(

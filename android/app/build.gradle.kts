@@ -71,11 +71,32 @@ android {
         release {
             // SPEC-224: firma con la release key real (antes: debug keys).
             signingConfig = signingConfigs.getByName("release")
+
+            // REL-02 (auditoría 2026-07-11): el release se compilaba sin
+            // minificar ni ofuscar el lado nativo (Kotlin/Java) del APK/AAB.
+            // Habilita R8 con las reglas de keep en proguard-rules.pro
+            // (Firebase, RevenueCat, Samsung Health SDK, Health Connect).
+            // IMPORTANTE: antes de subir el primer AAB minificado a Play
+            // Console, correr un smoke test manual completo (login, sync
+            // HealthKit/Health Connect, compra sandbox) — ver comentario en
+            // proguard-rules.pro.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
 
     lint {
-        checkReleaseBuilds = false
+        // REL-05 (auditoría 2026-07-11): estaba en `false`, ocultando
+        // posibles warnings de seguridad/compatibilidad en el build de
+        // release. Se reactiva; `abortOnError = false` evita que un
+        // warning nuevo bloquee el build mientras el equipo revisa el
+        // primer reporte y decide cuáles son bloqueantes reales.
+        checkReleaseBuilds = true
+        abortOnError = false
     }
 }
 

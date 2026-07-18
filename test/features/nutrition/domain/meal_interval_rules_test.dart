@@ -210,6 +210,44 @@ void main() {
     });
   });
 
+  group('MealIntervalRules.firstMealOf (18-jul)', () {
+    NutritionLog mk(String id, DateTime ts) => NutritionLog(
+          id: id,
+          timestamp: ts,
+          label: 'Desayuno',
+          withinCircadianWindow: true,
+          ratio: MealRatio.a2e1,
+        );
+
+    test('lista vacía → null', () {
+      expect(MealIntervalRules.firstMealOf([]), isNull);
+    });
+
+    test('un solo log → su timestamp', () {
+      final t = DateTime(2026, 5, 24, 8, 30);
+      expect(MealIntervalRules.firstMealOf([mk('a', t)]), t);
+    });
+
+    test('múltiples logs → el más temprano (no el más reciente)', () {
+      final t1 = DateTime(2026, 5, 24, 8, 30);
+      final t2 = DateTime(2026, 5, 24, 13, 0);
+      final t3 = DateTime(2026, 5, 24, 20, 0);
+      expect(
+        MealIntervalRules.firstMealOf([mk('a', t2), mk('b', t1), mk('c', t3)]),
+        t1,
+      );
+    });
+
+    test('orden no importa', () {
+      final t1 = DateTime(2026, 5, 24, 8, 30);
+      final t2 = DateTime(2026, 5, 24, 13, 0);
+      expect(
+        MealIntervalRules.firstMealOf([mk('a', t1), mk('b', t2)]),
+        t1,
+      );
+    });
+  });
+
   group('Constantes', () {
     test('minInterval = 2h, recommendedInterval = 3h, lead = 30min', () {
       expect(MealIntervalRules.minInterval, const Duration(hours: 2));

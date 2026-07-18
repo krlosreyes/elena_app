@@ -83,7 +83,7 @@ void main() {
   });
 
   group('SPEC-158 — tier por umbral', () {
-    MealsRatioBreakdown _withPct(int aDominantCount, int total) {
+    MealsRatioBreakdown withPct(int aDominantCount, int total) {
       // Construye un breakdown sintético con count y total dados.
       // Resto en a1e1 (no A-dominante).
       final allA = aDominantCount;
@@ -99,13 +99,13 @@ void main() {
     }
 
     test('empty → tier empty', () {
-      final b = _withPct(0, 0);
+      final b = withPct(0, 0);
       expect(b.tier, MealsRatioInsightTier.empty);
       expect(MealsRatioInsight.forTier(b.tier), isNull);
     });
 
     test('>=80% → tier excellent', () {
-      final b = _withPct(8, 10);
+      final b = withPct(8, 10);
       expect(b.aDominantPercent, 80);
       expect(b.tier, MealsRatioInsightTier.excellent);
       final ins = MealsRatioInsight.forTier(b.tier);
@@ -113,25 +113,25 @@ void main() {
     });
 
     test('70-79% → tier good', () {
-      final b = _withPct(7, 10);
+      final b = withPct(7, 10);
       expect(b.aDominantPercent, 70);
       expect(b.tier, MealsRatioInsightTier.good);
     });
 
     test('50-69% → tier insufficient', () {
-      final b = _withPct(6, 10);
+      final b = withPct(6, 10);
       expect(b.aDominantPercent, 60);
       expect(b.tier, MealsRatioInsightTier.insufficient);
     });
 
     test('<50% → tier poor', () {
-      final b = _withPct(4, 10);
+      final b = withPct(4, 10);
       expect(b.aDominantPercent, 40);
       expect(b.tier, MealsRatioInsightTier.poor);
     });
 
     test('exactamente 50% → insufficient (no poor)', () {
-      final b = _withPct(5, 10);
+      final b = withPct(5, 10);
       expect(b.aDominantPercent, 50);
       expect(b.tier, MealsRatioInsightTier.insufficient);
     });

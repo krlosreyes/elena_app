@@ -19,6 +19,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import 'package:elena_app/firebase_options.dart';
 import 'package:elena_app/src/features/auth/domain/app_account.dart';
 import 'package:elena_app/src/features/auth/domain/auth_repository.dart';
 import 'package:elena_app/src/shared/domain/validators/user_profile_validator.dart';
@@ -103,13 +104,25 @@ class FirebaseAuthRepository implements AuthRepository {
   // Firebase Console > Authentication > Authorized domains. El handler
   // del deep link en el cliente extrae el link y llama
   // `signInWithEmailLink`.
+  //
+  // ARCH-06 (auditoría 2026-07-11): antes el dominio venía hardcodeado
+  // como literal ('elena-app-2026-v1.firebaseapp.com'), sin diferenciar
+  // entorno y desincronizado de firebase_options.dart si el proyecto de
+  // Firebase cambiara. Se deriva ahora de
+  // `DefaultFirebaseOptions.web.authDomain` — la MISMA fuente única de
+  // verdad que ya usa el resto de la app (regenerada automáticamente por
+  // `flutterfire configure`). Se usa el config `web` explícitamente
+  // porque `authDomain` es un campo específico del flujo de Firebase Auth
+  // en navegador (el link del magic link siempre abre en un webview/
+  // browser, sin importar si quien lo solicitó fue la app iOS o Android).
   @override
   Future<void> sendSignInLinkToEmail(String email) async {
     try {
+      final authDomain = DefaultFirebaseOptions.web.authDomain;
       await _auth.sendSignInLinkToEmail(
         email: email,
         actionCodeSettings: ActionCodeSettings(
-          url: 'https://elena-app-2026-v1.firebaseapp.com/set-password',
+          url: 'https://$authDomain/set-password',
           handleCodeInApp: true,
           androidPackageName: 'com.metamorfosis.elena.elena_app',
           androidInstallApp: true,
@@ -173,32 +186,52 @@ class FirebaseAuthRepository implements AuthRepository {
   // Firestore ya está limpio. El usuario puede reintentar sin inconsistencia.
   // La Cloud Function onUserDeleted (SPEC-207/248) actúa como red de seguridad
   // para datos creados en el intervalo o si el cliente falla a medio camino.
+  //
+  // 18-jul (repro Carlos): "dice que está tardando demasiado y se sale pero
+  // no se elimina el usuario". Causa raíz: NINGUNA de las ~18 llamadas
+  // encadenadas de este método tenía `.timeout()` propio — a diferencia de
+  // `_buildAccount`, que ya blinda su única lectura con 6s (SPEC-206). El
+  // `.timeout(25s)` de `ProfileController.deleteAccount()` (SPEC-250) NO
+  // cancela el `Future` real, solo deja de esperarlo — así que si un solo
+  // `await` de este loop se CUELGA de verdad (no tarda: nunca resuelve, el
+  // mismo patrón offline-first ya diagnosticado en
+  // `feedback_offline_first_pattern.md`), el proceso nunca alcanza el paso 4
+  // (`user.delete()`) ni en foreground ni en background. El usuario ve el
+  // mensaje de timeout y es expulsado a /login, pero la cuenta de Auth queda
+  // viva para siempre porque el paso que la borra jamás se ejecutó.
+  //
+  // Fix: cada llamada de red gana su propio `.timeout()` (mismo patrón que
+  // `_buildAccount`), y las subcollections —independientes entre sí, sin
+  // orden que respetar— pasan de loop secuencial a `Future.wait` paralelo.
+  // Esto acota el peor caso a un tiempo finito garantizado en vez de a
+  // "indefinido", y en el caso normal (subcollections vacías/chicas) hace
+  // el borrado bastante más rápido al no sumar latencias en serie.
   @override
   Future<void> deleteAccount() async {
     final user = _auth.currentUser;
     if (user == null) return;
     final uid = user.uid;
 
-    // 1. Borrar todas las subcollections MIENTRAS el usuario está autenticado.
-    //    Las reglas de Firestore requieren request.auth válido para writes.
-    for (final sub in _kUserSubcollections) {
-      try {
-        await _deleteSubcollection(uid, sub);
-      } catch (_) {
-        // Best-effort. La Cloud Function onUserDeleted lo limpia si falla.
-      }
-    }
+    // 1. Borrar todas las subcollections MIENTRAS el usuario está autenticado,
+    //    EN PARALELO — son independientes entre sí, no hay orden que respetar.
+    //    Cada una absorbe su propio error/timeout, así que ninguna bloquea a
+    //    las demás ni al resto del método.
+    await Future.wait(
+      _kUserSubcollections.map((sub) => _safeDeleteSubcollection(uid, sub)),
+    );
 
     // 2. Borrar doc raíz users/{uid}.
     try {
-      await _firestore.collection('users').doc(uid).delete();
+      await _firestore.collection('users').doc(uid).delete().timeout(
+            _kDocTimeout,
+          );
     } catch (_) {
       // Best-effort.
     }
 
     // 3. Borrar fasting_history plana legacy (SPEC-50.4 / SPEC-217 transición).
     try {
-      await _deleteFastingHistoryForUser(uid);
+      await _deleteFastingHistoryForUser(uid).timeout(_kSubcollectionTimeout);
     } catch (_) {
       // Best-effort.
     }
@@ -207,7 +240,12 @@ class FirebaseAuthRepository implements AuthRepository {
     //    Esto dispara la Cloud Function onUserDeleted (SPEC-207/248) como
     //    red de seguridad para cualquier dato residual.
     try {
-      await user.delete();
+      await user.delete().timeout(_kDocTimeout);
+    } on TimeoutException {
+      throw Exception(
+        'La eliminación está tardando más de lo esperado en el paso '
+        'final de autenticación. Verifica tu conexión e intenta de nuevo.',
+      );
     } on FirebaseAuthException catch (e) {
       if (e.code == 'requires-recent-login') {
         throw Exception(
@@ -222,14 +260,47 @@ class FirebaseAuthRepository implements AuthRepository {
 
     // 5. Cerrar sesión local para limpiar caches de Firebase Auth.
     try {
-      await _auth.signOut();
+      await _auth.signOut().timeout(_kDocTimeout);
     } catch (_) {
       // Best-effort.
     }
   }
 
+  /// Duración máxima para una llamada de red individual (`.get()`,
+  /// `batch.commit()`, borrado de doc, `user.delete()`, `signOut()`) dentro
+  /// de `deleteAccount()`. Mismo criterio que `_buildAccount` (6s) — más
+  /// margen porque un `batch.commit()` de hasta 400 docs puede pesar más
+  /// que una lectura simple de un doc.
+  static const Duration _kDocTimeout = Duration(seconds: 8);
+
+  /// Duración máxima para el borrado COMPLETO de una subcolección
+  /// (potencialmente varias páginas de `_kDocTimeout` cada una). Actúa como
+  /// backstop del loop de paginación en `_deleteSubcollection`/
+  /// `_deleteFastingHistoryForUser` — si una subcolección tiene muchas
+  /// páginas y no termina en este margen, se corta ahí: best-effort, la
+  /// Cloud Function `onUserDeleted` la termina de limpiar.
+  static const Duration _kSubcollectionTimeout = Duration(seconds: 20);
+
+  /// Envuelve `_deleteSubcollection` en su propio timeout + catch, para que
+  /// pueda correr dentro de un `Future.wait` sin que un cuelgue o error en
+  /// UNA subcolección bloquee a las demás ni propague la excepción.
+  Future<void> _safeDeleteSubcollection(String uid, String sub) async {
+    try {
+      await _deleteSubcollection(uid, sub).timeout(_kSubcollectionTimeout);
+    } catch (_) {
+      // Best-effort. La Cloud Function onUserDeleted lo limpia si falla.
+    }
+  }
+
   /// Subcolecciones bajo users/{uid} que se borran en cascada.
-  /// Debe mantenerse sincronizado con USER_SUBCOLLECTIONS en functions/src/index.ts.
+  /// Debe mantenerse sincronizado con USER_SUBCOLLECTIONS en functions/src/index.ts,
+  /// CON UNA EXCEPCIÓN A PROPÓSITO: 'badges' no va en esta lista. Las reglas
+  /// de Firestore (firestore.rules) hacen esa subcolección allow-create-only
+  /// para el cliente — ni el dueño puede borrarla desde acá, por diseño
+  /// (integridad de insignias otorgadas). Solo el Admin SDK de la Cloud
+  /// Function `onUserDeleted` (que ignora las Security Rules) puede
+  /// limpiarla; agregar 'badges' acá sería un intento de delete que las
+  /// reglas siempre rechazan — inofensivo (best-effort) pero inútil.
   static const _kUserSubcollections = [
     'sleep_history',
     'nutrition_history',
@@ -249,18 +320,23 @@ class FirebaseAuthRepository implements AuthRepository {
   ];
 
   /// Borra todos los documentos de una subcollection en batches de 400.
+  ///
+  /// 18-jul: cada `.get()`/`.commit()` gana `.timeout(_kDocTimeout)` propio
+  /// — sin esto, una sola página colgada (red degradada) nunca lanza ni
+  /// resuelve, y el `try/catch` del caller no tiene nada que atrapar. Ver
+  /// nota completa en `deleteAccount()`.
   Future<void> _deleteSubcollection(String uid, String subcollection) async {
     const batchSize = 400;
     final col =
         _firestore.collection('users').doc(uid).collection(subcollection);
-    var snapshot = await col.limit(batchSize).get();
+    var snapshot = await col.limit(batchSize).get().timeout(_kDocTimeout);
     while (snapshot.docs.isNotEmpty) {
       final batch = _firestore.batch();
       for (final doc in snapshot.docs) {
         batch.delete(doc.reference);
       }
-      await batch.commit();
-      snapshot = await col.limit(batchSize).get();
+      await batch.commit().timeout(_kDocTimeout);
+      snapshot = await col.limit(batchSize).get().timeout(_kDocTimeout);
     }
   }
 
@@ -268,20 +344,28 @@ class FirebaseAuthRepository implements AuthRepository {
   ///
   /// SPEC-207 inc2 — best-effort en cliente mientras la Cloud Function
   /// corre en background. No lanza excepción; el caller la envuelve en try/catch.
+  ///
+  /// 18-jul: mismo tratamiento de timeout por-llamada que `_deleteSubcollection`.
   Future<void> _deleteFastingHistoryForUser(String uid) async {
     const batchSize = 400;
     final col = _firestore.collection('fasting_history');
-    var snapshot =
-        await col.where('userId', isEqualTo: uid).limit(batchSize).get();
+    var snapshot = await col
+        .where('userId', isEqualTo: uid)
+        .limit(batchSize)
+        .get()
+        .timeout(_kDocTimeout);
 
     while (snapshot.docs.isNotEmpty) {
       final batch = _firestore.batch();
       for (final doc in snapshot.docs) {
         batch.delete(doc.reference);
       }
-      await batch.commit();
-      snapshot =
-          await col.where('userId', isEqualTo: uid).limit(batchSize).get();
+      await batch.commit().timeout(_kDocTimeout);
+      snapshot = await col
+          .where('userId', isEqualTo: uid)
+          .limit(batchSize)
+          .get()
+          .timeout(_kDocTimeout);
     }
   }
 

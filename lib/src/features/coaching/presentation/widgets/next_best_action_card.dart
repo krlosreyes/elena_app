@@ -18,7 +18,6 @@ import 'package:elena_app/src/features/billing/presentation/paywall_launcher.dar
 import 'package:elena_app/src/features/coaching/application/coaching_completion_service.dart';
 import 'package:elena_app/src/features/coaching/application/coaching_fatigue_notifier.dart';
 import 'package:elena_app/src/features/coaching/application/coaching_providers.dart';
-import 'package:elena_app/src/features/coaching/domain/coaching_action.dart';
 import 'package:elena_app/src/features/coaching/presentation/widgets/action_explainer_sheet.dart';
 
 class NextBestActionCard extends ConsumerStatefulWidget {

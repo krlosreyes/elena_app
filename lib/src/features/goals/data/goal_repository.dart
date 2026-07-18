@@ -6,10 +6,16 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
+import 'package:elena_app/src/features/goals/domain/goal_repository.dart';
 import 'package:elena_app/src/features/goals/domain/user_goal.dart';
 
-class GoalRepository {
-  const GoalRepository(this._firestore);
+// ARCH-05 (auditoría 2026-07-11): implementación Firestore del contrato
+// `GoalRepository` (domain/goal_repository.dart). Renombrada a `Impl`
+// porque el único sitio que instanciaba la clase concreta era el
+// provider de este mismo archivo — seguro de renombrar sin tocar otros
+// consumidores (verificado con grep, ver informe de la tarea).
+class GoalRepositoryImpl implements GoalRepository {
+  const GoalRepositoryImpl(this._firestore);
 
   final FirebaseFirestore _firestore;
 
@@ -20,6 +26,7 @@ class GoalRepository {
 
   /// Persiste el mapa completo de goals para el usuario.
   /// Usa merge para no tocar el resto de campos de UserModel.
+  @override
   Future<void> saveGoals(
     String userId,
     Map<GoalType, UserGoal> goals,
@@ -37,6 +44,7 @@ class GoalRepository {
   // ─── Lectura ──────────────────────────────────────────────────────────────
 
   /// Stream que emite el mapa de goals cada vez que cambia en Firestore.
+  @override
   Stream<Map<GoalType, UserGoal>> watchGoals(String userId) {
     return _userDoc(userId).snapshots().map((snap) {
       final data = snap.data();
@@ -59,6 +67,7 @@ class GoalRepository {
   }
 
   /// Lee los goals una sola vez (útil para inicialización).
+  @override
   Future<Map<GoalType, UserGoal>> fetchGoals(String userId) async {
     final snap = await _userDoc(userId).get();
     final data = snap.data();
@@ -87,5 +96,5 @@ class GoalRepository {
 // ─── Provider ────────────────────────────────────────────────────────────────
 
 final goalRepositoryProvider = Provider<GoalRepository>((ref) {
-  return GoalRepository(FirebaseFirestore.instance);
+  return GoalRepositoryImpl(FirebaseFirestore.instance);
 });

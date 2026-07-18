@@ -98,8 +98,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   decoration: const InputDecoration(
                       labelText: "Contraseña",
                       prefixIcon: Icon(Icons.lock_outline)),
-                  validator: (val) => (val == null || val.length < 6)
-                      ? "Mínimo 6 caracteres"
+                  // SEC-06 (auditoría 2026-07-11): subido de 6 a 8 caracteres
+                  // para que una contraseña NUEVA cumpla el mismo mínimo que
+                  // ya exigía set_password_screen.dart (flujo de magic link).
+                  // Esto NO afecta a usuarios ya registrados con 6-7
+                  // caracteres — ver login_screen.dart, que a propósito NO
+                  // se tocó (cambiar su validador rompería el login de
+                  // cuentas existentes).
+                  validator: (val) => (val == null || val.length < 8)
+                      ? "Mínimo 8 caracteres"
                       : null,
                 ),
                 const SizedBox(height: 16),

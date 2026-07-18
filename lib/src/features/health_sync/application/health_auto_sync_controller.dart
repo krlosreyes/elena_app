@@ -18,7 +18,7 @@
 
 import 'dart:io' show Platform;
 
-import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elena_app/src/core/services/app_logger.dart';
@@ -30,9 +30,7 @@ import 'package:elena_app/src/features/health_sync/application/health_sync_provi
 import 'package:elena_app/src/features/health_sync/application/health_sync_service.dart';
 import 'package:elena_app/src/features/health_sync/domain/health_permission_status.dart';
 import 'package:elena_app/src/features/health_sync/domain/health_sync_result.dart';
-import 'package:elena_app/src/features/progress/application/biometric_history_service.dart';
 import 'package:elena_app/src/features/progress/data/biometric_repository.dart';
-import 'package:elena_app/src/shared/providers/user_provider.dart';
 
 /// Snapshot público del estado del controller. La UI lo consume para
 /// mostrar badges ("Sincronizando", "Última sync", "Permisos
@@ -103,13 +101,22 @@ class HealthAutoSyncController extends StateNotifier<HealthAutoSyncState> {
   final HealthImportService _importService;
   final Ref _ref;
 
+  /// TEST-06 (auditoría 2026-07-11): reloj inyectable. Default
+  /// `DateTime.now` preserva el comportamiento real en el único sitio
+  /// donde se instancia el controller (provider al final de este
+  /// archivo). Permite testear el debounce de `runIfDue` sin depender
+  /// del reloj de pared.
+  final DateTime Function() _now;
+
   HealthAutoSyncController({
     required HealthSyncService syncService,
     required HealthImportService importService,
     required Ref ref,
+    DateTime Function() now = DateTime.now,
   })  : _syncService = syncService,
         _importService = importService,
         _ref = ref,
+        _now = now,
         super(const HealthAutoSyncState());
 
   // ─── API pública ─────────────────────────────────────────────────
@@ -130,10 +137,10 @@ class HealthAutoSyncController extends StateNotifier<HealthAutoSyncState> {
       return;
     }
     if (state.lastRunAt != null &&
-        DateTime.now().difference(state.lastRunAt!) < _kMinSyncInterval) {
+        _now().difference(state.lastRunAt!) < _kMinSyncInterval) {
       AppLogger.debug(
         'HealthAutoSync: skip — última corrida hace '
-        '${DateTime.now().difference(state.lastRunAt!).inMinutes} min',
+        '${_now().difference(state.lastRunAt!).inMinutes} min',
       );
       return;
     }
@@ -168,10 +175,12 @@ class HealthAutoSyncController extends StateNotifier<HealthAutoSyncState> {
   // ─── Implementación ──────────────────────────────────────────────
 
   Future<void> _runNow({required String userId}) async {
-    if (kDebugMode) {
-      // ignore: avoid_print
-      print('🩺 SYNC START userId=$userId');
-    }
+    // ARCH-02 (auditoría 2026-07-11): estos print() de diagnóstico ya
+    // estaban gateados por kDebugMode (no llegaban a release), pero
+    // duplicaban información que AppLogger ya registra. Se consolidan en
+    // AppLogger.debug (gateado igual, sin userId en el mensaje) para
+    // evitar logging duplicado y el patrón `// ignore: avoid_print`.
+    AppLogger.debug('HealthAutoSync: sync start');
     state = state.copyWith(isRunning: true);
     _ref.read(isHealthSyncingProvider.notifier).state = true;
 
@@ -180,10 +189,7 @@ class HealthAutoSyncController extends StateNotifier<HealthAutoSyncState> {
       final perm = await _syncService.checkPermissions();
       state = state.copyWith(permissionStatus: perm);
       _ref.read(healthPermissionStatusProvider.notifier).state = perm;
-      if (kDebugMode) {
-        // ignore: avoid_print
-        print('🩺 SYNC permisos=${perm.runtimeType}');
-      }
+      AppLogger.debug('HealthAutoSync: permisos=${perm.runtimeType}');
 
       // SPEC-237: también sincronizamos si hay permisos PARCIALES.
       // En Android, si WORKOUT fue denegado pero SLEEP/STEPS están concedidos,
@@ -196,10 +202,6 @@ class HealthAutoSyncController extends StateNotifier<HealthAutoSyncState> {
           'HealthAutoSync: sin permisos (${perm.runtimeType}), '
           'no se sincroniza',
         );
-        if (kDebugMode) {
-          // ignore: avoid_print
-          print('🩺 SYNC ABORT — sin permisos');
-        }
         return;
       }
 
@@ -208,20 +210,12 @@ class HealthAutoSyncController extends StateNotifier<HealthAutoSyncState> {
       state = state.copyWith(lastResult: result);
       _ref.read(lastHealthSyncResultProvider.notifier).state = result;
       AppLogger.info('HealthAutoSync: sync ok — $result');
-      if (kDebugMode) {
-        // ignore: avoid_print
-        print('🩺 SYNC RESULT $result');
-      }
 
       // 3. Import (solo si hubo datos).
       if (!result.isEmpty) {
         final summary = await _importService.importResult(userId, result);
         state = state.copyWith(lastImport: summary);
         AppLogger.info('HealthAutoSync: import ok — $summary');
-        if (kDebugMode) {
-          // ignore: avoid_print
-          print('🩺 SYNC IMPORTED $summary');
-        }
 
         // NOTA: NO propagamos el peso de AH al doc canónico users/{uid}.weight.
         // El peso canónico lo controla el usuario (onboarding o edición manual en
@@ -230,10 +224,6 @@ class HealthAutoSyncController extends StateNotifier<HealthAutoSyncState> {
         // con datos históricos de AH, corrompiendo la recomendación de meta de peso.
       } else {
         AppLogger.info('HealthAutoSync: nada que importar');
-        if (kDebugMode) {
-          // ignore: avoid_print
-          print('🩺 SYNC EMPTY — nada que importar');
-        }
       }
 
       // SPEC-239: fallback Samsung Health SDK cuando HC no tiene sueño.
@@ -244,10 +234,9 @@ class HealthAutoSyncController extends StateNotifier<HealthAutoSyncState> {
         final noSleepFromHC = importSummary == null ||
             importSummary.sleepSessionsImported == 0;
         if (noSleepFromHC) {
-          if (kDebugMode) {
-            // ignore: avoid_print
-            print('🩺 HC sin sueño → intentando Samsung Health SDK directo');
-          }
+          AppLogger.debug(
+            'HealthAutoSync: HC sin sueño → intentando Samsung Health SDK directo',
+          );
           try {
             final shService = SamsungHealthService();
             final window = _kDefaultSyncWindow;
@@ -270,10 +259,9 @@ class HealthAutoSyncController extends StateNotifier<HealthAutoSyncState> {
                   workoutsImported: importSummary?.workoutsImported ?? 0,
                 );
                 state = state.copyWith(lastImport: updated);
-                if (kDebugMode) {
-                  // ignore: avoid_print
-                  print('🩺 SH SDK: $shImported sesiones importadas OK');
-                }
+                AppLogger.debug(
+                  'HealthAutoSync: SH SDK: $shImported sesiones importadas OK',
+                );
               }
             }
           } catch (e) {
@@ -296,10 +284,7 @@ class HealthAutoSyncController extends StateNotifier<HealthAutoSyncState> {
             importSummary.sleepSessionsImported == 0;
         if (noSleepImported) {
           state = state.copyWith(needsSamsungHealthGuide: true);
-          if (kDebugMode) {
-            // ignore: avoid_print
-            print('🩺 SAMSUNG GUIDE: sueño=0, mostrando guía HC');
-          }
+          AppLogger.debug('HealthAutoSync: sueño=0, mostrando guía HC');
         } else {
           // Sueño importó correctamente → ocultar guía si estaba visible.
           state = state.copyWith(needsSamsungHealthGuide: false);
@@ -307,44 +292,16 @@ class HealthAutoSyncController extends StateNotifier<HealthAutoSyncState> {
       }
     } catch (e, st) {
       AppLogger.error('HealthAutoSync: ciclo falló', e, st);
-      if (kDebugMode) {
-        // ignore: avoid_print
-        print('🩺 SYNC ERROR $e');
-        // ignore: avoid_print
-        print(st);
-      }
     } finally {
+      // TEST-06: usa el reloj inyectado — este timestamp es el que
+      // `runIfDue` compara en la próxima corrida, así que debe venir de
+      // la misma fuente que la comparación para que el debounce sea
+      // testeable de punta a punta.
       state = state.copyWith(
         isRunning: false,
-        lastRunAt: DateTime.now(),
+        lastRunAt: _now(),
       );
       _ref.read(isHealthSyncingProvider.notifier).state = false;
-    }
-  }
-
-  /// Propaga el peso más reciente de `biometric_history` al doc canónico
-  /// `users/{uid}.weight` (que lee la card de Perfil). Nunca rompe el sync:
-  /// cualquier fallo se loguea y se ignora.
-  Future<void> _syncCanonicalWeight(String userId) async {
-    try {
-      final latest =
-          await _ref.read(biometricRepositoryProvider).fetchLatest(userId);
-      final user = _ref.read(currentUserStreamProvider).valueOrNull;
-      if (latest == null || user == null) return;
-      // Auditoría P3/C1: ruta canónica (servicio único de biometría),
-      // no `saveProfile` suelto. Escribe doc raíz + historia atómicamente.
-      await _ref
-          .read(biometricHistoryServiceProvider)
-          .syncCanonicalWeightFromHistory(
-            currentUser: user,
-            latestHistoryEntry: latest,
-          );
-      AppLogger.info(
-          'HealthAutoSync: peso canónico actualizado a ${latest.weight} kg');
-    } catch (e) {
-      AppLogger.warning(
-        'HealthAutoSync: no se pudo sincronizar el peso canónico: $e',
-      );
     }
   }
 }

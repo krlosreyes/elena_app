@@ -59,7 +59,9 @@ final healthObserverSideEffectProvider = Provider<void>((ref) {
       return;
     }
 
-    AppLogger.debug('[HKObserver] evento aceptado — lanzando runNow uid=${user.id}');
+    // SEC-07: uid truncado, nunca completo en logs.
+    AppLogger.debug(
+        '[HKObserver] evento aceptado — lanzando runNow uid=${AppLogger.truncateUid(user.id)}');
     // `runNow` (no `runIfDue`): el evento del observer ignora el debounce de
     // 15 min del foreground — es data fresca confirmada por HealthKit.
     ref.read(healthAutoSyncControllerProvider.notifier).runNow(userId: user.id);

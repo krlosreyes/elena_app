@@ -10,8 +10,6 @@
 import 'package:flutter/material.dart';
 
 import 'package:elena_app/src/features/analysis/data/daily_summary_doc.dart';
-import 'package:elena_app/src/features/analysis/presentation/widgets/imr_pillar_bar_chart.dart'
-    show ImrWeekData;
 
 // ─── Modelo de análisis ────────────────────────────────────────────────────
 

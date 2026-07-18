@@ -16,7 +16,6 @@ import 'package:elena_app/src/features/analysis/application/chart_hero_computer.
 import 'package:elena_app/src/features/analysis/domain/aggregation_mode.dart';
 import 'package:elena_app/src/features/analysis/domain/hero_aggregation.dart';
 import 'package:elena_app/src/features/analysis/domain/metric_series.dart';
-import 'package:elena_app/src/features/analysis/domain/time_series_point.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/chart_card_header.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/chart_hero_block.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/chart_tooltip.dart';

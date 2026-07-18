@@ -1,0 +1,12 @@
+# TEST-07 (auditoría independiente 2026-07-11): node_modules se instaló en el
+# sandbox para poder ejecutar de verdad los tests de Cloud Functions
+# (firebase-functions-test + jest). No debe commitearse — se reinstala con
+# `npm install` dentro de functions/.
+node_modules/
+
+# Compilado de TypeScript (se regenera con `npm run build`).
+lib/
+
+# Logs de npm/firebase.
+npm-debug.log*
+firebase-debug.log

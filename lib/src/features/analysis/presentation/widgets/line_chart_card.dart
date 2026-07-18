@@ -81,7 +81,6 @@ class _LineChartCardState extends State<LineChartCard> {
   // Geometría duplicada del painter para mantener tap y render alineados.
   static const double _yAxisRightWidth = 36;
   static const double _xAxisHeight = 22;
-  static const double _gridPaddingTop = 12;
 
   /// Devuelve la x (en pixels del chart) donde se planta el punto `i`.
   double _xOf(int i, double plotLeft, double plotWidth) {

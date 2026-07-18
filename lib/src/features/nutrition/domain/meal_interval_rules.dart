@@ -120,6 +120,23 @@ class MealIntervalRules {
     }
     return latest;
   }
+
+  /// 18-jul: encuentra la PRIMERA comida de la lista de logs. Null si la
+  /// lista está vacía.
+  ///
+  /// Usado por `EatingWindowState.compute` (SPEC-95/96) para anclar el
+  /// inicio de la ventana de alimentación al primer registro real del
+  /// usuario en vez de a un horario configurado u óptimo teórico — mismo
+  /// principio del Día Metabólico (METABOLIC_DAY_CONSTITUTION.md §1):
+  /// el evento real del usuario gana sobre cualquier default.
+  static DateTime? firstMealOf(List<NutritionLog> logs) {
+    if (logs.isEmpty) return null;
+    var earliest = logs.first.timestamp;
+    for (final l in logs) {
+      if (l.timestamp.isBefore(earliest)) earliest = l.timestamp;
+    }
+    return earliest;
+  }
 }
 
 // ── Excepciones tipadas ──────────────────────────────────────────────

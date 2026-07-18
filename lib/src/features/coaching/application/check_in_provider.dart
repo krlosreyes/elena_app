@@ -161,7 +161,7 @@ CheckInCoachingResponse getCoachingResponse(
   List<FastingCheckIn> recentHistory,
 ) {
   // Regla clave: irritable 2x consecutivas → sugerir cierre.
-  if (feeling == FastingFeeling.irritable && recentHistory.length >= 1) {
+  if (feeling == FastingFeeling.irritable && recentHistory.isNotEmpty) {
     final prev = recentHistory.last;
     if (prev.feeling == FastingFeeling.irritable) {
       return const CheckInCoachingResponse(

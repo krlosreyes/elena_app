@@ -98,7 +98,6 @@ void main() {
         'SPEC-216-03: guard "if (isSaving)" no hace doble setState '
         'cuando el happy path ya limpió la bandera', () async {
       final svc = _SleepSavingMechanic();
-      var setCalls = 0;
       // Monkey-patch: usamos el svc normal (isSaving=false cuando finally corre)
       await svc.saveManualSleep(
         bedtime: const TimeOfDay(hour: 22, minute: 30),

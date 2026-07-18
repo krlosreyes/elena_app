@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 // fallback exclusivo para el caso "sin ciclo abierto". Cuando hay
 // ciclo, sigue cycle-aware estricto (Constitución §1).
 import 'package:elena_app/src/core/services/day_boundary_resolver.dart';
+import 'package:elena_app/src/core/offline_first_stream_mixin.dart';
 import 'package:elena_app/src/core/analytics/analytics_events.dart';
 import 'package:elena_app/src/core/orchestrator/biological_phases.dart';
 import 'package:elena_app/src/core/services/analytics_service.dart';
@@ -36,10 +37,10 @@ final exerciseProvider =
   return ExerciseNotifier(ref: ref);
 });
 
-class ExerciseNotifier extends StateNotifier<ExerciseState> {
+class ExerciseNotifier extends StateNotifier<ExerciseState>
+    with OfflineFirstStreamMixin<ExerciseState> {
   final Ref ref;
   String? _activeUserId;
-  StreamSubscription? _subscription;
   DateTime? _currentCycleStartedAt;
 
   ExerciseNotifier({required this.ref}) : super(const ExerciseState()) {
@@ -60,8 +61,7 @@ class ExerciseNotifier extends StateNotifier<ExerciseState> {
             }
           } else {
             // Logout: cancelar y limpiar estado.
-            _subscription?.cancel();
-            _subscription = null;
+            cancelActiveSubscription();
             _activeUserId = null;
             if (mounted) state = const ExerciseState();
           }
@@ -71,7 +71,7 @@ class ExerciseNotifier extends StateNotifier<ExerciseState> {
     );
 
     // SPEC-149.2 + SPEC-178.bugfix2: re-suscribir cuando cambia el
-    // ciclo metabólico. La condición `_subscription == null` cubre el
+    // ciclo metabólico. La condición `!hasActiveSubscription` cubre el
     // caso inicial donde el primer fire trae cycle=null y la igualdad
     // null==null bloquearía la suscripción.
     ref.listen<AsyncValue<MetabolicCycle?>>(
@@ -79,7 +79,7 @@ class ExerciseNotifier extends StateNotifier<ExerciseState> {
       (previous, next) {
         next.whenData((cycle) {
           final newSince = cycle?.startedAt;
-          if (_subscription == null ||
+          if (!hasActiveSubscription ||
               newSince != _currentCycleStartedAt) {
             _currentCycleStartedAt = newSince;
             _subscribeFor(newSince);
@@ -99,12 +99,10 @@ class ExerciseNotifier extends StateNotifier<ExerciseState> {
   void _subscribeFor(DateTime? cycleStartedAt) {
     final userId = _activeUserId;
     if (userId == null || userId.isEmpty) return;
-    _subscription?.cancel();
-    _subscription = null;
     final since = cycleStartedAt ??
         DayBoundaryResolver.startOfDay(DateTime.now());
     final repo = ref.read(exerciseRepositoryProvider);
-    _subscription = repo.watchSince(userId, since).listen(
+    attachSubscription(repo.watchSince(userId, since).listen(
       (logs) {
         if (mounted) {
           final totalMinutes = logs.fold<int>(
@@ -129,7 +127,7 @@ class ExerciseNotifier extends StateNotifier<ExerciseState> {
         // SPEC-211: Firestore cerró el stream (token refresh, reconexión).
         if (mounted) _subscribeFor(cycleStartedAt);
       },
-    );
+    ));
   }
 
   Future<void> registerExercise({
@@ -236,11 +234,5 @@ class ExerciseNotifier extends StateNotifier<ExerciseState> {
     if (!mounted) return;
     state = const ExerciseState();
     _subscribeFor(_currentCycleStartedAt);
-  }
-
-  @override
-  void dispose() {
-    _subscription?.cancel();
-    super.dispose();
   }
 }

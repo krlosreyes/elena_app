@@ -44,7 +44,6 @@ class TransformationNarrator {
   // ±0.5 cm, etc.).
   static const double _kWeightEpsilonKg = 0.3;
   static const double _kWaistEpsilonCm = 0.5;
-  static const double _kBodyFatEpsilonPct = 0.5;
   static const double _kSleepEpsilonHours = 0.2;
   static const int _kImrEpsilon = 2;
 

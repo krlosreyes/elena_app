@@ -87,8 +87,7 @@ class CycleScoreMigrationService {
         // Corregir fastingDurationHours: era mag(0) * targetHours = 0.
         // Ahora debería ser targetHours (100% del protocolo).
         final targetHours = fastingHoursForProtocol(cycle.fastingProtocol);
-        final correctedFastingHours =
-            targetHours != null ? targetHours.toDouble() : null;
+        final correctedFastingHours = targetHours?.toDouble();
 
         // Reconstruir el ciclo con los datos corregidos. No tenemos copyWith
         // en MetabolicCycle (diseño inmutable sin it) — reconstruimos campo

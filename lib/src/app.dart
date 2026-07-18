@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -13,7 +12,6 @@ import 'package:elena_app/src/features/auth/domain/app_account.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
 import 'package:elena_app/src/features/billing/application/billing_providers.dart';
 import 'package:elena_app/src/features/billing/application/feature_gate.dart';
-import 'package:elena_app/src/features/onboarding/application/app_tour_notifier.dart';
 import 'package:elena_app/src/features/onboarding/presentation/app_tour_overlay.dart';
 import 'package:elena_app/src/features/coaching/application/coaching_action_router.dart';
 import 'package:elena_app/src/core/services/daily_reset_service.dart';
@@ -113,8 +111,7 @@ class _ElenaAppState extends ConsumerState<ElenaApp>
       if (user == null || user.id.isEmpty) return;
       // SPEC-197: el auto-sync de wearables es Premium. Free registra manual.
       if (!ref.read(featureGateProvider).autoSyncAllowed) return;
-      // ignore: avoid_print
-      if (kDebugMode) print('[ElenaApp] resume — forzando HealthAutoSync.runNow');
+      AppLogger.debug('App: resume — forzando HealthAutoSync.runNow');
       ref
           .read(healthAutoSyncControllerProvider.notifier)
           .runNow(userId: user.id);
@@ -202,10 +199,9 @@ class _ElenaAppState extends ConsumerState<ElenaApp>
       if (wasAllowed || !isNowAllowed) return; // sin transición false→true
       final user = ref.read(currentUserStreamProvider).valueOrNull;
       if (user == null || user.id.isEmpty) return;
-      if (kDebugMode) {
-        // ignore: avoid_print
-        print('[ElenaApp] featureGate autoSync unlocked — forzando HealthAutoSync.runNow');
-      }
+      AppLogger.debug(
+        'App: featureGate autoSync unlocked — forzando HealthAutoSync.runNow',
+      );
       // runNow (no runIfDue): el entitlement acaba de cargar, el debounce de
       // 15 min no aplica — necesitamos datos frescos ahora.
       ref

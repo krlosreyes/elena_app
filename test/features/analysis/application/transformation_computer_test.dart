@@ -284,7 +284,7 @@ void main() {
 
   // ── SPEC-138 §16.4: delta UPF ────────────────────────────────────────
 
-  NutritionLog _nLog(DateTime now, int daysAgo,
+  NutritionLog nLog(DateTime now, int daysAgo,
       {int? upfSlots, int? totalSlots}) {
     return NutritionLog(
       id: 'log-$daysAgo',
@@ -314,8 +314,8 @@ void main() {
     test('pocos logs (<3) en cada ventana → ambos lados null', () {
       final now = DateTime(2026, 6, 5, 12);
       final logs = [
-        _nLog(now, 1, upfSlots: 1, totalSlots: 4),
-        _nLog(now, 30, upfSlots: 2, totalSlots: 5),
+        nLog(now, 1, upfSlots: 1, totalSlots: 4),
+        nLog(now, 30, upfSlots: 2, totalSlots: 5),
       ];
       final snap = TransformationComputer.compute(
         biometricHistory: const [],
@@ -334,10 +334,10 @@ void main() {
         // Ventana current: días 1-7. 5 logs con datos NOVA.
         // 5 platos con (1/4) = 25% cada uno → agregado 25%.
         for (int d = 1; d <= 5; d++)
-          _nLog(now, d, upfSlots: 1, totalSlots: 4),
+          nLog(now, d, upfSlots: 1, totalSlots: 4),
         // Ventana past: días 28-35. 5 logs con (3/4) = 75% cada uno → 75%.
         for (int d = 28; d <= 32; d++)
-          _nLog(now, d, upfSlots: 3, totalSlots: 4),
+          nLog(now, d, upfSlots: 3, totalSlots: 4),
       ];
       final snap = TransformationComputer.compute(
         biometricHistory: const [],
@@ -357,10 +357,10 @@ void main() {
       final now = DateTime(2026, 6, 5, 12);
       final logs = <NutritionLog>[
         // 5 logs pre-138 en ventana current (sin NOVA)
-        for (int d = 1; d <= 5; d++) _nLog(now, d),
+        for (int d = 1; d <= 5; d++) nLog(now, d),
         // 5 logs NOVA en ventana past
         for (int d = 28; d <= 32; d++)
-          _nLog(now, d, upfSlots: 0, totalSlots: 5),
+          nLog(now, d, upfSlots: 0, totalSlots: 5),
       ];
       final snap = TransformationComputer.compute(
         biometricHistory: const [],

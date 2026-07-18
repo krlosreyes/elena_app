@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
 // IMPORTANTE: Esta es la ruta al archivo que creamos para centralizar el usuario
 import 'package:elena_app/src/core/analytics/analytics_events.dart';
+import 'package:elena_app/src/core/offline_first_stream_mixin.dart';
 import 'package:elena_app/src/core/orchestrator/biological_phases.dart';
 import 'package:elena_app/src/core/services/analytics_service.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
@@ -75,9 +76,9 @@ class HydrationState {
 // SPEC-179: sentinel para distinguir "no se pasó" de "se pasó null".
 const Object _kSentinel = Object();
 
-class HydrationNotifier extends StateNotifier<HydrationState> {
+class HydrationNotifier extends StateNotifier<HydrationState>
+    with OfflineFirstStreamMixin<HydrationState> {
   final Ref _ref;
-  StreamSubscription? _hydrationSubscription;
   String? _activeUserId;
   DateTime? _currentCycleStartedAt;
 
@@ -111,8 +112,7 @@ class HydrationNotifier extends StateNotifier<HydrationState> {
           // SPEC-11: Usuario cerró sesión — cancelar suscripción activa y
           // resetear estado al valor inicial para aislar al próximo usuario.
           _activeUserId = null;
-          _hydrationSubscription?.cancel();
-          _hydrationSubscription = null;
+          cancelActiveSubscription();
           if (mounted) state = HydrationState();
         }
       });
@@ -129,7 +129,7 @@ class HydrationNotifier extends StateNotifier<HydrationState> {
           // cycle == null, newSince == _currentCycleStartedAt (ambos null)
           // y la igualdad bloqueaba la suscripción inicial. Subscribe
           // siempre que no haya subscription activa.
-          if (_hydrationSubscription == null ||
+          if (!hasActiveSubscription ||
               newSince != _currentCycleStartedAt) {
             _currentCycleStartedAt = newSince;
             _subscribeFor(newSince);
@@ -169,11 +169,9 @@ class HydrationNotifier extends StateNotifier<HydrationState> {
   void _subscribeFor(DateTime? cycleStartedAt) {
     final userId = _activeUserId;
     if (userId == null) return;
-    _hydrationSubscription?.cancel();
-    _hydrationSubscription = null;
     final since = cycleStartedAt ??
         DayBoundaryResolver.startOfDay(DateTime.now());
-    _hydrationSubscription = _ref
+    attachSubscription(_ref
         .read(hydrationRepositoryProvider)
         .watchSince(userId, since)
         .listen((logs) {
@@ -188,13 +186,7 @@ class HydrationNotifier extends StateNotifier<HydrationState> {
           isGoalReached: total >= state.dailyGoalLiters,
         );
       }
-    });
-  }
-
-  @override
-  void dispose() {
-    _hydrationSubscription?.cancel();
-    super.dispose();
+    }));
   }
 
   /// SPEC-58 + SPEC-149.2: Reset idempotente disparado al cierre del

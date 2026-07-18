@@ -165,7 +165,6 @@ class _TrendPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final w = size.width;
-    final h = size.height;
     // Plot ocupa horizontalmente toda la card. Vertical: 2 carriles —
     // largo arriba, corto abajo (offset). Diff visualizada por
     // separación vertical entre líneas.

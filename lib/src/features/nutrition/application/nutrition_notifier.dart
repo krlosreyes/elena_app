@@ -18,6 +18,7 @@ import 'package:uuid/uuid.dart';
 // cycle-aware (Constitución §1). Sin ciclo, ventana startOfDay para
 // que los logs del día sean visibles en el ring.
 import 'package:elena_app/src/core/analytics/analytics_events.dart';
+import 'package:elena_app/src/core/offline_first_stream_mixin.dart';
 import 'package:elena_app/src/core/orchestrator/biological_phases.dart';
 import 'package:elena_app/src/core/services/analytics_service.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
@@ -31,6 +32,7 @@ import 'package:elena_app/src/features/dashboard/application/fasting_notifier.da
 import 'package:elena_app/src/features/nutrition/domain/meal_interval_rules.dart';
 import 'package:elena_app/src/features/nutrition/domain/meal_ratio.dart';
 import 'package:elena_app/src/features/nutrition/domain/nutrition_log.dart';
+import 'package:elena_app/src/features/nutrition/domain/nutrition_score_calculator.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 
@@ -104,14 +106,14 @@ class NutritionState {
 
 // ─── Notifier ─────────────────────────────────────────────────────────────────
 
-class NutritionNotifier extends StateNotifier<NutritionState> {
+class NutritionNotifier extends StateNotifier<NutritionState>
+    with OfflineFirstStreamMixin<NutritionState> {
   NutritionNotifier(this._ref) : super(const NutritionState()) {
     _init();
   }
 
   final Ref _ref;
   CircadianProfile? _circadianProfile;
-  StreamSubscription<List<NutritionLog>>? _logsSub;
   String? _activeUserId;
   DateTime? _currentCycleStartedAt;
 
@@ -157,8 +159,7 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
         next.whenData((user) {
           if (user == null) {
             _activeUserId = null;
-            _logsSub?.cancel();
-            _logsSub = null;
+            cancelActiveSubscription();
             if (mounted) state = const NutritionState();
             return;
           }
@@ -191,13 +192,13 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
           AppLogger.debug(
             '[nutritionDebug] currentMetabolicCycleProvider emitió: '
             'cycleId=${cycle?.cycleId} startedAt=$newSince '
-            '(anterior=$_currentCycleStartedAt, logsSub==null=${_logsSub == null})',
+            '(anterior=$_currentCycleStartedAt, hasActiveSubscription=$hasActiveSubscription)',
           );
           // SPEC-178.bugfix2 (2026-06-05): si el primer fire emite con
           // cycle == null, newSince == _currentCycleStartedAt (ambos null)
           // y la igualdad bloqueaba la suscripción inicial. Subscribe
           // siempre que no haya subscription activa.
-          if (_logsSub == null ||
+          if (!hasActiveSubscription ||
               newSince != _currentCycleStartedAt) {
             _currentCycleStartedAt = newSince;
             _subscribeFor(newSince);
@@ -223,8 +224,6 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
   void _subscribeFor(DateTime? cycleStartedAt, {bool forceFreshBaseline = false}) {
     final userId = _activeUserId;
     if (userId == null) return;
-    _logsSub?.cancel();
-    _logsSub = null;
     final since = cycleStartedAt ??
         DayBoundaryResolver.startOfDay(DateTime.now());
     // SPEC-253: diagnóstico (Carlos reportó comidas desapareciendo al
@@ -247,7 +246,7 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
     }
 
     final repo = _ref.read(nutritionRepositoryProvider);
-    _logsSub = repo.watchSinceLogs(userId, since).listen(
+    attachSubscription(repo.watchSinceLogs(userId, since).listen(
       (logs) {
         if (!mounted) return;
         final merged = _mergeWithBaseline(_baseline, logs);
@@ -275,7 +274,7 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
         // incompleto de la reconciliación de caché tras reconectar.
         if (mounted) _subscribeFor(_currentCycleStartedAt);
       },
-    );
+    ));
   }
 
   /// SPEC-253: guardia definitiva contra pérdida silenciosa de datos.
@@ -724,12 +723,6 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
     _subscribeFor(_currentCycleStartedAt, forceFreshBaseline: true);
   }
 
-  @override
-  void dispose() {
-    _logsSub?.cancel();
-    super.dispose();
-  }
-
   // ─── Lógica interna ──────────────────────────────────────────────────────
 
   bool _isWithinCircadianWindow(DateTime time) {
@@ -745,14 +738,18 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
   }
 
   /// Recalcula nutritionScore y windowAdherence dado un conjunto de logs.
+  ///
+  /// SPEC-audit CODE-02: la fórmula (pesos 0.60/0.40) ahora vive en
+  /// `NutritionScoreCalculator` — mismos valores, solo con nombre.
   NutritionState _recalculate(List<NutritionLog> logs, int target) {
-    final int count = logs.length;
-    final double mealCountScore = (count / target.clamp(1, 10)).clamp(0.0, 1.0);
-    final double windowAdherence = count == 0
-        ? 0.0
-        : logs.where((l) => l.withinCircadianWindow).length / count;
-    final double score =
-        ((0.60 * mealCountScore) + (0.40 * windowAdherence)).clamp(0.0, 1.0);
+    final double mealCountScore =
+        NutritionScoreCalculator.mealCountScore(logs.length, target);
+    final double windowAdherence =
+        NutritionScoreCalculator.windowAdherence(logs);
+    final double score = NutritionScoreCalculator.score(
+      mealCountScore: mealCountScore,
+      windowAdherence: windowAdherence,
+    );
     return state.copyWith(
       todayLogs: logs,
       nutritionScore: score,

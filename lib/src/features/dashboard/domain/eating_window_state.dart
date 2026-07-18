@@ -71,10 +71,16 @@ class EatingWindowState {
   ///   ayuno).
   /// - [user]: para leer `fastingProtocol` y `profile.firstMealGoal`.
   /// - [now]: instante actual.
+  /// - [firstMealLoggedToday]: 18-jul — timestamp del primer registro
+  ///   REAL de comida del día metabólico actual (típicamente
+  ///   `MealIntervalRules.firstMealOf(nutritionState.todayLogs)`, que ya
+  ///   es cycle-aware). Null si el usuario no ha registrado ninguna
+  ///   comida todavía. Ver nota completa más abajo.
   static EatingWindowState compute({
     required FastingInterval? lastInterval,
     required UserModel user,
     required DateTime now,
+    DateTime? firstMealLoggedToday,
   }) {
     final int hours = _windowHoursForProtocol(user.fastingProtocol);
 
@@ -93,17 +99,47 @@ class EatingWindowState {
       );
     }
 
-    // Caso 2: hay un intervalo de ventana de comida (isFasting=false).
-    // Si su startTime es reciente (≤ 24h), usar como windowStart.
-    // Si es muy viejo, caer al fallback.
-    DateTime windowStart;
-    if (lastInterval != null && !lastInterval.isFasting) {
-      final ageHours = now.difference(lastInterval.startTime).inHours;
-      windowStart = ageHours.abs() <= 24
-          ? lastInterval.startTime
-          : _fallbackWindowStart(user, now);
+    // 18-jul (repro Carlos): un usuario NUEVO que registra su primer
+    // desayuno a las 8:30am esperaba que la ventana de alimentación
+    // (anillo + hitos de comida) arrancara EN esa hora real. Antes de
+    // este fix, sin `lastInterval` (nunca tocó el pilar Ayuno), el
+    // método caía directo al Caso 3 (`_fallbackWindowStart`), que usa
+    // `firstMealGoal` del onboarding o el horario "óptimo" teórico del
+    // protocolo — NINGUNO de los dos refleja lo que el usuario realmente
+    // hizo. Mismo principio ya aplicado al Día Metabólico
+    // (METABOLIC_DAY_CONSTITUTION.md §1): el evento real del usuario
+    // gana sobre cualquier configuración o default.
+    //
+    // Candidatos, en orden de qué tan "real" es la señal:
+    //   - `intervalCandidate`: el usuario cerró explícitamente su ayuno
+    //     (Caso 2 preexistente, SPEC-95/96) — solo si es reciente (≤24h).
+    //   - `firstMealLoggedToday`: el usuario registró comida de verdad.
+    // Si ambos existen (caso común: cierra ayuno y come poco después),
+    // gana el MÁS TEMPRANO — la ventana "abrió" en cuanto ocurrió la
+    // primera señal real, sin importar cuál fue. Esto preserva el
+    // comportamiento ya testeado de SPEC-95/96 en el flujo normal
+    // (interval.startTime suele preceder al primer registro de comida)
+    // y sólo cambia el resultado cuando `firstMealLoggedToday` es la
+    // única señal disponible o la más temprana.
+    final DateTime? intervalCandidate =
+        (lastInterval != null && !lastInterval.isFasting)
+            ? (now.difference(lastInterval.startTime).inHours.abs() <= 24
+                ? lastInterval.startTime
+                : null)
+            : null;
+
+    final DateTime windowStart;
+    if (intervalCandidate != null && firstMealLoggedToday != null) {
+      windowStart = intervalCandidate.isBefore(firstMealLoggedToday)
+          ? intervalCandidate
+          : firstMealLoggedToday;
+    } else if (firstMealLoggedToday != null) {
+      windowStart = firstMealLoggedToday;
+    } else if (intervalCandidate != null) {
+      windowStart = intervalCandidate;
     } else {
-      // Caso 3: sin historial — fallback al firstMealGoal o 08:00.
+      // Caso 3: sin historial de ningún tipo — fallback al firstMealGoal
+      // configurado o al óptimo del protocolo.
       windowStart = _fallbackWindowStart(user, now);
     }
 

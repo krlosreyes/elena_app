@@ -111,6 +111,90 @@ class IMRv2Result {
 }
 
 class ScoreEngine {
+  // ─── SPEC-audit CODE-03 (2026-07-11): coeficientes nombrados ───────────
+  //
+  // Estas constantes NO cambian ningún valor numérico de las fórmulas
+  // originales — solo les ponen nombre para hacerlas legibles/auditables.
+  // Cuando dos fórmulas distintas coinciden en el mismo valor (p.ej. 0.5,
+  // 0.35, 0.10, 0.15, 0.25), se declaran constantes SEPARADAS con nombres
+  // distintos salvo que sea literalmente la MISMA fórmula duplicada (ver
+  // caso Estructura abajo) — la coincidencia numérica es casual entre
+  // fórmulas semánticamente distintas, y forzarlas a compartir constante
+  // crearía un acoplamiento falso (cambiar una cambiaría la otra sin
+  // que exista relación real entre ambas).
+
+  // Bloque ESTRUCTURA (WHtR + FFMI). La fórmula se repite IDÉNTICA en
+  // `calculateIMR` y `calculateBaseline` (ver comentario en
+  // `calculateBaseline`: "recomputamos solo Estructura inline") — por eso
+  // SÍ comparten las mismas constantes en ambos métodos.
+  /// s1 neutro (ni bueno ni malo) cuando el usuario no tiene
+  /// `waistCircumference` registrado.
+  static const double _kStructureDefaultWhtrScore = 0.5;
+  /// Umbral WHtR superior de la normalización (Browning 2010).
+  /// SPEC-70: ref §2.3 — umbrales WHtR 0.45–0.60.
+  static const double _kWhtrUpperThreshold = 0.60;
+  /// Rango (0.60 - 0.45) usado para normalizar WHtR a [0, 1].
+  static const double _kWhtrRange = 0.15;
+  /// Peso de WHtR dentro del bloque Estructura.
+  /// SPEC-70: ref §2.1, §2.2 — pesos 0.65 WHtR + 0.35 FFMI.
+  static const double _kStructureWhtrWeight = 0.65;
+  /// Peso de FFMI dentro del bloque Estructura.
+  static const double _kStructureFfmiWeight = 0.35;
+
+  // Bloque METABOLISMO (sigmoid de ayuno + bonus eTRF).
+  /// Centro (horas de ayuno) de la sigmoid metabólica (Mattson 2017,
+  /// Anton 2018). SPEC-70: ref §3.1.
+  static const double _kFastingSigmoidCenterHours = 14.0;
+  /// Ancho de la sigmoid metabólica.
+  static const double _kFastingSigmoidWidthHours = 1.5;
+  /// Centro (hora del día de la última comida) de la sigmoid eTRF.
+  /// SPEC-70.2: ref IMR_BIBLIOGRAPHY.md §3.3.
+  static const double _kEtrfSigmoidCenterHour = 17.0;
+  /// Ancho de la sigmoid eTRF.
+  static const double _kEtrfSigmoidWidthHours = 1.0;
+  /// Amplitud del bonus eTRF (techo ≈1.15x, Sutton 2018).
+  static const double _kEtrfBonusAmplitude = 0.15;
+  /// Peso de la sigmoid de ayuno dentro del bloque Metabolismo.
+  /// SPEC-70: ref §3.2 — pesos 0.70 sigmoid + 0.30 calidad semanal.
+  static const double _kMetabolicSigmoidWeight = 0.70;
+  /// Peso de `weeklyQualityScore` dentro del bloque Metabolismo.
+  static const double _kMetabolicWeeklyQualityWeight = 0.30;
+
+  // Bloque CONDUCTA Y CIRCADIANO.
+  /// Penalización de `circadianScore` al comer tras el bloqueo intestinal
+  /// (21:30, Lopez-Minguez 2018). SPEC-70.5.
+  static const double _kCircadianLockPenaltyScore = 0.5;
+  /// Bonus de `circadianScore` al comer antes de `profile.lastMealGoal`.
+  static const double _kCircadianEarlyBonusScore = 1.1;
+  /// Minutos de ejercicio que equivalen a 1.0 en `sExercise` (60min = 1.0).
+  static const double _kExerciseMinutesNormalization = 60.0;
+  /// Techo permitido de `sExercise` (permite "sobre-cumplimiento" hasta 1.2).
+  static const double _kExerciseScoreUpperClamp = 1.2;
+  /// Pesos del bloque Conducta (recalibrados SPEC-70.5). Suma = 1.0.
+  /// Antes (SPEC-70): Circadiano 28% / Sueño 20% / Ejercicio 20% /
+  /// Nutrición 12% / Hidratación 20%. Ahora: Circadiano 38% / Hidratación 10%.
+  static const double _kBehaviorCircadianWeight = 0.38;
+  static const double _kBehaviorSleepWeight = 0.20;
+  static const double _kBehaviorExerciseWeight = 0.20;
+  static const double _kBehaviorNutritionWeight = 0.12;
+  static const double _kBehaviorHydrationWeight = 0.10;
+
+  // Macro (Estructura/Metabolismo/Conducta). SPEC-70: ref §1 — 50/25/25.
+  // `_kMacroStructureWeight` se reusa en `calculateBaseline` (mismo peso
+  // macro de Estructura aplicado ahí solo, sin Metabolismo/Conducta).
+  static const double _kMacroStructureWeight = 0.50;
+  static const double _kMacroMetabolicWeight = 0.25;
+  static const double _kMacroBehaviorWeight = 0.25;
+
+  // IMR LONGITUDINAL (SPEC-141 §RF-141-01). Aunque `_kLongitudinalStructureWeight`
+  // coincide en valor con otras constantes de otros bloques en algún punto,
+  // son macro-pesos de una fórmula totalmente distinta (agregado 30d/90d),
+  // así que se declaran aparte.
+  static const double _kLongitudinalStructureWeight = 0.40;
+  static const double _kLongitudinalBehaviorTrendWeight = 0.35;
+  static const double _kLongitudinalAdherenceWeight = 0.15;
+  static const double _kLongitudinalCoherenceWeight = 0.10;
+
   /// SPEC-92: fallback poblacional cuando `bodyFatPercentage` es null.
   /// Antes el UserModel tenía `@Default(20.0)` que disfrazaba la
   /// ausencia de datos como "20% confirmado". Ahora el campo puede ser
@@ -136,11 +220,11 @@ class ScoreEngine {
         user.gender.toUpperCase() == 'M' || user.gender.toUpperCase() == 'MALE';
 
     // 1. ESTRUCTURA (50%) — SPEC-70: ref §1.1, §2
-    double s1 = 0.5;
+    double s1 = _kStructureDefaultWhtrScore;
     if (user.waistCircumference != null && user.waistCircumference! > 0) {
       final double whtr = user.waistCircumference! / user.height;
       // SPEC-70: ref §2.3 — umbrales WHtR 0.45–0.60 (Browning 2010).
-      s1 = ((0.60 - whtr) / 0.15).clamp(0.0, 1.0);
+      s1 = ((_kWhtrUpperThreshold - whtr) / _kWhtrRange).clamp(0.0, 1.0);
     }
     final double hMeter = user.height / 100;
     // SPEC-92: bodyFat nullable → fallback poblacional explícito.
@@ -156,7 +240,8 @@ class ScoreEngine {
     final double rangeFFMI = isMale ? 6.0 : 5.0;
     final double s2 = ((ffmi - baseFFMI) / rangeFFMI).clamp(0.0, 1.0);
     // SPEC-70: ref §2.1, §2.2 — pesos 0.65 WHtR + 0.35 FFMI.
-    final double structureBlock = (0.65 * s1) + (0.35 * s2);
+    final double structureBlock =
+        (_kStructureWhtrWeight * s1) + (_kStructureFfmiWeight * s2);
 
     // 2. METABOLISMO (25%) — SPEC-70: ref §1.2, §3
     final double fastingHours = state.fastingHoursRaw;
@@ -168,7 +253,10 @@ class ScoreEngine {
     final double weeklySignal = state.weeklyQualityScore;
     // SPEC-70: ref §3.1 — sigmoid centrada en 14h, ancho 1.5
     // (Mattson 2017, Anton 2018).
-    final double s4 = 1 / (1 + math.exp(-(fastingHours - 14) / 1.5));
+    final double s4 = 1 /
+        (1 +
+            math.exp(-(fastingHours - _kFastingSigmoidCenterHours) /
+                _kFastingSigmoidWidthHours));
     // SPEC-70.2: bonus eTRF como sigmoid suave (era salto binario en
     // hora=18). Sutton 2018 reporta efectos dosis-respuesta con ventanas
     // más tempranas, no umbral único. La curva se centra en 17:00 con
@@ -177,12 +265,16 @@ class ScoreEngine {
     // Asíntota superior 1.15 (preserva el techo del binario anterior).
     // SPEC-70: ref IMR_BIBLIOGRAPHY.md §3.3.
     final double mealHourFloat = lastMealTime.hour + lastMealTime.minute / 60.0;
-    final double etrfSigmoid =
-        1.0 / (1.0 + math.exp(-(mealHourFloat - 17.0) / 1.0));
-    final double etrfBonus = 1.0 + 0.15 * (1.0 - etrfSigmoid);
+    final double etrfSigmoid = 1.0 /
+        (1.0 +
+            math.exp(-(mealHourFloat - _kEtrfSigmoidCenterHour) /
+                _kEtrfSigmoidWidthHours));
+    final double etrfBonus =
+        1.0 + _kEtrfBonusAmplitude * (1.0 - etrfSigmoid);
     // SPEC-70: ref §3.2 — pesos 0.70 sigmoid + 0.30 calidad semanal.
-    final double metabolicBlock =
-        ((0.70 * s4) + (0.30 * weeklySignal.clamp(0.0, 1.0))) * etrfBonus;
+    final double metabolicBlock = ((_kMetabolicSigmoidWeight * s4) +
+            (_kMetabolicWeeklyQualityWeight * weeklySignal.clamp(0.0, 1.0))) *
+        etrfBonus;
 
     // 3. CONDUCTA Y CIRCADIANO (25%)
     double circadianScore = 1.0;
@@ -195,10 +287,10 @@ class ScoreEngine {
       // SPEC-70.5: penalización al 0.5 por bloqueo intestinal 21:30
       // (Lopez-Minguez 2018, melatonina-MTNR1B). Antes era 22:30,
       // movido tras revisión clínica externa.
-      circadianScore = 0.5;
+      circadianScore = _kCircadianLockPenaltyScore;
     } else if (goal != null && lastMealTime.isBefore(goal)) {
       // Bonus eTRF por comer antes de la meta establecida.
-      circadianScore = 1.1;
+      circadianScore = _kCircadianEarlyBonusScore;
     }
 
     // SPEC-53: el bloque Conducta ahora consume `state.sleepQuality`
@@ -209,7 +301,8 @@ class ScoreEngine {
     // binaria asignaba el mismo 1.0 a ambos.
     final double sSleep = state.sleepQuality.clamp(0.0, 1.0);
     final double exerciseMin = state.exerciseMinutesRaw;
-    final double sExercise = (exerciseMin / 60).clamp(0.0, 1.2);
+    final double sExercise = (exerciseMin / _kExerciseMinutesNormalization)
+        .clamp(0.0, _kExerciseScoreUpperClamp);
     final double nutritionScore = state.nutritionScoreRaw;
     // SPEC-67: hidratación entra al bloque Conducta. El campo state.hydrationLevel
     // ya viene normalizado 0.0-1.0 desde MetabolicStateBuilder
@@ -234,18 +327,18 @@ class ScoreEngine {
     // clamp al bloque para que el bonus eTRF (1.1) tenga efecto real.
     // El clamp global a 100 en `score` ya absorbe cualquier exceso.
     // Solo circadianAlignment (indicador UI 0-1) sigue clampado en el return.
-    final double behaviorBlock = (0.38 * circadianScore) +
-        (0.20 * sSleep) +
-        (0.20 * sExercise) +
-        (0.12 * nutritionScore.clamp(0.0, 1.0)) +
-        (0.10 * sHydration);
+    final double behaviorBlock = (_kBehaviorCircadianWeight * circadianScore) +
+        (_kBehaviorSleepWeight * sSleep) +
+        (_kBehaviorExerciseWeight * sExercise) +
+        (_kBehaviorNutritionWeight * nutritionScore.clamp(0.0, 1.0)) +
+        (_kBehaviorHydrationWeight * sHydration);
 
     // SPEC-70: ref §1 — macro 50/25/25 (Estructura/Metabolismo/Conducta).
     // ENGINEERING JUDGMENT del split exacto; estructura domina por
     // mayor estabilidad bibliográfica de su asociación con outcomes.
-    final double raw = (0.50 * structureBlock) +
-        (0.25 * metabolicBlock.clamp(0.0, 1.0)) +
-        (0.25 * behaviorBlock);
+    final double raw = (_kMacroStructureWeight * structureBlock) +
+        (_kMacroMetabolicWeight * metabolicBlock.clamp(0.0, 1.0)) +
+        (_kMacroBehaviorWeight * behaviorBlock);
     final int score = (raw * 100).round().clamp(0, 100);
 
     // SPEC-82: campos derivados para el shape canónico del sitio web.
@@ -310,10 +403,10 @@ class ScoreEngine {
     // Recomputamos solo Estructura inline. Si en el futuro se extrae a
     // un método privado compartido con `calculateIMR`, hacerlo en una
     // SPEC separada para no expandir el scope de SPEC-82.
-    double s1 = 0.5;
+    double s1 = _kStructureDefaultWhtrScore;
     if (user.waistCircumference != null && user.waistCircumference! > 0) {
       final double whtr = user.waistCircumference! / user.height;
-      s1 = ((0.60 - whtr) / 0.15).clamp(0.0, 1.0);
+      s1 = ((_kWhtrUpperThreshold - whtr) / _kWhtrRange).clamp(0.0, 1.0);
     }
     final double hMeter = user.height / 100;
     // SPEC-92: bodyFat nullable → fallback poblacional explícito.
@@ -323,10 +416,11 @@ class ScoreEngine {
     final double baseFFMI = _baseFFMIForAge(isMale, user.age);
     final double rangeFFMI = isMale ? 6.0 : 5.0;
     final double s2 = ((ffmi - baseFFMI) / rangeFFMI).clamp(0.0, 1.0);
-    final double structureBlock = (0.65 * s1) + (0.35 * s2);
+    final double structureBlock =
+        (_kStructureWhtrWeight * s1) + (_kStructureFfmiWeight * s2);
 
     // Score baseline = solo el peso de Estructura (50%).
-    final double raw = 0.50 * structureBlock;
+    final double raw = _kMacroStructureWeight * structureBlock;
     final int score = (raw * 100).round().clamp(0, 100);
 
     final double imc = user.weight / math.pow(hMeter, 2);
@@ -423,10 +517,10 @@ class ScoreEngine {
 
     final double raw;
     if (hasEnoughHistory) {
-      raw = 0.40 * structure +
-          0.35 * behaviorTrend +
-          0.15 * adherenceTrend +
-          0.10 * coherence;
+      raw = _kLongitudinalStructureWeight * structure +
+          _kLongitudinalBehaviorTrendWeight * behaviorTrend +
+          _kLongitudinalAdherenceWeight * adherenceTrend +
+          _kLongitudinalCoherenceWeight * coherence;
     } else {
       // Renormalización: transfiere los 60% no-Estructura a Estructura.
       // Esto preserva el techo y semánticamente dice "aún no tengo señal

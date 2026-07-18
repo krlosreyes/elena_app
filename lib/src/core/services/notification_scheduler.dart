@@ -546,7 +546,7 @@ class NotificationScheduler {
       AppLogger.info(
         '[NotificationScheduler] Hidratación: $slotIndex slots programados '
         '(wake ${wakeUp.hour}:${wakeUp.minute.toString().padLeft(2, '0')}, '
-        'cutoff ${cutoffHour}:00, cadencia ${kHydrationCadence.inMinutes}min).',
+        'cutoff $cutoffHour:00, cadencia ${kHydrationCadence.inMinutes}min).',
       );
     } catch (e, st) {
       AppLogger.error(
