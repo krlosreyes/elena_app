@@ -42,6 +42,12 @@ import 'package:elena_app/src/features/goals/presentation/goal_setup_screen.dart
 import 'package:elena_app/src/features/onboarding/application/app_tour_notifier.dart';
 import 'package:elena_app/src/features/onboarding/presentation/widgets/onboarding_step_ui.dart';
 import 'package:elena_app/src/features/streak/domain/fasting_eligibility.dart';
+// Propuesta módulo Ejercicio (2026-07-21): paso "Tu relación con el
+// ejercicio" — captura hábitos/preferencias/equipo/lesiones que hoy no
+// se preguntan en ningún punto del onboarding. Ver
+// documentacion/propuestas/Propuesta_Modulo_Ejercicio_2026-07-21.docx §4.1.
+import 'package:elena_app/src/features/exercise/data/exercise_profile_repository_impl.dart';
+import 'package:elena_app/src/features/exercise/domain/exercise_profile.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -105,6 +111,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   // usuario debe terminar el onboarding viendo y confirmando sus
   // metas personalizadas (decisión Carlos: coaching desde día uno).
   static const int _kGoalsStepId = 4;
+
+  // Propuesta módulo Ejercicio (2026-07-21): paso "Tu relación con el
+  // ejercicio", siempre activo, insertado justo antes de "Tus objetivos"
+  // — así el motor de sugerencia de ejercicio (SPEC-244) ya puede leer
+  // este perfil si en el futuro se decide usarlo también ahí.
+  static const int _kExerciseHabitsStepId = 5;
 
   // SPEC-168.0.A: borrador local del step Goals. Se inicializa lazy la
   // primera vez que el PageView llega al paso (`_ensureGoalDrafts`)
@@ -171,6 +183,20 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   // importante"). Ahora `FastingEligibility.assess` las lee para
   // calcular el tope real. Se usan las constantes de
   // `FastingPathologyFlags` como fuente única del string exacto.
+  // --- PASO 5: HÁBITOS DE EJERCICIO (propuesta 2026-07-21) ---
+  //
+  // Ver documentacion/propuestas/Propuesta_Modulo_Ejercicio_2026-07-21.docx
+  // §4.1. Nunca se había preguntado nada de esto — es la captura que
+  // alimenta a WeeklyExercisePlanEngine (Fase 2) junto con BodyZone y
+  // sistema nervioso.
+  ExerciseFrequencyLevel _exerciseLevel = ExerciseFrequencyLevel.sedentary;
+  ExerciseExperienceLevel _strengthExperience = ExerciseExperienceLevel.none;
+  ExerciseEquipment _exerciseEquipment = ExerciseEquipment.bodyweightOnly;
+  final Set<ExercisePreferenceTag> _likedActivities = {};
+  final Set<InjuryTag> _injuries = {};
+  final TextEditingController _injuryNotesController = TextEditingController();
+  BodyCompositionGoal _bodyCompositionGoal = BodyCompositionGoal.recomposition;
+
   final List<String> _pathologyOptions = [
     "Ninguna",
     "Prediabetes",
@@ -387,6 +413,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       // capturar hábitos y antes de Health Sync.
       if (isColdInstall) _kIntroNotificationsId,
       if (showHealthStep) _kHealthSyncStepId,
+      // Propuesta módulo Ejercicio (2026-07-21): siempre activo, justo
+      // antes de "Tus objetivos" — todo usuario (cold install o MR)
+      // declara sus hábitos de ejercicio antes de ver sus metas.
+      _kExerciseHabitsStepId,
       // SPEC-168.0.A: Tus objetivos — siempre al final.
       _kGoalsStepId,
     ];
@@ -466,6 +496,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   @override
+  void dispose() {
+    _injuryNotesController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final state = ref.watch(onboardingControllerProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -515,6 +551,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             isDark: isDark,
             onContinue: _handleNext,
           );
+        case _kExerciseHabitsStepId:
+          // Propuesta módulo Ejercicio (2026-07-21): hábitos/preferencias
+          // /equipo/lesiones — insumo de WeeklyExercisePlanEngine (Fase 2).
+          return _buildStepExerciseHabits(isDark);
         case _kGoalsStepId:
           // SPEC-168.0.A: paso final — sugerencias de objetivos
           // personalizadas con narrativa coaching.
@@ -929,6 +969,229 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               () => _showMultiSelectPathologies(isDark), isDark),
         ],
       );
+
+  // --- PASO 5: HÁBITOS DE EJERCICIO (propuesta 2026-07-21) ---
+  //
+  // Ver documentacion/propuestas/Propuesta_Modulo_Ejercicio_2026-07-21.docx
+  // §4.1. Chips simples — sin scroll horizontal, todo visible de un
+  // vistazo, mismo lenguaje visual que el resto del onboarding.
+  Widget _buildStepExerciseHabits(bool isDark) => ListView(
+        padding: const EdgeInsets.all(24),
+        children: [
+          OnboardingStepHeader(
+            title: "Tu relación con el ejercicio",
+            sub: "Para armar TU plan, no uno genérico",
+            isDark: isDark,
+          ),
+          OnboardingStepHelperLine(
+            text: 'Con esto Elena arma tu plan semanal de fuerza + cardio '
+                '— ajustado a lo que ya haces, no a lo que "deberías" hacer.',
+            isDark: isDark,
+          ),
+          OnboardingSectionTitle(title: "NIVEL ACTUAL", isDark: isDark),
+          _chipGroup<ExerciseFrequencyLevel>(
+            options: ExerciseFrequencyLevel.values,
+            labelOf: (v) => v.label,
+            isSelected: (v) => _exerciseLevel == v,
+            onTap: (v) => setState(() => _exerciseLevel = v),
+            isDark: isDark,
+          ),
+          const SizedBox(height: 20),
+          OnboardingSectionTitle(
+              title: "EXPERIENCIA CON FUERZA", isDark: isDark),
+          _chipGroup<ExerciseExperienceLevel>(
+            options: ExerciseExperienceLevel.values,
+            labelOf: (v) => v.label,
+            isSelected: (v) => _strengthExperience == v,
+            onTap: (v) => setState(() => _strengthExperience = v),
+            isDark: isDark,
+          ),
+          const SizedBox(height: 20),
+          OnboardingSectionTitle(title: "EQUIPO DISPONIBLE", isDark: isDark),
+          _chipGroup<ExerciseEquipment>(
+            options: ExerciseEquipment.values,
+            labelOf: (v) => v.label,
+            isSelected: (v) => _exerciseEquipment == v,
+            onTap: (v) => setState(() => _exerciseEquipment = v),
+            isDark: isDark,
+          ),
+          const SizedBox(height: 20),
+          OnboardingSectionTitle(
+              title: "QUÉ TE GUSTA (opcional, elige las que quieras)",
+              isDark: isDark),
+          _multiChipGroup<ExercisePreferenceTag>(
+            options: ExercisePreferenceTag.values,
+            labelOf: (v) => v.label,
+            isSelected: (v) => _likedActivities.contains(v),
+            onTap: (v) => setState(() {
+              if (v == ExercisePreferenceTag.ninguna) {
+                _likedActivities
+                  ..clear()
+                  ..add(v);
+              } else {
+                _likedActivities.remove(ExercisePreferenceTag.ninguna);
+                if (!_likedActivities.remove(v)) _likedActivities.add(v);
+              }
+            }),
+            isDark: isDark,
+          ),
+          const SizedBox(height: 20),
+          OnboardingSectionTitle(
+              title: "OBJETIVO DE COMPOSICIÓN CORPORAL", isDark: isDark),
+          _chipGroup<BodyCompositionGoal>(
+            options: BodyCompositionGoal.values,
+            labelOf: (v) => v.label,
+            isSelected: (v) => _bodyCompositionGoal == v,
+            onTap: (v) => setState(() => _bodyCompositionGoal = v),
+            isDark: isDark,
+          ),
+          const SizedBox(height: 20),
+          OnboardingSectionTitle(
+              title: "LESIONES O LIMITACIONES (opcional)", isDark: isDark),
+          OnboardingStepHelperLine(
+            text: 'Nunca te vamos a prescribir carga sobre una lesión '
+                'activa — esto solo ayuda a Elena a evitar movimientos '
+                'de riesgo en tu plan.',
+            isDark: isDark,
+          ),
+          const SizedBox(height: 8),
+          _multiChipGroup<InjuryTag>(
+            options: InjuryTag.values,
+            labelOf: (v) => v.label,
+            isSelected: (v) => _injuries.contains(v),
+            onTap: (v) => setState(() {
+              if (!_injuries.remove(v)) _injuries.add(v);
+            }),
+            isDark: isDark,
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _injuryNotesController,
+            maxLines: 2,
+            style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+            decoration: InputDecoration(
+              hintText: 'Detalle opcional (ej: "hernia L4-L5 diagnosticada")',
+              hintStyle: TextStyle(
+                color: (isDark ? Colors.white : Colors.black).withValues(
+                  alpha: 0.35,
+                ),
+              ),
+              filled: true,
+              fillColor:
+                  isDark ? const Color(0xFF1E293B) : Colors.white,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(
+                  color: isDark ? Colors.white10 : const Color(0xFFE2E8F0),
+                ),
+              ),
+              contentPadding: const EdgeInsets.all(14),
+            ),
+          ),
+        ],
+      );
+
+  Widget _chipGroup<T>({
+    required List<T> options,
+    required String Function(T) labelOf,
+    required bool Function(T) isSelected,
+    required void Function(T) onTap,
+    required bool isDark,
+  }) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: options
+          .map((o) => _onboardingChip(
+                label: labelOf(o),
+                selected: isSelected(o),
+                onTap: () => onTap(o),
+                isDark: isDark,
+              ))
+          .toList(),
+    );
+  }
+
+  /// Igual que `_chipGroup` pero sin exclusividad — varias opciones
+  /// pueden estar seleccionadas a la vez (preferencias, lesiones).
+  Widget _multiChipGroup<T>({
+    required List<T> options,
+    required String Function(T) labelOf,
+    required bool Function(T) isSelected,
+    required void Function(T) onTap,
+    required bool isDark,
+  }) =>
+      _chipGroup<T>(
+        options: options,
+        labelOf: labelOf,
+        isSelected: isSelected,
+        onTap: onTap,
+        isDark: isDark,
+      );
+
+  Widget _onboardingChip({
+    required String label,
+    required bool selected,
+    required VoidCallback onTap,
+    required bool isDark,
+  }) {
+    const accent = Color(0xFF10B981);
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: selected
+              ? accent.withValues(alpha: 0.16)
+              : (isDark ? const Color(0xFF1E293B) : Colors.white),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: selected
+                ? accent
+                : (isDark ? Colors.white10 : const Color(0xFFE2E8F0)),
+            width: selected ? 1.4 : 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12.5,
+            fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+            color: selected
+                ? accent
+                : (isDark ? Colors.white70 : const Color(0xFF475569)),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Construye el `ExerciseProfile` a partir del state local del paso 5.
+  ExerciseProfile _buildExerciseProfileFromState() {
+    return ExerciseProfile(
+      currentLevel: _exerciseLevel,
+      strengthExperience: _strengthExperience,
+      equipment: _exerciseEquipment,
+      likedActivities: _likedActivities.toList(),
+      availableWeekdays: const [], // sin restricción declarada en v1
+      injuries: _injuries.toList(),
+      injuryNotes: _injuryNotesController.text.trim(),
+      goal: _bodyCompositionGoal,
+      updatedAt: DateTime.now(),
+    );
+  }
+
+  /// Persiste el perfil de ejercicio. Mismo patrón que
+  /// `_persistGoalDrafts`: un fallo aquí no debe bloquear el cierre del
+  /// onboarding — el usuario puede completar/editar su perfil de
+  /// ejercicio después desde Perfil.
+  Future<void> _persistExerciseProfile(String userId) async {
+    if (userId.isEmpty) return;
+    await ref
+        .read(exerciseProfileRepositoryProvider)
+        .save(userId, _buildExerciseProfileFromState());
+  }
 
   /// Rank en la escalera canónica (`FastingEligibility.ladder`) — única
   /// fuente de verdad del orden, compartida con Eje A/B. `-1` para
@@ -1517,6 +1780,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         // configura desde Perfil.
         AppLogger.warning('Onboarding: persistencia de goals falló: $e');
         AppLogger.error('Goals stack', e, stackTrace);
+      }
+      // Propuesta módulo Ejercicio (2026-07-21): persistir el perfil de
+      // hábitos capturado en el paso 5. Mismo criterio que goals — un
+      // fallo aquí no bloquea el cierre del onboarding.
+      try {
+        await _persistExerciseProfile(account.uid);
+      } catch (e, stackTrace) {
+        AppLogger.warning(
+          'Onboarding: persistencia de exercise profile falló: $e',
+        );
+        AppLogger.error('ExerciseProfile stack', e, stackTrace);
       }
       // SPEC-74 §RF-74-08: telemetría de cierre. Después del save —
       // antes de la navegación — para que el evento se asocie al

@@ -10,6 +10,12 @@ import 'package:elena_app/src/features/exercise/application/exercise_notifier.da
 import 'package:elena_app/src/features/exercise/application/exercise_state.dart';
 import 'package:elena_app/src/features/exercise/domain/exercise_log.dart';
 import 'package:elena_app/src/features/exercise/presentation/exercise_input_sheet.dart';
+// Propuesta módulo Ejercicio (2026-07-21): banner "hoy toca X" cuando
+// el usuario tiene un WeeklyExercisePlan generado. Aditivo — si no hay
+// plan, `_PlanOfTheDayBanner` no pinta nada y la card se ve exactamente
+// igual que antes.
+import 'package:elena_app/src/features/exercise/application/weekly_exercise_plan_providers.dart';
+import 'package:elena_app/src/features/exercise/domain/weekly_exercise_plan.dart';
 import 'package:elena_app/src/features/goals/application/pillar_goal_providers.dart';
 import 'package:elena_app/src/features/health_sync/application/health_sync_providers.dart';
 import 'package:elena_app/src/features/health_sync/domain/health_permission_status.dart';
@@ -32,12 +38,18 @@ class ExercisePillarCard extends ConsumerWidget {
     final pct = (progress * 100).round();
     final achieved = minutes >= goal;
     final lastSession = state.history.isNotEmpty ? state.history.first : null;
+    // Propuesta módulo Ejercicio (2026-07-21): plan del día, si existe.
+    final plan = ref.watch(weeklyExercisePlanProvider);
 
     return PillarCardUi.shell(
       title: 'Sarcopenia & Resistencia',
       badge: achieved ? 'ACTIVO' : 'Ejercicio',
       accent: accent,
       children: [
+        if (plan != null) ...[
+          _PlanOfTheDayBanner(entry: plan.entryFor(DateTime.now())),
+          const SizedBox(height: 12),
+        ],
         Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
@@ -104,6 +116,58 @@ class ExercisePillarCard extends ConsumerWidget {
                   .removeLastSession(),
         ),
       ],
+    );
+  }
+}
+
+/// Propuesta módulo Ejercicio (2026-07-21): "hoy toca X" — reemplaza el
+/// contador neutro por el día programado del plan. §4.4 de la
+/// propuesta: hacer muy visible qué tipo de sesión corresponde hoy, en
+/// vez de dejar que el usuario decida todo.
+class _PlanOfTheDayBanner extends StatelessWidget {
+  const _PlanOfTheDayBanner({required this.entry});
+
+  final PlanDayEntry entry;
+
+  @override
+  Widget build(BuildContext context) {
+    final isRest = entry.type == PlanSessionType.descanso;
+    final color = isRest ? Colors.grey : const Color(0xFF2DD4BF);
+    final label = switch (entry.type) {
+      PlanSessionType.fuerza => 'Hoy toca Fuerza · ${entry.durationMinutes} min',
+      PlanSessionType.cardio =>
+        'Hoy toca Cardio (${entry.cardioIntensity?.label ?? ""}) · '
+            '${entry.durationMinutes} min',
+      PlanSessionType.descanso => 'Hoy es tu día de descanso',
+    };
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.30)),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            isRest ? Icons.self_improvement_rounded : Icons.bolt_rounded,
+            color: color,
+            size: 18,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.92),
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

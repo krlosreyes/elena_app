@@ -8,6 +8,13 @@ import 'package:elena_app/src/features/dashboard/domain/fasting_status.dart';
 import 'package:elena_app/src/features/dashboard/domain/sleep_log.dart';
 import 'package:elena_app/src/features/dashboard/domain/sleep_quality_calculator.dart';
 import 'package:elena_app/src/features/exercise/application/exercise_state.dart';
+// Propuesta módulo Ejercicio (2026-07-21) Fase 4: cierra el gap ya
+// detectado en la auditoría previa — `ExerciseLoadCalculator` (SPEC-68,
+// pondera tipo×intensidad) existía pero no llegaba al IMR; el builder
+// alimentaba a `ScoreEngine` con minutos crudos, así que 60 min de yoga
+// puntuaban igual que 60 min de HIIT. Ver
+// documentacion/propuestas/Propuesta_Modulo_Ejercicio_2026-07-21.docx §5.
+import 'package:elena_app/src/features/exercise/domain/exercise_load_calculator.dart';
 import 'package:elena_app/src/features/nutrition/application/cociente_a_service.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
@@ -171,7 +178,17 @@ class MetabolicStateBuilder {
       // Crudos (para ScoreEngine)
       fastingHoursRaw: maxFastingHoursToday,
       sleepHoursRaw: sleepHours,
-      exerciseMinutesRaw: exercise.todayMinutes.toDouble(),
+      // Fase 4 (2026-07-21): antes `exercise.todayMinutes.toDouble()` —
+      // minutos crudos, sin distinguir tipo/intensidad. Ahora usamos la
+      // carga ponderada de ExerciseLoadCalculator (tipo×intensidad,
+      // SPEC-68) reexpresada en "minutos equivalentes" (× 60) para
+      // preservar la escala que ScoreEngine ya normaliza
+      // (`exerciseMin / 60`, ver _kExerciseMinutesNormalization).
+      // Backward-compat exacta para logs legacy sin `type`/`intensity`:
+      // ExerciseLoadCalculator usa multiplicador neutro 1.0 en ese caso,
+      // así que el resultado es idéntico a los minutos crudos de antes.
+      exerciseMinutesRaw:
+          ExerciseLoadCalculator.sumDailyLoad(exercise.history) * 60.0,
       // SPEC-137: ya no es == glycemicLoad. El builder sigue siendo la
       // fuente de verdad — calculamos ambos arriba de manera explícita.
       nutritionScoreRaw: nutritionScoreRaw,

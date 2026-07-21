@@ -14,6 +14,11 @@ import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/hydration_weekly_card.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/sleep_quality_card.dart';
 import 'package:elena_app/src/features/exercise/presentation/widgets/exercise_weekly_card.dart';
+// Propuesta módulo Ejercicio (2026-07-21): split semanal del plan
+// fuerza+cardio generado por WeeklyExercisePlanEngine. Se renderiza
+// arriba de ExerciseWeeklyCard; si el usuario no tiene plan (perfil de
+// ejercicio incompleto), no pinta nada — cero regresión.
+import 'package:elena_app/src/features/exercise/presentation/widgets/weekly_plan_split_card.dart';
 import 'package:elena_app/src/features/metabolic_cycle/presentation/widgets/cycles_history_card.dart';
 import 'package:elena_app/src/features/nutrition/presentation/widgets/meals_ratio_card.dart';
 
@@ -134,7 +139,13 @@ class _AnalysisPillarsTabState extends ConsumerState<AnalysisPillarsTab>
       case _ActivePillar.hydration:
         return const HydrationWeeklyCard();
       case _ActivePillar.exercise:
-        return const ExerciseWeeklyCard();
+        return const Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            WeeklyPlanSplitCard(),
+            ExerciseWeeklyCard(),
+          ],
+        );
       case _ActivePillar.sleep:
         return const SleepQualityCard();
     }
