@@ -50,6 +50,9 @@ import 'package:elena_app/src/features/auth/presentation/biometricos_detail_scre
 import 'package:elena_app/src/features/auth/presentation/ritmos_circadianos_detail_screen.dart';
 import 'package:elena_app/src/features/auth/presentation/protocolo_detail_screen.dart';
 import 'package:elena_app/src/features/auth/presentation/objetivos_detail_screen.dart';
+// Propuesta módulo Ejercicio (2026-07-21): punto de entrada para
+// usuarios existentes — configurar/editar ExerciseProfile desde Perfil.
+import 'package:elena_app/src/features/exercise/presentation/exercise_habits_detail_screen.dart';
 
 /// SPEC-222: llave global del navigator raíz para deeplink routing
 /// desde notificaciones (cold start + foreground).
@@ -219,6 +222,13 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/profile/objetivos',
         name: 'profile-objetivos',
         builder: (context, state) => const ObjetivosDetailScreen(),
+      ),
+      // Propuesta módulo Ejercicio (2026-07-21): configurar/editar
+      // ExerciseProfile — mismo patrón que las 4 rutas de arriba.
+      GoRoute(
+        path: '/profile/ejercicio',
+        name: 'profile-ejercicio',
+        builder: (context, state) => const ExerciseHabitsDetailScreen(),
       ),
       // SPEC-77: pantallas legales (privacy + terms).
       GoRoute(

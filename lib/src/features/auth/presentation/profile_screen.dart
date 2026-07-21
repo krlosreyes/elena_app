@@ -7,6 +7,7 @@ import 'package:elena_app/src/core/engine/imr_persistence_provider.dart';
 import 'package:elena_app/src/core/engine/longitudinal_imr_provider.dart';
 import 'package:elena_app/src/features/auth/presentation/widgets/achievement_showcase_card.dart';
 import 'package:elena_app/src/features/auth/presentation/widgets/biometricos_entry_card.dart';
+import 'package:elena_app/src/features/auth/presentation/widgets/exercise_habits_entry_card.dart';
 import 'package:elena_app/src/features/auth/presentation/widgets/objetivos_entry_card.dart';
 import 'package:elena_app/src/features/auth/presentation/widgets/profile_bottom_nav.dart';
 import 'package:elena_app/src/features/auth/presentation/widgets/profile_danger_zone_actions.dart';
@@ -161,6 +162,12 @@ class _ProfileBody extends ConsumerWidget {
         const ProtocoloEntryCard(),
         const SizedBox(height: 12),
         const ObjetivosEntryCard(),
+        const SizedBox(height: 12),
+        // Propuesta módulo Ejercicio (2026-07-21): sin esta card, un
+        // usuario existente no tiene ningún camino para generar su
+        // ExerciseProfile — /onboarding lo rebota al dashboard porque
+        // su perfil ya está completo (ver router_redirect.dart).
+        const ExerciseHabitsEntryCard(),
         const SizedBox(height: 24),
 
         // ── SPEC-132: sincronización con Apple Health / Health Connect
