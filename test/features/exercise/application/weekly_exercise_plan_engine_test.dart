@@ -1,6 +1,7 @@
 // Tests de WeeklyExercisePlanEngine — propuesta módulo Ejercicio
 // (2026-07-21), Fase 2.
 
+import 'package:elena_app/src/core/orchestrator/biological_phases.dart';
 import 'package:elena_app/src/features/analysis/domain/body_zone.dart';
 import 'package:elena_app/src/features/exercise/application/weekly_exercise_plan_engine.dart';
 import 'package:elena_app/src/features/exercise/domain/exercise_profile.dart';

@@ -12,7 +12,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/features/analysis/domain/body_zone.dart';
 import 'package:elena_app/src/features/exercise/application/exercise_profile_providers.dart';
 import 'package:elena_app/src/features/exercise/application/weekly_exercise_plan_engine.dart';
-import 'package:elena_app/src/features/exercise/domain/exercise_profile.dart';
 import 'package:elena_app/src/features/exercise/domain/weekly_exercise_plan.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
