@@ -15,7 +15,6 @@ import 'package:elena_app/src/features/dashboard/presentation/widgets/dashboard_
 import 'package:elena_app/src/features/dashboard/presentation/widgets/dashboard_fasting_overlays.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/dashboard_pillars_row.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/dashboard_selected_pillar_card.dart';
-import 'package:elena_app/src/features/dashboard/presentation/widgets/imr_longitudinal_card.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/metabolic_alert_banner.dart';
 import 'package:elena_app/src/features/engagement/presentation/widgets/engagement_banner.dart';
 import 'package:elena_app/src/features/adaptive/presentation/widgets/adaptive_suggestion_card.dart';
@@ -449,11 +448,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   ),
                   const SizedBox(height: 14),
 
-                  // GAP-2: bloqueo visible del IMR longitudinal en el Dashboard.
-                  // Free: ve el card atenuado con candado + CTA "Desbloquear".
-                  // Premium: ve el IMR actual + zona + enlace a Análisis.
-                  const ImrLongitudinalCard(),
-                  const SizedBox(height: 20),
+                  // GAP-2 → retirado (22-jul, a pedido del líder de
+                  // proyecto: "esta card no aporta nada"). El widget
+                  // `ImrLongitudinalCard` (widgets/imr_longitudinal_card.dart)
+                  // queda sin consumidores tras este cambio — no se borra el
+                  // archivo (restricción del sandbox), pero si en el futuro
+                  // se quiere recuperar la métrica en algún lado, este era
+                  // el único punto de montaje.
 
                   // SPEC-88 fix: BodyCompositionCard, GoalsDashboardWidget
                   // y _buildProgressCTA se removieron del Dashboard a
