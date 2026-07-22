@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
-import 'package:elena_app/src/core/engine/imr_persistence_provider.dart';
 import 'package:elena_app/src/features/fasting/application/fasting_notifier.dart';
 import 'package:elena_app/src/features/hydration/application/hydration_notifier.dart';
 import 'package:elena_app/src/features/sleep/application/sleep_notifier.dart';
 import 'package:elena_app/src/features/dashboard/domain/selected_pillar.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/daily_score_explainer_sheet.dart';
-import 'package:elena_app/src/features/dashboard/presentation/widgets/dual_score_ring.dart';
+import 'package:elena_app/src/features/dashboard/presentation/widgets/daily_score_hero.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/pillar_ring.dart';
 import 'package:elena_app/src/features/exercise/application/exercise_notifier.dart';
 import 'package:elena_app/src/features/goals/application/goal_notifier.dart';
@@ -49,7 +48,8 @@ class DashboardPillarsRow extends ConsumerWidget {
   // (dead prop: el sueño de esta fila sale de `currentCycleSleepProvider`
   // más abajo). Ahora cada pilar se lee acá mismo con `.select()` sobre
   // solo los campos que este widget efectivamente pinta — mismo patrón
-  // ya usado en este archivo para `displayedImrProvider`/`streakProvider`.
+  // ya usado en este archivo para `streakProvider` (ver también
+  // `.select()` sobre `fastingProvider`/`hydrationProvider`/etc. más abajo).
   final SelectedPillar selectedPillar;
   final ValueChanged<SelectedPillar> onSelectPillar;
 
@@ -179,25 +179,17 @@ class DashboardPillarsRow extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 14),
-          // SPEC-170 (2026-06-04): dos rings adyacentes HOY + IMR
-          // reemplazan el número grande 36pt. Cada uno con score, label
-          // y sub-label propio. Tap en cualquiera abre el ExplainerSheet
-          // único que cubre ambos.
+          // Decisión de producto (22-jul): el IMR longitudinal se saca del
+          // Dashboard (vive en Perfil + gráfica de Resultados de Progreso).
+          // `DailyScoreHero` reemplaza a `DualScoreRing` (SPEC-170) — ring
+          // único de HOY, agrandado, con un puente visual a los 5 pilares
+          // en vez de un segundo número. Ver daily_score_hero.dart.
           // SPEC-243 fix: key compartida con AppTourOverlay para calcular
           // posición real del spotlight "Progreso Hoy" (scoreCard).
-          DualScoreRing(
+          DailyScoreHero(
             key: ref.read(dualScoreRingKeyProvider),
             dailyScore: dailyScore,
             dailyDelta: delta,
-            // PERF-01: antes 3x `ref.watch(displayedImrProvider)` sobre el
-            // objeto completo. Cada línea usa un único campo primitivo
-            // (score/zone/isPartialBiometrics), así que se separan en
-            // `.select()` — solo reconstruye si ese campo puntual cambia.
-            imrScore: ref.watch(displayedImrProvider.select((s) => s.score)),
-            imrZone: ref.watch(displayedImrProvider.select((s) => s.zone)),
-            // SPEC-229: biometrías parciales → sublabel "estimado" en el IMR ring.
-            imrIsPartial: ref.watch(displayedImrProvider
-                .select((s) => s.localFull?.isPartialBiometrics ?? false)),
             onTap: () => showDailyScoreExplainerSheet(context),
           ),
           const SizedBox(height: 12),

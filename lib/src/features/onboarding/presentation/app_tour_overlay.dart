@@ -20,6 +20,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:elena_app/src/core/theme/app_theme.dart';
+import 'package:elena_app/src/features/exercise/presentation/widgets/rest_day_prompt_sheet.dart';
 import 'package:elena_app/src/features/onboarding/application/app_tour_notifier.dart';
 import 'package:elena_app/src/features/onboarding/application/tour_targets_provider.dart';
 import 'package:elena_app/src/router/app_router.dart' show rootNavigatorKey;
@@ -175,11 +176,30 @@ class _AppTourOverlayState extends ConsumerState<AppTourOverlay>
 
   Future<void> _advance(
       AppTourNotifier notifier, AppTourState tourState) async {
+    // Propuesta (22-jul): capturado ANTES de avanzar — `nextStep()` en el
+    // último paso dispara `_finish()` y deja `isActive=false`, así que
+    // `tourState.isLastStep` ya no se podría leer después con el mismo
+    // significado. Se guarda acá para decidir si mostramos el prompt de
+    // día de descanso una vez que el tour realmente termina.
+    final wasLastStep = tourState.isLastStep;
     final next = tourState.stepIndex + 1;
     if (next < kTourSteps.length) {
       await _handleNavigation(kTourSteps[next]);
     }
     await notifier.nextStep();
+
+    // Propuesta (22-jul, líder de proyecto): al terminar el tour tocando
+    // "¡Empezar!" (NO al "Saltar" — eso pasa por `onSkip`, nunca por acá),
+    // ofrecemos elegir el día de descanso preferido para el plan de
+    // ejercicio semanal. Ver rest_day_prompt_sheet.dart para el porqué y
+    // por qué esto no necesita un flag propio de "ya se mostró": el tour
+    // mismo ya solo corre una vez por cuenta (app_tour_notifier.dart).
+    if (wasLastStep) {
+      final navCtx = rootNavigatorKey.currentContext;
+      if (navCtx != null && navCtx.mounted) {
+        await showRestDayPromptSheet(navCtx);
+      }
+    }
   }
 
   @override

@@ -1,10 +1,17 @@
 // SPEC-140 §RF-140-05: BottomSheet educativo del Score del Día.
 //
 // SPEC-170 (2026-06-04): reescrito en tono humano-cercano (memoria
-// `notification-tone-human-not-clinical`) y extendido para cubrir
-// AMBOS números del header (HOY + IMR), no solo el Score del Día.
-// El bottom sheet se abre desde el DualScoreRing y desde el ⓘ del
-// card "TU DÍA".
+// `notification-tone-human-not-clinical`).
+//
+// Decisión de producto (22-jul): este sheet volvió a ser SOLO sobre HOY.
+// Entre el 04-jun y el 22-jul cubría también el IMR longitudinal (para
+// explicar el segundo ring del Dashboard) — al sacarse ese ring del
+// Dashboard (el IMR ahora se comunica solo en Perfil y en la gráfica de
+// Resultados de Progreso), mantener la sección de IMR acá habría sido
+// contradictorio: el sheet se abre EXCLUSIVAMENTE desde el Dashboard
+// (ver daily_score_hero.dart), así que hablarle de "el otro número que
+// ves" a alguien que ya no lo ve en pantalla generaba confusión en vez
+// de aclarar. La explicación de IMR completa vive en Análisis/Progreso.
 
 import 'package:flutter/material.dart';
 
@@ -50,8 +57,7 @@ class _DailyScoreExplainerSheet extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             const Text(
-              // SPEC-230: título más descriptivo que refleja los nombres oficiales.
-              'Progreso Hoy vs. IMR',
+              'Tu Progreso de Hoy',
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 22,
@@ -60,9 +66,8 @@ class _DailyScoreExplainerSheet extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             Text(
-              'Ves dos números en tu Dashboard. Los dos son tuyos, '
-              'pero miden cosas distintas: uno cambia cada día, '
-              'el otro refleja semanas de trabajo.',
+              'Es el número que se mueve cada día — un resumen en tiempo '
+              'real de tus 5 pilares. No mide semanas ni meses: mide hoy.',
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.75),
                 fontSize: 14,
@@ -95,43 +100,6 @@ class _DailyScoreExplainerSheet extends StatelessWidget {
             const _WeightRow(label: 'Ejercicio', value: 20),
             const _WeightRow(label: 'Nutrición', value: 18),
             const _WeightRow(label: 'Hidratación', value: 15),
-            const SizedBox(height: 22),
-            // ── IMR ──────────────────────────────────────────────────
-            _ScoreSection(
-              accent: const Color(0xFF22D3EE),
-              // SPEC-230: nombre completo visible para reforzar identidad.
-              title: 'IMR',
-              subtitle: 'Índice Metabólico Real',
-              body: 'Se mueve más lento, en semanas y meses. Esto es lo '
-                  'que importa cuando hablamos de cambios reales en tu '
-                  'cuerpo. No está pensado para llegar a 100 — está '
-                  'pensado para subir poco a poco.',
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'BLOQUES DEL IMR',
-              style: TextStyle(
-                color: Color(0xFF94A3B8),
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.5,
-              ),
-            ),
-            const SizedBox(height: 10),
-            const _WeightRow(label: 'Estructura corporal', value: 50),
-            const _WeightRow(label: 'Metabolismo (ayuno)', value: 25),
-            const _WeightRow(label: 'Conducta circadiana', value: 25),
-            const SizedBox(height: 10),
-            Text(
-              'El bloque Estructura usa tu cintura y composición corporal. '
-              'Si aún no los ingresaste, aparece como "estimado" hasta '
-              'que completes tu Check-in en Progreso.',
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.50),
-                fontSize: 12,
-                height: 1.45,
-              ),
-            ),
             const SizedBox(height: 20),
             Container(
               padding: const EdgeInsets.all(14),
@@ -153,9 +121,9 @@ class _DailyScoreExplainerSheet extends StatelessWidget {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'HOY te dice "hoy cumpliste". IMR te dice "estás '
-                      'cambiando". Los dos te acompañan — uno te empuja '
-                      'cada día, el otro te muestra el camino largo.',
+                      'Este número te empuja cada día. Tu progreso de fondo '
+                      '— el que se acumula en semanas — lo ves en Perfil y '
+                      'en Resultados, dentro de Progreso.',
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.85),
                         fontSize: 13,
@@ -185,9 +153,10 @@ class _DailyScoreExplainerSheet extends StatelessWidget {
   }
 }
 
-/// SPEC-170 (2026-06-04): bloque "icono color + title + subtitle + body"
-/// para describir cada uno de los dos scores. Reusado para HOY (verde
-/// teal) e IMR (cyan).
+/// SPEC-170 (2026-06-04): bloque "icono color + title + subtitle + body".
+/// Hasta el 22-jul describía HOY e IMR (ver nota de archivo); ahora solo
+/// se usa para HOY, pero se deja como widget reusable por si otro
+/// explainer necesita el mismo patrón visual.
 class _ScoreSection extends StatelessWidget {
   const _ScoreSection({
     required this.accent,
