@@ -38,8 +38,6 @@ import 'package:elena_app/src/features/goals/application/goal_suggestion_engine.
 import 'package:elena_app/src/features/goals/domain/user_goal.dart';
 import 'package:elena_app/src/features/goals/presentation/goal_setup_screen.dart'
     show GoalDraft, GoalSuggestionCard;
-// SPEC-243: tour interactivo post-onboarding.
-import 'package:elena_app/src/features/onboarding/application/app_tour_notifier.dart';
 import 'package:elena_app/src/features/onboarding/presentation/widgets/onboarding_step_ui.dart';
 import 'package:elena_app/src/features/streak/domain/fasting_eligibility.dart';
 // Propuesta módulo Ejercicio (2026-07-21): paso "Tu relación con el
@@ -1813,9 +1811,18 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       } catch (_) {
         // Si la pref falla no rompemos el cierre del onboarding.
       }
-      // SPEC-243: activar el tour ANTES de navegar mientras el ref es válido.
-      // Si 'appTourDone' ya está en true (usuario que repite onboarding), es no-op.
-      await ref.read(appTourProvider.notifier).tryActivate();
+      // PROD-05 fix (21-jul, auditoría técnica): el tour YA NO se activa
+      // aquí. `tryActivate()` es guardado por `AppTourNotifier` con
+      // `if (state.isActive) return false` para no reiniciarse al
+      // navegar — pero eso significaba que esta llamada (mientras
+      // TODAVÍA estamos en OnboardingScreen, sin las GlobalKeys del
+      // Dashboard montadas) ganaba la carrera, y la llamada correcta en
+      // `DashboardScreen.initState` (SPEC-243 BUILD-2 FIX, más abajo en
+      // este mismo archivo de features/dashboard) quedaba bloqueada por
+      // ese guard. Resultado: el overlay nunca aparecía. Se deja una
+      // única fuente de activación en DashboardScreen, que ya cubre
+      // explícitamente "cualquier usuario que llegue por primera vez al
+      // Dashboard" — incluyendo el que sale de este onboarding.
 
       await Future.delayed(const Duration(milliseconds: 800));
       if (!mounted) return;

@@ -94,6 +94,10 @@ class NotificationIds {
   // sleepTime - 3h cae antes del lastMealGoal. Recordatorio educativo
   // con cita Sutton 2018.
   static const int eTRFPreSleep = 107;
+  // 20-jul: resumen diario de "tus 5 objetivos de hoy" — wakeUpTime +
+  // 15 min. Dentro del rango circadiano (100-109) así que
+  // cancelCircadian() ya la cubre sin cambios ahí.
+  static const int dailyGoalsSummary = 108;
 
   static const int fasting12h = 200;
   // SPEC-169 (2026-06-04): hito autofagia inicial (Levine 2017),

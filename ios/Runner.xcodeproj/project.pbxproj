@@ -18,7 +18,6 @@
 		B0ED702CCAB74CE13E1E5A7F /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 70FA28D29F29EECB378E8F9D /* GoogleService-Info.plist */; };
 		B33EC5E72FF569E200F867C0 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = B33EC5E62FF569E200F867C0 /* PrivacyInfo.xcprivacy */; };
 		B33EC5E82FF569E200F867C0 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = B33EC5E62FF569E200F867C0 /* PrivacyInfo.xcprivacy */; };
-		B3C7C1E12FDA55B7004460DB /* HealthKitObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3C7C1E02FDA55B7004460DB /* HealthKitObserver.swift */; };
 		B3C7C1E22FDA55B7004460DB /* HealthKitObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3C7C1E02FDA55B7004460DB /* HealthKitObserver.swift */; };
 		FE94FB33CDF107EF5CAABC41 /* Pods_RunnerTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ED96FBE5251F2AE4DFEFF31A /* Pods_RunnerTests.framework */; };
 /* End PBXBuildFile section */
@@ -130,7 +129,6 @@
 		97C146E51CF9000F007C117D = {
 			isa = PBXGroup;
 			children = (
-				B3C7C1E02FDA55B7004460DB /* HealthKitObserver.swift */,
 				9740EEB11CF90186004384FC /* Flutter */,
 				97C146F01CF9000F007C117D /* Runner */,
 				97C146EF1CF9000F007C117D /* Products */,
@@ -162,6 +160,7 @@
 				1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */,
 				B33EC5E62FF569E200F867C0 /* PrivacyInfo.xcprivacy */,
 				74858FAE1ED2DC5600515810 /* AppDelegate.swift */,
+				B3C7C1E02FDA55B7004460DB /* HealthKitObserver.swift */,
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
 			);
 			path = Runner;
@@ -429,7 +428,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				B3C7C1E12FDA55B7004460DB /* HealthKitObserver.swift in Sources */,
 				331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

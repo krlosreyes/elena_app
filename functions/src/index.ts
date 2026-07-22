@@ -272,14 +272,42 @@ export const onUserDeleted = auth.user().onDelete(async (user: UserRecord, _cont
   const uid = user.uid;
   const db = admin.firestore();
   const log = (msg: string) => console.log(`[SPEC-207][uid:${uid}] ${msg}`);
+  const logError = (msg: string, e: unknown) =>
+    console.error(`[SPEC-207][uid:${uid}] ${msg}`, e);
 
   log("Inicio borrado en cascada");
 
+  // FIRE-08 fix (21-jul, auditoría técnica): antes, si `deleteCollection`
+  // lanzaba en CUALQUIER subcolección, el for-loop propagaba la excepción
+  // de inmediato — todas las subcolecciones restantes, el doc raíz
+  // users/{uid} y la limpieza legacy de fasting_history NUNCA se
+  // intentaban en esa invocación. Tras los reintentos automáticos de
+  // Cloud Functions, un fallo determinístico en una sola subcolección
+  // (permisos, cuota, doc corrupto) dejaba huérfano TODO lo que venía
+  // después en USER_SUBCOLLECTIONS — un riesgo real de cumplimiento
+  // (GDPR Art.17 / LGPD Art.18) que solo se detectaría por auditoría
+  // externa o denuncia, no por ninguna alerta del sistema.
+  //
+  // Fix: cada paso se envuelve en su propio try/catch — un fallo se
+  // registra con console.error (nivel ERROR, visible en Cloud Logging y
+  // conectable a una política de alertas) y NO detiene el resto del
+  // borrado. Al final, si hubo algún fallo, se relanza una excepción
+  // agregada para que Cloud Functions SÍ reintente la función completa
+  // (preserva el mecanismo de reintento existente), pero ahora con
+  // visibilidad exacta de qué falló y sin bloquear lo que sí se pudo
+  // borrar.
+  const failures: string[] = [];
+
   // 1. Subcolecciones bajo users/{uid}
   for (const sub of USER_SUBCOLLECTIONS) {
-    const colRef = db.collection("users").doc(uid).collection(sub);
-    const deleted = await deleteCollection(db, colRef);
-    log(`  ${sub}: ${deleted} docs eliminados`);
+    try {
+      const colRef = db.collection("users").doc(uid).collection(sub);
+      const deleted = await deleteCollection(db, colRef);
+      log(`  ${sub}: ${deleted} docs eliminados`);
+    } catch (e) {
+      logError(`  ${sub}: FALLÓ el borrado`, e);
+      failures.push(sub);
+    }
   }
 
   // 2. Documento raíz
@@ -294,8 +322,21 @@ export const onUserDeleted = auth.user().onDelete(async (user: UserRecord, _cont
   // 3. fasting_history plana legacy (SPEC-50.4 / SPEC-217 transición).
   //    Los docs nuevos ya van a users/{uid}/fasting_history (USER_SUBCOLLECTIONS).
   //    TODO-SPEC-217-inc5: eliminar cuando colección plana esté vacía.
-  const fastingDeleted = await deleteLegacyFlatFastingHistory(db, uid);
-  log(`  fasting_history (legacy plana): ${fastingDeleted} docs eliminados`);
+  try {
+    const fastingDeleted = await deleteLegacyFlatFastingHistory(db, uid);
+    log(`  fasting_history (legacy plana): ${fastingDeleted} docs eliminados`);
+  } catch (e) {
+    logError("  fasting_history (legacy plana): FALLÓ el borrado", e);
+    failures.push("fasting_history (legacy plana)");
+  }
+
+  if (failures.length > 0) {
+    log(`Borrado en cascada INCOMPLETO — fallaron: ${failures.join(", ")}`);
+    throw new Error(
+      `onUserDeleted: fallo parcial para uid=${uid}. Pasos no completados: ` +
+      `${failures.join(", ")}. Cloud Functions reintentará automáticamente.`,
+    );
+  }
 
   log("Borrado en cascada completado");
 });

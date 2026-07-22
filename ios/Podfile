@@ -65,6 +65,19 @@ post_install do |installer|
         config.build_settings['CLANG_ENABLE_MODULES'] = 'NO'
       end
 
+      # 18-jul: flutter_timezone — mismo síntoma que permission_handler_apple,
+      # pero además CocoaPods le genera su propio flutter_timezone.modulemap
+      # y lo fija en MODULEMAP_FILE. Un MODULEMAP_FILE explícito hace que
+      # Xcode defina el módulo IGUAL aunque DEFINES_MODULE=NO — por eso el
+      # primer intento (solo DEFINES_MODULE/CLANG_ENABLE_MODULES) no alcanzó.
+      # Hay que vaciar MODULEMAP_FILE también, igual que se hizo con leveldb.
+      if target.name == 'flutter_timezone'
+        config.build_settings['DEFINES_MODULE'] = 'NO'
+        config.build_settings['CLANG_ENABLE_MODULES'] = 'NO'
+        config.build_settings['MODULEMAP_FILE'] = ''
+        config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
+      end
+
       # leveldb-library: deshabilitar completamente el módulo system para
       # evitar que el module verifier de Xcode 26 intente compilar los
       # headers C++ de leveldb (cstdint, cache.h, c.h) como módulo.

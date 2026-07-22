@@ -39,10 +39,26 @@ final eatingWindowProvider = Provider<EatingWindowState?>((ref) {
   // que recalcular en cada frame.
   ref.watch(metabolicPulseProvider);
 
-  return EatingWindowState.compute(
+  final now = DateTime.now();
+  final state = EatingWindowState.compute(
     lastInterval: interval,
     user: user,
-    now: DateTime.now(),
+    now: now,
     firstMealLoggedToday: firstMealLoggedToday,
   );
+
+  // PROD-04 fix (21-jul, auditoría técnica): `windowStart` puede ser una
+  // PROYECCIÓN teórica (`isProjected`, sin ayuno cerrado ni comida
+  // registrada). Si `now` ya superó esa proyección, mostrarla pintaría
+  // un "recorrido" fabricado para un usuario que no registró nada — el
+  // caso reportado por Carlos el mismo día del alta de cuenta. Se
+  // devuelve `null` en ese caso, igual que cuando los providers siguen
+  // cargando (`circadian_clock.dart` ya omite la capa cuando es null).
+  // Si `now` todavía no llega a la proyección, sí se expone: es una
+  // cuenta regresiva honesta hacia una meta futura, no progreso
+  // inventado.
+  if (state.isProjected && !now.isBefore(state.windowStart)) {
+    return null;
+  }
+  return state;
 });

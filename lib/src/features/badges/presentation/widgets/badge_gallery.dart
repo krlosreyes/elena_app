@@ -38,11 +38,18 @@ class BadgeGallery extends ConsumerWidget {
       // ancho de card (168) sin importar qué tan ancha sea la pantalla;
       // en un teléfono real (~380-430px) sigue dando 2 columnas, igual
       // que antes.
+      // 20-jul: childAspectRatio 0.95 daba "BOTTOM OVERFLOWED BY 8.4
+      // PIXELS" en cada card en el iPhone físico de Carlos (no se veía
+      // en otros entornos) — el texto ahí escala con el tamaño de letra
+      // del sistema (Accesibilidad), y con su config esas 2 líneas de
+      // texto ya no entraban en el alto fijo del cell. 0.82 da margen
+      // real (no solo para este caso puntual) sin agrandar demasiado
+      // las cards en tamaño de letra por defecto.
       gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
         maxCrossAxisExtent: 168,
         mainAxisSpacing: 12,
         crossAxisSpacing: 12,
-        childAspectRatio: 0.95,
+        childAspectRatio: 0.82,
       ),
       itemCount: BadgeCategory.all.length,
       itemBuilder: (context, i) {

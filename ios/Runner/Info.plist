@@ -7,8 +7,19 @@
 		<string>com.metamorfosis.elena.notification-refresh</string>
 		<string>com.metamorfosis.elena.healthkit-update</string>
 	</array>
+	<!-- 20-jul: desactivado como diagnóstico del bug "scroll infinito" en
+	     Perfil — solo se reproduce en el iPhone físico (nunca en
+	     Duplicación de iPhone en el Mac) y no se resuelve forzando 60Hz
+	     por Accesibilidad. Esta clave es la que habilita CoreAnimation a
+	     rendear por encima de 60Hz (ProMotion) vía CADisplayLink, el
+	     mecanismo interno de Impeller (motor de render por default en
+	     iOS). El cap de Accesibilidad no siempre anula esto de forma
+	     confiable para apps que usan CADisplayLink directamente. Si tras
+	     este cambio el bug desaparece, confirma un problema de
+	     Impeller+ProMotion y esta clave se queda apagada (o se reporta
+	     upstream a Flutter). Si sigue igual, se puede revertir a <true/>.
 	<key>CADisableMinimumFrameDurationOnPhone</key>
-	<true/>
+	<false/> -->
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>

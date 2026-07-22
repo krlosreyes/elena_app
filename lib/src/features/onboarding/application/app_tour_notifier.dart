@@ -17,6 +17,7 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/core/providers/shared_preferences_provider.dart';
+import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
 
 // ── Descripción de un paso del tour ──────────────────────────────────────────
 
@@ -204,11 +205,41 @@ class AppTourNotifier extends StateNotifier<AppTourState> {
   AppTourNotifier(this._ref)
       : super(const AppTourState(isActive: false, stepIndex: 0));
 
-  /// Verifica si el tour ya se completó y lo activa si no.
+  /// PROD-05 (21-jul, auditoría técnica): clave de SharedPreferences
+  /// namespaceada por uid. Antes 'appTourDone' era una clave GLOBAL del
+  /// dispositivo (SharedPreferences no distingue cuentas). En la práctica
+  /// esto significa que si dos cuentas distintas se usan en el mismo
+  /// simulador/dispositivo (como ocurrió durante esta auditoría: cuenta
+  /// vieja → cerrar sesión → cuenta nueva), la cuenta NUEVA heredaba
+  /// `done=true` de la cuenta anterior y el tour jamás se activaba —
+  /// aunque para esa cuenta específica nunca se había mostrado. Esta es
+  /// la explicación más probable, más simple y más directamente respaldada
+  /// por el código, de por qué el tour "no se activó" al terminar el
+  /// onboarding de la cuenta nueva.
+  ///
+  /// Devuelve null si todavía no hay sesión (no hay uid para namespacing).
+  String? get _prefsKey {
+    final uid = _ref.read(authStateProvider).value?.uid;
+    if (uid == null) return null;
+    return 'appTourDone_$uid';
+  }
+
+  /// Verifica si el tour ya se completó (para ESTA cuenta) y lo activa si no.
   Future<bool> tryActivate() async {
     if (state.isActive) return false; // tour ya corriendo — no resetear al navegar
+    final key = _prefsKey;
+    if (key == null) return false; // sin sesión aún — no hay uid para namespacing
     final prefs = _ref.read(sharedPreferencesProvider);
-    final done = prefs.getBool('appTourDone') ?? false;
+
+    // Compat hacia atrás: usuarios que ya vieron el tour bajo la clave
+    // global legacy ('appTourDone') no deben volver a verlo solo porque
+    // ahora namespaceamos por uid. Se migra una sola vez.
+    if (!prefs.containsKey(key) && (prefs.getBool('appTourDone') ?? false)) {
+      await prefs.setBool(key, true);
+      return false;
+    }
+
+    final done = prefs.getBool(key) ?? false;
     if (done) return false;
     state = const AppTourState(isActive: true, stepIndex: 0);
     return true;
@@ -231,17 +262,24 @@ class AppTourNotifier extends StateNotifier<AppTourState> {
   /// Cierra el tour sin completarlo (botón "Saltar").
   Future<void> skip() async => _finish();
 
-  /// Borra el flag 'appTourDone' para volver a mostrar el tour.
-  /// Útil en QA / testing (Settings debug o shake gesture).
+  /// Borra el flag de "tour visto" (de ESTA cuenta) para volver a
+  /// mostrarlo. Útil en QA / testing y en el replay desde Perfil
+  /// ("Guía de la app").
   Future<void> forceReset() async {
-    final prefs = _ref.read(sharedPreferencesProvider);
-    await prefs.remove('appTourDone');
+    final key = _prefsKey;
+    if (key != null) {
+      final prefs = _ref.read(sharedPreferencesProvider);
+      await prefs.remove(key);
+    }
     state = const AppTourState(isActive: false, stepIndex: 0);
   }
 
   Future<void> _finish() async {
-    final prefs = _ref.read(sharedPreferencesProvider);
-    await prefs.setBool('appTourDone', true);
+    final key = _prefsKey;
+    if (key != null) {
+      final prefs = _ref.read(sharedPreferencesProvider);
+      await prefs.setBool(key, true);
+    }
     state = const AppTourState(isActive: false, stepIndex: 0);
   }
 }

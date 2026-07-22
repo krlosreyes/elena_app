@@ -70,6 +70,12 @@ jest.mock("firebase-admin", () => {
   // Mapa: "users/uid/sleep_history" -> Map<docId, data>
   const store = new Map<string, Map<string, DocData>>();
 
+  // FIRE-08 (21-jul, auditoría técnica): rutas que deben fallar su próximo
+  // `.get()` — permite simular un fallo real de Firestore en UNA
+  // subcolección específica para probar que `onUserDeleted` sigue
+  // borrando el resto en vez de abortar todo el proceso.
+  const failPaths = new Set<string>();
+
   function ensureCollection(path: string): Map<string, DocData> {
     if (!store.has(path)) store.set(path, new Map());
     return store.get(path)!;
@@ -103,7 +109,12 @@ jest.mock("firebase-admin", () => {
         const next = (d: DocData) => (prev ? prev(d) : true) && d[field] === value;
         return makeQuery(path, next, limitN);
       },
-      get: () => Promise.resolve(snapshotFor(path, filter, limitN)),
+      get: () => {
+        if (failPaths.has(path)) {
+          return Promise.reject(new Error(`mock forced failure for ${path}`));
+        }
+        return Promise.resolve(snapshotFor(path, filter, limitN));
+      },
     };
   }
 
@@ -167,6 +178,10 @@ jest.mock("firebase-admin", () => {
       ensureCollection(path).set(id, data);
     },
     __count: (path: string) => ensureCollection(path).size,
+    // FIRE-08: fuerza que el próximo (y siguientes) `.get()` de esta ruta
+    // rechace, simulando un fallo real de Firestore en esa subcolección.
+    __failPath: (path: string) => failPaths.add(path),
+    __clearFailPaths: () => failPaths.clear(),
   };
 });
 
@@ -178,6 +193,8 @@ const indexModule = require("./index") as typeof import("./index");
 type MockAdmin = typeof admin & {
   __seed: (path: string, id: string, data: DocData) => void;
   __count: (path: string) => number;
+  __failPath: (path: string) => void;
+  __clearFailPaths: () => void;
 };
 
 const mockAdmin = admin as unknown as MockAdmin;
@@ -247,5 +264,39 @@ describe("onUserDeleted (SPEC-207 borrado en cascada)", () => {
     const fakeUser = test.auth.makeUserRecord({ uid: emptyUid });
 
     await expect(wrapped(fakeUser)).resolves.not.toThrow();
+  });
+
+  // FIRE-08 (21-jul, auditoría técnica): antes de este fix, un fallo en
+  // UNA subcolección abortaba el for-loop completo — el resto de
+  // subcolecciones, el doc raíz y la limpieza legacy nunca se
+  // intentaban en esa invocación. Este test prueba el comportamiento
+  // corregido: el fallo se aísla, el resto SÍ se borra, y la función
+  // relanza un error agregado (para que Cloud Functions reintente).
+  it("FIRE-08: si una subcolección falla, borra igual el resto y relanza un error agregado", async () => {
+    const uid = "user_fallo_parcial";
+    const failingPath = `users/${uid}/sleep_history`;
+    const okPath = `users/${uid}/hydration_history`;
+
+    mockAdmin.__seed(failingPath, "d1", { dummy: true });
+    mockAdmin.__seed(okPath, "d1", { dummy: true });
+    mockAdmin.__failPath(failingPath);
+
+    const wrapped = test.wrap(indexModule.onUserDeleted);
+    const fakeUser = test.auth.makeUserRecord({ uid });
+
+    try {
+      await expect(wrapped(fakeUser)).rejects.toThrow(/fallo parcial/);
+
+      // La subcolección SANA debió borrarse igual — el fallo de
+      // sleep_history no debe bloquear hydration_history.
+      expect(mockAdmin.__count(okPath)).toBe(0);
+      // La subcolección que falló, en cambio, conserva su documento
+      // (el mock nunca llegó a borrarlo porque `.get()` rechazó).
+      expect(mockAdmin.__count(failingPath)).toBe(1);
+    } finally {
+      // No contaminar los tests siguientes con esta ruta marcada
+      // como fallida permanentemente.
+      mockAdmin.__clearFailPaths();
+    }
   });
 });

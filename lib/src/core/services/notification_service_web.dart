@@ -13,6 +13,10 @@ class NotificationIds {
   static const int sleep = 106;
   // SPEC-169 (2026-06-04): eTRF pre-sueño.
   static const int eTRFPreSleep = 107;
+  // 20-jul: resumen diario de "tus 5 objetivos de hoy" (ver
+  // notification_service_mobile.dart — misma constante, mantener en
+  // sync porque el conditional export usa una u otra, nunca ambas).
+  static const int dailyGoalsSummary = 108;
   static const int fasting12h = 200;
   static const int fasting18h = 201;
   static const int fasting24h = 202;

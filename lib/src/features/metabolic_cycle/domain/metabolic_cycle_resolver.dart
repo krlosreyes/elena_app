@@ -97,13 +97,25 @@ class MetabolicCycleResolver {
   ///
   /// La función evalúa los triggers documentados en §RF-149-04 en
   /// orden de prioridad:
-  ///   1. protocolChanged
-  ///   2. manualNextFasting
-  ///   3. fallbackSleepDetected
-  ///   4. fallback3hAfterWindow
-  ///   5. fallbackAbsolute
+  ///   1. manualNextFasting
+  ///   2. fallbackSleepDetected
+  ///   3. fallback3hAfterWindow
+  ///   4. fallbackAbsolute
   ///
-  /// SPEC-189 eliminó el trigger 6 `fallbackCalendar` (cierre por
+  /// 20-jul: trigger `protocolChanged` ELIMINADO — cerraba el ciclo
+  /// (y con él, el día de hoy vía triggerDailyReset) apenas el usuario
+  /// tocaba "cambiar protocolo" en Configuración, aunque estuviera en
+  /// plena ventana de alimentación sin intención de ayunar. Decisión de
+  /// producto de Carlos: cambiar el protocolo es una preferencia pura,
+  /// nunca debe afectar el día en curso. `currentProtocol` se mantiene
+  /// como parámetro (varios callers ya lo pasan) pero deja de leerse acá;
+  /// el ciclo abierto sigue el protocolo con el que arrancó hasta que el
+  /// usuario inicia un ayuno nuevo a propósito (trigger
+  /// `manualNextFasting`, ya gateado por `FastingActivationSource.
+  /// userInitiated` en metabolic_cycle_evaluator_provider.dart) — recién
+  /// ahí aplica el protocolo nuevo, al ciclo siguiente.
+  ///
+  /// SPEC-189 eliminó el trigger `fallbackCalendar` (cierre por
   /// medianoche). Ver METABOLIC_DAY_CONSTITUTION.md §1.
   ///
   /// El caller (MetabolicCycleService) es responsable de ejecutar el
@@ -120,13 +132,7 @@ class MetabolicCycleResolver {
   }) {
     if (openCycle.isClosed) return null; // ya cerrado, no doble cierre
 
-    // 1. protocolChanged: el protocolo del ciclo abierto difiere del
-    //    actual del usuario. El ciclo previo queda inválido.
-    if (currentProtocol != openCycle.fastingProtocol) {
-      return ClosureReason.protocolChanged;
-    }
-
-    // 2. manualNextFasting: el usuario explícitamente inició un nuevo
+    // 1. manualNextFasting: el usuario explícitamente inició un nuevo
     //    ayuno Y han pasado ≥30 min desde startedAt del ciclo abierto.
     if (newFastingStartedExplicitly &&
         newFastingStartedAt != null &&

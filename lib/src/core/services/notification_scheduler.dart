@@ -36,10 +36,18 @@ class NotificationScheduler {
   /// usuario inició el ayuno, no la configurada en el perfil. Si
   /// [openCycle] es null o el protocolo es 'Ninguno', cae al fallback
   /// legacy (`profile.lastMealGoal`).
+  ///
+  /// 20-jul: [goalsSummaryBody] es el resumen compacto de "tus 5
+  /// objetivos de hoy" (ej. "⏱️16:8 · 🌙8h · 💧2.5L · 💪35min · 🥦2
+  /// comidas"), calculado por el caller (`NotificationProvider`, que
+  /// tiene acceso a `goalsProvider` vía Riverpod — este servicio es
+  /// puro y no lee providers). Si es null (aún no hay datos
+  /// suficientes), la notificación simplemente no se agenda ese día.
   static Future<void> scheduleCircadianDay(
     UserModel user, {
     MetabolicCycle? openCycle,
     bool isFasting = false,
+    String? goalsSummaryBody,
   }) async {
     try {
       await NotificationService.cancelCircadian();
@@ -63,6 +71,32 @@ class NotificationScheduler {
             'importe hoy.',
         payload: NotificationRouter.circadianPayload(),
       );
+
+      // ── 1b. Tus 5 objetivos de hoy (20-jul) ──────────────────────────────
+      // Pedido de Carlos: además de "Buenos días", el usuario recibe un
+      // resumen de sus 5 objetivos del día, 15 min después de despertar
+      // (mismo offset de gracia que ya usa hidratación —
+      // kHydrationFirstSlotOffset). Tap → pantalla de Objetivos (metas +
+      // avance en vivo), vía `NotificationRouter.goalsPayload()`.
+      if (goalsSummaryBody != null && goalsSummaryBody.isNotEmpty) {
+        final goalsDt = DateTime(
+          2000,
+          1,
+          1,
+          profile.wakeUpTime.hour,
+          profile.wakeUpTime.minute,
+        ).add(const Duration(minutes: 15));
+        await _scheduleCircadian(
+          id: NotificationIds.dailyGoalsSummary,
+          hour: goalsDt.hour,
+          minute: goalsDt.minute,
+          title: '🎯 Tus objetivos de hoy',
+          body: goalsSummaryBody,
+          payload: NotificationRouter.goalsPayload(),
+        );
+      } else {
+        await NotificationService.cancel(NotificationIds.dailyGoalsSummary);
+      }
 
       // ── 2. Apertura de ventana de alimentación ───────────────────────────
       // SPEC-241: ID 101 se dispara al CERRAR EL AYUNO (en fasting_notifier.dart

@@ -234,23 +234,13 @@ class MetabolicCycleService {
         'protocol=${opened.fastingProtocol} '
         'source=chainedAfterClose',
       );
-    } else if (reason == ClosureReason.protocolChanged) {
-      // Tras cambio de protocolo, abrir un ciclo nuevo con el nuevo
-      // protocolo a partir de ahora.
-      opened = MetabolicCycleResolver.openCycle(
-        startedAt: input.now,
-        fastingProtocol: input.currentProtocol,
-        tzOffsetMinutes: input.tzOffsetMinutes,
-      );
-      _persistCycle(userId, opened);
-      // SPEC-184: log estructurado de re-apertura por cambio de protocolo.
-      AppLogger.info(
-        '[cycle.open] cycleId=${opened.cycleId} '
-        'startedAt=${opened.startedAt.toIso8601String()} '
-        'protocol=${opened.fastingProtocol} '
-        'source=protocolChanged',
-      );
     }
+    // 20-jul: rama `ClosureReason.protocolChanged` retirada — el
+    // resolver ya no devuelve esa razón (ver metabolic_cycle_resolver.
+    // dart), así que reabrir un ciclo encadenado por cambio de
+    // protocolo ya no aplica. El enum value se conserva en
+    // closure_reason.dart por compatibilidad con ciclos históricos ya
+    // persistidos con esa razón.
 
     return MetabolicCycleCheckResult.closed(closed: closed, opened: opened);
     } finally {

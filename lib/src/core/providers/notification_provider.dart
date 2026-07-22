@@ -4,8 +4,11 @@ import 'package:elena_app/src/shared/providers/user_provider.dart';
 import 'package:elena_app/src/core/services/notification_scheduler.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/features/dashboard/application/fasting_notifier.dart';
+import 'package:elena_app/src/features/goals/application/goal_notifier.dart';
+import 'package:elena_app/src/features/goals/application/pillar_goal_resolver.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart';
 import 'package:elena_app/src/features/metabolic_cycle/domain/metabolic_cycle.dart';
+import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // NotificationSchedulerNotifier
@@ -61,6 +64,46 @@ class NotificationSchedulerNotifier extends StateNotifier<void> {
         if (user != null) _maybeReschedule(user, force: true);
       },
     );
+
+    // 20-jul: si el usuario edita sus objetivos ("Mis objetivos" en
+    // Perfil), el resumen de la notificación diaria de "tus 5
+    // objetivos de hoy" queda desactualizado hasta el próximo cambio
+    // de perfil/ciclo — hay que forzar reprogramación acá también.
+    _ref.listen<GoalsMap>(
+      goalsProvider,
+      (previous, next) {
+        if (previous == next) return;
+        final user = _ref.read(currentUserStreamProvider).valueOrNull;
+        if (user != null) _maybeReschedule(user, force: true);
+      },
+    );
+  }
+
+  /// 20-jul: resumen compacto de "tus 5 objetivos de hoy" para la
+  /// notificación matutina. Mismos emojis que ya usa `PillarRing` en
+  /// el Dashboard (⏱️🌙💧💪🥦) para que el usuario reconozca de
+  /// inmediato a qué pilar corresponde cada valor.
+  ///
+  /// Usa `PillarGoalResolver` (mismas fórmulas que alimentan los
+  /// anillos y la pantalla de Objetivos) para ejercicio/sueño/
+  /// hidratación, y `nutritionProvider.targetMeals` para comidas — no
+  /// hay resolver puro equivalente para nutrición, y el provider ya
+  /// resuelve protocolo → comidas sugeridas en vivo.
+  String _buildGoalsSummary(UserModel user) {
+    final goals = _ref.read(goalsProvider);
+    final exerciseMin = PillarGoalResolver.exerciseMinutes(goals, user);
+    final sleepH = PillarGoalResolver.sleepHours(goals);
+    final hydrationL = PillarGoalResolver.hydrationLiters(goals, user);
+    final targetMeals = _ref.read(nutritionProvider).targetMeals;
+    final protocol = user.fastingProtocol;
+
+    final sleepLabel = sleepH == sleepH.roundToDouble()
+        ? sleepH.toStringAsFixed(0)
+        : sleepH.toStringAsFixed(1);
+    final hydrationLabel = hydrationL.toStringAsFixed(1);
+
+    return '⏱️$protocol · 🌙${sleepLabel}h · 💧${hydrationLabel}L · '
+        '💪${exerciseMin}min · 🥦$targetMeals comidas';
   }
 
   Future<void> _maybeReschedule(UserModel? user, {bool force = false}) async {
@@ -82,6 +125,7 @@ class NotificationSchedulerNotifier extends StateNotifier<void> {
       user,
       openCycle: openCycle,
       isFasting: isFasting,
+      goalsSummaryBody: _buildGoalsSummary(user),
     );
     // SPEC-150: hidratación reprograma junto con la agenda circadiana.
     // Default 90 min entre slots durante la ventana de despertar,

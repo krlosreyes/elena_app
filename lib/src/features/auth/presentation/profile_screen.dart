@@ -19,7 +19,6 @@ import 'package:elena_app/src/features/health_sync/presentation/health_sync_card
 import 'package:elena_app/src/features/profile/presentation/widgets/body_composition_card.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
-import 'package:elena_app/src/features/onboarding/application/app_tour_notifier.dart';
 // 17-jul (Propuesta "un Perfil que da orgullo abrir", P2): card de
 // transformación 30 días vs hoy — existía desde SPEC-148 pero quedó
 // huérfana cuando el tab viejo de Análisis se reemplazó (ver
@@ -171,9 +170,23 @@ class _ProfileBody extends ConsumerWidget {
         const SizedBox(height: 24),
 
         // ── SPEC-132: sincronización con Apple Health / Health Connect
+        //
+        // 20-jul: HealthSyncCard cambia de alto varias veces seguidas
+        // apenas se abre Perfil (verificando → conectado → sincronizando
+        // → resultado, disparado por refreshPermissionStatus() en su
+        // initState). Sin este wrapper, cada cambio de alto reacomoda el
+        // ListView de golpe bajo el dedo del usuario si está scrolleando
+        // en ese momento — se siente como un "rebote"/scroll infinito.
+        // AnimatedSize convierte ese reacomodo brusco en una transición
+        // suave, así el gesto de scroll no se pelea con el layout.
         _buildSectionTitle('Salud'),
         const SizedBox(height: 10),
-        const HealthSyncCard(),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOut,
+          alignment: Alignment.topCenter,
+          child: const HealthSyncCard(),
+        ),
         const SizedBox(height: 24),
 
         // ── Legal ───────────────────────────────────────────────────
@@ -181,61 +194,19 @@ class _ProfileBody extends ConsumerWidget {
         // documentos informativos, no acciones de cuenta). Bajada
         // sustancial de peso visual: lista plana sin card-border, sin
         // iconos coloreados, tipografía secundaria.
+        // 20-jul: "Legal" y "Ayuda" pasaron de lista plana a cards con
+        // borde de color, mismo patrón que "Configuración" (pedido de
+        // Carlos: coherencia visual de arriba a abajo en Perfil).
         _buildSectionTitle('Legal'),
-        const SizedBox(height: 6),
+        const SizedBox(height: 12),
         const ProfileLegalSection(),
-        const SizedBox(height: 28),
+        const SizedBox(height: 24),
 
         // ── Ayuda ────────────────────────────────────────────────────
         _buildSectionTitle('Ayuda'),
-        const SizedBox(height: 6),
-        Consumer(
-          builder: (ctx, ref, _) => InkWell(
-            onTap: () async {
-              await ref.read(appTourProvider.notifier).forceReset();
-              await ref.read(appTourProvider.notifier).tryActivate();
-              if (ctx.mounted) ctx.go('/dashboard');
-            },
-            borderRadius: BorderRadius.circular(8),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Guía de la app',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.white.withValues(alpha: 0.70),
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Vuelve a ver el tour interactivo',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w400,
-                            color: Colors.white.withValues(alpha: 0.34),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Icon(
-                    Icons.chevron_right_rounded,
-                    color: Colors.white.withValues(alpha: 0.24),
-                    size: 18,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 28),
+        const SizedBox(height: 12),
+        const ProfileHelpGuideCard(),
+        const SizedBox(height: 24),
 
         // ── Acciones destructivas (text buttons sutiles) ────────────
         const ProfileDangerZoneActions(),

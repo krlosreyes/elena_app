@@ -105,4 +105,10 @@ class NotificationRouter {
   /// Incluye las horas del hito para que el router sepa cuál fue.
   static String fastingMilestonePayload({required int hours}) =>
       jsonEncode({'route': '/dashboard', 'category': 'fasting', 'milestone_hours': hours});
+
+  /// 20-jul: payload para el resumen diario de "tus 5 objetivos de
+  /// hoy" — lleva a la pantalla de Objetivos (metas + avance en vivo),
+  /// no al Dashboard como el resto de las circadianas.
+  static String goalsPayload() =>
+      jsonEncode({'route': '/profile/objetivos', 'category': 'goals'});
 }

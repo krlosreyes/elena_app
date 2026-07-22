@@ -27,6 +27,7 @@ import 'package:elena_app/src/shared/data/mappers/user_profile_mapper.dart';
 import 'package:elena_app/src/shared/data/user_profile_repository_impl.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/shared/domain/repositories/user_profile_repository.dart';
+import 'package:elena_app/src/shared/providers/user_provider.dart';
 
 class OnboardingController extends StateNotifier<AsyncValue<void>> {
   // SPEC-50.5: UserProfileRepository (no UserRepository).
@@ -124,6 +125,23 @@ class OnboardingController extends StateNotifier<AsyncValue<void>> {
       // cuando la pantalla llame `context.go('/dashboard')`, el
       // redirect del router ya vea profileStatus == COMPLETE.
       await _ref.read(authStateProvider.future);
+
+      // PROD-03b fix (21-jul, auditoría técnica): además de authStateProvider,
+      // esperar el primer emit de `currentUserStreamProvider` con el usuario
+      // ya persistido. `GoalNotifier` (goal_notifier.dart) fija su
+      // `_currentUserId` DENTRO de su propio listener a
+      // `currentUserStreamProvider` — un provider DISTINTO de
+      // `authStateProvider`, que abre su propia suscripción a Firestore
+      // (`UserProfileRepository.watchProfile`) y no necesariamente emite en
+      // el mismo tick que `authStateProvider`. Antes de este fix,
+      // `_persistGoalDrafts()` (llamado justo después de `completeOnboarding`
+      // en `onboarding_screen.dart`) podía ejecutar `GoalNotifier.saveAll()`
+      // ANTES de que ese segundo listener hubiera corrido, y `saveAll()`
+      // descartaba el guardado en silencio (`_currentUserId == null`) — los
+      // objetivos configurados en el onboarding nunca llegaban a Firestore.
+      // Esperar aquí el emit real (no solo la reclasificación de auth)
+      // cierra esa ventana de carrera.
+      await _ref.read(currentUserStreamProvider.future);
 
       // SPEC-193: evento de cierre de embudo de onboarding.
       AnalyticsService.logEvent(

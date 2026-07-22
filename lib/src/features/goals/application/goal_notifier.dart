@@ -75,7 +75,19 @@ class GoalNotifier extends StateNotifier<GoalsMap> {
   /// background; `watchGoals` (la subscripción activa) reconcilia el
   /// estado cuando el servidor confirma.
   Future<void> setGoal(UserGoal goal) async {
-    if (_currentUserId == null) return;
+    if (_currentUserId == null) {
+      // PROD-03b (21-jul, auditoría técnica): antes este guard descartaba
+      // el guardado en absoluto silencio. Si algún caller futuro invoca
+      // esto antes de que `currentUserStreamProvider` haya emitido (la
+      // misma condición de carrera que perdía los goals del onboarding,
+      // ver onboarding_controller.dart), ahora queda un rastro en los
+      // logs en vez de una pérdida de datos indetectable.
+      AppLogger.warning(
+        '[GoalNotifier.setGoal] descartado: _currentUserId aún null '
+        '(¿currentUserStreamProvider no emitió todavía?) goal=${goal.type}',
+      );
+      return;
+    }
     final updated = {...state, goal.type: goal};
     state = updated;
     final userId = _currentUserId!;
@@ -127,7 +139,18 @@ class GoalNotifier extends StateNotifier<GoalsMap> {
   /// cambio ese await resuelve tan pronto el estado local se actualiza,
   /// sin esperar la confirmación de red.
   Future<void> saveAll(Map<GoalType, UserGoal> goals) async {
-    if (_currentUserId == null) return;
+    if (_currentUserId == null) {
+      // PROD-03b (21-jul, auditoría técnica): ver nota en setGoal(). Este
+      // era exactamente el punto donde los objetivos del onboarding se
+      // perdían en silencio — saveAll() es lo que _persistGoalDrafts()
+      // llama en onboarding_screen.dart.
+      AppLogger.warning(
+        '[GoalNotifier.saveAll] descartado: _currentUserId aún null '
+        '(¿currentUserStreamProvider no emitió todavía?) '
+        'goals=${goals.keys.map((g) => g.name).join(", ")}',
+      );
+      return;
+    }
     state = goals;
     final userId = _currentUserId!;
     unawaited(

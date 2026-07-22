@@ -2,11 +2,19 @@
 // sección siempre expandida a card colapsada + pantalla de detalle —
 // ver comentario en biometricos_detail_screen.dart, mismo movimiento.
 // ProfileGoalsSection no cambió — solo dónde vive.
+//
+// 20-jul: se agrega `TodaysProgressSection` arriba de la lista de
+// metas — pedido de Carlos: el usuario necesita ver no solo QUÉ le
+// sugiere Elena sino CÓMO va avanzando hoy contra eso. Esta pantalla
+// (`/profile/objetivos`) es también el destino de la notificación
+// diaria de "tus 5 objetivos de hoy" (ver notification_scheduler.dart
+// + notification_router.dart, payload `goalsPayload()`).
 
 import 'package:flutter/material.dart';
 
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/auth/presentation/widgets/profile_goals_section.dart';
+import 'package:elena_app/src/features/auth/presentation/widgets/todays_progress_section.dart';
 
 class ObjetivosDetailScreen extends StatelessWidget {
   const ObjetivosDetailScreen({super.key});
@@ -34,6 +42,8 @@ class ObjetivosDetailScreen extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
           children: const [
+            TodaysProgressSection(),
+            SizedBox(height: 20),
             ProfileGoalsSection(),
           ],
         ),

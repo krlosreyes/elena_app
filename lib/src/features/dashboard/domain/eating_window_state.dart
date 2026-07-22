@@ -54,6 +54,22 @@ class EatingWindowState {
   /// Si `status == beforeWindow` → 0. Si `afterWindow` → 1.
   final double progressPercent;
 
+  /// true cuando `windowStart`/`windowEnd` provienen del fallback teórico
+  /// (`_fallbackWindowStart`: óptimo del protocolo o `firstMealGoal`)
+  /// porque no hay ninguna señal real del usuario — ni un ayuno cerrado
+  /// reciente ni una comida registrada hoy. false cuando el origen es
+  /// un evento real (`intervalCandidate` o `firstMealLoggedToday`).
+  ///
+  /// PROD-04 (21-jul, auditoría técnica): antes de este campo, un
+  /// usuario sin ningún registro veía el anillo de ventana pintado como
+  /// si ya llevara horas "en curso", solo porque `now` había superado el
+  /// horario teórico del protocolo. `isProjected` le permite al caller
+  /// (`eatingWindowProvider`) distinguir una PROYECCIÓN honesta (útil
+  /// como cuenta regresiva hacia una meta futura) de progreso fabricado,
+  /// y ocultar la capa visual cuando `now` ya superó una proyección sin
+  /// ningún respaldo real.
+  final bool isProjected;
+
   const EatingWindowState({
     required this.windowStart,
     required this.windowEnd,
@@ -61,6 +77,7 @@ class EatingWindowState {
     required this.now,
     required this.status,
     required this.progressPercent,
+    this.isProjected = false,
   });
 
   /// Computa el state a partir de los inputs disponibles.
@@ -96,6 +113,7 @@ class EatingWindowState {
         now: now,
         status: EatingWindowStatus.unknown,
         progressPercent: 0.0,
+        isProjected: true,
       );
     }
 
@@ -129,18 +147,25 @@ class EatingWindowState {
             : null;
 
     final DateTime windowStart;
+    final bool isProjected;
     if (intervalCandidate != null && firstMealLoggedToday != null) {
       windowStart = intervalCandidate.isBefore(firstMealLoggedToday)
           ? intervalCandidate
           : firstMealLoggedToday;
+      isProjected = false;
     } else if (firstMealLoggedToday != null) {
       windowStart = firstMealLoggedToday;
+      isProjected = false;
     } else if (intervalCandidate != null) {
       windowStart = intervalCandidate;
+      isProjected = false;
     } else {
       // Caso 3: sin historial de ningún tipo — fallback al firstMealGoal
-      // configurado o al óptimo del protocolo.
+      // configurado o al óptimo del protocolo. `isProjected = true`:
+      // este `windowStart` es una meta teórica, no un evento que
+      // ocurrió. Ver doc de `isProjected` en la clase.
       windowStart = _fallbackWindowStart(user, now);
+      isProjected = true;
     }
 
     final DateTime windowEnd = windowStart.add(Duration(hours: hours));
@@ -167,6 +192,7 @@ class EatingWindowState {
       now: now,
       status: status,
       progressPercent: progress,
+      isProjected: isProjected,
     );
   }
 
