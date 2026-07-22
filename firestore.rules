@@ -207,26 +207,14 @@ service cloud.firestore {
         );
     }
 
-    // 6. fasting_history plana (SPEC-50.4 schema legacy).
-    //    SPEC-217 (2026-06-14): nueva escritura va a users/{uid}/fasting_history
-    //    (subcolección cubierta por `match /{allPaths=**}` arriba).
-    //    Esta regla se mantiene durante el período de transición para que
-    //    los documentos históricos sean legibles/borrables por el usuario.
-    //    TODO-SPEC-217-inc5: eliminar esta regla 7 días después de validar
-    //    que la migración de datos históricos está completa.
-    match /fasting_history/{docId} {
-      allow read: if signedIn()
-        && resource.data.userId == request.auth.uid;
-      allow create: if signedIn()
-        && request.resource.data.userId == request.auth.uid
-        && withinSizeLimit();
-      allow update: if signedIn()
-        && resource.data.userId == request.auth.uid
-        && request.resource.data.userId == request.auth.uid
-        && withinSizeLimit();
-      allow delete: if signedIn()
-        && resource.data.userId == request.auth.uid;
-    }
+    // FIRE-06 (cerrado 22-jul): la regla de la colección plana
+    // fasting_history (SPEC-50.4 legacy, TODO-SPEC-217-inc5) se retiró.
+    // La colección se confirmó vacía en producción
+    // (functions/scripts/verify_fasting_history_migration.js, 0
+    // documentos) y se borró en Firestore — ver
+    // Addendum_Auditoria_ElenaApp_2026-07-22.docx §2. Toda la data real
+    // vive en users/{uid}/fasting_history (subcolección, cubierta por
+    // `match /{allPaths=**}` arriba).
 
     // ─────────────────────────────────────────────────────────────────
     // SPEC-81: Denial-by-default explícito.

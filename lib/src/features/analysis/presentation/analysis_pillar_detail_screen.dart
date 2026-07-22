@@ -98,6 +98,28 @@ class _AnalysisPillarDetailScreenState
     // real.
     final isPremium = ref.watch(featureGateProvider).hasFullAccess;
 
+    // UX-PROGRESO (hallazgo de auditoría propia, 22-jul): el reset a w1
+    // en initState corre en addPostFrameCallback (a propósito — mutar
+    // el provider de forma síncrona en initState puede disparar
+    // "modify provider while widget tree is building"). Eso deja UN
+    // frame donde `range` todavía puede ser el rango largo que el
+    // usuario tenía seleccionado en la lista de Progreso, ANTES del
+    // callback. Si eso pasa para Free, no construimos el chart con ese
+    // rango (evitamos la query real a Firestore con datos que deberían
+    // estar bloqueados) — mostramos un loader hasta el frame siguiente,
+    // cuando el callback ya corrigió el rango a w1.
+    if (!isPremium && range != AnalysisRange.w1) {
+      return const Scaffold(
+        backgroundColor: AppColors.backgroundDark,
+        body: Center(
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: AppColors.metabolicGreen,
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       // SPEC-168.4.6: mismo fondo que Hoy/Perfil/Analisis (cards
       // mantienen su #0C0C0E).

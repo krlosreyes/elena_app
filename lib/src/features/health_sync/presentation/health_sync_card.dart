@@ -481,7 +481,30 @@ class _HealthSyncCardState extends ConsumerState<HealthSyncCard>
     }
   }
 
+  // UX-SYNC (22-jul, P1 — hallazgo de auditoría propia): `runNow()` no
+  // tiene cooldown interno a propósito (SPEC-173.bugfix2: el resume de
+  // la app necesita bypassear el debounce de 15 min de `runIfDue` para
+  // traer datos frescos). Al abrir el botón manual a Free, eso dejaba
+  // sin ningún freno al tap repetido — un usuario podía acercarse a un
+  // sync "casi automático" gratis spameando el botón, cada tap
+  // disparando lecturas/escrituras reales a Firestore. Cooldown corto
+  // solo en este call site (no en `runNow` en sí, para no afectar el
+  // resume/login de app.dart).
+  static const Duration _kManualSyncCooldown = Duration(seconds: 45);
+
   Future<void> _handleSyncNow() async {
+    final lastRun = ref.read(healthAutoSyncControllerProvider).lastRunAt;
+    if (lastRun != null &&
+        DateTime.now().difference(lastRun) < _kManualSyncCooldown) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Ya sincronizaste hace un momento — esperá unos segundos.',
+          ),
+        ),
+      );
+      return;
+    }
     final user = ref.read(currentUserStreamProvider).value;
     if (user == null) return;
     await ref

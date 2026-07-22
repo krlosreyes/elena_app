@@ -62,13 +62,6 @@ class _DailyScoreDetailScreenState
   @override
   Widget build(BuildContext context) {
     final range = ref.watch(analysisRangeProvider);
-    final mode = AggregationMode.forRange(range);
-    // SPEC-219 rev2: fuente ÚNICA — ciclos cerrados con dailyScore.
-    // Sin fallback a streak (scores distintos causaban flip-flop).
-    final series = ref.watch(resolvedDailyScoreSeriesProvider);
-    // Spinner mientras el stream de ciclos no haya emitido aún.
-    final seriesAsync = ref.watch(closedCycleScoreSeriesProvider);
-    final showSpinner = seriesAsync.isLoading && series.points.isEmpty;
     // SPEC-197: detalle Score del Día.
     //
     // UX-PROGRESO (auditoría técnica 21-jul, P1): antes esto bloqueaba
@@ -77,6 +70,35 @@ class _DailyScoreDetailScreenState
     // pantalla); el histórico más largo (`SegmentedRangeControl.locked`)
     // y la sección de Tendencia siguen requiriendo Premium/Trial.
     final isPremium = ref.watch(featureGateProvider).hasFullAccess;
+
+    // UX-PROGRESO (hallazgo de auditoría propia, 22-jul): el reset a w1
+    // en initState corre en addPostFrameCallback (a propósito — mutar
+    // el provider de forma síncrona en initState puede disparar
+    // "modify provider while widget tree is building"). Eso deja UN
+    // frame donde `range` todavía puede ser el rango largo que el
+    // usuario tenía seleccionado en la lista de Progreso, ANTES del
+    // callback. Este guard corta ACÁ, antes de watchear los series
+    // providers de abajo — así ese frame no dispara ninguna query con
+    // un rango que Free no debería poder ver.
+    if (!isPremium && range != AnalysisRange.w1) {
+      return const Scaffold(
+        backgroundColor: AppColors.backgroundDark,
+        body: Center(
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: AppColors.metabolicGreen,
+          ),
+        ),
+      );
+    }
+
+    final mode = AggregationMode.forRange(range);
+    // SPEC-219 rev2: fuente ÚNICA — ciclos cerrados con dailyScore.
+    // Sin fallback a streak (scores distintos causaban flip-flop).
+    final series = ref.watch(resolvedDailyScoreSeriesProvider);
+    // Spinner mientras el stream de ciclos no haya emitido aún.
+    final seriesAsync = ref.watch(closedCycleScoreSeriesProvider);
+    final showSpinner = seriesAsync.isLoading && series.points.isEmpty;
 
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,

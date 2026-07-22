@@ -13,8 +13,6 @@ import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/features/coaching/application/coaching_completion_service.dart';
 import 'package:elena_app/src/core/services/firestore_errors.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
-import 'package:elena_app/src/core/data/app_state_repository.dart';
-import 'package:elena_app/src/features/fasting/data/fasting_history_migrator.dart';
 import 'package:elena_app/src/features/fasting/data/fasting_interval_repository_impl.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/core/services/live_activity_service.dart';
@@ -54,25 +52,17 @@ class FastingNotifier extends StateNotifier<FastingState> {
   /// SPEC-235: tracking del último minuto actualizado en Live Activity
   /// para no enviar updates redundantes (tick es cada segundo).
   int _lastLiveActivityMinute = -1;
-  // SPEC-222: evitar lanzar la migración más de una vez por sesión.
-  bool _migrationTriggered = false;
 
   FastingNotifier(this._ref) : super(FastingState.initial()) {
     _init();
   }
 
   void _init() {
-    // SPEC-222: migración one-shot flat fasting_history → subcollección.
-    // Se dispara la primera vez que el uid es no-null en esta sesión.
-    _ref.listen(authStateProvider, (_, next) {
-      final uid = next.value?.uid;
-      if (uid != null && !_migrationTriggered) {
-        _migrationTriggered = true;
-        final appState = _ref.read(appStateRepositoryProvider);
-        FastingHistoryMigrator(appState: appState).migrateIfNeeded(uid);
-      }
-    }, fireImmediately: true);
-
+    // FIRE-06 (cerrado 22-jul): la migración one-shot flat fasting_history
+    // → subcolección (SPEC-222) se retiró de acá. La colección plana ya
+    // se confirmó vacía y se borró en Firestore — ver
+    // Addendum_Auditoria_ElenaApp_2026-07-22.docx §2 y
+    // functions/scripts/verify_fasting_history_migration.js.
     _ref.listen(currentUserStreamProvider, (previous, next) {
       final user = next.value;
       if (user != null && state.fastingProtocol != user.fastingProtocol) {

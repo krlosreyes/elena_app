@@ -294,27 +294,23 @@ describe('FB-02 — catalogos globales: solo admin puede escribir', () => {
   }
 });
 
-describe('fasting_history (legacy plana) — aislamiento por userId', () => {
-  it('el dueño puede crear su propio doc', async () => {
-    const db = testEnv.authenticatedContext('userA').firestore();
-    await assertSucceeds(
-      db.collection('fasting_history').doc('log1').set({ userId: 'userA' }),
-    );
-  });
-
-  it('otro usuario no puede leer el doc de userA', async () => {
-    await seed((db) =>
-      db.collection('fasting_history').doc('log1').set({ userId: 'userA' }),
-    );
-    const db = testEnv.authenticatedContext('userB').firestore();
-    await assertFails(db.collection('fasting_history').doc('log1').get());
-  });
-
-  it('un usuario no puede crear un doc con userId de otro', async () => {
+describe('fasting_history (legacy plana) — FIRE-06: regla retirada, deny-by-default', () => {
+  // FIRE-06 (cerrado 22-jul): la colección plana se confirmó vacía en
+  // producción y se borró; la regla dedicada (aislamiento por userId) se
+  // retiró de firestore.rules. Toda escritura/lectura a este path a nivel
+  // raíz ahora cae en la regla explícita de deny-by-default (SPEC-81) —
+  // estos casos reemplazan a los anteriores (que esperaban éxito para el
+  // dueño) para dejar registrado el cambio de comportamiento intencional.
+  it('nadie puede escribir en la colección plana, ni siquiera el dueño', async () => {
     const db = testEnv.authenticatedContext('userA').firestore();
     await assertFails(
-      db.collection('fasting_history').doc('log1').set({ userId: 'userB' }),
+      db.collection('fasting_history').doc('log1').set({ userId: 'userA' }),
     );
+  });
+
+  it('nadie puede leer de la colección plana', async () => {
+    const db = testEnv.authenticatedContext('userB').firestore();
+    await assertFails(db.collection('fasting_history').doc('log1').get());
   });
 });
 
