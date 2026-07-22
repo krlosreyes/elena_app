@@ -116,6 +116,13 @@ class DashboardPillarsRow extends ConsumerWidget {
     final showAnchorHint =
         !todayQualifies && !fastingAnchorDone && !sleepAnchorDone;
 
+    // 22-jul: la racha se muestra ahora dentro de `DailyScoreHero` (ver
+    // doc en daily_score_hero.dart) — reemplaza al badge que antes vivía
+    // en `ElenaHeader` (quitado en el mismo commit, "un solo indicador").
+    final (streakDays, streakProtected) = ref.watch(
+      streakProvider.select((s) => (s.currentStreak, s.streakHasProtectedDay)),
+    );
+
     // SPEC-257 §3.1: re-deriva el mismo cálculo que `StreakNotifier` usa
     // para decidir si hoy es un día de descanso PROGRAMADO (nivel Novato,
     // 12:12/14:10 con frecuencia semanal reducida). Es intencional que
@@ -182,8 +189,10 @@ class DashboardPillarsRow extends ConsumerWidget {
           // Decisión de producto (22-jul): el IMR longitudinal se saca del
           // Dashboard (vive en Perfil + gráfica de Resultados de Progreso).
           // `DailyScoreHero` reemplaza a `DualScoreRing` (SPEC-170) — ring
-          // único de HOY, agrandado, con un puente visual a los 5 pilares
-          // en vez de un segundo número. Ver daily_score_hero.dart.
+          // único de HOY, agrandado, con la racha como puente visual (ver
+          // daily_score_hero.dart — v2 del mismo día, reemplazó a un
+          // primer intento con íconos de pilares que Carlos marcó como
+          // redundante con la fila de abajo).
           // SPEC-243 fix: key compartida con AppTourOverlay para calcular
           // posición real del spotlight "Progreso Hoy" (scoreCard).
           DailyScoreHero(
@@ -191,6 +200,8 @@ class DashboardPillarsRow extends ConsumerWidget {
             dailyScore: dailyScore,
             dailyDelta: delta,
             onTap: () => showDailyScoreExplainerSheet(context),
+            streakDays: streakDays,
+            streakProtected: streakProtected,
           ),
           const SizedBox(height: 12),
           // Frase motivacional centrada bajo los rings (SPEC-140.3).
