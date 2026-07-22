@@ -184,6 +184,88 @@ describe('FB-01 — metabolic_cycles: validacion de rango ya NO es bypasseable',
   });
 });
 
+describe('FIRE-04 — badges: inmutabilidad de insignias otorgadas', () => {
+  // 21-jul (auditoria tecnica Staff Engineer): la regla de badges (unica
+  // via = `create`, sin `update` ni `delete`) nunca tuvo test de
+  // regresion pese a ser el invariante mas importante del ruleset: una
+  // insignia otorgada es un HECHO PERMANENTE (ver comentario en
+  // firestore.rules linea 94). Sin este test, un cambio futuro en la
+  // regla general de `allow create, update`/`allow delete` (lineas
+  // ~144-149) podria neutralizar la inmutabilidad sin que nada lo
+  // detecte -- exactamente el riesgo que documenta la nota de FB-01
+  // sobre reglas mas laxas pisando reglas mas especificas.
+  const validBadge = {
+    badgeId: 'ayuno_7_dias',
+    category: 'ayuno',
+  };
+
+  it('el dueño puede crear una insignia con badgeId y category validos', async () => {
+    const db = testEnv.authenticatedContext('userA').firestore();
+    await assertSucceeds(
+      db.collection('users').doc('userA').collection('badges')
+        .doc('ayuno_7_dias').set(validBadge),
+    );
+  });
+
+  it('badgeId del payload distinto al del path es rechazado', async () => {
+    const db = testEnv.authenticatedContext('userA').firestore();
+    await assertFails(
+      db.collection('users').doc('userA').collection('badges')
+        .doc('ayuno_7_dias')
+        .set({ ...validBadge, badgeId: 'otro_id' }),
+    );
+  });
+
+  it('category fuera de la whitelist cerrada es rechazada', async () => {
+    const db = testEnv.authenticatedContext('userA').firestore();
+    await assertFails(
+      db.collection('users').doc('userA').collection('badges')
+        .doc('ayuno_7_dias')
+        .set({ ...validBadge, category: 'categoria_inventada' }),
+    );
+  });
+
+  it('una insignia ya creada NO puede modificarse (update rechazado)', async () => {
+    await seed((db) =>
+      db.collection('users').doc('userA').collection('badges')
+        .doc('ayuno_7_dias').set(validBadge),
+    );
+    const db = testEnv.authenticatedContext('userA').firestore();
+    await assertFails(
+      db.collection('users').doc('userA').collection('badges')
+        .doc('ayuno_7_dias').update({ category: 'racha' }),
+    );
+  });
+
+  it('una insignia ya creada NO puede borrarse (delete rechazado)', async () => {
+    await seed((db) =>
+      db.collection('users').doc('userA').collection('badges')
+        .doc('ayuno_7_dias').set(validBadge),
+    );
+    const db = testEnv.authenticatedContext('userA').firestore();
+    await assertFails(
+      db.collection('users').doc('userA').collection('badges')
+        .doc('ayuno_7_dias').delete(),
+    );
+  });
+
+  it('otro usuario autenticado no puede leer ni crear insignias ajenas', async () => {
+    await seed((db) =>
+      db.collection('users').doc('userA').collection('badges')
+        .doc('ayuno_7_dias').set(validBadge),
+    );
+    const db = testEnv.authenticatedContext('userB').firestore();
+    await assertFails(
+      db.collection('users').doc('userA').collection('badges')
+        .doc('ayuno_7_dias').get(),
+    );
+    await assertFails(
+      db.collection('users').doc('userA').collection('badges')
+        .doc('otra_insignia').set(validBadge),
+    );
+  });
+});
+
 describe('FB-02 — catalogos globales: solo admin puede escribir', () => {
   for (const col of ['master_food_db', 'master_exercises_db', 'user_food_suggestions']) {
     it(`${col}: usuario autenticado sin claim admin NO puede escribir`, async () => {

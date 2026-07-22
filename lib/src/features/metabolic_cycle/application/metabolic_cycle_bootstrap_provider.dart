@@ -20,8 +20,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elena_app/src/core/data/app_state_repository.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
-import 'package:elena_app/src/features/dashboard/application/fasting_notifier.dart';
-import 'package:elena_app/src/features/dashboard/domain/fasting_status.dart';
+import 'package:elena_app/src/features/fasting/application/fasting_notifier.dart';
+import 'package:elena_app/src/features/fasting/domain/fasting_status.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart';
 import 'package:elena_app/src/features/metabolic_cycle/data/metabolic_cycle_repository_impl.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';

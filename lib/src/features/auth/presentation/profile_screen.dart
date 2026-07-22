@@ -1,10 +1,15 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/core/config/feature_flags.dart';
 import 'package:elena_app/src/core/engine/imr_persistence_provider.dart';
 import 'package:elena_app/src/core/engine/longitudinal_imr_provider.dart';
+//import 'package:go_router/go_router.dart';
+import 'package:elena_app/src/core/theme/app_theme.dart';
+// 17-jul (Propuesta "un Perfil que da orgullo abrir", P2): card de
+// transformación 30 días vs hoy — existía desde SPEC-148 pero quedó
+// huérfana cuando el tab viejo de Análisis se reemplazó (ver
+// project_aprende_con_elena_2026_07_17 en memoria, mismo hallazgo que
+// desenterró WeeklyCoachingCard). Encaja en Perfil: es exactamente el
+// tipo de "mira cómo cambiaste" que pediste.
+import 'package:elena_app/src/features/analysis/presentation/widgets/transformation_card.dart';
 import 'package:elena_app/src/features/auth/presentation/widgets/achievement_showcase_card.dart';
 import 'package:elena_app/src/features/auth/presentation/widgets/biometricos_entry_card.dart';
 import 'package:elena_app/src/features/auth/presentation/widgets/exercise_habits_entry_card.dart';
@@ -19,13 +24,8 @@ import 'package:elena_app/src/features/health_sync/presentation/health_sync_card
 import 'package:elena_app/src/features/profile/presentation/widgets/body_composition_card.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
-// 17-jul (Propuesta "un Perfil que da orgullo abrir", P2): card de
-// transformación 30 días vs hoy — existía desde SPEC-148 pero quedó
-// huérfana cuando el tab viejo de Análisis se reemplazó (ver
-// project_aprende_con_elena_2026_07_17 en memoria, mismo hallazgo que
-// desenterró WeeklyCoachingCard). Encaja en Perfil: es exactamente el
-// tipo de "mira cómo cambiaste" que pediste.
-import 'package:elena_app/src/features/analysis/presentation/widgets/transformation_card.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 // 17-jul (2da vuelta de feedback): "Datos biométricos", "Ritmos
 // circadianos", "Protocolo de ayuno" y "Mis objetivos" dejaron de
@@ -56,7 +56,10 @@ class ProfileScreen extends ConsumerWidget {
         title: const Text(
           'Perfil',
           style: TextStyle(
-              fontWeight: FontWeight.w700, fontSize: 18, letterSpacing: 0),
+            fontWeight: FontWeight.w700,
+            fontSize: 18,
+            letterSpacing: 0,
+          ),
         ),
         centerTitle: false,
         backgroundColor: AppColors.backgroundDark,

@@ -24,16 +24,22 @@ import 'package:elena_app/src/features/analysis/domain/aggregation_mode.dart';
 import 'package:elena_app/src/features/analysis/domain/metric_series.dart';
 import 'package:elena_app/src/features/analysis/domain/time_series_point.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
-import 'package:elena_app/src/features/dashboard/data/fasting_interval_repository_impl.dart';
-import 'package:elena_app/src/features/dashboard/data/hydration_repository_impl.dart';
-import 'package:elena_app/src/features/dashboard/data/sleep_repository_impl.dart';
-import 'package:elena_app/src/features/dashboard/domain/sleep_quality_classifier.dart';
+import 'package:elena_app/src/features/fasting/data/fasting_interval_repository_impl.dart';
+import 'package:elena_app/src/features/hydration/data/hydration_repository_impl.dart';
+import 'package:elena_app/src/features/sleep/data/sleep_repository_impl.dart';
+import 'package:elena_app/src/features/sleep/domain/sleep_quality_classifier.dart';
 import 'package:elena_app/src/features/exercise/data/exercise_repository_impl.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart';
 import 'package:elena_app/src/features/nutrition/data/nutrition_repository_impl.dart';
 import 'package:elena_app/src/features/progress/data/biometric_repository.dart';
 import 'package:elena_app/src/features/streak/application/streak_notifier.dart';
 import 'package:elena_app/src/features/streak/domain/streak_entry.dart';
+
+import '../../../core/services/app_logger.dart';
+import '../../metabolic_cycle/application/metabolic_cycle_providers.dart';
+import '../domain/metric_series.dart';
+import 'analysis_range_provider.dart';
+import 'temporal_aggregator.dart';
 
 /// SPEC-177 (2026-06-04): bump que cambia cada vez que se cierra un
 /// nuevo ciclo metabólico. Las series del Análisis lo watch como

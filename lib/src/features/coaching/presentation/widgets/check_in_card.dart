@@ -12,7 +12,7 @@ import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/coaching/application/check_in_provider.dart';
 import 'package:elena_app/src/features/coaching/data/check_in_repository.dart';
 import 'package:elena_app/src/features/coaching/domain/fasting_check_in.dart';
-import 'package:elena_app/src/features/dashboard/application/fasting_notifier.dart';
+import 'package:elena_app/src/features/fasting/application/fasting_notifier.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 
 class CheckInCard extends ConsumerStatefulWidget {

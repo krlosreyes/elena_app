@@ -7,7 +7,7 @@
 //
 // Funciones puras: no requieren Firebase ni Riverpod container.
 
-import 'package:elena_app/src/features/dashboard/domain/sleep_log.dart';
+import 'package:elena_app/src/features/sleep/domain/sleep_log.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 // ── Réplicas de las fórmulas de sleep_provider.dart ──────────────────────────

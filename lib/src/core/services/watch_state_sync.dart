@@ -11,9 +11,9 @@ import 'package:elena_app/src/core/services/live_activity_service.dart';
 import 'package:elena_app/src/core/services/pending_action_queue.dart'
     show kHydrationGlassLiters;
 import 'package:elena_app/src/core/services/watch_connectivity_service.dart';
-import 'package:elena_app/src/features/dashboard/application/fasting_notifier.dart';
-import 'package:elena_app/src/features/dashboard/application/hydration_notifier.dart';
-import 'package:elena_app/src/features/dashboard/domain/fasting_status.dart';
+import 'package:elena_app/src/features/fasting/application/fasting_notifier.dart';
+import 'package:elena_app/src/features/hydration/application/hydration_notifier.dart';
+import 'package:elena_app/src/features/fasting/domain/fasting_status.dart';
 
 /// Inicializa los listeners de sincronización con el Watch.
 ///

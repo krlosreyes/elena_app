@@ -4,12 +4,12 @@ import 'package:elena_app/src/core/engine/metabolic_state.dart';
 import 'package:elena_app/src/core/engine/metabolic_state_builder.dart';
 import 'package:elena_app/src/core/engine/score_engine.dart';
 import 'package:elena_app/src/core/providers/ticker_providers.dart';
-import 'package:elena_app/src/features/dashboard/application/fasting_notifier.dart';
-import 'package:elena_app/src/features/dashboard/application/hydration_notifier.dart';
+import 'package:elena_app/src/features/fasting/application/fasting_notifier.dart';
+import 'package:elena_app/src/features/hydration/application/hydration_notifier.dart';
 import 'package:elena_app/src/features/exercise/application/exercise_notifier.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
 import 'package:elena_app/src/features/streak/application/streak_notifier.dart';
-import 'package:elena_app/src/features/dashboard/application/sleep_notifier.dart';
+import 'package:elena_app/src/features/sleep/application/sleep_notifier.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────

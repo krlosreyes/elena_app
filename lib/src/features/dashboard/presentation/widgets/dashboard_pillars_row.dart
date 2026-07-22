@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/core/engine/imr_persistence_provider.dart';
-import 'package:elena_app/src/features/dashboard/application/hydration_notifier.dart';
-import 'package:elena_app/src/features/dashboard/application/sleep_notifier.dart';
-import 'package:elena_app/src/features/dashboard/domain/fasting_status.dart';
+import 'package:elena_app/src/features/fasting/application/fasting_notifier.dart';
+import 'package:elena_app/src/features/hydration/application/hydration_notifier.dart';
+import 'package:elena_app/src/features/sleep/application/sleep_notifier.dart';
 import 'package:elena_app/src/features/dashboard/domain/selected_pillar.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/daily_score_explainer_sheet.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/dual_score_ring.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/pillar_ring.dart';
-import 'package:elena_app/src/features/exercise/application/exercise_state.dart';
+import 'package:elena_app/src/features/exercise/application/exercise_notifier.dart';
 import 'package:elena_app/src/features/goals/application/goal_notifier.dart';
 import 'package:elena_app/src/features/goals/application/pillar_goal_providers.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
@@ -35,20 +35,21 @@ import 'package:elena_app/src/shared/providers/user_provider.dart';
 class DashboardPillarsRow extends ConsumerWidget {
   const DashboardPillarsRow({
     super.key,
-    required this.fastingState,
-    required this.sleep,
-    required this.hydration,
-    required this.exercise,
-    required this.nutrition,
     required this.selectedPillar,
     required this.onSelectPillar,
   });
 
-  final FastingState fastingState;
-  final SleepState sleep;
-  final HydrationState hydration;
-  final ExerciseState exercise;
-  final NutritionState nutrition;
+  // STATE-01 (auditoría técnica 21-jul): antes este widget recibía
+  // fastingState/sleep/hydration/exercise/nutrition completos como
+  // parámetros del constructor, resueltos por DashboardScreen con un
+  // `ref.watch` amplio a nivel raíz. Cualquier cambio en CUALQUIERA de
+  // los 5 pilares reconstruía DashboardScreen entero, que a su vez
+  // reconstruía este widget con objetos nuevos aunque el campo que
+  // realmente usa no hubiera cambiado. `sleep` ni siquiera se leía acá
+  // (dead prop: el sueño de esta fila sale de `currentCycleSleepProvider`
+  // más abajo). Ahora cada pilar se lee acá mismo con `.select()` sobre
+  // solo los campos que este widget efectivamente pinta — mismo patrón
+  // ya usado en este archivo para `displayedImrProvider`/`streakProvider`.
   final SelectedPillar selectedPillar;
   final ValueChanged<SelectedPillar> onSelectPillar;
 
@@ -67,6 +68,22 @@ class DashboardPillarsRow extends ConsumerWidget {
     // Fallback al legacy cuando no hay ciclo o protocolo == 'Ninguno'.
     final dailyScore = ref.watch(displayDailyScoreProvider);
     final delta = ref.watch(displayDailyScoreDeltaProvider);
+
+    // STATE-01: solo los campos que este widget pinta, no los objetos
+    // completos — un cambio en otro campo de FastingState/HydrationState/
+    // etc. ya no reconstruye esta fila.
+    final (fastingProgress, fastingIsActive) = ref.watch(
+      fastingProvider.select((s) => (s.progressPercentage, s.isActive)),
+    );
+    final (hydrationProgress, hydrationGoalReached) = ref.watch(
+      hydrationProvider.select((s) => (s.progressPercentage, s.isGoalReached)),
+    );
+    final exerciseTodayMinutes =
+        ref.watch(exerciseProvider.select((s) => s.todayMinutes));
+    final (nutritionProgress, nutritionMealsLogged, nutritionTargetMeals) =
+        ref.watch(nutritionProvider.select(
+      (s) => (s.progressPercentage, s.mealsLoggedToday, s.targetMeals),
+    ));
 
     // SPEC-175 (2026-06-04): la regla "el sleep pertenece al ciclo"
     // vive en `currentCycleSleepProvider`. Si no pertenece, devuelve
@@ -225,14 +242,10 @@ class DashboardPillarsRow extends ConsumerWidget {
                 // que ayudaría. `completed` se deja en false a propósito:
                 // la insignia de "descanso" (isRestDay) toma precedencia
                 // visual sobre el check verde dentro de `PillarRing`.
-                progress: isFastingRestDay
-                    ? 1.0
-                    : fastingState.progressPercentage,
+                progress: isFastingRestDay ? 1.0 : fastingProgress,
                 label: 'Ayuno',
                 isSelected: selectedPillar == SelectedPillar.ayuno,
-                completed:
-                    !isFastingRestDay &&
-                        fastingState.progressPercentage >= 1.0,
+                completed: !isFastingRestDay && fastingProgress >= 1.0,
                 showPercent: !isFastingRestDay,
                 isStreakAnchor: showAnchorHint && !isFastingRestDay,
                 isRestDay: isFastingRestDay,
@@ -252,10 +265,10 @@ class DashboardPillarsRow extends ConsumerWidget {
               PillarRing(
                 icon: Icons.water_drop_rounded,
                 color: Colors.blueAccent,
-                progress: hydration.progressPercentage,
+                progress: hydrationProgress,
                 label: 'Hidratación',
                 isSelected: selectedPillar == SelectedPillar.hidratacion,
-                completed: hydration.isGoalReached,
+                completed: hydrationGoalReached,
                 showPercent: true,
                 onTap: () => onSelectPillar(SelectedPillar.hidratacion),
               ),
@@ -270,14 +283,14 @@ class DashboardPillarsRow extends ConsumerWidget {
                 final goal =
                     ref.watch(effectiveExerciseGoalProvider).clamp(1, 240);
                 final progress =
-                    (exercise.todayMinutes / goal.toDouble()).clamp(0.0, 1.0);
+                    (exerciseTodayMinutes / goal.toDouble()).clamp(0.0, 1.0);
                 return PillarRing(
                   icon: Icons.fitness_center_rounded,
                   color: Colors.tealAccent,
                   progress: progress,
                   label: 'Ejercicio',
                   isSelected: selectedPillar == SelectedPillar.ejercicio,
-                  completed: exercise.todayMinutes >= goal,
+                  completed: exerciseTodayMinutes >= goal,
                   showPercent: true,
                   onTap: () => onSelectPillar(SelectedPillar.ejercicio),
                 );
@@ -287,15 +300,14 @@ class DashboardPillarsRow extends ConsumerWidget {
               // con el bloqueo. Sigue tappable — el usuario puede entrar
               // a la card y ver el banner explicativo.
               Opacity(
-                opacity: fastingState.isActive ? 0.5 : 1.0,
+                opacity: fastingIsActive ? 0.5 : 1.0,
                 child: PillarRing(
                   icon: Icons.restaurant_rounded,
                   color: Colors.orangeAccent,
-                  progress: nutrition.progressPercentage,
+                  progress: nutritionProgress,
                   label: 'Comidas',
                   isSelected: selectedPillar == SelectedPillar.comidas,
-                  completed:
-                      nutrition.mealsLoggedToday >= nutrition.targetMeals,
+                  completed: nutritionMealsLogged >= nutritionTargetMeals,
                   showPercent: true,
                   onTap: () => onSelectPillar(SelectedPillar.comidas),
                 ),

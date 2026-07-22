@@ -6,13 +6,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elena_app/src/core/engine/imr_persistence_provider.dart';
 import 'package:elena_app/src/features/analysis/domain/daily_summary.dart';
-import 'package:elena_app/src/features/dashboard/application/fasting_history_provider.dart'
+import 'package:elena_app/src/features/fasting/application/fasting_history_provider.dart'
     show hasCompletedFastingTodayProvider;
-import 'package:elena_app/src/features/dashboard/application/fasting_notifier.dart'
+import 'package:elena_app/src/features/fasting/application/fasting_notifier.dart'
     show fastingProvider;
-import 'package:elena_app/src/features/dashboard/application/hydration_notifier.dart'
+import 'package:elena_app/src/features/hydration/application/hydration_notifier.dart'
     show hydrationProvider;
-import 'package:elena_app/src/features/dashboard/application/sleep_notifier.dart'
+import 'package:elena_app/src/features/sleep/application/sleep_notifier.dart'
     show sleepProvider;
 import 'package:elena_app/src/features/exercise/application/exercise_notifier.dart'
     show exerciseProvider;

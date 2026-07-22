@@ -1,0 +1,249 @@
+// SPEC-95: estado puro de la ventana de alimentación.
+//
+// Antes el `EatingWindowPainter` recibía datos del `FastingState` (que
+// mezcla ayuno y ventana), lo cual hacía que cuando no había ayuno
+// activo el arco no se pintara o quedara descalibrado.
+//
+// Este value object encapsula la ventana de alimentación como concepto
+// propio: cuándo empezó, cuándo cierra, cuánto va, dónde estamos.
+
+import 'package:elena_app/src/features/fasting/domain/optimal_schedule.dart';
+import 'package:elena_app/src/shared/domain/models/user_model.dart';
+
+/// Estado relativo a la ventana de alimentación del día.
+enum EatingWindowStatus {
+  /// `now` aún no llega a `windowStart` — la ventana del día todavía
+  /// no abre. Pasa cuando el usuario no ha cerrado el ayuno o
+  /// `firstMealGoal` es a futuro.
+  beforeWindow,
+
+  /// `now` está entre `windowStart` y `windowEnd`. Es el caso normal
+  /// durante el día.
+  withinWindow,
+
+  /// `now` superó `windowEnd`. La ventana ideal del usuario ya cerró
+  /// y debería iniciar el siguiente ayuno.
+  afterWindow,
+
+  /// No hay datos suficientes para determinar la ventana (por ejemplo,
+  /// el último intervalo está marcado como `isFasting=true` — ese caso
+  /// debería pintar `FastingRingPainter`, no este state).
+  unknown,
+}
+
+/// Resultado puro del cálculo. Sin dependencias de Flutter ni
+/// Firebase — testeable 100%.
+class EatingWindowState {
+  /// Hora a la que abrió (o abrirá) la ventana de comida del usuario.
+  final DateTime windowStart;
+
+  /// Hora a la que cierra (o cerró) la ventana de comida.
+  final DateTime windowEnd;
+
+  /// Duración en horas, derivada del `fastingProtocol`.
+  ///   16:8 → 8     18:6 → 6     20:4 → 4     Ninguno → 14
+  final int windowDurationHours;
+
+  /// "Ahora" usado en este cálculo. Se inyecta para testabilidad.
+  final DateTime now;
+
+  /// Estado relativo de `now` respecto a la ventana.
+  final EatingWindowStatus status;
+
+  /// Fracción de la ventana transcurrida en `now`. Clamp [0.0, 1.0].
+  /// Si `status == beforeWindow` → 0. Si `afterWindow` → 1.
+  final double progressPercent;
+
+  /// true cuando `windowStart`/`windowEnd` provienen del fallback teórico
+  /// (`_fallbackWindowStart`: óptimo del protocolo o `firstMealGoal`)
+  /// porque no hay ninguna señal real del usuario — ni un ayuno cerrado
+  /// reciente ni una comida registrada hoy. false cuando el origen es
+  /// un evento real (`intervalCandidate` o `firstMealLoggedToday`).
+  ///
+  /// PROD-04 (21-jul, auditoría técnica): antes de este campo, un
+  /// usuario sin ningún registro veía el anillo de ventana pintado como
+  /// si ya llevara horas "en curso", solo porque `now` había superado el
+  /// horario teórico del protocolo. `isProjected` le permite al caller
+  /// (`eatingWindowProvider`) distinguir una PROYECCIÓN honesta (útil
+  /// como cuenta regresiva hacia una meta futura) de progreso fabricado,
+  /// y ocultar la capa visual cuando `now` ya superó una proyección sin
+  /// ningún respaldo real.
+  final bool isProjected;
+
+  const EatingWindowState({
+    required this.windowStart,
+    required this.windowEnd,
+    required this.windowDurationHours,
+    required this.now,
+    required this.status,
+    required this.progressPercent,
+    this.isProjected = false,
+  });
+
+  /// Computa el state a partir de los inputs disponibles.
+  ///
+  /// - [lastInterval]: último intervalo persistido en Firestore. Puede
+  ///   ser null (usuario nuevo) o estar marcado `isFasting=true`
+  ///   (entonces este state no debería usarse — el caller pinta el
+  ///   ayuno).
+  /// - [user]: para leer `fastingProtocol` y `profile.firstMealGoal`.
+  /// - [now]: instante actual.
+  /// - [firstMealLoggedToday]: 18-jul — timestamp del primer registro
+  ///   REAL de comida del día metabólico actual (típicamente
+  ///   `MealIntervalRules.firstMealOf(nutritionState.todayLogs)`, que ya
+  ///   es cycle-aware). Null si el usuario no ha registrado ninguna
+  ///   comida todavía. Ver nota completa más abajo.
+  static EatingWindowState compute({
+    required FastingInterval? lastInterval,
+    required UserModel user,
+    required DateTime now,
+    DateTime? firstMealLoggedToday,
+  }) {
+    final int hours = _windowHoursForProtocol(user.fastingProtocol);
+
+    // Caso 1: hay ayuno activo. Este state no aplica; devolvemos
+    // unknown con datos derivados del firstMealGoal (no debería
+    // pintarse, pero protegemos el constructor para no fallar).
+    if (lastInterval != null && lastInterval.isFasting) {
+      final DateTime fallbackStart = _fallbackWindowStart(user, now);
+      return EatingWindowState(
+        windowStart: fallbackStart,
+        windowEnd: fallbackStart.add(Duration(hours: hours)),
+        windowDurationHours: hours,
+        now: now,
+        status: EatingWindowStatus.unknown,
+        progressPercent: 0.0,
+        isProjected: true,
+      );
+    }
+
+    // 18-jul (repro Carlos): un usuario NUEVO que registra su primer
+    // desayuno a las 8:30am esperaba que la ventana de alimentación
+    // (anillo + hitos de comida) arrancara EN esa hora real. Antes de
+    // este fix, sin `lastInterval` (nunca tocó el pilar Ayuno), el
+    // método caía directo al Caso 3 (`_fallbackWindowStart`), que usa
+    // `firstMealGoal` del onboarding o el horario "óptimo" teórico del
+    // protocolo — NINGUNO de los dos refleja lo que el usuario realmente
+    // hizo. Mismo principio ya aplicado al Día Metabólico
+    // (METABOLIC_DAY_CONSTITUTION.md §1): el evento real del usuario
+    // gana sobre cualquier configuración o default.
+    //
+    // Candidatos, en orden de qué tan "real" es la señal:
+    //   - `intervalCandidate`: el usuario cerró explícitamente su ayuno
+    //     (Caso 2 preexistente, SPEC-95/96) — solo si es reciente (≤24h).
+    //   - `firstMealLoggedToday`: el usuario registró comida de verdad.
+    // Si ambos existen (caso común: cierra ayuno y come poco después),
+    // gana el MÁS TEMPRANO — la ventana "abrió" en cuanto ocurrió la
+    // primera señal real, sin importar cuál fue. Esto preserva el
+    // comportamiento ya testeado de SPEC-95/96 en el flujo normal
+    // (interval.startTime suele preceder al primer registro de comida)
+    // y sólo cambia el resultado cuando `firstMealLoggedToday` es la
+    // única señal disponible o la más temprana.
+    final DateTime? intervalCandidate =
+        (lastInterval != null && !lastInterval.isFasting)
+            ? (now.difference(lastInterval.startTime).inHours.abs() <= 24
+                ? lastInterval.startTime
+                : null)
+            : null;
+
+    final DateTime windowStart;
+    final bool isProjected;
+    if (intervalCandidate != null && firstMealLoggedToday != null) {
+      windowStart = intervalCandidate.isBefore(firstMealLoggedToday)
+          ? intervalCandidate
+          : firstMealLoggedToday;
+      isProjected = false;
+    } else if (firstMealLoggedToday != null) {
+      windowStart = firstMealLoggedToday;
+      isProjected = false;
+    } else if (intervalCandidate != null) {
+      windowStart = intervalCandidate;
+      isProjected = false;
+    } else {
+      // Caso 3: sin historial de ningún tipo — fallback al firstMealGoal
+      // configurado o al óptimo del protocolo. `isProjected = true`:
+      // este `windowStart` es una meta teórica, no un evento que
+      // ocurrió. Ver doc de `isProjected` en la clase.
+      windowStart = _fallbackWindowStart(user, now);
+      isProjected = true;
+    }
+
+    final DateTime windowEnd = windowStart.add(Duration(hours: hours));
+
+    final EatingWindowStatus status;
+    final double progress;
+    if (now.isBefore(windowStart)) {
+      status = EatingWindowStatus.beforeWindow;
+      progress = 0.0;
+    } else if (now.isAfter(windowEnd)) {
+      status = EatingWindowStatus.afterWindow;
+      progress = 1.0;
+    } else {
+      status = EatingWindowStatus.withinWindow;
+      final totalSec = windowEnd.difference(windowStart).inSeconds;
+      final elapsedSec = now.difference(windowStart).inSeconds;
+      progress = totalSec > 0 ? (elapsedSec / totalSec).clamp(0.0, 1.0) : 0.0;
+    }
+
+    return EatingWindowState(
+      windowStart: windowStart,
+      windowEnd: windowEnd,
+      windowDurationHours: hours,
+      now: now,
+      status: status,
+      progressPercent: progress,
+      isProjected: isProjected,
+    );
+  }
+
+  /// Mapea el protocolo de ayuno a horas de ventana de comida.
+  ///   16:8 → 8     18:6 → 6     20:4 → 4     Ninguno/default → 14
+  static int _windowHoursForProtocol(String protocol) {
+    if (protocol.contains(':')) {
+      final parts = protocol.split(':');
+      if (parts.length == 2) {
+        final windowPart = int.tryParse(parts[1]);
+        if (windowPart != null && windowPart > 0) return windowPart;
+      }
+    }
+    // 14 = default sensible para adulto sano sin TRF. Cubre desayuno
+    // 08:00 a cena 22:00 cómodamente.
+    return 14;
+  }
+
+  /// Fallback cuando no hay un `lastInterval` confiable.
+  ///
+  /// SPEC-96: la fuente canónica es el `OptimalScheduleCalculator`
+  /// derivado del `fastingProtocol`. El `firstMealGoal` del perfil
+  /// solo se respeta si está dentro de la tolerancia ±60 min del
+  /// óptimo (el usuario tiene preferencia social pero coherente).
+  ///
+  /// Si el `firstMealGoal` está fuera de tolerancia, gana el óptimo
+  /// — la app empuja activamente hacia el comportamiento correcto.
+  /// Si no hay `firstMealGoal` configurado, también gana el óptimo.
+  static DateTime _fallbackWindowStart(UserModel user, DateTime now) {
+    final optimal = OptimalScheduleCalculator.forProtocol(user.fastingProtocol);
+    final DateTime? goal = user.profile.firstMealGoal;
+
+    if (goal == null) {
+      // Sin preferencia explícita → óptimo canónico.
+      return DateTime(now.year, now.month, now.day, optimal.windowStart.hour,
+          optimal.windowStart.minute);
+    }
+
+    // Verificar si la preferencia del usuario está dentro de tolerancia.
+    final int goalMinutes = goal.hour * 60 + goal.minute;
+    final int optimalMinutes =
+        optimal.windowStart.hour * 60 + optimal.windowStart.minute;
+    final int delta = (goalMinutes - optimalMinutes).abs();
+
+    if (delta <= OptimalScheduleCalculator.kToleranceMinutes) {
+      // Dentro de tolerancia → respetar preferencia del usuario.
+      return DateTime(now.year, now.month, now.day, goal.hour, goal.minute);
+    }
+
+    // Fuera de tolerancia → óptimo canónico.
+    return DateTime(now.year, now.month, now.day, optimal.windowStart.hour,
+        optimal.windowStart.minute);
+  }
+}

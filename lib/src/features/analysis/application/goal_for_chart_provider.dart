@@ -18,7 +18,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/features/analysis/domain/chart_metric.dart';
 // SPEC-168.5.2: el target del chart de Ayuno viene del protocolo
 // activo (fastingProvider.targetHours), no del goal del usuario.
-import 'package:elena_app/src/features/dashboard/application/fasting_notifier.dart'
+import 'package:elena_app/src/features/fasting/application/fasting_notifier.dart'
     show fastingProvider;
 import 'package:elena_app/src/features/goals/application/goal_notifier.dart';
 import 'package:elena_app/src/features/goals/domain/user_goal.dart';

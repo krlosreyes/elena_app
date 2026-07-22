@@ -22,7 +22,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elena_app/src/core/services/app_logger.dart';
-import 'package:elena_app/src/features/dashboard/data/sleep_repository_impl.dart';
+import 'package:elena_app/src/features/sleep/data/sleep_repository_impl.dart';
 import 'package:elena_app/src/features/exercise/data/exercise_repository_impl.dart';
 import 'package:elena_app/src/features/health_sync/application/health_import_service.dart';
 import 'package:elena_app/src/features/health_sync/application/samsung_health_service.dart';

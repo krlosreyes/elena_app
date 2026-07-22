@@ -8,8 +8,8 @@
 import 'package:flutter/material.dart';
 
 import 'package:elena_app/src/core/theme/app_theme.dart';
-import 'package:elena_app/src/features/dashboard/domain/fasting_benefits.dart';
-import 'package:elena_app/src/features/dashboard/domain/fasting_status.dart';
+import 'package:elena_app/src/features/fasting/domain/fasting_benefits.dart';
+import 'package:elena_app/src/features/fasting/domain/fasting_status.dart';
 
 class EarlyFastingEndDialog extends StatelessWidget {
   final Duration elapsed;

@@ -7,12 +7,12 @@
 ///   - Desincronización entre sleepProvider y globalSleepProvider.
 ///
 /// SPEC-209 elimina globalSleepProvider. Todo el código apunta a
-/// `sleepProvider` (lib/src/features/dashboard/application/sleep_notifier.dart)
+/// `sleepProvider` (lib/src/features/sleep/application/sleep_notifier.dart)
 /// que es la fuente de verdad única, correctamente invalidada en signOut().
 library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:elena_app/src/features/dashboard/application/sleep_notifier.dart';
+import 'package:elena_app/src/features/sleep/application/sleep_notifier.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Selectors derivados — todos leen de sleepProvider (fuente única)

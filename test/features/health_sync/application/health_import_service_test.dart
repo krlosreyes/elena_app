@@ -10,8 +10,8 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:elena_app/src/core/services/day_boundary_resolver.dart';
-import 'package:elena_app/src/features/dashboard/domain/sleep_log.dart';
-import 'package:elena_app/src/features/dashboard/domain/sleep_repository.dart';
+import 'package:elena_app/src/features/sleep/domain/sleep_log.dart';
+import 'package:elena_app/src/features/sleep/domain/sleep_repository.dart';
 import 'package:elena_app/src/features/health_sync/application/samsung_health_service.dart'
     as samsung_health;
 import 'package:elena_app/src/features/exercise/domain/exercise_log.dart';

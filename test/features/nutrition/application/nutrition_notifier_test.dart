@@ -12,7 +12,7 @@
 
 import 'dart:async';
 
-import 'package:elena_app/src/features/dashboard/application/fasting_notifier.dart';
+import 'package:elena_app/src/features/fasting/application/fasting_notifier.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
 import 'package:elena_app/src/features/nutrition/data/nutrition_repository_impl.dart';
 import 'package:elena_app/src/features/nutrition/domain/meal_interval_rules.dart';

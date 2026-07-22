@@ -1,7 +1,7 @@
 // SPEC-117: tests funcionales + golden del FastingHeroDisplay.
 
-import 'package:elena_app/src/features/dashboard/domain/eating_window_state.dart';
-import 'package:elena_app/src/features/dashboard/domain/fasting_status.dart';
+import 'package:elena_app/src/features/fasting/domain/eating_window_state.dart';
+import 'package:elena_app/src/features/fasting/domain/fasting_status.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/fasting_hero_display.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';

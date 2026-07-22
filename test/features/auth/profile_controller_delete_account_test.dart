@@ -190,6 +190,10 @@ class _FakeAuthRepository implements AuthRepository {
       throw UnimplementedError();
 
   @override
+  Future<int?> getTrialExpiresAtClaimMillis({bool forceRefresh = false}) =>
+      throw UnimplementedError();
+
+  @override
   Future<void> signOut() async {
     signOutCalled = true;
   }

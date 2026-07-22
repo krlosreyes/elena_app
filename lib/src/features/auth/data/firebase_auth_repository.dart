@@ -443,6 +443,27 @@ class FirebaseAuthRepository implements AuthRepository {
     );
   }
 
+  // FIRE-01 (21-jul): ver doc completa en auth_repository.dart. El
+  // `.timeout` usa la misma constante que el resto del archivo — esta
+  // llamada es una lectura de token (`getIdTokenResult`), del mismo orden
+  // de costo/latencia que las lecturas de doc que ya usan `_kDocTimeout`.
+  @override
+  Future<int?> getTrialExpiresAtClaimMillis({bool forceRefresh = false}) async {
+    final user = _auth.currentUser;
+    if (user == null) return null;
+    try {
+      final result =
+          await user.getIdTokenResult(forceRefresh).timeout(_kDocTimeout);
+      final claim = result.claims?['trialExpiresAt'];
+      if (claim is int) return claim;
+      if (claim is double) return claim.toInt();
+      return null;
+    } catch (_) {
+      // Best-effort: el caller cae al cálculo local (HWM) como respaldo.
+      return null;
+    }
+  }
+
   Exception _handleAuthException(FirebaseAuthException e) {
     switch (e.code) {
       case 'weak-password':

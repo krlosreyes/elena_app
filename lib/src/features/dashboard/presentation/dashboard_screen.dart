@@ -5,10 +5,10 @@ import 'package:elena_app/src/core/engine/imr_persistence_provider.dart';
 import 'package:elena_app/src/core/engine/metabolic_state_provider.dart';
 import 'package:elena_app/src/core/widgets/elena_header.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
-import 'package:elena_app/src/features/dashboard/application/eating_window_provider.dart';
-import 'package:elena_app/src/features/dashboard/application/fasting_notifier.dart';
-import 'package:elena_app/src/features/dashboard/application/sleep_notifier.dart';
-import 'package:elena_app/src/features/dashboard/application/hydration_notifier.dart';
+import 'package:elena_app/src/features/fasting/application/eating_window_provider.dart';
+import 'package:elena_app/src/features/fasting/application/fasting_notifier.dart';
+import 'package:elena_app/src/features/sleep/application/sleep_notifier.dart';
+import 'package:elena_app/src/features/hydration/application/hydration_notifier.dart';
 import 'package:elena_app/src/features/dashboard/domain/selected_pillar.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/circadian_clock.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/dashboard_bottom_nav.dart';
@@ -17,7 +17,6 @@ import 'package:elena_app/src/features/dashboard/presentation/widgets/dashboard_
 import 'package:elena_app/src/features/dashboard/presentation/widgets/dashboard_selected_pillar_card.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/imr_longitudinal_card.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/metabolic_alert_banner.dart';
-import 'package:elena_app/src/features/exercise/application/exercise_notifier.dart';
 import 'package:elena_app/src/features/engagement/presentation/widgets/engagement_banner.dart';
 import 'package:elena_app/src/features/adaptive/presentation/widgets/adaptive_suggestion_card.dart';
 import 'package:elena_app/src/features/billing/presentation/paywall_auto_trigger.dart';
@@ -127,9 +126,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final userAsync = ref.watch(currentUserStreamProvider);
     final fastingState = ref.watch(fastingProvider);
     final sleepState = ref.watch(sleepProvider);
-    final hydrationState = ref.watch(hydrationProvider);
-    final exerciseState = ref.watch(exerciseProvider);
-    final nutritionState = ref.watch(nutritionProvider);
+    // STATE-01 (auditoría técnica 21-jul): hydrationState/exerciseState/
+    // nutritionState se watcheaban acá solo para pasarlos por
+    // constructor a DashboardPillarsRow/DashboardSelectedPillarCard.
+    // Esos dos widgets ahora leen su propio provider internamente
+    // (ver sus archivos), así que este build ya no los necesita — cada
+    // cambio en hidratación/ejercicio/comidas dejó de reconstruir todo
+    // DashboardScreen.
 
     // SPEC-52 + SPEC-115: el IMR sigue siendo la métrica central de
     // Análisis. En "Hoy" mantenemos el watch como side-effect (el
@@ -426,11 +429,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   // El card separado anterior se eliminó por redundancia
                   // visual con los anillos de cada pilar.
                   DashboardPillarsRow(
-                    fastingState: fastingState,
-                    sleep: sleepState,
-                    hydration: hydrationState,
-                    exercise: exerciseState,
-                    nutrition: nutritionState,
                     selectedPillar: _selectedPillar,
                     onSelectPillar: (p) => setState(() => _selectedPillar = p),
                   ),
@@ -443,11 +441,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   // Cambia dinámicamente al tocar un anillo de la fila "PILARES HOY".
                   DashboardSelectedPillarCard(
                     selectedPillar: _selectedPillar,
-                    fastingState: fastingState,
-                    sleep: sleepState,
-                    hydration: hydrationState,
-                    exercise: exerciseState,
-                    nutrition: nutritionState,
                     onSelectPillar: (p) {
                       if (mounted) {
                         setState(() => _selectedPillar = p);

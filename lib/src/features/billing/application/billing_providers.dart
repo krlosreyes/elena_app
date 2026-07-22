@@ -53,6 +53,30 @@ final isPremiumProvider = Provider<bool>((ref) {
 
 // ─── Trial (SPEC-240) ────────────────────────────────────────────────────────
 
+/// FIRE-01 (P1, auditoría técnica 21-jul): lee el custom claim
+/// `trialExpiresAt` del ID token del usuario autenticado (ver doc
+/// completa en `auth_repository.dart` y `functions/src/index.ts`).
+///
+/// Se pide con `forceRefresh: true` porque, justo después del signup, el
+/// primer token del cliente puede no incluir el claim todavía (el
+/// trigger `onUserCreated` corre server-side, en paralelo, no antes del
+/// primer token) — sin forzar el refresh, un usuario nuevo podría no ver
+/// nunca el claim hasta su próximo login natural.
+///
+/// Solo se dispara cuando hay un uid (evita tocar el repository — y por
+/// lo tanto Firebase — mientras auth sigue cargando o no hay sesión, el
+/// mismo criterio de corte que ya usa `trialDaysRemainingProvider`).
+/// Si falla o el claim no existe, resuelve a `null` — el provider de
+/// abajo cae al cálculo local (HWM) sin cambiar el comportamiento previo
+/// a este fix.
+final trialExpiresAtClaimProvider = FutureProvider<int?>((ref) async {
+  final uid = ref.watch(authStateProvider).valueOrNull?.uid;
+  if (uid == null) return null;
+  return ref.read(authRepositoryProvider).getTrialExpiresAtClaimMillis(
+        forceRefresh: true,
+      );
+});
+
 /// Días restantes del trial. 0 si el trial venció.
 /// Si auth aún carga → 0 (sin parpadeo de banner).
 /// Si auth cargó pero createdAt es null (metadata ausente) → asumimos usuario
@@ -61,7 +85,22 @@ final trialDaysRemainingProvider = Provider<int>((ref) {
   final authAsync = ref.watch(authStateProvider);
   // Mientras carga, no mostramos el banner (evita parpadeo).
   if (!authAsync.hasValue) return 0;
-  final createdAt = authAsync.valueOrNull?.createdAt;
+
+  // FIRE-01: si el claim server-side ya está disponible, se usa como
+  // fuente de la fecha de creación real en vez de `AppAccount.createdAt`
+  // (metadata local de Firebase Auth, vulnerable a reinstalar la app —
+  // ver nota en billing_providers.dart de la auditoría del 11-jul). El
+  // resto de la fórmula (elapsed/remaining) queda IDÉNTICO al cálculo
+  // previo: solo cambia de qué timestamp de "creación" parte, no cómo se
+  // calculan los días restantes. Mientras el claim carga o no existe
+  // (`valueOrNull` es null en loading/error/ausente), se preserva el
+  // comportamiento exacto de antes de este fix.
+  final claimMillis = ref.watch(trialExpiresAtClaimProvider).valueOrNull;
+  final createdAt = claimMillis != null
+      ? DateTime.fromMillisecondsSinceEpoch(claimMillis)
+          .subtract(const Duration(days: kTrialDurationDays))
+      : authAsync.valueOrNull?.createdAt;
+
   // createdAt puede ser null si Firebase no populó metadata.creationTime
   // (ocurre en cuentas recién creadas en algunos builds). Asumimos trial
   // completo: el peor caso es darle 14 días a alguien que ya tiene cuenta
@@ -93,14 +132,18 @@ final trialDaysRemainingProvider = Provider<int>((ref) {
 /// `functions/src/index.ts` exporta `onUserCreated` (auth.user().onCreate),
 /// que al registrar la cuenta fija `trialExpiresAt` (createdAt + 14 días,
 /// calculado en el servidor) como custom claim del usuario, inmune a
-/// manipulación del reloj del dispositivo. PENDIENTE conectar este archivo
-/// a ese claim: no se hizo en esta pasada porque `cloud_functions` no está
-/// en pubspec.yaml y no se pudo compilar/validar en este sandbox el flujo
-/// de lectura (`FirebaseAuth.instance.currentUser.getIdTokenResult()`,
-/// incluyendo el caso de carrera "claim aún no propagado al token recién
-/// emitido" y el fallback para cuentas creadas antes de este trigger). El
-/// HWM de abajo sigue siendo la única protección activa hasta que se
-/// complete ese wiring.
+/// manipulación del reloj del dispositivo.
+///
+/// ACTUALIZACIÓN (FIRE-01, 21-jul): ya está conectado. `AuthRepository`
+/// gana `getTrialExpiresAtClaimMillis()` (implementado con
+/// `User.getIdTokenResult()` de `firebase_auth`, ya en pubspec.yaml —
+/// NO se necesitó agregar el paquete `cloud_functions`, la lectura del
+/// claim no pasa por una Cloud Function callable, solo por el token ya
+/// emitido). Ver `trialExpiresAtClaimProvider` arriba: hace
+/// `forceRefresh: true` para cubrir el caso de carrera del signup, y
+/// `trialDaysRemainingProvider` lo usa como fuente de `createdAt` cuando
+/// está disponible. El HWM de abajo sigue activo como respaldo mientras
+/// el claim no exista (cuentas viejas) o la lectura falle (sin red).
 const _trialClockHwmKey = 'trial_clock_hwm_millis';
 
 DateTime _trialClockNow(Ref ref) {

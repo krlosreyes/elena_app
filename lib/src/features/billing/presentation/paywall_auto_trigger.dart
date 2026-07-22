@@ -16,7 +16,7 @@ import 'package:elena_app/src/features/billing/application/paywall_nudges.dart';
 import 'package:elena_app/src/features/billing/application/paywall_prompt_store.dart';
 import 'package:elena_app/src/features/billing/application/paywall_trigger.dart';
 import 'package:elena_app/src/features/billing/presentation/paywall_screen.dart';
-import 'package:elena_app/src/features/dashboard/application/fasting_history_provider.dart';
+import 'package:elena_app/src/features/fasting/application/fasting_history_provider.dart';
 import 'package:elena_app/src/features/onboarding/application/app_tour_notifier.dart';
 
 class PaywallAutoTrigger extends ConsumerStatefulWidget {

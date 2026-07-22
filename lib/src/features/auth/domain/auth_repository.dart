@@ -64,4 +64,23 @@ abstract class AuthRepository {
   Future<void> setPassword(String newPassword);
 
   Future<void> deleteAccount();
+
+  /// FIRE-01 (auditoría técnica 21-jul): lee el custom claim
+  /// `trialExpiresAt` (epoch millis) fijado server-side por la Cloud
+  /// Function `onUserCreated` (SEC-02) — inmune a que el usuario atrase
+  /// el reloj del dispositivo o reinstale la app (lo que sí borra el
+  /// high-water-mark local que usa `billing_providers.dart` como único
+  /// mecanismo hasta este fix).
+  ///
+  /// Devuelve `null` si no hay usuario autenticado, si el claim todavía
+  /// no existe (cuentas creadas antes de este trigger, o el token recién
+  /// emitido en el signup que aún no lo incluye — ver nota en
+  /// `functions/src/index.ts`), o si la lectura falla. El caller debe
+  /// tratar `null` como "usar el cálculo local de respaldo", nunca como
+  /// "trial vencido".
+  ///
+  /// `forceRefresh: true` fuerza a pedir un token nuevo al servidor en
+  /// vez de reusar el cacheado — necesario justo después del signup,
+  /// donde el primer token emitido puede no incluir el claim todavía.
+  Future<int?> getTrialExpiresAtClaimMillis({bool forceRefresh = false});
 }

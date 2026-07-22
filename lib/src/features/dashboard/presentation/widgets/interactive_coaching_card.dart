@@ -15,8 +15,8 @@ import 'package:elena_app/src/features/coaching/application/interactive_prompt_o
 import 'package:elena_app/src/features/coaching/application/interactive_prompt_provider.dart';
 import 'package:elena_app/src/features/coaching/domain/actionable_prompt.dart';
 import 'package:elena_app/src/features/coaching/presentation/sleep_routine_screen.dart';
-import 'package:elena_app/src/features/dashboard/application/fasting_notifier.dart';
-import 'package:elena_app/src/features/dashboard/application/hydration_notifier.dart';
+import 'package:elena_app/src/features/fasting/application/fasting_notifier.dart';
+import 'package:elena_app/src/features/hydration/application/hydration_notifier.dart';
 import 'package:elena_app/src/features/exercise/application/exercise_notifier.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
 

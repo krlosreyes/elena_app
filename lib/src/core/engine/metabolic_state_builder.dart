@@ -3,10 +3,10 @@ import 'dart:math' as math;
 import 'package:elena_app/src/core/engine/coherence_engine.dart';
 import 'package:elena_app/src/core/engine/metabolic_state.dart';
 import 'package:elena_app/src/core/rules/circadian_rules.dart';
-import 'package:elena_app/src/features/dashboard/application/hydration_notifier.dart';
-import 'package:elena_app/src/features/dashboard/domain/fasting_status.dart';
-import 'package:elena_app/src/features/dashboard/domain/sleep_log.dart';
-import 'package:elena_app/src/features/dashboard/domain/sleep_quality_calculator.dart';
+import 'package:elena_app/src/features/hydration/application/hydration_notifier.dart';
+import 'package:elena_app/src/features/fasting/domain/fasting_status.dart';
+import 'package:elena_app/src/features/sleep/domain/sleep_log.dart';
+import 'package:elena_app/src/features/sleep/domain/sleep_quality_calculator.dart';
 import 'package:elena_app/src/features/exercise/application/exercise_state.dart';
 // Propuesta módulo Ejercicio (2026-07-21) Fase 4: cierra el gap ya
 // detectado en la auditoría previa — `ExerciseLoadCalculator` (SPEC-68,

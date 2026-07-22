@@ -15,7 +15,7 @@ import 'package:elena_app/src/features/coaching/application/predictive_trigger_e
 import 'package:elena_app/src/features/coaching/data/check_in_repository.dart';
 import 'package:elena_app/src/features/coaching/domain/actionable_prompt.dart';
 import 'package:elena_app/src/features/coaching/domain/fasting_check_in.dart';
-import 'package:elena_app/src/features/dashboard/application/fasting_notifier.dart';
+import 'package:elena_app/src/features/fasting/application/fasting_notifier.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────

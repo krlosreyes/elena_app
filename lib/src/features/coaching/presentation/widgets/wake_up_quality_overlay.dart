@@ -11,7 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elena_app/src/core/services/analytics_service.dart';
-import 'package:elena_app/src/features/dashboard/application/sleep_notifier.dart';
+import 'package:elena_app/src/features/sleep/application/sleep_notifier.dart';
 
 class WakeUpQualityOverlay extends ConsumerStatefulWidget {
   const WakeUpQualityOverlay({super.key});

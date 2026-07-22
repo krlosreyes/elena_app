@@ -14,8 +14,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
-import 'package:elena_app/src/features/dashboard/application/sleep_notifier.dart';
-import 'package:elena_app/src/features/dashboard/domain/sleep_log.dart';
+import 'package:elena_app/src/features/sleep/application/sleep_notifier.dart';
+import 'package:elena_app/src/features/sleep/domain/sleep_log.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 
 class SleepInputSheet extends ConsumerStatefulWidget {

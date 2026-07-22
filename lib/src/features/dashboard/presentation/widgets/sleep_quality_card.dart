@@ -7,9 +7,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elena_app/src/core/theme/app_theme.dart';
-import 'package:elena_app/src/features/dashboard/application/last_week_sleep_logs_provider.dart';
-import 'package:elena_app/src/features/dashboard/domain/sleep_log.dart';
-import 'package:elena_app/src/features/dashboard/domain/sleep_weekly_insight.dart';
+import 'package:elena_app/src/features/sleep/application/last_week_sleep_logs_provider.dart';
+import 'package:elena_app/src/features/sleep/domain/sleep_log.dart';
+import 'package:elena_app/src/features/sleep/domain/sleep_weekly_insight.dart';
 
 /// Color base del pilar Sueño en la app — coherente con
 /// `WeeklyCoachingCard` y `PillarsHeatmap` legacy (purple-indigo).

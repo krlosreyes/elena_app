@@ -7,8 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elena_app/src/core/theme/app_theme.dart';
-import 'package:elena_app/src/features/dashboard/application/last_week_hydration_provider.dart';
-import 'package:elena_app/src/features/dashboard/domain/hydration_weekly_insight.dart';
+import 'package:elena_app/src/features/hydration/application/last_week_hydration_provider.dart';
+import 'package:elena_app/src/features/hydration/domain/hydration_weekly_insight.dart';
 
 const Color _kHydrationAccent = Color(0xFF38BDF8);
 

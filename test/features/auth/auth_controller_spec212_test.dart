@@ -7,7 +7,7 @@
 // que registra qué providers se invalidaron. No requiere Firebase.
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:elena_app/src/features/dashboard/application/fasting_notifier.dart';
+import 'package:elena_app/src/features/fasting/application/fasting_notifier.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart';
 import 'package:elena_app/src/features/progress/application/progress_notifier.dart';
 
