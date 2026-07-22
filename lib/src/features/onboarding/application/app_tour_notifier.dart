@@ -231,14 +231,24 @@ class AppTourNotifier extends StateNotifier<AppTourState> {
     if (key == null) return false; // sin sesión aún — no hay uid para namespacing
     final prefs = _ref.read(sharedPreferencesProvider);
 
-    // Compat hacia atrás: usuarios que ya vieron el tour bajo la clave
-    // global legacy ('appTourDone') no deben volver a verlo solo porque
-    // ahora namespaceamos por uid. Se migra una sola vez.
-    if (!prefs.containsKey(key) && (prefs.getBool('appTourDone') ?? false)) {
-      await prefs.setBool(key, true);
-      return false;
-    }
-
+    // REGRESIÓN DE P0-2 encontrada y corregida en la auditoría en vivo del
+    // 22-jul: el shim de "compat hacia atrás" que vivía acá asumía que si
+    // la clave global legacy ('appTourDone', sin namespacing por uid) era
+    // `true`, entonces ESTA cuenta ya había visto el tour, y migraba sin
+    // activarlo. Ese supuesto es falso en cualquier dispositivo/simulador
+    // que haya corrido una cuenta ANTERIOR (la que puso el flag legacy en
+    // `true`) — exactamente el escenario multi-cuenta que P0-2 vino a
+    // arreglar. Resultado en producción: toda cuenta NUEVA creada en un
+    // dispositivo con historial heredaba `done=true` sin haber visto nunca
+    // el tour, silenciosamente. Confirmado en vivo: cuenta de prueba fresca
+    // ("Claude", 22-jul) nunca vio el tour pese a que P0-2 estaba
+    // implementado y el trigger en DashboardScreen.initState corría bien.
+    //
+    // Se elimina la migración. El costo de sacarla es bajo (un usuario que
+    // de verdad completó el tour bajo el esquema global viejo podría verlo
+    // una vez más); el costo de mantenerla era alto (ninguna cuenta nueva
+    // en un dispositivo compartido lo ve jamás). La clave global legacy ya
+    // no se lee en ningún lado de este archivo.
     final done = prefs.getBool(key) ?? false;
     if (done) return false;
     state = const AppTourState(isActive: true, stepIndex: 0);

@@ -200,6 +200,20 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final TextEditingController _injuryNotesController = TextEditingController();
   BodyCompositionGoal _bodyCompositionGoal = BodyCompositionGoal.recomposition;
 
+  /// Auditoría en vivo (22-jul): a diferencia de Goals (que no persiste
+  /// nada si el usuario nunca inicializó ese paso — ver
+  /// `OnboardingGoalsController.persist()`), `_persistExerciseProfile()`
+  /// guardaba SIEMPRE `_buildExerciseProfileFromState()`, aunque el
+  /// usuario nunca hubiera visto las 3 pantallas de Ejercicio — quedaban
+  /// indistinguibles de una elección real (mismo problema que
+  /// `ExerciseProfile.isInitial` ya intentaba resolver, pero
+  /// `_buildExerciseProfileFromState()` siempre estampa
+  /// `updatedAt: DateTime.now()`, así que ese getter nunca da `true` acá).
+  /// Este flag se enciende con la primera interacción real del usuario
+  /// con cualquier chip/campo de las 3 pantallas — `_persistExerciseProfile`
+  /// se salta el guardado si sigue en `false`, igual que Goals.
+  bool _exerciseProfileTouched = false;
+
   final List<String> _pathologyOptions = [
     "Ninguna",
     "Prediabetes",
@@ -1120,6 +1134,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           TextField(
             controller: _injuryNotesController,
             maxLines: 2,
+            onChanged: (_) => _exerciseProfileTouched = true,
             style: TextStyle(color: isDark ? Colors.white : Colors.black87),
             decoration: InputDecoration(
               hintText: 'Detalle opcional (ej: "hernia L4-L5 diagnosticada")',
@@ -1157,7 +1172,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           .map((o) => _onboardingChip(
                 label: labelOf(o),
                 selected: isSelected(o),
-                onTap: () => onTap(o),
+                onTap: () {
+                  // Auditoría 22-jul: único choke point de las 6 selecciones
+                  // de Ejercicio — ver nota en `_exerciseProfileTouched`.
+                  _exerciseProfileTouched = true;
+                  onTap(o);
+                },
                 isDark: isDark,
               ))
           .toList(),
@@ -1238,8 +1258,20 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   /// `_persistGoalDrafts`: un fallo aquí no debe bloquear el cierre del
   /// onboarding — el usuario puede completar/editar su perfil de
   /// ejercicio después desde Perfil.
+  ///
+  /// Auditoría en vivo (22-jul): guard agregado para que este método
+  /// tenga la MISMA semántica que `OnboardingGoalsController.persist()`
+  /// (que no escribe nada si `drafts` nunca se inicializó). Antes se
+  /// guardaba siempre, aunque el usuario jamás hubiera visto las 3
+  /// pantallas de Ejercicio — dejando defaults de clase (`Sedentario`,
+  /// `Ninguna`, `Solo peso corporal`, etc.) indistinguibles de una
+  /// elección real. Confirmado en producción: una cuenta de prueba cuyo
+  /// onboarding saltó esas 3 pantallas terminó con
+  /// `exerciseMinutesPerDay: 20` en Firestore como si el usuario lo
+  /// hubiera elegido.
   Future<void> _persistExerciseProfile(String userId) async {
     if (userId.isEmpty) return;
+    if (!_exerciseProfileTouched) return;
     await ref
         .read(exerciseProfileRepositoryProvider)
         .save(userId, _buildExerciseProfileFromState());
