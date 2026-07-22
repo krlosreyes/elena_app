@@ -5,8 +5,6 @@
 //
 // Rango: abre en Semana. Al salir restaura m1 para la pantalla Progreso.
 
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -71,213 +69,175 @@ class _DailyScoreDetailScreenState
     // Spinner mientras el stream de ciclos no haya emitido aún.
     final seriesAsync = ref.watch(closedCycleScoreSeriesProvider);
     final showSpinner = seriesAsync.isLoading && series.points.isEmpty;
-    // SPEC-197: detalle Score del Día solo Premium.
+    // SPEC-197: detalle Score del Día.
+    //
+    // UX-PROGRESO (auditoría técnica 21-jul, P1): antes esto bloqueaba
+    // TODO el detalle con un blur, incluso el gráfico de 7 días. Ahora
+    // Free siempre ve la semana (rango w1, default al abrir esta
+    // pantalla); el histórico más largo (`SegmentedRangeControl.locked`)
+    // y la sección de Tendencia siguen requiriendo Premium/Trial.
     final isPremium = ref.watch(featureGateProvider).hasFullAccess;
 
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
-      body: Stack(
-        children: [
-          SafeArea(
-            child: SingleChildScrollView(
-              controller: _scroll,
-              physics: isPremium ? null : const NeverScrollableScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: InkResponse(
-                      onTap: () => context.pop(),
-                      radius: 22,
-                      child: Padding(
-                        padding: const EdgeInsets.all(4),
-                        child: Icon(
-                          Icons.arrow_back_ios_new_rounded,
-                          color: Colors.white.withValues(alpha: 0.85),
-                          size: 22,
-                        ),
-                      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          controller: _scroll,
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Align(
+                alignment: Alignment.centerLeft,
+                child: InkResponse(
+                  onTap: () => context.pop(),
+                  radius: 22,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4),
+                    child: Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      color: Colors.white.withValues(alpha: 0.85),
+                      size: 22,
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'Score del día',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 28,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.4,
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  const SegmentedRangeControl(),
-                  const SizedBox(height: 24),
-                  if (showSpinner)
-                    const Center(
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(vertical: 60),
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    )
-                  else ...[
-                    BarChartCard(
-                      series: series,
-                      accent: AppColors.metabolicGreen,
-                      periodLabel: range.periodLabel,
-                      headline: 'Score al cierre de cada día metabólico.',
-                      aggregationMode: mode,
-                      heroAggregation: HeroAggregation.avg,
-                      heroUnit: '',
-                      targetValue: 100,
-                      targetLabel: 'Meta 100',
-                      deltaIsBetterIf: 'up',
-                    ),
-                    const SizedBox(height: 24),
-                    _buildTrendSection(series, mode),
-                  ],
-                  const SizedBox(height: 12),
-                  Padding(
-                    padding: const EdgeInsets.only(left: 2),
-                    child: Text(
-                      'Tu puntaje refleja cómo viviste cada día metabólico al '
-                      'momento de cerrarlo — llega a 100 cuando cumples los 5 '
-                      'pilares. Es distinto del IMR, que mide tu estado '
-                      'metabólico de fondo y se mueve en semanas.',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.55),
-                        fontSize: 13,
-                        height: 1.4,
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
+              const SizedBox(height: 12),
+              const Text(
+                'Score del día',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 28,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.4,
+                ),
+              ),
+              const SizedBox(height: 18),
+              SegmentedRangeControl(
+                locked: !isPremium,
+                onLockedTap: () => openPaywall(
+                  context, ref,
+                  feature: GatedFeature.analyticsHistory,
+                ),
+              ),
+              const SizedBox(height: 24),
+              if (showSpinner)
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 60),
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                )
+              else ...[
+                // UX-PROGRESO: el chart de la semana (w1) es siempre
+                // visible, Free incluido.
+                BarChartCard(
+                  series: series,
+                  accent: AppColors.metabolicGreen,
+                  periodLabel: range.periodLabel,
+                  headline: 'Score al cierre de cada día metabólico.',
+                  aggregationMode: mode,
+                  heroAggregation: HeroAggregation.avg,
+                  heroUnit: '',
+                  targetValue: 100,
+                  targetLabel: 'Meta 100',
+                  deltaIsBetterIf: 'up',
+                ),
+                const SizedBox(height: 24),
+                if (isPremium)
+                  _buildTrendSection(series, mode)
+                else
+                  _buildHistoryUpsellCard(context),
+              ],
+              const SizedBox(height: 12),
+              Padding(
+                padding: const EdgeInsets.only(left: 2),
+                child: Text(
+                  'Tu puntaje refleja cómo viviste cada día metabólico al '
+                  'momento de cerrarlo — llega a 100 cuando cumples los 5 '
+                  'pilares. Es distinto del IMR, que mide tu estado '
+                  'metabólico de fondo y se mueve en semanas.',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.55),
+                    fontSize: 13,
+                    height: 1.4,
+                  ),
+                ),
+              ),
+            ],
           ),
-          // SPEC-197 soft gate: blur overlay para usuarios Free.
-          if (!isPremium) _buildPremiumGateOverlay(context),
-        ],
+        ),
       ),
     );
   }
 
-  /// Overlay de blur + CTA premium con su propio botón ←.
-  Widget _buildPremiumGateOverlay(BuildContext context) {
-    return Positioned.fill(
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () {},
-        child: ClipRect(
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 12.0, sigmaY: 12.0),
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  stops: const [0.0, 0.50],
-                  colors: [
-                    Colors.black.withValues(alpha: 0.10),
-                    AppColors.backgroundDark.withValues(alpha: 0.92),
-                  ],
+  /// UX-PROGRESO (21-jul, P1): reemplaza al antiguo blur de página
+  /// completa (`_buildPremiumGateOverlay`). Se muestra una sola vez,
+  /// debajo del chart de 7 días.
+  Widget _buildHistoryUpsellCard(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: const Color(0xFF111827),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.lock_outline_rounded,
+                size: 16,
+                color: AppColors.metabolicGreen.withValues(alpha: 0.85),
+              ),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  'Tendencia y análisis de evolución',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
-              child: SafeArea(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    InkResponse(
-                      onTap: () => context.pop(),
-                      radius: 22,
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                        child: Icon(
-                          Icons.arrow_back_ios_new_rounded,
-                          color: Colors.white.withValues(alpha: 0.85),
-                          size: 22,
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: Center(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 32),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                width: 68,
-                                height: 68,
-                                decoration: BoxDecoration(
-                                  color: AppColors.metabolicGreen
-                                      .withValues(alpha: 0.14),
-                                  borderRadius: BorderRadius.circular(22),
-                                ),
-                                child: const Icon(
-                                  Icons.lock_rounded,
-                                  color: AppColors.metabolicGreen,
-                                  size: 30,
-                                ),
-                              ),
-                              const SizedBox(height: 20),
-                              const Text(
-                                'Detalle Score del Día',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              Text(
-                                'Gráficas detalladas, tendencias y análisis de evolución disponibles con Elena Premium.',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.65),
-                                  fontSize: 14,
-                                  height: 1.55,
-                                ),
-                              ),
-                              const SizedBox(height: 28),
-                              SizedBox(
-                                width: double.infinity,
-                                child: FilledButton(
-                                  onPressed: () => openPaywall(
-                                    context, ref,
-                                    feature: GatedFeature.analyticsHistory,
-                                  ),
-                                  style: FilledButton.styleFrom(
-                                    backgroundColor: AppColors.metabolicGreen,
-                                    foregroundColor: Colors.black,
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 16),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(14),
-                                    ),
-                                  ),
-                                  child: const Text(
-                                    'Desbloquear Premium',
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w900,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Ya ves tu semana. Con Premium desbloqueas meses de histórico '
+            'y comparativas de corto vs. largo plazo de tu Score del Día.',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.6),
+              fontSize: 13,
+              height: 1.45,
+            ),
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.metabolicGreen,
+                foregroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
+              ),
+              onPressed: () => openPaywall(
+                context, ref,
+                feature: GatedFeature.analyticsHistory,
+              ),
+              child: const Text(
+                'Desbloquear Premium',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900),
               ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }

@@ -180,63 +180,66 @@ class _HealthSyncCardState extends ConsumerState<HealthSyncCard>
     if (perm is HealthConnectNotInstalled) return _buildInstallButton();
     if (perm is HealthPermissionDenied) return _buildConnectButton();
 
-    // Granted (o Partial) — verificar si el usuario puede sincronizar.
-    final isPremium = ref.watch(featureGateProvider).hasFullAccess;
-    if (!isPremium) return _buildPremiumNeededBanner(context);
-
-    // Solo Premium llega aquí — mostrar última sync + botón manual.
-    return _buildSyncStatusAndButton(state);
+    // UX-SYNC (auditoría técnica 21-jul, P1): Granted (o Partial) ya NO
+    // bloquea a Free por completo. Antes, un usuario Free que ya había
+    // conectado Apple Health/Health Connect solo veía un banner de
+    // upsell y perdía el botón "Sincronizar ahora" — forzándolo a
+    // registrar los 5 pilares 100% manual, la mayor fricción diaria
+    // identificada en la auditoría. Ahora todos ven el estado real +
+    // el botón manual; solo el sync EN SEGUNDO PLANO (automático al
+    // volver a la app / listener nativo, ver `app.dart` y
+    // `FeatureGate.autoSyncAllowed`) sigue siendo Premium/Trial.
+    final autoSyncEnabled = ref.watch(featureGateProvider).autoSyncAllowed;
+    return _buildSyncStatusAndButton(state, autoSyncEnabled: autoSyncEnabled);
   }
 
-  /// Banner para usuarios Free que ya conectaron Apple Health pero
-  /// no tienen sincronización automática disponible (SPEC-197).
-  Widget _buildPremiumNeededBanner(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(
-              Icons.lock_outline_rounded,
-              size: 14,
-              color: AppColors.metabolicGreen.withValues(alpha: 0.80),
-            ),
-            const SizedBox(width: 6),
-            Expanded(
-              child: Text(
-                'Sincronización automática disponible en Premium.',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.white.withValues(alpha: 0.65),
-                  height: 1.4,
-                ),
+  /// UX-SYNC (21-jul, P1): upsell chico (no bloqueante) para el sync
+  /// automático en segundo plano — reemplaza al antiguo
+  /// `_buildPremiumNeededBanner`, que bloqueaba TODO el card. Se
+  /// muestra debajo del botón "Sincronizar ahora", que Free ya puede
+  /// usar libremente.
+  Widget _buildAutoSyncUpsell() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Row(
+        children: [
+          Icon(
+            Icons.lock_outline_rounded,
+            size: 13,
+            color: AppColors.metabolicGreen.withValues(alpha: 0.75),
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              'Sync automático en segundo plano: Premium.',
+              style: TextStyle(
+                fontSize: 11.5,
+                color: Colors.white.withValues(alpha: 0.5),
               ),
             ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        SizedBox(
-          width: double.infinity,
-          child: FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.metabolicGreen,
-              foregroundColor: Colors.black,
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
             onPressed: () => openPaywall(
               context, ref,
               feature: GatedFeature.autoSync,
             ),
-            child: const Text(
-              'Desbloquear sincronización',
-              style: TextStyle(fontWeight: FontWeight.w600),
+            child: Text(
+              'Ver Premium',
+              style: TextStyle(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w700,
+                color: AppColors.metabolicGreen,
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -291,7 +294,10 @@ class _HealthSyncCardState extends ConsumerState<HealthSyncCard>
     );
   }
 
-  Widget _buildSyncStatusAndButton(HealthAutoSyncState state) {
+  Widget _buildSyncStatusAndButton(
+    HealthAutoSyncState state, {
+    required bool autoSyncEnabled,
+  }) {
     final isRunning = state.isRunning;
     final lastRun = state.lastRunAt;
     final lastResult = state.lastResult;
@@ -335,6 +341,9 @@ class _HealthSyncCardState extends ConsumerState<HealthSyncCard>
           const SizedBox(height: 12),
           _buildSyncNowButton(isRunning),
         ],
+        // UX-SYNC (21-jul, P1): Free ya usó el botón manual de arriba
+        // libremente — este upsell solo ofrece el salto a automático.
+        if (!autoSyncEnabled) _buildAutoSyncUpsell(),
       ],
     );
   }

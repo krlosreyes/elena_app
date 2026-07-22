@@ -21,6 +21,17 @@ void main() {
       expect(g.coachingActionAllowed(1), false); // la segunda se bloquea
     });
 
+    test(
+        'UX-SYNC (21-jul, P1): manualSyncAllowed siempre true, incluso Free '
+        '— solo el sync EN SEGUNDO PLANO (autoSyncAllowed) se gatea', () {
+      const free = FeatureGate(isPremium: false, isInTrial: false);
+      const premium = FeatureGate(isPremium: true, isInTrial: false);
+      expect(free.manualSyncAllowed, true);
+      expect(free.autoSyncAllowed, false);
+      expect(premium.manualSyncAllowed, true);
+      expect(premium.autoSyncAllowed, true);
+    });
+
     test('Premium: todo permitido, coaching ilimitado', () {
       const g = FeatureGate(isPremium: true, isInTrial: false);
       expect(g.cycleFeedbackAllowed, true);

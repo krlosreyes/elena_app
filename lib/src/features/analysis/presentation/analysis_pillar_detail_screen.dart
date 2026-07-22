@@ -15,6 +15,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/billing/application/billing_providers.dart';
+import 'package:elena_app/src/features/billing/presentation/paywall_launcher.dart';
 import 'package:elena_app/src/features/analysis/application/analysis_range_provider.dart';
 import 'package:elena_app/src/features/analysis/application/historic_summaries_provider.dart';
 import 'package:elena_app/src/features/analysis/domain/analysis_range.dart';
@@ -28,7 +29,6 @@ import 'package:elena_app/src/features/analysis/domain/aggregation_mode.dart';
 import 'package:elena_app/src/features/analysis/domain/chart_metric.dart';
 import 'package:elena_app/src/features/analysis/domain/hero_aggregation.dart';
 import 'package:elena_app/src/features/analysis/domain/metric_series.dart';
-import 'package:elena_app/src/features/analysis/presentation/widgets/analysis_premium_gate_overlay.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/pillar_analysis_feedback_sections.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/bar_chart_card.dart';
 // SPEC-168.4.3: widget completo de composición corporal con tabs.
@@ -87,76 +87,159 @@ class _AnalysisPillarDetailScreenState
     final range = ref.watch(analysisRangeProvider);
     final aggregationMode = AggregationMode.forRange(range);
     // SPEC-197 + SPEC-240: detalle de pilar — Premium o en Trial.
+    //
+    // UX-PROGRESO (auditoría técnica 21-jul, P1): antes esto bloqueaba
+    // el detalle COMPLETO con un blur — Free no veía ni el gráfico de
+    // 7 días. Ahora Free siempre ve el chart de la semana (rango w1,
+    // ya es el default al abrir esta pantalla); lo que sigue detrás
+    // del gate es el histórico más largo (mes/3M/6M/1A, ver
+    // `SegmentedRangeControl.locked`) y la sección de Tendencia +
+    // feedback por pilar, que necesitan ese histórico para decir algo
+    // real.
     final isPremium = ref.watch(featureGateProvider).hasFullAccess;
 
     return Scaffold(
       // SPEC-168.4.6: mismo fondo que Hoy/Perfil/Analisis (cards
       // mantienen su #0C0C0E).
       backgroundColor: AppColors.backgroundDark,
-      body: Stack(
-        children: [
-          SafeArea(
-            child: SingleChildScrollView(
-              controller: _scrollController,
-              physics: isPremium ? null : const NeverScrollableScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _buildHeader(context),
-                  const SizedBox(height: 24),
-                  const SegmentedRangeControl(),
-                  const SizedBox(height: 24),
-                  _buildChart(aggregationMode),
-                  // SPEC-168.4.1: debajo del chart principal aparece la
-                  // tendencia corta vs larga del mismo pilar. Si no hay
-                  // data suficiente, devuelve SizedBox.shrink.
-                  const SizedBox(height: 24),
-                  _buildTrendSection(aggregationMode),
-                  // IMR: card de feedback por pilar debajo de la tendencia.
-                  if (widget.metric == ChartMetric.imr) ...[
-                    const SizedBox(height: 24),
-                    const ImrPillarFeedbackSection(),
-                  ],
-                  // Ayuno: card de análisis de hábito debajo de la tendencia.
-                  if (widget.metric == ChartMetric.fastingHours) ...[
-                    const SizedBox(height: 24),
-                    const AyunoPillarFeedbackSection(),
-                  ],
-                  // Hidratación: card de análisis de hábito debajo de la tendencia.
-                  if (widget.metric == ChartMetric.hydrationLiters) ...[
-                    const SizedBox(height: 24),
-                    const HidratacionFeedbackSection(),
-                  ],
-                  // Ejercicio: card de análisis de hábito debajo de la tendencia.
-                  if (widget.metric == ChartMetric.exerciseMin) ...[
-                    const SizedBox(height: 24),
-                    const EjercicioFeedbackSection(),
-                  ],
-                  // Sueño: card de análisis de hábito debajo de la tendencia.
-                  if (widget.metric == ChartMetric.sleepHours) ...[
-                    const SizedBox(height: 24),
-                    const SuenoFeedbackSection(),
-                  ],
-                  // Nutrición: card de análisis de hábito debajo de la tendencia.
-                  if (widget.metric == ChartMetric.nutritionAPct) ...[
-                    const SizedBox(height: 24),
-                    const NutricionFeedbackSection(),
-                  ],
-                ],
+      body: SafeArea(
+        child: SingleChildScrollView(
+          controller: _scrollController,
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildHeader(context),
+              const SizedBox(height: 24),
+              SegmentedRangeControl(
+                locked: !isPremium,
+                onLockedTap: () => openPaywall(
+                  context, ref,
+                  feature: GatedFeature.analyticsHistory,
+                ),
               ),
-            ),
+              const SizedBox(height: 24),
+              // UX-PROGRESO: el chart de la semana (w1) es siempre
+              // visible, Free incluido — es la "vista simple de 7
+              // días" que pidió la auditoría.
+              _buildChart(aggregationMode),
+              const SizedBox(height: 24),
+              if (isPremium) ...[
+                // SPEC-168.4.1: tendencia corta vs larga del mismo
+                // pilar. Si no hay data suficiente, devuelve
+                // SizedBox.shrink.
+                _buildTrendSection(aggregationMode),
+                // IMR: card de feedback por pilar debajo de la tendencia.
+                if (widget.metric == ChartMetric.imr) ...[
+                  const SizedBox(height: 24),
+                  const ImrPillarFeedbackSection(),
+                ],
+                // Ayuno: card de análisis de hábito debajo de la tendencia.
+                if (widget.metric == ChartMetric.fastingHours) ...[
+                  const SizedBox(height: 24),
+                  const AyunoPillarFeedbackSection(),
+                ],
+                // Hidratación: card de análisis de hábito debajo de la tendencia.
+                if (widget.metric == ChartMetric.hydrationLiters) ...[
+                  const SizedBox(height: 24),
+                  const HidratacionFeedbackSection(),
+                ],
+                // Ejercicio: card de análisis de hábito debajo de la tendencia.
+                if (widget.metric == ChartMetric.exerciseMin) ...[
+                  const SizedBox(height: 24),
+                  const EjercicioFeedbackSection(),
+                ],
+                // Sueño: card de análisis de hábito debajo de la tendencia.
+                if (widget.metric == ChartMetric.sleepHours) ...[
+                  const SizedBox(height: 24),
+                  const SuenoFeedbackSection(),
+                ],
+                // Nutrición: card de análisis de hábito debajo de la tendencia.
+                if (widget.metric == ChartMetric.nutritionAPct) ...[
+                  const SizedBox(height: 24),
+                  const NutricionFeedbackSection(),
+                ],
+              ] else
+                _buildHistoryUpsellCard(context),
+            ],
           ),
-          // SPEC-197 soft gate: blur overlay para usuarios Free.
-          if (!isPremium) AnalysisPremiumGateOverlay(metric: widget.metric),
-        ],
+        ),
       ),
     );
   }
 
-  // SPEC-119: overlay premium (blur + CTA) → AnalysisPremiumGateOverlay
-  // (widgets/analysis_premium_gate_overlay.dart). Extraído en ARCH-03.
-  // `_metricLabel` se movió junto con el widget (solo lo usaba él).
+  /// UX-PROGRESO (21-jul, P1): reemplaza al antiguo blur de página
+  /// completa (`AnalysisPremiumGateOverlay`). Se muestra una sola vez,
+  /// debajo del chart de 7 días, en vez de tapar tendencia + las 6
+  /// variantes de feedback por pilar con candados repetidos.
+  Widget _buildHistoryUpsellCard(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: const Color(0xFF111827),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.lock_outline_rounded,
+                size: 16,
+                color: AppColors.metabolicGreen.withValues(alpha: 0.85),
+              ),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  'Tendencia y análisis de evolución',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Ya ves tu semana. Con Premium desbloqueas meses de histórico, '
+            'comparativas de corto vs. largo plazo y el análisis de hábito '
+            'de este pilar.',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.6),
+              fontSize: 13,
+              height: 1.45,
+            ),
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.metabolicGreen,
+                foregroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: () => openPaywall(
+                context, ref,
+                feature: GatedFeature.analyticsHistory,
+              ),
+              child: const Text(
+                'Desbloquear Premium',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   /// SPEC-168.4.1: sección "Tendencia" debajo del chart. Para
   /// Nutrición usamos el bicolor (verde A / amarillo E). Para el

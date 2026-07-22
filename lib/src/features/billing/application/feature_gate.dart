@@ -29,10 +29,33 @@ class FeatureGate {
   bool get cycleFeedbackAllowed => hasFullAccess;
 
   /// Histórico / tendencia longitudinal en Análisis — Premium o Trial.
+  ///
+  /// UX-PROGRESO (auditoría técnica 21-jul, P1): esto NO bloquea el
+  /// detalle de un pilar por completo — Free siempre puede ver la
+  /// ventana de 7 días (`AnalysisRange.w1`, ya es el default al abrir
+  /// cualquier detalle). Lo que este flag sigue controlando es el
+  /// acceso a rangos más largos (mes/3M/6M/1A) y a la sección
+  /// "Tendencia" (comparación corto vs largo plazo) — ambos requieren
+  /// histórico real. Antes del 21-jul, Free no veía NADA del detalle.
   bool get analyticsHistoryAllowed => hasFullAccess;
 
-  /// Sync automático de wearables (HealthKit / Health Connect) — Premium o Trial.
+  /// Sync automático de wearables EN SEGUNDO PLANO (resume de la app,
+  /// listener nativo de background delivery, bootstrap por sesión) —
+  /// Premium o Trial.
+  ///
+  /// UX-SYNC (auditoría técnica 21-jul, P1): el sync 100% manual que
+  /// esto forzaba en Free era "la mayor fricción diaria posible contra
+  /// el hábito" (auditoría). La decisión de producto no es regalar el
+  /// sync automático completo (sigue siendo el diferenciador Premium
+  /// real), sino separar automático de manual: ver `manualSyncAllowed`.
   bool get autoSyncAllowed => hasFullAccess;
+
+  /// Sync manual bajo demanda (botón "Sincronizar ahora" en Perfil ›
+  /// Salud, una vez que el usuario ya conectó HealthKit/Health Connect).
+  /// Siempre permitido, incluso en Free — reduce la fricción de registro
+  /// manual sin regalar el sync automático en segundo plano
+  /// (`autoSyncAllowed`), que sigue siendo Premium/Trial.
+  bool get manualSyncAllowed => true;
 
   /// Acción secundaria de coaching — Premium o Trial.
   bool get coachingSecondaryAllowed => hasFullAccess;

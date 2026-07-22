@@ -115,7 +115,18 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   // ejercicio", siempre activo, insertado justo antes de "Tus objetivos"
   // — así el motor de sugerencia de ejercicio (SPEC-244) ya puede leer
   // este perfil si en el futuro se decide usarlo también ahí.
-  static const int _kExerciseHabitsStepId = 5;
+  //
+  // UX-ONBOARD (auditoría técnica 21-jul, P1): la pantalla original
+  // empaquetaba 6 secciones de decisión en un solo scroll — el punto de
+  // mayor fricción de todo el onboarding. Se parte en 3 pantallas de 2
+  // secciones cada una, mismo `ExerciseProfile` final, sin agregar ni
+  // quitar ninguna pregunta. `_buildExerciseProfileFromState()` sigue
+  // leyendo el mismo estado local (`_exerciseLevel`, etc.) sin importar
+  // en cuál de las 3 pantallas se haya tocado cada chip — el submit real
+  // ocurre una sola vez en `_finalSubmit`, no por pantalla.
+  static const int _kExerciseHabitsStepId = 5; // Nivel actual + experiencia
+  static const int _kExerciseHabitsStepId2 = 6; // Equipo + preferencias
+  static const int _kExerciseHabitsStepId3 = 7; // Objetivo + lesiones
 
   // SPEC-168.0.A: el borrador local del step Goals (antes campos
   // `_goalDrafts`/`_goalDraftsInitialized` acá mismo) vive ahora en
@@ -408,7 +419,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       // Propuesta módulo Ejercicio (2026-07-21): siempre activo, justo
       // antes de "Tus objetivos" — todo usuario (cold install o MR)
       // declara sus hábitos de ejercicio antes de ver sus metas.
+      // UX-ONBOARD (21-jul, P1): partido en 3 pantallas — ver nota en
+      // la constante `_kExerciseHabitsStepId`.
       _kExerciseHabitsStepId,
+      _kExerciseHabitsStepId2,
+      _kExerciseHabitsStepId3,
       // SPEC-168.0.A: Tus objetivos — siempre al final.
       _kGoalsStepId,
     ];
@@ -549,9 +564,16 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             onContinue: _handleNext,
           );
         case _kExerciseHabitsStepId:
-          // Propuesta módulo Ejercicio (2026-07-21): hábitos/preferencias
-          // /equipo/lesiones — insumo de WeeklyExercisePlanEngine (Fase 2).
-          return _buildStepExerciseHabits(isDark);
+          // UX-ONBOARD (21-jul, P1): pantalla 1/3 — nivel actual +
+          // experiencia con fuerza. Insumo de WeeklyExercisePlanEngine
+          // (Fase 2).
+          return _buildStepExerciseHabitsPart1(isDark);
+        case _kExerciseHabitsStepId2:
+          // UX-ONBOARD: pantalla 2/3 — equipo disponible + preferencias.
+          return _buildStepExerciseHabitsPart2(isDark);
+        case _kExerciseHabitsStepId3:
+          // UX-ONBOARD: pantalla 3/3 — objetivo de composición + lesiones.
+          return _buildStepExerciseHabitsPart3(isDark);
         case _kGoalsStepId:
           // SPEC-168.0.A: paso final — sugerencias de objetivos
           // personalizadas con narrativa coaching.
@@ -967,12 +989,23 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         ],
       );
 
-  // --- PASO 5: HÁBITOS DE EJERCICIO (propuesta 2026-07-21) ---
+  // --- PASO 5-7: HÁBITOS DE EJERCICIO (propuesta 2026-07-21) ---
   //
   // Ver documentacion/propuestas/Propuesta_Modulo_Ejercicio_2026-07-21.docx
   // §4.1. Chips simples — sin scroll horizontal, todo visible de un
   // vistazo, mismo lenguaje visual que el resto del onboarding.
-  Widget _buildStepExerciseHabits(bool isDark) => ListView(
+  //
+  // UX-ONBOARD (auditoría técnica 21-jul, P1): las 6 secciones originales
+  // vivían en un solo scroll largo — el punto de mayor fricción de todo
+  // el onboarding. Se dividen en 3 pantallas de 2 secciones cada una,
+  // agrupadas por tema (capacidad actual / condiciones de entrenamiento
+  // / objetivo y seguridad). Ningún chip, opción ni pregunta cambia —
+  // solo el empaquetado visual. El estado local sigue siendo el mismo
+  // (`_exerciseLevel`, `_strengthExperience`, etc.), así que
+  // `_buildExerciseProfileFromState()` no necesita ningún cambio.
+
+  /// Pantalla 1/3: capacidad actual (nivel + experiencia con fuerza).
+  Widget _buildStepExerciseHabitsPart1(bool isDark) => ListView(
         padding: const EdgeInsets.all(24),
         children: [
           OnboardingStepHeader(
@@ -1003,7 +1036,18 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             onTap: (v) => setState(() => _strengthExperience = v),
             isDark: isDark,
           ),
-          const SizedBox(height: 20),
+        ],
+      );
+
+  /// Pantalla 2/3: condiciones de entrenamiento (equipo + preferencias).
+  Widget _buildStepExerciseHabitsPart2(bool isDark) => ListView(
+        padding: const EdgeInsets.all(24),
+        children: [
+          OnboardingStepHeader(
+            title: "Cómo vas a entrenar",
+            sub: "Para armar sesiones que sí puedas cumplir",
+            isDark: isDark,
+          ),
           OnboardingSectionTitle(title: "EQUIPO DISPONIBLE", isDark: isDark),
           _chipGroup<ExerciseEquipment>(
             options: ExerciseEquipment.values,
@@ -1032,7 +1076,18 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             }),
             isDark: isDark,
           ),
-          const SizedBox(height: 20),
+        ],
+      );
+
+  /// Pantalla 3/3: objetivo de composición corporal + lesiones/límites.
+  Widget _buildStepExerciseHabitsPart3(bool isDark) => ListView(
+        padding: const EdgeInsets.all(24),
+        children: [
+          OnboardingStepHeader(
+            title: "Tu objetivo y tu seguridad",
+            sub: "Lo último — para que tu plan te cuide",
+            isDark: isDark,
+          ),
           OnboardingSectionTitle(
               title: "OBJETIVO DE COMPOSICIÓN CORPORAL", isDark: isDark),
           _chipGroup<BodyCompositionGoal>(
