@@ -871,3 +871,47 @@ final streakAtRiskProvider = Provider<bool>((ref) {
   if (streak.freezesAvailable > 0) return false;
   return DateTime.now().hour >= 18;
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 22-jul: nivel de riesgo semáforo para el ring de racha del Dashboard
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Nivel semáforo de la racha, para colorear el borde del ring en
+/// `DailyScoreHero` (Carlos: "verde si está activa y bien, amarillo si
+/// riesgo medio, rojo si riesgo alto"). No es un concepto nuevo del
+/// motor de racha — es una GRADACIÓN de las mismas señales que ya
+/// existían de forma binaria en [streakAtRiskProvider] (mismo día
+/// calificado, mismo umbral de 18:00, mismas reservas). Se agrega acá
+/// en vez de tocar `StreakEngine`/`StreakEntry` porque es puramente de
+/// PRESENTACIÓN: ninguna de las 4 señales que combina es nueva.
+enum StreakRiskLevel {
+  /// Sin racha activa (`currentStreak == 0`) — no hay nada que arriesgar
+  /// todavía. Color neutro en el ring, no forma parte del semáforo.
+  none,
+
+  /// Racha activa y el día de hoy YA calificó — nada que hacer, verde.
+  onTrack,
+
+  /// Racha activa, hoy todavía no calificó, pero no es urgente: o queda
+  /// tiempo (antes de las 18:00) o hay una reserva (`freezesAvailable`)
+  /// que la protege igual — amarillo.
+  atRiskMedium,
+
+  /// Exactamente la misma condición de [streakAtRiskProvider]: sin
+  /// reserva disponible y ya pasadas las 18:00 sin calificar hoy —
+  /// rojo, mismo umbral que ya dispara `StreakAtRiskBanner`.
+  atRiskHigh,
+}
+
+final streakRiskLevelProvider = Provider<StreakRiskLevel>((ref) {
+  final streak = ref.watch(streakProvider);
+  if (streak.currentStreak <= 0) return StreakRiskLevel.none;
+
+  final todayQualifies = streak.todayEntry?.qualifiesForStreak ?? false;
+  if (todayQualifies) return StreakRiskLevel.onTrack;
+
+  final noSafetyNet = streak.freezesAvailable <= 0;
+  final pastThreshold = DateTime.now().hour >= 18;
+  if (noSafetyNet && pastThreshold) return StreakRiskLevel.atRiskHigh;
+  return StreakRiskLevel.atRiskMedium;
+});

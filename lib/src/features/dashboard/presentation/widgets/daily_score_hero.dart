@@ -8,33 +8,45 @@
 // Sacar el segundo ring sin más dejaba el ring "HOY" descentrado y la
 // card con la mitad superior vacía.
 //
-// v1 del "puente visual" (commit b393b38, mismo día): 5 íconos de
-// pilares sin progreso ("TU DÍA SE ARMA CON"). Carlos lo señaló como
-// redundante apenas lo vio en pantalla — esos mismos 5 íconos, CON
-// progreso real, ya están un scroll más abajo en la misma card
-// (`DashboardPillarsRow`). Mostrarlos dos veces no agrega información,
-// solo repite.
+// v1 (commit b393b38, mismo día): 5 íconos de pilares sin progreso
+// ("TU DÍA SE ARMA CON"). Carlos lo señaló como redundante apenas lo
+// vio en pantalla — esos mismos 5 íconos, CON progreso real, ya están
+// un scroll más abajo en la misma card (`DashboardPillarsRow`).
 //
-// v2 (22-jul, misma sesión): en vez de decorar el mismo concepto dos
-// veces, se usa el espacio para un dato que esta card todavía no
-// mostraba en ningún lado — la racha de días consecutivos. Esto
-// además resuelve una segunda redundancia que Carlos pidió cerrar en
-// el mismo cambio: la racha vivía ADEMÁS como badge propio en el header
-// del Dashboard (`ElenaHeader._StreakBadge`, commit fb32b03, "un solo
-// indicador"). Con la racha acá, ese badge del header sobra — se quita
-// en `elena_header.dart` en el mismo commit. Resultado: un solo lugar
-// para la racha (acá), un solo lugar para el detalle de pilares con
-// progreso (la fila de abajo).
+// v2 (mismo día): se cambió el bloque de íconos por una línea de texto
+// con la racha ("🔥 X días de racha"). Resolvió la redundancia de
+// íconos, pero le bajó protagonismo a la racha — Carlos la quería de
+// vuelta como RING, en el mismo lugar físico donde antes vivía el IMR,
+// pero más chico que el ring de HOY (jerarquía: HOY es el hero).
 //
-// Tocar el ring abre el explainer sheet de siempre (ahora solo sobre
-// HOY, ver daily_score_explainer_sheet.dart). Tocar el bloque de racha
-// navega directo a `RachaDetailScreen` (`/analysis/racha`) — mismo
-// destino que tenía el badge del header que reemplaza.
+// v3 (22-jul, misma sesión — versión actual): ring de racha con código
+// semáforo. El borde del ring no es una barra de progreso (la racha no
+// tiene "0-100") — es un indicador de ESTADO: verde (racha activa y hoy
+// ya calificó), amarillo (racha activa, hoy no calificó todavía, pero
+// no es urgente), rojo (mismo umbral que ya usaba `streakAtRiskProvider`
+// para el banner: sin reserva y ya pasadas las 18:00 sin calificar).
+// Gris/neutro cuando no hay racha activa (`streakDays == 0`) — no hay
+// nada que arriesgar todavía, así que no es parte del semáforo. Ver
+// `StreakRiskLevel` en streak_notifier.dart — es una gradación de
+// señales que YA existían de forma binaria, no un cálculo nuevo del
+// motor de racha.
+//
+// Esto también resuelve, de paso, la segunda redundancia que Carlos
+// había pedido cerrar horas antes: la racha vivía ADEMÁS como badge en
+// el header (`ElenaHeader._StreakBadge`, commit fb32b03). Con la racha
+// acá como ring, ese badge sobra — se quitó de `elena_header.dart`.
+//
+// Tocar el ring de HOY abre el explainer sheet de siempre (ver
+// daily_score_explainer_sheet.dart). Tocar el ring de racha navega
+// directo a `RachaDetailScreen` (`/analysis/racha`) — mismo destino que
+// tenía el badge del header que reemplaza.
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:elena_app/src/core/theme/app_theme.dart';
+import 'package:elena_app/src/features/streak/application/streak_notifier.dart'
+    show StreakRiskLevel;
 
 class DailyScoreHero extends StatelessWidget {
   const DailyScoreHero({
@@ -43,6 +55,7 @@ class DailyScoreHero extends StatelessWidget {
     required this.dailyDelta,
     required this.onTap,
     required this.streakDays,
+    required this.streakRisk,
     this.streakProtected = false,
   });
 
@@ -56,10 +69,12 @@ class DailyScoreHero extends StatelessWidget {
   final VoidCallback onTap;
 
   /// Racha de días consecutivos — mismo campo que consumía
-  /// `ElenaHeader._StreakBadge` (`StreakState.currentStreak`). Ver doc
-  /// de archivo: único indicador de racha de la app tras el fix del
-  /// 22-jul.
+  /// `ElenaHeader._StreakBadge` (`StreakState.currentStreak`).
   final int streakDays;
+
+  /// Nivel semáforo de la racha (`streakRiskLevelProvider`) — colorea el
+  /// borde del ring. Ver doc de archivo.
+  final StreakRiskLevel streakRisk;
 
   /// SPEC-255 RF-02: true si la racha incluye un día perdonado por una
   /// reserva — mismo significado que `StreakState.streakHasProtectedDay`.
@@ -78,37 +93,23 @@ class DailyScoreHero extends StatelessWidget {
         child: LayoutBuilder(
           builder: (context, constraints) {
             final bool narrow = constraints.maxWidth < 340;
-            final double ringSize = narrow ? 96 : 112;
+            final double heroSize = narrow ? 92 : 108;
+            final double streakSize = narrow ? 52 : 60;
             return Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 _BigScoreRing(
                   score: dailyScore,
                   sublabel: _dailyDeltaLabel(dailyDelta),
-                  size: ringSize,
+                  size: heroSize,
                 ),
-                const SizedBox(width: 20),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'TU RACHA',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.40),
-                          fontSize: 9.5,
-                          letterSpacing: 1.2,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      _StreakBridge(
-                        days: streakDays,
-                        protected: streakProtected,
-                      ),
-                    ],
-                  ),
+                SizedBox(width: narrow ? 20 : 32),
+                _StreakRing(
+                  days: streakDays,
+                  risk: streakRisk,
+                  protected: streakProtected,
+                  size: streakSize,
                 ),
               ],
             );
@@ -135,9 +136,7 @@ class DailyScoreHero extends StatelessWidget {
 }
 
 /// Ring grande con el score numérico en el centro + label "HOY" + sub-label
-/// (delta vs ayer) debajo. Idéntico visualmente al hero de `DualScoreRing`
-/// — solo se le subió el tamaño por default al no tener ya un segundo ring
-/// al lado empujándolo.
+/// (delta vs ayer) debajo.
 class _BigScoreRing extends StatelessWidget {
   const _BigScoreRing({
     required this.score,
@@ -210,66 +209,139 @@ class _BigScoreRing extends StatelessWidget {
   }
 }
 
-/// Bloque de racha del puente visual — reemplaza a los 5 íconos de
-/// pilares (ver doc de archivo). Tap PROPIO e independiente del tap
-/// del ring (que abre el explainer): al estar anidado, gana el gesture
-/// arena de Flutter y el tap sobre este bloque navega a
-/// `RachaDetailScreen` sin disparar también el explainer del ring.
-/// Mismo destino que tenía `ElenaHeader._StreakBadge`.
-class _StreakBridge extends StatelessWidget {
-  const _StreakBridge({required this.days, required this.protected});
+/// Ring de racha — más chico que `_BigScoreRing` (jerarquía: HOY es el
+/// hero), en el mismo lugar físico donde antes vivía el ring de IMR.
+///
+/// A diferencia de `_BigScoreRing`, el borde NO es una barra de
+/// progreso 0-100 — la racha no tiene "porcentaje". Es un semáforo de
+/// ESTADO (ver `StreakRiskLevel`): se dibuja siempre lleno (`value:
+/// 1.0`), y lo que comunica es el COLOR, no cuánto se llenó.
+///
+/// Tap PROPIO e independiente del tap del ring de HOY (que abre el
+/// explainer): al estar anidado, gana el gesture arena de Flutter y el
+/// tap acá navega a `RachaDetailScreen` sin disparar también el
+/// explainer. Mismo destino que tenía `ElenaHeader._StreakBadge`.
+class _StreakRing extends StatelessWidget {
+  const _StreakRing({
+    required this.days,
+    required this.risk,
+    required this.protected,
+    required this.size,
+  });
 
   final int days;
+  final StreakRiskLevel risk;
   final bool protected;
+  final double size;
+
+  Color get _color {
+    switch (risk) {
+      case StreakRiskLevel.none:
+        return Colors.white.withValues(alpha: 0.28);
+      case StreakRiskLevel.onTrack:
+        return const Color(0xFF22C55E); // verde
+      case StreakRiskLevel.atRiskMedium:
+        return const Color(0xFFF59E0B); // ámbar — mismo tono que
+        // StreakAtRiskBanner usaba para su único estado de aviso.
+      case StreakRiskLevel.atRiskHigh:
+        return const Color(0xFFEF4444); // rojo
+    }
+  }
+
+  String get _stateLabel {
+    switch (risk) {
+      case StreakRiskLevel.none:
+        return 'Arrancá hoy';
+      case StreakRiskLevel.onTrack:
+        return 'Vas bien';
+      case StreakRiskLevel.atRiskMedium:
+        return 'Sumá hoy';
+      case StreakRiskLevel.atRiskHigh:
+        return 'En riesgo';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final color = _color;
     final active = days >= 1;
-    final flameColor =
-        active ? Colors.orange : Colors.white.withValues(alpha: 0.35);
-    final label = active
-        ? '$days ${days == 1 ? "día" : "días"} de racha'
-        : 'Empezá tu racha hoy';
-
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () => context.push('/analysis/racha'),
-      child: Row(
+      child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            active
-                ? Icons.local_fire_department_rounded
-                : Icons.local_fire_department_outlined,
-            color: flameColor,
-            size: 20,
-          ),
-          const SizedBox(width: 6),
-          Flexible(
-            child: Text(
-              label,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color:
-                    active ? Colors.white : Colors.white.withValues(alpha: 0.55),
-                fontSize: 14,
-                fontWeight: FontWeight.w800,
-              ),
+          SizedBox(
+            width: size,
+            height: size,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                SizedBox(
+                  width: size,
+                  height: size,
+                  child: CircularProgressIndicator(
+                    value: 1.0,
+                    strokeWidth: 4,
+                    backgroundColor: color.withValues(alpha: 0.15),
+                    valueColor: AlwaysStoppedAnimation<Color>(color),
+                  ),
+                ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      active
+                          ? Icons.local_fire_department_rounded
+                          : Icons.local_fire_department_outlined,
+                      color: color,
+                      size: size * 0.30,
+                    ),
+                    const SizedBox(width: 2),
+                    Text(
+                      '$days',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: size * 0.32,
+                        fontWeight: FontWeight.w900,
+                        fontFamily: 'monospace',
+                        height: 1.0,
+                      ),
+                    ),
+                  ],
+                ),
+                if (protected)
+                  Positioned(
+                    top: 0,
+                    right: size * 0.08,
+                    child: Icon(
+                      Icons.shield_rounded,
+                      color: const Color(0xFFF59E0B).withValues(alpha: 0.9),
+                      size: size * 0.20,
+                    ),
+                  ),
+              ],
             ),
           ),
-          if (protected) ...[
-            const SizedBox(width: 5),
-            Icon(
-              Icons.shield_rounded,
-              color: const Color(0xFFF59E0B).withValues(alpha: 0.9),
-              size: 13,
+          const SizedBox(height: 8),
+          Text(
+            'RACHA',
+            style: TextStyle(
+              color: color,
+              fontSize: 11,
+              letterSpacing: 1.5,
+              fontWeight: FontWeight.w800,
             ),
-          ],
-          const SizedBox(width: 2),
-          Icon(
-            Icons.chevron_right_rounded,
-            color: Colors.white.withValues(alpha: 0.25),
-            size: 16,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            _stateLabel,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.55),
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              height: 1.0,
+            ),
           ),
         ],
       ),

@@ -119,9 +119,13 @@ class DashboardPillarsRow extends ConsumerWidget {
     // 22-jul: la racha se muestra ahora dentro de `DailyScoreHero` (ver
     // doc en daily_score_hero.dart) — reemplaza al badge que antes vivía
     // en `ElenaHeader` (quitado en el mismo commit, "un solo indicador").
+    // v3 (mismo día): ring con semáforo — se agrega streakRisk desde
+    // streakRiskLevelProvider (gradación verde/amarillo/rojo de señales
+    // que ya existían de forma binaria en streakAtRiskProvider).
     final (streakDays, streakProtected) = ref.watch(
       streakProvider.select((s) => (s.currentStreak, s.streakHasProtectedDay)),
     );
+    final streakRisk = ref.watch(streakRiskLevelProvider);
 
     // SPEC-257 §3.1: re-deriva el mismo cálculo que `StreakNotifier` usa
     // para decidir si hoy es un día de descanso PROGRAMADO (nivel Novato,
@@ -201,6 +205,7 @@ class DashboardPillarsRow extends ConsumerWidget {
             dailyDelta: delta,
             onTap: () => showDailyScoreExplainerSheet(context),
             streakDays: streakDays,
+            streakRisk: streakRisk,
             streakProtected: streakProtected,
           ),
           const SizedBox(height: 12),
