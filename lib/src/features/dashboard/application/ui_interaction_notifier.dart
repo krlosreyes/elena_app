@@ -27,12 +27,20 @@ class UiInteractionState {
   /// Propuesta "racha protagonista" (2026-07-15, P4).
   final bool isStreakAtRiskDismissed;
 
+  /// Módulo "Tu Glucosa" (23-jul): usuario tocó "Ahora no" en el sheet
+  /// de consentimiento del Protocolo de Seguimiento de Glucosa.
+  /// Mismo criterio día-calendario que el resto: reaparece mañana si
+  /// sigue elegible y sin consentimiento — evita el loop de volver a
+  /// mostrarlo en cada rebuild del Dashboard dentro del mismo día.
+  final bool isGlucoseConsentDismissed;
+
   const UiInteractionState({
     this.isEngagementBannerDismissed = false,
     this.isAdaptiveSuggestionDismissed = false,
     this.isHydrationCoachDismissed = false,
     this.isBiometricReminderDismissed = false,
     this.isStreakAtRiskDismissed = false,
+    this.isGlucoseConsentDismissed = false,
   });
 
   UiInteractionState copyWith({
@@ -41,6 +49,7 @@ class UiInteractionState {
     bool? isHydrationCoachDismissed,
     bool? isBiometricReminderDismissed,
     bool? isStreakAtRiskDismissed,
+    bool? isGlucoseConsentDismissed,
   }) {
     return UiInteractionState(
       isEngagementBannerDismissed:
@@ -53,6 +62,8 @@ class UiInteractionState {
           isBiometricReminderDismissed ?? this.isBiometricReminderDismissed,
       isStreakAtRiskDismissed:
           isStreakAtRiskDismissed ?? this.isStreakAtRiskDismissed,
+      isGlucoseConsentDismissed:
+          isGlucoseConsentDismissed ?? this.isGlucoseConsentDismissed,
     );
   }
 }
@@ -67,6 +78,7 @@ String _adaptiveKey(String day) => 'ui_dismiss_adaptive_$day';
 String _hydrationCoachKey(String day) => 'ui_dismiss_hydration_coach_$day';
 String _biometricReminderKey(String day) => 'ui_dismiss_biometric_reminder_$day';
 String _streakAtRiskKey(String day) => 'ui_dismiss_streak_at_risk_$day';
+String _glucoseConsentKey(String day) => 'ui_dismiss_glucose_consent_$day';
 
 class UiInteractionNotifier extends StateNotifier<UiInteractionState> {
   final Ref _ref;
@@ -91,6 +103,8 @@ class UiInteractionNotifier extends StateNotifier<UiInteractionState> {
           prefs.getBool(_biometricReminderKey(day)) ?? false,
       isStreakAtRiskDismissed:
           prefs.getBool(_streakAtRiskKey(day)) ?? false,
+      isGlucoseConsentDismissed:
+          prefs.getBool(_glucoseConsentKey(day)) ?? false,
     );
   }
 
@@ -132,6 +146,14 @@ class UiInteractionNotifier extends StateNotifier<UiInteractionState> {
     final prefs = _ref.read(sharedPreferencesProvider);
     await prefs.setBool(_streakAtRiskKey(_todayKey()), true);
     state = state.copyWith(isStreakAtRiskDismissed: true);
+  }
+
+  /// Módulo "Tu Glucosa" (23-jul): mismo criterio que
+  /// `dismissStreakAtRisk` — pospone un día, no apaga para siempre.
+  Future<void> dismissGlucoseConsent() async {
+    final prefs = _ref.read(sharedPreferencesProvider);
+    await prefs.setBool(_glucoseConsentKey(_todayKey()), true);
+    state = state.copyWith(isGlucoseConsentDismissed: true);
   }
 
   /// SPEC-194: ya no se necesita reset manual. La clave incluye el día,

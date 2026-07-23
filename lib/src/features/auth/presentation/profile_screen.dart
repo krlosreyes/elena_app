@@ -13,6 +13,7 @@ import 'package:elena_app/src/features/analysis/presentation/widgets/transformat
 import 'package:elena_app/src/features/auth/presentation/widgets/achievement_showcase_card.dart';
 import 'package:elena_app/src/features/auth/presentation/widgets/biometricos_entry_card.dart';
 import 'package:elena_app/src/features/auth/presentation/widgets/exercise_habits_entry_card.dart';
+import 'package:elena_app/src/features/auth/presentation/widgets/glucose_protocol_entry_card.dart';
 import 'package:elena_app/src/features/auth/presentation/widgets/objetivos_entry_card.dart';
 import 'package:elena_app/src/features/auth/presentation/widgets/profile_bottom_nav.dart';
 import 'package:elena_app/src/features/auth/presentation/widgets/profile_danger_zone_actions.dart';
@@ -190,6 +191,12 @@ class _ProfileBody extends ConsumerWidget {
           alignment: Alignment.topCenter,
           child: const HealthSyncCard(),
         ),
+        const SizedBox(height: 12),
+        // Módulo "Tu Glucosa" (23-jul): control manual del protocolo —
+        // vive en "Salud" junto a HealthSyncCard porque conceptualmente
+        // es la misma categoría (datos clínicos sincronizados/medidos),
+        // no un ajuste de "Configuración" de un pilar existente.
+        const GlucoseProtocolEntryCard(),
         const SizedBox(height: 24),
 
         // ── Legal ───────────────────────────────────────────────────

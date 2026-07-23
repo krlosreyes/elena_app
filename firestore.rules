@@ -115,6 +115,49 @@ service cloud.firestore {
                         ];
       }
 
+      // Módulo "Tu Glucosa" (23-jul, propuesta
+      // documentacion/propuestas/Propuesta_Protocolo_Glucosa_2026-07-23.docx
+      // §8/§9): users/{uid}/glucose_readings/{readingId}. Dato de salud
+      // SENSIBLE (glucosa capilar) — regla estricta propia, igual
+      // criterio que metabolic_cycles/imr_history: la catch-all de más
+      // abajo excluye explícitamente este path de create/update para
+      // que esta validación de rango sea la única vía de escritura
+      // server-side.
+      //
+      // Sin `update`: una lectura de glucosa es un HECHO medido en un
+      // momento — igual criterio de integridad que `badges` (no se
+      // "corrige" un valor ya guardado, se borra y se vuelve a crear).
+      // Sí se permite `delete` (a diferencia de badges): es un dato de
+      // salud personal, el usuario tiene derecho a borrar una lectura
+      // mal cargada o a ejercer su derecho de supresión sobre su propio
+      // historial (GDPR / Ley 1581 de Colombia, dato sensible).
+      //
+      // Validación: userId del payload debe coincidir con el dueño,
+      // valueMgDl debe ser number en el rango fisiológico plausible
+      // [40, 400] (glucose_reading.dart, kGlucoseMinPlausibleMgDl/
+      // kGlucoseMaxPlausibleMgDl), y context debe ser uno de los
+      // valores reconocidos de GlucoseReadingContext.
+      match /glucose_readings/{readingId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId)
+                     && withinSizeLimit()
+                     && request.resource.data.userId == userId
+                     && request.resource.data.valueMgDl is number
+                     && request.resource.data.valueMgDl >= 40
+                     && request.resource.data.valueMgDl <= 400
+                     && request.resource.data.context in [
+                          'ayunas', 'antesDeComer', 'postprandial1h',
+                          'postprandial2h', 'antesDeDormir', 'otro'
+                        ];
+        allow delete: if isOwner(userId);
+      }
+
+      // Módulo "Tu Glucosa": users/{uid}/glucose_meta/protocol — estado
+      // del protocolo (activo/pausado/consentimiento), mismo patrón que
+      // exercise_meta/profile. Sin datos clínicos acá (solo flags de
+      // configuración), no necesita validación de rango propia — la
+      // catch-all de abajo ya lo cubre con ownership + tamaño.
+
       // Subcolecciones (logs de sueño, hidratación, ejercicio, etc.):
       // mismo dueño, mismo límite de tamaño. Sin id-match porque los
       // docs hijos pueden o no tener `id` y el path ya enlaza al
@@ -139,13 +182,20 @@ service cloud.firestore {
       // laxa (que sí permite delete a cualquier dueño) neutralizaría la
       // inmutabilidad que acabamos de definir arriba, por la misma
       // semántica OR entre matches que documenta la nota de FB-01.
+      //
+      // Glucosa (23-jul): 'glucose_readings' queda excluido de
+      // create/update por el mismo motivo — su regla de rango [40,400]
+      // de arriba quedaría neutralizada si esta regla más laxa también
+      // aplicara. NO se excluye de `delete` (a diferencia de badges):
+      // sí debe poder borrarse por esta vía, ver nota arriba.
       match /{allPaths=**} {
         allow read: if isOwner(userId);
         allow create, update: if isOwner(userId)
                      && withinSizeLimit()
                      && allPaths[0] != 'metabolic_cycles'
                      && allPaths[0] != 'imr_history'
-                     && allPaths[0] != 'badges';
+                     && allPaths[0] != 'badges'
+                     && allPaths[0] != 'glucose_readings';
         allow delete: if isOwner(userId) && allPaths[0] != 'badges';
       }
     }

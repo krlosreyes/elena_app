@@ -44,6 +44,12 @@ import 'package:elena_app/src/features/onboarding/application/tour_targets_provi
 import 'package:elena_app/src/features/progress/presentation/widgets/biometric_reminder_banner.dart';
 import 'package:elena_app/src/features/badges/application/badge_notifier.dart';
 import 'package:elena_app/src/features/streak/presentation/widgets/streak_at_risk_banner.dart';
+// Módulo "Tu Glucosa" (23-jul): tarjeta de registro matutino + gancho
+// de consentimiento automático (ver ref.listen más abajo).
+import 'package:elena_app/src/features/dashboard/application/ui_interaction_notifier.dart';
+import 'package:elena_app/src/features/glucose/application/glucose_providers.dart';
+import 'package:elena_app/src/features/glucose/presentation/widgets/glucose_consent_sheet.dart';
+import 'package:elena_app/src/features/glucose/presentation/widgets/glucose_morning_reminder_card.dart';
 
 // SPEC-88 fix: BodyCompositionCard y GoalsDashboardWidget se retiraron
 // del Dashboard. La primera vive ahora en Profile; la segunda queda
@@ -208,6 +214,32 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       }
     });
 
+    // Módulo "Tu Glucosa" (23-jul): dispara el sheet de consentimiento
+    // UNA vez por día cuando `glucoseShouldPromptConsentProvider` pasa a
+    // true (elegible por pathologies, sin consentimiento aceptado, no
+    // descartado hoy) — mismo patrón `ref.listen` + postFrameCallback
+    // que `cycleClosureMomentProvider` más arriba. Si el usuario toca
+    // "Ahora no", el sheet mismo no lo descarta — lo hace explícito acá
+    // para no acoplar la UI del sheet a esta lógica de "una vez por día".
+    ref.listen<bool>(glucoseShouldPromptConsentProvider, (prev, next) {
+      if (next != true) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted) return;
+        await showGlucoseConsentSheet(
+          context,
+          welcomeReason: ref.read(glucoseProtocolEligibilityProvider).reason,
+        );
+        if (!mounted) return;
+        final stillNotAccepted = ref.read(glucoseProtocolStateProvider)
+                .valueOrNull
+                ?.consentAccepted !=
+            true;
+        if (stillNotAccepted) {
+          ref.read(uiInteractionProvider.notifier).dismissGlucoseConsent();
+        }
+      });
+    });
+
     // SPEC-149: evaluador continuo del ciclo.
     // SPEC-174 (2026-06-04): el evaluator se movió a `app.dart` (nivel
     // root) para que evalúe aunque el usuario no esté en este tab.
@@ -263,6 +295,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   // de tarde/noche si hoy todavía no calificó y hay una
                   // racha activa en juego. Se oculta sola el resto del día.
                   const StreakAtRiskBanner(),
+
+                  // Módulo "Tu Glucosa" (23-jul): tarjeta de registro
+                  // matutino — se autooculta si la ventana no está
+                  // abierta (GlucoseWindowState.isOpen == false), mismo
+                  // criterio "widget autocontenido" que StreakAtRiskBanner.
+                  const GlucoseMorningReminderCard(),
 
                   // BANNER DE ENGAGEMENT (SPEC-07 + SPEC-72.2 dismiss por sesión)
                   const EngagementBanner(),

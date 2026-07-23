@@ -24,6 +24,12 @@ import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/badges/presentation/widgets/badges_entry_card.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/habitos_entry_card.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/results_entry_card.dart';
+// 23-jul: módulo "Tu Glucosa" (propuesta Protocolo de Seguimiento de
+// Glucosa) — mismo patrón autocontenido que WeeklyCoachingCard más
+// abajo: se oculta sola (SizedBox.shrink) si el usuario no tiene el
+// protocolo activo, así que AnalysisScreen no necesita dejar de ser
+// StatelessWidget ni saber nada de elegibilidad.
+import 'package:elena_app/src/features/glucose/presentation/widgets/glucose_entry_card.dart';
 // 17-jul (2da vuelta): WeeklyCoachingCard existía desde SPEC-153 pero
 // quedó huérfana cuando SPEC-168.4 reemplazó el diseño de tabs viejo —
 // nadie la volvió a enlazar. Se rescata acá para llenar el espacio
@@ -64,6 +70,11 @@ class AnalysisScreen extends StatelessWidget {
               const ResultsEntryCard(),
               const SizedBox(height: 12),
               const HabitosEntryCard(),
+              // 23-jul: "Tu Glucosa" — se autooculta si el usuario no
+              // tiene el Protocolo de Seguimiento de Glucosa activo (ver
+              // GlucoseEntryCard). Sin SizedBox extra: la card ya trae
+              // su propio Padding(top:12) cuando SÍ se muestra.
+              const GlucoseEntryCard(),
               // 17-jul (2da vuelta): contenido real debajo de las cards
               // para que la pantalla no se sienta vacía — ver comentario
               // en el import de WeeklyCoachingCard arriba.

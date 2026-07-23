@@ -48,6 +48,13 @@ class NotificationScheduler {
     MetabolicCycle? openCycle,
     bool isFasting = false,
     String? goalsSummaryBody,
+    // Módulo "Tu Glucosa" (23-jul, propuesta §7.2/R3): true cuando el
+    // protocolo de seguimiento de glucosa está activo y no pausado —
+    // dispara el recordatorio matutino de registro en ayunas. El
+    // caller (NotificationProvider) lo deriva de
+    // `glucoseProtocolStateProvider` porque este servicio es puro y no
+    // lee providers.
+    bool glucoseProtocolActive = false,
   }) async {
     try {
       await NotificationService.cancelCircadian();
@@ -96,6 +103,35 @@ class NotificationScheduler {
         );
       } else {
         await NotificationService.cancel(NotificationIds.dailyGoalsSummary);
+      }
+
+      // ── 1c. Módulo "Tu Glucosa" (23-jul, propuesta §7.2/R3) ──────────────
+      // Recordatorio matutino de registro en ayunas — mismo offset que el
+      // resumen de objetivos (wakeUpTime + 15 min). La ventana real de
+      // registro (`GlucoseWindowState`) se ancla al wakeUp BIOLÓGICO real
+      // vía `currentCycleSleepProvider`, no a esta hora de perfil — este
+      // push es solo el disparador de OS; si el usuario aún no se
+      // despertó, tocar la notificación abre igual el sheet de registro
+      // (que respeta la ventana real, no la del perfil).
+      if (glucoseProtocolActive) {
+        final glucoseDt = DateTime(
+          2000,
+          1,
+          1,
+          profile.wakeUpTime.hour,
+          profile.wakeUpTime.minute,
+        ).add(const Duration(minutes: 15));
+        await _scheduleCircadian(
+          id: NotificationIds.glucoseMorningReminder,
+          hour: glucoseDt.hour,
+          minute: glucoseDt.minute,
+          title: '🩸 Registra tu glucosa en ayunas',
+          body: 'Antes de comer o beber, es buen momento para tu registro '
+              'de hoy.',
+          payload: NotificationRouter.circadianPayload(),
+        );
+      } else {
+        await NotificationService.cancel(NotificationIds.glucoseMorningReminder);
       }
 
       // ── 2. Apertura de ventana de alimentación ───────────────────────────

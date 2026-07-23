@@ -41,6 +41,7 @@ import 'package:elena_app/src/features/goals/presentation/goal_setup_screen.dart
 import 'package:elena_app/src/features/onboarding/application/onboarding_goals_controller.dart';
 import 'package:elena_app/src/features/onboarding/presentation/widgets/onboarding_step_ui.dart';
 import 'package:elena_app/src/features/streak/domain/fasting_eligibility.dart';
+import 'package:elena_app/src/features/glucose/domain/glucose_protocol_eligibility.dart';
 // Propuesta módulo Ejercicio (2026-07-21): paso "Tu relación con el
 // ejercicio" — captura hábitos/preferencias/equipo/lesiones que hoy no
 // se preguntan en ningún punto del onboarding. Ver
@@ -214,10 +215,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   /// se salta el guardado si sigue en `false`, igual que Goals.
   bool _exerciseProfileTouched = false;
 
+  // 23-jul: "Prediabetes"/"Diabetes T2" ahora vienen de
+  // GlucosePathologyFlags (glucose/domain/glucose_protocol_eligibility.dart)
+  // en vez de literales sueltos — es el mismo string que lee
+  // GlucoseProtocolEligibility.assess() para activar el Protocolo de
+  // Seguimiento de Glucosa; centralizarlo evita que diverjan por un typo.
   final List<String> _pathologyOptions = [
     "Ninguna",
-    "Prediabetes",
-    "Diabetes T2",
+    GlucosePathologyFlags.prediabetes,
+    GlucosePathologyFlags.diabetesT2,
     "Hipertensión",
     "Hígado Graso",
     "Hipotiroidismo",

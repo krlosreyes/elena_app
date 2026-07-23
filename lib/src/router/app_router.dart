@@ -28,6 +28,7 @@ import 'package:elena_app/src/features/analysis/presentation/daily_score_detail_
 import 'package:elena_app/src/features/analysis/presentation/resultados_detail_screen.dart';
 import 'package:elena_app/src/features/analysis/presentation/habitos_detail_screen.dart';
 import 'package:elena_app/src/features/analysis/presentation/racha_detail_screen.dart';
+import 'package:elena_app/src/features/glucose/presentation/glucose_detail_screen.dart';
 import 'package:elena_app/src/features/analysis/domain/chart_metric.dart';
 // SPEC-12: Composición Corporal
 import 'package:elena_app/src/features/profile/presentation/body_composition_screen.dart';
@@ -165,6 +166,15 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/analysis/racha',
         name: 'analysis-racha',
         builder: (context, state) => const RachaDetailScreen(),
+      ),
+      // 23-jul: módulo "Tu Glucosa" (Protocolo de Seguimiento de
+      // Glucosa) — mismo patrón que las 3 rutas de detalle de arriba.
+      // Solo se llega acá desde GlucoseEntryCard, que ya se autooculta
+      // si el protocolo no está activo.
+      GoRoute(
+        path: '/analysis/glucosa',
+        name: 'analysis-glucosa',
+        builder: (context, state) => const GlucoseDetailScreen(),
       ),
       // 17-jul: detalle de "Aprende con Elena" (antes "Para ti") — card
       // colapsada en Dashboard, ver aprende_entry_card.dart.

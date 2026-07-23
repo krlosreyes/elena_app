@@ -4,6 +4,7 @@ import 'package:elena_app/src/shared/providers/user_provider.dart';
 import 'package:elena_app/src/core/services/notification_scheduler.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/features/fasting/application/fasting_notifier.dart';
+import 'package:elena_app/src/features/glucose/application/glucose_providers.dart';
 import 'package:elena_app/src/features/goals/application/goal_notifier.dart';
 import 'package:elena_app/src/features/goals/application/pillar_goal_resolver.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart';
@@ -77,6 +78,23 @@ class NotificationSchedulerNotifier extends StateNotifier<void> {
         if (user != null) _maybeReschedule(user, force: true);
       },
     );
+
+    // Módulo "Tu Glucosa" (23-jul): si el protocolo se activa/pausa/
+    // desactiva desde Perfil o el consentimiento automático, el
+    // recordatorio matutino (109) queda desactualizado hasta el próximo
+    // cambio de perfil/ciclo — forzar reprogramación acá también, mismo
+    // criterio que goalsProvider arriba.
+    _ref.listen<bool>(
+      glucoseProtocolStateProvider.select(
+        (s) => (s.valueOrNull?.protocolActive ?? false) &&
+            !(s.valueOrNull?.paused ?? false),
+      ),
+      (previous, next) {
+        if (previous == next) return;
+        final user = _ref.read(currentUserStreamProvider).valueOrNull;
+        if (user != null) _maybeReschedule(user, force: true);
+      },
+    );
   }
 
   /// 20-jul: resumen compacto de "tus 5 objetivos de hoy" para la
@@ -121,11 +139,15 @@ class NotificationSchedulerNotifier extends StateNotifier<void> {
     // Consciencia ayuno↔alimentación: suprimir notificaciones de comida
     // mientras el usuario está en ayuno activo.
     final isFasting = _ref.read(fastingProvider).isActive;
+    final glucoseState = _ref.read(glucoseProtocolStateProvider).valueOrNull;
+    final glucoseProtocolActive =
+        (glucoseState?.protocolActive ?? false) && !(glucoseState?.paused ?? false);
     await NotificationScheduler.scheduleCircadianDay(
       user,
       openCycle: openCycle,
       isFasting: isFasting,
       goalsSummaryBody: _buildGoalsSummary(user),
+      glucoseProtocolActive: glucoseProtocolActive,
     );
     // SPEC-150: hidratación reprograma junto con la agenda circadiana.
     // Default 90 min entre slots durante la ventana de despertar,

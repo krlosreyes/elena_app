@@ -10,7 +10,7 @@
 // y `terms_of_service_screen.dart`). Cambios al texto pasan por aquí —
 // nunca hardcoded en widgets.
 
-const int kPrivacyPolicyVersion = 1;
+const int kPrivacyPolicyVersion = 2;
 const int kTermsOfServiceVersion = 1;
 
 class LegalSection {
@@ -94,6 +94,31 @@ const List<LegalSection> kPrivacyPolicySections = [
         'datos: contacto@metamorfosisreal.com.',
   ),
   LegalSection(
+    title: 'Datos de salud sensibles: Glucosa',
+    body: 'Módulo "Tu Glucosa" (opcional): si activas el seguimiento de '
+        'glucosa —ya sea porque marcaste prediabetes/diabetes tipo 2 en '
+        'tus condiciones médicas o porque lo activaste manualmente desde '
+        'Perfil— guardamos tus lecturas de glucosa (valor en mg/dL, '
+        'momento del día, síntomas que reportes) junto con una '
+        'instantánea de tu ayuno, sueño y última comida en el momento del '
+        'registro, para poder mostrarte correlaciones con tus 5 pilares.\n\n'
+        'Bajo la Ley 1581 de 2012 (Colombia) y el RGPD/GDPR (para '
+        'usuarios en la Unión Europea), la glucosa es un dato de salud '
+        'sensible. Por eso: (a) el módulo nunca se activa sin tu '
+        'consentimiento explícito e informado, mostrado antes del primer '
+        'registro; (b) podés pausarlo o desactivarlo en cualquier momento '
+        'desde Perfil → Seguimiento de glucosa, sin perder el resto de tu '
+        'cuenta; (c) podés eliminar lecturas individuales directamente '
+        'desde "Tu Glucosa" en Progreso (derecho de supresión); (d) no '
+        'usamos estos datos para publicidad ni los compartimos con '
+        'terceros distintos a los ya listados en "Con quién compartimos".\n\n'
+        'El análisis que hacemos con estos datos es educativo y '
+        'estadístico (correlación, no diagnóstico): nunca reemplaza el '
+        'criterio de un profesional de la salud, y el motor exige un '
+        'mínimo de días de datos reales antes de mostrar cualquier '
+        'conclusión — nunca inventa patrones con información insuficiente.',
+  ),
+  LegalSection(
     title: 'Disclaimer médico',
     body: 'ElenaApp NO es un dispositivo médico. El IMR es un indicador '
         'informativo basado en literatura científica revisada (ver '
@@ -108,7 +133,9 @@ const List<LegalSection> kPrivacyPolicySections = [
     body: 'Si modificamos esta política sustancialmente, te lo notificaremos '
         'la próxima vez que abras la app. Tu uso continuado constituye '
         'aceptación de la versión actual.\n\n'
-        'Versión actual: 1. Última actualización: mayo 2026.',
+        'Versión actual: 2. Última actualización: julio 2026 (se agregó '
+        'la sección "Datos de salud sensibles: Glucosa" para el módulo '
+        'opcional de seguimiento de glucosa).',
   ),
 ];
 

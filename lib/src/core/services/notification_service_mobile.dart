@@ -99,6 +99,11 @@ class NotificationIds {
   // cancelCircadian() ya la cubre sin cambios ahí.
   static const int dailyGoalsSummary = 108;
 
+  // Módulo "Tu Glucosa" (23-jul): recordatorio matutino de registro en
+  // ayunas — mismo offset que dailyGoalsSummary (wakeUpTime + 15 min).
+  // Dentro del rango circadiano (100-109) → cancelCircadian() ya lo cubre.
+  static const int glucoseMorningReminder = 109;
+
   static const int fasting12h = 200;
   // SPEC-169 (2026-06-04): hito autofagia inicial (Levine 2017),
   // intercalado entre 12h y 18h. Cancelado por cancelFasting() (rango 200-209).

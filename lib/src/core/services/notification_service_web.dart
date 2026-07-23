@@ -17,6 +17,10 @@ class NotificationIds {
   // notification_service_mobile.dart — misma constante, mantener en
   // sync porque el conditional export usa una u otra, nunca ambas).
   static const int dailyGoalsSummary = 108;
+  // Módulo "Tu Glucosa" (23-jul): recordatorio matutino de registro en
+  // ayunas, mismo offset que dailyGoalsSummary (wakeUpTime + 15 min).
+  // Dentro del rango circadiano (100-109) → cancelCircadian() ya lo cubre.
+  static const int glucoseMorningReminder = 109;
   static const int fasting12h = 200;
   static const int fasting18h = 201;
   static const int fasting24h = 202;
