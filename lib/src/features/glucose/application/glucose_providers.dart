@@ -172,7 +172,7 @@ final glucoseInsightsProvider = Provider<List<GlucoseInsight>>((ref) {
 /// llama desde el sheet de registro (`glucose_reading_sheet.dart`) —
 /// vive acá para que ese widget no tenga lógica de negocio, solo UI.
 GlucoseReading buildGlucoseReadingSnapshot(
-  Ref ref, {
+  WidgetRef ref, {
   required String userId,
   required int valueMgDl,
   required GlucoseReadingContext context,
