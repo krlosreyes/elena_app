@@ -910,6 +910,21 @@ final streakRiskLevelProvider = Provider<StreakRiskLevel>((ref) {
   final todayQualifies = streak.todayEntry?.qualifiesForStreak ?? false;
   if (todayQualifies) return StreakRiskLevel.onTrack;
 
+  // Fix (22-jul, feedback en vivo de Carlos): `qualifiesForStreak` exige
+  // que el ayuno ya haya CRUZADO el 80% de su meta
+  // (`StreakEngine.evaluateFasting`) — un ayuno recién arrancado o a
+  // mitad de camino todavía da `fastingCompleted=false`, aunque el
+  // usuario esté activamente cumpliendo su ancla en este momento. Sin
+  // este chequeo, cualquiera con un ayuno EN CURSO (la señal más fuerte
+  // posible de "estoy en camino") veía el ring en amarillo/rojo solo
+  // por no haber cruzado todavía un umbral que de todos modos va a
+  // cruzar más tarde en el mismo ayuno. "Ayuno activo" ya es evidencia
+  // de que el ancla de hoy está en marcha — se trata como onTrack, no
+  // como riesgo, independientemente de cuántas horas lleve.
+  final fastingInProgress =
+      ref.watch(fastingProvider.select((s) => s.isActive));
+  if (fastingInProgress) return StreakRiskLevel.onTrack;
+
   final noSafetyNet = streak.freezesAvailable <= 0;
   final pastThreshold = DateTime.now().hour >= 18;
   if (noSafetyNet && pastThreshold) return StreakRiskLevel.atRiskHigh;
