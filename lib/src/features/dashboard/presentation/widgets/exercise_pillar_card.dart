@@ -48,6 +48,8 @@ class ExercisePillarCard extends ConsumerWidget {
       children: [
         if (plan != null) ...[
           _PlanOfTheDayBanner(entry: plan.entryFor(DateTime.now())),
+          const SizedBox(height: 14),
+          _WeeklyFuerzaStrip(plan: plan),
           const SizedBox(height: 12),
         ],
         Row(
@@ -168,6 +170,88 @@ class _PlanOfTheDayBanner extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Pedido directo de Carlos (23-jul): franja de 7 círculos pequeños
+/// (L M M J V S D) que marca automáticamente qué días de la semana
+/// tocan Fuerza, según el plan generado por WeeklyExercisePlanEngine.
+/// Mismo criterio aditivo que `_PlanOfTheDayBanner`: vive dentro del
+/// mismo `if (plan != null)` — sin plan no hay dato real que marcar.
+/// Mismo color de "fuerza" que `WeeklyPlanSplitCard` (Progreso) para
+/// que el usuario asocie el mismo significado en ambas pantallas.
+class _WeeklyFuerzaStrip extends StatelessWidget {
+  const _WeeklyFuerzaStrip({required this.plan});
+
+  final WeeklyExercisePlan plan;
+
+  static const _fuerzaColor = Color(0xFF14B8A6);
+  static const _labels = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
+
+  @override
+  Widget build(BuildContext context) {
+    final todayWeekday = DateTime.now().weekday; // ISO 1=lunes..7=domingo.
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'TU SEMANA DE FUERZA',
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.40),
+            fontSize: 10,
+            letterSpacing: 1.2,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: List.generate(7, (i) {
+            final weekday = i + 1;
+            final entry = plan.days.firstWhere(
+              (d) => d.weekday == weekday,
+              orElse: () => plan.days.first,
+            );
+            final isFuerza = entry.type == PlanSessionType.fuerza;
+            final isToday = weekday == todayWeekday;
+
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 26,
+                  height: 26,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isFuerza
+                        ? _fuerzaColor
+                        : Colors.white.withValues(alpha: 0.05),
+                    border: Border.all(
+                      color: isToday
+                          ? Colors.white.withValues(alpha: 0.85)
+                          : Colors.white.withValues(alpha: 0.12),
+                      width: isToday ? 1.6 : 1,
+                    ),
+                  ),
+                  child: Text(
+                    _labels[i],
+                    style: TextStyle(
+                      color: isFuerza
+                          ? Colors.black
+                          : Colors.white.withValues(alpha: 0.45),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ],
+            );
+          }),
+        ),
+      ],
     );
   }
 }
