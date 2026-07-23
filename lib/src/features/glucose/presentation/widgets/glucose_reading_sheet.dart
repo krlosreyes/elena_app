@@ -29,7 +29,17 @@ Future<void> showGlucoseReadingSheet(
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     isDismissible: true,
-    builder: (_) => _GlucoseReadingSheet(initialContext: initialContext),
+    // Bug reportado en dispositivo físico (23-jul): el teclado numérico
+    // tapaba el botón "Guardar" — el DraggableScrollableSheet calcula su
+    // alto como fracción de la pantalla completa, sin descontar el
+    // teclado. Mismo fix que edit_biometry_value_sheet.dart: envolver el
+    // builder en un Padding con `viewInsets.bottom` empuja todo el sheet
+    // hacia arriba cuando aparece el teclado, así el alto disponible
+    // para el DraggableScrollableSheet ya excluye esa franja.
+    builder: (ctx) => Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+      child: _GlucoseReadingSheet(initialContext: initialContext),
+    ),
   );
 }
 
