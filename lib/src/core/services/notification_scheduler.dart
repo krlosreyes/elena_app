@@ -301,8 +301,10 @@ class NotificationScheduler {
       await NotificationService.cancelFasting();
 
       // SPEC-169 v1.1 (2026-06-04): 4 hitos con tono humano-cercano + cita.
-      // Hito 16h nuevo (autofagia inicial — Levine 2017); 24h queda como
-      // "reparación profunda" para evitar redundancia con 16h.
+      // Hito 16h nuevo (autofagia inicial — Ohsumi 2016, Nobel de
+      // Fisiología o Medicina; corregido 23-jul-2026, antes decía
+      // "Levine 2017" por error); 24h queda como "reparación profunda"
+      // para evitar redundancia con 16h.
       final DateTime m12h = fastingStart.add(const Duration(hours: 12));
       final DateTime m16h = fastingStart.add(const Duration(hours: 16));
       final DateTime m18h = fastingStart.add(const Duration(hours: 18));

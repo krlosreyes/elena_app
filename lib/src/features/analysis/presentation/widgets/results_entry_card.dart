@@ -27,17 +27,16 @@ class ResultsEntryCard extends ConsumerWidget {
     final scoreSeries = ref.watch(resolvedDailyScoreSeriesProvider);
     final score =
         ChartHeroComputer.aggregateValue(scoreSeries, HeroAggregation.last);
-    // imrSeriesProvider SÍ es AsyncValue<MetricSeries> — hay que desenvolver
-    // .value antes de pasarlo a ChartHeroComputer.
-    final imrSeries = ref.watch(imrSeriesProvider).value;
-    final imr = imrSeries == null
-        ? null
-        : ChartHeroComputer.aggregateValue(imrSeries, HeroAggregation.avg);
 
-    final parts = <String>[];
-    if (score != null) parts.add('Score ${ChartHeroComputer.formatValue(score)}');
-    if (imr != null) parts.add('IMR ${ChartHeroComputer.formatValue(imr)}');
-    final subtitle = parts.isEmpty ? 'Aún sin registros' : parts.join(' · ');
+    // Fix P1 (validación de ejecución real, 23-jul-2026): esta card
+    // mostraba "Score X · IMR Y" con el mismo peso visual, sin jerarquía,
+    // lo que reforzaba la confusión de "¿cuál número miro?" reportada en
+    // la validación de ejecución real. Score del día pasa a ser la única
+    // métrica visible en este resumen colapsado; el IMR sigue disponible
+    // — sin perderse — un tap más adentro, en ResultadosDetailScreen.
+    final subtitle = score == null
+        ? 'Aún sin registros'
+        : 'Score del día: ${ChartHeroComputer.formatValue(score)}';
 
     return InkWell(
       borderRadius: BorderRadius.circular(14),

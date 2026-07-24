@@ -47,9 +47,14 @@ void main() {
       expect(find.textContaining('NEJM'), findsWidgets);
     });
 
-    testWidgets('renderea citation pill de Levine 2017', (tester) async {
+    // Fix P0 (validación de ejecución real, 23-jul-2026): el Nobel de
+    // Fisiología o Medicina 2016 por el descubrimiento de los mecanismos
+    // de la autofagia fue para Yoshinori Ohsumi, no para "Levine 2017"
+    // (Beth Levine nunca recibió el Nobel). Test actualizado junto con
+    // el copy real en intro_screens.dart.
+    testWidgets('renderea citation pill de Ohsumi 2016', (tester) async {
       await tester.pumpWidget(_wrap(const IntroWelcomeStep(isDark: true)));
-      expect(find.textContaining('Levine 2017'), findsWidgets);
+      expect(find.textContaining('Ohsumi 2016'), findsWidgets);
     });
 
     testWidgets('renderea sin voseo', (tester) async {
@@ -158,7 +163,7 @@ void main() {
       );
       expect(find.textContaining('16 horas'), findsWidgets);
       expect(find.textContaining('Cahill'), findsWidgets);
-      expect(find.textContaining('Levine'), findsWidgets);
+      expect(find.textContaining('Ohsumi'), findsWidgets);
     });
 
     testWidgets('protocolo 14:10 muestra timeline de 14 horas', (tester) async {
@@ -171,14 +176,14 @@ void main() {
       expect(find.textContaining('Cahill'), findsWidgets);
     });
 
-    testWidgets('protocolo 18:6 menciona autofagia y Levine', (tester) async {
+    testWidgets('protocolo 18:6 menciona autofagia y Ohsumi', (tester) async {
       _bigViewport(tester);
       addTearDown(tester.view.reset);
       await tester.pumpWidget(
         _wrap(const IntroInsightStep(isDark: true, protocol: '18:6')),
       );
       expect(find.textContaining('18'), findsWidgets);
-      expect(find.textContaining('Levine'), findsWidgets);
+      expect(find.textContaining('Ohsumi'), findsWidgets);
     });
 
     testWidgets('default (sin protocolo) usa 16:8', (tester) async {

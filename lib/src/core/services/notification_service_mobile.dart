@@ -105,8 +105,10 @@ class NotificationIds {
   static const int glucoseMorningReminder = 109;
 
   static const int fasting12h = 200;
-  // SPEC-169 (2026-06-04): hito autofagia inicial (Levine 2017),
-  // intercalado entre 12h y 18h. Cancelado por cancelFasting() (rango 200-209).
+  // SPEC-169 (2026-06-04): hito autofagia inicial (Ohsumi 2016, Nobel de
+  // Fisiología o Medicina; corregido 23-jul-2026, antes decía "Levine 2017"
+  // por error), intercalado entre 12h y 18h. Cancelado por cancelFasting()
+  // (rango 200-209).
   static const int fasting16h = 203;
   static const int fasting18h = 201;
   static const int fasting24h = 202;

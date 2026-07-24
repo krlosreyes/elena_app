@@ -69,7 +69,10 @@ class FastingConsciousnessCard extends ConsumerWidget {
     final benefits = isActive
         ? const [
             'Estás reduciendo glucosa y mejorando sensibilidad a la insulina.',
-            'A partir de 12h se activa la cetosis y la autofagia inicial.',
+            // Fix P0 (validación de ejecución real, 23-jul-2026): esta
+            // tarjeta decía "12h" mientras el onboarding (intro_screens.dart)
+            // dice "Hora 16" para el mismo hito — se unifica a 16h.
+            'A partir de 16h se activa la cetosis y la autofagia inicial.',
           ]
         : const [
             'Reduce resistencia a la insulina desde la 1ª hora',

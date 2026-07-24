@@ -93,7 +93,11 @@ class IntroWelcomeStep extends StatelessWidget {
         const SizedBox(height: 8),
         _CitationPill(
           icon: Icons.science_outlined,
-          text: 'Levine 2017 · Autofagia y ayuno  (Nobel de Medicina)',
+          // Fix P0 (validación de ejecución real, 23-jul-2026): el Nobel de
+          // Fisiología o Medicina 2016 por el descubrimiento de los
+          // mecanismos de la autofagia fue para Yoshinori Ohsumi, no para
+          // Beth Levine (que nunca recibió el Nobel) ni en 2017.
+          text: 'Ohsumi 2016 · Autofagia y ayuno  (Nobel de Medicina)',
           isDark: isDark,
         ),
         const SizedBox(height: 8),
@@ -398,7 +402,7 @@ class IntroInsightStep extends StatelessWidget {
             hour: 'Hora 16',
             icon: '🧬',
             text: 'Autofagia activa: el cuerpo limpia células dañadas.',
-            citation: '· Levine, 2017 — Nobel de Medicina',
+            citation: '· Ohsumi, 2016 — Nobel de Medicina',
           ),
           _TimelineData(
             hour: 'Hora 18',
@@ -429,7 +433,7 @@ class IntroInsightStep extends StatelessWidget {
             hour: 'Hora 16',
             icon: '🧬',
             text: 'Autofagia: limpieza celular profunda.',
-            citation: '· Levine, 2017 — Nobel de Medicina',
+            citation: '· Ohsumi, 2016 — Nobel de Medicina',
           ),
         ];
     }

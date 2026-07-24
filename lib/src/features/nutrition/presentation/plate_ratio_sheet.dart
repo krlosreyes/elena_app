@@ -1041,6 +1041,7 @@ class _AERatioBar extends StatelessWidget {
         tipoASlots += food.category.slots;
       }
     }
+    final tipoESlots = total - tipoASlots;
 
     final aPercent = total > 0 ? (tipoASlots / total).toDouble() : 0.0;
     final isOptimal = aPercent >= 0.70;
@@ -1092,7 +1093,9 @@ class _AERatioBar extends StatelessWidget {
         ),
         const SizedBox(height: 3),
         Text(
-          isOptimal ? 'Plato en proporción ideal (3A:1E)' : 'Meta: al menos 3 partes A por cada 1 E',
+          isOptimal
+              ? _optimalLabel(tipoASlots, tipoESlots)
+              : 'Meta: al menos 3 partes A por cada 1 E',
           style: TextStyle(
             color: AppColors.textMuted,
             fontSize: 11,
@@ -1101,6 +1104,24 @@ class _AERatioBar extends StatelessWidget {
       ],
     );
   }
+
+  // Fix P1 (validación de ejecución real, 23-jul-2026): el texto era un
+  // literal fijo "(3A:1E)" que se mostraba para CUALQUIER plato con
+  // aPercent >= 70%, incluyendo un plato 100% Tipo A / 0% Tipo E, donde
+  // "3A:1E" no describe la composición real. Ahora se calcula la
+  // proporción real (reducida a su mínima expresión) y se declara el
+  // caso especial de 0 slots Tipo E de forma explícita.
+  static String _optimalLabel(int aSlots, int eSlots) {
+    if (eSlots == 0) {
+      return 'Plato 100% Tipo A — proporción ideal';
+    }
+    final divisor = _gcd(aSlots, eSlots);
+    final aRatio = aSlots ~/ divisor;
+    final eRatio = eSlots ~/ divisor;
+    return 'Plato en proporción ideal (${aRatio}A:${eRatio}E)';
+  }
+
+  static int _gcd(int a, int b) => b == 0 ? a : _gcd(b, a % b);
 }
 
 // ── Food Picker Sheet ─────────────────────────────────────────────────
@@ -1281,7 +1302,13 @@ class _FoodPickerSheetState extends State<_FoodPickerSheet> {
   }
 
   Widget _buildImpactRow(double previewQuality, double delta, bool isEmpty) {
-    final percent = (previewQuality * 100).round();
+    // Fix P0 (validación de ejecución real, 23-jul-2026): `previewQuality`
+    // y `delta` provienen de `PlateBuilder.qualityPercent`, que YA está
+    // expresado en escala 0-100 (ver plate_builder.dart). El código
+    // anterior volvía a multiplicar por 100 como si fueran fracciones
+    // 0-1 (igual que `aPercent` en `_AERatioBar`), produciendo valores
+    // como "Calidad del plato: 9500%" para un alimento con score 95.
+    final percent = previewQuality.round();
     final arrow = isEmpty
         ? ''
         : delta > 0.01
@@ -1310,7 +1337,7 @@ class _FoodPickerSheetState extends State<_FoodPickerSheet> {
         if (!isEmpty && arrow.isNotEmpty) ...[
           const SizedBox(width: 6),
           Text(
-            '$arrow ${delta.abs() > 0.01 ? '${(delta * 100).round().abs()}%' : ''}',
+            '$arrow ${delta.abs() > 0.01 ? '${delta.round().abs()}%' : ''}',
             style: TextStyle(
               color: arrowColor,
               fontSize: 13,

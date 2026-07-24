@@ -20,6 +20,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elena_app/src/core/theme/app_theme.dart';
+import 'package:elena_app/src/core/utils/error_presentation.dart';
 import 'package:elena_app/src/features/auth/application/auth_controller.dart';
 
 class SetPasswordScreen extends ConsumerStatefulWidget {
@@ -71,7 +72,7 @@ class _SetPasswordScreenState extends ConsumerState<SetPasswordScreen> {
       next.whenOrNull(
         error: (err, _) => ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(err.toString()),
+            content: Text(presentableError(err)),
             backgroundColor: Colors.redAccent,
           ),
         ),

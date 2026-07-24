@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
+import 'package:elena_app/src/core/utils/error_presentation.dart';
 import 'package:elena_app/src/features/auth/application/auth_controller.dart';
 import 'package:elena_app/src/features/auth/presentation/widgets/legal_footer.dart';
 
@@ -43,7 +44,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       next.whenOrNull(
         error: (err, _) => ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text(err.toString()), backgroundColor: Colors.redAccent),
+              content: Text(presentableError(err)),
+              backgroundColor: Colors.redAccent),
         ),
       );
     });

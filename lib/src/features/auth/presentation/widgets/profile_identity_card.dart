@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/core/engine/imr_persistence_provider.dart';
 import 'package:elena_app/src/features/analysis/domain/imr_explanation.dart';
@@ -83,56 +84,43 @@ class ProfileIdentityCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 10),
-          // IMR badge
-          Column(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: zoneColor, width: 2),
-                ),
-                child: Center(
-                  child: Text(
-                    '${imrResult.score}',
+          // Fix P1 (validación de ejecución real, 23-jul-2026): este
+          // anillo con el número de IMR competía visualmente con Score
+          // del día por ser "la métrica principal" apenas se abría
+          // Perfil, agravando la confusión de "¿cuál número miro?" ya
+          // reportada en Progreso (ver ResultsEntryCard). Se reemplaza
+          // el número siempre visible por un indicador compacto que
+          // navega al detalle — el IMR completo (con su explicación y
+          // el badge de "estimado" si aplica) sigue viviendo en
+          // ResultadosDetailScreen, no desaparece, solo deja de ocupar
+          // el primer plano de la vista de identidad.
+          InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () => context.push('/analysis/resultados'),
+            child: Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: zoneColor.withValues(alpha: 0.5)),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.query_stats_rounded, color: zoneColor, size: 18),
+                  const SizedBox(height: 3),
+                  Text(
+                    'Ver IMR',
                     style: TextStyle(
-                      fontSize: 19,
+                      fontSize: 9,
                       fontWeight: FontWeight.w800,
                       color: zoneColor,
-                      height: 1.0,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 5),
-              Text(
-                IMRZoneColors.displayLabel(imrResult.zone),
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 8.5,
-                  fontWeight: FontWeight.w800,
-                  color: zoneColor,
-                  letterSpacing: 0.4,
-                ),
-              ),
-              // SPEC-229: badge "datos incompletos" cuando el bloque
-              // Estructura usa valores poblacionales (50% del IMR).
-              if (imrResult.localFull?.isPartialBiometrics == true)
-                const Padding(
-                  padding: EdgeInsets.only(top: 3),
-                  child: Text(
-                    'estimado',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 7.5,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFFF59E0B),
                       letterSpacing: 0.2,
                     ),
                   ),
-                ),
-            ],
+                ],
+              ),
+            ),
           ),
         ],
       ),
