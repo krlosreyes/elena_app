@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/core/engine/imr_persistence_provider.dart';
-import 'package:elena_app/src/features/analysis/domain/imr_explanation.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 
 /// SPEC-116: sin border coloreado. El badge IMR ya comunica el
