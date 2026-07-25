@@ -198,31 +198,29 @@ class _PlateRatioSheetState extends ConsumerState<PlateRatioSheet> {
               ],
               // Fricción mínima (25-jul-2026, diagnóstico "Pilar Nutrición:
               // dos métricas paralelas" §3.4): alimentos Tipo A de uso
-              // frecuente y calidad muy alta (score ≥ 90) se agregan con
-              // UN toque — sin abrir `_FoodPickerSheet` — a diferencia del
-              // flujo de búsqueda (4 toques mínimo: buscar → tocar
-              // resultado → elegir cantidad → confirmar). Inspirado en el
-              // patrón "ZeroPoint" de Weight Watchers: la fricción más baja
-              // queda reservada a propósito para las opciones más
-              // alineadas con el modelo hormonal.
+              // frecuente y calidad muy alta (score ≥ 90) aparecen como
+              // accesos directos ANTES del buscador — evita el paso de
+              // escribir/escanear resultados (el resto del flujo de
+              // búsqueda es idéntico: buscar → tocar resultado → elegir
+              // cantidad → confirmar; acá se saltan los dos primeros).
+              // Inspirado en el patrón "ZeroPoint" de Weight Watchers.
               //
-              // FIX (25-jul-2026, mismo día — Carlos: "no es lo mismo un
-              // huevo que 3"): el toque simple agrega 1 porción de
-              // referencia por defecto, pero `PlateBuilder.qualityPercent`
-              // y `derivedMealRatio` promedian por SLOTS acumulados — 3
-              // huevos pesan 3× lo que 1 huevo en ese cálculo, y desde el
-              // rediseño de `NutritionScoreCalculator` de ayer esa
-              // composición domina el 60% del Score del Día. Registrar
-              // siempre "1" sin importar cuánto comió el usuario podía
-              // hacer que el mismo plato real quedara "excelente" o
-              // "mejorable" según si tocó el atajo o buscó y especificó
-              // cantidad. Fix elegido por Carlos: mantener presionado
-              // abre el mismo `_FoodPickerSheet` del flujo de búsqueda
-              // para ajustar la cantidad — el toque simple sigue siendo
-              // el camino rápido para el caso común (1 porción).
+              // FIX 1 (mismo día — Carlos: "no es lo mismo un huevo que
+              // 3"): `PlateBuilder.qualityPercent`/`derivedMealRatio`
+              // promedian por SLOTS acumulados — 3 huevos pesan 3× lo que
+              // 1 huevo, y desde ayer esa composición domina el 60% del
+              // Score del Día. Un atajo que siempre agregara "1" sin
+              // preguntar podía hacer que el mismo plato real quedara
+              // "excelente" o "mejorable" según cómo se registró.
+              //
+              // FIX 2 (mismo día — Carlos: "que se despliegue sin hacer
+              // presión"): la primera corrección resolvía esto con
+              // mantener-presionado como gesto alterno, pero es un gesto
+              // poco descubrible en móvil. Ahora el toque simple ya abre
+              // el selector de cantidad (el mismo `_FoodPickerSheet` que
+              // usa el buscador) — sin gesto especial, sin adivinar.
               _QuickAddRow(
                 builder: _builder,
-                onAdd: (food) => setState(() => _builder.add(food)),
                 onAddCopies: (food, copies) => setState(() {
                   for (var i = 0; i < copies; i++) {
                     _builder.add(food);
@@ -799,27 +797,27 @@ class _SelectedChips extends StatelessWidget {
   }
 }
 
-/// Fricción mínima (25-jul-2026): fila de accesos rápidos de UN toque
-/// para alimentos Tipo A de calidad muy alta (score ≥ 90). Curada a
-/// mano (no derivada de historial de uso — eso requeriría persistencia
-/// nueva, fuera de alcance de este cambio) con 8 alimentos diversos y
-/// universales de las 3 categorías del plato. Cada tap agrega 1 porción
-/// de referencia directamente, sin abrir el picker de cantidad.
+/// Fricción mínima (25-jul-2026): fila de accesos rápidos para alimentos
+/// Tipo A de calidad muy alta (score ≥ 90). Curada a mano (no derivada
+/// de historial de uso — eso requeriría persistencia nueva, fuera de
+/// alcance de este cambio) con 8 alimentos diversos y universales de las
+/// 3 categorías del plato.
+///
+/// Un toque abre el MISMO `_FoodPickerSheet` que usa `_SearchResults` —
+/// el ahorro de fricción está en saltarse buscar/escanear resultados,
+/// no en saltarse la cantidad (fix 25-jul-2026, Carlos: "que se
+/// despliegue sin hacer presión" — un gesto simple, sin long-press).
 class _QuickAddRow extends StatelessWidget {
-  /// Plato en construcción — se lo pasamos a `_FoodPickerSheet.show` en el
-  /// long-press, igual que hace `_SearchResults.onPick` (necesita ver la
+  /// Plato en construcción — se lo pasamos a `_FoodPickerSheet.show`,
+  /// igual que hace `_SearchResults.onPick` (necesita ver la
   /// composición actual para calcular la vista previa de calidad).
   final PlateBuilder builder;
 
-  /// Toque simple: agrega 1 porción de referencia (el camino rápido).
-  final void Function(Food food) onAdd;
-
-  /// Mantener presionado: agrega [copies] porciones elegidas en el picker.
+  /// Agrega [copies] porciones del alimento elegidas en el picker.
   final void Function(Food food, int copies) onAddCopies;
 
   const _QuickAddRow({
     required this.builder,
-    required this.onAdd,
     required this.onAddCopies,
   });
 
@@ -848,7 +846,7 @@ class _QuickAddRow extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Agregar rápido · mantén presionado para elegir cantidad',
+          'Agregar rápido',
           style: TextStyle(
             color: AppColors.textSecondary,
             fontSize: 12,
@@ -866,8 +864,7 @@ class _QuickAddRow extends StatelessWidget {
               final food = foods[i];
               final color = PlatePainter._colorForScore(food.qualityScore);
               return InkWell(
-                onTap: () => onAdd(food),
-                onLongPress: () async {
+                onTap: () async {
                   final copies = await _FoodPickerSheet.show(
                     context,
                     food: food,
