@@ -196,6 +196,20 @@ class _PlateRatioSheetState extends ConsumerState<PlateRatioSheet> {
                 ),
                 const SizedBox(height: 14),
               ],
+              // Fricción mínima (25-jul-2026, diagnóstico "Pilar Nutrición:
+              // dos métricas paralelas" §3.4): alimentos Tipo A de uso
+              // frecuente y calidad muy alta (score ≥ 90) se agregan con
+              // UN toque — sin abrir `_FoodPickerSheet` ni elegir cantidad
+              // — a diferencia del flujo de búsqueda (4 toques mínimo:
+              // buscar → tocar resultado → elegir cantidad → confirmar).
+              // Inspirado en el patrón "ZeroPoint" de Weight Watchers: la
+              // fricción más baja queda reservada a propósito para las
+              // opciones más alineadas con el modelo hormonal. Agrega 1
+              // porción de referencia (`portionLabel`) del alimento.
+              _QuickAddRow(
+                onAdd: (food) => setState(() => _builder.add(food)),
+              ),
+              const SizedBox(height: 14),
               _SearchField(
                 controller: _searchController,
                 onChanged: (_) => setState(() {}),
@@ -761,6 +775,95 @@ class _SelectedChips extends StatelessWidget {
           ),
         );
       }).toList(),
+    );
+  }
+}
+
+/// Fricción mínima (25-jul-2026): fila de accesos rápidos de UN toque
+/// para alimentos Tipo A de calidad muy alta (score ≥ 90). Curada a
+/// mano (no derivada de historial de uso — eso requeriría persistencia
+/// nueva, fuera de alcance de este cambio) con 8 alimentos diversos y
+/// universales de las 3 categorías del plato. Cada tap agrega 1 porción
+/// de referencia directamente, sin abrir el picker de cantidad.
+class _QuickAddRow extends StatelessWidget {
+  final void Function(Food food) onAdd;
+
+  const _QuickAddRow({required this.onAdd});
+
+  /// Ids estables de `FoodCatalog` — ver criterio de curación en el
+  /// comentario de la clase. Todos con qualityScore ≥ 90.
+  static const List<String> _quickAddIds = [
+    'pollo',
+    'huevo',
+    'aguacate',
+    'almendras',
+    'brocoli',
+    'espinaca',
+    'tomate',
+    'pepino',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final foods = _quickAddIds
+        .map(FoodCatalog.byId)
+        .whereType<Food>()
+        .toList(growable: false);
+    if (foods.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Agregar rápido',
+          style: TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 34,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: foods.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            itemBuilder: (context, i) {
+              final food = foods[i];
+              final color = PlatePainter._colorForScore(food.qualityScore);
+              return InkWell(
+                onTap: () => onAdd(food),
+                borderRadius: BorderRadius.circular(999),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: color.withValues(alpha: 0.35)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.add_circle_rounded, size: 14, color: color),
+                      const SizedBox(width: 5),
+                      Text(
+                        food.name,
+                        style: TextStyle(
+                          color: color,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }

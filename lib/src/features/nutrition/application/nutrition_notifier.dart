@@ -739,16 +739,22 @@ class NutritionNotifier extends StateNotifier<NutritionState>
 
   /// Recalcula nutritionScore y windowAdherence dado un conjunto de logs.
   ///
-  /// SPEC-audit CODE-02: la fórmula (pesos 0.60/0.40) ahora vive en
-  /// `NutritionScoreCalculator` — mismos valores, solo con nombre.
+  /// SPEC-audit CODE-02: la fórmula vivía con pesos 0.60/0.40 (conteo/
+  /// ventana) en `NutritionScoreCalculator` — mismos valores, solo con
+  /// nombre. Rediseño 2026-07-25: se agrega `plateQualityScore` (Cociente
+  /// A, ver doc extenso en `nutrition_score_calculator.dart`) como
+  /// componente dominante (0.60), bajando conteo/ventana a 0.20/0.20.
   NutritionState _recalculate(List<NutritionLog> logs, int target) {
     final double mealCountScore =
         NutritionScoreCalculator.mealCountScore(logs.length, target);
     final double windowAdherence =
         NutritionScoreCalculator.windowAdherence(logs);
+    final double plateQualityScore =
+        NutritionScoreCalculator.plateQualityScore(logs);
     final double score = NutritionScoreCalculator.score(
       mealCountScore: mealCountScore,
       windowAdherence: windowAdherence,
+      plateQualityScore: plateQualityScore,
     );
     return state.copyWith(
       todayLogs: logs,
