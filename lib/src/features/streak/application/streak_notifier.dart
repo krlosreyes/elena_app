@@ -67,6 +67,13 @@ class StreakState {
   /// por una reserva — para mostrar un indicador sutil en la UI.
   final bool streakHasProtectedDay;
 
+  /// "Racha de Calidad" (25-jul-2026, diferenciador de mercado): días
+  /// consecutivos con composición real de plato ≥60% (Cociente A), no
+  /// solo "registró algo". Ver `StreakEngine.computeNutritionQualityStreak`
+  /// para el criterio completo y sus limitaciones sobre histórico previo
+  /// al rediseño de `NutritionScoreCalculator`.
+  final int nutritionQualityStreak;
+
   /// Si hoy ya califica para la racha.
   bool get todayCompleted => todayEntry?.qualifiesForStreak ?? false;
 
@@ -83,6 +90,7 @@ class StreakState {
     this.history = const [],
     this.freezesAvailable = 0,
     this.streakHasProtectedDay = false,
+    this.nutritionQualityStreak = 0,
   });
 
   StreakState copyWith({
@@ -95,6 +103,7 @@ class StreakState {
     List<StreakEntry>? history,
     int? freezesAvailable,
     bool? streakHasProtectedDay,
+    int? nutritionQualityStreak,
   }) =>
       StreakState(
         currentStreak: currentStreak ?? this.currentStreak,
@@ -107,6 +116,8 @@ class StreakState {
         freezesAvailable: freezesAvailable ?? this.freezesAvailable,
         streakHasProtectedDay:
             streakHasProtectedDay ?? this.streakHasProtectedDay,
+        nutritionQualityStreak:
+            nutritionQualityStreak ?? this.nutritionQualityStreak,
       );
 }
 
@@ -657,6 +668,14 @@ class StreakNotifier extends StateNotifier<StreakState> {
     final prevStreak = state.currentStreak;
     final prevProtected = state.streakHasProtectedDay;
 
+    // "Racha de Calidad" (25-jul-2026): mismo historial, mismo ancla
+    // cycle-aware que la racha principal — solo cambia el criterio de
+    // calificación (composición real vs. 3+/5 pilares).
+    final nutritionQualityStreak = StreakEngine.computeNutritionQualityStreak(
+      history,
+      asOf: _todayAnchor,
+    );
+
     state = state.copyWith(
       history: history,
       todayEntry: todayEntry,
@@ -667,6 +686,7 @@ class StreakNotifier extends StateNotifier<StreakState> {
       weeklyQualityScore: newQualityScore,
       freezesAvailable: freezeState.freezesAvailable,
       streakHasProtectedDay: freezeState.currentStreakHasProtectedDay,
+      nutritionQualityStreak: nutritionQualityStreak,
     );
 
     // Persistir el ratio global solo si cambió (evita loops circulares)

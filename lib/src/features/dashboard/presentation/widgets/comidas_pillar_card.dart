@@ -15,6 +15,7 @@ import 'package:elena_app/src/features/nutrition/domain/meal_ratio.dart';
 import 'package:elena_app/src/features/nutrition/domain/nutrition_log.dart';
 import 'package:elena_app/src/features/nutrition/presentation/meal_history_sheet.dart';
 import 'package:elena_app/src/features/nutrition/presentation/plate_ratio_sheet.dart';
+import 'package:elena_app/src/features/streak/application/streak_notifier.dart';
 
 class ComidasPillarCard extends ConsumerWidget {
   const ComidasPillarCard({
@@ -49,6 +50,14 @@ class ComidasPillarCard extends ConsumerWidget {
     final cocienteA = cocienteService.calculate(state.todayLogs);
     final cocientePct = (cocienteA * 100).round();
     final lastLog = state.todayLogs.isNotEmpty ? state.todayLogs.last : null;
+    // "Racha de Calidad" (25-jul-2026, diferenciador de mercado — ver
+    // diagnóstico "Pilar Nutrición: dos métricas paralelas" §3.3): días
+    // consecutivos con plato bien compuesto, distinto de la racha
+    // principal (que exige 3+/5 pilares y es ciega a composición dentro
+    // de Nutrición). Cálculo en StreakEngine.computeNutritionQualityStreak,
+    // sobre nutritionMagnitude ya persistido — sin schema nuevo.
+    final qualityStreak =
+        ref.watch(streakProvider.select((s) => s.nutritionQualityStreak));
 
     final card = PillarCardUi.shell(
       // Título vacío: la card se identifica por el badge de comidas.
@@ -81,6 +90,11 @@ class ComidasPillarCard extends ConsumerWidget {
                       big: true),
                 ],
               ),
+              // ── Racha de Calidad ─────────────────────────────────────
+              if (qualityStreak > 0) ...[
+                const SizedBox(height: 12),
+                _QualityStreakChip(days: qualityStreak),
+              ],
               // ── Composición del último plato ────────────────────────
               if (lastLog != null) ...[
                 const SizedBox(height: 14),
@@ -299,6 +313,51 @@ class _LastPlateCard extends StatelessWidget {
               ),
             ),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+/// "Racha de Calidad" (25-jul-2026) — chip discreto, solo visible cuando
+/// hay al menos 1 día de racha. Distinto en tono/color del badge de
+/// conteo ("N/M comidas") para que el usuario no los confunda: este es
+/// el número que mide qué tan bien comió, no cuántas veces registró.
+class _QualityStreakChip extends StatelessWidget {
+  const _QualityStreakChip({required this.days});
+
+  final int days;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.statusGood.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.statusGood.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.local_fire_department_rounded,
+            size: 16,
+            color: AppColors.statusGood,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              days == 1
+                  ? 'Racha de calidad: 1 día con plato bien compuesto'
+                  : 'Racha de calidad: $days días con plato bien compuesto',
+              style: const TextStyle(
+                color: AppColors.statusGood,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
         ],
       ),
     );

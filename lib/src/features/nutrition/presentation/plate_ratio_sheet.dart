@@ -11,6 +11,7 @@
 //   respecto a marca registrada NaturalSlim®). Internamente usamos
 //   `qualityScore`; al usuario solo le mostramos badge cualitativo.
 
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/cupertino.dart';
@@ -20,9 +21,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/core/providers/ticker_providers.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/nutrition/application/cheat_day_notifier.dart';
+import 'package:elena_app/src/features/nutrition/application/meal_preset_notifier.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
 import 'package:elena_app/src/features/nutrition/domain/food_catalog.dart';
 import 'package:elena_app/src/features/nutrition/domain/meal_interval_rules.dart';
+import 'package:elena_app/src/features/nutrition/domain/meal_preset.dart';
 import 'package:elena_app/src/features/nutrition/domain/plate_builder.dart';
 
 class PlateRatioSheet extends ConsumerStatefulWidget {
@@ -121,6 +124,7 @@ class _PlateRatioSheetState extends ConsumerState<PlateRatioSheet> {
     final quality = _builder.quality(cheatDayActive: cheatActive);
     final tip = _builder.tip(cheatDayActive: cheatActive);
     final searchResults = FoodCatalog.search(_searchController.text);
+    final presets = ref.watch(mealPresetProvider).presets;
     // SPEC-137 E.5 fix: si el usuario NO tocó el TimePicker, la fila
     // de hora muestra "ahora" en vivo. Refresca cada 10s via el pulso.
     // Si tocó el picker (caso registrar comida pasada), respetamos
@@ -194,15 +198,61 @@ class _PlateRatioSheetState extends ConsumerState<PlateRatioSheet> {
                   onRemove: (food) =>
                       setState(() => _builder.remove(food)),
                 ),
+                const SizedBox(height: 8),
+                // Presets (25-jul-2026, diagnóstico §3.5 "brecha de
+                // fricción más grande"): guardar el plato actual como
+                // reutilizable. Persistencia real en Firestore vía
+                // mealPresetProvider — ver meal_preset_notifier.dart.
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton.icon(
+                    onPressed: _showSavePresetDialog,
+                    icon: const Icon(
+                      Icons.bookmark_add_outlined,
+                      size: 16,
+                      color: AppColors.accent,
+                    ),
+                    label: const Text(
+                      'Guardar como preset',
+                      style: TextStyle(
+                        color: AppColors.accent,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      minimumSize: const Size(0, 0),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 6),
+              ],
+              // "Mis platos" (25-jul-2026): platos guardados por el
+              // usuario, un toque los aplica completos (con cantidad
+              // exacta — ver comentario de cabecera en meal_preset.dart).
+              // Es el camino MÁS rápido para el usuario recurrente, así
+              // que va primero, antes de categorías/búsqueda.
+              if (presets.isNotEmpty) ...[
+                _PresetsRow(presets: presets, onApply: _applyPreset),
                 const SizedBox(height: 14),
               ],
+              // Reordeno de flujo (25-jul-2026, plan "categorías como
+              // entrada primaria" — diagnóstico §4): antes el único
+              // camino de entrada real era el buscador de texto; ahora
+              // navegar por categoría (Proteína/Grasa/Carbos) es la
+              // forma PRIMARIA de armar el plato — coherente con el
+              // modelo de "arma tu plato por categorías" y no con
+              // "escribe lo que sabes que existe". El buscador se
+              // conserva más abajo para lo que no aparece a simple vista.
+              _CategoryBrowser(onPick: _pickAndAdd),
+              const SizedBox(height: 14),
               // Fricción mínima (25-jul-2026, diagnóstico "Pilar Nutrición:
               // dos métricas paralelas" §3.4): alimentos Tipo A de uso
               // frecuente y calidad muy alta (score ≥ 90) aparecen como
-              // accesos directos ANTES del buscador — evita el paso de
-              // escribir/escanear resultados (el resto del flujo de
-              // búsqueda es idéntico: buscar → tocar resultado → elegir
-              // cantidad → confirmar; acá se saltan los dos primeros).
+              // accesos directos adicionales — atajo aún más corto que
+              // navegar por categoría para los 8 alimentos más comunes.
               // Inspirado en el patrón "ZeroPoint" de Weight Watchers.
               //
               // FIX 1 (mismo día — Carlos: "no es lo mismo un huevo que
@@ -236,21 +286,7 @@ class _PlateRatioSheetState extends ConsumerState<PlateRatioSheet> {
                 const SizedBox(height: 10),
                 _SearchResults(
                   results: searchResults,
-                  onPick: (food) async {
-                    final copies = await _FoodPickerSheet.show(
-                      context,
-                      food: food,
-                      builder: _builder,
-                    );
-                    if (copies != null && copies > 0 && mounted) {
-                      setState(() {
-                        for (var i = 0; i < copies; i++) {
-                          _builder.add(food);
-                        }
-                        _searchController.clear();
-                      });
-                    }
-                  },
+                  onPick: _pickAndAdd,
                 ),
               ],
               const SizedBox(height: 14),
@@ -336,6 +372,132 @@ class _PlateRatioSheetState extends ConsumerState<PlateRatioSheet> {
         ),
       );
 
+  /// Abre el selector de cantidad para [food] y, si el usuario confirma,
+  /// lo agrega al plato. Único punto de entrada compartido por búsqueda,
+  /// categorías y "agregar rápido" — mismo comportamiento sin importar
+  /// desde dónde se eligió el alimento (25-jul-2026, extraído del
+  /// closure que antes vivía solo en `_SearchResults.onPick`).
+  Future<void> _pickAndAdd(Food food) async {
+    final copies = await _FoodPickerSheet.show(
+      context,
+      food: food,
+      builder: _builder,
+    );
+    if (copies != null && copies > 0 && mounted) {
+      setState(() {
+        for (var i = 0; i < copies; i++) {
+          _builder.add(food);
+        }
+        _searchController.clear();
+      });
+    }
+  }
+
+  /// Aplica un preset guardado: agrega TODOS sus alimentos (con la
+  /// cantidad exacta que traía `foodIds`, repeticiones incluidas) al
+  /// plato en construcción, y marca el preset como usado (reordena
+  /// "Mis platos" con este primero, sube `useCount`).
+  Future<void> _applyPreset(MealPreset preset) async {
+    final foods = preset.foodIds
+        .map(FoodCatalog.byId)
+        .whereType<Food>()
+        .toList(growable: false);
+    if (foods.isEmpty || !mounted) return;
+    setState(() {
+      for (final food in foods) {
+        _builder.add(food);
+      }
+    });
+    unawaited(ref.read(mealPresetProvider.notifier).markUsed(preset.id));
+  }
+
+  /// Diálogo para nombrar y guardar el plato actual como preset
+  /// reutilizable. Persistencia real en Firestore (no local/memoria) —
+  /// garantía pedida por Carlos: `MealPresetNotifier.savePreset` hace
+  /// update optimista y dispara el write real sin esperar el roundtrip.
+  Future<void> _showSavePresetDialog() async {
+    if (_builder.isEmpty) return;
+    final controller = TextEditingController();
+    final name = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppColors.bgElevated,
+        title: const Text(
+          'Guardar como preset',
+          style: TextStyle(color: AppColors.textPrimary),
+        ),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          style: const TextStyle(color: AppColors.textPrimary),
+          decoration: const InputDecoration(
+            hintText: 'Ej. Mi desayuno de siempre',
+            hintStyle: TextStyle(color: AppColors.textMuted),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () =>
+                Navigator.of(dialogContext).pop(controller.text),
+            child: const Text('Guardar'),
+          ),
+        ],
+      ),
+    );
+    if (name == null || !mounted) return;
+    final foodIds = _builder.items.map((f) => f.id).toList();
+    await ref.read(mealPresetProvider.notifier).savePreset(
+          name: name,
+          foodIds: foodIds,
+        );
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Plato guardado en "Mis platos".'),
+          backgroundColor: AppColors.metabolicGreen,
+        ),
+      );
+    }
+  }
+
+  /// Muestra el nivel cualitativo del plato recién registrado + un tip
+  /// accionable si aplica. Sin feedback en cheat day — el usuario ya
+  /// decidió libremente, no hay nada que "mejorar" ese día (mismo
+  /// criterio que `PlateBuilder.tip`).
+  void _showPostSubmitFeedback(
+    ScaffoldMessengerState messenger, {
+    required bool isCheatDay,
+  }) {
+    if (isCheatDay) return;
+    final quality = _builder.quality(cheatDayActive: false);
+    final tip = _builder.tip(cheatDayActive: false);
+    final Color color;
+    final String message;
+    switch (quality) {
+      case PlateQuality.excellent:
+        message = '${quality.label}. Composición ideal — sigue así.';
+        color = AppColors.metabolicGreen;
+      case PlateQuality.good:
+        message = tip != null ? '${quality.label}. $tip' : quality.label;
+        color = AppColors.metabolicGreen;
+      case PlateQuality.needsWork:
+      case PlateQuality.cheatDay:
+        message = tip != null ? '${quality.label}. $tip' : quality.label;
+        color = AppColors.accent;
+    }
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: color,
+        duration: const Duration(seconds: 4),
+      ),
+    );
+  }
+
   Future<void> _submit({bool forceLog = false}) async {
     if (_builder.isEmpty) return;
     setState(() => _submitting = true);
@@ -380,7 +542,17 @@ class _PlateRatioSheetState extends ConsumerState<PlateRatioSheet> {
           plateItemIds: currentPlateIds,
         );
       }
-      if (mounted) Navigator.of(context).pop();
+      if (mounted) {
+        // Feedback cualitativo post-registro (25-jul-2026, plan
+        // "categorías como entrada primaria" §4): capturamos el
+        // ScaffoldMessenger ANTES de pop — pertenece al Scaffold padre
+        // (Dashboard), no al sheet, así que sigue vivo después de
+        // cerrar. El usuario ve al instante qué tan bien compuesto
+        // quedó su plato, sin ir a Análisis a buscarlo.
+        final messenger = ScaffoldMessenger.of(context);
+        Navigator.of(context).pop();
+        _showPostSubmitFeedback(messenger, isCheatDay: isCheatDay);
+      }
     } on MealTooSoonException catch (e) {
       if (mounted) {
         setState(() => _submitting = false);
@@ -892,6 +1064,232 @@ class _QuickAddRow extends StatelessWidget {
                         food.name,
                         style: TextStyle(
                           color: color,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Navegador por categoría (25-jul-2026, plan "categorías como entrada
+/// primaria" — diagnóstico §4). Chips Proteína/Grasa/Carbos + grilla de
+/// alimentos de esa categoría ordenados por calidad descendente. Toque
+/// en un alimento abre el mismo `_FoodPickerSheet` que usan búsqueda y
+/// "agregar rápido" — un solo camino de confirmación de cantidad, sin
+/// importar por dónde entró el usuario.
+class _CategoryBrowser extends StatefulWidget {
+  final Future<void> Function(Food food) onPick;
+
+  const _CategoryBrowser({required this.onPick});
+
+  @override
+  State<_CategoryBrowser> createState() => _CategoryBrowserState();
+}
+
+class _CategoryBrowserState extends State<_CategoryBrowser> {
+  FoodCategory _selected = FoodCategory.protein;
+  bool _expanded = false;
+
+  /// Cuántos alimentos se muestran antes de "Ver N más" — evita una
+  /// grilla gigante para Carbos (89 alimentos en el catálogo).
+  static const int _collapsedCount = 12;
+
+  @override
+  Widget build(BuildContext context) {
+    final foods = List<Food>.from(FoodCatalog.byCategory(_selected))
+      ..sort((a, b) => b.qualityScore.compareTo(a.qualityScore));
+    final visible = _expanded ? foods : foods.take(_collapsedCount).toList();
+    final hiddenCount = foods.length - visible.length;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Elige por categoría',
+          style: TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: FoodCategory.values.map((category) {
+            final isSelected = category == _selected;
+            return Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: InkWell(
+                onTap: () => setState(() {
+                  _selected = category;
+                  _expanded = false;
+                }),
+                borderRadius: BorderRadius.circular(999),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? AppColors.metabolicGreen.withValues(alpha: 0.18)
+                        : AppColors.bgElevated,
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(
+                      color: isSelected
+                          ? AppColors.metabolicGreen
+                          : AppColors.borderStrong,
+                    ),
+                  ),
+                  child: Text(
+                    category.label,
+                    style: TextStyle(
+                      color: isSelected
+                          ? AppColors.metabolicGreen
+                          : AppColors.textSecondary,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final food in visible)
+              _FoodChip(food: food, onTap: () => widget.onPick(food)),
+            if (hiddenCount > 0)
+              InkWell(
+                onTap: () => setState(() => _expanded = true),
+                borderRadius: BorderRadius.circular(999),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.bgElevated,
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: AppColors.borderStrong),
+                  ),
+                  child: Text(
+                    'Ver $hiddenCount más',
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+/// Chip individual de alimento, coloreado por `qualityScore` — mismo
+/// esquema visual que `_QuickAddRow` y `_SearchResults` (consistencia:
+/// el color de un alimento significa lo mismo en cualquier parte del
+/// sheet).
+class _FoodChip extends StatelessWidget {
+  final Food food;
+  final VoidCallback onTap;
+
+  const _FoodChip({required this.food, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = PlatePainter._colorForScore(food.qualityScore);
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(999),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: color.withValues(alpha: 0.35)),
+        ),
+        child: Text(
+          food.name,
+          style: TextStyle(
+            color: color,
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// "Mis platos" (25-jul-2026): fila horizontal de presets guardados por
+/// el usuario. Un toque aplica el plato completo — ver
+/// `_PlateRatioSheetState._applyPreset`.
+class _PresetsRow extends StatelessWidget {
+  final List<MealPreset> presets;
+  final Future<void> Function(MealPreset preset) onApply;
+
+  const _PresetsRow({required this.presets, required this.onApply});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Mis platos',
+          style: TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 34,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: presets.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            itemBuilder: (context, i) {
+              final preset = presets[i];
+              return InkWell(
+                onTap: () => onApply(preset),
+                borderRadius: BorderRadius.circular(999),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.accent.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(999),
+                    border:
+                        Border.all(color: AppColors.accent.withValues(alpha: 0.35)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.bookmark_rounded,
+                        size: 14,
+                        color: AppColors.accent,
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        preset.name,
+                        style: const TextStyle(
+                          color: AppColors.accent,
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                         ),

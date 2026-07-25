@@ -522,6 +522,89 @@ class StreakEngine {
   }
 
   // ─────────────────────────────────────────────────────────────────────────
+  // "Racha de Calidad" (25-jul-2026) — diferenciador de mercado
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /// Días consecutivos con `nutritionMagnitude >= [threshold]` — a
+  /// diferencia de [computeCurrentStreak] (que exige 3+/5 pilares con
+  /// ancla ayuno/sueño y es ciega a la composición del plato dentro del
+  /// pilar Nutrición), esta racha mide EXCLUSIVAMENTE calidad real de lo
+  /// que el usuario comió.
+  ///
+  /// No requiere schema nuevo: `nutritionMagnitude` ya se persiste por
+  /// día en cada `StreakEntry` desde SPEC-65, y desde el rediseño de
+  /// `NutritionScoreCalculator` (25-jul-2026, ver ese archivo) ya
+  /// refleja composición real (Cociente A) en vez de puro conteo de
+  /// comidas. Entradas ANTERIORES a ese rediseño tienen
+  /// `nutritionMagnitude` calculado con la fórmula vieja (conteo-
+  /// dominante) — la racha de calidad hacia atrás en el tiempo puede
+  /// sobre-contar días que en realidad tuvieron mala composición. Es
+  /// una limitación conocida de cualquier métrica recalibrada sobre
+  /// histórico ya escrito, no un bug de este método.
+  ///
+  /// Entradas sin magnitud (`null` — legacy pre-SPEC-65 o día sin ningún
+  /// registro) NO califican y rompen la cadena. A diferencia de
+  /// `StreakEntry.dailyQualityScore` (que hace fallback a
+  /// `pillarsCompleted/5` cuando falta la magnitud), acá NO hay
+  /// fallback: no hay forma de saber si un día sin dato tuvo buena
+  /// composición, y asumir que sí premiaría la ausencia de registro —
+  /// exactamente el error que este diferenciador busca evitar.
+  ///
+  /// [threshold] default 0.60 — mismo umbral que `PlateQuality.good` en
+  /// `plate_builder.dart` (≥60% = "Buen plato" o mejor).
+  /// [asOf] — mismo propósito que en [computeCurrentStreak]: ancla
+  /// cycle-aware de "hoy"/"ayer".
+  static int computeNutritionQualityStreak(
+    List<StreakEntry> history, {
+    double threshold = 0.60,
+    DateTime? asOf,
+  }) {
+    if (history.isEmpty) return 0;
+
+    final sorted = _sortedDescending(history);
+    final now = asOf ?? DateTime.now();
+    final today = _dateKey(now);
+    final yesterday = _dateKey(now.subtract(const Duration(days: 1)));
+
+    bool qualifies(StreakEntry e) =>
+        e.nutritionMagnitude != null && e.nutritionMagnitude! >= threshold;
+
+    int start = 0;
+    if (sorted.isNotEmpty &&
+        sorted.first.date == today &&
+        !qualifies(sorted.first)) {
+      start = 1;
+    }
+
+    int streak = 0;
+    String? expectedDate;
+
+    for (int i = start; i < sorted.length; i++) {
+      final entry = sorted[i];
+      if (!qualifies(entry)) break;
+
+      if (expectedDate == null) {
+        if (entry.date != today && entry.date != yesterday && i == start) {
+          break;
+        }
+        expectedDate = entry.date;
+        streak++;
+      } else {
+        final expected =
+            DateTime.parse(expectedDate).subtract(const Duration(days: 1));
+        if (entry.date == _dateKey(expected)) {
+          streak++;
+          expectedDate = entry.date;
+        } else {
+          break;
+        }
+      }
+    }
+
+    return streak;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
   // Fuente de verdad de "ayuno completado hoy" (17-jul, "sistema coherente")
   // ─────────────────────────────────────────────────────────────────────────
 
