@@ -80,9 +80,22 @@ class DashboardPillarsRow extends ConsumerWidget {
     );
     final exerciseTodayMinutes =
         ref.watch(exerciseProvider.select((s) => s.todayMinutes));
-    final (nutritionProgress, nutritionMealsLogged, nutritionTargetMeals) =
+    // FIX (25-jul-2026, Carlos con evidencia de pantalla: "pesa más la
+    // cantidad de comidas que el tipo de comida"): el anillo de Comidas
+    // mostraba `progressPercentage` (mealsLoggedToday/targetMeals) — puro
+    // conteo, ciego a calidad. Un plato "1 a 1" (Cociente A 0%) y un
+    // Desayuno perfecto se veían IGUAL acá (33% con 1/3 comidas) aunque
+    // la card de abajo mostrara "Cociente A: 0%" al lado — la misma
+    // contradicción visual que motivó el rediseño de `nutritionScore`
+    // (ver nutrition_score_calculator.dart). Ahora el anillo usa
+    // `nutritionScore` (ya calidad-ponderado desde ese fix) en vez de
+    // `progressPercentage`. `nutritionMealsLogged`/`nutritionTargetMeals`
+    // se conservan solo para el check verde de "completado" — eso sigue
+    // siendo, a propósito, "¿registraste tus comidas planeadas de hoy?",
+    // una pregunta distinta de "¿qué tan bien comiste?".
+    final (nutritionScore, nutritionMealsLogged, nutritionTargetMeals) =
         ref.watch(nutritionProvider.select(
-      (s) => (s.progressPercentage, s.mealsLoggedToday, s.targetMeals),
+      (s) => (s.nutritionScore, s.mealsLoggedToday, s.targetMeals),
     ));
 
     // SPEC-175 (2026-06-04): la regla "el sleep pertenece al ciclo"
@@ -312,7 +325,7 @@ class DashboardPillarsRow extends ConsumerWidget {
                 child: PillarRing(
                   icon: Icons.restaurant_rounded,
                   color: Colors.orangeAccent,
-                  progress: nutritionProgress,
+                  progress: nutritionScore,
                   label: 'Comidas',
                   isSelected: selectedPillar == SelectedPillar.comidas,
                   completed: nutritionMealsLogged >= nutritionTargetMeals,

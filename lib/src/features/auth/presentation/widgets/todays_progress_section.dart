@@ -106,13 +106,21 @@ class TodaysProgressSection extends ConsumerWidget {
         subtitle: '${exercise.todayMinutes} min de $exerciseGoal min sugeridos',
         progress: exerciseProgress,
       ),
+      // FIX (25-jul-2026, mismo hallazgo que en el Dashboard — Carlos:
+      // "pesa más la cantidad de comidas que el tipo de comida"): esta
+      // barra ("Tu avance de hoy" en Objetivos) tenía el mismo problema
+      // que dashboard_pillars_row.dart y comidas_pillar_card.dart —
+      // `progressPercentage` es puro conteo, ciego a calidad. El
+      // subtítulo sigue mostrando el conteo (está claramente etiquetado
+      // como tal), pero la barra ahora refleja `nutritionScore`
+      // (calidad-ponderado), consistente con las otras dos pantallas.
       _PillarProgress(
         icon: Icons.restaurant_rounded,
         color: Colors.orangeAccent,
         label: 'Nutrición',
         subtitle:
             '${nutrition.mealsLoggedToday} de ${nutrition.targetMeals} comidas sugeridas',
-        progress: nutrition.progressPercentage,
+        progress: nutrition.nutritionScore,
       ),
     ];
 

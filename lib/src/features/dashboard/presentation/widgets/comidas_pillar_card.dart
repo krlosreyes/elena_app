@@ -34,7 +34,16 @@ class ComidasPillarCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     const accent = Color(0xFFFB923C);
-    final progress = state.progressPercentage;
+    // FIX (25-jul-2026, Carlos con evidencia de pantalla): esta barra y
+    // el "X% completado" usaban `progressPercentage` (puro conteo de
+    // comidas) — mostraban "33% completado" para un plato "1 a 1" con
+    // Cociente A 0%, contradiciendo el mini-stat de al lado. Ahora usan
+    // `nutritionScore` (calidad-ponderado, ver nutrition_score_calculator
+    // .dart), consistente con el anillo del Dashboard (mismo fix, ver
+    // dashboard_pillars_row.dart). El badge "N/M comidas" de abajo sigue
+    // mostrando el conteo tal cual — está explícitamente etiquetado como
+    // conteo, no se presta a confusión.
+    final progress = state.nutritionScore;
     final pct = (progress * 100).round();
     const cocienteService = CocienteAService();
     final cocienteA = cocienteService.calculate(state.todayLogs);
