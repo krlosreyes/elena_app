@@ -1051,21 +1051,25 @@ class _QuickAddRow extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.12),
+                    color: AppColors.bgElevated,
                     borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: color.withValues(alpha: 0.35)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.add_circle_rounded, size: 14, color: color),
-                      const SizedBox(width: 5),
+                      Container(
+                        width: 7,
+                        height: 7,
+                        decoration:
+                            BoxDecoration(color: color, shape: BoxShape.circle),
+                      ),
+                      const SizedBox(width: 7),
                       Text(
                         food.name,
-                        style: TextStyle(
-                          color: color,
+                        style: const TextStyle(
+                          color: AppColors.textPrimary,
                           fontSize: 12,
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
@@ -1122,6 +1126,12 @@ class _CategoryBrowserState extends State<_CategoryBrowser> {
           ),
         ),
         const SizedBox(height: 8),
+        // Estilo unificado con el selector de cantidad (_FoodPickerSheet):
+        // fondo plano, sin contorno de color — la selección se marca con
+        // un fondo verde translúcido (misma opacidad 0.12 que
+        // CupertinoPickerDefaultSelectionOverlay), no con un borde
+        // dibujado alrededor de cada chip (25-jul-2026, feedback Carlos
+        // "cambiemos el selector al mismo estilo del selector uno").
         Row(
           children: FoodCategory.values.map((category) {
             final isSelected = category == _selected;
@@ -1138,23 +1148,18 @@ class _CategoryBrowserState extends State<_CategoryBrowser> {
                       horizontal: 14, vertical: 7),
                   decoration: BoxDecoration(
                     color: isSelected
-                        ? AppColors.metabolicGreen.withValues(alpha: 0.18)
-                        : AppColors.bgElevated,
+                        ? AppColors.metabolicGreen.withValues(alpha: 0.12)
+                        : Colors.transparent,
                     borderRadius: BorderRadius.circular(999),
-                    border: Border.all(
-                      color: isSelected
-                          ? AppColors.metabolicGreen
-                          : AppColors.borderStrong,
-                    ),
                   ),
                   child: Text(
                     category.label,
                     style: TextStyle(
                       color: isSelected
-                          ? AppColors.metabolicGreen
+                          ? AppColors.textPrimary
                           : AppColors.textSecondary,
                       fontSize: 13,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                     ),
                   ),
                 ),
@@ -1179,7 +1184,6 @@ class _CategoryBrowserState extends State<_CategoryBrowser> {
                   decoration: BoxDecoration(
                     color: AppColors.bgElevated,
                     borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: AppColors.borderStrong),
                   ),
                   child: Text(
                     'Ver $hiddenCount más',
@@ -1198,10 +1202,12 @@ class _CategoryBrowserState extends State<_CategoryBrowser> {
   }
 }
 
-/// Chip individual de alimento, coloreado por `qualityScore` — mismo
-/// esquema visual que `_QuickAddRow` y `_SearchResults` (consistencia:
-/// el color de un alimento significa lo mismo en cualquier parte del
-/// sheet).
+/// Chip individual de alimento. Fondo plano sin contorno (mismo criterio
+/// que el selector de cantidad — ver comentario en `_CategoryBrowser`);
+/// el `qualityScore` se señala con un punto de color, no con todo el
+/// borde del chip pintado — así se conserva la señal visual (mismo
+/// código de color que `_SearchResults`) sin el "ruido" de un contorno
+/// coloreado en cada elemento de la grilla.
 class _FoodChip extends StatelessWidget {
   final Food food;
   final VoidCallback onTap;
@@ -1215,19 +1221,29 @@ class _FoodChip extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(999),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.12),
+          color: AppColors.bgElevated,
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: color.withValues(alpha: 0.35)),
         ),
-        child: Text(
-          food.name,
-          style: TextStyle(
-            color: color,
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 7,
+              height: 7,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            ),
+            const SizedBox(width: 7),
+            Text(
+              food.name,
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -1272,10 +1288,8 @@ class _PresetsRow extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: AppColors.accent.withValues(alpha: 0.12),
+                    color: AppColors.bgElevated,
                     borderRadius: BorderRadius.circular(999),
-                    border:
-                        Border.all(color: AppColors.accent.withValues(alpha: 0.35)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -1289,9 +1303,9 @@ class _PresetsRow extends StatelessWidget {
                       Text(
                         preset.name,
                         style: const TextStyle(
-                          color: AppColors.accent,
+                          color: AppColors.textPrimary,
                           fontSize: 12,
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
