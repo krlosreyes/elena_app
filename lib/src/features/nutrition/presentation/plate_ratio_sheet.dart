@@ -1085,11 +1085,14 @@ class _QuickAddRow extends StatelessWidget {
 }
 
 /// Navegador por categoría (25-jul-2026, plan "categorías como entrada
-/// primaria" — diagnóstico §4). Chips Proteína/Grasa/Carbos + grilla de
-/// alimentos de esa categoría ordenados por calidad descendente. Toque
-/// en un alimento abre el mismo `_FoodPickerSheet` que usan búsqueda y
-/// "agregar rápido" — un solo camino de confirmación de cantidad, sin
-/// importar por dónde entró el usuario.
+/// primaria" — diagnóstico §4). `CupertinoSlidingSegmentedControl` para
+/// Proteína/Grasa/Carbos + `CupertinoPicker` con los alimentos de esa
+/// categoría ordenados por calidad descendente (mismo par de widgets
+/// Cupertino que usa el selector de cantidad — pedido explícito de
+/// Carlos: "que sea del mismo estilo... no un reguero de opciones").
+/// El botón "Agregar" bajo el picker abre el mismo `_FoodPickerSheet`
+/// que usan búsqueda y "agregar rápido" — un solo camino de
+/// confirmación de cantidad, sin importar por dónde entró el usuario.
 class _CategoryBrowser extends StatefulWidget {
   final Future<void> Function(Food food) onPick;
 
@@ -1101,18 +1104,17 @@ class _CategoryBrowser extends StatefulWidget {
 
 class _CategoryBrowserState extends State<_CategoryBrowser> {
   FoodCategory _selected = FoodCategory.protein;
-  bool _expanded = false;
 
-  /// Cuántos alimentos se muestran antes de "Ver N más" — evita una
-  /// grilla gigante para Carbos (89 alimentos en el catálogo).
-  static const int _collapsedCount = 12;
+  /// Índice resaltado en el `CupertinoPicker` de la categoría actual.
+  int _selectedFoodIndex = 0;
 
   @override
   Widget build(BuildContext context) {
     final foods = List<Food>.from(FoodCatalog.byCategory(_selected))
       ..sort((a, b) => b.qualityScore.compareTo(a.qualityScore));
-    final visible = _expanded ? foods : foods.take(_collapsedCount).toList();
-    final hiddenCount = foods.length - visible.length;
+    final safeIndex =
+        foods.isEmpty ? 0 : _selectedFoodIndex.clamp(0, foods.length - 1);
+    final highlighted = foods.isEmpty ? null : foods[safeIndex];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1144,7 +1146,7 @@ class _CategoryBrowserState extends State<_CategoryBrowser> {
               if (category == null) return;
               setState(() {
                 _selected = category;
-                _expanded = false;
+                _selectedFoodIndex = 0;
               });
             },
             children: {
@@ -1168,84 +1170,75 @@ class _CategoryBrowserState extends State<_CategoryBrowser> {
           ),
         ),
         const SizedBox(height: 10),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            for (final food in visible)
-              _FoodChip(food: food, onTap: () => widget.onPick(food)),
-            if (hiddenCount > 0)
-              InkWell(
-                onTap: () => setState(() => _expanded = true),
-                borderRadius: BorderRadius.circular(999),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: AppColors.bgElevated,
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(
-                    'Ver $hiddenCount más',
-                    style: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
+        // FIX (25-jul-2026, Carlos: "las opciones de alimentos colocalas
+        // en un CupertinoPicker"): la grilla de chips ("reguero de
+        // opciones") se reemplaza por el mismo widget que usa el
+        // selector de cantidad — se desliza para elegir el alimento en
+        // vez de escanear una grilla. `key: ValueKey(_selected)` fuerza
+        // que el picker se reconstruya (y su scroll vuelva al inicio) al
+        // cambiar de categoría, en vez de conservar un índice de scroll
+        // que ya no corresponde a la lista nueva.
+        if (foods.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Text(
+              'Sin alimentos en esta categoría.',
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+            ),
+          )
+        else
+          SizedBox(
+            height: 140,
+            child: CupertinoPicker(
+              key: ValueKey(_selected),
+              itemExtent: 36,
+              selectionOverlay: CupertinoPickerDefaultSelectionOverlay(
+                background:
+                    AppColors.metabolicGreen.withValues(alpha: 0.12),
+              ),
+              onSelectedItemChanged: (i) =>
+                  setState(() => _selectedFoodIndex = i),
+              children: [
+                for (final food in foods)
+                  Center(
+                    child: Text(
+                      food.name,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 15,
+                      ),
                     ),
                   ),
+              ],
+            ),
+          ),
+        if (highlighted != null) ...[
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => widget.onPick(highlighted),
+              icon: Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: PlatePainter._colorForScore(highlighted.qualityScore),
+                  shape: BoxShape.circle,
                 ),
               ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-/// Chip individual de alimento. Fondo plano sin contorno (mismo criterio
-/// que el selector de cantidad — ver comentario en `_CategoryBrowser`);
-/// el `qualityScore` se señala con un punto de color, no con todo el
-/// borde del chip pintado — así se conserva la señal visual (mismo
-/// código de color que `_SearchResults`) sin el "ruido" de un contorno
-/// coloreado en cada elemento de la grilla.
-class _FoodChip extends StatelessWidget {
-  final Food food;
-  final VoidCallback onTap;
-
-  const _FoodChip({required this.food, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final color = PlatePainter._colorForScore(food.qualityScore);
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(999),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-        decoration: BoxDecoration(
-          color: AppColors.bgElevated,
-          borderRadius: BorderRadius.circular(999),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 7,
-              height: 7,
-              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-            ),
-            const SizedBox(width: 7),
-            Text(
-              food.name,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
+              label: Text('Agregar ${highlighted.name}'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.textPrimary,
+                side: const BorderSide(color: AppColors.borderStrong),
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(999),
+                ),
               ),
             ),
-          ],
-        ),
-      ),
+          ),
+        ],
+      ],
     );
   }
 }
