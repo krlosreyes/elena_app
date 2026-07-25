@@ -199,15 +199,35 @@ class _PlateRatioSheetState extends ConsumerState<PlateRatioSheet> {
               // Fricción mínima (25-jul-2026, diagnóstico "Pilar Nutrición:
               // dos métricas paralelas" §3.4): alimentos Tipo A de uso
               // frecuente y calidad muy alta (score ≥ 90) se agregan con
-              // UN toque — sin abrir `_FoodPickerSheet` ni elegir cantidad
-              // — a diferencia del flujo de búsqueda (4 toques mínimo:
-              // buscar → tocar resultado → elegir cantidad → confirmar).
-              // Inspirado en el patrón "ZeroPoint" de Weight Watchers: la
-              // fricción más baja queda reservada a propósito para las
-              // opciones más alineadas con el modelo hormonal. Agrega 1
-              // porción de referencia (`portionLabel`) del alimento.
+              // UN toque — sin abrir `_FoodPickerSheet` — a diferencia del
+              // flujo de búsqueda (4 toques mínimo: buscar → tocar
+              // resultado → elegir cantidad → confirmar). Inspirado en el
+              // patrón "ZeroPoint" de Weight Watchers: la fricción más baja
+              // queda reservada a propósito para las opciones más
+              // alineadas con el modelo hormonal.
+              //
+              // FIX (25-jul-2026, mismo día — Carlos: "no es lo mismo un
+              // huevo que 3"): el toque simple agrega 1 porción de
+              // referencia por defecto, pero `PlateBuilder.qualityPercent`
+              // y `derivedMealRatio` promedian por SLOTS acumulados — 3
+              // huevos pesan 3× lo que 1 huevo en ese cálculo, y desde el
+              // rediseño de `NutritionScoreCalculator` de ayer esa
+              // composición domina el 60% del Score del Día. Registrar
+              // siempre "1" sin importar cuánto comió el usuario podía
+              // hacer que el mismo plato real quedara "excelente" o
+              // "mejorable" según si tocó el atajo o buscó y especificó
+              // cantidad. Fix elegido por Carlos: mantener presionado
+              // abre el mismo `_FoodPickerSheet` del flujo de búsqueda
+              // para ajustar la cantidad — el toque simple sigue siendo
+              // el camino rápido para el caso común (1 porción).
               _QuickAddRow(
+                builder: _builder,
                 onAdd: (food) => setState(() => _builder.add(food)),
+                onAddCopies: (food, copies) => setState(() {
+                  for (var i = 0; i < copies; i++) {
+                    _builder.add(food);
+                  }
+                }),
               ),
               const SizedBox(height: 14),
               _SearchField(
@@ -786,9 +806,22 @@ class _SelectedChips extends StatelessWidget {
 /// universales de las 3 categorías del plato. Cada tap agrega 1 porción
 /// de referencia directamente, sin abrir el picker de cantidad.
 class _QuickAddRow extends StatelessWidget {
+  /// Plato en construcción — se lo pasamos a `_FoodPickerSheet.show` en el
+  /// long-press, igual que hace `_SearchResults.onPick` (necesita ver la
+  /// composición actual para calcular la vista previa de calidad).
+  final PlateBuilder builder;
+
+  /// Toque simple: agrega 1 porción de referencia (el camino rápido).
   final void Function(Food food) onAdd;
 
-  const _QuickAddRow({required this.onAdd});
+  /// Mantener presionado: agrega [copies] porciones elegidas en el picker.
+  final void Function(Food food, int copies) onAddCopies;
+
+  const _QuickAddRow({
+    required this.builder,
+    required this.onAdd,
+    required this.onAddCopies,
+  });
 
   /// Ids estables de `FoodCatalog` — ver criterio de curación en el
   /// comentario de la clase. Todos con qualityScore ≥ 90.
@@ -815,7 +848,7 @@ class _QuickAddRow extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Agregar rápido',
+          'Agregar rápido · mantén presionado para elegir cantidad',
           style: TextStyle(
             color: AppColors.textSecondary,
             fontSize: 12,
@@ -834,6 +867,16 @@ class _QuickAddRow extends StatelessWidget {
               final color = PlatePainter._colorForScore(food.qualityScore);
               return InkWell(
                 onTap: () => onAdd(food),
+                onLongPress: () async {
+                  final copies = await _FoodPickerSheet.show(
+                    context,
+                    food: food,
+                    builder: builder,
+                  );
+                  if (copies != null && copies > 0) {
+                    onAddCopies(food, copies);
+                  }
+                },
                 borderRadius: BorderRadius.circular(999),
                 child: Container(
                   padding: const EdgeInsets.symmetric(
