@@ -1126,46 +1126,46 @@ class _CategoryBrowserState extends State<_CategoryBrowser> {
           ),
         ),
         const SizedBox(height: 8),
-        // Estilo unificado con el selector de cantidad (_FoodPickerSheet):
-        // fondo plano, sin contorno de color — la selección se marca con
-        // un fondo verde translúcido (misma opacidad 0.12 que
-        // CupertinoPickerDefaultSelectionOverlay), no con un borde
-        // dibujado alrededor de cada chip (25-jul-2026, feedback Carlos
-        // "cambiemos el selector al mismo estilo del selector uno").
-        Row(
-          children: FoodCategory.values.map((category) {
-            final isSelected = category == _selected;
-            return Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: InkWell(
-                onTap: () => setState(() {
-                  _selected = category;
-                  _expanded = false;
-                }),
-                borderRadius: BorderRadius.circular(999),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 7),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? AppColors.metabolicGreen.withValues(alpha: 0.12)
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(999),
-                  ),
+        // FIX (25-jul-2026, Carlos: "que sea del mismo estilo del selector
+        // de cantidades, no un reguero de opciones"): 3 chips sueltos en
+        // fila seguían leyéndose como opciones dispersas, aunque ya no
+        // tuvieran contorno de color. Un `CupertinoSlidingSegmentedControl`
+        // es el MISMO widget de la familia Cupertino que usa el selector
+        // de cantidad (`CupertinoPicker`) — un solo control contenido, con
+        // una sola opción resaltada a la vez, no una fila de elementos
+        // independientes.
+        SizedBox(
+          width: double.infinity,
+          child: CupertinoSlidingSegmentedControl<FoodCategory>(
+            backgroundColor: AppColors.bgElevated,
+            thumbColor: AppColors.metabolicGreen.withValues(alpha: 0.22),
+            groupValue: _selected,
+            onValueChanged: (category) {
+              if (category == null) return;
+              setState(() {
+                _selected = category;
+                _expanded = false;
+              });
+            },
+            children: {
+              for (final category in FoodCategory.values)
+                category: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
                   child: Text(
                     category.label,
                     style: TextStyle(
-                      color: isSelected
+                      color: category == _selected
                           ? AppColors.textPrimary
                           : AppColors.textSecondary,
                       fontSize: 13,
-                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                      fontWeight: category == _selected
+                          ? FontWeight.w700
+                          : FontWeight.w500,
                     ),
                   ),
                 ),
-              ),
-            );
-          }).toList(),
+            },
+          ),
         ),
         const SizedBox(height: 10),
         Wrap(
