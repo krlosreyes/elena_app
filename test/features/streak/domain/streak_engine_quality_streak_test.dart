@@ -74,8 +74,26 @@ void main() {
     });
 
     test(
-        'nutritionMagnitude null (legacy o sin registro) NO califica — '
-        'sin fallback a pillarsCompleted, a diferencia de dailyQualityScore',
+        'nutritionMagnitude null en un día INTERMEDIO (no hoy) rompe la '
+        'cadena — sin fallback a pillarsCompleted, a diferencia de '
+        'dailyQualityScore', () {
+      final history = [
+        entry('2026-07-23', nutritionMagnitude: 0.90),
+        entry('2026-07-24', nutritionMagnitude: null), // rompe acá
+        entry('2026-07-25', nutritionMagnitude: 0.80),
+      ];
+      expect(
+        StreakEngine.computeNutritionQualityStreak(history, asOf: asOf),
+        1,
+        reason: 'solo cuenta hoy (25) — el 24 sin magnitud (null) no '
+            'califica y corta la cadena antes de llegar al 23, igual que '
+            'un día bajo el umbral',
+      );
+    });
+
+    test(
+        'hoy con nutritionMagnitude null (aún sin registrar) NO rompe la '
+        'racha — mismo trato que hoy bajo el umbral, se cuenta desde ayer',
         () {
       final history = [
         entry('2026-07-24', nutritionMagnitude: 0.90),
@@ -83,10 +101,10 @@ void main() {
       ];
       expect(
         StreakEngine.computeNutritionQualityStreak(history, asOf: asOf),
-        0,
-        reason: 'hoy (25) no calificó por magnitud null → cuenta desde '
-            'ayer, pero ayer tampoco es el día de arranque válido tras '
-            'el corte',
+        1,
+        reason: 'usuario típico a media mañana: aún no registra ningún '
+            'plato hoy, pero eso no debe resetear a 0 una racha real de '
+            'ayer — mismo criterio que "hoy incompleto" con score bajo',
       );
     });
 
