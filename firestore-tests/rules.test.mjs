@@ -359,6 +359,189 @@ describe('metamorfosis_posts — lectura publica, escritura de contenido bloquea
   });
 });
 
+// ─────────────────────────────────────────────────────────────────────
+// C-03 (auditoria independiente 2026-07-27): el DELETE del doc raiz y de
+// metabolic_cycles / imr_history estaba DENEGADO por las reglas.
+//
+// Los tres bloques usaban `allow write` con `withinSizeLimit()` y/o una
+// condicion sobre `request.resource.data`. En una operacion DELETE
+// `request.resource` no existe, la evaluacion falla y el borrado se
+// deniega -- el mismo defecto que el catch-all de subcolecciones ya
+// documentaba y corregia desde el 2026-06-13, sin propagarse hacia arriba.
+//
+// La suite tenia 30+ casos, incluidos tests de delete para `badges`, pero
+// NI UNO para estos tres paths. El hueco estaba justo donde no habia test.
+//
+// Estos casos deben FALLAR contra las reglas anteriores al fix.
+// ─────────────────────────────────────────────────────────────────────
+describe('C-03 — el dueno puede BORRAR sus propios datos (derecho de supresion)', () => {
+  it('el dueno puede borrar su doc raiz users/{uid}', async () => {
+    await seed((db) =>
+      db.collection('users').doc('userA').set({ id: 'userA', name: 'Ana' }),
+    );
+    const db = testEnv.authenticatedContext('userA').firestore();
+    await assertSucceeds(db.collection('users').doc('userA').delete());
+  });
+
+  it('otro usuario NO puede borrar el doc raiz ajeno', async () => {
+    await seed((db) =>
+      db.collection('users').doc('userA').set({ id: 'userA', name: 'Ana' }),
+    );
+    const db = testEnv.authenticatedContext('userB').firestore();
+    await assertFails(db.collection('users').doc('userA').delete());
+  });
+
+  it('un usuario no autenticado NO puede borrar un doc raiz', async () => {
+    await seed((db) =>
+      db.collection('users').doc('userA').set({ id: 'userA', name: 'Ana' }),
+    );
+    const db = testEnv.unauthenticatedContext().firestore();
+    await assertFails(db.collection('users').doc('userA').delete());
+  });
+
+  it('el dueno puede borrar un metabolic_cycle propio', async () => {
+    await seed((db) =>
+      db
+        .collection('users')
+        .doc('userA')
+        .collection('metabolic_cycles')
+        .doc('c1')
+        .set({ cycleId: 'c1', dailyScore: 72 }),
+    );
+    const db = testEnv.authenticatedContext('userA').firestore();
+    await assertSucceeds(
+      db
+        .collection('users')
+        .doc('userA')
+        .collection('metabolic_cycles')
+        .doc('c1')
+        .delete(),
+    );
+  });
+
+  it('el dueno puede borrar una entrada de imr_history propia', async () => {
+    await seed((db) =>
+      db
+        .collection('users')
+        .doc('userA')
+        .collection('imr_history')
+        .doc('2026-W30')
+        .set({ weekISO: '2026-W30', totalScore: 64 }),
+    );
+    const db = testEnv.authenticatedContext('userA').firestore();
+    await assertSucceeds(
+      db
+        .collection('users')
+        .doc('userA')
+        .collection('imr_history')
+        .doc('2026-W30')
+        .delete(),
+    );
+  });
+
+  it('otro usuario NO puede borrar metabolic_cycles ni imr_history ajenos', async () => {
+    await seed(async (db) => {
+      await db
+        .collection('users')
+        .doc('userA')
+        .collection('metabolic_cycles')
+        .doc('c1')
+        .set({ cycleId: 'c1', dailyScore: 72 });
+      await db
+        .collection('users')
+        .doc('userA')
+        .collection('imr_history')
+        .doc('2026-W30')
+        .set({ weekISO: '2026-W30', totalScore: 64 });
+    });
+    const db = testEnv.authenticatedContext('userB').firestore();
+    await assertFails(
+      db
+        .collection('users')
+        .doc('userA')
+        .collection('metabolic_cycles')
+        .doc('c1')
+        .delete(),
+    );
+    await assertFails(
+      db
+        .collection('users')
+        .doc('userA')
+        .collection('imr_history')
+        .doc('2026-W30')
+        .delete(),
+    );
+  });
+
+  it('separar delete NO relaja la validacion de rango en create/update', async () => {
+    const db = testEnv.authenticatedContext('userA').firestore();
+    await assertFails(
+      db
+        .collection('users')
+        .doc('userA')
+        .collection('imr_history')
+        .doc('2026-W31')
+        .set({ weekISO: '2026-W31', totalScore: 140 }),
+    );
+    await assertFails(
+      db
+        .collection('users')
+        .doc('userA')
+        .collection('metabolic_cycles')
+        .doc('c2')
+        .set({ cycleId: 'c2', dailyScore: 101 }),
+    );
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────
+// B-18 (auditoria 2026-07-27): metamorfosis_posts es un documento PUBLICO
+// y su `update` no aplicaba `withinSizeLimit()` ni acotaba el incremento.
+// Un cliente autenticado podia inflar el contador a un valor arbitrario o
+// escribir cientos de KB en `analytics`, amplificando el coste de lectura
+// para toda la base.
+// ─────────────────────────────────────────────────────────────────────
+describe('B-18 — metamorfosis_posts: analytics acotado en tamano y ritmo', () => {
+  beforeEach(async () => {
+    await seed((db) =>
+      db
+        .collection('metamorfosis_posts')
+        .doc('p1')
+        .set({ title: 'x', analytics: { views: 5 } }),
+    );
+  });
+
+  it('un salto arbitrario del contador es rechazado', async () => {
+    const db = testEnv.authenticatedContext('userA').firestore();
+    await assertFails(
+      db
+        .collection('metamorfosis_posts')
+        .doc('p1')
+        .update({ 'analytics.views': 1000000 }),
+    );
+  });
+
+  it('un incremento de exactamente 1 sigue permitido', async () => {
+    const db = testEnv.authenticatedContext('userA').firestore();
+    await assertSucceeds(
+      db
+        .collection('metamorfosis_posts')
+        .doc('p1')
+        .update({ 'analytics.views': 6 }),
+    );
+  });
+
+  it('un payload gigante en analytics es rechazado por tamano', async () => {
+    const db = testEnv.authenticatedContext('userA').firestore();
+    await assertFails(
+      db
+        .collection('metamorfosis_posts')
+        .doc('p1')
+        .update({ analytics: { views: 6, basura: 'x'.repeat(150000) } }),
+    );
+  });
+});
+
 describe('catch-all — coleccion no declarada queda denegada por defecto', () => {
   it('una coleccion inventada, sin match propio, deniega todo', async () => {
     const db = testEnv.authenticatedContext('userA').firestore();

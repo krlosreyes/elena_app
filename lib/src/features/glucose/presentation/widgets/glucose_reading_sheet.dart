@@ -115,7 +115,7 @@ class _GlucoseReadingSheetState extends ConsumerState<_GlucoseReadingSheet> {
       if (mounted) {
         setState(() {
           _saving = false;
-          _error = 'No se pudo guardar. Probá de nuevo.';
+          _error = 'No se pudo guardar. Intenta de nuevo.';
         });
       }
       return;
@@ -306,7 +306,7 @@ class _GlucoseReadingSheetState extends ConsumerState<_GlucoseReadingSheet> {
                 ),
                 child: Text(
                   value! < 70
-                      ? 'Este valor es bajo. Si sentís síntomas, considerá '
+                      ? 'Este valor es bajo. Si sientes síntomas, considera '
                           'tratarlo según lo que te haya indicado tu médico '
                           'y, si persiste, contactalo.'
                       : 'Este valor es alto. No es un diagnóstico, pero si '

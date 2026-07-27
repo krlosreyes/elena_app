@@ -19,14 +19,25 @@ import 'src/core/services/app_logger.dart';
 import 'src/core/services/analytics_service.dart';
 import 'src/core/services/crashlytics_service.dart';
 import 'src/core/services/notification_service.dart';
+import 'src/core/services/pii_scrubber.dart';
+import 'src/core/widgets/bootstrap_error_app.dart';
 
 // SPEC-80: envolvemos main en runZonedGuarded para capturar
 // excepciones async no manejadas y enviarlas a Crashlytics tras
 // pasar por el PII scrubber.
+//
+// C-04 (auditoría 2026-07-27): además del zone handler, `_bootstrap()`
+// lleva ahora su propio try/catch. Sin él, cualquier excepción anterior a
+// `runApp()` terminaba la ejecución sin montar NINGÚN árbol de widgets: el
+// usuario veía una pantalla negra permanente, sin mensaje ni forma de
+// reintentar, y en Crashlytics el evento aparecía como fatal sin sesión
+// asociada (difícil de dimensionar). La regla que se establece aquí es
+// simple y no debe romperse: `main()` SIEMPRE llama a `runApp`, pase lo
+// que pase.
 void main() {
   runZonedGuarded<Future<void>>(
     () async {
-      await _bootstrap();
+      await _bootstrapProtegido();
     },
     (error, stack) => CrashlyticsService.recordError(
       error,
@@ -35,6 +46,34 @@ void main() {
       fatal: true,
     ),
   );
+}
+
+/// Ejecuta el bootstrap y garantiza que siempre se monte una UI.
+///
+/// Si el arranque falla, monta [BootstrapErrorApp], cuyo botón
+/// "Reintentar" vuelve a llamar a esta misma función. Un reintento con
+/// éxito hace `runApp` con el árbol real y reemplaza la pantalla de error.
+Future<void> _bootstrapProtegido() async {
+  try {
+    await _bootstrap();
+  } catch (error, stack) {
+    CrashlyticsService.recordError(
+      error,
+      stack,
+      reason: 'bootstrap_failed',
+      fatal: true,
+    );
+    AppLogger.error('Bootstrap falló; montando pantalla de error.', error, stack);
+    // `ensureInitialized` es idempotente y puede no haberse ejecutado si el
+    // fallo ocurrió en la primera línea de `_bootstrap`.
+    WidgetsFlutterBinding.ensureInitialized();
+    runApp(
+      BootstrapErrorApp(
+        onRetry: _bootstrapProtegido,
+        technicalDetail: PiiScrubber.scrub(error.toString()),
+      ),
+    );
+  }
 }
 
 Future<void> _bootstrap() async {
@@ -198,7 +237,14 @@ Future<void> _activateAppCheck() async {
       );
     }
   } else {
-    AppLogger.info('AppCheck omitido: web debug (ver SPEC-73.1).');
+    // B-23 (auditoría 2026-07-27): este log decía "web debug" en CUALQUIER
+    // build de debug, incluido móvil, porque la condición real es
+    // `!kReleaseMode`. Al diagnosticar un problema de App Check en el
+    // Simulador, el mensaje mandaba a buscar en el sitio equivocado.
+    AppLogger.info(
+      'AppCheck omitido: build de debug (ver SPEC fix 2026-06-08). '
+      'En release se activa AppAttest/PlayIntegrity/reCAPTCHA.',
+    );
   }
 }
 
@@ -221,7 +267,28 @@ Future<List<Override>> _initBilling() async {
   if (key.isNotEmpty) {
     final service =
         RevenueCatBillingService(apiKey: key, debugLogging: kDebugMode);
-    await service.initialize();
+    // C-04 (auditoría 2026-07-27): `initialize()` es una llamada de RED en
+    // el camino crítico del primer frame. Si la tienda no responde, antes
+    // la excepción se propagaba hasta `main` y tumbaba el arranque entero:
+    // la app quedaba inservible por un fallo del proveedor de cobro. El
+    // cobro es importante, pero no es condición para abrir la app.
+    //
+    // Degradación elegida: caer a FreeBillingService (gating inerte, app
+    // completa). Es preferible que un usuario Premium vea temporalmente
+    // todo desbloqueado a que ningún usuario pueda entrar. El listener de
+    // `featureGateProvider` en app.dart ya sabe reaccionar cuando el
+    // entitlement resuelve más tarde.
+    try {
+      await service.initialize();
+    } catch (e, st) {
+      CrashlyticsService.recordError(e, st, reason: 'billing_init_failed');
+      AppLogger.warning(
+        'SPEC-196: RevenueCat no inicializó — se arranca sin cobro para no '
+        'bloquear el acceso a la app. Detalle: $e',
+      );
+      service.dispose();
+      return const [];
+    }
     AppLogger.info('SPEC-196: RevenueCatBillingService activo.');
     return [
       billingServiceProvider.overrideWith((ref) {

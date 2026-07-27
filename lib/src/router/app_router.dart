@@ -59,18 +59,46 @@ import 'package:elena_app/src/features/exercise/presentation/exercise_habits_det
 /// desde notificaciones (cold start + foreground).
 final rootNavigatorKey = GlobalKey<NavigatorState>();
 
-final goRouterProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authStateProvider);
+/// I-02 (auditoría 2026-07-27): puente entre Riverpod y GoRouter.
+///
+/// Antes, `goRouterProvider` hacía `ref.watch(authStateProvider)` y devolvía
+/// un `GoRouter` NUEVO en cada emisión. Como `MaterialApp.router` recibe ese
+/// objeto como `routerConfig`, cada emisión reconstruía el Navigator entero:
+/// se perdía la pila de navegación (un usuario en `/profile/badges` acababa
+/// en `/dashboard`) y la instancia anterior nunca se liberaba, dejando sus
+/// listeners vivos. `authStateChanges` emite al menos dos veces en cada
+/// arranque en frío (loading → data), más una vez por login y por logout.
+///
+/// El patrón correcto es una única instancia de router con un `Listenable`
+/// que le diga cuándo reevaluar el redirect. `computeRedirect` ya era una
+/// función pura y bien testeada; no hace falta tocarla.
+class _RefreshListenable extends ChangeNotifier {
+  /// Expuesto para que el provider dispare la reevaluación del redirect.
+  void refresh() => notifyListeners();
+}
 
-  return GoRouter(
+final goRouterProvider = Provider<GoRouter>((ref) {
+  final refresh = _RefreshListenable();
+  ref.onDispose(refresh.dispose);
+
+  // `listen`, no `watch`: reaccionamos al cambio de sesión SIN reconstruir
+  // el provider —y con él, el router—. La suscripción se cierra sola cuando
+  // el provider se dispone.
+  ref.listen(authStateProvider, (_, __) => refresh.refresh());
+
+  final router = GoRouter(
     navigatorKey: rootNavigatorKey,
+    refreshListenable: refresh,
     // SPEC-146: initialLocation cambiado de '/dashboard' a '/splash'
     // para evitar flash de pantallas privadas mientras Firebase Auth
     // hidrata la sesión del keychain en cold start. La lógica completa
     // del redirect vive en `computeRedirect` (función pura testeable).
     initialLocation: '/splash',
+    // El authState se LEE en cada evaluación del redirect, no se captura
+    // en el closure. Así el router es estable y el redirect siempre ve el
+    // estado vigente (I-02).
     redirect: (context, state) => computeRedirect(
-      authState: authState,
+      authState: ref.read(authStateProvider),
       location: state.matchedLocation,
     ),
     routes: [
@@ -298,4 +326,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ),
     ],
   );
+
+  // I-02: sin esto, cada router descartado dejaba vivos sus listeners.
+  ref.onDispose(router.dispose);
+  return router;
 });

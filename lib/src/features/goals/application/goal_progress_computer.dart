@@ -117,7 +117,7 @@ class GoalProgressComputer {
     required double progress,
   }) {
     if (progress >= 1.0) {
-      return '✅ Objetivo alcanzado. Considerá uno nuevo.';
+      return '✅ Objetivo alcanzado. Considera uno nuevo.';
     }
 
     if (progress >= 0.85) {
@@ -125,7 +125,7 @@ class GoalProgressComputer {
     }
 
     if (progress >= 0.50) {
-      return 'Más de la mitad. Seguí así.';
+      return 'Más de la mitad. Sigue así.';
     }
 
     if (progress < 0.10) {
@@ -141,19 +141,19 @@ class GoalProgressComputer {
     final gap = (goal.targetValue - currentValue).abs();
     switch (goal.type) {
       case GoalType.weightTarget:
-        return 'Casi llegás. Faltan ${_round1(gap)} kg.';
+        return 'Casi llegas. Faltan ${_round1(gap)} kg.';
       case GoalType.bodyFatTarget:
-        return 'Casi llegás. Faltan ${_round1(gap)}%.';
+        return 'Casi llegas. Faltan ${_round1(gap)}%.';
       case GoalType.fastingDaysPerWeek:
-        return 'Casi llegás. Sumá ${gap.round()} día más.';
+        return 'Casi llegas. Suma ${gap.round()} día más.';
       case GoalType.exerciseMinPerDay:
-        return 'Casi llegás. Sumá ${gap.round()} min más por día.';
+        return 'Casi llegas. Suma ${gap.round()} min más por día.';
       case GoalType.sleepHoursPerNight:
-        return 'Casi llegás. Sumá ${_round1(gap)}h más por noche.';
+        return 'Casi llegas. Suma ${_round1(gap)}h más por noche.';
       case GoalType.hydrationLitersPerDay:
-        return 'Casi llegás. Sumá ${(gap * 1000).round()} ml más por día.';
+        return 'Casi llegas. Suma ${(gap * 1000).round()} ml más por día.';
       case GoalType.nutritionADominantPercent:
-        return 'Casi llegás. Sumá ${gap.round()}% A-dominante más por semana.';
+        return 'Casi llegas. Suma ${gap.round()}% A-dominante más por semana.';
     }
   }
 

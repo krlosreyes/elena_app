@@ -54,7 +54,7 @@ class GlucoseDetailScreen extends ConsumerWidget {
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (_, __) => Center(
             child: Text(
-              'No pudimos cargar tu historial. Probá de nuevo más tarde.',
+              'No pudimos cargar tu historial. Intenta de nuevo más tarde.',
               style: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
             ),
           ),
@@ -123,7 +123,7 @@ class GlucoseDetailScreen extends ConsumerWidget {
                     ),
                     child: Text(
                       'Todavía no tenemos suficientes datos para mostrarte '
-                      'un patrón confiable. Seguí registrando tu glucosa '
+                      'un patrón confiable. Sigue registrando tu glucosa '
                       'unos días más — necesitamos al menos una semana de '
                       'superposición con tus otros hábitos.',
                       style: TextStyle(

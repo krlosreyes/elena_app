@@ -54,24 +54,43 @@ void main() {
     test(
         'CASO REAL: 2 ciclos el mismo día — el primero (ya completo) sigue contando aunque el segundo apenas arrancó',
         () {
-      // El escenario exacto del bug: usuario completó un ayuno de 16h
-      // esta mañana, lo cerró, y arrancó uno nuevo (todavía en curso,
-      // por eso NO aparece en `recentCompleted` — solo intervalos
-      // CERRADOS). El historial persistido sigue teniendo el primero.
+      // El escenario exacto del bug: usuario completó un ayuno largo, lo
+      // cerró, y arrancó uno nuevo (todavía en curso, por eso NO aparece
+      // en `recentCompleted` — solo intervalos CERRADOS). El historial
+      // persistido sigue teniendo el primero.
+      //
+      // 27-jul (auditoría): este test llevaba en rojo desde que se
+      // escribió, y el motivo era una CONTRADICCIÓN dentro de este mismo
+      // archivo. Su fixture original (inicio 16-jul 20:00 → cierre 17-jul
+      // 12:00) atribuía el ayuno al día del CIERRE, mientras que el test
+      // "atribuye por startTime, no por endTime" —más abajo, con su
+      // explicación— afirma exactamente lo contrario para un fixture de la
+      // misma forma. Ambos no pueden pasar a la vez.
+      //
+      // Manda la Constitución del Día Metabólico §1: el ciclo lo ABRE el
+      // tap "Iniciar ayuno" (`startedAt`), así que un ayuno pertenece al
+      // día en que EMPEZÓ. La implementación ya seguía esa regla; lo que
+      // estaba mal era el fixture, no el motor.
+      //
+      // Se corrige el fixture a dos ciclos que empiezan y cierran el mismo
+      // día —que es literalmente lo que dice el título del test— con lo
+      // que se conserva intacta la regresión que vino a proteger: que un
+      // ayuno CERRADO se siga leyendo del historial aunque haya otro ciclo
+      // activo encima.
       final intervals = [
         _interval(
           id: 'primero',
-          startTime: DateTime(2026, 7, 16, 20, 0), // empezó anoche
-          endTime: DateTime(2026, 7, 17, 12, 0), // cerró hoy, 16h
+          startTime: DateTime(2026, 7, 17, 2, 0),
+          endTime: DateTime(2026, 7, 17, 18, 0), // 16h, cerrado hoy
         ),
       ];
       final result = StreakEngine.bestCompletedFastingHoursToday(
         recentCompleted: intervals,
-        now: DateTime(2026, 7, 17, 18, 0),
+        now: DateTime(2026, 7, 17, 20, 0),
       );
       expect(result, 16.0,
           reason:
-              'el ciclo cerrado esta mañana sigue siendo la fuente de verdad, '
+              'el ciclo ya cerrado sigue siendo la fuente de verdad, '
               'sin depender de que el ciclo activo nuevo lo "recuerde"');
     });
 

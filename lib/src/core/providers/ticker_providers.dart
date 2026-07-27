@@ -1,19 +1,25 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Un provider que emite el tiempo actual cada segundo.
-/// Sirve como trigger reactivo para cálculos que dependen del tiempo (ej: duración de ayuno).
-final clockProvider = StreamProvider<DateTime>((ref) {
-  return Stream.periodic(const Duration(seconds: 1), (_) => DateTime.now());
-});
+// B-21 (auditoría 2026-07-27): este archivo declaraba además `clockProvider`
+// (1 s) y `minuteTickerProvider` (1 min). Un grep sobre todo `lib/` devolvió
+// CERO consumidores de ambos: eran dos `Stream.periodic` permanentes,
+// documentados como si estuvieran en uso, en el núcleo de la app. Se
+// retiraron. Si en el futuro hace falta una cadencia distinta, se añade
+// entonces y con su consumidor.
 
-/// Un ticker más lento para tareas que no requieren precisión de segundos (ej: cada minuto).
-final minuteTickerProvider = StreamProvider<DateTime>((ref) {
-  return Stream.periodic(const Duration(minutes: 1), (_) => DateTime.now());
-});
-
-/// Pulso para recálculos metabólicos (ej: cada 10 segundos).
-/// Optimiza el rendimiento evitando recomputar scores pesados cada segundo.
+/// Pulso para recálculos metabólicos (cada 10 segundos).
+///
+/// Es el ÚNICO ticker de la aplicación. Alimenta `metabolicStateProvider`,
+/// `fastingNotifier`, `eatingWindowProvider`, `metabolicCycleEvaluator`,
+/// `nextMealProvider` y el banner de próxima comida.
+///
+/// I-01 (auditoría 2026-07-27): que este pulso emita no implica que se
+/// recompute nada. `MetabolicState` implementa igualdad estructural y
+/// `maxFastingHoursToday` se redondea a la centésima de hora, de modo que
+/// dos ticks consecutivos producen un estado idéntico y Riverpod corta la
+/// propagación. Antes del redondeo, cada tick disparaba el recálculo
+/// completo del IMR: ~5.760 veces por ayuno de 16 h.
 final metabolicPulseProvider = StreamProvider<DateTime>((ref) {
   return Stream.periodic(const Duration(seconds: 10), (_) => DateTime.now());
 });

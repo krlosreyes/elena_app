@@ -24,6 +24,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/exercise/application/exercise_notifier.dart';
 import 'package:elena_app/src/features/exercise/domain/exercise_log.dart';
+import 'package:elena_app/src/core/utils/error_presentation.dart';
 
 class ExerciseInputSheet extends ConsumerStatefulWidget {
   const ExerciseInputSheet({super.key});
@@ -80,7 +81,7 @@ class _ExerciseInputSheetState extends ConsumerState<ExerciseInputSheet> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(error.toString().replaceAll("Exception: ", "")),
+            content: Text(presentableError(error)),
             backgroundColor: Colors.redAccent,
           ),
         );

@@ -17,6 +17,21 @@ Widget _wrap(Widget child) => MaterialApp(
       ),
     );
 
+/// Localiza el `CustomPaint` que pinta el gráfico, ignorando los que el
+/// propio Flutter monta dentro de `Scaffold`/`Material`.
+///
+/// El painter es privado (`_GlucoseChartPainter`), así que no se puede
+/// referenciar por tipo desde el test; se identifica por su nombre en
+/// tiempo de ejecución. Es feo, pero es preferible a afirmar sobre
+/// `CustomPaint` a secas, que acopla el test al árbol interno del framework.
+final Finder _chartPainter = find.byWidgetPredicate(
+  (w) =>
+      w is CustomPaint &&
+      (w.painter?.runtimeType.toString().contains('GlucoseChartPainter') ??
+          false),
+  description: 'CustomPaint del GlucoseChart',
+);
+
 GlucoseReading _reading(int value, DateTime measuredAt) => GlucoseReading(
       id: 'r-${measuredAt.millisecondsSinceEpoch}',
       userId: 'u1',
@@ -35,7 +50,13 @@ void main() {
       await tester.pumpWidget(_wrap(const GlucoseChart(readings: [])));
       expect(find.text('Todavía no hay lecturas para graficar.'),
           findsOneWidget);
-      expect(find.byType(CustomPaint), findsNothing);
+      // 27-jul (auditoría): antes esto era `find.byType(CustomPaint)` con
+      // `findsNothing`, y llevaba fallando desde que Flutter empezó a montar
+      // un `CustomPaint` propio dentro de Scaffold/Material. El test afirmaba
+      // un detalle de implementación del framework, no del widget bajo
+      // prueba. Lo que de verdad importa es que NO se pinte el gráfico:
+      // se busca el painter concreto, no cualquier CustomPaint del árbol.
+      expect(_chartPainter, findsNothing);
     });
 
     testWidgets('con 1 lectura renderiza sin excepción (xFor divide por 0 '
@@ -43,7 +64,7 @@ void main() {
       await tester.pumpWidget(_wrap(GlucoseChart(readings: [
         _reading(95, DateTime(2026, 7, 20)),
       ])));
-      expect(find.byType(CustomPaint), findsWidgets);
+      expect(_chartPainter, findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
@@ -54,7 +75,7 @@ void main() {
         _reading(90, DateTime(2026, 7, 19)),
         _reading(90, DateTime(2026, 7, 20)),
       ])));
-      expect(find.byType(CustomPaint), findsWidgets);
+      expect(_chartPainter, findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
@@ -65,7 +86,7 @@ void main() {
         _reading(105, DateTime(2026, 7, 19)),
         _reading(130, DateTime(2026, 7, 20)),
       ])));
-      expect(find.byType(CustomPaint), findsWidgets);
+      expect(_chartPainter, findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   });

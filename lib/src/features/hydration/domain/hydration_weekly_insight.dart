@@ -100,14 +100,14 @@ class HydrationCoachingMessage {
           headline:
               'Tu hidratación está severamente baja. Compromete cetonas y cortisol.',
           action:
-              'Empezá con un vaso (250ml) cada 90 min hasta las 21:00. Bajá café y mate.',
+              'Empieza con un vaso (250 ml) cada 90 min hasta las 21:00. Baja el café y el mate.',
           citation: 'EFSA 2010 + Popkin 2010',
         );
       case HydrationInsightTier.low:
         return const HydrationCoachingMessage(
           headline: 'Estás bajo el target. Riesgo de retención y cansancio.',
           action:
-              'Sumá 2 vasos extra al día. El ayuno saca más agua que la comida — compensá.',
+              'Suma 2 vasos extra al día. El ayuno saca más agua que la comida: compénsalo.',
           citation: 'EFSA 2010 + Popkin 2010',
         );
       case HydrationInsightTier.adequate:

@@ -110,6 +110,13 @@ class _HangingNutritionRepository implements NutritionRepository {
   // (listener de usuario + listener de ciclo metabólico, ambos con
   // `fireImmediately: true`); un controller single-subscription lanzaría
   // "Stream has already been listened to" en ese caso.
+  // No se cierra A PROPÓSITO: el contrato de este fake es un stream que
+  // NUNCA emite y NUNCA completa (ver comentario de arriba). Cerrarlo haría
+  // que los listeners recibieran `onDone` y cambiaría justo el escenario que
+  // estos tests reproducen. La regla `close_sinks` (activada en la auditoría
+  // del 27-jul-2026) lo señala correctamente en general; aquí es el
+  // comportamiento buscado.
+  // ignore: close_sinks
   final _neverEmits = StreamController<List<NutritionLog>>.broadcast();
 
   @override

@@ -53,15 +53,15 @@ enum WeakPillar {
   String get suggestedAction {
     switch (this) {
       case WeakPillar.fasting:
-        return 'Marcá el inicio del próximo ayuno entre 19:00 y 21:00.';
+        return 'Marca el inicio del próximo ayuno entre 19:00 y 21:00.';
       case WeakPillar.sleep:
-        return 'Apuntá a apagar pantallas 1h antes de tu hora objetivo de dormir.';
+        return 'Apunta a apagar pantallas 1h antes de tu hora objetivo de dormir.';
       case WeakPillar.hydration:
-        return 'Bebé un vaso de agua cada 90 min hasta las 21:00.';
+        return 'Bebe un vaso de agua cada 90 min hasta las 21:00.';
       case WeakPillar.exercise:
-        return 'Sumá 20 min de caminata después de la comida más grande.';
+        return 'Suma 20 min de caminata después de la comida más grande.';
       case WeakPillar.meals:
-        return 'Cerrá tu ventana de comida antes de las 21:00.';
+        return 'Cierra tu ventana de comida antes de las 21:00.';
     }
   }
 

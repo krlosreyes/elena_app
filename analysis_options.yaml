@@ -19,6 +19,26 @@ analyzer:
   errors:
     invalid_annotation_target: ignore
 
+  # M-03 (auditoría independiente 2026-07-27): el archivo incluía
+  # `flutter_lints` y nada más. Para 100.000 líneas en una app de salud es
+  # un suelo demasiado bajo.
+  #
+  # ADOPCIÓN ESCALONADA — leer antes de descomentar nada de abajo.
+  # Las reglas de este bloque se aplican a código YA ESCRITO, así que
+  # activarlas de golpe deja `flutter analyze` en rojo con un volumen que
+  # nadie tria y que termina en un `// ignore_for_file` masivo, es decir,
+  # peor que no tenerlas. El orden recomendado es una regla por PR, con su
+  # limpieza incluida:
+  #
+  #   language:
+  #     strict-casts: true        # 1º — el de mayor señal por ruido
+  #     strict-raw-types: true    # 2º
+  #
+  # Se dejan comentadas a propósito: la auditoría que las recomienda no
+  # pudo ejecutar `flutter analyze` (sin toolchain Dart en su entorno) y
+  # activar a ciegas lo que no se puede medir es exactamente el tipo de
+  # deuda que este bloque pretende evitar.
+
 
 linter:
   # The lint rules applied to this project can be customized in the
@@ -32,6 +52,33 @@ linter:
   # `// ignore_for_file: name_of_lint` syntax on the line or in the file
   # producing the lint.
   rules:
+    # M-03 (auditoría 2026-07-27). Sobre `unawaited_futures` en particular:
+    # es la red del patrón offline-first que este proyecto usa a propósito
+    # (nunca esperar una escritura de Firestore — ver
+    # feedback_offline_first_pattern). Con la regla activa, cada escritura
+    # deliberadamente no esperada debe marcarse con `unawaited(...)`, lo que
+    # documenta la decisión en el propio código y —más importante— hace
+    # visible cualquier `await` accidental en un camino de UI, que es
+    # exactamente lo que congelaba la pantalla de "Eliminar cuenta" sin red.
+    #
+    # ACTIVAS: reglas que detectan errores reales y cuyo volumen esperado
+    # sobre este código es bajo (patrones que ya se siguen en casi todo el
+    # repositorio). Si alguna resulta ruidosa al correr `flutter analyze`,
+    # comentarla y pasarla a la lista escalonada de abajo.
+    - avoid_empty_else
+    - avoid_returning_null_for_void
+    - null_check_on_nullable_type_parameter
+    - avoid_slow_async_io
+    - cancel_subscriptions
+    - close_sinks
+    #
+    # ESCALONADAS: alto valor, alto volumen inicial. Una por PR, con su
+    # limpieza. Ver la nota del bloque `analyzer:` de arriba.
+    #
+    # - unawaited_futures          # 1º — es la red del patrón offline-first
+    # - use_build_context_synchronously
+    # - avoid_dynamic_calls
+    # - prefer_const_constructors  # último: es estilo, no corrección
     # avoid_print: false  # Uncomment to disable the `avoid_print` rule
     # prefer_single_quotes: true  # Uncomment to enable the `prefer_single_quotes` rule
 

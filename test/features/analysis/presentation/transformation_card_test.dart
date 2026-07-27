@@ -151,7 +151,7 @@ void main() {
           snapshot: _fullSnapshot(),
           narrative: const TransformationNarrative(
             id: 'p',
-            headline: 'Seguí registrando.',
+            headline: 'Sigue registrando.',
             citation: null,
           ),
         ),

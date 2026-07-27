@@ -57,7 +57,32 @@ class DailyScoreHero extends StatelessWidget {
     required this.streakDays,
     required this.streakRisk,
     this.streakProtected = false,
+    this.dayElapsedFraction = 1.0,
+    this.longestStreak = 0,
   });
+
+  /// Fracción [0..1] del día ya transcurrida.
+  ///
+  /// I-03 (auditoría 2026-07-27): el delta vs ayer se mostraba a cualquier
+  /// hora. A las 07:22, con el día recién empezado, el Dashboard saludaba
+  /// con "↓22 vs ayer" — porque comparaba un día de 17 minutos contra un
+  /// día completo. Por construcción, a primera hora ese delta SIEMPRE es
+  /// catastrófico. Y la primera interacción de la mañana es justo la que
+  /// decide si el hábito se forma: abrir la app con intención y que lo
+  /// primero que diga es que vas perdiendo es la peor apertura posible.
+  ///
+  /// El dato no era incorrecto; el encuadre sí. Con este campo, el delta
+  /// solo se muestra cuando la comparación ya es justa.
+  final double dayElapsedFraction;
+
+  /// Mejor racha histórica del usuario (`StreakState.longestStreak`).
+  ///
+  /// I-04 (auditoría 2026-07-27): con la racha en 0, el ring decía
+  /// "Arrancá hoy" tanto al usuario recién registrado como al que llevaba
+  /// seis días y falló uno. Al segundo se le borraba el esfuerzo previo en
+  /// el momento de mayor riesgo de abandono. Este campo permite
+  /// distinguirlos.
+  final int longestStreak;
 
   /// Score del Día 0-100 (display anclado al ciclo metabólico — SPEC-171).
   final int dailyScore;
@@ -84,7 +109,7 @@ class DailyScoreHero extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      label: _dailySemanticLabel(dailyScore, dailyDelta),
+      label: _dailySemanticLabel(dailyScore, dailyDelta, dayElapsedFraction),
       hint: 'Toca para ver cómo se arma tu puntaje de hoy',
       excludeSemantics: true,
       child: GestureDetector(
@@ -101,7 +126,7 @@ class DailyScoreHero extends StatelessWidget {
               children: [
                 _BigScoreRing(
                   score: dailyScore,
-                  sublabel: _dailyDeltaLabel(dailyDelta),
+                  sublabel: _dailyDeltaLabel(dailyDelta, dayElapsedFraction),
                   size: heroSize,
                 ),
                 SizedBox(width: narrow ? 20 : 32),
@@ -110,6 +135,7 @@ class DailyScoreHero extends StatelessWidget {
                   risk: streakRisk,
                   protected: streakProtected,
                   size: streakSize,
+                  longestStreak: longestStreak,
                 ),
               ],
             );
@@ -119,16 +145,31 @@ class DailyScoreHero extends StatelessWidget {
     );
   }
 
-  static String _dailyDeltaLabel(int? delta) {
+  /// Fracción del día a partir de la cual comparar contra ayer es justo.
+  ///
+  /// 0.75 ≈ las 18:00 en un día anclado a medianoche. Antes de ese punto,
+  /// el día en curso todavía tiene margen para acumular y el delta diría
+  /// más sobre la hora que sobre el comportamiento. Ver [dayElapsedFraction].
+  static const double kUmbralDeltaComparable = 0.75;
+
+  static String _dailyDeltaLabel(int? delta, double elapsed) {
     if (delta == null) return ' ';
+    // I-03: mientras el día está en curso no se emite juicio. Una línea
+    // neutra reemplaza a un delta que solo puede ser negativo por la hora.
+    if (elapsed < kUmbralDeltaComparable) return 'tu día está en curso';
     if (delta == 0) return 'igual que ayer';
     final arrow = delta > 0 ? '↑' : '↓';
     return '$arrow${delta.abs()} vs ayer';
   }
 
-  static String _dailySemanticLabel(int score, int? delta) {
+  static String _dailySemanticLabel(int score, int? delta, double elapsed) {
     final base = 'Puntaje de hoy: $score de 100';
     if (delta == null) return base;
+    // I-03: el lector de pantalla anuncia lo MISMO que se ve. Si el delta
+    // se oculta por prematuro, tampoco se locuta — de lo contrario un
+    // usuario de VoiceOver recibiría el juicio que a los demás se les
+    // ahorra, que es el peor reparto posible.
+    if (elapsed < kUmbralDeltaComparable) return '$base, tu día está en curso';
     if (delta == 0) return '$base, igual que ayer';
     if (delta > 0) return '$base, subió $delta respecto a ayer';
     return '$base, bajó ${delta.abs()} respecto a ayer';
@@ -227,14 +268,28 @@ class _StreakRing extends StatelessWidget {
     required this.risk,
     required this.protected,
     required this.size,
+    this.longestStreak = 0,
   });
 
   final int days;
   final StreakRiskLevel risk;
   final bool protected;
   final double size;
+  final int longestStreak;
+
+  /// True si la racha está en 0 pero el usuario YA construyó una antes.
+  ///
+  /// I-04 (auditoría 2026-07-27): es el estado de máximo riesgo de
+  /// abandono —acabo de romper una racha que me costó— y era también el
+  /// que menos apoyo recibía: se mostraba idéntico al del usuario que
+  /// acaba de registrarse.
+  bool get _rachaRota => days == 0 && longestStreak > 0;
 
   Color get _color {
+    // Una racha rota NO es lo mismo que no tener racha. El gris neutro
+    // decía "aquí no hay nada"; el ámbar dice "aquí había algo y se puede
+    // recuperar" — que es la lectura correcta y la que sostiene el hábito.
+    if (_rachaRota) return const Color(0xFFF59E0B);
     switch (risk) {
       case StreakRiskLevel.none:
         return Colors.white.withValues(alpha: 0.28);
@@ -249,13 +304,16 @@ class _StreakRing extends StatelessWidget {
   }
 
   String get _stateLabel {
+    // I-04: reconocer el récord previo antes que pedir nada. El usuario
+    // que llevaba 6 días no está empezando: está volviendo.
+    if (_rachaRota) return 'Récord: ${longestStreak}d';
     switch (risk) {
       case StreakRiskLevel.none:
-        return 'Arrancá hoy';
+        return 'Empieza hoy';
       case StreakRiskLevel.onTrack:
         return 'Vas bien';
       case StreakRiskLevel.atRiskMedium:
-        return 'Sumá hoy';
+        return 'Suma hoy';
       case StreakRiskLevel.atRiskHigh:
         return 'En riesgo';
     }

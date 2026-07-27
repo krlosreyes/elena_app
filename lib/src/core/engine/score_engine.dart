@@ -90,6 +90,69 @@ class IMRv2Result {
     this.isPartialBiometrics = false,
   });
 
+  // ───────────────────────────────────────────────────────────────────
+  // I-01 (auditoría 2026-07-27): igualdad estructural.
+  //
+  // Sin `==`, Riverpod comparaba por identidad. Como `imrProvider` crea un
+  // IMRv2Result nuevo en cada emisión de `metabolicStateProvider` —y ese
+  // cambia cada 10 s mientras hay un ayuno activo, porque `fastingHoursRaw`
+  // avanza—, el provider notificaba SIEMPRE a todos sus consumidores.
+  //
+  // Coste medido sobre un ayuno de 16h: ~5.760 recomputaciones completas
+  // del motor (sigmoides, exponenciales) y ~5.760 ciclos de rebuild del
+  // árbol de consumidores, para mostrar un número que en 10 segundos no se
+  // había movido. Con `==` estructural, Riverpod corta la notificación en
+  // cuanto el resultado visible es idéntico.
+  //
+  // Se comparan solo los campos que forman el resultado; no hay campos
+  // mutables ni colecciones, así que la igualdad es barata y total.
+  // ───────────────────────────────────────────────────────────────────
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is IMRv2Result &&
+          runtimeType == other.runtimeType &&
+          totalScore == other.totalScore &&
+          structureScore == other.structureScore &&
+          metabolicScore == other.metabolicScore &&
+          behaviorScore == other.behaviorScore &&
+          circadianAlignment == other.circadianAlignment &&
+          zone == other.zone &&
+          description == other.description &&
+          imc == other.imc &&
+          tmb == other.tmb &&
+          metabolicAge == other.metabolicAge &&
+          ica == other.ica &&
+          ffmi == other.ffmi &&
+          whtr == other.whtr &&
+          longitudinalScore == other.longitudinalScore &&
+          subscoreBehaviorTrend == other.subscoreBehaviorTrend &&
+          subscoreAdherence == other.subscoreAdherence &&
+          subscoreCoherence == other.subscoreCoherence &&
+          isPartialBiometrics == other.isPartialBiometrics;
+
+  @override
+  int get hashCode => Object.hashAll([
+        totalScore,
+        structureScore,
+        metabolicScore,
+        behaviorScore,
+        circadianAlignment,
+        zone,
+        description,
+        imc,
+        tmb,
+        metabolicAge,
+        ica,
+        ffmi,
+        whtr,
+        longitudinalScore,
+        subscoreBehaviorTrend,
+        subscoreAdherence,
+        subscoreCoherence,
+        isPartialBiometrics,
+      ]);
+
   /// Resultado vacío para cuando no hay datos suficientes (estado inicial,
   /// usuario aún cargando, etc.). SPEC-60: sin DateTime.now().
   /// SPEC-82: incluye los campos derivados en 0.

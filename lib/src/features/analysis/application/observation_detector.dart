@@ -119,14 +119,14 @@ class ObservationDetector {
       case 'ayuno':
         return 'Estirá tu ventana de ayuno una hora hoy.';
       case 'sueño':
-        return 'Apuntá a acostarte 20 minutos antes hoy.';
+        return 'Apunta a acostarte 20 minutos antes hoy.';
       case 'hidratación':
-        return 'Sumá un vaso de agua ahora.';
+        return 'Suma un vaso de agua ahora.';
       case 'ejercicio':
         return 'Meté 10 minutos de movimiento hoy.';
       case 'nutrición':
       case 'nutrición a':
-        return 'Elegí un plato Tipo A en tu próxima comida.';
+        return 'Elige un plato Tipo A en tu próxima comida.';
       default:
         return null;
     }
@@ -216,7 +216,7 @@ class ObservationDetector {
         headline: 'Tu hidratación viene corta de tu meta.',
         detail: 'Los últimos ${lastN.length} días promediaste $pct % de tu '
             'meta diaria.',
-        action: 'Sumá un vaso de agua ahora.',
+        action: 'Suma un vaso de agua ahora.',
         strength: 0.5,
       );
     }

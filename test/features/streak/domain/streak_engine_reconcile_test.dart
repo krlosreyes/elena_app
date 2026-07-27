@@ -200,8 +200,17 @@ void main() {
       // SIN reconciliar (comportamiento previo al fix): hoy solo tiene
       // sleep+hydration = 2 pilares → no califica → la racha cuenta
       // solo ayer = 1. Esto reproduce el bug reportado.
-      final freezeStateBuggy =
-          StreakEngine.computeCurrentStreakWithFreezes(rawHistoryStale);
+      //
+      // 27-jul (auditoría): se pasa `asOf` explícito. El test se escribió
+      // el 17-jul con fechas fijas y sin `asOf` —parámetro que el motor
+      // todavía no tenía—, así que `computeCurrentStreakWithFreezes` caía
+      // en `DateTime.now()`. Desde el 18-jul '2026-07-17' dejó de ser hoy
+      // y la cadena se cortaba en el primer día ausente: el test devolvía
+      // 0 y llevaba diez días en rojo sin que fuera un bug del motor.
+      final freezeStateBuggy = StreakEngine.computeCurrentStreakWithFreezes(
+        rawHistoryStale,
+        asOf: DateTime.parse('$today 12:00:00'),
+      );
       expect(freezeStateBuggy.currentStreak, 1);
     });
 
@@ -235,8 +244,12 @@ void main() {
         localToday: local,
         todayKey: today,
       );
-      final freezeStateFixed =
-          StreakEngine.computeCurrentStreakWithFreezes(reconciled);
+      // 27-jul: mismo motivo que el test anterior — `asOf` explícito para
+      // que el fixture no dependa del día en que se corre la suite.
+      final freezeStateFixed = StreakEngine.computeCurrentStreakWithFreezes(
+        reconciled,
+        asOf: DateTime.parse('$today 12:00:00'),
+      );
 
       expect(freezeStateFixed.currentStreak, 2,
           reason:

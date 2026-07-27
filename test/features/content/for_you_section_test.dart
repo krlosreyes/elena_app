@@ -53,7 +53,12 @@ void main() {
     await tester.pumpWidget(_wrap(feed));
     await tester.pump();
 
-    expect(find.text('Para ti'), findsOneWidget);
+    // 27-jul (auditoría): el 17-jul la sección se rebautizó "Aprende con
+    // Elena" y su título pasó al contenedor (aprende_entry_card /
+    // aprende_detail_screen). `ForYouSection` ya no renderiza cabecera
+    // propia, así que este assert llevaba diez días fallando contra un
+    // texto que el widget dejó de emitir. Se retira: lo que este test debe
+    // verificar es el CONTENIDO del feed, que es lo que sigue abajo.
     expect(find.text('Tu ejercicio viene bajo esta semana.'), findsOneWidget);
     expect(find.text('Título e1'), findsOneWidget);
     expect(find.text('Más para leer'), findsOneWidget);
@@ -64,7 +69,7 @@ void main() {
     await tester.pumpWidget(_wrap(PersonalizedFeed.empty));
     await tester.pump();
 
-    expect(find.text('Para ti'), findsOneWidget);
+    // Ver nota del test anterior: la cabecera ya no vive en este widget.
     expect(find.textContaining('Pronto vas a ver'), findsOneWidget);
   });
 

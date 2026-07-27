@@ -60,7 +60,7 @@ class GlucoseProtocolEntryCard extends ConsumerWidget {
           showGlucoseConsentSheet(
             context,
             welcomeReason:
-                'Activá el seguimiento de glucosa desde tu perfil, '
+                'Activa el seguimiento de glucosa desde tu perfil, '
                 'cuando quieras.',
           );
         } else {

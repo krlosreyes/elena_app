@@ -97,6 +97,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
+                    autocorrect: false,
+                    autofillHints: const [AutofillHints.username],
+                    textInputAction: TextInputAction.next,
                     decoration: const InputDecoration(
                       labelText: "Email",
                       prefixIcon: Icon(Icons.email_outlined),
@@ -111,6 +114,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   TextFormField(
                     controller: _passwordController,
                     obscureText: true,
+                    // B-15 (auditoría 2026-07-27): sin `autofillHints` el
+                    // llavero de iOS no ofrece guardar ni rellenar la
+                    // contraseña. El usuario que vuelve a los tres días y
+                    // no la recuerda cae en el flujo de recuperación —el
+                    // más débil de la app— y muchos no vuelven. Es una
+                    // fuga de retención de origen puramente técnico.
+                    autofillHints: const [AutofillHints.password],
+                    textInputAction: TextInputAction.done,
+                    onFieldSubmitted: (_) => _submit(),
                     decoration: const InputDecoration(
                       labelText: "Contraseña",
                       prefixIcon: Icon(Icons.lock_outline),

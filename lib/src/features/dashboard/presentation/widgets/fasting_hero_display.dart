@@ -271,21 +271,17 @@ class _FastingHeroDisplayState extends State<FastingHeroDisplay> {
   String _fmtClock(DateTime t) =>
       '${_twoDigits(t.hour)}:${_twoDigits(t.minute)}';
 
-  String _friendlyMilestone(FastingPhase phase) {
-    switch (phase) {
-      case FastingPhase.postAbsorption:
-      case FastingPhase.transition:
-        return 'Quema de grasa';
-      case FastingPhase.fatBurning:
-        return 'Autofagia';
-      case FastingPhase.autophagy:
-        return 'Regeneración';
-      case FastingPhase.survival:
-        return 'Cierre';
-      case FastingPhase.none:
-        return 'Próximo hito';
-    }
-  }
+  /// Nombre del hito que viene DESPUÉS de [phase].
+  ///
+  /// Auditoría 2026-07-27 (C-01): esta función tenía su propia tabla de
+  /// nombres, que adelantaba una fase respecto del enum canónico —
+  /// anunciaba "Quema de grasa" a un usuario en post-absorción (menos de
+  /// 12h de ayuno) cuando la cetosis nutricional empieza a las 18h. El
+  /// mapeo vive ahora en `FastingPhase.next` + `milestoneName`, compartido
+  /// con la tarjeta Ayuno Consciente, de modo que ambas vistas no pueden
+  /// volver a divergir.
+  String _friendlyMilestone(FastingPhase phase) =>
+      phase.next?.milestoneName ?? 'Próximo hito';
 
   IconData _iconForPhase(FastingPhase phase) {
     switch (phase) {

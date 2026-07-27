@@ -140,7 +140,19 @@ void main() {
       expect(result, isNull);
     });
 
-    test('protocolChanged dispara cuando protocol del ciclo != actual', () {
+    test('cambiar de protocolo NO cierra el ciclo en curso', () {
+      // 27-jul (auditoría): este test afirmaba lo contrario
+      // (`ClosureReason.protocolChanged`) y llevaba en rojo desde el
+      // 20-jul, cuando el trigger se ELIMINÓ por decisión de producto de
+      // Carlos: cerraba el día en curso apenas el usuario tocaba "cambiar
+      // protocolo" en Configuración, aunque estuviera en plena ventana de
+      // alimentación sin intención de ayunar. Ver la nota extensa en
+      // `metabolic_cycle_resolver.dart`.
+      //
+      // El test no se borra: se invierte. Cambiar el protocolo es una
+      // preferencia pura y el ciclo abierto conserva el suyo hasta que el
+      // usuario inicia un ayuno nuevo a propósito. Blindar esa regla vale
+      // más que blindar la función que se quitó.
       final cycle = _openCycle(protocol: '16:8');
       final result = MetabolicCycleResolver.shouldClose(
         openCycle: cycle,
@@ -152,7 +164,8 @@ void main() {
         newFastingStartedExplicitly: false,
         newFastingStartedAt: null,
       );
-      expect(result, ClosureReason.protocolChanged);
+      expect(result, isNull,
+          reason: 'el protocolo nuevo aplica al ciclo SIGUIENTE, no al actual');
     });
 
     test('manualNextFasting dispara con nuevo ayuno y >=30 min', () {
@@ -304,7 +317,15 @@ void main() {
       expect(result, isNull);
     });
 
-    test('Prioridad: protocolChanged gana sobre manualNextFasting', () {
+    test(
+        'con protocolo cambiado Y ayuno nuevo, cierra por manualNextFasting '
+        '(no por el cambio de protocolo)', () {
+      // 27-jul (auditoría): antes esperaba `protocolChanged`, trigger
+      // retirado el 20-jul. Lo que este caso protege ahora es que el
+      // cambio de protocolo no "secuestre" el motivo de cierre: quien
+      // cierra el ciclo es el ayuno que el usuario inició a propósito, y
+      // el motivo registrado debe reflejar esa intención — no una
+      // preferencia de configuración que tocó de paso.
       final cycle = _openCycle(startedAt: DateTime(2026, 6, 1, 21, 0));
       final result = MetabolicCycleResolver.shouldClose(
         openCycle: cycle,
@@ -316,7 +337,7 @@ void main() {
         newFastingStartedExplicitly: true,
         newFastingStartedAt: DateTime(2026, 6, 2, 22, 0),
       );
-      expect(result, ClosureReason.protocolChanged);
+      expect(result, ClosureReason.manualNextFasting);
     });
 
     test('Prioridad: manualNextFasting gana sobre fallbackSleepDetected', () {

@@ -50,6 +50,83 @@ enum FastingPhase {
         fatBurning => 'ketosis',
         autophagy || survival => 'deepFasting',
       };
+
+  // ───────────────────────────────────────────────────────────────────
+  // FUENTE ÚNICA DE VERDAD DE LOS HITOS (auditoría 2026-07-27, C-01)
+  //
+  // Antes de este bloque existían CINCO definiciones divergentes de la
+  // misma taxonomía: los comentarios del enum, `determinePhase`,
+  // `metabolicMilestone`, `nextMilestoneLabel`,
+  // `fasting_consciousness_card._formatNextMilestone` y
+  // `fasting_hero_display._friendlyMilestone`. El resultado observado en
+  // ejecución era que, a los 17 minutos de ayuno, el anillo del Dashboard
+  // anunciaba "Quema de grasa en 11h 43m" y la tarjeta de abajo
+  // "Descenso de insulina en 11h 42m" — dos afirmaciones fisiológicas
+  // distintas para el mismo instante, y ninguna coincidente con este enum,
+  // que sitúa la cetosis nutricional entre las 18 y 24 horas.
+  //
+  // A partir de aquí, umbrales y nombres viven SOLO en el dominio. Ningún
+  // widget puede volver a inventarse los suyos: los tres getters de abajo
+  // son la única vía.
+  // ───────────────────────────────────────────────────────────────────
+
+  /// Horas de ayuno acumuladas a las que se ENTRA en esta fase.
+  ///
+  /// Es el umbral que `determinePhase` usa para clasificar y el que
+  /// `timeRemainingForNextMilestone` usa para contar hacia atrás. Los
+  /// valores son los de IMR_BIBLIOGRAPHY.md (Mattson 2017, Anton 2018).
+  Duration get startsAt => switch (this) {
+        none || postAbsorption => Duration.zero,
+        transition => const Duration(hours: 12),
+        fatBurning => const Duration(hours: 18),
+        autophagy => const Duration(hours: 24),
+        survival => const Duration(hours: 48),
+      };
+
+  /// Fase siguiente en el mapa cronológico, **a efectos de anuncio al
+  /// usuario**. `null` cuando ya no hay hito que prometer.
+  ///
+  /// `autophagy.next` es deliberadamente `null` y NO `survival`: un ayuno
+  /// de 48h o más requiere supervisión médica (ver [description] de
+  /// `survival`), así que la app no debe empujar hacia él presentándolo
+  /// como la próxima meta. Esto además preserva el comportamiento previo,
+  /// donde a partir de las 24h no se anunciaba ningún hito nuevo.
+  FastingPhase? get next => switch (this) {
+        none => postAbsorption,
+        postAbsorption => transition,
+        transition => fatBurning,
+        fatBurning => autophagy,
+        autophagy || survival => null,
+      };
+
+  /// Nombre del hito con el que se ANUNCIA la entrada a esta fase.
+  ///
+  /// Se usa siempre en construcciones del tipo "«X» en 3h 20m", es decir
+  /// hablando de una fase que el usuario todavía NO alcanzó. Para nombrar
+  /// la fase en la que ya está, usar [currentStateName].
+  String get milestoneName => switch (this) {
+        none => 'Estado anabólico',
+        postAbsorption => 'Descenso de insulina',
+        transition => 'Inicio de cetogénesis',
+        fatBurning => 'Quema de grasa',
+        autophagy => 'Autofagia',
+        survival => 'Regeneración celular',
+      };
+
+  /// Nombre de la fase EN CURSO, para construcciones del tipo "estás en X".
+  ///
+  /// Difiere de [milestoneName] en el matiz temporal: "Autofagia" es el
+  /// hito que se alcanza, "Autofagia Activa" es el estado en el que se
+  /// está. Mantiene la capitalización histórica porque hay tests que la
+  /// afirman literalmente (fasting_e2e_temporal_test.dart).
+  String get currentStateName => switch (this) {
+        none => 'Estado Anabólico',
+        postAbsorption => 'Descenso de Insulina',
+        transition => 'Inicio de Cetogénesis',
+        fatBurning => 'Quema de Grasa',
+        autophagy => 'Autofagia Activa',
+        survival => 'Regeneración Celular',
+      };
 }
 
 /// SPEC-183 (2026-06-05): origen de la activación del ayuno.
@@ -170,31 +247,26 @@ class FastingState {
     return (closedProgressToday ?? 0.0).clamp(0.0, 1.0);
   }
 
+  /// Clasifica una duración en su fase. Los umbrales NO se repiten aquí:
+  /// se derivan de `FastingPhase.startsAt` (auditoría 2026-07-27, C-01),
+  /// de modo que mover un umbral en el enum mueve también la
+  /// clasificación, el countdown y todas las etiquetas a la vez.
   static FastingPhase determinePhase(Duration duration) {
-    final hours = duration.inHours;
-    if (hours < 12) return FastingPhase.postAbsorption;
-    if (hours < 18) return FastingPhase.transition;
-    if (hours < 24) return FastingPhase.fatBurning;
-    if (hours < 48) return FastingPhase.autophagy;
-    return FastingPhase.survival;
+    // Recorrido de la fase más avanzada a la más temprana: la primera
+    // cuyo umbral de entrada ya se cruzó es la fase actual.
+    for (final phase in const [
+      FastingPhase.survival,
+      FastingPhase.autophagy,
+      FastingPhase.fatBurning,
+      FastingPhase.transition,
+    ]) {
+      if (duration >= phase.startsAt) return phase;
+    }
+    return FastingPhase.postAbsorption;
   }
 
-  String get metabolicMilestone {
-    switch (phase) {
-      case FastingPhase.none:
-        return "Estado Anabólico";
-      case FastingPhase.postAbsorption:
-        return "Descenso de Insulina";
-      case FastingPhase.transition:
-        return "Inicio de Cetogénesis";
-      case FastingPhase.fatBurning:
-        return "Quema de Grasa";
-      case FastingPhase.autophagy:
-        return "Autofagia Activa";
-      case FastingPhase.survival:
-        return "Regeneración Celular";
-    }
-  }
+  /// Nombre de la fase EN CURSO. Delega en el enum canónico.
+  String get metabolicMilestone => phase.currentStateName;
 
   /// COMUNICACIÓN SEMÁNTICA DE ALERTA
   String? get metabolicAlert {
@@ -204,31 +276,37 @@ class FastingState {
     return null;
   }
 
+  /// Fase que el usuario alcanzará a continuación, o `null` si ya no hay
+  /// hito que anunciar. Única fuente para cualquier UI que quiera decir
+  /// "próximo hito" (auditoría 2026-07-27, C-01).
+  ///
+  /// Corrige un error de índice histórico: con el ayuno por debajo de las
+  /// 12h, el código anterior anunciaba "Descenso de insulina" como lo que
+  /// venía, cuando el descenso de insulina es la fase en la que el usuario
+  /// YA está. Lo que viene a las 12h es el inicio de cetogénesis.
+  FastingPhase? get nextPhase => isActive ? phase.next : null;
+
   String get nextMilestoneLabel {
-    if (isActive) {
-      if (duration.inHours < 12) {
-        return "SIGUIENTE ETAPA: DESCENSO DE INSULINA (12H)";
-      }
-      if (duration.inHours < 18) return "SIGUIENTE ETAPA: QUEMA DE GRASA (18H)";
-      if (duration.inHours < 24) return "SIGUIENTE ETAPA: AUTOFAGIA (24H)";
-      return "FASE DE REGENERACIÓN PROFUNDA";
-    } else {
+    if (!isActive) {
       return nearSleepWarning
           ? "ATENCIÓN: RIESGO DE INSULINA NOCTURNA"
           : "META: INICIAR AYUNO";
     }
+    final next = nextPhase;
+    if (next == null) return "FASE DE REGENERACIÓN PROFUNDA";
+    return "SIGUIENTE ETAPA: ${next.milestoneName.toUpperCase()} "
+        "(${next.startsAt.inHours}H)";
   }
 
   Duration get timeRemainingForNextMilestone {
-    if (isActive) {
-      if (duration.inHours < 12) return const Duration(hours: 12) - duration;
-      if (duration.inHours < 18) return const Duration(hours: 18) - duration;
-      if (duration.inHours < 24) return const Duration(hours: 24) - duration;
-      return Duration.zero;
-    } else {
+    if (!isActive) {
       final remaining = const Duration(hours: 8) - duration;
       return remaining.isNegative ? Duration.zero : remaining;
     }
+    final next = nextPhase;
+    if (next == null) return Duration.zero;
+    final remaining = next.startsAt - duration;
+    return remaining.isNegative ? Duration.zero : remaining;
   }
 
   FastingState copyWith({

@@ -212,8 +212,11 @@ void main() {
     });
 
     test('acciones son concretas y empiezan con verbo', () {
-      // Verbos de acción típicos en imperativo del Río de la Plata.
-      const accionables = ['Marcá', 'Apuntá', 'Bebé', 'Sumá', 'Cerrá'];
+      // Auditoría 2026-07-27 (C-02): este test afirmaba imperativos del
+      // Río de la Plata, blindando el voseo en vez de impedirlo. El
+      // estándar del proyecto es español neutro LatAm (ver
+      // intro_screens.dart §Reglas de copy).
+      const accionables = ['Marca', 'Apunta', 'Bebe', 'Suma', 'Cierra'];
       for (final p in WeakPillar.values) {
         final hasVerb = accionables.any((v) => p.suggestedAction.startsWith(v));
         expect(

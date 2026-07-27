@@ -91,7 +91,7 @@ class SleepCoachingMessage {
           headline:
               'Tu duración promedio compromete tu reparación metabólica.',
           action:
-              'Apuntá a 7h como mínimo no negociable. Adelantá tu hora de dormirte 30 min esta semana.',
+              'Apunta a 7h como mínimo no negociable. Adelanta tu hora de dormir 30 min esta semana.',
           citation: 'Walker 2017 + AASM',
         );
       case SleepInsightTier.latencyHigh:
@@ -99,7 +99,7 @@ class SleepCoachingMessage {
           headline:
               'Tu latencia >30min sugiere cortisol elevado al acostarte.',
           action:
-              'Cerrá pantallas 1h antes y bajá la luz progresivamente desde el atardecer.',
+              'Cierra pantallas 1h antes y baja la luz progresivamente desde el atardecer.',
           citation: 'Walker 2017',
         );
       case SleepInsightTier.fragmented:

@@ -104,14 +104,14 @@ class ExerciseCoachingMessage {
         return const ExerciseCoachingMessage(
           headline: 'Movimiento insuficiente. Tu insulina no se regula.',
           action:
-              'Empezá con 20 min de caminata después de la comida más grande.',
+              'Empieza con 20 min de caminata después de la comida más grande.',
           citation: 'OMS 150 min/sem + Mattson 2017',
         );
       case ExerciseInsightTier.low:
         return const ExerciseCoachingMessage(
           headline: 'Cerca pero corto. Te faltan minutos para el efecto metabólico.',
           action:
-              'Sumá 10 min al día. La OMS marca 150 min/semana como mínimo.',
+              'Suma 10 min al día. La OMS marca 150 min/semana como mínimo.',
           citation: 'OMS 2020 + AHA 2018',
         );
       case ExerciseInsightTier.meetsTarget:

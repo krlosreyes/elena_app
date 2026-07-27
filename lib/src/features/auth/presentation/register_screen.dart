@@ -74,6 +74,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
                 TextFormField(
                   controller: _nameController,
+                  textCapitalization: TextCapitalization.words,
+                  autofillHints: const [AutofillHints.name],
+                  textInputAction: TextInputAction.next,
                   decoration: const InputDecoration(
                       labelText: "Nombre Completo",
                       prefixIcon: Icon(Icons.person_outline)),
@@ -85,6 +88,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
+                  autocorrect: false,
+                  autofillHints: const [AutofillHints.email],
+                  textInputAction: TextInputAction.next,
                   decoration: const InputDecoration(
                       labelText: "Email",
                       prefixIcon: Icon(Icons.email_outlined)),
@@ -97,8 +103,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 TextFormField(
                   controller: _passwordController,
                   obscureText: true,
+                  // B-15: `newPassword` es lo que hace que iOS ofrezca
+                  // GENERAR y guardar una contraseña fuerte en el alta.
+                  autofillHints: const [AutofillHints.newPassword],
+                  textInputAction: TextInputAction.next,
+                  // B-17 (auditoría 2026-07-27): el requisito de 8 caracteres
+                  // solo se revelaba DESPUÉS de fallar la validación. Mostrarlo
+                  // como texto de ayuda evita el fallo en vez de explicarlo.
                   decoration: const InputDecoration(
                       labelText: "Contraseña",
+                      helperText: "Mínimo 8 caracteres",
                       prefixIcon: Icon(Icons.lock_outline)),
                   // SEC-06 (auditoría 2026-07-11): subido de 6 a 8 caracteres
                   // para que una contraseña NUEVA cumpla el mismo mínimo que
@@ -116,12 +130,25 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 TextFormField(
                   controller: _confirmPasswordController,
                   obscureText: true,
+                  autofillHints: const [AutofillHints.newPassword],
+                  textInputAction: TextInputAction.done,
                   decoration: const InputDecoration(
                       labelText: "Confirmar Contraseña",
                       prefixIcon: Icon(Icons.lock_reset)),
-                  validator: (val) => val != _passwordController.text
-                      ? "Las contraseñas no coinciden"
-                      : null,
+                  // B-20 (auditoría 2026-07-27): con el formulario vacío, este
+                  // validador comparaba '' contra '' → iguales → sin error.
+                  // Los otros tres campos se marcaban en rojo y este quedaba
+                  // en verde estando vacío, dando la impresión falsa de que
+                  // era el único correcto.
+                  validator: (val) {
+                    if (val == null || val.isEmpty) {
+                      return "Confirma tu contraseña";
+                    }
+                    if (val != _passwordController.text) {
+                      return "Las contraseñas no coinciden";
+                    }
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 32),
 

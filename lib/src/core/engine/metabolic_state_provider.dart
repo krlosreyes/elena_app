@@ -72,10 +72,23 @@ final metabolicStateProvider = Provider<MetabolicState>((ref) {
   // eliminó porque ese provider nunca existió en el repo (deuda baseline).
   // Si en el futuro se requiere recuperar la duración de ayunos completados
   // hoy, será una SPEC dedicada con un repository de intervalos.
+  //
+  // I-01 (auditoría 2026-07-27): el valor se REDONDEA a la centésima de
+  // hora (36 s). Sin redondeo, cada pulso de 10 s producía un
+  // `fastingHoursRaw` distinto en el sexto decimal, `MetabolicState`
+  // dejaba de ser igual al anterior pese a que nada observable había
+  // cambiado, y toda la cadena reactiva —incluido el recálculo completo
+  // del IMR— se disparaba 6 veces por minuto durante las 16 h del ayuno.
+  //
+  // La resolución que queda (36 s) es muy superior a la que necesita
+  // cualquier consumidor del score: la sigmoide metabólica está centrada
+  // en 14 h con ancho 1,5 h, así que 36 s son ruido. El cronómetro visible
+  // del ayuno NO depende de este valor —se dibuja con su propio reloj—,
+  // de modo que la cuenta atrás sigue viéndose fluida.
   double maxFastingHoursToday = 0.0;
   if (fasting.isActive && fasting.startTime != null) {
-    maxFastingHoursToday =
-        now.difference(fasting.startTime!).inSeconds / 3600.0;
+    final horasExactas = now.difference(fasting.startTime!).inSeconds / 3600.0;
+    maxFastingHoursToday = (horasExactas * 100).roundToDouble() / 100;
   }
 
   return MetabolicStateBuilder.build(

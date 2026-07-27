@@ -159,7 +159,7 @@ class CyclesHistoryCard extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Cerrá tu primer Día Metabólico iniciando tu siguiente '
+            'Cierra tu primer Día Metabólico iniciando tu siguiente '
             'ayuno. Ahí vas a ver los scores, logros y enseñanzas '
             'de cada ciclo.',
             style: TextStyle(

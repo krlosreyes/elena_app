@@ -287,8 +287,17 @@ void main() {
       expect(result.hasOpening, isFalse);
     });
 
-    test('Cierre por protocolChanged → abre nuevo con nuevo protocolo',
-        () async {
+    test(
+        'cambiar de protocolo NO cierra ni reabre ciclo — el día en curso '
+        'queda intacto', () async {
+      // 27-jul (auditoría): este test esperaba un cierre por
+      // `ClosureReason.protocolChanged` y llevaba en rojo desde el 20-jul,
+      // cuando ese trigger se retiró por decisión de producto. El
+      // comportamiento correcto —y el que ahora se blinda— es que tocar
+      // "cambiar protocolo" en Configuración no tenga ningún efecto sobre
+      // el ciclo abierto: el usuario puede estar en plena ventana de
+      // alimentación, sin ninguna intención de ayunar, y cerrarle el día
+      // ahí le rompía la racha por una preferencia de configuración.
       await repo.save(
         'u1',
         MetabolicCycle.open(
@@ -307,11 +316,14 @@ void main() {
         ),
       );
 
-      expect(result.hasClosure, isTrue);
-      expect(result.closed!.closureReason, ClosureReason.protocolChanged);
-      expect(result.hasOpening, isTrue);
-      expect(result.opened!.fastingProtocol, '20:4');
-      expect(result.opened!.startedAt, now);
+      expect(result.hasClosure, isFalse);
+      expect(result.hasOpening, isFalse);
+
+      // Y el ciclo abierto conserva SU protocolo, no el nuevo: el '20:4'
+      // aplicará recién al ciclo que abra el próximo ayuno intencional.
+      final abierto = await repo.fetchOpenCycle('u1');
+      expect(abierto, isNotNull);
+      expect(abierto!.fastingProtocol, '16:8');
     });
   });
 

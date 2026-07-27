@@ -17,6 +17,7 @@ import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/sleep/application/sleep_notifier.dart';
 import 'package:elena_app/src/features/sleep/domain/sleep_log.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
+import 'package:elena_app/src/core/utils/error_presentation.dart';
 
 class SleepInputSheet extends ConsumerStatefulWidget {
   /// SPEC-106: si se pasa `initial`, el sheet precarga todos los
@@ -117,7 +118,7 @@ class _SleepInputSheetState extends ConsumerState<SleepInputSheet> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(error.toString().replaceAll("Exception: ", "")),
+            content: Text(presentableError(error)),
             backgroundColor: Colors.redAccent,
           ),
         );

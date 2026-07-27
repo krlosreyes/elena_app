@@ -156,7 +156,7 @@ void main() {
       expect(snap.motivationalMessage, contains('Objetivo alcanzado'));
     });
 
-    test('progress 0.85..1.0 → mensaje "Casi llegás" con gap', () {
+    test('progress 0.85..1.0 → mensaje "Casi llegas" con gap', () {
       final goal = _goal(
         type: GoalType.weightTarget,
         start: 90,
@@ -168,7 +168,7 @@ void main() {
         currentValue: 81,
       );
       expect(snap.isAlmostThere, isTrue);
-      expect(snap.motivationalMessage, contains('Casi llegás'));
+      expect(snap.motivationalMessage, contains('Casi llegas'));
       expect(snap.motivationalMessage, contains('1.0 kg'));
     });
 
@@ -244,7 +244,7 @@ void main() {
     });
   });
 
-  group('SPEC-154 — mensajes de "Casi llegás" por tipo', () {
+  group('SPEC-154 — mensajes de "Casi llegas" por tipo', () {
     test('peso muestra kg', () {
       final goal = _goal(type: GoalType.weightTarget, start: 90, target: 80);
       final snap = GoalProgressComputer.compute(goal: goal, currentValue: 81);

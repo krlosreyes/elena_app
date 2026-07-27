@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:elena_app/src/core/providers/ticker_providers.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/fasting/application/fasting_notifier.dart';
 import 'package:elena_app/src/features/hydration/application/hydration_notifier.dart';
@@ -212,6 +213,11 @@ class DashboardPillarsRow extends ConsumerWidget {
           // redundante con la fila de abajo).
           // SPEC-243 fix: key compartida con AppTourOverlay para calcular
           // posición real del spotlight "Progreso Hoy" (scoreCard).
+          // I-03 / I-04 (auditoría 2026-07-27): el hero recibe además la
+          // fracción del día transcurrida —para no comparar un día de 17
+          // minutos contra uno completo— y el récord de racha, para no
+          // tratar al usuario que se le rompió la racha como si acabara de
+          // registrarse. Ver la doc de ambos campos en daily_score_hero.dart.
           DailyScoreHero(
             key: ref.read(dualScoreRingKeyProvider),
             dailyScore: dailyScore,
@@ -220,6 +226,11 @@ class DashboardPillarsRow extends ConsumerWidget {
             streakDays: streakDays,
             streakRisk: streakRisk,
             streakProtected: streakProtected,
+            dayElapsedFraction: _fraccionDelDiaTranscurrida(
+              ref.watch(metabolicPulseProvider).valueOrNull ?? DateTime.now(),
+            ),
+            longestStreak:
+                ref.watch(streakProvider.select((s) => s.longestStreak)),
           ),
           const SizedBox(height: 12),
           // Frase motivacional centrada bajo los rings (SPEC-140.3).
@@ -370,5 +381,18 @@ class DashboardPillarsRow extends ConsumerWidget {
     if (historyDays == 0) return 'Tu primer día: arranca el ayuno';
     if (historyDays < 4) return 'En camino: suma sueño e hidratación';
     return 'Vas empezando';
+  }
+
+  /// Fracción [0..1] del día natural ya transcurrida.
+  ///
+  /// I-03 (auditoría 2026-07-27): la usa `DailyScoreHero` para decidir si
+  /// el delta contra ayer es una comparación justa. Se calcula sobre el
+  /// reloj de pared y no sobre el ancla del ciclo metabólico a propósito:
+  /// la pregunta que responde no es "¿en qué punto de tu ciclo estás?"
+  /// sino "¿te queda día por delante para acumular?", y para eso la hora
+  /// local es la referencia correcta y la más barata de calcular.
+  static double _fraccionDelDiaTranscurrida(DateTime ahora) {
+    const minutosPorDia = 24 * 60;
+    return ((ahora.hour * 60 + ahora.minute) / minutosPorDia).clamp(0.0, 1.0);
   }
 }

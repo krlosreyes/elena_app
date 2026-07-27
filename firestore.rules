@@ -37,11 +37,30 @@ service cloud.firestore {
     // 1. users/{userId}: doc principal del usuario.
     //    Lectura/escritura solo del propio dueño + tamaño limitado +
     //    `id` (si presente) debe coincidir con el path.
+    //
+    //    FIX-DELETE (auditoría 2026-07-27, hallazgo C-03): `allow write`
+    //    unificado incluía `withinSizeLimit()`, que llama a
+    //    `request.resource.size()`. En una operación DELETE
+    //    `request.resource` NO existe → la evaluación de la regla falla →
+    //    permission-denied. Es EXACTAMENTE el mismo defecto que el bloque
+    //    catch-all de subcolecciones ya documenta y corrige desde el
+    //    2026-06-13; el arreglo nunca se propagó hacia arriba, a este
+    //    bloque ni a metabolic_cycles / imr_history.
+    //
+    //    Consecuencia real: `deleteAccount()` envuelve este borrado en un
+    //    catch best-effort, así que el fallo era SILENCIOSO y el borrado
+    //    del doc raíz quedaba dependiendo por completo de la Cloud
+    //    Function `onUserDeleted` — que solo se dispara si `user.delete()`
+    //    tuvo éxito. Con `requires-recent-login` (caso frecuente y
+    //    explícitamente manejado en el cliente), el usuario quedaba con la
+    //    cuenta viva y parte del historial ya borrado. Para un dato de
+    //    salud eso es exposición regulatoria (GDPR art. 17, Ley 1581/2012).
     match /users/{userId} {
       allow read: if isOwner(userId);
-      allow write: if isOwner(userId)
+      allow create, update: if isOwner(userId)
                    && withinSizeLimit()
                    && idMatchesOrAbsent(userId);
+      allow delete: if isOwner(userId);
 
       // SPEC-149: metabolic_cycles — historial de ciclos metabólicos
       // (Día Metabólico). PK = cycleId (ISO timestamp UTC del startedAt).
@@ -52,9 +71,15 @@ service cloud.firestore {
       // excluye explícitamente este path de su condición de create/update,
       // por lo que esta validación de rango sí se enforza server-side (ver
       // nota completa en el bloque de imr_history, unas líneas más abajo).
+      //
+      // FIX-DELETE (auditoría 2026-07-27, C-03): create/update se separan
+      // de delete. La condición de rango lee `request.resource.data`, que
+      // no existe en DELETE — con `allow write` unificado, borrar un ciclo
+      // era imposible incluso para su dueño. Ver nota completa en el
+      // bloque `users/{userId}` de arriba.
       match /metabolic_cycles/{cycleId} {
         allow read: if isOwner(userId);
-        allow write: if isOwner(userId)
+        allow create, update: if isOwner(userId)
                      && withinSizeLimit()
                      && request.resource.data.cycleId == cycleId
                      && (
@@ -65,6 +90,7 @@ service cloud.firestore {
                          && request.resource.data.dailyScore <= 100
                        )
                      );
+        allow delete: if isOwner(userId);
       }
 
       // SPEC-143: imr_history — historial semanal del IMR longitudinal
@@ -80,14 +106,18 @@ service cloud.firestore {
       // validación client-side en BiometricHistoryService y
       // WeeklyImrSnapshotService sigue existiendo como primera línea de
       // defensa; esta regla es ahora la segunda línea real.
+      //
+      // FIX-DELETE (auditoría 2026-07-27, C-03): mismo desdoblamiento que
+      // metabolic_cycles y users/{userId}. Ver nota completa arriba.
       match /imr_history/{weekISO} {
         allow read: if isOwner(userId);
-        allow write: if isOwner(userId)
+        allow create, update: if isOwner(userId)
                      && withinSizeLimit()
                      && request.resource.data.weekISO == weekISO
                      && request.resource.data.totalScore is number
                      && request.resource.data.totalScore >= 0
                      && request.resource.data.totalScore <= 100;
+        allow delete: if isOwner(userId);
       }
 
       // Sistema de insignias (2026-07-15): users/{uid}/badges/{badgeId}.
@@ -245,15 +275,32 @@ service cloud.firestore {
     //    warning) para ese post, indefinidamente. Se añade el chequeo
     //    `!('analytics' in resource.data)` como vía alterna válida, más
     //    `is number` para blindar el tipo del nuevo valor.
+    //    B-18 (auditoría 2026-07-27): la regla permitía a cualquier cuenta
+    //    autenticada escribir el mapa `analytics` con dos únicas
+    //    restricciones —tocar solo esa clave y no decrecer `views`— y sin
+    //    `withinSizeLimit()`. Eso abría dos vectores en un documento
+    //    PÚBLICO que después leen todos los usuarios: (a) escribir cientos
+    //    de KB de basura en `analytics`, amplificando el coste de lectura
+    //    de toda la base; (b) inflar el contador a un valor arbitrario,
+    //    corrompiendo las métricas de contenido.
+    //
+    //    Se añade el límite de tamaño y un tope de incremento: una vista
+    //    es +1, así que cualquier salto mayor que 1 por escritura no
+    //    proviene de `incrementViews`. Con esto el contador sigue siendo
+    //    monótono, pero además avanza al ritmo que le corresponde.
     match /metamorfosis_posts/{postId} {
       allow read: if true;
       allow create, delete: if false;
       allow update: if signedIn()
+        && withinSizeLimit()
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['analytics'])
         && request.resource.data.analytics.views is number
         && (
           !('analytics' in resource.data)
-          || request.resource.data.analytics.views >= resource.data.analytics.views
+          || (
+            request.resource.data.analytics.views >= resource.data.analytics.views
+            && request.resource.data.analytics.views <= resource.data.analytics.views + 1
+          )
         );
     }
 

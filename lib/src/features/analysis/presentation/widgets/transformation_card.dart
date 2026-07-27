@@ -303,7 +303,7 @@ class _EmptyPlaceholder extends StatelessWidget {
           Expanded(
             child: Text(
               'En 30 días tu transformación va a tener su primera foto '
-              'comparable. Seguí registrando.',
+              'comparable. Sigue registrando.',
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.80),
                 fontSize: 13,

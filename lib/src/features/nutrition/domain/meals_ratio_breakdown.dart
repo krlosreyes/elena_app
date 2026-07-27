@@ -104,14 +104,14 @@ class MealsRatioInsight {
         return const MealsRatioInsight(
           headline: 'Buen nivel A-dominante.',
           action:
-              'Mantenete arriba del 70% para sostener sensibilidad a la insulina.',
+              'Mantente arriba del 70% para sostener sensibilidad a la insulina.',
           citation: 'Frank Suárez (Tipo A/E)',
         );
       case MealsRatioInsightTier.insufficient:
         return const MealsRatioInsight(
           headline: 'Tu semana tuvo demasiados platos E.',
           action:
-              'Empezá por reemplazar un plato por día con un Todo A — proteína, verduras, grasa saludable.',
+              'Empieza por reemplazar un plato por día con un Todo A — proteína, verduras, grasa saludable.',
           citation: 'Frank Suárez (Tipo A/E) + Jenkins 2002',
         );
       case MealsRatioInsightTier.poor:

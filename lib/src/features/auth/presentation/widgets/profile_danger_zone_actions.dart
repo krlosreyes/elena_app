@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/auth/application/profile_controller.dart';
+import 'package:elena_app/src/core/utils/error_presentation.dart';
 
 /// SPEC-116: logout y delete account pasan a text buttons sutiles
 /// (estilo Apple Settings). El logout era verde sólido — pelea por
@@ -197,7 +198,11 @@ class ProfileDangerZoneActions extends ConsumerWidget {
                       } catch (e) {
                         messenger.showSnackBar(
                           SnackBar(
-                            content: Text(e.toString()),
+                            // B-12 (auditoría 2026-07-27): mostraba
+                            // `e.toString()` crudo, así que el usuario
+                            // veía "Exception: Por seguridad, tu sesión
+                            // es muy antigua…" al fallar el borrado.
+                            content: Text(presentableError(e)),
                             backgroundColor: Colors.redAccent,
                             duration: const Duration(seconds: 5),
                           ),

@@ -15,6 +15,8 @@ import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/auth/application/profile_controller.dart';
 import 'package:elena_app/src/features/fasting/application/fasting_history_provider.dart';
 import 'package:elena_app/src/features/fasting/application/fasting_notifier.dart';
+import 'package:elena_app/src/features/fasting/domain/eating_window_advisory.dart';
+import 'package:elena_app/src/features/fasting/domain/fasting_benefits.dart';
 import 'package:elena_app/src/features/fasting/domain/fasting_status.dart';
 import 'package:elena_app/src/features/dashboard/domain/relative_day_label.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/early_fasting_end_dialog.dart';
@@ -66,14 +68,17 @@ class FastingConsciousnessCard extends ConsumerWidget {
         ? 'En curso'
         : (nextFastingTime != null ? 'Próximo ayuno' : 'En espera');
 
+    // Auditoría 2026-07-27 (C-01): esta lista era estática y afirmaba, a
+    // cualquier usuario con un ayuno activo, que ya estaba "reduciendo
+    // glucosa y mejorando sensibilidad a la insulina" y que "a partir de
+    // 16h se activa la cetosis y la autofagia inicial" — dos umbrales que
+    // no coinciden con el enum canónico (cetosis a las 18h, autofagia a
+    // las 24h) y que se mostraban idénticos a los 17 minutos de ayuno que
+    // a las 20 horas. Ahora los beneficios se derivan de la fase real vía
+    // `FastingBenefits`, que ya existía en el dominio, está alineado con
+    // CIRCADIAN_BIBLIOGRAPHY.md §2 y tiene tests propios.
     final benefits = isActive
-        ? const [
-            'Estás reduciendo glucosa y mejorando sensibilidad a la insulina.',
-            // Fix P0 (validación de ejecución real, 23-jul-2026): esta
-            // tarjeta decía "12h" mientras el onboarding (intro_screens.dart)
-            // dice "Hora 16" para el mismo hito — se unifica a 16h.
-            'A partir de 16h se activa la cetosis y la autofagia inicial.',
-          ]
+        ? FastingBenefits.benefitsFor(state.phase, state.duration)
         : const [
             'Reduce resistencia a la insulina desde la 1ª hora',
             'Regula glucosa en ayunas y mejora sensibilidad metabólica',
@@ -225,6 +230,14 @@ class FastingConsciousnessCard extends ConsumerWidget {
               fontWeight: FontWeight.w600,
             ),
           ),
+          // I-06 (auditoría 2026-07-27): aviso cuando la ventana de
+          // alimentación abriría después del cierre circadiano. Se observó
+          // en ejecución un ayuno 07:05 → 23:05, es decir, la app guiando a
+          // comer a las once de la noche mientras su propio IMR penaliza al
+          // 50% comer después de las 21:30. Es una recomendación, no un
+          // bloqueo: el usuario sigue mandando sobre su ayuno.
+          if (isActive && state.startTime != null)
+            _buildEatingWindowAdvisory(state),
           const SizedBox(height: 18),
           // Beneficios
           Text(
@@ -328,18 +341,64 @@ class FastingConsciousnessCard extends ConsumerWidget {
     final hours = remaining.inHours;
     final minutes = remaining.inMinutes.remainder(60);
     final timeText = hours == 0 ? '${minutes}m' : '${hours}h ${minutes}m';
-    // Texto del hito en minúsculas estilo "Quema de grasa".
-    String milestone;
-    if (state.duration.inHours < 12) {
-      milestone = 'Descenso de insulina';
-    } else if (state.duration.inHours < 18) {
-      milestone = 'Quema de grasa';
-    } else if (state.duration.inHours < 24) {
-      milestone = 'Autofagia';
-    } else {
-      milestone = 'Regeneración';
-    }
+    // Auditoría 2026-07-27 (C-01): este método tenía sus propios umbrales
+    // hardcodeados (12/18/24h) y su propia tabla de nombres, ambos
+    // divergentes del enum canónico y del anillo del Dashboard. El
+    // resultado era que la misma pantalla anunciaba dos hitos distintos
+    // para el mismo instante. Ahora el nombre viene del dominio y no hay
+    // ningún umbral fisiológico en esta capa.
+    final milestone = state.nextPhase?.milestoneName;
+    if (milestone == null) return state.metabolicMilestone;
     return '$milestone en $timeText';
+  }
+
+  /// I-06 (auditoría 2026-07-27): franja de aviso cuando el objetivo de
+  /// ayuno actual dejaría la ventana de alimentación abriendo después del
+  /// bloqueo intestinal. La lógica vive en `EatingWindowAdvisory` (dominio
+  /// puro, testeable); aquí solo se pinta. Devuelve `SizedBox.shrink()`
+  /// —coste cero— cuando la ventana sí respeta el cierre, que es el caso
+  /// normal de un ayuno bien planteado.
+  Widget _buildEatingWindowAdvisory(FastingState state) {
+    final advisory = EatingWindowAdvisory.evaluate(
+      start: state.startTime!,
+      targetHours: state.targetHours,
+    );
+    final mensaje = advisory.mensaje;
+    if (mensaje == null) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(
+              Icons.nightlight_outlined,
+              size: 15,
+              color: Color(0xFFF59E0B),
+              semanticLabel: 'Aviso de cierre circadiano',
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                mensaje,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.78),
+                  fontSize: 11.5,
+                  height: 1.35,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   /// SPEC-119: residual hasta cerrar el target (`targetHours`).

@@ -5,8 +5,8 @@
 // FastingEligibility / StreakEngine.
 //
 // Riesgo explícito que esta clase debe respetar (propuesta §14): NO es
-// un diagnóstico. `label` nunca dice "tenés diabetes" — dice "alto,
-// considerá consultar a tu médico". La diferencia de tono es
+// un diagnóstico. `label` nunca dice "tienes diabetes" — dice "alto,
+// considera consultar a tu médico". La diferencia de tono es
 // deliberada y no debe relajarse en ninguna pantalla que consuma esto.
 
 import 'package:elena_app/src/features/glucose/domain/glucose_reading.dart';
@@ -24,7 +24,7 @@ extension GlucoseClassificationLabel on GlucoseClassification {
       case GlucoseClassification.elevado:
         return 'Elevado';
       case GlucoseClassification.alto:
-        return 'Alto — considerá consultar a tu médico';
+        return 'Alto — considera consultar a tu médico';
       case GlucoseClassification.sinUmbral:
         return '';
     }
