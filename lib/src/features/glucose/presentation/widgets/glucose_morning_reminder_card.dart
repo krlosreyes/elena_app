@@ -10,7 +10,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/glucose/application/glucose_providers.dart';
 import 'package:elena_app/src/features/glucose/domain/glucose_reading.dart';
 import 'package:elena_app/src/features/glucose/presentation/widgets/glucose_reading_sheet.dart';

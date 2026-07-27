@@ -43,7 +43,7 @@ class GlucoseProtocolEntryCard extends ConsumerWidget {
         protocolState.consentVersion < kGlucoseConsentVersion;
 
     String subtitle;
-    if (!needsConsent && protocolState!.protocolActive) {
+    if (!needsConsent && protocolState.protocolActive) {
       subtitle = protocolState.paused ? 'Pausado' : 'Activo';
     } else if (eligibility.eligible) {
       // R1: elegible por `pathologies` pero todavía no activó — mismo

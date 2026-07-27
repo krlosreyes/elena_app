@@ -56,3 +56,7 @@ run_android.sh
 android/key.properties
 *.jks
 *.keystore
+
+# Salida de ./scripts/validar.sh — puente para que Claude lea el resultado de
+# analyze/test sin que haya que pegarlo a mano. Es un artefacto local, no código.
+.claude-runs/

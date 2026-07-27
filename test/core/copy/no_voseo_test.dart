@@ -78,6 +78,15 @@ const _voseo = <String, String>{
   'Enfocate': 'Enfócate',
   'Preparate': 'Prepárate',
   // Imperativos con pronombre enclítico
+  // Imperativos con clítico: en tuteo llevan tilde ("contáctalo"), en voseo
+  // no ("contactalo"). Se coló uno en el módulo de glucosa que la primera
+  // pasada del 27-jul no vigilaba — de ahí que la lista crezca.
+  'contactalo': 'contáctalo',
+  'consultalo': 'consúltalo',
+  'revisalo': 'revísalo',
+  'anotalo': 'anótalo',
+  'tomalo': 'tómalo',
+  'dejalo': 'déjalo',
   'Mantenete': 'Mantente',
   'Movete': 'Muévete',
   'Cuidate': 'Cuídate',

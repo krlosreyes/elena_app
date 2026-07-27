@@ -7,11 +7,26 @@ service cloud.firestore {
     //
     // - signedIn(): el caller pasó el access token de Firebase Auth.
     // - isOwner(uid): además, su `uid` coincide con el path/recurso.
-    // - withinSizeLimit(): tope defensivo de 100KB por documento. Un
-    //   UserModel completo pesa <10KB; el límite blinda contra abuso
-    //   (payloads gigantes que saturen la cuota o sirvan como exfil
-    //   vector). No aplica a subcolecciones grandes intencionalmente
-    //   chicas (logs diarios de sueño, hidratación, etc.).
+    // - withinSizeLimit(): tope de 100.000 CAMPOS por documento.
+    //
+    //   CORRECCIÓN (auditoría 2026-07-27, verificada contra el emulador):
+    //   este comentario decía "tope defensivo de 100KB por documento" y era
+    //   FALSO. `request.resource.size()` devuelve el número de CAMPOS del
+    //   documento, no su tamaño en bytes. Un test que escribió 150 KB en un
+    //   único campo `analytics` pasó la regla sin problema — el documento
+    //   tenía 2 campos, y 2 < 100000.
+    //
+    //   La función se usa en 12 bloques de este archivo, así que la creencia
+    //   equivocada estaba propagada por todas las reglas. Lo que de verdad
+    //   protege el tamaño en bytes es el límite NATIVO de Firestore: 1 MiB
+    //   por documento, que no se puede rebajar desde las reglas — el lenguaje
+    //   no expone ninguna función de bytes.
+    //
+    //   Lo que SÍ aporta esta función, y por eso se conserva: impide el
+    //   relleno de claves (escribir decenas de miles de campos basura para
+    //   inflar índices y coste de lectura). Contra el abuso por VOLUMEN el
+    //   tope real es 1 MiB, y contra el abuso por FRECUENCIA no hay reglas
+    //   que valgan: eso se mitiga con App Check y cuotas, no acá.
     // - idMatchesOrAbsent(uid): si el doc trae campo `id`, debe ser
     //   == uid del path. Defensa en profundidad — el mapper canónico
     //   (SPEC-82) escribe `id: uid`; un cliente comprometido que

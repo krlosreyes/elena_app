@@ -19,7 +19,6 @@ import 'package:go_router/go_router.dart';
 
 import 'package:elena_app/src/features/glucose/application/glucose_providers.dart';
 import 'package:elena_app/src/features/glucose/domain/glucose_classification.dart';
-import 'package:elena_app/src/features/glucose/domain/glucose_reading.dart';
 
 class GlucoseEntryCard extends ConsumerWidget {
   const GlucoseEntryCard({super.key});

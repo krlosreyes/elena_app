@@ -268,7 +268,7 @@ class GlucoseInsightEngine {
       evidenceLevel: GlucoseEvidenceLevel.solida,
       observation: 'Las noches que dormiste menos de tu meta, tu glucosa en '
           'ayunas de la mañana siguiente promedió ${diff.round()} mg/dL más '
-          'alta que tras tus noches con sueño suficiente (${totalDays} días '
+          'alta que tras tus noches con sueño suficiente ($totalDays días '
           'con dato).',
       mechanism: 'La privación de sueño, incluso parcial y de una sola '
           'noche, reduce la sensibilidad a la insulina de forma medible — '

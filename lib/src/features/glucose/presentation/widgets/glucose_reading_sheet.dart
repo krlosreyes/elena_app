@@ -305,10 +305,10 @@ class _GlucoseReadingSheetState extends ConsumerState<_GlucoseReadingSheet> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  value! < 70
+                  value < 70
                       ? 'Este valor es bajo. Si sientes síntomas, considera '
                           'tratarlo según lo que te haya indicado tu médico '
-                          'y, si persiste, contactalo.'
+                          'y, si persiste, contáctalo.'
                       : 'Este valor es alto. No es un diagnóstico, pero si '
                           'se repite vale la pena comentarlo con tu médico.',
                   style: TextStyle(

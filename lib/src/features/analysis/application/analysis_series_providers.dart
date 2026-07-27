@@ -35,11 +35,11 @@ import 'package:elena_app/src/features/progress/data/biometric_repository.dart';
 import 'package:elena_app/src/features/streak/application/streak_notifier.dart';
 import 'package:elena_app/src/features/streak/domain/streak_entry.dart';
 
-import '../../../core/services/app_logger.dart';
-import '../../metabolic_cycle/application/metabolic_cycle_providers.dart';
-import '../domain/metric_series.dart';
-import 'analysis_range_provider.dart';
-import 'temporal_aggregator.dart';
+// 27-jul (auditoría): aquí vivían cinco imports RELATIVOS que duplicaban
+// exactamente los `package:` de arriba (app_logger, metabolic_cycle_providers,
+// metric_series, analysis_range_provider, temporal_aggregator). El analizador
+// los marcaba como `duplicate_import` — 5 de los 11 avisos del proyecto salían
+// de este bloque. Se eliminan: el archivo usa `package:` en todo lo demás.
 
 /// SPEC-177 (2026-06-04): bump que cambia cada vez que se cierra un
 /// nuevo ciclo metabólico. Las series del Análisis lo watch como
@@ -95,8 +95,27 @@ final closedCycleScoreSeriesProvider =
   final rangeStart = ref.watch(analysisRangeStartProvider);
   final mode = _currentMode(ref);
 
-  await for (final cycles
-      in ref.watch(metabolicCyclesHistoryProvider.stream)) {
+  // 27-jul (auditoría): `.stream` está deprecado y desaparece en Riverpod
+  // 3.0. NO se migra en esta pasada, y el motivo es concreto: la migración
+  // recomendada obliga a convertir este `StreamProvider<MetricSeries>` en un
+  // `Provider<AsyncValue<MetricSeries>>`, y eso rompe a sus consumidores —
+  // `resolved_daily_score_provider_test.dart` lee `.future` sobre él
+  // (línea 55) y lo sustituye con `.overrideWith` en dos sitios más.
+  //
+  // Es una migración real de framework con superficie propia, no un aviso
+  // de estilo: merece su PR, con la suite delante. Se suprime el aviso
+  // acá para no dejarlo mezclado con los 10 triviales que sí se limpiaron
+  // el 27-jul, pero queda como deuda EXPLÍCITA y con fecha límite: hay que
+  // resolverla antes de subir a Riverpod 3.0, porque entonces será un error
+  // de compilación y no un aviso.
+  //
+  // El stream se extrae a una variable en vez de leerse dentro del
+  // `await for`: `// ignore:` aplica a la línea SIGUIENTE, y con el
+  // `await for` partido en dos líneas el uso de `.stream` caía en la
+  // tercera, fuera del alcance de la supresión.
+  // ignore: deprecated_member_use
+  final cyclesStream = ref.watch(metabolicCyclesHistoryProvider.stream);
+  await for (final cycles in cyclesStream) {
     // ── DIAGNÓSTICO (2026-06-17) ──────────────────────────────────────
     // Log cada emisión del stream para rastrear exactamente qué data llega.
     final withScore = cycles.where((c) => c.dailyScore != null).length;

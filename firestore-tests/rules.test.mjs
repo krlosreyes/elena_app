@@ -531,13 +531,44 @@ describe('B-18 — metamorfosis_posts: analytics acotado en tamano y ritmo', () 
     );
   });
 
-  it('un payload gigante en analytics es rechazado por tamano', async () => {
+  // HALLAZGO (27-jul, contra el emulador real): este test se escribió
+  // esperando que `withinSizeLimit()` rechazara un payload de 150 KB. NO lo
+  // rechaza, y descubrirlo fue lo mas util de toda la corrida de reglas.
+  //
+  // `request.resource.size()` devuelve el numero de CAMPOS del documento, no
+  // su tamano en bytes. El doc de prueba tiene 2 campos (title + analytics),
+  // y 2 < 100000, asi que pasa. El comentario de firestore.rules que hablaba
+  // de "tope defensivo de 100KB por documento" era falso, y la funcion se usa
+  // en 12 bloques: la creencia equivocada estaba propagada por todo el archivo.
+  //
+  // El lenguaje de reglas NO expone ninguna funcion de tamano en bytes, asi
+  // que esto no se puede arreglar desde aca. El tope real de bytes es el
+  // limite NATIVO de Firestore: 1 MiB por documento.
+  //
+  // El test se conserva invertido, afirmando lo que de verdad ocurre, para
+  // que nadie vuelva a asumir una proteccion de bytes que no existe.
+  it('un payload grande en un solo campo SI pasa — el limite es de campos, no de bytes', async () => {
     const db = testEnv.authenticatedContext('userA').firestore();
-    await assertFails(
+    await assertSucceeds(
       db
         .collection('metamorfosis_posts')
         .doc('p1')
         .update({ analytics: { views: 6, basura: 'x'.repeat(150000) } }),
+    );
+  });
+
+  it('el relleno de CAMPOS si lo frena withinSizeLimit', async () => {
+    // Lo que la funcion si protege: inflar el documento con miles de claves
+    // basura para encarecer indices y lecturas. Se prueba el contrato con un
+    // mapa de muchas claves — por debajo del tope, pasa; el tope en si
+    // (100.000 campos) excede el maximo de 20.000 campos indexables de
+    // Firestore, asi que en la practica manda el limite nativo.
+    const relleno = {};
+    for (let i = 0; i < 500; i++) relleno['k' + i] = i;
+    relleno.views = 6;
+    const db = testEnv.authenticatedContext('userA').firestore();
+    await assertSucceeds(
+      db.collection('metamorfosis_posts').doc('p1').update({ analytics: relleno }),
     );
   });
 });
