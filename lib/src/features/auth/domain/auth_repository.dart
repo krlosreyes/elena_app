@@ -8,6 +8,30 @@
 
 import 'package:elena_app/src/features/auth/domain/app_account.dart';
 
+/// Firebase exige una autenticación reciente para operaciones sensibles
+/// (`requires-recent-login`). Se lanza tipada, y no como una `Exception`
+/// con mensaje suelto, porque la UI tiene que poder DISTINGUIRLA para
+/// ofrecer el diálogo de contraseña en vez de limitarse a mostrar texto.
+///
+/// Antes del 27-jul-2026 el repositorio lanzaba
+/// `Exception('Por seguridad, tu sesión es muy antigua. Cierra sesión,
+/// vuelve a iniciar sesión…')`. La pantalla no tenía forma fiable de
+/// reconocer ese caso —habría tenido que comparar cadenas— así que el
+/// único remedio ofrecido al usuario era salir y volver a entrar a mano.
+/// Para App Store 5.1.1(v), que exige que borrar la cuenta sea sencillo,
+/// eso no basta.
+class ReauthRequiredException implements Exception {
+  const ReauthRequiredException({this.email});
+
+  /// Email de la cuenta, para prellenar el diálogo si se conoce.
+  final String? email;
+
+  @override
+  String toString() =>
+      'Por seguridad hace falta que confirmes tu identidad antes de '
+      'continuar. Tus datos siguen intactos.';
+}
+
 abstract class AuthRepository {
   /// Stream del estado de autenticación.
   ///
@@ -63,6 +87,23 @@ abstract class AuthRepository {
   /// Sólo válido inmediatamente después de `signInWithEmailLink`.
   Future<void> setPassword(String newPassword);
 
+  /// Vuelve a autenticar al usuario actual con su contraseña, para
+  /// refrescar la "sesión reciente" que Firebase exige antes de borrar
+  /// la cuenta.
+  ///
+  /// Lanza `Exception` con mensaje presentable si la contraseña es
+  /// incorrecta o si la cuenta no tiene contraseña — caso posible en
+  /// usuarios que entraron por magic link y nunca pasaron por
+  /// [setPassword]. Para ellos la vía es restablecer la contraseña con
+  /// [sendPasswordResetEmail]; reautenticar con el propio magic link
+  /// exigiría rehacer todo ese flujo y queda fuera de alcance.
+  Future<void> reauthenticateWithPassword(String password);
+
+  /// Elimina la cuenta de Firebase Auth.
+  ///
+  /// Lanza [ReauthRequiredException] si Firebase pide sesión reciente.
+  /// En ese caso NO se ha borrado nada: la UI debe pedir la contraseña,
+  /// llamar a [reauthenticateWithPassword] y reintentar.
   Future<void> deleteAccount();
 
   /// FIRE-01 (auditoría técnica 21-jul): lee el custom claim

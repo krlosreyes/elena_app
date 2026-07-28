@@ -118,6 +118,14 @@ class _StubRepo implements AuthRepository {
   String? lastEmail;
   String? lastPassword;
 
+  // 27-jul-2026: `reauthenticateWithPassword` se añadió a la interfaz al
+  // implementar la reautenticación previa al borrado de cuenta. Este fake
+  // enumera sus miembros, así que hay que declararlo aunque el test no lo
+  // use — es la lección de `feedback_interface_extension`.
+  @override
+  Future<void> reauthenticateWithPassword(String password) async =>
+      throw UnimplementedError();
+
   @override
   Future<AppAccount> signInWithEmail({
     required String email,

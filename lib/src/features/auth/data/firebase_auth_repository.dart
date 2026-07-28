@@ -213,6 +213,50 @@ class FirebaseAuthRepository implements AuthRepository {
   // (patrón offline-first, ver `feedback_offline_first_pattern.md`)
   // dejaría el método sin terminar nunca.
   @override
+  Future<void> reauthenticateWithPassword(String password) async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw Exception('No hay sesión activa. Vuelve a iniciar sesión.');
+    }
+    final email = user.email;
+    if (email == null || email.isEmpty) {
+      throw Exception(
+        'Esta cuenta no tiene email asociado, así que no se puede '
+        'confirmar la identidad por contraseña.',
+      );
+    }
+
+    try {
+      await user
+          .reauthenticateWithCredential(
+            EmailAuthProvider.credential(email: email, password: password),
+          )
+          .timeout(_kDocTimeout);
+    } on TimeoutException {
+      throw Exception(
+        'La confirmación está tardando más de lo esperado. Verifica tu '
+        'conexión e inténtalo de nuevo.',
+      );
+    } on FirebaseAuthException catch (e) {
+      // Las cuentas creadas por magic link que nunca pasaron por
+      // `setPassword` no tienen contraseña que validar: Firebase
+      // responde igual que ante una contraseña equivocada. No hay forma
+      // de distinguir los dos casos desde aquí, así que el mensaje
+      // menciona la salida que sirve para ambos.
+      if (e.code == 'wrong-password' ||
+          e.code == 'invalid-credential' ||
+          e.code == 'invalid-login-credentials') {
+        throw Exception(
+          'Contraseña incorrecta. Si entraste con un enlace por email y '
+          'nunca creaste una contraseña, usa "¿Olvidaste tu contraseña?" '
+          'para establecerla.',
+        );
+      }
+      throw _handleAuthException(e);
+    }
+  }
+
+  @override
   Future<void> deleteAccount() async {
     final user = _auth.currentUser;
     if (user == null) return;
@@ -229,11 +273,9 @@ class FirebaseAuthRepository implements AuthRepository {
       );
     } on FirebaseAuthException catch (e) {
       if (e.code == 'requires-recent-login') {
-        throw Exception(
-          'Por seguridad hace falta una sesión reciente para borrar la '
-          'cuenta. Cierra sesión, vuelve a entrar e inténtalo de nuevo. '
-          'Tus datos siguen intactos.',
-        );
+        // Tipada a propósito: la pantalla la reconoce y ofrece el
+        // diálogo de contraseña. Ver `ReauthRequiredException`.
+        throw ReauthRequiredException(email: user.email);
       }
       throw _handleAuthException(e);
     } catch (_) {

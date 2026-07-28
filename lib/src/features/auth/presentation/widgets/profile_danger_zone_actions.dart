@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/auth/application/profile_controller.dart';
+import 'package:elena_app/src/features/auth/domain/auth_repository.dart'
+    show ReauthRequiredException;
 import 'package:elena_app/src/core/utils/error_presentation.dart';
 
 /// SPEC-116: logout y delete account pasan a text buttons sutiles
@@ -110,36 +112,71 @@ class ProfileDangerZoneActions extends ConsumerWidget {
     // no sirve para mostrar el SnackBar ni para navegar.
     final messenger = ScaffoldMessenger.of(context);
     final goRouter = GoRouter.of(context);
+    final navigator = Navigator.of(context, rootNavigator: true);
+
+    void avisarExito() {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Cuenta eliminada. Hasta pronto.'),
+          backgroundColor: Color(0xFF10B981),
+          duration: Duration(seconds: 3),
+        ),
+      );
+      goRouter.go('/login');
+    }
+
+    void avisarError(Object e) {
+      messenger.showSnackBar(
+        SnackBar(
+          // B-12 (auditoría 2026-07-27): mostraba `e.toString()` crudo,
+          // así que el usuario veía "Exception: …" en pantalla.
+          content: Text(presentableError(e)),
+          backgroundColor: Colors.redAccent,
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    }
 
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (_) => _DeleteAccountDialog(
         onConfirm: () async {
+          final controller = ref.read(profileControllerProvider.notifier);
           try {
-            await ref.read(profileControllerProvider.notifier).deleteAccount();
-            messenger.showSnackBar(
-              const SnackBar(
-                content: Text('Cuenta eliminada. Hasta pronto.'),
-                backgroundColor: Color(0xFF10B981),
-                duration: Duration(seconds: 3),
-              ),
-            );
-            goRouter.go('/login');
+            await controller.deleteAccount();
+            avisarExito();
+          } on ReauthRequiredException catch (e) {
+            // Firebase pide sesión reciente. No se ha borrado nada, y el
+            // usuario sigue autenticado: se le pide la contraseña aquí
+            // mismo y se reintenta. Antes del 27-jul-2026 el único
+            // remedio era un mensaje diciéndole que cerrara sesión y
+            // volviera a entrar — flojo para App Store 5.1.1(v), que
+            // exige que borrar la cuenta sea sencillo.
+            final password = await _pedirPassword(navigator, e.email);
+            if (password == null) return; // canceló: no se borra nada
+            try {
+              await controller.reauthenticate(password);
+              await controller.deleteAccount();
+              avisarExito();
+            } catch (e2) {
+              avisarError(e2);
+            }
           } catch (e) {
-            messenger.showSnackBar(
-              SnackBar(
-                // B-12 (auditoría 2026-07-27): mostraba `e.toString()`
-                // crudo, así que el usuario veía "Exception: Por
-                // seguridad, tu sesión es muy antigua…" al fallar.
-                content: Text(presentableError(e)),
-                backgroundColor: Colors.redAccent,
-                duration: const Duration(seconds: 5),
-              ),
-            );
+            avisarError(e);
           }
         },
       ),
+    );
+  }
+
+  /// Pide la contraseña para confirmar identidad. `null` si el usuario
+  /// cancela — en ese caso no se intenta nada y no se borra nada.
+  Future<String?> _pedirPassword(NavigatorState navigator, String? email) {
+    return showDialog<String>(
+      context: navigator.context,
+      barrierDismissible: false,
+      builder: (_) => _ReauthPasswordDialog(email: email),
     );
   }
 }
@@ -262,6 +299,135 @@ class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
             'ELIMINAR CUENTA',
             style: TextStyle(
               color: _isEnabled
+                  ? Colors.redAccent
+                  : Colors.redAccent.withValues(alpha: 0.3),
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Pide la contraseña para confirmar identidad antes de borrar la cuenta.
+///
+/// StatefulWidget por la misma razón que `_DeleteAccountDialog`: tiene un
+/// `TextEditingController` y un controller lo libera el `State` que lo
+/// crea, en su `dispose()`. La versión anterior de este archivo gestionaba
+/// eso a mano dentro de los botones y tumbaba la pantalla de Perfil
+/// entera al cancelar.
+class _ReauthPasswordDialog extends StatefulWidget {
+  const _ReauthPasswordDialog({this.email});
+
+  /// Email de la cuenta, solo para mostrarlo. No es editable: se está
+  /// confirmando la identidad de la sesión actual, no iniciando otra.
+  final String? email;
+
+  @override
+  State<_ReauthPasswordDialog> createState() => _ReauthPasswordDialogState();
+}
+
+class _ReauthPasswordDialogState extends State<_ReauthPasswordDialog> {
+  final _passwordController = TextEditingController();
+  bool _oculta = true;
+  bool _tieneTexto = false;
+
+  @override
+  void dispose() {
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  void _confirmar() {
+    if (!_tieneTexto) return;
+    Navigator.pop(context, _passwordController.text);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: AppColors.surfaceDark,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      title: const Row(
+        children: [
+          Icon(Icons.lock_outline_rounded, color: Colors.redAccent, size: 20),
+          SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Confirma tu identidad',
+              style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+            ),
+          ),
+        ],
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            widget.email == null
+                ? 'Escribe tu contraseña para completar el borrado.'
+                : 'Escribe la contraseña de ${widget.email} para completar '
+                    'el borrado.',
+            style: const TextStyle(
+              color: Color(0xFF94A3B8),
+              fontSize: 13,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _passwordController,
+            autofocus: true,
+            obscureText: _oculta,
+            textInputAction: TextInputAction.done,
+            onSubmitted: (_) => _confirmar(),
+            onChanged: (val) {
+              final hay = val.isNotEmpty;
+              if (hay != _tieneTexto) setState(() => _tieneTexto = hay);
+            },
+            decoration: InputDecoration(
+              hintText: 'Contraseña',
+              hintStyle:
+                  const TextStyle(color: Color(0xFF475569), fontSize: 13),
+              filled: true,
+              fillColor: AppColors.backgroundDark,
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _oculta
+                      ? Icons.visibility_outlined
+                      : Icons.visibility_off_outlined,
+                  size: 20,
+                  color: const Color(0xFF94A3B8),
+                ),
+                tooltip: _oculta ? 'Mostrar' : 'Ocultar',
+                onPressed: () => setState(() => _oculta = !_oculta),
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Color(0xFF334155)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Colors.redAccent),
+              ),
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('CANCELAR',
+              style: TextStyle(color: Color(0xFF94A3B8))),
+        ),
+        TextButton(
+          onPressed: _tieneTexto ? _confirmar : null,
+          child: Text(
+            'CONFIRMAR Y BORRAR',
+            style: TextStyle(
+              color: _tieneTexto
                   ? Colors.redAccent
                   : Colors.redAccent.withValues(alpha: 0.3),
               fontWeight: FontWeight.bold,

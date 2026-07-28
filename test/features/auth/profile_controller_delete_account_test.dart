@@ -114,10 +114,9 @@ void main() {
     });
 
     test(
-        'SPEC-250 inc3: error real (ej. requires-recent-login) también '
-        'dispara signOut() local — mismo recovery que el timeout, no solo '
-        'ese camino (repro Carlos, simulador Xcode, 2026-07-08, 2do caso)',
-        () async {
+        'SPEC-250 inc3: un error genérico del repo dispara signOut() local '
+        '— mismo recovery que el timeout (repro Carlos, simulador Xcode, '
+        '2026-07-08, 2do caso)', () async {
       final repo = _FakeAuthRepository()..shouldThrow = true;
       container = ProviderContainer(overrides: [
         authRepositoryProvider.overrideWithValue(repo),
@@ -131,10 +130,79 @@ void main() {
       );
 
       expect(repo.signOutCalled, isTrue,
-          reason: 'requires-recent-login solo puede ocurrir DESPUÉS de que '
-              'Firestore ya fue borrado (pasos 1-3 son best-effort y nunca '
-              'lanzan) — sin signOut(), ProfileScreen queda igual de '
-              'colgado que en el caso de timeout');
+          reason: 'ante un error indeterminado no sabemos si el borrado se '
+              'completó; sin signOut() la pantalla puede quedar sin salida');
+    });
+  });
+
+  // ── Reautenticación (27-jul-2026) ──────────────────────────────────
+  //
+  // El nombre de este grupo importa: hasta hoy, `requires-recent-login`
+  // caía en el `catch` genérico y disparaba `signOut()`. Tenía sentido
+  // con el orden antiguo, donde una excepción implicaba que Firestore ya
+  // estaba borrado y la pantalla quedaba colgada. Invertido el orden, el
+  // significado es el contrario: no se ha borrado nada, y el usuario
+  // necesita SEGUIR autenticado para escribir su contraseña y
+  // reintentar. Sacarlo a /login aquí sería reproducir el mismo mal
+  // remedio que veníamos de quitar.
+  group('requires-recent-login: no expulsa al usuario', () {
+    late ProviderContainer container;
+    tearDown(() => container.dispose());
+
+    test('ReauthRequiredException se propaga SIN cerrar sesión', () async {
+      final repo = _FakeAuthRepository()..throwReauthRequired = true;
+      container = ProviderContainer(overrides: [
+        authRepositoryProvider.overrideWithValue(repo),
+      ]);
+
+      await expectLater(
+        container.read(profileControllerProvider.notifier).deleteAccount(),
+        throwsA(isA<ReauthRequiredException>()),
+      );
+
+      expect(repo.signOutCalled, isFalse,
+          reason: 'el usuario debe seguir autenticado para reintentar');
+      expect(container.read(profileControllerProvider).isSaving, isFalse,
+          reason: 'el spinner debe soltarse igual');
+    });
+
+    test('reauthenticate() pasa la contraseña al repositorio', () async {
+      final repo = _FakeAuthRepository();
+      container = ProviderContainer(overrides: [
+        authRepositoryProvider.overrideWithValue(repo),
+      ]);
+
+      await container
+          .read(profileControllerProvider.notifier)
+          .reauthenticate('mi-clave');
+
+      expect(repo.reauthCalled, isTrue);
+      expect(repo.lastPassword, 'mi-clave');
+      expect(container.read(profileControllerProvider).isSaving, isFalse);
+    });
+
+    test('tras reautenticar, el borrado se completa', () async {
+      final repo = _FakeAuthRepository()..throwReauthRequired = true;
+      container = ProviderContainer(overrides: [
+        authRepositoryProvider.overrideWithValue(repo),
+      ]);
+      final controller = container.read(profileControllerProvider.notifier);
+
+      // 1er intento: Firebase pide sesión reciente.
+      await expectLater(
+        controller.deleteAccount(),
+        throwsA(isA<ReauthRequiredException>()),
+      );
+
+      // El usuario confirma su identidad y se reintenta.
+      await controller.reauthenticate('mi-clave');
+      repo.throwReauthRequired = false;
+      await controller.deleteAccount();
+
+      expect(repo.deleteCalled, isTrue);
+      expect(repo.signOutCalled, isFalse,
+          reason: 'el signOut del camino feliz lo hace el repositorio, no '
+              'el recovery de error');
     });
   });
 }
@@ -148,12 +216,27 @@ class _FakeAuthRepository implements AuthRepository {
   bool deleteCalled = false;
   bool signOutCalled = false;
 
+  /// 27-jul-2026: permite simular `requires-recent-login`, el camino que
+  /// ahora NO debe cerrar sesión.
+  bool throwReauthRequired = false;
+  bool reauthCalled = false;
+  String? lastPassword;
+
   @override
   Stream<AppAccount?> get authStateChanges => Stream.value(null);
 
   @override
+  Future<void> reauthenticateWithPassword(String password) async {
+    reauthCalled = true;
+    lastPassword = password;
+  }
+
+  @override
   Future<void> deleteAccount() async {
     deleteCalled = true;
+    if (throwReauthRequired) {
+      throw const ReauthRequiredException(email: 'test@elena.app');
+    }
     if (shouldThrow) {
       throw Exception('boom');
     }

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/core/providers/shared_preferences_provider.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
+import 'package:elena_app/src/features/auth/domain/auth_repository.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
 import 'package:elena_app/src/features/progress/application/biometric_history_service.dart';
 import 'package:elena_app/src/features/progress/domain/biometric_delta.dart';
@@ -206,17 +207,16 @@ class ProfileController extends StateNotifier<ProfileEditState> {
   /// "Eliminar cuenta" queda trabado indefinidamente — reproducido por
   /// Carlos en simulador de Xcode. El `.timeout()` acota el peor caso.
   ///
-  /// SPEC-250 inc3 (repro Carlos 2026-07-08, dos veces — ver
-  /// `_recoverFromPartialDelete`): CUALQUIER excepción que llegue hasta
-  /// acá, no solo el timeout, implica que Firestore ya fue borrado.
-  /// `FirebaseAuthRepository.deleteAccount` ejecuta sus pasos 1-3
-  /// (subcolecciones + doc raíz + legacy) envueltos en try/catch que
-  /// nunca relanza ("best-effort") — así que SIEMPRE corren antes de
-  /// llegar al paso 4 (`user.delete()` de Firebase Auth), que es el
-  /// ÚNICO punto que puede lanzar (p.ej. `requires-recent-login` si la
-  /// sesión tiene más de ~5 min). Por eso el recovery de
-  /// `_recoverFromPartialDelete()` se aplica en AMBOS catch — timeout y
-  /// error real — no solo en el de timeout.
+  /// SPEC-250 inc3 decía aquí: "CUALQUIER excepción que llegue hasta acá
+  /// implica que Firestore ya fue borrado", porque el repositorio
+  /// ejecutaba sus pasos de Firestore ANTES de tocar Auth. Esa premisa
+  /// dejó de ser cierta el 27-jul-2026: al invertir el orden —Auth
+  /// primero, cascada de Firestore a cargo de `onUserDeleted`— una
+  /// excepción significa justo lo contrario, que no se ha borrado nada.
+  ///
+  /// Por eso `ReauthRequiredException` tiene su propio `catch` y NO pasa
+  /// por `_recoverFromPartialDelete()`: el usuario debe seguir
+  /// autenticado para confirmar su contraseña y reintentar.
   Future<void> deleteAccount({
     Duration timeout = const Duration(seconds: 25),
   }) async {
@@ -237,16 +237,45 @@ class ProfileController extends StateNotifier<ProfileEditState> {
       await _recoverFromPartialDelete();
       state = state.copyWith(isSaving: false, errorMessage: message);
       throw Exception(message);
+    } on ReauthRequiredException {
+      // 27-jul-2026. ESTE CASO YA NO DEBE CERRAR SESIÓN.
+      //
+      // El recovery de abajo existía porque, con el orden antiguo
+      // (Firestore → Auth), cualquier excepción implicaba que los datos
+      // ya estaban borrados y la pantalla quedaba colgada: cerrar sesión
+      // era la única salida. Invertido el orden, `requires-recent-login`
+      // significa lo contrario — no se ha tocado nada — y el usuario
+      // necesita SEGUIR autenticado para escribir su contraseña y
+      // reintentar. Sacarlo a /login aquí sería reproducir a mano el
+      // mismo mal remedio que veníamos de quitar.
+      state = state.copyWith(isSaving: false);
+      rethrow;
     } catch (e) {
-      // SPEC-250 inc3: mismo recovery que el timeout — ver doc del
-      // método. Este catch también atrapa 'requires-recent-login'
-      // (Firestore ya borrado, solo Auth falló) y cualquier otro error
-      // real del paso 4.
+      // Resto de errores del borrado de Auth. Se conserva el recovery:
+      // con un timeout no sabemos si `user.delete()` llegó a completarse,
+      // y la pantalla puede quedar sin salida (ver doc del método).
       await _recoverFromPartialDelete();
       state = state.copyWith(
         isSaving: false,
         errorMessage: e.toString(),
       );
+      rethrow;
+    }
+  }
+
+  /// Confirma la identidad con la contraseña, para que Firebase acepte
+  /// el borrado inmediatamente después. Ver [deleteAccount].
+  Future<void> reauthenticate(String password) async {
+    state = state.copyWith(isSaving: true, errorMessage: null);
+    try {
+      await ref.read(authRepositoryProvider).reauthenticateWithPassword(
+            password,
+          );
+      state = state.copyWith(isSaving: false);
+    } catch (e) {
+      // Sin recovery ni signOut: una contraseña equivocada no es motivo
+      // para expulsar a nadie de su sesión.
+      state = state.copyWith(isSaving: false, errorMessage: e.toString());
       rethrow;
     }
   }
