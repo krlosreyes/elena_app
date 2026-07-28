@@ -78,8 +78,7 @@ class TransformationNarrator {
 
   static const _default = TransformationNarrative(
     id: 'default',
-    headline:
-        'Cada 30 días cuenta. Seguir registrando te da la foto.',
+    headline: 'Cada 30 días cuenta. Seguir registrando te da la foto.',
     citation: null,
   );
 
@@ -98,30 +97,23 @@ class TransformationNarrator {
     final imrDelta = s.imr.delta?.toInt();
     final currentFasting = s.fastingDaysOf7.current ?? 0;
 
-    bool weightDown(double byKg) =>
-        weightDelta != null && weightDelta <= -byKg;
-    bool weightUp(double byKg) =>
-        weightDelta != null && weightDelta >= byKg;
+    bool weightDown(double byKg) => weightDelta != null && weightDelta <= -byKg;
+    bool weightUp(double byKg) => weightDelta != null && weightDelta >= byKg;
     bool weightStable() => s.weightKg.isStableWithin(_kWeightEpsilonKg);
 
-    bool waistDown(double byCm) =>
-        waistDelta != null && waistDelta <= -byCm;
+    bool waistDown(double byCm) => waistDelta != null && waistDelta <= -byCm;
     bool waistStable() => s.waistCm.isStableWithin(_kWaistEpsilonCm);
 
     bool bodyFatDown(double byPct) =>
         bodyFatDelta != null && bodyFatDelta <= -byPct;
 
-    bool sleepUp(double byH) =>
-        sleepDelta != null && sleepDelta >= byH;
-    bool sleepDown(double byH) =>
-        sleepDelta != null && sleepDelta <= -byH;
+    bool sleepUp(double byH) => sleepDelta != null && sleepDelta >= byH;
+    bool sleepDown(double byH) => sleepDelta != null && sleepDelta <= -byH;
     bool sleepStable() => s.sleepHoursAvg.isStableWithin(_kSleepEpsilonHours);
 
     bool fastingHighNow() => currentFasting >= 5;
-    bool fastingMoreThan(int by) =>
-        fastingDelta != null && fastingDelta >= by;
-    bool fastingLessThan(int by) =>
-        fastingDelta != null && fastingDelta <= -by;
+    bool fastingMoreThan(int by) => fastingDelta != null && fastingDelta >= by;
+    bool fastingLessThan(int by) => fastingDelta != null && fastingDelta <= -by;
 
     bool imrUp(int by) => imrDelta != null && imrDelta >= by;
 
@@ -130,8 +122,7 @@ class TransformationNarrator {
     if (weightDown(1.0) && fastingHighNow()) {
       out.add(const TransformationNarrative(
         id: 'progress-weight-down-fasting-high',
-        headline:
-            'Tu ayuno está haciendo el trabajo, y se ve en la balanza. '
+        headline: 'Tu ayuno está haciendo el trabajo, y se ve en la balanza. '
             'Seguilo así.',
         citation: 'Mattson 2017',
       ));
@@ -140,8 +131,7 @@ class TransformationNarrator {
     if (imrUp(_kImrEpsilon) && sleepUp(_kSleepEpsilonHours)) {
       out.add(const TransformationNarrative(
         id: 'progress-imr-up-sleep-up',
-        headline:
-            'El sueño está empujando tu base metabólica hacia arriba. '
+        headline: 'El sueño está empujando tu base metabólica hacia arriba. '
             'Cuando duermes mejor, el resto se ordena.',
         citation: 'Walker 2017',
       ));
@@ -150,8 +140,7 @@ class TransformationNarrator {
     if (waistDown(1.5) && bodyFatDown(1.0)) {
       out.add(const TransformationNarrative(
         id: 'progress-waist-down-bf-down',
-        headline:
-            'Estás perdiendo lo que se nota en salud — visceral y '
+        headline: 'Estás perdiendo lo que se nota en salud — visceral y '
             'composición — no solo en la balanza.',
         citation: 'Lopez-Minguez 2018',
       ));
@@ -159,12 +148,28 @@ class TransformationNarrator {
 
     if (fastingMoreThan(2) && currentFasting >= 5) {
       // No `const` — interpola `currentFasting` (variable runtime).
+      //
+      // TRES CORRECCIONES EN UN RENGLÓN (27-jul-2026)
+      // ----------------------------------------------
+      //  1. `citation: 'Levine 2017'` — era la cuarta instancia de la cita
+      //     errónea del Nobel de autofagia que el fix del 23-jul (46931bb)
+      //     no cubrió, y llevaba abierta como P0 desde el plan del 25-jul.
+      //     Beth Levine nunca recibió el Nobel; fue Ohsumi, en 2016. Pero
+      //     además la cita estaba fuera de tema: esto habla de constancia,
+      //     no de autofagia. Poner un paper de biología celular debajo de
+      //     una frase sobre hábitos es ruido con aspecto de rigor.
+      //  2. "Acabás de cruzar a hábito" — voseo rioplatense (una de las
+      //     formas vivas que el test de lista negra no atrapa).
+      //  3. La afirmación era falsa. La literatura de formación de hábitos
+      //     (Lally 2010, mediana de 66 días hasta la automaticidad) dice
+      //     justo lo contrario: a los 7 días no se ha cruzado nada. Ahora
+      //     se dice lo que el paper sí sostiene, que además es mejor
+      //     coaching: gestiona la expectativa en vez de inflarla.
       out.add(TransformationNarrative(
         id: 'progress-fasting-streak-grew',
-        headline:
-            '$currentFasting de 7 días de ayuno es disciplina, no fuerza '
-            'de voluntad. Acabás de cruzar a hábito.',
-        citation: 'Levine 2017',
+        headline: '$currentFasting de 7 días de ayuno es disciplina, no fuerza '
+            'de voluntad. La automaticidad tarda semanas, y así se construye.',
+        citation: 'Lally 2010, Eur J Soc Psychol',
       ));
     }
 
@@ -173,8 +178,7 @@ class TransformationNarrator {
     if (weightStable() && waistDown(1.0)) {
       out.add(const TransformationNarrative(
         id: 'silent-weight-stable-waist-down',
-        headline:
-            'Estás perdiendo visceral antes que masa magra — eso es '
+        headline: 'Estás perdiendo visceral antes que masa magra — eso es '
             'exactamente lo que quieres ver.',
         citation: 'Petersen-Shulman 2018',
       ));
@@ -183,8 +187,7 @@ class TransformationNarrator {
     if (weightUp(0.5) && bodyFatDown(0.5)) {
       out.add(const TransformationNarrative(
         id: 'silent-weight-up-bf-down',
-        headline:
-            'Subiste un poco de peso pero bajaste grasa: el músculo pesa '
+        headline: 'Subiste un poco de peso pero bajaste grasa: el músculo pesa '
             'más, y el cuerpo está cambiando para mejor.',
         citation: 'ACSM 2021',
       ));
@@ -193,8 +196,7 @@ class TransformationNarrator {
     if (waistStable() && sleepUp(_kSleepEpsilonHours)) {
       out.add(const TransformationNarrative(
         id: 'silent-waist-stable-sleep-up',
-        headline:
-            'El sueño consistente está consolidando los cambios que '
+        headline: 'El sueño consistente está consolidando los cambios que '
             'todavía no se ven afuera, pero sí adentro.',
         citation: 'Walker 2017',
       ));
@@ -208,8 +210,7 @@ class TransformationNarrator {
         currentFasting >= 4) {
       out.add(const TransformationNarrative(
         id: 'plateau-discipline-pays',
-        headline:
-            'Sigues registrando con consistencia. El cuerpo responde en '
+        headline: 'Sigues registrando con consistencia. El cuerpo responde en '
             'ondas, no en líneas rectas — la próxima ola se prepara.',
         citation: 'Sutton 2018',
       ));
@@ -218,8 +219,7 @@ class TransformationNarrator {
     if (weightStable() && waistStable() && sleepStable()) {
       out.add(const TransformationNarrative(
         id: 'plateau-next-wave',
-        headline:
-            '30 días sin cambio visible no es estancamiento — es el '
+        headline: '30 días sin cambio visible no es estancamiento — es el '
             'cuerpo construyendo abajo lo que vas a ver arriba pronto.',
         citation: 'Mattson 2017',
       ));
@@ -230,8 +230,7 @@ class TransformationNarrator {
     if (weightUp(1.0) && fastingLessThan(1)) {
       out.add(const TransformationNarrative(
         id: 'setback-weight-up-fasting-down',
-        headline:
-            'El último mes tuvo más comidas social y menos ayunos — '
+        headline: 'El último mes tuvo más comidas social y menos ayunos — '
             'sin culpa. Esta semana volvemos a tomar ritmo.',
         citation: null,
       ));
@@ -240,8 +239,7 @@ class TransformationNarrator {
     if (sleepDown(0.5)) {
       out.add(const TransformationNarrative(
         id: 'setback-sleep-dropped',
-        headline:
-            'Tu sueño cayó este mes, y el cuerpo lo está sintiendo. '
+        headline: 'Tu sueño cayó este mes, y el cuerpo lo está sintiendo. '
             'Acostarte 20 min antes esta noche ya empieza a sumar.',
         citation: 'Walker 2017',
       ));

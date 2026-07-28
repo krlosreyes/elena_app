@@ -155,6 +155,14 @@ void main() {
 
   // ── Paso 101: Insight personalizado ────────────────────────────────
   group('SPEC-247 — IntroInsightStep (Reciprocidad)', () {
+    // Estos tres tests exigían `find.textContaining('Ohsumi')` en el
+    // timeline, y el de 18:6 se llamaba "menciona autofagia y Ohsumi".
+    // Estaban blindando el problema: la cita del Nobel iba puesta debajo
+    // de "Autofagia a las 16 h", un umbral que Ohsumi nunca publicó — su
+    // premio fue por el mecanismo de la autofagia en levaduras. Con el
+    // timeline derivado de `FastingPhase`, ningún protocolo llega a la
+    // autofagia (empieza a las 24 h) y esa cita ya no pinta nada aquí.
+    // Ohsumi sigue —correctamente— en las citation pills del paso 100.
     testWidgets('protocolo 16:8 muestra timeline de 16 horas', (tester) async {
       _bigViewport(tester);
       addTearDown(tester.view.reset);
@@ -163,7 +171,7 @@ void main() {
       );
       expect(find.textContaining('16 horas'), findsWidgets);
       expect(find.textContaining('Cahill'), findsWidgets);
-      expect(find.textContaining('Ohsumi'), findsWidgets);
+      expect(find.textContaining('Ohsumi'), findsNothing);
     });
 
     testWidgets('protocolo 14:10 muestra timeline de 14 horas', (tester) async {
@@ -176,14 +184,19 @@ void main() {
       expect(find.textContaining('Cahill'), findsWidgets);
     });
 
-    testWidgets('protocolo 18:6 menciona autofagia y Ohsumi', (tester) async {
+    testWidgets('protocolo 18:6 llega a quema de grasa, no a autofagia',
+        (tester) async {
       _bigViewport(tester);
       addTearDown(tester.view.reset);
       await tester.pumpWidget(
         _wrap(const IntroInsightStep(isDark: true, protocol: '18:6')),
       );
-      expect(find.textContaining('18'), findsWidgets);
-      expect(find.textContaining('Ohsumi'), findsWidgets);
+      // 18 h coincide con el umbral de `fatBurning`, así que la meta y la
+      // fase se anuncian juntas. Es el único protocolo que alcanza una
+      // fase más allá de la cetogénesis.
+      expect(find.textContaining('Hora 18'), findsWidgets);
+      expect(find.textContaining('quema de grasa'), findsWidgets);
+      expect(find.textContaining('Ohsumi'), findsNothing);
     });
 
     testWidgets('default (sin protocolo) usa 16:8', (tester) async {

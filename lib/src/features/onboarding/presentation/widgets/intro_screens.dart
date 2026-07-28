@@ -19,6 +19,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
+// Fuente única de los umbrales de fase. El onboarding NO define los suyos:
+// ver la nota en `IntroInsightStep._timelineFor`.
+import 'package:elena_app/src/features/fasting/domain/fasting_status.dart'
+    show FastingPhase;
 
 // ── PASO 100 — Identidad ─────────────────────────────────────────────
 // Principios: Unidad + Autoridad
@@ -301,8 +305,7 @@ class IntroInsightStep extends StatelessWidget {
             color: isDark ? AppColors.bgSurface : Colors.white,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color:
-                  isDark ? AppColors.borderDefault : const Color(0xFFE2E8F0),
+              color: isDark ? AppColors.borderDefault : const Color(0xFFE2E8F0),
             ),
           ),
           child: Column(
@@ -346,102 +349,126 @@ class IntroInsightStep extends StatelessWidget {
     }
   }
 
+  /// Pie de la pantalla.
+  ///
+  /// La segunda frase dice explícitamente dónde empieza la autofagia y
+  /// que este protocolo no llega. Es información que la versión anterior
+  /// no solo omitía: la contradecía, anunciando autofagia a las 16 h. Un
+  /// usuario que lee esto y luego ve "24 h autofagia" en la leyenda del
+  /// reloj encuentra el mismo número — que es justo lo que la app promete
+  /// en su primera pantalla.
   static String _footerFor(String protocol) {
+    final horas = _horasDe(protocol);
+    final autofagia = FastingPhase.autophagy.startsAt.inHours;
+
+    final notaAutofagia = horas < autofagia
+        ? 'La autofagia empieza alrededor de las $autofagia h: tu protocolo '
+            'no llega ahí, y no hace falta para lo que buscas. '
+        : '';
+
     switch (protocol) {
       case '14:10':
-        return 'Estos eventos son automáticos. '
+        return 'Estos eventos son automáticos. $notaAutofagia'
             '14/10 es el protocolo ideal para construir el hábito. '
             'ElenaApp te avisa en cada hito.';
       case '18:6':
-        return 'Estos eventos son automáticos. '
+        return 'Estos eventos son automáticos. $notaAutofagia'
             '18/6 requiere que tu sistema digestivo esté adaptado. '
             'ElenaApp ajusta el coaching si el patrón necesita cambio.';
       case '16:8':
       default:
-        return 'Estos eventos son automáticos. '
+        return 'Estos eventos son automáticos. $notaAutofagia'
             'Tu trabajo es darle el tiempo necesario. '
             'ElenaApp te avisa en cada hito.';
     }
   }
 
+  /// Horas de ayuno del protocolo. '16:8' → 16.
+  static int _horasDe(String protocol) =>
+      int.tryParse(protocol.split(RegExp(r'[:/]')).first) ?? 16;
+
+  /// Línea de tiempo del ayuno, DERIVADA de `FastingPhase`.
+  ///
+  /// POR QUÉ SE REESCRIBIÓ (recorrido en Simulador, 27-jul-2026)
+  /// -----------------------------------------------------------
+  /// Antes eran tres tablas de umbrales escritos a mano, una por
+  /// protocolo, y no coincidían ni con el motor ni entre sí:
+  ///
+  ///     evento           14:10   16:8   18:6   enum canónico
+  ///     insulina baja      h6      h8    h10   h0
+  ///     quema de grasa    h12     h12    h10   h18
+  ///     autofagia          —      h16    h16   h24
+  ///
+  /// La biología no sabe qué protocolo eligió el usuario. Que el umbral
+  /// se moviera con la elección delata que los números se ajustaron para
+  /// que cada protocolo "llegara" a un hito: diseño motivacional, no
+  /// fisiología. Y encima iba firmado — Ohsumi bajo "autofagia a las
+  /// 16 h" (su Nobel fue por el mecanismo en levaduras, no por un umbral
+  /// humano) y Cahill citado tres veces para el mismo fenómeno en tres
+  /// horas distintas. Todo ello en el flujo que abre diciendo "No te
+  /// pedimos fe — te damos las fuentes".
+  ///
+  /// Ahora las filas salen de `FastingPhase.startsAt`, así que mover un
+  /// umbral se propaga solo. La consecuencia incómoda —y correcta— es
+  /// que ningún protocolo de la app llega a la autofagia: empieza a las
+  /// 24 h y el más largo es de 18. El pie de pantalla lo dice en vez de
+  /// esconderlo. Prometer autofagia diaria a un usuario de 16:8 era una
+  /// promesa que el Dashboard le iba a desmentir cada día.
+  ///
+  /// Lo vigila `check_in_copy_coherence_test.dart`.
   static List<_TimelineData> _timelineFor(String protocol) {
-    switch (protocol) {
-      case '14:10':
-        return [
-          _TimelineData(
-            hour: 'Hora 0',
-            icon: '🔒',
-            text: 'Cierras la ventana. Tu cuerpo usa glucosa almacenada.',
-          ),
-          _TimelineData(
-            hour: 'Hora 6',
-            icon: '🔥',
-            text: 'La insulina baja. El cuerpo empieza a acceder a reservas de grasa.',
-            citation: '· Cahill, 1966 — NEJM',
-          ),
-          _TimelineData(
-            hour: 'Hora 12',
-            icon: '⚡',
-            text: 'Quema de grasa activa. Un par de horas más y alcanzas la meta.',
-          ),
-          _TimelineData(
-            hour: 'Hora 14',
-            icon: '✓',
-            text: 'Meta alcanzada. Base sólida para el siguiente paso.',
-          ),
-        ];
-      case '18:6':
-        return [
-          _TimelineData(
-            hour: 'Hora 0',
-            icon: '🔒',
-            text: 'Cierras la ventana. El proceso empieza.',
-          ),
-          _TimelineData(
-            hour: 'Hora 10',
-            icon: '🔥',
-            text: 'Insulina en mínimo. Quema de grasa en su punto máximo.',
-            citation: '· Cahill, 1966 — NEJM',
-          ),
-          _TimelineData(
-            hour: 'Hora 16',
-            icon: '🧬',
-            text: 'Autofagia activa: el cuerpo limpia células dañadas.',
-            citation: '· Ohsumi, 2016 — Nobel de Medicina',
-          ),
-          _TimelineData(
-            hour: 'Hora 18',
-            icon: '💪',
-            text: 'Meta. Cetosis metabólica leve en usuarios con práctica regular.',
-          ),
-        ];
-      case '16:8':
-      default:
-        return [
-          _TimelineData(
-            hour: 'Hora 0',
-            icon: '🔒',
-            text: 'Cierras la ventana. Tu cuerpo empieza a usar glucosa almacenada.',
-          ),
-          _TimelineData(
-            hour: 'Hora 8',
-            icon: '🔥',
-            text: 'La insulina baja. El cuerpo cambia de glucosa a grasa como combustible.',
-            citation: '· Cahill, 1966 — NEJM',
-          ),
-          _TimelineData(
-            hour: 'Hora 12',
-            icon: '⚡',
-            text: 'Quema de grasa activa. Tu energía viene de tus reservas.',
-          ),
-          _TimelineData(
-            hour: 'Hora 16',
-            icon: '🧬',
-            text: 'Autofagia: limpieza celular profunda.',
-            citation: '· Ohsumi, 2016 — Nobel de Medicina',
-          ),
-        ];
+    final horas = _horasDe(protocol);
+    final meta = Duration(hours: horas);
+
+    final filas = <_TimelineData>[
+      const _TimelineData(
+        hour: 'Hora 0',
+        icon: '🔒',
+        text: 'Cierras la ventana. Tu cuerpo usa la energía de lo que comiste.',
+      ),
+      // `postAbsorption` arranca en 0 y dura hasta las 12 h: es un tramo,
+      // no un instante. Ponerle una hora concreta fue justo el origen del
+      // problema (h6/h8/h10 según el protocolo), así que se nombra como
+      // lo que es.
+      const _TimelineData(
+        hour: 'Primeras horas',
+        icon: '🔥',
+        text: 'La insulina baja y tu cuerpo empieza a tirar de reservas.',
+        citation: '· Cahill, 1966 — NEJM',
+      ),
+    ];
+
+    for (final fase in FastingPhase.values) {
+      if (fase == FastingPhase.none || fase == FastingPhase.postAbsorption) {
+        continue;
+      }
+      // No se alcanza dentro del protocolo: no se anuncia.
+      if (fase.startsAt >= meta) break;
+      filas.add(_TimelineData(
+        hour: 'Hora ${fase.startsAt.inHours}',
+        icon: fase == FastingPhase.transition ? '⚡' : '💪',
+        text: '${fase.milestoneName}. ${fase.description}',
+      ));
     }
+
+    // Si la meta coincide con el umbral de una fase, se nombran juntas.
+    FastingPhase? faseEnMeta;
+    for (final fase in FastingPhase.values) {
+      if (fase != FastingPhase.none && fase.startsAt == meta) {
+        faseEnMeta = fase;
+        break;
+      }
+    }
+    filas.add(_TimelineData(
+      hour: 'Hora $horas',
+      icon: '✓',
+      text: faseEnMeta == null
+          ? 'Meta alcanzada.'
+          : 'Meta alcanzada. Entras en '
+              '${faseEnMeta.milestoneName.toLowerCase()}.',
+    ));
+
+    return filas;
   }
 }
 
@@ -617,9 +644,7 @@ class _CitationPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: isDark
-            ? AppColors.bgSurface
-            : Colors.white,
+        color: isDark ? AppColors.bgSurface : Colors.white,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: accent.withValues(alpha: 0.35),
@@ -684,7 +709,9 @@ class _ProtocolCard extends StatelessWidget {
             : (isDark ? AppColors.bgSurface : Colors.white),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: isSelected ? accent : (isDark ? AppColors.borderDefault : const Color(0xFFE2E8F0)),
+          color: isSelected
+              ? accent
+              : (isDark ? AppColors.borderDefault : const Color(0xFFE2E8F0)),
           width: isSelected ? 2.0 : 1.0,
         ),
       ),
@@ -756,9 +783,7 @@ class _ProtocolCard extends StatelessWidget {
                 duration: const Duration(milliseconds: 200),
                 child: isSelected
                     ? Icon(Icons.check_circle_rounded,
-                        key: const ValueKey('checked'),
-                        color: accent,
-                        size: 26)
+                        key: const ValueKey('checked'), color: accent, size: 26)
                     : Icon(Icons.radio_button_unchecked,
                         key: const ValueKey('unchecked'),
                         color: textSecondary.withValues(alpha: 0.4),
