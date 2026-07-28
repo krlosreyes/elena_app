@@ -162,7 +162,11 @@ class _FastingHeroDisplayState extends State<FastingHeroDisplay> {
         return 'Próximo ayuno en ${_spokenHm(safe)}. '
             'Cierra ventana a las ${_fmtClock(w.windowEnd)}';
       case _Mode.idle:
-        return 'Ayuno sin iniciar. Toca para iniciar';
+        // Esta cadena es lo que oye alguien que usa VoiceOver. Decía
+        // "Toca para iniciar": le anunciaba a una persona ciega una
+        // acción que no existe — tocaba y recibía la leyenda del reloj.
+        // Ver la nota en `_buildIdle`.
+        return 'Ayuno sin iniciar. Toca para ver la leyenda del reloj';
     }
   }
 
@@ -237,14 +241,39 @@ class _FastingHeroDisplayState extends State<FastingHeroDisplay> {
     );
   }
 
+  // ─────────────────────────────────────────────────────────────────
+  // POR QUÉ ESTE TEXTO YA NO DICE "Toca para iniciar"
+  // (recorrido en Simulador, 27-jul-2026)
+  // ─────────────────────────────────────────────────────────────────
+  // Decía "⏵ Toca para iniciar" y al tocar el anillo se abría la
+  // leyenda del reloj. Reproducido tres veces, en tres coordenadas
+  // distintas dentro del anillo.
+  //
+  // No era un conflicto de hit-testing: `dashboard_screen.dart` envuelve
+  // TODO el cuadrado del reloj en un `GestureDetector` con
+  // `HitTestBehavior.opaque` que abre el explainer (SPEC-202), y este
+  // archivo no tiene —ni tuvo nunca— un solo `onTap`. El rótulo
+  // describía una acción que el widget no implementa.
+  //
+  // POR QUÉ NO SE CONECTA EN VEZ DE CAMBIAR EL TEXTO
+  // Iniciar un ayuno no es una llamada suelta: pasa por
+  // `_handleFastingPrimaryTap` en `fasting_consciousness_card.dart`, que
+  // antes de arrancar avisa si hay comidas registradas en el ciclo
+  // actual (SPEC-254) y gestiona el cierre anticipado. Cablear el anillo
+  // a un atajo propio saltaría esas guardas en el flujo de más tráfico
+  // de la app. Unificarlo bien es un refactor con su propio riesgo, no
+  // un arreglo de una línea — queda propuesto aparte.
+  //
+  // Mientras tanto el centro dice la verdad y el botón verde "Iniciar
+  // Ayuno" de la tarjeta de abajo sigue siendo la vía única y correcta.
   Widget _buildIdle(Color colorBase) {
     return _Layout(
       label: 'AYUNO',
       labelColor: colorBase.withValues(alpha: 0.55),
       mainText: '--:--:--',
       mainColor: colorBase.withValues(alpha: 0.30),
-      subIcon: Icons.play_circle_outline_rounded,
-      subText: 'Toca para iniciar',
+      subIcon: Icons.info_outline_rounded,
+      subText: 'Sin ayuno en curso',
       subColor: colorBase.withValues(alpha: 0.50),
       size: widget.size,
     );

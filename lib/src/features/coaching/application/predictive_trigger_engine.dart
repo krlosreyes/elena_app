@@ -211,6 +211,25 @@ class PredictiveTriggerEngine {
   static const Duration kMinGapBetweenCheckIns = Duration(hours: 3);
 
   /// Mensajes contextualizados por hito de ayuno.
+  ///
+  /// COHERENCIA CON `FastingPhase` (recorrido en Simulador, 27-jul-2026)
+  /// -------------------------------------------------------------------
+  /// Los hitos de check-in (4/8/12/16) son momentos de conversación, no
+  /// fronteras de fase. Pero lo que se AFIRMA en cada uno tiene que ser
+  /// cierto según `FastingPhase.startsAt`, que es la única fuente:
+  ///
+  ///     postAbsorption  0 h   ·  transition 12 h
+  ///     fatBurning     18 h   ·  autophagy  24 h
+  ///
+  /// El copy de las 16 h decía "Tu cuerpo inició la autofagia". A las
+  /// 16 h el usuario sigue en `transition`: la autofagia está 8 horas
+  /// más allá. Y como esto además se programa como notificación push al
+  /// iniciar el ayuno, todo usuario de 16:8 recibía a diario, en la
+  /// pantalla de bloqueo, una afirmación que la propia app desmiente en
+  /// la leyenda del reloj ("24 h autofagia").
+  ///
+  /// Al tocar estos textos, comprobar contra el enum. El test
+  /// `check_in_copy_coherence_test.dart` lo verifica.
   static const Map<int, _CheckInCopy> _checkInCopies = {
     4: _CheckInCopy(
       title: '¿Cómo empiezas el ayuno?',
@@ -225,8 +244,8 @@ class PredictiveTriggerEngine {
       message: 'La cetosis temprana está en marcha.',
     ),
     16: _CheckInCopy(
-      title: 'Entraste en limpieza profunda. ¿Cómo estás?',
-      message: 'Tu cuerpo inició la autofagia.',
+      title: 'Llevas 16 horas. ¿Cómo te sientes?',
+      message: 'La cetosis se afianza y tu energía viene de tus reservas.',
     ),
   };
 

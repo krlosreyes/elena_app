@@ -393,10 +393,19 @@ class NotificationScheduler {
           title: 'Tu cuerpo cambió de marcha',
           body: 'La cetosis temprana está en marcha. ¿Cómo vas?',
         ),
+        // 27-jul-2026: decía "Limpieza profunda activa / Tu cuerpo inició
+        // la autofagia". A las 16 h el usuario está en `transition`
+        // (12-18 h); la autofagia empieza a las 24 h según
+        // `FastingPhase.startsAt`. Al programarse esta notificación al
+        // iniciar el ayuno, todo usuario de 16:8 la recibía cada día en
+        // la pantalla de bloqueo — donde no hay nada que la matice — y
+        // luego abría la app y leía "24 h autofagia" en la leyenda del
+        // reloj. Ver el mismo copy en PredictiveTriggerEngine.
         16: _CheckInMilestone(
           id: NotificationIds.checkIn16h,
-          title: 'Limpieza profunda activa',
-          body: 'Tu cuerpo inició la autofagia. ¿Cómo estás?',
+          title: 'Llevas 16 horas',
+          body: 'La cetosis se afianza y tu energía viene de tus reservas. '
+              '¿Cómo estás?',
         ),
       };
 

@@ -109,7 +109,16 @@ void main() {
       ));
       expect(find.text('AYUNO'), findsOneWidget);
       expect(find.text('--:--:--'), findsOneWidget);
-      expect(find.textContaining('Toca'), findsOneWidget);
+
+      // Antes decía `find.textContaining('Toca')`. El texto era "Toca
+      // para iniciar" y el anillo no inicia nada: `dashboard_screen.dart`
+      // envuelve todo el reloj en un GestureDetector opaco que abre la
+      // leyenda, y este widget no tiene ni un `onTap`. El rótulo
+      // describía una acción inexistente — y la misma cadena era la
+      // etiqueta de Semantics, así que VoiceOver también la anunciaba.
+      // Ver la nota en `fasting_hero_display.dart:_buildIdle`.
+      expect(find.text('Sin ayuno en curso'), findsOneWidget);
+      expect(find.textContaining('Toca para iniciar'), findsNothing);
     });
 
     testWidgets(

@@ -6,7 +6,7 @@
 //   100 — IntroWelcomeStep    (Identidad: Unidad + Autoridad)
 //   105 — IntroProtocolStep   (Compromiso y coherencia) ← NUEVA
 //   101 — IntroInsightStep    (Reciprocidad + Autoridad) ← sustituye IntroImrStep
-//   104 — IntroNotificationsStep (Prueba social + activar) ← rediseñada
+//   104 — IntroNotificationsStep (por qué avisar + activar) ← rediseñada
 //
 // Pantallas eliminadas:
 //   102 — IntroDataStep       → privacidad absorbida en header de Biometría (onboarding_screen)
@@ -200,7 +200,12 @@ class IntroProtocolStep extends StatelessWidget {
           id: '16:8',
           title: '16/8',
           subtitle: '16 horas de ayuno · 8 de alimentación',
-          description: 'El más estudiado. El 70% de las personas empieza aquí.',
+          // 27-jul-2026: decía "El 70% de las personas empieza aquí". Es
+          // la misma cifra sin fuente que el 78/31% de la pantalla de
+          // notificaciones, y ElenaApp tampoco tiene datos para
+          // sostenerla. Lo que sí es cierto y verificable es que 16:8 es
+          // el protocolo con más literatura detrás.
+          description: 'El más estudiado. El punto de partida habitual.',
           isSelected: selectedProtocol == '16:8',
           onTap: () => onProtocolSelected('16:8'),
           isDark: isDark,
@@ -440,10 +445,32 @@ class IntroInsightStep extends StatelessWidget {
   }
 }
 
-// ── PASO 104 — Notificaciones + Prueba social ────────────────────────
-// Principios: Prueba social + Reciprocidad
-// El dato 78/31% es estimado conservador (beta). Se reemplaza con datos
-// reales de Firestore cuando el volumen lo permita.
+// ── PASO 104 — Notificaciones ────────────────────────────────────────
+//
+// POR QUÉ YA NO HAY "PRUEBA SOCIAL" AQUÍ (recorrido, 27-jul-2026)
+// ----------------------------------------------------------------
+// Esta pantalla mostraba "78% con notificaciones / 31% sin
+// notificaciones" bajo el titular "completan el doble de días". Tres
+// problemas, y el tercero es el grave:
+//
+//   1. 78 contra 31 no es "el doble", es 2,5 veces.
+//   2. Era el ÚNICO dato numérico de todo el onboarding sin cita, en un
+//      flujo donde cada afirmación fisiológica lleva su paper — y el
+//      único que servía al interés de la app en vez del entendimiento
+//      del usuario.
+//   3. El comentario que había aquí lo admitía: "estimado conservador
+//      (beta)". Es decir, inventado. Un comentario en el código no es
+//      una divulgación al usuario, y con ~10 testers es aritméticamente
+//      imposible tener ese dato.
+//
+// Es exactamente la categoría de afirmación por la que la FTC multó a
+// Noom con 56M USD: prueba social cuantificada, sin respaldo, justo
+// antes de una decisión que beneficia al producto.
+//
+// La sustituye una afirmación verdadera, que apoya la misma decisión sin
+// inventar nada: sin avisos, la app depende de que el usuario se acuerde.
+// Si algún día hay volumen real para medir la diferencia, se puede
+// volver a poner un número — CON su fuente y su fecha.
 
 class IntroNotificationsStep extends StatelessWidget {
   final bool isDark;
@@ -485,7 +512,7 @@ class IntroNotificationsStep extends StatelessWidget {
         ),
         const SizedBox(height: 28),
         Text(
-          'Las personas que activan las notificaciones\ncompletan el doble de días',
+          'Elena mira el reloj\npara que tú no tengas que hacerlo',
           textAlign: TextAlign.center,
           style: TextStyle(
             color: textPrimary,
@@ -495,8 +522,7 @@ class IntroNotificationsStep extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 20),
-        // Tarjeta de prueba social
-        _SocialProofCard(isDark: isDark),
+        _PorQueAvisarCard(isDark: isDark),
         const SizedBox(height: 20),
         Text(
           'Así se ven algunas notificaciones:',
@@ -843,12 +869,15 @@ class _TimelineRow extends StatelessWidget {
   }
 }
 
-/// Tarjeta de prueba social 78/31%. Usada en IntroNotificationsStep.
-/// Datos: estimado conservador (beta). Reemplazar con datos reales de
-/// Firestore cuando el volumen lo permita.
-class _SocialProofCard extends StatelessWidget {
+/// Sustituye a la antigua tarjeta de "prueba social" con el 78/31%
+/// inventado. Ver la nota larga en la cabecera de `IntroNotificationsStep`.
+///
+/// Todo lo que afirma es comprobable en el código: los avisos de fase los
+/// programa `NotificationScheduler.scheduleCheckInMilestones` y el del
+/// cierre de ventana sale de `EatingWindowState`.
+class _PorQueAvisarCard extends StatelessWidget {
   final bool isDark;
-  const _SocialProofCard({required this.isDark});
+  const _PorQueAvisarCard({required this.isDark});
 
   @override
   Widget build(BuildContext context) {
@@ -859,29 +888,36 @@ class _SocialProofCard extends StatelessWidget {
         isDark ? AppColors.textSecondary : const Color(0xFF475569);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
       decoration: BoxDecoration(
         color: isDark ? AppColors.bgSurface : Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: accent.withValues(alpha: 0.3),
-        ),
+        border: Border.all(color: accent.withValues(alpha: 0.3)),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _StatColumn(
-            value: '78%',
-            label: 'Con\nnotificaciones',
-            valueColor: accent,
-            labelColor: textSecondary,
+          _AvisoRow(
+            icon: Icons.schedule_rounded,
+            text: 'Cuando tu cuerpo cambia de fase',
+            accent: accent,
+            textColor: textPrimary,
           ),
-          Container(width: 1, height: 48, color: textSecondary.withValues(alpha: 0.2)),
-          _StatColumn(
-            value: '31%',
-            label: 'Sin\nnotificaciones',
-            valueColor: textPrimary,
-            labelColor: textSecondary,
+          const SizedBox(height: 12),
+          _AvisoRow(
+            icon: Icons.dinner_dining_outlined,
+            text: 'Cuando se acerca el cierre de tu ventana',
+            accent: accent,
+            textColor: textPrimary,
+          ),
+          const SizedBox(height: 14),
+          Text(
+            'Sin avisos, la app solo funciona si te acuerdas de abrirla.',
+            style: TextStyle(
+              color: textSecondary,
+              fontSize: 13,
+              height: 1.35,
+            ),
           ),
         ],
       ),
@@ -889,45 +925,45 @@ class _SocialProofCard extends StatelessWidget {
   }
 }
 
-class _StatColumn extends StatelessWidget {
-  final String value;
-  final String label;
-  final Color valueColor;
-  final Color labelColor;
+class _AvisoRow extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  final Color accent;
+  final Color textColor;
 
-  const _StatColumn({
-    required this.value,
-    required this.label,
-    required this.valueColor,
-    required this.labelColor,
+  const _AvisoRow({
+    required this.icon,
+    required this.text,
+    required this.accent,
+    required this.textColor,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          value,
-          style: TextStyle(
-            color: valueColor,
-            fontSize: 28,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: labelColor,
-            fontSize: 12,
-            height: 1.35,
+        Icon(icon, color: accent, size: 18),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(
+              color: textColor,
+              fontSize: 14,
+              height: 1.3,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
       ],
     );
   }
 }
+
+// `_StatColumn` vivía aquí: era la columna de número grande que pintaba
+// el "78%" y el "31%". Se retira con la tarjeta de prueba social — no
+// quedan cifras de adherencia que mostrar hasta que existan de verdad.
 
 /// Pill de notificación de ejemplo. Usada en IntroNotificationsStep.
 class _ExamplePill extends StatelessWidget {

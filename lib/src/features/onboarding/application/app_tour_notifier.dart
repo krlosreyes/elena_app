@@ -94,11 +94,20 @@ const List<TourStep> kTourSteps = [
   ),
 
   // 2 — Pilar Ayuno
+  //
+  // 27-jul-2026, dos correcciones en la misma frase:
+  //   * "activa la quema de grasa y la autofagia" — sin decir cuándo,
+  //     junto a "tu ayuno del día", daba a entender que un 16:8 llega a
+  //     la autofagia. Empieza a las 24 h (`FastingPhase.startsAt`).
+  //   * "Toca el anillo para iniciar" — el anillo no inicia nada: abre
+  //     la leyenda del reloj. Ver la nota en `fasting_hero_display.dart`.
   TourStep(
     emoji: '⏱️',
     title: 'Pilar 1 · Ayuno',
     body:
-        'El ayuno intermitente activa la quema de grasa y la autofagia. Toca el anillo para iniciar o registrar tu ayuno del día.',
+        'Cada hora de ayuno mueve a tu cuerpo por fases: baja la insulina, '
+        'empieza la cetosis y aumenta el uso de grasa. Inicia tu ayuno con '
+        'el botón verde de la tarjeta de abajo.',
     spotlight: TourSpotlightArea.fastingRing,
   ),
 
@@ -172,7 +181,9 @@ const List<TourStep> kTourSteps = [
     emoji: '🎯',
     title: '¡Todo listo!',
     body:
-        'Ya conoces tu app. Comienza registrando tu primer ayuno: toca el anillo ⏱️ en el Dashboard. ¡Tu metabolismo te lo va a agradecer!',
+        'Ya conoces tu app. Comienza registrando tu primer ayuno con el '
+        'botón "Iniciar Ayuno" ⏱️ del Dashboard. '
+        '¡Tu metabolismo te lo va a agradecer!',
     spotlight: TourSpotlightArea.none,
     navigateTo: '/dashboard',
   ),

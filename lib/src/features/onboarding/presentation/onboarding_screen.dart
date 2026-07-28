@@ -90,7 +90,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   //   100 — Identidad (Unidad + Autoridad)
   //   105 — Protocolo (Compromiso y coherencia) ← NUEVA
   //   101 — Insight personalizado (Reciprocidad) ← sustituye "Tus dos números"
-  //   104 — Notificaciones + Prueba social (después de Hábitos, sin cambio de posición)
+  //   104 — Notificaciones (después de Hábitos, sin cambio de posición)
   // Eliminados: 102 ("Tus datos son tuyos") → privacidad en header Biometría.
   //             103 ("Día Metabólico") → coaching card post-Day-1 (SPEC-249).
   static const int _kIntroProtocolStepId = 105;
@@ -560,8 +560,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             protocol: _fastingProtocol,
           );
         case 104:
-          // SPEC-247: Notificaciones con prueba social 78/31%. Dos CTAs
-          // — activar dispara requestPermissions, "ahora no" avanza.
+          // SPEC-247: Notificaciones. Dos CTAs — activar dispara
+          // requestPermissions, "ahora no" avanza. La "prueba social"
+          // 78/31% que había aquí se retiró el 27-jul-2026 por ser un
+          // dato inventado; ver la nota en IntroNotificationsStep.
           return IntroNotificationsStep(
             isDark: isDark,
             onActivate: _activateNotifications,

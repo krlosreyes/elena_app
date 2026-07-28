@@ -204,9 +204,16 @@ void main() {
     });
   });
 
-  // ── Paso 104: Notificaciones + Prueba social ─────────────────────
-  group('SPEC-247 — IntroNotificationsStep (Prueba social)', () {
-    testWidgets('renderea dato 78% visible', (tester) async {
+  // ── Paso 104: Notificaciones ──────────────────────────────────────
+  group('SPEC-247 — IntroNotificationsStep', () {
+    // Este test decía `expect(find.text('78%'), findsOneWidget)`: afirmaba
+    // que la pantalla mostrara una estadística que el propio código
+    // admitía inventada ("estimado conservador (beta)"). Estaba
+    // blindando el problema en vez de protegerlo — el mismo patrón que el
+    // test que afirmaba imperativos en voseo, encontrado esa misma
+    // mañana. Se invierte: ahora vigila que NO vuelva.
+    testWidgets('no muestra estadísticas de adherencia sin fuente',
+        (tester) async {
       _bigViewport(tester);
       addTearDown(tester.view.reset);
       await tester.pumpWidget(
@@ -216,8 +223,26 @@ void main() {
           onSkip: () {},
         )),
       );
-      expect(find.text('78%'), findsOneWidget);
-      expect(find.text('31%'), findsOneWidget);
+      expect(find.text('78%'), findsNothing);
+      expect(find.text('31%'), findsNothing);
+      expect(find.textContaining('el doble de días'), findsNothing);
+    });
+
+    testWidgets('explica para qué sirven los avisos, sin inventar datos',
+        (tester) async {
+      _bigViewport(tester);
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        _wrap(IntroNotificationsStep(
+          isDark: true,
+          onActivate: () {},
+          onSkip: () {},
+        )),
+      );
+      // Las dos cosas que los avisos hacen de verdad, y que se pueden
+      // comprobar en NotificationScheduler y EatingWindowState.
+      expect(find.textContaining('cambia de fase'), findsOneWidget);
+      expect(find.textContaining('cierre de tu ventana'), findsOneWidget);
     });
 
     testWidgets('renderea 2 ejemplos con cita', (tester) async {
