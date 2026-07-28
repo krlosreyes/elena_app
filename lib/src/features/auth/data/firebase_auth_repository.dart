@@ -168,89 +168,71 @@ class FirebaseAuthRepository implements AuthRepository {
     }
   }
 
-  // SPEC-248b: Orden correcto — Firestore PRIMERO, Auth DESPUÉS.
+  // ORDEN DEL BORRADO: Auth PRIMERO. Firestore lo limpia el servidor.
   //
-  // El orden anterior (Auth → Firestore) era incorrecto: una vez que
-  // `user.delete()` se ejecuta, el token de Auth queda inválido y las
-  // reglas de Firestore rechazan cualquier write posterior. Resultado:
-  // subcollections nunca se borraban del cliente.
+  // 27-jul-2026, verificado borrando una cuenta real en el Simulador. El
+  // orden anterior —Firestore primero, Auth al final— produce PÉRDIDA DE
+  // DATOS SIN BORRADO:
   //
-  // Nuevo orden:
-  //   1. Borrar subcollections de users/{uid} (mientras auth es válido)
-  //   2. Borrar doc raíz users/{uid}
-  //   3. Borrar fasting_history plana (legacy SPEC-50.4)
-  //   4. Eliminar Auth — dispara Cloud Function onUserDeleted como red de seguridad
-  //   5. signOut local
+  //   1-3. borra subcolecciones, doc raíz y `fasting_history` legacy
+  //   4.   `user.delete()` lanza `requires-recent-login`
+  //   5.   signOut: inalcanzable, el paso 4 ya hizo `throw`
   //
-  // Si el paso 4 falla con requires-recent-login: Auth sigue existiendo pero
-  // Firestore ya está limpio. El usuario puede reintentar sin inconsistencia.
-  // La Cloud Function onUserDeleted (SPEC-207/248) actúa como red de seguridad
-  // para datos creados en el intervalo o si el cliente falla a medio camino.
+  // Resultado observado: datos destruidos, cuenta de Auth viva, usuario
+  // expulsado a /login. Una cuenta zombi. Y como `requires-recent-login`
+  // salta a los pocos minutos de la última autenticación, ese es el camino
+  // NORMAL de cualquiera que borre su cuenta, no un caso raro.
   //
-  // 18-jul (repro Carlos): "dice que está tardando demasiado y se sale pero
-  // no se elimina el usuario". Causa raíz: NINGUNA de las ~18 llamadas
-  // encadenadas de este método tenía `.timeout()` propio — a diferencia de
-  // `_buildAccount`, que ya blinda su única lectura con 6s (SPEC-206). El
-  // `.timeout(25s)` de `ProfileController.deleteAccount()` (SPEC-250) NO
-  // cancela el `Future` real, solo deja de esperarlo — así que si un solo
-  // `await` de este loop se CUELGA de verdad (no tarda: nunca resuelve, el
-  // mismo patrón offline-first ya diagnosticado en
-  // `feedback_offline_first_pattern.md`), el proceso nunca alcanza el paso 4
-  // (`user.delete()`) ni en foreground ni en background. El usuario ve el
-  // mensaje de timeout y es expulsado a /login, pero la cuenta de Auth queda
-  // viva para siempre porque el paso que la borra jamás se ejecutó.
+  // POR QUÉ EL ORDEN ANTERIOR (SPEC-248b) PARTÍA DE UNA PREMISA FALSA
+  // ------------------------------------------------------------------
+  // Su razonamiento era: "tras `user.delete()` el token queda inválido y
+  // las reglas rechazan cualquier write, así que las subcolecciones nunca
+  // se borraban desde el cliente". La observación es correcta. La
+  // conclusión no: **el cliente no tiene que borrarlas**.
   //
-  // Fix: cada llamada de red gana su propio `.timeout()` (mismo patrón que
-  // `_buildAccount`), y las subcollections —independientes entre sí, sin
-  // orden que respetar— pasan de loop secuencial a `Future.wait` paralelo.
-  // Esto acota el peor caso a un tiempo finito garantizado en vez de a
-  // "indefinido", y en el caso normal (subcollections vacías/chicas) hace
-  // el borrado bastante más rápido al no sumar latencias en serie.
+  // `onUserDeleted` (functions/src/index.ts) las borra en servidor con el
+  // Admin SDK, y cubre estrictamente MÁS que el cliente:
+  //   · sus 16 subcolecciones incluyen `badges`, que el cliente ni siquiera
+  //     puede tocar porque `firestore.rules` la deja allow-create-only;
+  //   · borra también el doc raíz `users/{uid}`;
+  //   · y la colección plana `fasting_history` legacy.
+  //
+  // Es decir: los pasos 1-3 del cliente eran REDUNDANTES, y el precio de
+  // ejecutarlos antes de saber si el borrado es siquiera posible era
+  // destruir los datos de quien no puede completarlo. Con el orden
+  // invertido, un fallo en Auth no destruye nada: el usuario conserva su
+  // cuenta intacta y puede reintentar.
+  //
+  // DEPENDENCIA OPERATIVA: esto exige que `onUserDeleted` esté DESPLEGADA.
+  // Si no lo está, el borrado deja Firestore huérfano. Comprobar con
+  // `firebase functions:list` antes de publicar.
+  //
+  // Se conserva el `.timeout()` por llamada del fix del 18-jul: el
+  // `.timeout(25s)` de `ProfileController.deleteAccount()` no cancela el
+  // Future real, solo deja de esperarlo, así que un `await` colgado
+  // (patrón offline-first, ver `feedback_offline_first_pattern.md`)
+  // dejaría el método sin terminar nunca.
   @override
   Future<void> deleteAccount() async {
     final user = _auth.currentUser;
     if (user == null) return;
-    final uid = user.uid;
 
-    // 1. Borrar todas las subcollections MIENTRAS el usuario está autenticado,
-    //    EN PARALELO — son independientes entre sí, no hay orden que respetar.
-    //    Cada una absorbe su propio error/timeout, así que ninguna bloquea a
-    //    las demás ni al resto del método.
-    await Future.wait(
-      _kUserSubcollections.map((sub) => _safeDeleteSubcollection(uid, sub)),
-    );
-
-    // 2. Borrar doc raíz users/{uid}.
-    try {
-      await _firestore.collection('users').doc(uid).delete().timeout(
-            _kDocTimeout,
-          );
-    } catch (_) {
-      // Best-effort.
-    }
-
-    // 3. Borrar fasting_history plana legacy (SPEC-50.4 / SPEC-217 transición).
-    try {
-      await _deleteFastingHistoryForUser(uid).timeout(_kSubcollectionTimeout);
-    } catch (_) {
-      // Best-effort.
-    }
-
-    // 4. Eliminar cuenta de Firebase Auth.
-    //    Esto dispara la Cloud Function onUserDeleted (SPEC-207/248) como
-    //    red de seguridad para cualquier dato residual.
+    // 1. Eliminar la cuenta de Firebase Auth. Es lo único que puede fallar
+    //    de forma recuperable, así que va primero: si falla, no se ha
+    //    tocado un solo dato del usuario.
     try {
       await user.delete().timeout(_kDocTimeout);
     } on TimeoutException {
       throw Exception(
-        'La eliminación está tardando más de lo esperado en el paso '
-        'final de autenticación. Verifica tu conexión e intenta de nuevo.',
+        'La eliminación está tardando más de lo esperado. Verifica tu '
+        'conexión e inténtalo de nuevo. No se borró nada.',
       );
     } on FirebaseAuthException catch (e) {
       if (e.code == 'requires-recent-login') {
         throw Exception(
-          'Por seguridad, tu sesión es muy antigua. Cierra sesión, '
-          'vuelve a iniciar sesión y vuelve a intentar eliminar la cuenta.',
+          'Por seguridad hace falta una sesión reciente para borrar la '
+          'cuenta. Cierra sesión, vuelve a entrar e inténtalo de nuevo. '
+          'Tus datos siguen intactos.',
         );
       }
       throw _handleAuthException(e);
@@ -258,7 +240,10 @@ class FirebaseAuthRepository implements AuthRepository {
       throw Exception('Error técnico al eliminar la cuenta de autenticación.');
     }
 
-    // 5. Cerrar sesión local para limpiar caches de Firebase Auth.
+    // 2. El borrado en cascada de Firestore lo hace `onUserDeleted` en
+    //    servidor. Aquí ya no se puede: el token acaba de invalidarse.
+
+    // 3. Cerrar sesión local para limpiar caches de Firebase Auth.
     try {
       await _auth.signOut().timeout(_kDocTimeout);
     } catch (_) {
@@ -272,102 +257,6 @@ class FirebaseAuthRepository implements AuthRepository {
   /// margen porque un `batch.commit()` de hasta 400 docs puede pesar más
   /// que una lectura simple de un doc.
   static const Duration _kDocTimeout = Duration(seconds: 8);
-
-  /// Duración máxima para el borrado COMPLETO de una subcolección
-  /// (potencialmente varias páginas de `_kDocTimeout` cada una). Actúa como
-  /// backstop del loop de paginación en `_deleteSubcollection`/
-  /// `_deleteFastingHistoryForUser` — si una subcolección tiene muchas
-  /// páginas y no termina en este margen, se corta ahí: best-effort, la
-  /// Cloud Function `onUserDeleted` la termina de limpiar.
-  static const Duration _kSubcollectionTimeout = Duration(seconds: 20);
-
-  /// Envuelve `_deleteSubcollection` en su propio timeout + catch, para que
-  /// pueda correr dentro de un `Future.wait` sin que un cuelgue o error en
-  /// UNA subcolección bloquee a las demás ni propague la excepción.
-  Future<void> _safeDeleteSubcollection(String uid, String sub) async {
-    try {
-      await _deleteSubcollection(uid, sub).timeout(_kSubcollectionTimeout);
-    } catch (_) {
-      // Best-effort. La Cloud Function onUserDeleted lo limpia si falla.
-    }
-  }
-
-  /// Subcolecciones bajo users/{uid} que se borran en cascada.
-  /// Debe mantenerse sincronizado con USER_SUBCOLLECTIONS en functions/src/index.ts,
-  /// CON UNA EXCEPCIÓN A PROPÓSITO: 'badges' no va en esta lista. Las reglas
-  /// de Firestore (firestore.rules) hacen esa subcolección allow-create-only
-  /// para el cliente — ni el dueño puede borrarla desde acá, por diseño
-  /// (integridad de insignias otorgadas). Solo el Admin SDK de la Cloud
-  /// Function `onUserDeleted` (que ignora las Security Rules) puede
-  /// limpiarla; agregar 'badges' acá sería un intento de delete que las
-  /// reglas siempre rechazan — inofensivo (best-effort) pero inútil.
-  static const _kUserSubcollections = [
-    'sleep_history',
-    'nutrition_history',
-    'hydration_history',
-    'exercise_history',
-    'biometric_history',
-    'metabolic_cycles',
-    'daily_summary',
-    'streak_history',
-    'imr_history',
-    'protocol_adjustments',
-    'app_state',
-    'fasting_checkins',
-    'sleep_routines',
-    'post_reads',
-    'fasting_history',
-  ];
-
-  /// Borra todos los documentos de una subcollection en batches de 400.
-  ///
-  /// 18-jul: cada `.get()`/`.commit()` gana `.timeout(_kDocTimeout)` propio
-  /// — sin esto, una sola página colgada (red degradada) nunca lanza ni
-  /// resuelve, y el `try/catch` del caller no tiene nada que atrapar. Ver
-  /// nota completa en `deleteAccount()`.
-  Future<void> _deleteSubcollection(String uid, String subcollection) async {
-    const batchSize = 400;
-    final col =
-        _firestore.collection('users').doc(uid).collection(subcollection);
-    var snapshot = await col.limit(batchSize).get().timeout(_kDocTimeout);
-    while (snapshot.docs.isNotEmpty) {
-      final batch = _firestore.batch();
-      for (final doc in snapshot.docs) {
-        batch.delete(doc.reference);
-      }
-      await batch.commit().timeout(_kDocTimeout);
-      snapshot = await col.limit(batchSize).get().timeout(_kDocTimeout);
-    }
-  }
-
-  /// Borra los documentos de `fasting_history` donde `userId == uid`.
-  ///
-  /// SPEC-207 inc2 — best-effort en cliente mientras la Cloud Function
-  /// corre en background. No lanza excepción; el caller la envuelve en try/catch.
-  ///
-  /// 18-jul: mismo tratamiento de timeout por-llamada que `_deleteSubcollection`.
-  Future<void> _deleteFastingHistoryForUser(String uid) async {
-    const batchSize = 400;
-    final col = _firestore.collection('fasting_history');
-    var snapshot = await col
-        .where('userId', isEqualTo: uid)
-        .limit(batchSize)
-        .get()
-        .timeout(_kDocTimeout);
-
-    while (snapshot.docs.isNotEmpty) {
-      final batch = _firestore.batch();
-      for (final doc in snapshot.docs) {
-        batch.delete(doc.reference);
-      }
-      await batch.commit().timeout(_kDocTimeout);
-      snapshot = await col
-          .where('userId', isEqualTo: uid)
-          .limit(batchSize)
-          .get()
-          .timeout(_kDocTimeout);
-    }
-  }
 
   /// Lee `users/{uid}` y construye el AppAccount clasificando el shape.
   ///

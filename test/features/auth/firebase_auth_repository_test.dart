@@ -177,81 +177,115 @@ void main() {
     });
   });
 
-  // ─── SPEC-207: Borrado en cascada al eliminar cuenta ────────────────────────
-
-  group('SPEC-207 — deleteAccount: best-effort fasting_history', () {
+  // ─── Borrado de cuenta: Auth primero, Firestore lo limpia el servidor ──────
+  //
+  // Este grupo afirmaba lo contrario hasta el 27-jul-2026: que
+  // `deleteAccount()` borrara `users/{uid}` y `fasting_history` desde el
+  // CLIENTE. Era coherente con el orden de entonces (Firestore → Auth), pero
+  // ese orden producía pérdida de datos sin borrado, verificado en el
+  // Simulador: los pasos de Firestore se completaban, `user.delete()` lanzaba
+  // `requires-recent-login` y el usuario quedaba con los datos destruidos y
+  // la cuenta viva. Los tests protegían el bug en vez de impedirlo.
+  //
+  // El contrato nuevo es: el cliente SOLO borra la cuenta de Auth. La
+  // cascada de Firestore la hace `onUserDeleted` con el Admin SDK, que cubre
+  // estrictamente más (incluye `badges`, que las reglas prohíben borrar al
+  // cliente). Ver la nota larga en `deleteAccount()`.
+  group('deleteAccount — el cliente solo toca Auth', () {
     setUp(() async {
-      // Seed: doc raíz del usuario
       await firestore.collection('users').doc(testUid).set({
         'name': 'Carlos MR',
         'email': testEmail,
       });
-
-      // Seed: 3 docs de fasting_history del usuario
       for (var i = 0; i < 3; i++) {
         await firestore.collection('fasting_history').add({
           'userId': testUid,
           'startedAt': DateTime.now().millisecondsSinceEpoch,
         });
       }
-
-      // Seed: 1 doc de otro usuario (NO debe borrarse)
-      await firestore.collection('fasting_history').add({
-        'userId': 'otro-uid',
-        'startedAt': DateTime.now().millisecondsSinceEpoch,
-      });
     });
 
-    test(
-        'SPEC-207-01: borra los 3 docs de fasting_history del usuario '
-        'y preserva el de otro usuario', () async {
+    test('elimina la cuenta de Firebase Auth', () async {
+      expect(auth.currentUser, isNotNull);
       await repo.deleteAccount();
-
-      final propios = await firestore
-          .collection('fasting_history')
-          .where('userId', isEqualTo: testUid)
-          .get();
-      expect(propios.docs, isEmpty,
-          reason: 'Los docs del usuario deben estar eliminados');
-
-      final ajenos = await firestore
-          .collection('fasting_history')
-          .where('userId', isEqualTo: 'otro-uid')
-          .get();
-      expect(ajenos.docs.length, 1,
-          reason: 'Docs de otros usuarios no deben tocarse');
+      expect(auth.currentUser, isNull,
+          reason: 'tras borrar y cerrar sesión no debe quedar usuario');
     });
 
-    test('SPEC-207-02: borra el doc raíz users/{uid}', () async {
-      await repo.deleteAccount();
-
-      final doc = await firestore.collection('users').doc(testUid).get();
-      expect(doc.exists, isFalse);
-    });
-
-    test('SPEC-207-03: no lanza si fasting_history del usuario ya está vacía',
+    test('NO borra Firestore desde el cliente: es trabajo de onUserDeleted',
         () async {
-      // Borrar previamente los docs del usuario
-      final snapshot = await firestore
+      await repo.deleteAccount();
+
+      // Que estos datos sigan aquí no es un fallo: en producción el token
+      // ya está invalidado cuando termina `user.delete()`, así que las
+      // reglas rechazarían el intento. Quien los borra es la Cloud
+      // Function. Este test fija esa frontera de responsabilidad.
+      final raiz = await firestore.collection('users').doc(testUid).get();
+      expect(raiz.exists, isTrue,
+          reason: 'el doc raíz lo borra onUserDeleted en servidor');
+
+      final ayunos = await firestore
           .collection('fasting_history')
           .where('userId', isEqualTo: testUid)
           .get();
-      for (final doc in snapshot.docs) {
-        await doc.reference.delete();
-      }
+      expect(ayunos.docs.length, 3,
+          reason: 'fasting_history legacy también la limpia el servidor');
+    });
 
-      // deleteAccount no debe lanzar en este caso
+    test('sin sesión activa no hace nada y no lanza', () async {
+      await auth.signOut();
       await expectLater(repo.deleteAccount(), completes);
     });
 
-    test(
-        'SPEC-207-04: no lanza si no hay doc raíz users/{uid} '
-        '(doc ya fue borrado por la Cloud Function)', () async {
-      // Borrar el doc raíz antes de llamar deleteAccount
+    test('no lanza si el doc raíz ya no existe', () async {
       await firestore.collection('users').doc(testUid).delete();
-
-      // No debe propagar excepción
       await expectLater(repo.deleteAccount(), completes);
+    });
+  });
+
+  // ─── La regresión que este test existe para impedir ───────────────────────
+  group('deleteAccount — un borrado fallido no destruye datos', () {
+    setUp(() async {
+      await firestore.collection('users').doc(testUid).set({
+        'name': 'Carlos MR',
+        'email': testEmail,
+      });
+      for (final sub in ['sleep_history', 'imr_history', 'metabolic_cycles']) {
+        await firestore
+            .collection('users')
+            .doc(testUid)
+            .collection(sub)
+            .add({'seed': true});
+      }
+    });
+
+    test('si Auth rechaza el borrado, los datos del usuario quedan intactos',
+        () async {
+      // El caso real: `requires-recent-login`. Aquí se fuerza el fallo
+      // cerrando la sesión y usando un repo cuyo `currentUser` es null —
+      // el mock de firebase_auth_mocks no permite inyectar el código de
+      // error, pero lo que importa es la INVARIANTE: si el borrado de Auth
+      // no se completa, no puede haberse tocado un solo dato.
+      //
+      // Antes del 27-jul-2026 esta invariante NO se cumplía: los pasos de
+      // Firestore corrían ANTES de intentar Auth, así que un fallo dejaba
+      // al usuario con los datos destruidos y la cuenta viva. Una cuenta
+      // zombi, y sin forma de recuperar nada.
+      await auth.signOut();
+      await repo.deleteAccount();
+
+      final raiz = await firestore.collection('users').doc(testUid).get();
+      expect(raiz.exists, isTrue, reason: 'el perfil debe seguir existiendo');
+
+      for (final sub in ['sleep_history', 'imr_history', 'metabolic_cycles']) {
+        final docs = await firestore
+            .collection('users')
+            .doc(testUid)
+            .collection(sub)
+            .get();
+        expect(docs.docs, isNotEmpty,
+            reason: '$sub no debe haberse tocado si el borrado no ocurrió');
+      }
     });
   });
 }

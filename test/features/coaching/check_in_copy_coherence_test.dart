@@ -133,7 +133,46 @@ void main() {
     // Los tres del catálogo real (`_ProtocolCard` del paso 105).
     const protocolos = {'14:10': 14, '16:8': 16, '18:6': 18};
 
-    Future<String> textoRenderizado(WidgetTester tester, String protocolo) async {
+    /// Marca el inicio del pie de pantalla, que se excluye del barrido.
+    ///
+    /// El pie dice, a propósito, "La autofagia empieza alrededor de las
+    /// 24 h: tu protocolo no llega ahí". Nombrar una fase para decir que
+    /// NO se alcanza es lo contrario del defecto que este grupo vigila —
+    /// pero un barrido por palabras no distingue una cosa de la otra. La
+    /// primera versión de este test tumbaba los tres protocolos por esa
+    /// frase, que es justamente la parte honesta de la pantalla.
+    ///
+    /// Así que el barrido se limita a las filas de la línea de tiempo,
+    /// que son las que afirman "a la hora X pasa Y". El contenido del pie
+    /// lo comprueba su propio test, más abajo.
+    const inicioDelPie = 'Estos eventos son automáticos';
+
+    Future<List<String>> filasDeTimeline(
+      WidgetTester tester,
+      String protocolo,
+    ) async {
+      tester.view.physicalSize = const Size(1080, 2600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+          body: IntroInsightStep(isDark: true, protocol: protocolo),
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      return tester
+          .widgetList<Text>(find.byType(Text))
+          .map((t) => t.data ?? '')
+          .where((t) => !t.startsWith(inicioDelPie))
+          .toList();
+    }
+
+    Future<String> textoCompleto(
+      WidgetTester tester,
+      String protocolo,
+    ) async {
       tester.view.physicalSize = const Size(1080, 2600);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
@@ -152,14 +191,15 @@ void main() {
     }
 
     protocolos.forEach((protocolo, horas) {
-      testWidgets('$protocolo no anuncia fases que no alcanza',
-          (tester) async {
-        final texto = await textoRenderizado(tester, protocolo);
-        _noAdelantaFases(
-          texto,
-          Duration(hours: horas),
-          donde: 'La línea de tiempo de $protocolo',
-        );
+      testWidgets('$protocolo no anuncia fases que no alcanza', (tester) async {
+        final filas = await filasDeTimeline(tester, protocolo);
+        for (final fila in filas) {
+          _noAdelantaFases(
+            fila,
+            Duration(hours: horas),
+            donde: 'La línea de tiempo de $protocolo',
+          );
+        }
       });
     });
 
@@ -169,8 +209,7 @@ void main() {
       // cada día alcanzaba la autofagia. El Dashboard nunca se lo iba a
       // confirmar, porque para el motor a las 16 h sigue en transición.
       for (final protocolo in protocolos.keys) {
-        final texto = (await textoRenderizado(tester, protocolo))
-            .toLowerCase();
+        final texto = (await textoCompleto(tester, protocolo)).toLowerCase();
         expect(
           texto.contains('autofagia activa') ||
               texto.contains('limpieza celular'),
@@ -185,7 +224,7 @@ void main() {
       // La contrapartida honesta de no prometerla: decir el número. Que
       // coincida con el de la leyenda del reloj es justo lo que la app
       // promete en su primera pantalla ("te damos las fuentes").
-      final texto = await textoRenderizado(tester, '16:8');
+      final texto = await textoCompleto(tester, '16:8');
       expect(
         texto.contains('${FastingPhase.autophagy.startsAt.inHours} h'),
         isTrue,
@@ -200,7 +239,7 @@ void main() {
       // 10 h en 18:6. La biología no sabe qué protocolo se eligió.
       final cetogenesis = FastingPhase.transition.startsAt.inHours;
       for (final protocolo in protocolos.keys) {
-        final texto = await textoRenderizado(tester, protocolo);
+        final texto = await textoCompleto(tester, protocolo);
         expect(texto, contains('Hora $cetogenesis'),
             reason: '$protocolo debería situar la cetogénesis en la misma '
                 'hora que los demás');
