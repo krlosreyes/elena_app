@@ -43,8 +43,7 @@ String? computeRedirect({
   }
 
   final account = authState.value;
-  final isLegalDoc =
-      location == '/legal/privacy' || location == '/legal/terms';
+  final isLegalDoc = location == '/legal/privacy' || location == '/legal/terms';
   final isPublic = location == kLoginRoute ||
       location == '/register' ||
       location == '/forgot-password' ||

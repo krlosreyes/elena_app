@@ -93,9 +93,7 @@ class HydrationPillarCard extends ConsumerWidget {
           // operación en curso.
           onPressed: state.history.isEmpty
               ? null
-              : () => ref
-                  .read(hydrationProvider.notifier)
-                  .removeLastWater(),
+              : () => ref.read(hydrationProvider.notifier).removeLastWater(),
         ),
       ],
     );

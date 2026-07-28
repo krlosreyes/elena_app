@@ -18,7 +18,8 @@
 
 const int kGlucoseConsentVersion = 1;
 
-const String kGlucoseConsentTitle = 'Antes de activar tu seguimiento de glucosa';
+const String kGlucoseConsentTitle =
+    'Antes de activar tu seguimiento de glucosa';
 
 const String kGlucoseConsentBody =
     'Vamos a pedirte un registro de glucosa capilar (con tu glucómetro '

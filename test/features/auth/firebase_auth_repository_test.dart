@@ -229,8 +229,7 @@ void main() {
       expect(doc.exists, isFalse);
     });
 
-    test(
-        'SPEC-207-03: no lanza si fasting_history del usuario ya está vacía',
+    test('SPEC-207-03: no lanza si fasting_history del usuario ya está vacía',
         () async {
       // Borrar previamente los docs del usuario
       final snapshot = await firestore

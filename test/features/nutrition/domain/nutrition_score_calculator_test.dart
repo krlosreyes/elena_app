@@ -87,8 +87,7 @@ void main() {
               'a tiempo');
     });
 
-    test('3 platos perfectos (Todo A) dentro de ventana, target 3 → 1.0',
-        () {
+    test('3 platos perfectos (Todo A) dentro de ventana, target 3 → 1.0', () {
       final logs = [
         _log(id: '1', ratio: MealRatio.allA),
         _log(id: '2', ratio: MealRatio.allA),
@@ -104,8 +103,7 @@ void main() {
 
     test(
         '3 platos con ratio por defecto (a2e1, A-dominante) → sigue dando '
-        '1.0 — no rompe el fixture existente de nutrition_notifier_test',
-        () {
+        '1.0 — no rompe el fixture existente de nutrition_notifier_test', () {
       final logs = [_log(id: '1'), _log(id: '2'), _log(id: '3')];
       final score = NutritionScoreCalculator.score(
         mealCountScore: NutritionScoreCalculator.mealCountScore(3, 3),
@@ -119,14 +117,12 @@ void main() {
       final score = NutritionScoreCalculator.score(
         mealCountScore: NutritionScoreCalculator.mealCountScore(0, 3),
         windowAdherence: NutritionScoreCalculator.windowAdherence(const []),
-        plateQualityScore:
-            NutritionScoreCalculator.plateQualityScore(const []),
+        plateQualityScore: NutritionScoreCalculator.plateQualityScore(const []),
       );
       expect(score, 0.0);
     });
 
-    test('score siempre queda en [0.0, 1.0] para cualquier combinación',
-        () {
+    test('score siempre queda en [0.0, 1.0] para cualquier combinación', () {
       for (final r1 in MealRatio.values) {
         for (final r2 in MealRatio.values) {
           final logs = [
@@ -136,8 +132,7 @@ void main() {
           final score = NutritionScoreCalculator.score(
             mealCountScore: NutritionScoreCalculator.mealCountScore(2, 3),
             windowAdherence: NutritionScoreCalculator.windowAdherence(logs),
-            plateQualityScore:
-                NutritionScoreCalculator.plateQualityScore(logs),
+            plateQualityScore: NutritionScoreCalculator.plateQualityScore(logs),
           );
           expect(score, inInclusiveRange(0.0, 1.0),
               reason: 'fuera de rango para [$r1, $r2]: $score');

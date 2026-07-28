@@ -149,8 +149,7 @@ class MetabolicCycleResolver {
 
     // 4. fallback3hAfterWindow: 3h pasadas desde expectedWindowCloseTime.
     if (expectedWindowCloseTime != null &&
-        now.difference(expectedWindowCloseTime) >=
-            kFallbackAfterWindowGrace) {
+        now.difference(expectedWindowCloseTime) >= kFallbackAfterWindowGrace) {
       return ClosureReason.fallback3hAfterWindow;
     }
 

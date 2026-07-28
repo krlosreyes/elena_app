@@ -94,7 +94,8 @@ class WeeklyPlanSplitCard extends ConsumerWidget {
       decoration: BoxDecoration(
         color: isToday ? color.withValues(alpha: 0.10) : Colors.transparent,
         borderRadius: BorderRadius.circular(10),
-        border: isToday ? Border.all(color: color.withValues(alpha: 0.35)) : null,
+        border:
+            isToday ? Border.all(color: color.withValues(alpha: 0.35)) : null,
       ),
       child: Row(
         children: [

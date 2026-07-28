@@ -108,8 +108,7 @@ void main() {
       expect(n.citation, 'Walker 2017');
     });
 
-    test('cintura ↓2cm + bodyfat ↓1.5% → copy "visceral y composición"',
-        () {
+    test('cintura ↓2cm + bodyfat ↓1.5% → copy "visceral y composición"', () {
       final s = _snap(
         waistPast: 96.0,
         waistCurrent: 94.0,
@@ -134,8 +133,7 @@ void main() {
   });
 
   group('Categoría 2 — Cambio silente', () {
-    test('peso estable + cintura ↓1cm → copy "visceral antes que magra"',
-        () {
+    test('peso estable + cintura ↓1cm → copy "visceral antes que magra"', () {
       final s = _snap(
         weightPast: 80.0,
         weightCurrent: 80.1, // dentro de epsilon
@@ -206,8 +204,7 @@ void main() {
   });
 
   group('Categoría 4 — Retroceso sin culpa', () {
-    test('peso ↑1.5kg + ayuno ↓2 días → copy "comidas social, sin culpa"',
-        () {
+    test('peso ↑1.5kg + ayuno ↓2 días → copy "comidas social, sin culpa"', () {
       final s = _snap(
         weightPast: 80.0,
         weightCurrent: 81.5,
@@ -273,8 +270,7 @@ void main() {
   });
 
   group('SPEC-148 — fallback default', () {
-    test('snapshot con un solo indicador no significativo → default',
-        () {
+    test('snapshot con un solo indicador no significativo → default', () {
       // Solo IMR con delta 0 → ninguna regla matchea fuerte.
       final s = _snap(imrPast: 60, imrCurrent: 60);
       final n = TransformationNarrator.pick(s);

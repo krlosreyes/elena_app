@@ -330,11 +330,10 @@ class GoalSuggestionEngine {
     // SPEC-203.2: actividad REAL de logs/HealthKit como "actual".
     // Sin historial → placeholder del goal (estimado).
     final bool hasReal = recentMinPerDay != null;
-    final double current = (hasReal
-            ? recentMinPerDay
-            : user.exerciseGoalMinutes.toDouble())
-        .clamp(0, 120)
-        .toDouble();
+    final double current =
+        (hasReal ? recentMinPerDay : user.exerciseGoalMinutes.toDouble())
+            .clamp(0, 120)
+            .toDouble();
 
     // ── Composición corporal ────────────────────────────────────────────────
     final double rawBf = user.bodyFatPercentage ?? (isMale ? 20.0 : 28.0);
@@ -426,8 +425,7 @@ class GoalSuggestionEngine {
             ? 'Cardio diario + Fuerza funcional'
             : 'Cardio + Fuerza funcional',
         minTarget: 35,
-        rationale:
-            'Tu zona actual (Alto) prioriza reducción de grasa mientras '
+        rationale: 'Tu zona actual (Alto) prioriza reducción de grasa mientras '
             'preservas músculo.\n\n'
             'Protocolo recomendado:\n'
             '· 3 días — cardio moderado-intenso: caminata rápida, bici '
@@ -465,8 +463,7 @@ class GoalSuggestionEngine {
       return const _ExerciseProtocol(
         typeLabel: 'Fuerza + Cardio moderado',
         minTarget: 35,
-        rationale:
-            'Tu zona (Promedio) es ideal para recomposición corporal: '
+        rationale: 'Tu zona (Promedio) es ideal para recomposición corporal: '
             'ganar músculo mientras reduces grasa.\n\n'
             'Protocolo recomendado:\n'
             '· 3 días — fuerza compuesta: pesas, TRX o funcional (30-40 min). '
@@ -502,8 +499,7 @@ class GoalSuggestionEngine {
       return const _ExerciseProtocol(
         typeLabel: 'Fuerza progresiva + HIIT',
         minTarget: 40,
-        rationale:
-            'Tu zona Fitness permite entrenamientos de mayor intensidad '
+        rationale: 'Tu zona Fitness permite entrenamientos de mayor intensidad '
             'para seguir mejorando composición corporal.\n\n'
             'Protocolo recomendado:\n'
             '· 3-4 días — fuerza progresiva con sobrecarga gradual (35-45 min). '

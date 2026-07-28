@@ -40,7 +40,9 @@ MetabolicCycle _cycle({
 }
 
 void main() {
-  group('sin ciclo abierto (Carlos: "MUESTRA CERO" — está en ventana de alimentación)', () {
+  group(
+      'sin ciclo abierto (Carlos: "MUESTRA CERO" — está en ventana de alimentación)',
+      () {
     test('sueño de anoche (dentro de las 20h) pertenece', () {
       // El escenario real reportado: sin ayuno activo, sueño capturado
       // por Apple Watch hace unas horas — debe mostrarse.
@@ -116,7 +118,9 @@ void main() {
   });
 
   group('con ciclo abierto — comportamiento previo (no regresión)', () {
-    test('SPEC-245: ciclo abrió hoy DESPUÉS de despertar → no penaliza el sueño de hoy', () {
+    test(
+        'SPEC-245: ciclo abrió hoy DESPUÉS de despertar → no penaliza el sueño de hoy',
+        () {
       final now = DateTime(2026, 7, 17, 12, 0);
       final log = _log(
         fellAsleep: DateTime(2026, 7, 16, 23, 0),
@@ -134,10 +138,12 @@ void main() {
       );
 
       expect(result, isNotNull,
-          reason: 'SPEC-245: sueño de hoy antes del inicio del ayuno debe contar');
+          reason:
+              'SPEC-245: sueño de hoy antes del inicio del ayuno debe contar');
     });
 
-    test('ciclo multi-día (inició hace 2 días) — sueño de esta noche pertenece', () {
+    test('ciclo multi-día (inició hace 2 días) — sueño de esta noche pertenece',
+        () {
       final now = DateTime(2026, 7, 17, 12, 0);
       final log = _log(
         fellAsleep: DateTime(2026, 7, 16, 23, 0),
@@ -157,7 +163,8 @@ void main() {
       expect(result, isNotNull);
     });
 
-    test('BUG-02: segundo ciclo del mismo día — el sueño de anoche NO pertenece al ciclo nuevo',
+    test(
+        'BUG-02: segundo ciclo del mismo día — el sueño de anoche NO pertenece al ciclo nuevo',
         () {
       // Usuario cerró un ayuno más temprano hoy (reclamando el sueño de
       // anoche) y abrió uno nuevo después. El ciclo nuevo debe arrancar
@@ -188,7 +195,9 @@ void main() {
               'el ciclo nuevo arranca en 0');
     });
 
-    test('sueño de una noche anterior a la apertura del ciclo actual NO pertenece', () {
+    test(
+        'sueño de una noche anterior a la apertura del ciclo actual NO pertenece',
+        () {
       final now = DateTime(2026, 7, 17, 16, 0);
       final log = _log(
         fellAsleep: DateTime(2026, 7, 14, 23, 0),

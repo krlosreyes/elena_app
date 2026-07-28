@@ -100,8 +100,8 @@ class MarkdownLite extends StatelessWidget {
         ));
       } else if (t.startsWith('---')) {
         flushParagraph();
-        widgets.add(Divider(
-            color: Colors.white.withValues(alpha: 0.1), height: 24));
+        widgets.add(
+            Divider(color: Colors.white.withValues(alpha: 0.1), height: 24));
       } else {
         paragraph.add(t);
       }
@@ -160,8 +160,7 @@ class MarkdownLite extends StatelessWidget {
       spans.add(TextSpan(
         text: parts[i],
         style: isBold
-            ? base.copyWith(
-                fontWeight: FontWeight.w800, color: Colors.white)
+            ? base.copyWith(fontWeight: FontWeight.w800, color: Colors.white)
             : base,
       ));
     }

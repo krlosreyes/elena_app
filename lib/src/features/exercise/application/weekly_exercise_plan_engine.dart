@@ -185,8 +185,7 @@ class WeeklyExercisePlanEngine {
     if (sequence.isNotEmpty &&
         sequence.first == PlanSessionType.cardio &&
         fuerzaCount > 0) {
-      final firstFuerza =
-          sequence.indexOf(PlanSessionType.fuerza);
+      final firstFuerza = sequence.indexOf(PlanSessionType.fuerza);
       final rotated = [
         ...sequence.sublist(firstFuerza),
         ...sequence.sublist(0, firstFuerza),
@@ -217,7 +216,7 @@ class WeeklyExercisePlanEngine {
     switch (zone) {
       case BodyZone.alto:
         return 30; // OMS: caminata diaria 30+ min es la intervención
-        // más documentada para grasa visceral.
+      // más documentada para grasa visceral.
       case BodyZone.promedio:
       case BodyZone.fitness:
         return 25;

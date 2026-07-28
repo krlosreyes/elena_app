@@ -154,12 +154,11 @@ class MetabolicCycleMapper {
       };
 
   CycleFeedback _feedbackFromMap(Map<String, dynamic> m) => CycleFeedback(
-        achievements: (m['achievements'] as List?)
-                ?.map((e) => e.toString())
-                .toList() ??
-            const [],
-        gaps: (m['gaps'] as List?)?.map((e) => e.toString()).toList() ??
-            const [],
+        achievements:
+            (m['achievements'] as List?)?.map((e) => e.toString()).toList() ??
+                const [],
+        gaps:
+            (m['gaps'] as List?)?.map((e) => e.toString()).toList() ?? const [],
         insight: m['insight'] as String? ?? '',
         citation: m['citation'] as String?,
       );

@@ -56,8 +56,7 @@ void main() {
       expect(GlucoseInsightEngine.analyze(const []), isEmpty);
     });
 
-    test('menos de 7 días con dato de ayuno → no genera insight de ayuno',
-        () {
+    test('menos de 7 días con dato de ayuno → no genera insight de ayuno', () {
       final entries = [
         _fastingEntry(value: 90, fastingHours: 14),
         _fastingEntry(value: 100, fastingHours: 6),
@@ -69,13 +68,13 @@ void main() {
       ];
       final insights = GlucoseInsightEngine.analyze(entries);
       expect(
-        insights.any(
-            (i) => i.type == GlucoseInsightType.ayunoVsGlucosaAyunas),
+        insights.any((i) => i.type == GlucoseInsightType.ayunoVsGlucosaAyunas),
         isFalse,
       );
     });
 
-    test('7 días pero TODOS con ayuno largo (sin grupo de comparación) → '
+    test(
+        '7 días pero TODOS con ayuno largo (sin grupo de comparación) → '
         'no genera insight', () {
       final entries = List.generate(
         7,
@@ -83,8 +82,7 @@ void main() {
       );
       final insights = GlucoseInsightEngine.analyze(entries);
       expect(
-        insights.any(
-            (i) => i.type == GlucoseInsightType.ayunoVsGlucosaAyunas),
+        insights.any((i) => i.type == GlucoseInsightType.ayunoVsGlucosaAyunas),
         isFalse,
       );
     });
@@ -104,8 +102,8 @@ void main() {
         _fastingEntry(value: 101, fastingHours: 7),
       ];
       final insights = GlucoseInsightEngine.analyze(entries);
-      final insight = insights.firstWhere(
-          (i) => i.type == GlucoseInsightType.ayunoVsGlucosaAyunas);
+      final insight = insights
+          .firstWhere((i) => i.type == GlucoseInsightType.ayunoVsGlucosaAyunas);
       expect(insight.confidence, GlucoseInsightConfidence.preliminar);
       expect(insight.sampleSize, 7);
       expect(insight.evidenceLevel, GlucoseEvidenceLevel.solida);
@@ -113,14 +111,12 @@ void main() {
 
     test('14+ días → confidence establecido', () {
       final entries = [
-        for (int i = 0; i < 7; i++)
-          _fastingEntry(value: 88, fastingHours: 14),
-        for (int i = 0; i < 7; i++)
-          _fastingEntry(value: 100, fastingHours: 6),
+        for (int i = 0; i < 7; i++) _fastingEntry(value: 88, fastingHours: 14),
+        for (int i = 0; i < 7; i++) _fastingEntry(value: 100, fastingHours: 6),
       ];
       final insights = GlucoseInsightEngine.analyze(entries);
-      final insight = insights.firstWhere(
-          (i) => i.type == GlucoseInsightType.ayunoVsGlucosaAyunas);
+      final insight = insights
+          .firstWhere((i) => i.type == GlucoseInsightType.ayunoVsGlucosaAyunas);
       expect(insight.confidence, GlucoseInsightConfidence.establecido);
       expect(insight.sampleSize, 14);
     });
@@ -137,8 +133,7 @@ void main() {
       ];
       final insights = GlucoseInsightEngine.analyze(entries);
       expect(
-        insights.any(
-            (i) => i.type == GlucoseInsightType.ayunoVsGlucosaAyunas),
+        insights.any((i) => i.type == GlucoseInsightType.ayunoVsGlucosaAyunas),
         isFalse,
       );
     });
@@ -156,12 +151,13 @@ void main() {
         _sleepEntry(value: 88, sleepHours: 8, sleepGoalHours: 8),
       ];
       final insights = GlucoseInsightEngine.analyze(entries);
-      final insight = insights.firstWhere(
-          (i) => i.type == GlucoseInsightType.suenoVsGlucosaAyunas);
+      final insight = insights
+          .firstWhere((i) => i.type == GlucoseInsightType.suenoVsGlucosaAyunas);
       expect(insight.sampleSize, 7);
     });
 
-    test('sin meta de sueño declarada (sleepGoalHours null) → se excluye '
+    test(
+        'sin meta de sueño declarada (sleepGoalHours null) → se excluye '
         'del correlato', () {
       final entries = List.generate(
         7,
@@ -184,7 +180,8 @@ void main() {
   });
 
   group('GlucoseInsightEngine.analyze — correlato comida↔postprandial', () {
-    test('7 lecturas con IG alto vs. bajo → insight (unidad: lecturas, '
+    test(
+        '7 lecturas con IG alto vs. bajo → insight (unidad: lecturas, '
         'no días — adaptación documentada de R8)', () {
       final entries = [
         _mealEntry(value: 170, glycemicIndex: 80),
@@ -211,8 +208,8 @@ void main() {
       // Solo 2 lecturas cuentan (1 alta + 1 baja) — muy por debajo de 7.
       final insights = GlucoseInsightEngine.analyze(entries);
       expect(
-        insights.any((i) =>
-            i.type == GlucoseInsightType.comidaVsGlucosaPostprandial),
+        insights.any(
+            (i) => i.type == GlucoseInsightType.comidaVsGlucosaPostprandial),
         isFalse,
       );
     });
@@ -224,8 +221,8 @@ void main() {
       );
       final insights = GlucoseInsightEngine.analyze(entries);
       expect(
-        insights.any((i) =>
-            i.type == GlucoseInsightType.comidaVsGlucosaPostprandial),
+        insights.any(
+            (i) => i.type == GlucoseInsightType.comidaVsGlucosaPostprandial),
         isFalse,
       );
     });

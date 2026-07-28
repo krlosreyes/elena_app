@@ -23,7 +23,15 @@ void main() {
     });
 
     test('cualquier protocolo TRE → false', () {
-      for (final p in ['12:12', '14:10', '16:8', '18:6', '20:4', '22:2', 'OMAD']) {
+      for (final p in [
+        '12:12',
+        '14:10',
+        '16:8',
+        '18:6',
+        '20:4',
+        '22:2',
+        'OMAD'
+      ]) {
         expect(
           MetabolicCycleResolver.useCalendarFallback(p),
           isFalse,
@@ -356,7 +364,8 @@ void main() {
     });
   });
 
-  group('Auditoría 2026-06-08 — bordes exactos, precedencias y no-cierre espurio',
+  group(
+      'Auditoría 2026-06-08 — bordes exactos, precedencias y no-cierre espurio',
       () {
     // ── Bordes exactos (donde se esconden los bugs) ──────────────────────────
     test('manualNextFasting en EXACTAMENTE 30 min → cierra (límite inclusivo)',
@@ -421,7 +430,8 @@ void main() {
     });
 
     // ── Precedencias faltantes ───────────────────────────────────────────────
-    test('Prioridad: fallbackSleepDetected gana sobre fallback3hAfterWindow', () {
+    test('Prioridad: fallbackSleepDetected gana sobre fallback3hAfterWindow',
+        () {
       final cycle = _openCycle(startedAt: DateTime(2026, 6, 1, 21, 0));
       final result = MetabolicCycleResolver.shouldClose(
         openCycle: cycle,
@@ -456,8 +466,7 @@ void main() {
     });
 
     // ── No-cierre espurio (regresión del incidente de hoy) ───────────────────
-    test(
-        'ciclo largo (23h) SIN ningún trigger → NO cierra (no churn espurio)',
+    test('ciclo largo (23h) SIN ningún trigger → NO cierra (no churn espurio)',
         () {
       // Reproduce el caso del "ayuno corregido a ayer": ciclo abierto de 23h,
       // mismo protocolo, sin sueño, sin ventana pasada, sin nuevo ayuno, <28h.
@@ -492,12 +501,14 @@ void main() {
     });
 
     // ── Ventana TRE cruzando medianoche (sin manejo calendárico especial) ────
-    test('ventana TRE cerró 21:00; a las 00:30 (3.5h, cruzó medianoche) → cierra',
+    test(
+        'ventana TRE cerró 21:00; a las 00:30 (3.5h, cruzó medianoche) → cierra',
         () {
       final cycle = _openCycle(startedAt: DateTime(2026, 6, 1, 12, 0));
       final result = MetabolicCycleResolver.shouldClose(
         openCycle: cycle,
-        now: DateTime(2026, 6, 2, 0, 30), // 3.5h tras ventana, ya cruzó medianoche
+        now: DateTime(
+            2026, 6, 2, 0, 30), // 3.5h tras ventana, ya cruzó medianoche
         currentProtocol: '16:8',
         expectedWindowCloseTime: DateTime(2026, 6, 1, 21, 0),
         lastMealTime: DateTime(2026, 6, 1, 20, 30),
@@ -524,4 +535,3 @@ void main() {
     });
   });
 }
-

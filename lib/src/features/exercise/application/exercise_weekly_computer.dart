@@ -44,9 +44,8 @@ class ExerciseWeeklyComputer {
         0,
         (sum, l) => sum + l.durationMinutes,
       );
-      final pct = targetMinutesPerDay > 0
-          ? totalMinutes / targetMinutesPerDay
-          : 0.0;
+      final pct =
+          targetMinutesPerDay > 0 ? totalMinutes / targetMinutesPerDay : 0.0;
       entries.add(ExerciseDayEntry(
         date: date,
         minutes: totalMinutes,
@@ -58,9 +57,8 @@ class ExerciseWeeklyComputer {
 
     final minutesAvg =
         entries.fold<int>(0, (sum, e) => sum + e.minutes) / entries.length;
-    final percentAvg = targetMinutesPerDay > 0
-        ? minutesAvg / targetMinutesPerDay
-        : 0.0;
+    final percentAvg =
+        targetMinutesPerDay > 0 ? minutesAvg / targetMinutesPerDay : 0.0;
 
     return ExerciseWeeklyBreakdown(
       days: entries,

@@ -26,8 +26,10 @@ enum FastingPhase {
   /// Descripción breve para tooltips o cards de coaching.
   String get description => switch (this) {
         none => 'Tu cuerpo usa la energía de lo que comiste.',
-        postAbsorption => 'La insulina baja, tu cuerpo empieza a usar reservas.',
-        transition => 'Tu hígado produce glucosa; la oxidación de grasa aumenta.',
+        postAbsorption =>
+          'La insulina baja, tu cuerpo empieza a usar reservas.',
+        transition =>
+          'Tu hígado produce glucosa; la oxidación de grasa aumenta.',
         fatBurning => 'Cetosis nutricional: la grasa es tu fuente principal.',
         autophagy => 'Reciclaje celular profundo. Tu cuerpo se repara.',
         survival => 'Conservación profunda. Solo con supervisión médica.',

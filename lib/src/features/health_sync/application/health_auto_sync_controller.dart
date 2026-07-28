@@ -231,8 +231,8 @@ class HealthAutoSyncController extends StateNotifier<HealthAutoSyncState> {
       final isAndroidForSH = !kIsWeb && Platform.isAndroid;
       if (isAndroidForSH) {
         final importSummary = state.lastImport;
-        final noSleepFromHC = importSummary == null ||
-            importSummary.sleepSessionsImported == 0;
+        final noSleepFromHC =
+            importSummary == null || importSummary.sleepSessionsImported == 0;
         if (noSleepFromHC) {
           AppLogger.debug(
             'HealthAutoSync: HC sin sueño → intentando Samsung Health SDK directo',
@@ -280,8 +280,8 @@ class HealthAutoSyncController extends StateNotifier<HealthAutoSyncState> {
       if (isAndroid && canSync) {
         // Leemos el lastImport del state (que ya fue actualizado arriba).
         final importSummary = state.lastImport;
-        final noSleepImported = importSummary == null ||
-            importSummary.sleepSessionsImported == 0;
+        final noSleepImported =
+            importSummary == null || importSummary.sleepSessionsImported == 0;
         if (noSleepImported) {
           state = state.copyWith(needsSamsungHealthGuide: true);
           AppLogger.debug('HealthAutoSync: sueño=0, mostrando guía HC');

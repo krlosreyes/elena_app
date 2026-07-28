@@ -131,7 +131,8 @@ class NotificationScheduler {
           payload: NotificationRouter.circadianPayload(),
         );
       } else {
-        await NotificationService.cancel(NotificationIds.glucoseMorningReminder);
+        await NotificationService.cancel(
+            NotificationIds.glucoseMorningReminder);
       }
 
       // ── 2. Apertura de ventana de alimentación ───────────────────────────
@@ -183,8 +184,7 @@ class NotificationScheduler {
       // Al cerrar el ayuno, _scheduleFeedingWindowNotifs() la reprograma
       // para el cierre real de ventana (startedAt + 24h - 30 min).
       if (lastMealDt != null && !isFasting) {
-        final warningTime =
-            lastMealDt.subtract(const Duration(minutes: 30));
+        final warningTime = lastMealDt.subtract(const Duration(minutes: 30));
         await _scheduleCircadian(
           id: NotificationIds.lastMealWarning,
           hour: warningTime.hour,
@@ -410,8 +410,7 @@ class NotificationScheduler {
       };
 
       for (final entry in milestones.entries) {
-        final scheduledTime =
-            fastingStart.add(Duration(hours: entry.key));
+        final scheduledTime = fastingStart.add(Duration(hours: entry.key));
 
         // No programar si el hito ya pasó.
         if (scheduledTime.isBefore(DateTime.now())) continue;
@@ -492,17 +491,15 @@ class NotificationScheduler {
       await NotificationService.cancel(NotificationIds.nextMealReady);
       // SPEC-241 Bug 301: buffer +10s para absorber drift de milisegundos
       // en la conversión DateTime → TZDateTime que puede rechazar la notif.
-      final triggerAt = nextMealAt
-          .subtract(leadTime)
-          .add(const Duration(seconds: 10));
+      final triggerAt =
+          nextMealAt.subtract(leadTime).add(const Duration(seconds: 10));
       if (triggerAt.isBefore(DateTime.now())) return;
       final hh = nextMealAt.hour.toString().padLeft(2, '0');
       final mm = nextMealAt.minute.toString().padLeft(2, '0');
       await NotificationService.scheduleAt(
         id: NotificationIds.nextMealReady,
         title: '🍽️ Tu próxima comida es a las $hh:$mm',
-        body:
-            'Alístate. Faltan ${leadTime.inMinutes} min para tu próxima '
+        body: 'Alístate. Faltan ${leadTime.inMinutes} min para tu próxima '
             'comida sugerida.',
         scheduledTime: triggerAt,
         repeatsDaily: false,
@@ -547,7 +544,8 @@ class NotificationScheduler {
   /// SPEC-215: delegar a [fastingHoursForProtocol] (shared/utils/fasting_protocol.dart).
   /// Mantenido como wrapper por compat con callers existentes y tests de SPEC-169.
   /// Nuevos callers deben importar y usar [fastingHoursForProtocol] directamente.
-  @Deprecated('Use fastingHoursForProtocol() from shared/utils/fasting_protocol.dart')
+  @Deprecated(
+      'Use fastingHoursForProtocol() from shared/utils/fasting_protocol.dart')
   static int? protocolFastingHours(String protocol) =>
       fastingHoursForProtocol(protocol);
 
@@ -599,9 +597,8 @@ class NotificationScheduler {
       // Fin: cutoffHour:00 del mismo día base.
       final endTime = DateTime(2000, 1, 1, cutoffHour, 0);
 
-      final maxSlots = NotificationIds.hydrationEnd -
-          NotificationIds.hydrationStart +
-          1;
+      final maxSlots =
+          NotificationIds.hydrationEnd - NotificationIds.hydrationStart + 1;
       int slotIndex = 0;
       while (!current.isAfter(endTime) && slotIndex < maxSlots) {
         final id = NotificationIds.hydrationStart + slotIndex;

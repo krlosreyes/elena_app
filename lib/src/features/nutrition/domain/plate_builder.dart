@@ -70,8 +70,7 @@ class PlateBuilder {
   // ── distribución por categoría ─────────────────────────────────────
 
   /// Peso total del plato en slots (sumatoria de [FoodCategory.slots]).
-  int get totalSlots =>
-      _items.fold(0, (sum, f) => sum + f.category.slots);
+  int get totalSlots => _items.fold(0, (sum, f) => sum + f.category.slots);
 
   /// Slots ocupados por una categoría específica.
   int slotsForCategory(FoodCategory category) => _items
@@ -88,8 +87,8 @@ class PlateBuilder {
     final cats = _items.where((f) => f.category == category).toList();
     if (cats.isEmpty) return 0;
     final totalSlotsCat = cats.fold(0, (sum, f) => sum + f.category.slots);
-    final weighted = cats.fold(
-        0, (sum, f) => sum + (f.qualityScore * f.category.slots));
+    final weighted =
+        cats.fold(0, (sum, f) => sum + (f.qualityScore * f.category.slots));
     return (weighted / totalSlotsCat).round();
   }
 
@@ -98,8 +97,8 @@ class PlateBuilder {
   /// Score promedio ponderado del plato (0-100). 0 si vacío.
   int get qualityPercent {
     if (totalSlots == 0) return 0;
-    final weighted = _items.fold(
-        0, (sum, f) => sum + (f.qualityScore * f.category.slots));
+    final weighted =
+        _items.fold(0, (sum, f) => sum + (f.qualityScore * f.category.slots));
     return (weighted / totalSlots).round();
   }
 
@@ -154,8 +153,8 @@ class PlateBuilder {
     }
 
     // Caso 2: hay de todo pero el promedio baja por algún item específico.
-    final lowest = _items.reduce(
-        (a, b) => a.qualityScore <= b.qualityScore ? a : b);
+    final lowest =
+        _items.reduce((a, b) => a.qualityScore <= b.qualityScore ? a : b);
 
     if (lowest.qualityScore < 35) {
       return 'Reduce ${_articleFor(lowest.name)} '
@@ -171,12 +170,38 @@ class PlateBuilder {
   static String _articleFor(String name) {
     final lower = name.toLowerCase();
     const feminine = {
-      'manzana', 'fresa', 'pasta', 'papa', 'papa criolla', 'banana',
-      'leche', 'leche entera', 'espinaca', 'lechuga', 'mantequilla',
-      'carne', 'carne de res', 'coliflor', 'avena', 'arepa', 'tortilla',
-      'harina', 'panela', 'mayonesa', 'crema de leche', 'manteca',
-      'margarina', 'salchicha', 'frambuesa', 'pechuga de pavo',
-      'quinua', 'tapioca', 'yuca', 'sardinas', 'cebolla', 'zanahoria',
+      'manzana',
+      'fresa',
+      'pasta',
+      'papa',
+      'papa criolla',
+      'banana',
+      'leche',
+      'leche entera',
+      'espinaca',
+      'lechuga',
+      'mantequilla',
+      'carne',
+      'carne de res',
+      'coliflor',
+      'avena',
+      'arepa',
+      'tortilla',
+      'harina',
+      'panela',
+      'mayonesa',
+      'crema de leche',
+      'manteca',
+      'margarina',
+      'salchicha',
+      'frambuesa',
+      'pechuga de pavo',
+      'quinua',
+      'tapioca',
+      'yuca',
+      'sardinas',
+      'cebolla',
+      'zanahoria',
     };
     if (feminine.contains(lower)) return 'la';
     return 'el';

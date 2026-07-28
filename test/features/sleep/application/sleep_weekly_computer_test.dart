@@ -84,7 +84,7 @@ void main() {
   group('SPEC-159 — pickTier prioridad', () {
     test('duration <6h → deprivation (prioridad máxima)', () {
       final i = SleepWeeklyComputer.compute([
-        _log(hours: 5, quality: 5),  // calidad alta no rescata
+        _log(hours: 5, quality: 5), // calidad alta no rescata
         _log(hours: 5, quality: 5),
       ]);
       expect(i.tier, SleepInsightTier.deprivation);

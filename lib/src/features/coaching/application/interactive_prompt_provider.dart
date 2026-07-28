@@ -82,8 +82,7 @@ final interactivePromptProvider = Provider<PillarPrompt?>((ref) {
       lastMealAt = log.timestamp;
     }
   }
-  final sinceLastMeal =
-      lastMealAt == null ? null : now.difference(lastMealAt);
+  final sinceLastMeal = lastMealAt == null ? null : now.difference(lastMealAt);
 
   // Sueño: ¿ya registró hoy? lastLog != null indica que hay log del día.
   final sleepState = ref.watch(sleepProvider);

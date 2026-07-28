@@ -299,11 +299,16 @@ class PendingActionQueue {
   /// fasting12h=200 → 12h, fasting16h=203 → 16h, fasting18h=201 → 18h, fasting24h=202 → 24h.
   static double _milestoneHoursFromId(int? id) {
     switch (id) {
-      case 200: return 12;
-      case 201: return 18;
-      case 202: return 24;
-      case 203: return 16;
-      default:  return 0;
+      case 200:
+        return 12;
+      case 201:
+        return 18;
+      case 202:
+        return 24;
+      case 203:
+        return 16;
+      default:
+        return 0;
     }
   }
 

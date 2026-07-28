@@ -7,10 +7,10 @@ import 'package:elena_app/src/features/exercise/domain/exercise_log.dart';
 /// Tier del insight según % del target alcanzado en promedio semanal.
 enum ExerciseInsightTier {
   empty,
-  sedentary,    // <50% del target
-  low,          // 50-80%
-  meetsTarget,  // 80-120%
-  aboveTarget,  // >120%
+  sedentary, // <50% del target
+  low, // 50-80%
+  meetsTarget, // 80-120%
+  aboveTarget, // >120%
 }
 
 class ExerciseDayEntry {
@@ -109,7 +109,8 @@ class ExerciseCoachingMessage {
         );
       case ExerciseInsightTier.low:
         return const ExerciseCoachingMessage(
-          headline: 'Cerca pero corto. Te faltan minutos para el efecto metabólico.',
+          headline:
+              'Cerca pero corto. Te faltan minutos para el efecto metabólico.',
           action:
               'Suma 10 min al día. La OMS marca 150 min/semana como mínimo.',
           citation: 'OMS 2020 + AHA 2018',

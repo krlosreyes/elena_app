@@ -120,7 +120,8 @@ class _HangingNutritionRepository implements NutritionRepository {
   final _neverEmits = StreamController<List<NutritionLog>>.broadcast();
 
   @override
-  Stream<List<NutritionLog>> watchTodayLogs(String userId) => _neverEmits.stream;
+  Stream<List<NutritionLog>> watchTodayLogs(String userId) =>
+      _neverEmits.stream;
 
   @override
   Stream<List<NutritionLog>> watchSinceLogs(
@@ -322,8 +323,7 @@ void main() {
 
     // ── SPEC-210: removeLastMeal cycle-aware ───────────────────────────────────
 
-    test(
-        'SPEC-210-01: removeLastMeal pasa since != null al repositorio',
+    test('SPEC-210-01: removeLastMeal pasa since != null al repositorio',
         () async {
       await Future<void>.delayed(Duration.zero);
       await container.read(nutritionProvider.notifier).removeLastMeal();
@@ -352,7 +352,8 @@ void main() {
       );
     });
 
-    test('SPEC-210-03: sin logs en el ciclo → removeLastCount=1 pero lista intacta',
+    test(
+        'SPEC-210-03: sin logs en el ciclo → removeLastCount=1 pero lista intacta',
         () async {
       await Future<void>.delayed(Duration.zero);
       // No emitimos logs → todayLogs está vacío
@@ -397,8 +398,7 @@ void main() {
       fakeRepo.dispose();
     });
 
-    test(
-        'logMeal invoca repo.saveMeal aunque fastingProvider lance excepción',
+    test('logMeal invoca repo.saveMeal aunque fastingProvider lance excepción',
         () async {
       await Future<void>.delayed(Duration.zero);
       fakeRepo.emit(const []);
@@ -624,8 +624,7 @@ void main() {
 
     test(
         'un borrado explícito (deleteMealById) sí reduce la lista — la '
-        'guardia no resucita logs que el usuario pidió eliminar',
-        () async {
+        'guardia no resucita logs que el usuario pidió eliminar', () async {
       await Future<void>.delayed(Duration.zero);
       final desayuno = NutritionLog(
         id: 'log-desayuno',
@@ -686,8 +685,7 @@ void main() {
   });
 
   // ── TEST-03 (auditoría 2026-07-11): SPEC-206 offline-first ──────────────
-  group('NutritionNotifier — SPEC-206 offline-first (write no bloqueante)',
-      () {
+  group('NutritionNotifier — SPEC-206 offline-first (write no bloqueante)', () {
     late _HangingNutritionRepository hangingRepo;
     late ProviderContainer container;
 

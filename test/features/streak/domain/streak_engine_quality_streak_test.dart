@@ -93,8 +93,7 @@ void main() {
 
     test(
         'hoy con nutritionMagnitude null (aún sin registrar) NO rompe la '
-        'racha — mismo trato que hoy bajo el umbral, se cuenta desde ayer',
-        () {
+        'racha — mismo trato que hoy bajo el umbral, se cuenta desde ayer', () {
       final history = [
         entry('2026-07-24', nutritionMagnitude: 0.90),
         entry('2026-07-25', nutritionMagnitude: null),
@@ -122,8 +121,7 @@ void main() {
       );
     });
 
-    test('umbral configurable — 0.75 excluye un día que pasaba con 0.60',
-        () {
+    test('umbral configurable — 0.75 excluye un día que pasaba con 0.60', () {
       final history = [
         entry('2026-07-24', nutritionMagnitude: 0.65),
         entry('2026-07-25', nutritionMagnitude: 0.80),

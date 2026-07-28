@@ -77,8 +77,7 @@ void main() {
   group('GlucoseReading toMap/fromMap — roundtrip', () {
     test('reproduce todos los campos exactamente', () {
       final original = _reading(symptoms: const [GlucoseSymptom.temblor]);
-      final rebuilt =
-          GlucoseReading.fromMap(original.id, original.toMap());
+      final rebuilt = GlucoseReading.fromMap(original.id, original.toMap());
 
       expect(rebuilt.id, original.id);
       expect(rebuilt.userId, original.userId);
@@ -89,8 +88,7 @@ void main() {
       expect(rebuilt.minutesSinceWaking, original.minutesSinceWaking);
       expect(rebuilt.relatedFastingHours, original.relatedFastingHours);
       expect(rebuilt.relatedSleepHours, original.relatedSleepHours);
-      expect(
-          rebuilt.relatedSleepGoalHours, original.relatedSleepGoalHours);
+      expect(rebuilt.relatedSleepGoalHours, original.relatedSleepGoalHours);
       expect(rebuilt.mealGlycemicIndex, original.mealGlycemicIndex);
       expect(rebuilt.symptomsReported, original.symptomsReported);
       expect(rebuilt.note, original.note);
@@ -99,7 +97,8 @@ void main() {
       expect(rebuilt.updatedAt, original.updatedAt);
     });
 
-    test('fromMap con campos nulos/faltantes cae a defaults seguros, sin '
+    test(
+        'fromMap con campos nulos/faltantes cae a defaults seguros, sin '
         'lanzar excepción', () {
       final rebuilt = GlucoseReading.fromMap('r2', const {});
       expect(rebuilt.userId, '');
@@ -109,7 +108,8 @@ void main() {
       expect(rebuilt.source, GlucoseSource.manual);
     });
 
-    test('fromMap con nombre de enum desconocido cae al fallback '
+    test(
+        'fromMap con nombre de enum desconocido cae al fallback '
         '("otro"/"ninguno"), no revienta', () {
       final map = _reading().toMap()..['context'] = 'algo_inventado';
       final rebuilt = GlucoseReading.fromMap('r3', map);

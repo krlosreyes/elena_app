@@ -17,13 +17,15 @@ void main() {
   group('MealRatio.values', () {
     test('expone exactamente las 5 posiciones canónicas', () {
       expect(MealRatio.values, hasLength(5));
-      expect(MealRatio.values, containsAll([
-        MealRatio.allA,
-        MealRatio.a3e1,
-        MealRatio.a2e1,
-        MealRatio.a1e1,
-        MealRatio.allE,
-      ]));
+      expect(
+          MealRatio.values,
+          containsAll([
+            MealRatio.allA,
+            MealRatio.a3e1,
+            MealRatio.a2e1,
+            MealRatio.a1e1,
+            MealRatio.allE,
+          ]));
     });
 
     test('el orden de declaración es Todo A → Todo E (importante para UI)', () {

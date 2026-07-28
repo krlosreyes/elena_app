@@ -34,10 +34,8 @@ class FirestorePostSource implements PostDataSource {
     }).toList();
   }
 
-  CollectionReference<Map<String, dynamic>> _reads(String userId) => _firestore
-      .collection('users')
-      .doc(userId)
-      .collection('post_reads');
+  CollectionReference<Map<String, dynamic>> _reads(String userId) =>
+      _firestore.collection('users').doc(userId).collection('post_reads');
 
   @override
   Future<void> incrementViews(String postId) async {

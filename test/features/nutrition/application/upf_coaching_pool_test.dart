@@ -50,11 +50,9 @@ void main() {
         ...UpfCoachingPool.maintenance,
       ];
       for (final c in all) {
-        final hasCanon =
-            canonAuthors.any((a) => c.citation.contains(a));
+        final hasCanon = canonAuthors.any((a) => c.citation.contains(a));
         expect(hasCanon, isTrue,
-            reason:
-                '${c.id} no cita ningún autor canon (Monteiro/Hall/Srour)');
+            reason: '${c.id} no cita ningún autor canon (Monteiro/Hall/Srour)');
       }
     });
 

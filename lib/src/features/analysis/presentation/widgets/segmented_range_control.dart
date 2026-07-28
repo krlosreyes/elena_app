@@ -55,9 +55,8 @@ class SegmentedRangeControl extends ConsumerWidget {
                 curve: Curves.easeOutCubic,
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 decoration: BoxDecoration(
-                  color: isSelected
-                      ? const Color(0xFF3A3A3C)
-                      : Colors.transparent,
+                  color:
+                      isSelected ? const Color(0xFF3A3A3C) : Colors.transparent,
                   borderRadius: BorderRadius.circular(8),
                   boxShadow: isSelected
                       ? [

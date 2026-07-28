@@ -60,8 +60,7 @@ final interactiveCheckInPromptProvider = Provider<ActionablePrompt?>((ref) {
   final fastingState = ref.watch(fastingProvider);
   if (!fastingState.isActive || fastingState.startTime == null) return null;
 
-  final fastingDuration =
-      DateTime.now().difference(fastingState.startTime!);
+  final fastingDuration = DateTime.now().difference(fastingState.startTime!);
 
   final lastCheckIn = ref.watch(lastCheckInProvider);
 
@@ -111,9 +110,8 @@ void saveCheckIn({
   String? cycleId,
 }) {
   final now = DateTime.now();
-  final fastingHour = fastingStart != null
-      ? now.difference(fastingStart).inHours
-      : 0;
+  final fastingHour =
+      fastingStart != null ? now.difference(fastingStart).inHours : 0;
 
   // Snap al hito más cercano.
   int snappedHour = fastingHour;
@@ -183,8 +181,7 @@ CheckInCoachingResponse getCoachingResponse(
         message: 'Vas bien, sigue así.',
       ),
     FastingFeeling.hungry => const CheckInCoachingResponse(
-        message:
-            'Un vaso de agua con limón puede ayudar. ¿Lo tomamos?',
+        message: 'Un vaso de agua con limón puede ayudar. ¿Lo tomamos?',
         followUpAction: PromptActionType.logWater,
       ),
     FastingFeeling.tired => const CheckInCoachingResponse(
@@ -192,8 +189,7 @@ CheckInCoachingResponse getCoachingResponse(
             'Es normal en esta fase. Un té sin azúcar puede darte un empujón.',
       ),
     FastingFeeling.irritable => const CheckInCoachingResponse(
-        message:
-            'Está bien parar si lo necesitas. ¿Quieres cerrar el ayuno?',
+        message: 'Está bien parar si lo necesitas. ¿Quieres cerrar el ayuno?',
         followUpAction: PromptActionType.closeFasting,
       ),
   };

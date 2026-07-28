@@ -95,8 +95,8 @@ class _GoalSetupScreenState extends ConsumerState<GoalSetupScreen> {
           }
           return GoalDraft(
             type: type,
-            target: existingGoals[type]?.targetValue ??
-                suggestion.suggestedTarget,
+            target:
+                existingGoals[type]?.targetValue ?? suggestion.suggestedTarget,
             current: suggestion.currentValue,
             rationale: suggestion.rationale,
             statusLabel: suggestion.currentStatusLabel,

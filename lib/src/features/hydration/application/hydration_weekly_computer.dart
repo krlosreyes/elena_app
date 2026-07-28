@@ -52,9 +52,8 @@ class HydrationWeeklyComputer {
 
     final litersAvg =
         entries.fold<double>(0, (sum, e) => sum + e.liters) / entries.length;
-    final percentAvg = targetLitersPerDay > 0
-        ? litersAvg / targetLitersPerDay
-        : 0.0;
+    final percentAvg =
+        targetLitersPerDay > 0 ? litersAvg / targetLitersPerDay : 0.0;
 
     return HydrationWeeklyBreakdown(
       days: entries,

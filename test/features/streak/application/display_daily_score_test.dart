@@ -91,12 +91,10 @@ void main() {
       );
     });
 
-    test('ciclo abierto válido pero sin último cerrado → delta null',
-        () async {
+    test('ciclo abierto válido pero sin último cerrado → delta null', () async {
       final container = ProviderContainer(overrides: [
         currentMetabolicCycleProvider.overrideWith(
-          (ref) =>
-              Stream<MetabolicCycle?>.value(_openCycle(protocol: '16:8')),
+          (ref) => Stream<MetabolicCycle?>.value(_openCycle(protocol: '16:8')),
         ),
         lastClosedMetabolicCycleProvider.overrideWith(
           (ref) => Stream<MetabolicCycle?>.value(null),

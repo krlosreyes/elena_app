@@ -85,8 +85,7 @@ class _PaywallAutoTriggerState extends ConsumerState<PaywallAutoTrigger> {
             (account?.isComplete == true);
     final now = DateTime.now();
     final days = createdAt == null ? 0 : now.difference(createdAt).inDays;
-    final fastsCompleted =
-        ref.read(hasCompletedFastingTodayProvider) ? 1 : 0;
+    final fastsCompleted = ref.read(hasCompletedFastingTodayProvider) ? 1 : 0;
     final store = ref.read(paywallPromptStoreProvider);
 
     final shouldOffer = PaywallTrigger.shouldOffer(

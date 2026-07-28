@@ -57,8 +57,8 @@ final glucoseShouldPromptConsentProvider = Provider<bool>((ref) {
   final eligibility = ref.watch(glucoseProtocolEligibilityProvider);
   if (!eligibility.eligible) return false;
 
-  final dismissedToday =
-      ref.watch(uiInteractionProvider.select((s) => s.isGlucoseConsentDismissed));
+  final dismissedToday = ref
+      .watch(uiInteractionProvider.select((s) => s.isGlucoseConsentDismissed));
   if (dismissedToday) return false;
 
   final protocolState = ref.watch(glucoseProtocolStateProvider).valueOrNull;
@@ -116,7 +116,8 @@ final glucoseWindowStateProvider = Provider<GlucoseWindowState>((ref) {
 
   final readings = ref.watch(glucoseReadingsProvider).valueOrNull ?? const [];
   final hasFastingReadingToday = readings.any((r) =>
-      r.context == GlucoseReadingContext.ayunas && _isSameDay(r.measuredAt, now));
+      r.context == GlucoseReadingContext.ayunas &&
+      _isSameDay(r.measuredAt, now));
 
   return GlucoseWindowState.compute(
     wokeUpToday: wokeUpToday,

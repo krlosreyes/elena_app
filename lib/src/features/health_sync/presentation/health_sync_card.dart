@@ -220,13 +220,13 @@ class _HealthSyncCardState extends ConsumerState<HealthSyncCard>
           ),
           TextButton(
             style: TextButton.styleFrom(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               minimumSize: Size.zero,
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
             onPressed: () => openPaywall(
-              context, ref,
+              context,
+              ref,
               feature: GatedFeature.autoSync,
             ),
             child: Text(

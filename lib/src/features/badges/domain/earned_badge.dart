@@ -74,7 +74,8 @@ class EarnedBadge {
 
   @override
   bool operator ==(Object other) =>
-      identical(this, other) || (other is EarnedBadge && badgeId == other.badgeId);
+      identical(this, other) ||
+      (other is EarnedBadge && badgeId == other.badgeId);
 
   @override
   int get hashCode => badgeId.hashCode;

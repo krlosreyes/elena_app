@@ -190,8 +190,7 @@ class MealsRatioCard extends ConsumerWidget {
 
   Widget _buildRatioRow(MealRatio r, MealsRatioBreakdown b) {
     final count = b.counts[r] ?? 0;
-    final maxCount = b.counts.values
-        .fold<int>(1, (m, v) => v > m ? v : m);
+    final maxCount = b.counts.values.fold<int>(1, (m, v) => v > m ? v : m);
     final fraction = count / maxCount;
     final color = _colorForRatio(r);
 

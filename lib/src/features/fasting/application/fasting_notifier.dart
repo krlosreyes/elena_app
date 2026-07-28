@@ -95,8 +95,7 @@ class FastingNotifier extends StateNotifier<FastingState> {
             // bloqueando el cierre del ciclo previo cuando el usuario
             // iniciaba un nuevo ayuno.
             final isUserInitiatedAlreadySet = interval.isFasting &&
-                state.activationSource ==
-                    FastingActivationSource.userInitiated;
+                state.activationSource == FastingActivationSource.userInitiated;
             state = state.copyWith(
               startTime: interval.startTime,
               isActive: interval.isFasting,
@@ -311,9 +310,9 @@ class FastingNotifier extends StateNotifier<FastingState> {
             newStartTime: newStart,
             isFastingFilter: true,
           )
-          .then((_) => AppLogger.debug(
-              'Hora de inicio del ayuno corregida a $newStart '
-              '(nueva duración: ${newDuration.inMinutes}min).'))
+          .then((_) =>
+              AppLogger.debug('Hora de inicio del ayuno corregida a $newStart '
+                  '(nueva duración: ${newDuration.inMinutes}min).'))
           .catchError((Object e) {
         AppLogger.error('No se pudo corregir la hora de inicio (reintenta)', e);
       }),
@@ -544,8 +543,7 @@ class FastingNotifier extends StateNotifier<FastingState> {
         LiveActivityService.isActive &&
         duration.inMinutes != _lastLiveActivityMinute) {
       _lastLiveActivityMinute = duration.inMinutes;
-      final phase =
-          LiveActivityPhase.fromElapsedMinutes(duration.inMinutes);
+      final phase = LiveActivityPhase.fromElapsedMinutes(duration.inMinutes);
       // Calcular próximo hito.
       final targetMin = state.targetHours * 60;
       final remaining =

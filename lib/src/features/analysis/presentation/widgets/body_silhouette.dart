@@ -133,9 +133,8 @@ class _ZoneGauge extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, c) {
         final w = c.maxWidth;
-        final pinLabel = bodyFatPct == null
-            ? null
-            : '${bodyFatPct!.toStringAsFixed(1)}%';
+        final pinLabel =
+            bodyFatPct == null ? null : '${bodyFatPct!.toStringAsFixed(1)}%';
         final pinCenterX = _indicatorFraction * w;
 
         return Column(
@@ -176,9 +175,8 @@ class _ZoneGauge extends StatelessWidget {
                           Expanded(
                             flex: (_segmentWeights[i] * 100).round(),
                             child: Container(
-                              color: _zoneOrder[i]
-                                  .color
-                                  .withValues(alpha: 0.78),
+                              color:
+                                  _zoneOrder[i].color.withValues(alpha: 0.78),
                             ),
                           ),
                       ],
@@ -220,8 +218,10 @@ class _ZoneGauge extends StatelessWidget {
                 children: [
                   for (int i = 1; i < _bounds.length - 1; i++)
                     Positioned(
-                      left:
-                          ((_bounds[i] - _bounds.first) / (_bounds.last - _bounds.first)) * w - 10,
+                      left: ((_bounds[i] - _bounds.first) /
+                                  (_bounds.last - _bounds.first)) *
+                              w -
+                          10,
                       top: 0,
                       width: 20,
                       child: Text(

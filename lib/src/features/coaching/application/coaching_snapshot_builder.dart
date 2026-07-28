@@ -25,8 +25,9 @@ class CoachingSnapshotBuilder {
     Set<String> shownTodayActionIds = const {},
     FastingFeeling? lastFeeling,
   }) {
-    final Pillar? weakest =
-        weekly?.weakest == null ? null : CoachingMappers.fromWeakPillar(weekly!.weakest!);
+    final Pillar? weakest = weekly?.weakest == null
+        ? null
+        : CoachingMappers.fromWeakPillar(weekly!.weakest!);
 
     return CoachingSnapshot(
       currentPhase: currentPhase,

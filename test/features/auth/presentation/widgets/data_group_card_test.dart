@@ -141,7 +141,8 @@ void main() {
           rows: [
             ProfileDataRow.readonly('Nombre', 'charlie'),
             ProfileDataRow.readonly('Edad', '49 años'),
-            ProfileDataRow.editable(label: 'Peso', value: '82 kg', onTap: () {}),
+            ProfileDataRow.editable(
+                label: 'Peso', value: '82 kg', onTap: () {}),
             ProfileDataRow.info(
               label: '% Grasa',
               value: '33.9%',

@@ -29,7 +29,8 @@ class AnalyticsService {
   /// Llamar desde main.dart tras CrashlyticsService.init().
   static Future<void> init() async {
     if (kIsWeb) {
-      AppLogger.info('[AnalyticsService] Skip: web no instrumentado (SPEC-193)');
+      AppLogger.info(
+          '[AnalyticsService] Skip: web no instrumentado (SPEC-193)');
       return;
     }
     try {

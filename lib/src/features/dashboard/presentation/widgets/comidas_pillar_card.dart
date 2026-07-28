@@ -83,10 +83,11 @@ class ComidasPillarCard extends ConsumerWidget {
                 children: [
                   PillarCardUi.miniStat('Próxima', state.nextMealLabel, accent,
                       big: true),
-                  PillarCardUi.miniStat('En', _estimateNextMealIn(state), accent,
+                  PillarCardUi.miniStat(
+                      'En', _estimateNextMealIn(state), accent,
                       big: true),
-                  PillarCardUi.miniStat('Cociente A', '$cocientePct%',
-                      _cocienteAColor(cocienteA),
+                  PillarCardUi.miniStat(
+                      'Cociente A', '$cocientePct%', _cocienteAColor(cocienteA),
                       big: true),
                 ],
               ),
@@ -281,8 +282,7 @@ class _LastPlateCard extends StatelessWidget {
               ),
               const Spacer(),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
                   color: ratioColor.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),

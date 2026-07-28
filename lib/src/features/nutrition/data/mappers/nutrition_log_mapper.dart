@@ -113,7 +113,8 @@ class NutritionLogMapper {
     // SPEC-BUG6: lista de ids de alimentos para pre-cargar el PlateBuilder
     // al editar. Logs pre-BUG6 no tienen el campo → lista vacía.
     final plateItemIds =
-        (map['plateItemIds'] as List<dynamic>?)?.cast<String>() ?? const <String>[];
+        (map['plateItemIds'] as List<dynamic>?)?.cast<String>() ??
+            const <String>[];
 
     final log = NutritionLog(
       id: id,

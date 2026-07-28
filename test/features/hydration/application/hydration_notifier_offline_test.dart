@@ -54,7 +54,8 @@ class _HydrationOfflineMechanic {
       _repo.add(userId, amount).then((_) {
         lastWriteError = null;
       }).catchError((Object e) {
-        lastWriteError = 'No pudimos guardar tu hidratación. Revisa tu conexión.';
+        lastWriteError =
+            'No pudimos guardar tu hidratación. Revisa tu conexión.';
       }),
     );
   }

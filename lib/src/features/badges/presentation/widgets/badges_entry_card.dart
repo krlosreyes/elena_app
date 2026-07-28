@@ -25,11 +25,11 @@ class BadgesEntryCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final earnedCount = ref.watch(badgeProvider.select((s) => s.earned.length));
     final totalBadges = BadgeCatalog.all.length;
-    final currentStreak = ref.watch(streakProvider.select((s) => s.currentStreak));
+    final currentStreak =
+        ref.watch(streakProvider.select((s) => s.currentStreak));
 
-    final streakLabel = currentStreak == 1
-        ? '1 día de racha'
-        : '$currentStreak días de racha';
+    final streakLabel =
+        currentStreak == 1 ? '1 día de racha' : '$currentStreak días de racha';
 
     return InkWell(
       borderRadius: BorderRadius.circular(14),

@@ -49,16 +49,16 @@ void main() {
   group('FoodCatalog calidad esperada de items criticos', () {
     test('proteinas magras tienen score alto (>= 90)', () {
       expect(FoodCatalog.byId('pollo')?.qualityScore, greaterThanOrEqualTo(90));
-      expect(FoodCatalog.byId('pescado')?.qualityScore,
-          greaterThanOrEqualTo(90));
+      expect(
+          FoodCatalog.byId('pescado')?.qualityScore, greaterThanOrEqualTo(90));
       expect(FoodCatalog.byId('huevo')?.qualityScore, greaterThanOrEqualTo(90));
       expect(FoodCatalog.byId('pechuga_pavo')?.qualityScore,
           greaterThanOrEqualTo(90));
     });
 
     test('grasas saludables tienen score alto (>= 90)', () {
-      expect(FoodCatalog.byId('aguacate')?.qualityScore,
-          greaterThanOrEqualTo(90));
+      expect(
+          FoodCatalog.byId('aguacate')?.qualityScore, greaterThanOrEqualTo(90));
       expect(FoodCatalog.byId('aceite_oliva')?.qualityScore,
           greaterThanOrEqualTo(90));
       expect(FoodCatalog.byId('almendras')?.qualityScore,
@@ -66,19 +66,19 @@ void main() {
     });
 
     test('verduras puras tienen score alto (>= 90)', () {
-      expect(FoodCatalog.byId('brocoli')?.qualityScore,
-          greaterThanOrEqualTo(90));
-      expect(FoodCatalog.byId('espinaca')?.qualityScore,
-          greaterThanOrEqualTo(90));
-      expect(FoodCatalog.byId('lechuga')?.qualityScore,
-          greaterThanOrEqualTo(90));
+      expect(
+          FoodCatalog.byId('brocoli')?.qualityScore, greaterThanOrEqualTo(90));
+      expect(
+          FoodCatalog.byId('espinaca')?.qualityScore, greaterThanOrEqualTo(90));
+      expect(
+          FoodCatalog.byId('lechuga')?.qualityScore, greaterThanOrEqualTo(90));
     });
 
     test('legumbres tienen score moderado (60-80)', () {
-      expect(FoodCatalog.byId('lentejas')?.qualityScore,
-          inInclusiveRange(60, 80));
-      expect(FoodCatalog.byId('frijoles')?.qualityScore,
-          inInclusiveRange(60, 80));
+      expect(
+          FoodCatalog.byId('lentejas')?.qualityScore, inInclusiveRange(60, 80));
+      expect(
+          FoodCatalog.byId('frijoles')?.qualityScore, inInclusiveRange(60, 80));
       expect(FoodCatalog.byId('garbanzos')?.qualityScore,
           inInclusiveRange(60, 80));
     });
@@ -88,8 +88,8 @@ void main() {
     });
 
     test('margarina tiene score bajo (<= 40) por procesado', () {
-      expect(FoodCatalog.byId('margarina')?.qualityScore,
-          lessThanOrEqualTo(40));
+      expect(
+          FoodCatalog.byId('margarina')?.qualityScore, lessThanOrEqualTo(40));
     });
 
     test('avena tiene score medio-bajo (25-45) por ser cereal', () {
@@ -112,8 +112,8 @@ void main() {
 
     test('frutas bajas tienen score medio (>= 60)', () {
       expect(FoodCatalog.byId('fresa')?.qualityScore, greaterThanOrEqualTo(60));
-      expect(FoodCatalog.byId('manzana')?.qualityScore,
-          greaterThanOrEqualTo(60));
+      expect(
+          FoodCatalog.byId('manzana')?.qualityScore, greaterThanOrEqualTo(60));
     });
   });
 
@@ -135,8 +135,7 @@ void main() {
         'tofu',
       ];
       for (final id in expected) {
-        expect(FoodCatalog.byId(id), isNotNull,
-            reason: '$id deberia existir');
+        expect(FoodCatalog.byId(id), isNotNull, reason: '$id deberia existir');
       }
     });
 
@@ -386,10 +385,10 @@ void main() {
   group('SPEC-138 — catálogo NOVA 4 (ultraprocesados canon Monteiro)', () {
     test('galletas comerciales son NOVA 4', () {
       expect(FoodCatalog.byId('galletas')?.nova, NovaGroup.ultraProcessed);
-      expect(FoodCatalog.byId('galletas_dulces')?.nova,
-          NovaGroup.ultraProcessed);
-      expect(FoodCatalog.byId('galletas_saladas')?.nova,
-          NovaGroup.ultraProcessed);
+      expect(
+          FoodCatalog.byId('galletas_dulces')?.nova, NovaGroup.ultraProcessed);
+      expect(
+          FoodCatalog.byId('galletas_saladas')?.nova, NovaGroup.ultraProcessed);
     });
 
     test('cereal de caja es NOVA 4 (Monteiro 2019 ejemplo canon)', () {
@@ -458,8 +457,8 @@ void main() {
     });
 
     test('mantequilla y manteca son NOVA 2', () {
-      expect(FoodCatalog.byId('mantequilla')?.nova,
-          NovaGroup.culinaryIngredient);
+      expect(
+          FoodCatalog.byId('mantequilla')?.nova, NovaGroup.culinaryIngredient);
       expect(FoodCatalog.byId('manteca')?.nova, NovaGroup.culinaryIngredient);
     });
   });
@@ -493,8 +492,7 @@ void main() {
     });
 
     test('al menos 8 NOVA 4 en el catálogo (cobertura mínima)', () {
-      final upfCount =
-          FoodCatalog.all.where((f) => f.isUltraProcessed).length;
+      final upfCount = FoodCatalog.all.where((f) => f.isUltraProcessed).length;
       expect(upfCount, greaterThanOrEqualTo(8),
           reason: 'Debe haber al menos 8 alimentos UPF para que el '
               'pilar Nutrición pueda registrar patrones de consumo.');

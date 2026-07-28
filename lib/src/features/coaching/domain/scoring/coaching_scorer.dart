@@ -88,9 +88,10 @@ class CoachingScorer {
     }
 
     // 1. Override de deadline duro: el de mayor urgencia gana sin pasar score.
-    final overrides =
-        candidates.where((a) => urgency(a) >= kHardOverrideUrgency).toList()
-          ..sort((a, b) => urgency(b).compareTo(urgency(a)));
+    final overrides = candidates
+        .where((a) => urgency(a) >= kHardOverrideUrgency)
+        .toList()
+      ..sort((a, b) => urgency(b).compareTo(urgency(a)));
 
     final List<CoachingAction> ranked;
     final CoachingAction primary;

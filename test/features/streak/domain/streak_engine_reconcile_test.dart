@@ -214,7 +214,8 @@ void main() {
       expect(freezeStateBuggy.currentStreak, 1);
     });
 
-    test('CON reconciliar: la racha se mantiene en 2 (o sube a 3 si hoy ya calificaba)',
+    test(
+        'CON reconciliar: la racha se mantiene en 2 (o sube a 3 si hoy ya calificaba)',
         () {
       final local = _entry(
         date: today,

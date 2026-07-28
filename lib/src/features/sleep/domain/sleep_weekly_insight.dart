@@ -8,12 +8,12 @@ import 'package:elena_app/src/features/sleep/domain/sleep_log.dart';
 /// color del bloque inferior del widget.
 enum SleepInsightTier {
   empty,
-  deprivation,   // duración < 6h promedio
-  latencyHigh,   // latencia >30min en ≥3 noches
-  fragmented,    // awakenings ≥3 en ≥2 noches
-  lowQuality,    // calidad <3 con ≥3 ratings
-  sustained,     // duración ≥7h && calidad ≥4
-  neutral,       // intermedio
+  deprivation, // duración < 6h promedio
+  latencyHigh, // latencia >30min en ≥3 noches
+  fragmented, // awakenings ≥3 en ≥2 noches
+  lowQuality, // calidad <3 con ≥3 ratings
+  sustained, // duración ≥7h && calidad ≥4
+  neutral, // intermedio
 }
 
 class SleepWeeklyInsight {
@@ -88,16 +88,14 @@ class SleepCoachingMessage {
         return null;
       case SleepInsightTier.deprivation:
         return const SleepCoachingMessage(
-          headline:
-              'Tu duración promedio compromete tu reparación metabólica.',
+          headline: 'Tu duración promedio compromete tu reparación metabólica.',
           action:
               'Apunta a 7h como mínimo no negociable. Adelanta tu hora de dormir 30 min esta semana.',
           citation: 'Walker 2017 + AASM',
         );
       case SleepInsightTier.latencyHigh:
         return const SleepCoachingMessage(
-          headline:
-              'Tu latencia >30min sugiere cortisol elevado al acostarte.',
+          headline: 'Tu latencia >30min sugiere cortisol elevado al acostarte.',
           action:
               'Cierra pantallas 1h antes y baja la luz progresivamente desde el atardecer.',
           citation: 'Walker 2017',

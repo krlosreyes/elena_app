@@ -68,8 +68,7 @@ class PillarFeedbackCard extends StatelessWidget {
         children: [
           // Header
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.07),
               borderRadius: BorderRadius.circular(8),
@@ -122,8 +121,7 @@ class PillarFeedbackCard extends StatelessWidget {
                       child: LinearProgressIndicator(
                         value: progressFill.clamp(0.0, 1.0),
                         minHeight: 8,
-                        backgroundColor:
-                            Colors.white.withValues(alpha: 0.08),
+                        backgroundColor: Colors.white.withValues(alpha: 0.08),
                         valueColor:
                             AlwaysStoppedAnimation<Color>(progressColor),
                       ),
@@ -177,14 +175,12 @@ class PillarFeedbackCard extends StatelessWidget {
             decoration: BoxDecoration(
               color: statusColor.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                  color: statusColor.withValues(alpha: 0.25)),
+              border: Border.all(color: statusColor.withValues(alpha: 0.25)),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(statusEmoji,
-                    style: const TextStyle(fontSize: 20)),
+                Text(statusEmoji, style: const TextStyle(fontSize: 20)),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
@@ -237,8 +233,7 @@ class _MetricChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       child: Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(10),

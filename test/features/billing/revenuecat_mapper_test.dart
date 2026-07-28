@@ -183,8 +183,10 @@ void main() {
     });
 
     test('un PackageType no mapeado explícitamente cae en unknown', () {
-      expect(mapRevenueCatPackageType(PackageType.weekly), BillingPeriod.unknown);
-      expect(mapRevenueCatPackageType(PackageType.lifetime), BillingPeriod.unknown);
+      expect(
+          mapRevenueCatPackageType(PackageType.weekly), BillingPeriod.unknown);
+      expect(mapRevenueCatPackageType(PackageType.lifetime),
+          BillingPeriod.unknown);
     });
   });
 }

@@ -5,10 +5,10 @@
 /// Tier del insight según % del target alcanzado en promedio semanal.
 enum HydrationInsightTier {
   empty,
-  severelyLow,  // <60%
-  low,          // 60-80%
-  adequate,     // 80-100%
-  optimal,      // >=100%
+  severelyLow, // <60%
+  low, // 60-80%
+  adequate, // 80-100%
+  optimal, // >=100%
 }
 
 class HydrationDayEntry {
@@ -113,8 +113,7 @@ class HydrationCoachingMessage {
       case HydrationInsightTier.adequate:
         return const HydrationCoachingMessage(
           headline: 'En rango. Sostén la cadencia.',
-          action:
-              'Mantén ≥1 vaso cada 90 min. Beber ≤21:00 protege tu sueño.',
+          action: 'Mantén ≥1 vaso cada 90 min. Beber ≤21:00 protege tu sueño.',
           citation: 'EFSA 2010',
         );
       case HydrationInsightTier.optimal:

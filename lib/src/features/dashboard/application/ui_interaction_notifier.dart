@@ -76,7 +76,8 @@ class UiInteractionState {
 String _engagementKey(String day) => 'ui_dismiss_engagement_$day';
 String _adaptiveKey(String day) => 'ui_dismiss_adaptive_$day';
 String _hydrationCoachKey(String day) => 'ui_dismiss_hydration_coach_$day';
-String _biometricReminderKey(String day) => 'ui_dismiss_biometric_reminder_$day';
+String _biometricReminderKey(String day) =>
+    'ui_dismiss_biometric_reminder_$day';
 String _streakAtRiskKey(String day) => 'ui_dismiss_streak_at_risk_$day';
 String _glucoseConsentKey(String day) => 'ui_dismiss_glucose_consent_$day';
 
@@ -93,16 +94,13 @@ class UiInteractionNotifier extends StateNotifier<UiInteractionState> {
     final prefs = _ref.read(sharedPreferencesProvider);
     final day = _todayKey();
     state = UiInteractionState(
-      isEngagementBannerDismissed:
-          prefs.getBool(_engagementKey(day)) ?? false,
-      isAdaptiveSuggestionDismissed:
-          prefs.getBool(_adaptiveKey(day)) ?? false,
+      isEngagementBannerDismissed: prefs.getBool(_engagementKey(day)) ?? false,
+      isAdaptiveSuggestionDismissed: prefs.getBool(_adaptiveKey(day)) ?? false,
       isHydrationCoachDismissed:
           prefs.getBool(_hydrationCoachKey(day)) ?? false,
       isBiometricReminderDismissed:
           prefs.getBool(_biometricReminderKey(day)) ?? false,
-      isStreakAtRiskDismissed:
-          prefs.getBool(_streakAtRiskKey(day)) ?? false,
+      isStreakAtRiskDismissed: prefs.getBool(_streakAtRiskKey(day)) ?? false,
       isGlucoseConsentDismissed:
           prefs.getBool(_glucoseConsentKey(day)) ?? false,
     );

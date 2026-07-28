@@ -40,7 +40,11 @@ void main() {
           startTime: pastStart,
         );
 
-        final snap = await firestore.collection('users').doc(uid).collection('fasting_history').get();
+        final snap = await firestore
+            .collection('users')
+            .doc(uid)
+            .collection('fasting_history')
+            .get();
         expect(snap.docs.length, 1);
         final data = snap.docs.first.data();
         expect((data['startTime'] as Timestamp).toDate(), pastStart);
@@ -59,7 +63,11 @@ void main() {
         final correctedStart = DateTime(2026, 5, 15, 18, 0);
 
         // Doc 1: ayuno cerrado (no debe ser tocado).
-        final closedRef = await firestore.collection('users').doc(uid).collection('fasting_history').add({
+        final closedRef = await firestore
+            .collection('users')
+            .doc(uid)
+            .collection('fasting_history')
+            .add({
           'userId': uid,
           'startTime': Timestamp.fromDate(yesterdayClosedStart),
           'endTime': Timestamp.fromDate(yesterdayClosedEnd),
@@ -67,7 +75,11 @@ void main() {
         });
 
         // Doc 2: ayuno abierto (debe ser corregido).
-        final openRef = await firestore.collection('users').doc(uid).collection('fasting_history').add({
+        final openRef = await firestore
+            .collection('users')
+            .doc(uid)
+            .collection('fasting_history')
+            .add({
           'userId': uid,
           'startTime': Timestamp.fromDate(openFastStart),
           'endTime': null,

@@ -69,7 +69,6 @@ class SleepNotifier extends StateNotifier<SleepState> {
     _init();
   }
 
-
   /// Clave por día calendárico para el flag de wake-up.
   /// SPEC-228: persiste en Firestore (users/{uid}/app_state/sleep_wakeup)
   /// para que el overlay "¿Ya despertaste?" se muestre una sola vez por día
@@ -204,8 +203,7 @@ class SleepNotifier extends StateNotifier<SleepState> {
       // SPEC-228: el flag de wake-up se lee desde Firestore (cache-first)
       // para que sea cross-device. La latencia es mínima por el cache local
       // de Firestore SDK.
-      final wakeAlreadyConfirmed =
-          await _isWakeUpConfirmedFor(user.id, now);
+      final wakeAlreadyConfirmed = await _isWakeUpConfirmedFor(user.id, now);
 
       if (!mounted) return;
 
@@ -576,10 +574,9 @@ class SleepCycleMembership {
     // posterior al inicio del día local, no penalizamos sueño que sí
     // ocurrió hoy antes de que el ciclo empezara (típico en ayunos que
     // inician tarde en el día).
-    final effectiveAnchor =
-        (anchor.isAfter(todayStart) && !hasClosedCycleToday)
-            ? todayStart
-            : anchor;
+    final effectiveAnchor = (anchor.isAfter(todayStart) && !hasClosedCycleToday)
+        ? todayStart
+        : anchor;
 
     final belongs = !wokeUp.isBefore(effectiveAnchor);
     return belongs ? lastLog : null;

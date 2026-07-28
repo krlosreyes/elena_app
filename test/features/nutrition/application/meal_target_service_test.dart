@@ -46,8 +46,7 @@ void main() {
       expect(t.allowsSnack, isFalse);
     });
 
-    test('"22:2" → 1 comida SIN snack (ventana 2h, solo comida principal)',
-        () {
+    test('"22:2" → 1 comida SIN snack (ventana 2h, solo comida principal)', () {
       final t = service.targetForProtocol('22:2');
       expect(t.meals, 1);
       expect(t.allowsSnack, isFalse);
@@ -94,16 +93,18 @@ void main() {
   group('knownProtocols', () {
     test('expone los 8 valores canónicos de SPEC-98', () {
       expect(service.knownProtocols, hasLength(8));
-      expect(service.knownProtocols, containsAll([
-        'Ninguno',
-        '12:12',
-        '14:10',
-        '16:8',
-        '18:6',
-        '20:4',
-        '22:2',
-        'OMAD',
-      ]));
+      expect(
+          service.knownProtocols,
+          containsAll([
+            'Ninguno',
+            '12:12',
+            '14:10',
+            '16:8',
+            '18:6',
+            '20:4',
+            '22:2',
+            'OMAD',
+          ]));
     });
 
     test('todos los conocidos retornan un MealTarget válido', () {
@@ -127,16 +128,11 @@ void main() {
 
       expect(p12, greaterThanOrEqualTo(p14),
           reason: '12:12 (12h) ≥ 14:10 (10h)');
-      expect(p14, greaterThanOrEqualTo(p16),
-          reason: '14:10 (10h) ≥ 16:8 (8h)');
-      expect(p16, greaterThanOrEqualTo(p18),
-          reason: '16:8 (8h) ≥ 18:6 (6h)');
-      expect(p18, greaterThanOrEqualTo(p20),
-          reason: '18:6 (6h) ≥ 20:4 (4h)');
-      expect(p20, greaterThanOrEqualTo(p22),
-          reason: '20:4 (4h) ≥ 22:2 (2h)');
-      expect(p22, greaterThanOrEqualTo(omad),
-          reason: '22:2 (2h) ≥ OMAD (~1h)');
+      expect(p14, greaterThanOrEqualTo(p16), reason: '14:10 (10h) ≥ 16:8 (8h)');
+      expect(p16, greaterThanOrEqualTo(p18), reason: '16:8 (8h) ≥ 18:6 (6h)');
+      expect(p18, greaterThanOrEqualTo(p20), reason: '18:6 (6h) ≥ 20:4 (4h)');
+      expect(p20, greaterThanOrEqualTo(p22), reason: '20:4 (4h) ≥ 22:2 (2h)');
+      expect(p22, greaterThanOrEqualTo(omad), reason: '22:2 (2h) ≥ OMAD (~1h)');
     });
 
     test('progresión del snack: ventanas cortas no admiten snack', () {

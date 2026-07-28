@@ -60,12 +60,18 @@ class BadgeEngine {
   ) {
     return {
       BadgeCategory.racha: StreakEngine.computeLongestStreak(fullStreakHistory),
-      BadgeCategory.ayuno: fullStreakHistory.where((e) => e.fastingCompleted).length,
-      BadgeCategory.sueno: fullStreakHistory.where((e) => e.sleepCompleted).length,
-      BadgeCategory.hidratacion: fullStreakHistory.where((e) => e.hydrationCompleted).length,
-      BadgeCategory.ejercicio: fullStreakHistory.where((e) => e.exerciseLogged).length,
-      BadgeCategory.nutricion: fullStreakHistory.where((e) => e.nutritionLogged).length,
-      BadgeCategory.imr: fullStreakHistory.where((e) => e.imrScore >= 60).length,
+      BadgeCategory.ayuno:
+          fullStreakHistory.where((e) => e.fastingCompleted).length,
+      BadgeCategory.sueno:
+          fullStreakHistory.where((e) => e.sleepCompleted).length,
+      BadgeCategory.hidratacion:
+          fullStreakHistory.where((e) => e.hydrationCompleted).length,
+      BadgeCategory.ejercicio:
+          fullStreakHistory.where((e) => e.exerciseLogged).length,
+      BadgeCategory.nutricion:
+          fullStreakHistory.where((e) => e.nutritionLogged).length,
+      BadgeCategory.imr:
+          fullStreakHistory.where((e) => e.imrScore >= 60).length,
       BadgeCategory.checkin: biometricHistory
           .where((c) => c.source == BiometricSource.checkinSheet)
           .length,
@@ -90,7 +96,8 @@ class BadgeEngine {
 
     bool isNew(String badgeId) => !alreadyUnlockedIds.contains(badgeId);
 
-    void checkThresholdCategory(String category, int actualCount, {String contextKey = 'daysCompleted'}) {
+    void checkThresholdCategory(String category, int actualCount,
+        {String contextKey = 'daysCompleted'}) {
       for (final def in BadgeCatalog.forCategory(category)) {
         if (isNew(def.badgeId) && actualCount >= def.threshold) {
           newly.add(EarnedBadge(
@@ -119,14 +126,20 @@ class BadgeEngine {
     // Racha usa un contextKey distinto ('streakLength') al resto
     // ('daysCompleted' por defecto) — todas las demás categorías de
     // counts comparten el default.
-    checkThresholdCategory(BadgeCategory.racha, counts[BadgeCategory.racha]!, contextKey: 'streakLength');
+    checkThresholdCategory(BadgeCategory.racha, counts[BadgeCategory.racha]!,
+        contextKey: 'streakLength');
     checkThresholdCategory(BadgeCategory.ayuno, counts[BadgeCategory.ayuno]!);
     checkThresholdCategory(BadgeCategory.sueno, counts[BadgeCategory.sueno]!);
-    checkThresholdCategory(BadgeCategory.hidratacion, counts[BadgeCategory.hidratacion]!);
-    checkThresholdCategory(BadgeCategory.ejercicio, counts[BadgeCategory.ejercicio]!);
-    checkThresholdCategory(BadgeCategory.nutricion, counts[BadgeCategory.nutricion]!);
+    checkThresholdCategory(
+        BadgeCategory.hidratacion, counts[BadgeCategory.hidratacion]!);
+    checkThresholdCategory(
+        BadgeCategory.ejercicio, counts[BadgeCategory.ejercicio]!);
+    checkThresholdCategory(
+        BadgeCategory.nutricion, counts[BadgeCategory.nutricion]!);
     checkThresholdCategory(BadgeCategory.imr, counts[BadgeCategory.imr]!);
-    checkThresholdCategory(BadgeCategory.checkin, counts[BadgeCategory.checkin]!, contextKey: 'checkIns');
+    checkThresholdCategory(
+        BadgeCategory.checkin, counts[BadgeCategory.checkin]!,
+        contextKey: 'checkIns');
 
     // ── Resiliencia: volviste a 7+ días de racha después de haber roto
     // una racha más larga. Un solo nivel — usa datos ya calculados por
@@ -186,7 +199,8 @@ class BadgeEngine {
       if (remaining <= 0) continue;
 
       if (closest == null || remaining < closest.remaining) {
-        closest = BadgeProgress(definition: next, currentValue: entry.value, remaining: remaining);
+        closest = BadgeProgress(
+            definition: next, currentValue: entry.value, remaining: remaining);
       }
     }
 

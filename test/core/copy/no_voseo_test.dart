@@ -102,7 +102,8 @@ const _voseo = <String, String>{
   'sentís': 'sientes',
   'cumplís': 'cumples',
   'necesitás': 'necesitas',
-  'estás listo para': 'estás listo para', // control: NO es voseo, no debe saltar
+  'estás listo para':
+      'estás listo para', // control: NO es voseo, no debe saltar
 };
 
 /// Extrae las cadenas literales de un archivo Dart, descartando

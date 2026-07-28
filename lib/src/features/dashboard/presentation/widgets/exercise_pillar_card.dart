@@ -113,9 +113,7 @@ class ExercisePillarCard extends ConsumerWidget {
           icon: Icons.delete_outline_rounded,
           onPressed: state.history.isEmpty
               ? null
-              : () => ref
-                  .read(exerciseProvider.notifier)
-                  .removeLastSession(),
+              : () => ref.read(exerciseProvider.notifier).removeLastSession(),
         ),
       ],
     );
@@ -136,7 +134,8 @@ class _PlanOfTheDayBanner extends StatelessWidget {
     final isRest = entry.type == PlanSessionType.descanso;
     final color = isRest ? Colors.grey : const Color(0xFF2DD4BF);
     final label = switch (entry.type) {
-      PlanSessionType.fuerza => 'Hoy toca Fuerza · ${entry.durationMinutes} min',
+      PlanSessionType.fuerza =>
+        'Hoy toca Fuerza · ${entry.durationMinutes} min',
       PlanSessionType.cardio =>
         'Hoy toca Cardio (${entry.cardioIntensity?.label ?? ""}) · '
             '${entry.durationMinutes} min',
@@ -286,7 +285,8 @@ class _LastSessionRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(Icons.history_rounded, size: 14, color: accent.withValues(alpha: 0.7)),
+        Icon(Icons.history_rounded,
+            size: 14, color: accent.withValues(alpha: 0.7)),
         const SizedBox(width: 4),
         Text(
           'Última: ${_label()} · ${session.durationMinutes} min',

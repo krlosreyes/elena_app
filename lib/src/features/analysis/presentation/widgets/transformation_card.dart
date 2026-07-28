@@ -204,9 +204,8 @@ class _DeltaPill extends StatelessWidget {
     // "bajar" es positivo (peso, cintura, %grasa) → verde flecha abajo.
     // El widget no conoce el contexto del indicador — usa flecha
     // simple y deja la interpretación al copy del narrador.
-    final color = isStable
-        ? Colors.white.withValues(alpha: 0.40)
-        : AppColors.accent;
+    final color =
+        isStable ? Colors.white.withValues(alpha: 0.40) : AppColors.accent;
     final arrow = isStable ? '↔' : (isUp ? '↑' : '↓');
     final absVal = deltaValue.abs();
     final formatted = absVal is int

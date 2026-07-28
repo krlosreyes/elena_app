@@ -84,30 +84,15 @@ class WeeklyCoachingCard extends ConsumerWidget {
           _buildEmptyState()
         else ...[
           _buildPillarRow(
-              'Ayuno',
-              i.fastingAvg,
-              i.fastingDelta,
-              const Color(0xFF22D3A8)),
+              'Ayuno', i.fastingAvg, i.fastingDelta, const Color(0xFF22D3A8)),
           _buildPillarRow(
-              'Sueño',
-              i.sleepAvg,
-              i.sleepDelta,
-              const Color(0xFF818CF8)),
-          _buildPillarRow(
-              'Hidrat.',
-              i.hydrationAvg,
-              i.hydrationDelta,
+              'Sueño', i.sleepAvg, i.sleepDelta, const Color(0xFF818CF8)),
+          _buildPillarRow('Hidrat.', i.hydrationAvg, i.hydrationDelta,
               const Color(0xFF38BDF8)),
-          _buildPillarRow(
-              'Ejerc.',
-              i.exerciseAvg,
-              i.exerciseDelta,
+          _buildPillarRow('Ejerc.', i.exerciseAvg, i.exerciseDelta,
               const Color(0xFF14B8A6)),
           _buildPillarRow(
-              'Comidas',
-              i.mealsAvg,
-              i.mealsDelta,
-              const Color(0xFFFB923C)),
+              'Comidas', i.mealsAvg, i.mealsDelta, const Color(0xFFFB923C)),
           const SizedBox(height: 14),
           _buildDivider(),
           const SizedBox(height: 14),
@@ -151,8 +136,18 @@ class WeeklyCoachingCard extends ConsumerWidget {
   }
 
   static const _monthsShort = [
-    'ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN',
-    'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC',
+    'ENE',
+    'FEB',
+    'MAR',
+    'ABR',
+    'MAY',
+    'JUN',
+    'JUL',
+    'AGO',
+    'SEP',
+    'OCT',
+    'NOV',
+    'DIC',
   ];
 
   String _formatRange(DateTime start, DateTime end) {
@@ -224,9 +219,7 @@ class WeeklyCoachingCard extends ConsumerWidget {
             margin: const EdgeInsets.symmetric(horizontal: 1.5),
             height: 10,
             decoration: BoxDecoration(
-              color: isFilled
-                  ? accent
-                  : accent.withValues(alpha: 0.12),
+              color: isFilled ? accent : accent.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -262,8 +255,7 @@ class WeeklyCoachingCard extends ConsumerWidget {
       );
     }
     final isDown = delta < 0;
-    final color =
-        isDown ? const Color(0xFFEF4444) : AppColors.metabolicGreen;
+    final color = isDown ? const Color(0xFFEF4444) : AppColors.metabolicGreen;
     final icon =
         isDown ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded;
     return Row(

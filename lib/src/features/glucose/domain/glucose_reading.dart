@@ -235,8 +235,7 @@ class GlucoseReading {
       minutesSinceWaking: (map['minutesSinceWaking'] as num?)?.toInt(),
       relatedFastingHours: (map['relatedFastingHours'] as num?)?.toDouble(),
       relatedSleepHours: (map['relatedSleepHours'] as num?)?.toDouble(),
-      relatedSleepGoalHours:
-          (map['relatedSleepGoalHours'] as num?)?.toDouble(),
+      relatedSleepGoalHours: (map['relatedSleepGoalHours'] as num?)?.toDouble(),
       mealGlycemicIndex: (map['mealGlycemicIndex'] as num?)?.toInt(),
       symptomsReported: ((map['symptomsReported'] as List?) ?? const [])
           .map((e) => _enumFromName(

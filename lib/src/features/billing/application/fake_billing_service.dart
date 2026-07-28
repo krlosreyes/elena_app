@@ -72,8 +72,7 @@ class FakeBillingService implements BillingService {
   }
 
   @override
-  Future<List<BillingPackage>> currentOfferingPackages() async =>
-      _fakePackages;
+  Future<List<BillingPackage>> currentOfferingPackages() async => _fakePackages;
 
   @override
   Future<PurchaseResult> purchase(BillingPackage pkg) async {

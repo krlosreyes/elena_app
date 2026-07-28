@@ -112,7 +112,8 @@ void main() {
 
     test('determinismo: misma entrada → misma principal', () {
       final a = _action(id: 'a', pillar: Pillar.sleep, circadianImpact: 0.8);
-      final b = _action(id: 'b', pillar: Pillar.nutrition, circadianImpact: 0.5);
+      final b =
+          _action(id: 'b', pillar: Pillar.nutrition, circadianImpact: 0.5);
       const s = CoachingSnapshot(
         currentPhase: CircadianPhase.creatividad,
         weakestPillar: Pillar.sleep,

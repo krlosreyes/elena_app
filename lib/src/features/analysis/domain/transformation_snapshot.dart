@@ -126,8 +126,7 @@ class TransformationSnapshot {
       ];
 
   /// Deltas que tienen ambos puntos (se renderizan con delta visible).
-  Iterable<TransformationDelta> get visible =>
-      all.where((d) => d.hasBoth);
+  Iterable<TransformationDelta> get visible => all.where((d) => d.hasBoth);
 
   /// True si NINGÚN indicador tiene ambos puntos — la card no se
   /// renderiza y se muestra el placeholder cálido del SPEC §2.4.

@@ -95,7 +95,8 @@ void main() {
       );
     });
 
-    test('Baseline con campo null + delta con valor → siempre significativo', () {
+    test('Baseline con campo null + delta con valor → siempre significativo',
+        () {
       const delta = BiometricDelta(waistCircumference: 90.0);
       expect(
         delta.isSignificant(baseline: _baseline(waistCircumference: null)),
@@ -135,7 +136,8 @@ void main() {
       expect(
         delta.isSignificant(baseline: _baseline(weight: 0)),
         isTrue,
-        reason: 'División por cero protegida — cualquier cambio desde 0 dispara',
+        reason:
+            'División por cero protegida — cualquier cambio desde 0 dispara',
       );
     });
   });

@@ -130,9 +130,10 @@ Future<void> _evaluate(
   // ya corrió y puso fastingMagnitude = 0 (el nuevo ayuno tiene duración 0).
   // Si leemos streakProvider ahora, capturamos ese 0 en lugar del progreso
   // real del día que terminó. preClosureStreak preserva el estado anterior.
-  final StreakState streakForSnapshot = (newFastingTriggered && preClosureStreak != null)
-      ? preClosureStreak
-      : ref.read(streakProvider);
+  final StreakState streakForSnapshot =
+      (newFastingTriggered && preClosureStreak != null)
+          ? preClosureStreak
+          : ref.read(streakProvider);
   final today = streakForSnapshot.todayEntry;
 
   // Magnitudes del día actual (StreakEntry). Si no hay, todo en 0.
@@ -201,18 +202,15 @@ Future<void> _evaluate(
   // Firestore escribe en caché local al instante (SPEC-206), por lo que
   // fetchOpenCycle() del service leerá liveScore correcto incluso offline.
   if (!newFastingTriggered) {
-    final openCycleSnap =
-        ref.read(currentMetabolicCycleProvider).valueOrNull;
+    final openCycleSnap = ref.read(currentMetabolicCycleProvider).valueOrNull;
     if (openCycleSnap != null) {
       if (openCycleSnap.liveScore != dailyScore) {
         unawaited(
           ref
               .read(metabolicCycleRepositoryProvider)
-              .updateLiveScore(
-                  account.uid, openCycleSnap.cycleId, dailyScore)
+              .updateLiveScore(account.uid, openCycleSnap.cycleId, dailyScore)
               .catchError((Object e) {
-            AppLogger.debug(
-                '[evaluator] updateLiveScore falló (offline?): $e');
+            AppLogger.debug('[evaluator] updateLiveScore falló (offline?): $e');
           }),
         );
       }
@@ -265,8 +263,7 @@ Future<void> _evaluate(
   // de alimentación del ciclo ACTUAL no ha iniciado → windowEnd no aplica.
   // Anulamos effectiveWindowClose para que el resolver no dispare el fallback.
   DateTime? effectiveWindowClose = eatingWindow?.windowEnd;
-  final openCycleForGuard =
-      ref.read(currentMetabolicCycleProvider).valueOrNull;
+  final openCycleForGuard = ref.read(currentMetabolicCycleProvider).valueOrNull;
   if (openCycleForGuard != null && effectiveWindowClose != null) {
     final targetHours =
         fastingHoursForProtocol(openCycleForGuard.fastingProtocol);

@@ -117,9 +117,7 @@ class ProfileDangerZoneActions extends ConsumerWidget {
       builder: (_) => _DeleteAccountDialog(
         onConfirm: () async {
           try {
-            await ref
-                .read(profileControllerProvider.notifier)
-                .deleteAccount();
+            await ref.read(profileControllerProvider.notifier).deleteAccount();
             messenger.showSnackBar(
               const SnackBar(
                 content: Text('Cuenta eliminada. Hasta pronto.'),
@@ -225,7 +223,8 @@ class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
             textCapitalization: TextCapitalization.characters,
             decoration: InputDecoration(
               hintText: 'ELIMINAR',
-              hintStyle: const TextStyle(color: Color(0xFF475569), fontSize: 13),
+              hintStyle:
+                  const TextStyle(color: Color(0xFF475569), fontSize: 13),
               filled: true,
               fillColor: AppColors.backgroundDark,
               border: OutlineInputBorder(

@@ -288,8 +288,18 @@ class CycleDetailSheet extends StatelessWidget {
   // ─── Helpers ────────────────────────────────────────────────────────
 
   static const _monthsLong = [
-    'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
-    'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
+    'enero',
+    'febrero',
+    'marzo',
+    'abril',
+    'mayo',
+    'junio',
+    'julio',
+    'agosto',
+    'septiembre',
+    'octubre',
+    'noviembre',
+    'diciembre',
   ];
 
   String _formatDateLong(DateTime dt) {

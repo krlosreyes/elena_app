@@ -50,8 +50,7 @@ class _SleepRoutineScreenState extends ConsumerState<SleepRoutineScreen> {
     _RoutineItem(
       icon: Icons.thermostat_rounded,
       title: 'Habitación fresca (18-20°C)',
-      subtitle:
-          'El cuerpo necesita bajar ~1°C para iniciar el sueño profundo.',
+      subtitle: 'El cuerpo necesita bajar ~1°C para iniciar el sueño profundo.',
       field: 'tempCool',
     ),
     _RoutineItem(

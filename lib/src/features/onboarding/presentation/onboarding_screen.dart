@@ -270,16 +270,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   /// Calcula el resultado del SN basado en las respuestas actuales.
   /// Si el usuario saltó, devuelve unknown.
-  NervousSystemScore get _snScore =>
-      NervousSystemScore.fromAnswers(_snAnswers.whereType<NervousSystemAnswer>()
-          .toList());
+  NervousSystemScore get _snScore => NervousSystemScore.fromAnswers(
+      _snAnswers.whereType<NervousSystemAnswer>().toList());
 
   NervousSystem get _classifiedNervousSystem =>
       _snSkipped ? NervousSystem.unknown : _snScore.classify();
 
   bool get _snDeclared =>
-      !_snSkipped &&
-      _snAnswers.whereType<NervousSystemAnswer>().length >= 3;
+      !_snSkipped && _snAnswers.whereType<NervousSystemAnswer>().length >= 3;
 
   void _inferMedidas() {
     setState(() {
@@ -352,8 +350,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         prefill.birthYear != null ||
         prefill.gender != null;
 
-    _isReturningMrUser = account.profileStatus == AppProfileStatus.partialProfile &&
-        hasMrBiometricData;
+    _isReturningMrUser =
+        account.profileStatus == AppProfileStatus.partialProfile &&
+            hasMrBiometricData;
     if (_isReturningMrUser) {
       // Primera vez que un usuario MR entra a la app.
       telemetry.mrUserFirstLogin();
@@ -413,8 +412,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     // rawProfile → hasMrBiometricData = false → es cold install.
     final isColdInstall =
         account.profileStatus == AppProfileStatus.newProfile ||
-        (account.profileStatus == AppProfileStatus.partialProfile &&
-            !hasMrBiometricData);
+            (account.profileStatus == AppProfileStatus.partialProfile &&
+                !hasMrBiometricData);
 
     // SPEC-132: el step de Health solo aplica si la plataforma lo
     // soporta. En Web/Desktop el plugin no funciona, así que lo
@@ -460,8 +459,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       } else {
         // Fallback: leer el peso actual del perfil Firestore del usuario
         // (re-onboarding, usuario existente sin datos MR).
-        final existingUser =
-            ref.read(currentUserStreamProvider).valueOrNull;
+        final existingUser = ref.read(currentUserStreamProvider).valueOrNull;
         if (existingUser != null && existingUser.weight > 0) {
           _weight = existingUser.weight;
           _weightTouched = true;
@@ -884,8 +882,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                           },
                         ))),
           ]),
-          OnboardingSectionTitle(
-              title: "MEDIDAS CRÍTICAS IMR", isDark: isDark),
+          OnboardingSectionTitle(title: "MEDIDAS CRÍTICAS IMR", isDark: isDark),
           _pickerSelector(
               label: "Cintura",
               displayValue: "${_waist.toInt()} cm",
@@ -1152,8 +1149,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 ),
               ),
               filled: true,
-              fillColor:
-                  isDark ? const Color(0xFF1E293B) : Colors.white,
+              fillColor: isDark ? const Color(0xFF1E293B) : Colors.white,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
                 borderSide: BorderSide(
@@ -1317,10 +1313,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       showDialog<void>(
         context: context,
         builder: (ctx) => AlertDialog(
-          backgroundColor:
-              Theme.of(ctx).brightness == Brightness.dark
-                  ? AppColors.bgElevated
-                  : Colors.white,
+          backgroundColor: Theme.of(ctx).brightness == Brightness.dark
+              ? AppColors.bgElevated
+              : Colors.white,
           title: const Text('🤔 Una sugerencia honesta'),
           content: Text(
             'Las personas con perfil Excitado (sueño superficial, '
@@ -1459,8 +1454,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           _buildSnOptionRow(
             option: const _SnOption('🤷', 'No estoy seguro'),
             selected: answered == NervousSystemAnswer.unknown,
-            onTap: () => setState(
-                () => _snAnswers[index] = NervousSystemAnswer.unknown),
+            onTap: () =>
+                setState(() => _snAnswers[index] = NervousSystemAnswer.unknown),
           ),
         ],
       ),
@@ -1497,8 +1492,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   style: TextStyle(
                     fontSize: 13,
                     color: AppColors.textPrimary,
-                    fontWeight:
-                        selected ? FontWeight.w600 : FontWeight.w400,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
                   ),
                 ),
               ),
@@ -1911,8 +1905,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 label,
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
-                  color:
-                      isDark ? Colors.white70 : const Color(0xFF475569),
+                  color: isDark ? Colors.white70 : const Color(0xFF475569),
                   fontSize: 14,
                 ),
               ),
@@ -1960,8 +1953,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     int initialIndex = values.indexWhere((v) => v == value.toInt());
     if (initialIndex < 0) initialIndex = 0;
 
-    final controller =
-        FixedExtentScrollController(initialItem: initialIndex);
+    final controller = FixedExtentScrollController(initialItem: initialIndex);
     int selectedIndex = initialIndex;
 
     showCupertinoModalPopup<void>(
@@ -2074,8 +2066,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     int initialIndex = options.indexOf(current);
     if (initialIndex < 0) initialIndex = 0;
 
-    final controller =
-        FixedExtentScrollController(initialItem: initialIndex);
+    final controller = FixedExtentScrollController(initialItem: initialIndex);
     int selectedIndex = initialIndex;
 
     showCupertinoModalPopup<void>(

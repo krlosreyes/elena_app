@@ -195,8 +195,7 @@ class _PlateRatioSheetState extends ConsumerState<PlateRatioSheet> {
               if (_builder.isNotEmpty) ...[
                 _SelectedChips(
                   builder: _builder,
-                  onRemove: (food) =>
-                      setState(() => _builder.remove(food)),
+                  onRemove: (food) => setState(() => _builder.remove(food)),
                 ),
                 const SizedBox(height: 8),
                 // Presets (25-jul-2026, diagnóstico §3.5 "brecha de
@@ -325,8 +324,7 @@ class _PlateRatioSheetState extends ConsumerState<PlateRatioSheet> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed:
-                      _builder.isEmpty || _submitting ? null : _submit,
+                  onPressed: _builder.isEmpty || _submitting ? null : _submit,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.metabolicGreen,
                     foregroundColor: AppColors.bgBase,
@@ -441,8 +439,7 @@ class _PlateRatioSheetState extends ConsumerState<PlateRatioSheet> {
             child: const Text('Cancelar'),
           ),
           TextButton(
-            onPressed: () =>
-                Navigator.of(dialogContext).pop(controller.text),
+            onPressed: () => Navigator.of(dialogContext).pop(controller.text),
             child: const Text('Guardar'),
           ),
         ],
@@ -508,13 +505,11 @@ class _PlateRatioSheetState extends ConsumerState<PlateRatioSheet> {
       // el sheet). Esto evita que el countdown a la próxima comida
       // arranque 5-10 min "atrasado" por el tiempo que tardó en
       // armar el plato.
-      final effectiveMealTime =
-          _userEditedTime ? _mealTime : DateTime.now();
+      final effectiveMealTime = _userEditedTime ? _mealTime : DateTime.now();
       final notifier = ref.read(nutritionProvider.notifier);
       final oldId = widget.logToReplaceId;
       // SPEC-BUG6: capturamos los ids del plato actual para persistirlos.
-      final currentPlateIds =
-          _builder.items.map((f) => f.id).toList();
+      final currentPlateIds = _builder.items.map((f) => f.id).toList();
       if (oldId != null) {
         // Modo edición: reemplaza el log viejo.
         await notifier.replaceMeal(
@@ -655,8 +650,7 @@ class _PlateRatioSheetState extends ConsumerState<PlateRatioSheet> {
       case CheatDayActivationResult.activated:
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content:
-                Text('Día de permitidos activo. Disfrutalo, sin culpa.'),
+            content: Text('Día de permitidos activo. Disfrutalo, sin culpa.'),
             backgroundColor: AppColors.accent,
           ),
         );
@@ -941,8 +935,7 @@ class _SelectedChips extends StatelessWidget {
           onTap: () => onRemove(f),
           borderRadius: BorderRadius.circular(999),
           child: Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.18),
               borderRadius: BorderRadius.circular(999),
@@ -1048,8 +1041,8 @@ class _QuickAddRow extends StatelessWidget {
                 },
                 borderRadius: BorderRadius.circular(999),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: AppColors.bgElevated,
                     borderRadius: BorderRadius.circular(999),
@@ -1193,8 +1186,7 @@ class _CategoryBrowserState extends State<_CategoryBrowser> {
               key: ValueKey(_selected),
               itemExtent: 36,
               selectionOverlay: CupertinoPickerDefaultSelectionOverlay(
-                background:
-                    AppColors.metabolicGreen.withValues(alpha: 0.12),
+                background: AppColors.metabolicGreen.withValues(alpha: 0.12),
               ),
               onSelectedItemChanged: (i) =>
                   setState(() => _selectedFoodIndex = i),
@@ -1278,8 +1270,8 @@ class _PresetsRow extends StatelessWidget {
                 onTap: () => onApply(preset),
                 borderRadius: BorderRadius.circular(999),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: AppColors.bgElevated,
                     borderRadius: BorderRadius.circular(999),
@@ -1365,8 +1357,7 @@ class _SearchResults extends StatelessWidget {
           return InkWell(
             onTap: () => onPick(f),
             child: Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 14, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
                 border: Border(
                   bottom: BorderSide(
@@ -1397,8 +1388,8 @@ class _SearchResults extends StatelessWidget {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
                       color: AppColors.bgSurface,
                       borderRadius: BorderRadius.circular(6),
@@ -1595,7 +1586,9 @@ class _AERatioBar extends StatelessWidget {
     final isOptimal = aPercent >= 0.70;
     final barColor = isOptimal
         ? AppColors.metabolicGreen
-        : (aPercent >= 0.50 ? const Color(0xFFEAB308) : const Color(0xFFEF4444));
+        : (aPercent >= 0.50
+            ? const Color(0xFFEAB308)
+            : const Color(0xFFEF4444));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1720,7 +1713,9 @@ class _FoodPickerSheetState extends State<_FoodPickerSheet> {
     for (var i = 0; i < _copies; i++) {
       simBuilder.add(_food);
     }
-    return simBuilder.totalSlots > 0 ? simBuilder.qualityPercent.toDouble() : 0.0;
+    return simBuilder.totalSlots > 0
+        ? simBuilder.qualityPercent.toDouble()
+        : 0.0;
   }
 
   @override
@@ -1742,7 +1737,8 @@ class _FoodPickerSheetState extends State<_FoodPickerSheet> {
           // Handle
           Center(
             child: Container(
-              width: 36, height: 4,
+              width: 36,
+              height: 4,
               decoration: BoxDecoration(
                 color: AppColors.borderStrong,
                 borderRadius: BorderRadius.circular(2),
@@ -1765,7 +1761,8 @@ class _FoodPickerSheetState extends State<_FoodPickerSheet> {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: foodColor.withValues(alpha: 0.18),
                   borderRadius: BorderRadius.circular(20),
@@ -1876,7 +1873,9 @@ class _FoodPickerSheetState extends State<_FoodPickerSheet> {
             color: AppColors.textSecondary, size: 16),
         const SizedBox(width: 8),
         Text(
-          isEmpty ? 'Calidad del plato: $percent%' : 'Calidad resultante: $percent%',
+          isEmpty
+              ? 'Calidad del plato: $percent%'
+              : 'Calidad resultante: $percent%',
           style: const TextStyle(
             color: AppColors.textSecondary,
             fontSize: 13,

@@ -296,8 +296,8 @@ class GlucoseInsightEngine {
   static GlucoseInsight? _analyzeMealVsPostprandialGlucose(
     List<GlucoseReadingWithContext> entries,
   ) {
-    final postprandial = entries.where((e) =>
-        e.isPostprandialContext && e.mealGlycemicIndex != null);
+    final postprandial = entries
+        .where((e) => e.isPostprandialContext && e.mealGlycemicIndex != null);
 
     final highGi = postprandial
         .where((e) => e.mealGlycemicIndex! >= _GlycemicIndexBand.highMin)

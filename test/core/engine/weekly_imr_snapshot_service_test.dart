@@ -134,8 +134,7 @@ void main() {
       expect(repo.lastUserId, 'u1');
       expect(repo.lastWrittenImr!['scoreVariant'], 'longitudinal');
       expect(repo.lastWrittenImr!['trigger'], 'biometricCheckin');
-      expect(repo.lastWrittenImr!['computedAt'],
-          fixedNow.toIso8601String());
+      expect(repo.lastWrittenImr!['computedAt'], fixedNow.toIso8601String());
     });
 
     test('trigger stalenessFallback se propaga', () async {

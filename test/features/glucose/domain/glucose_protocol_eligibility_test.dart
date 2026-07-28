@@ -43,7 +43,8 @@ void main() {
       expect(e.eligible, isTrue);
     });
 
-    test('diabetes medicada (insulina/sulfonilureas) → NO elegible, '
+    test(
+        'diabetes medicada (insulina/sulfonilureas) → NO elegible, '
         'aunque también declare prediabetes', () {
       final e = GlucoseProtocolEligibility.assess(
         _user(pathologies: [

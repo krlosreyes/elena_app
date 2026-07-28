@@ -178,8 +178,7 @@ void main() {
         bodyFatPct: TransformationDelta.empty(label: '% Grasa', unit: '%'),
         sleepHoursAvg:
             TransformationDelta.empty(label: 'Sueño', unit: 'h prom'),
-        fastingDaysOf7:
-            TransformationDelta.empty(label: 'Ayuno', unit: 'd/7'),
+        fastingDaysOf7: TransformationDelta.empty(label: 'Ayuno', unit: 'd/7'),
         upfSharePct: TransformationDelta.empty(
           label: 'Ultraprocesado',
           unit: '%',

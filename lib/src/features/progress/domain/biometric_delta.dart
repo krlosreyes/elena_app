@@ -58,7 +58,8 @@ class BiometricDelta {
       return true;
     }
 
-    if (weight != null && _relativeDeltaExceeds(weight!, baseline.weight, 0.005)) {
+    if (weight != null &&
+        _relativeDeltaExceeds(weight!, baseline.weight, 0.005)) {
       return true;
     }
 
@@ -148,7 +149,8 @@ class BiometricDelta {
   }
 
   @override
-  String toString() => 'BiometricDelta(weight: $weight, waist: $waistCircumference, '
+  String toString() =>
+      'BiometricDelta(weight: $weight, waist: $waistCircumference, '
       'neck: $neckCircumference, bodyFat: $bodyFatPercentage, '
       'estimated: $isMeasurementEstimated)';
 }

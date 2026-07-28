@@ -55,12 +55,10 @@ class _GlucoseChartPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final values = readings.map((r) => r.valueMgDl).toList();
-    final minV = (values.reduce((a, b) => a < b ? a : b) - 15)
-        .clamp(0, 400)
-        .toDouble();
-    final maxV = (values.reduce((a, b) => a > b ? a : b) + 15)
-        .clamp(0, 400)
-        .toDouble();
+    final minV =
+        (values.reduce((a, b) => a < b ? a : b) - 15).clamp(0, 400).toDouble();
+    final maxV =
+        (values.reduce((a, b) => a > b ? a : b) + 15).clamp(0, 400).toDouble();
     final range = (maxV - minV).clamp(1, 400).toDouble();
 
     double yFor(int v) => size.height - ((v - minV) / range) * size.height;

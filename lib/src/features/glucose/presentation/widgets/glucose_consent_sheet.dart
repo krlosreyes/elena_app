@@ -139,9 +139,8 @@ class _GlucoseConsentSheetState extends ConsumerState<_GlucoseConsentSheet> {
                   color: Colors.white.withValues(alpha: 0.04),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: _accepted
-                        ? AppColors.metabolicGreen
-                        : Colors.white24,
+                    color:
+                        _accepted ? AppColors.metabolicGreen : Colors.white24,
                   ),
                 ),
                 child: Row(
@@ -208,8 +207,7 @@ class _GlucoseConsentSheetState extends ConsumerState<_GlucoseConsentSheet> {
             const SizedBox(height: 8),
             Center(
               child: TextButton(
-                onPressed:
-                    _saving ? null : () => Navigator.of(context).pop(),
+                onPressed: _saving ? null : () => Navigator.of(context).pop(),
                 child: Text(
                   'Ahora no',
                   style: TextStyle(

@@ -184,9 +184,7 @@ class CyclesHistoryCard extends ConsumerWidget {
   }) {
     final score = cycle.dailyScore ?? 0;
     final duration = cycle.totalDuration;
-    final durationLabel = duration != null
-        ? '${duration.inHours}h'
-        : '—';
+    final durationLabel = duration != null ? '${duration.inHours}h' : '—';
     final dateLabel = _formatDateShort(cycle.closedAt ?? cycle.startedAt);
 
     return InkWell(
@@ -347,8 +345,18 @@ class CyclesHistoryCard extends ConsumerWidget {
   // ─── Helpers ────────────────────────────────────────────────────────
 
   static const _monthsShort = [
-    'ene', 'feb', 'mar', 'abr', 'may', 'jun',
-    'jul', 'ago', 'sep', 'oct', 'nov', 'dic',
+    'ene',
+    'feb',
+    'mar',
+    'abr',
+    'may',
+    'jun',
+    'jul',
+    'ago',
+    'sep',
+    'oct',
+    'nov',
+    'dic',
   ];
 
   String _formatDateShort(DateTime dt) {

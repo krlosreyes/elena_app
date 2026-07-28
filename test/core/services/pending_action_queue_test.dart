@@ -105,8 +105,8 @@ void main() {
 
     test('actionId nulo o desconocido no encola nada', () async {
       await PendingActionQueue.handleNotificationAction(null, 400, now: fixed);
-      await PendingActionQueue.handleNotificationAction(
-          'algo_raro', 400, now: fixed);
+      await PendingActionQueue.handleNotificationAction('algo_raro', 400,
+          now: fixed);
       expect((await PendingActionQueue.peekAll()), isEmpty);
     });
   });

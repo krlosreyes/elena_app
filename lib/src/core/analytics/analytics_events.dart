@@ -48,10 +48,13 @@ class AnalyticsEvents {
   // ── Racha (SPEC-255) ───────────────────────────────────────────────────
   /// El usuario cruzó un hito de racha (3/7/14/30/60/100 días).
   static const String streakMilestoneReached = 'streak_milestone_reached';
+
   /// Una racha activa se rompió (sin reserva disponible para protegerla).
   static const String streakBroken = 'streak_broken';
+
   /// Una reserva de racha (freeze) perdonó un día no calificado.
   static const String streakFreezeUsed = 'streak_freeze_used';
+
   /// El usuario abrió el explainer de "qué cuenta para mi racha".
   static const String streakExplainerOpened = 'streak_explainer_opened';
 

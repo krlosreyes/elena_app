@@ -63,7 +63,13 @@ class PlanDayEntry {
   });
 
   static const List<String> _weekdayShort = [
-    'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom',
+    'Lun',
+    'Mar',
+    'Mié',
+    'Jue',
+    'Vie',
+    'Sáb',
+    'Dom',
   ];
 
   String get weekdayShortLabel => _weekdayShort[(weekday - 1).clamp(0, 6)];

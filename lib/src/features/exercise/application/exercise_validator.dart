@@ -14,7 +14,8 @@ class ExerciseValidator {
     required int intensityPercent,
   }) {
     // Primero: verificar seguridad básica (Autofagia profunda + sueño malo)
-    if (fastingPhase == OrchestratorFastingBand.autofagia && sleepQuality < 0.4) {
+    if (fastingPhase == OrchestratorFastingBand.autofagia &&
+        sleepQuality < 0.4) {
       return (
         false,
         'No es seguro ejercitar ahora: Autofagia profunda con recuperación de sueño insuficiente (${(sleepQuality * 100).toStringAsFixed(0)}%)',
@@ -41,7 +42,8 @@ class ExerciseValidator {
     }
 
     // Validar intensidad en Autofagia
-    if (fastingPhase == OrchestratorFastingBand.autofagia && intensityPercent > 75) {
+    if (fastingPhase == OrchestratorFastingBand.autofagia &&
+        intensityPercent > 75) {
       return (
         false,
         'Intensidad >75% en Autofagia es arriesgada. '
@@ -63,7 +65,8 @@ class ExerciseValidator {
 
   /// Calcula multiplicador de seguridad basado en fasting phase
   /// Valores sincronizados con OrchestratorEngine
-  static double getExerciseSafetyMultiplier(OrchestratorFastingBand fastingPhase) {
+  static double getExerciseSafetyMultiplier(
+      OrchestratorFastingBand fastingPhase) {
     return switch (fastingPhase) {
       OrchestratorFastingBand.alerta => 1.0,
       OrchestratorFastingBand.gluconeogenesis => 0.95,

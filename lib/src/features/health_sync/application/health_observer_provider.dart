@@ -43,7 +43,8 @@ final healthObserverSideEffectProvider = Provider<void>((ref) {
 
     final user = ref.read(currentUserStreamProvider).valueOrNull;
     if (user == null || user.id.isEmpty) {
-      AppLogger.debug('[HKObserver] evento descartado — sin usuario autenticado');
+      AppLogger.debug(
+          '[HKObserver] evento descartado — sin usuario autenticado');
       return;
     }
 

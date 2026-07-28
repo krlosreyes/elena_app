@@ -378,7 +378,13 @@ class SleepQualityCard extends ConsumerWidget {
   // ─── Helpers ────────────────────────────────────────────────────────
 
   static const _daysShort = [
-    'lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom',
+    'lun',
+    'mar',
+    'mié',
+    'jue',
+    'vie',
+    'sáb',
+    'dom',
   ];
 
   String _dayShort(int weekday) {

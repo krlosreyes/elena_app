@@ -58,27 +58,23 @@ class NutritionRepositoryImpl implements NutritionRepository {
     DateTime start,
     DateTime? end,
   ) {
-    return _source
-        .watchTodayLogs(userId, startOfDay: start, endOfDay: end)
-        .map(
+    return _source.watchTodayLogs(userId, startOfDay: start, endOfDay: end).map(
           // BUGFIX (2026-06-14): si fromMap lanza (timestamp corrupto,
           // label inválido, etc.), NO propagar el error al stream —
           // eso causa que onError lo silencie y el estado quede en 0
           // permanentemente. En cambio, saltamos el doc inválido y
           // seguimos procesando el resto del snapshot.
-          (rows) => rows
-              .expand((row) {
-                try {
-                  return [_mapper.fromMap(row.data, docId: row.docId)];
-                } catch (e) {
-                  AppLogger.warning(
-                    'nutrition_history: doc ${row.docId} inválido, '
-                    'ignorado: $e',
-                  );
-                  return const <NutritionLog>[];
-                }
-              })
-              .toList(growable: false),
+          (rows) => rows.expand((row) {
+            try {
+              return [_mapper.fromMap(row.data, docId: row.docId)];
+            } catch (e) {
+              AppLogger.warning(
+                'nutrition_history: doc ${row.docId} inválido, '
+                'ignorado: $e',
+              );
+              return const <NutritionLog>[];
+            }
+          }).toList(growable: false),
         );
   }
 

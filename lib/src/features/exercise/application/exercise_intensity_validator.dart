@@ -75,7 +75,8 @@ class ExerciseIntensityValidator {
     final String exerciseType = categorizeIntensity(intensityPercent);
 
     // Regla 1: No ejercitar en AUTOFAGIA con sueño deficiente
-    if (currentOrchestratorFastingBand == OrchestratorFastingBand.autofagia && sleepQuality < 0.4) {
+    if (currentOrchestratorFastingBand == OrchestratorFastingBand.autofagia &&
+        sleepQuality < 0.4) {
       return (
         true, // Permitir pero advertir
         '⚠️  CRÍTICO: No es seguro ejercitar ahora. '
@@ -143,7 +144,8 @@ class ExerciseIntensityValidator {
     if (sleepQuality < 0.4) {
       recommendedType = 'LISS';
       recommendedIntensity = 35;
-    } else if (currentOrchestratorFastingBand == OrchestratorFastingBand.autofagia) {
+    } else if (currentOrchestratorFastingBand ==
+        OrchestratorFastingBand.autofagia) {
       recommendedType = sleepQuality > 0.6 ? 'STRENGTH' : 'LISS';
       recommendedIntensity = 50;
     } else {
@@ -217,7 +219,8 @@ class ExerciseIntensityValidator {
   }
 
   /// Multiplicador de seguridad (Sincronizado SPEC-01)
-  static double getExerciseSafetyMultiplier(OrchestratorFastingBand fastingPhase) {
+  static double getExerciseSafetyMultiplier(
+      OrchestratorFastingBand fastingPhase) {
     return switch (fastingPhase) {
       OrchestratorFastingBand.alerta => 1.0,
       OrchestratorFastingBand.gluconeogenesis => 0.95,
@@ -238,7 +241,8 @@ class ExerciseIntensityValidator {
     );
 
     // En AUTOFAGIA profunda, limita carga metabólica
-    if (fastingPhase == OrchestratorFastingBand.autofagia && metabolicLoad > 1.5) {
+    if (fastingPhase == OrchestratorFastingBand.autofagia &&
+        metabolicLoad > 1.5) {
       return false;
     }
 

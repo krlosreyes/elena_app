@@ -58,8 +58,7 @@ class HealthImportSummary {
   bool get hasErrors => errors.isNotEmpty;
 
   @override
-  String toString() =>
-      'HealthImportSummary(weights=$weightsImported, '
+  String toString() => 'HealthImportSummary(weights=$weightsImported, '
       'sleep=$sleepSessionsImported, '
       'steps=$stepsActivitiesImported, '
       'workouts=$workoutsImported, errors=${errors.length})';
@@ -387,7 +386,8 @@ class HealthImportService {
     // Loguear el breakdown por día para diagnóstico — incluye sources
     // por día para que Carlos pueda ver iPhone vs Apple Watch.
     final breakdown = byDay.entries.map((e) {
-      final sources = byDayBySource[e.key]!.entries
+      final sources = byDayBySource[e.key]!
+          .entries
           .map((s) => '${s.key.split('.').last}=${s.value.round()}')
           .join('|');
       return '${e.key}=${e.value.round()}($sources)';

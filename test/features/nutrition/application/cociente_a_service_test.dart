@@ -123,7 +123,8 @@ void main() {
       );
     });
 
-    test('includeCheatDay=false con todos los logs en cheat → 0.0 '
+    test(
+        'includeCheatDay=false con todos los logs en cheat → 0.0 '
         '(lista filtrada queda vacía)', () {
       final logs = [
         _log(id: '1', ratio: MealRatio.a2e1, isCheatDay: true),

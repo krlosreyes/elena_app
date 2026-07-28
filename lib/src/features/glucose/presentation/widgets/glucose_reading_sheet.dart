@@ -369,7 +369,9 @@ class _GlucoseReadingSheetState extends ConsumerState<_GlucoseReadingSheet> {
                         ),
                       )
                     : Text(
-                        _confirmedOutOfRange ? 'Confirmar y guardar' : 'Guardar',
+                        _confirmedOutOfRange
+                            ? 'Confirmar y guardar'
+                            : 'Guardar',
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w900,

@@ -155,7 +155,8 @@ void main() {
     expect(controller.drafts[otherType], same(before));
   });
 
-  test('persist() con drafts vacíos no llama al repo (caso edge de '
+  test(
+      'persist() con drafts vacíos no llama al repo (caso edge de '
       '_finalSubmit: paso Goals nunca se inicializó)', () async {
     final controller = container.read(onboardingGoalsControllerProvider);
     await controller.persist();
@@ -164,8 +165,7 @@ void main() {
 
   test(
       'persist() guarda un UserGoal por draft respetando isActive '
-      '(Opción B: incluso los inactivos del engine se guardan)',
-      () async {
+      '(Opción B: incluso los inactivos del engine se guardan)', () async {
     // Fuerza la creación de GoalNotifier y su suscripción a
     // currentUserStreamProvider ANTES de emitir — un StreamController
     // broadcast no reproduce eventos a suscriptores tardíos.

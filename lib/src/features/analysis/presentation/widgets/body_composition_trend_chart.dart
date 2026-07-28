@@ -280,15 +280,13 @@ class _BodyCompositionTrendChartState
     } else if ((delta < 0) == lowerIsBetter) {
       // Cambio favorable
       deltaColor = AppColors.metabolicGreen;
-      deltaIcon = delta < 0
-          ? Icons.arrow_downward_rounded
-          : Icons.arrow_upward_rounded;
+      deltaIcon =
+          delta < 0 ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded;
     } else {
       // Cambio desfavorable
       deltaColor = const Color(0xFFF59E0B);
-      deltaIcon = delta < 0
-          ? Icons.arrow_downward_rounded
-          : Icons.arrow_upward_rounded;
+      deltaIcon =
+          delta < 0 ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded;
     }
 
     return Column(
@@ -394,8 +392,7 @@ class _BodyCompositionTrendChartState
             ),
             const SizedBox(width: 10),
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
                 color: zone.color.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(6),
@@ -478,16 +475,24 @@ class _BodyCompositionTrendChartState
       case BodyCompositionMetric.bodyFatPct:
         // ACSM ranges (adultos)
         if (isMale) {
-          if (value < 6) return const _HealthZone('Muy bajo', Color(0xFF38BDF8));
-          if (value <= 17) return const _HealthZone('Atlético ✓', Color(0xFF10B981));
-          if (value <= 24) return const _HealthZone('Saludable ✓', Color(0xFF10B981));
-          if (value <= 31) return const _HealthZone('Por mejorar', Color(0xFFF59E0B));
+          if (value < 6)
+            return const _HealthZone('Muy bajo', Color(0xFF38BDF8));
+          if (value <= 17)
+            return const _HealthZone('Atlético ✓', Color(0xFF10B981));
+          if (value <= 24)
+            return const _HealthZone('Saludable ✓', Color(0xFF10B981));
+          if (value <= 31)
+            return const _HealthZone('Por mejorar', Color(0xFFF59E0B));
           return const _HealthZone('Riesgo', Color(0xFFEF4444));
         } else {
-          if (value < 14) return const _HealthZone('Muy bajo', Color(0xFF38BDF8));
-          if (value <= 20) return const _HealthZone('Atlético ✓', Color(0xFF10B981));
-          if (value <= 31) return const _HealthZone('Saludable ✓', Color(0xFF10B981));
-          if (value <= 36) return const _HealthZone('Por mejorar', Color(0xFFF59E0B));
+          if (value < 14)
+            return const _HealthZone('Muy bajo', Color(0xFF38BDF8));
+          if (value <= 20)
+            return const _HealthZone('Atlético ✓', Color(0xFF10B981));
+          if (value <= 31)
+            return const _HealthZone('Saludable ✓', Color(0xFF10B981));
+          if (value <= 36)
+            return const _HealthZone('Por mejorar', Color(0xFFF59E0B));
           return const _HealthZone('Riesgo', Color(0xFFEF4444));
         }
 
@@ -498,19 +503,25 @@ class _BodyCompositionTrendChartState
       case BodyCompositionMetric.waistCm:
         // WHO risk thresholds
         if (isMale) {
-          if (value < 94) return const _HealthZone('Zona segura ✓', Color(0xFF10B981));
-          if (value < 102) return const _HealthZone('Riesgo moderado', Color(0xFFF59E0B));
+          if (value < 94)
+            return const _HealthZone('Zona segura ✓', Color(0xFF10B981));
+          if (value < 102)
+            return const _HealthZone('Riesgo moderado', Color(0xFFF59E0B));
           return const _HealthZone('Riesgo alto', Color(0xFFEF4444));
         } else {
-          if (value < 80) return const _HealthZone('Zona segura ✓', Color(0xFF10B981));
-          if (value < 88) return const _HealthZone('Riesgo moderado', Color(0xFFF59E0B));
+          if (value < 80)
+            return const _HealthZone('Zona segura ✓', Color(0xFF10B981));
+          if (value < 88)
+            return const _HealthZone('Riesgo moderado', Color(0xFFF59E0B));
           return const _HealthZone('Riesgo alto', Color(0xFFEF4444));
         }
 
       case BodyCompositionMetric.whtr:
         // Ashwell & Browne 2012: <0.5 saludable
-        if (value < 0.5) return const _HealthZone('Saludable ✓', Color(0xFF10B981));
-        if (value < 0.6) return const _HealthZone('Riesgo moderado', Color(0xFFF59E0B));
+        if (value < 0.5)
+          return const _HealthZone('Saludable ✓', Color(0xFF10B981));
+        if (value < 0.6)
+          return const _HealthZone('Riesgo moderado', Color(0xFFF59E0B));
         return const _HealthZone('Riesgo alto', Color(0xFFEF4444));
     }
   }
@@ -636,10 +647,10 @@ class _LinePainter extends CustomPainter {
     final yMax = maxV + padding;
     final yRange = (yMax - yMin) == 0 ? 1.0 : (yMax - yMin);
 
-    double yOf(double v) =>
-        size.height - ((v - yMin) / yRange) * size.height;
-    double xOf(int i) =>
-        values.length == 1 ? size.width / 2 : (i / (values.length - 1)) * size.width;
+    double yOf(double v) => size.height - ((v - yMin) / yRange) * size.height;
+    double xOf(int i) => values.length == 1
+        ? size.width / 2
+        : (i / (values.length - 1)) * size.width;
 
     final path = Path();
     final fillPath = Path();

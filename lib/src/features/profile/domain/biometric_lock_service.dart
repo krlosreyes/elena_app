@@ -86,10 +86,10 @@ class BiometricLockService {
 
     // Condición 2: cheat day ocurrió DESPUÉS del edit → desbloqueado.
     if (lastCheatDate != null) {
-      final editDay = DateTime(
-          lastEditAt.year, lastEditAt.month, lastEditAt.day);
-      final cheatDay = DateTime(
-          lastCheatDate.year, lastCheatDate.month, lastCheatDate.day);
+      final editDay =
+          DateTime(lastEditAt.year, lastEditAt.month, lastEditAt.day);
+      final cheatDay =
+          DateTime(lastCheatDate.year, lastCheatDate.month, lastCheatDate.day);
       if (cheatDay.isAfter(editDay)) {
         return BiometricLockState(
           isLocked: false,

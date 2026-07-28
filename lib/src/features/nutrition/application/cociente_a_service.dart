@@ -45,8 +45,7 @@ class CocienteAService {
 
     if (filtered.isEmpty) return 0.0;
 
-    final aDominantCount =
-        filtered.where((l) => l.ratio.isADominant).length;
+    final aDominantCount = filtered.where((l) => l.ratio.isADominant).length;
     return (aDominantCount / filtered.length).clamp(0.0, 1.0);
   }
 

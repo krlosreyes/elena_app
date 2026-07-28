@@ -86,15 +86,17 @@ void main() {
     });
 
     test('80-100% → adequate', () {
-      expect(
-          HydrationWeeklyComputer.pickTier(0.80), HydrationInsightTier.adequate);
-      expect(
-          HydrationWeeklyComputer.pickTier(0.99), HydrationInsightTier.adequate);
+      expect(HydrationWeeklyComputer.pickTier(0.80),
+          HydrationInsightTier.adequate);
+      expect(HydrationWeeklyComputer.pickTier(0.99),
+          HydrationInsightTier.adequate);
     });
 
     test('>=100% → optimal', () {
-      expect(HydrationWeeklyComputer.pickTier(1.0), HydrationInsightTier.optimal);
-      expect(HydrationWeeklyComputer.pickTier(1.5), HydrationInsightTier.optimal);
+      expect(
+          HydrationWeeklyComputer.pickTier(1.0), HydrationInsightTier.optimal);
+      expect(
+          HydrationWeeklyComputer.pickTier(1.5), HydrationInsightTier.optimal);
     });
   });
 

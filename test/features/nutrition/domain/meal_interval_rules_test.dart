@@ -81,8 +81,7 @@ void main() {
   });
 
   group('MealIntervalRules.check — casos especiales', () {
-    test('intervalo 18h (más allá del corte) → firstMeal (reset nocturno)',
-        () {
+    test('intervalo 18h (más allá del corte) → firstMeal (reset nocturno)', () {
       // Ayer 20:00, hoy 14:00 = 18h después → asume reset por ayuno
       // nocturno, trata como primera comida del día.
       final result = MealIntervalRules.check(
@@ -103,8 +102,7 @@ void main() {
       expect(result, MealIntervalCheck.ok);
     });
 
-    test('attemptAt en el pasado respecto a lastMealAt → ok (defensivo)',
-        () {
+    test('attemptAt en el pasado respecto a lastMealAt → ok (defensivo)', () {
       // No debería ocurrir, pero el service no debe romper.
       final result = MealIntervalRules.check(
         lastMealAt: DateTime(2026, 5, 24, 14),
@@ -252,8 +250,8 @@ void main() {
     test('minInterval = 2h, recommendedInterval = 3h, lead = 30min', () {
       expect(MealIntervalRules.minInterval, const Duration(hours: 2));
       expect(MealIntervalRules.recommendedInterval, const Duration(hours: 3));
-      expect(MealIntervalRules.notificationLeadTime,
-          const Duration(minutes: 30));
+      expect(
+          MealIntervalRules.notificationLeadTime, const Duration(minutes: 30));
     });
   });
 }

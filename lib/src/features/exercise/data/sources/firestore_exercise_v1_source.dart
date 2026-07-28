@@ -32,17 +32,16 @@ class FirestoreExerciseV1Source implements ExerciseDataSource {
             isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
         .orderBy('timestamp');
     if (endOfDay != null) {
-      query = query.where('timestamp',
-          isLessThan: Timestamp.fromDate(endOfDay));
+      query =
+          query.where('timestamp', isLessThan: Timestamp.fromDate(endOfDay));
     }
     return query
         .snapshots()
         // Fix Web: cloud_firestore_web puede retornar
         // LegacyJavaScriptObject como `data()` aunque la collection
         // esté tipada. Forzamos conversión a Map Dart con .from().
-        .map((snap) => snap.docs
-            .map((d) => Map<String, dynamic>.from(d.data()))
-            .toList());
+        .map((snap) =>
+            snap.docs.map((d) => Map<String, dynamic>.from(d.data())).toList());
   }
 
   @override
@@ -60,8 +59,7 @@ class FirestoreExerciseV1Source implements ExerciseDataSource {
     required DateTime since,
   }) async {
     final snap = await _collection(userId)
-        .where('timestamp',
-            isGreaterThanOrEqualTo: Timestamp.fromDate(since))
+        .where('timestamp', isGreaterThanOrEqualTo: Timestamp.fromDate(since))
         .orderBy('timestamp', descending: true)
         .limit(1)
         .get();

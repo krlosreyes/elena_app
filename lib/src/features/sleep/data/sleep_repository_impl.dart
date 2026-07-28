@@ -133,9 +133,7 @@ class SleepRepositoryImpl implements SleepRepository {
 
   @override
   Stream<List<SleepLog>> watchRecent(String userId, {int limit = 7}) {
-    return _source
-        .streamRecent(userId: userId, limit: limit)
-        .map((maps) {
+    return _source.streamRecent(userId: userId, limit: limit).map((maps) {
       final out = <SleepLog>[];
       for (final map in maps) {
         final docId = map['__docId'] as String? ?? '';

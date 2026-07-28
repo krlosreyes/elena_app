@@ -82,9 +82,8 @@ class QuizQuestion {
             .toList() ??
         const <String>[];
     final correct = map['correctAnswer'];
-    final idx = correct is int
-        ? correct
-        : int.tryParse(correct?.toString() ?? '') ?? 0;
+    final idx =
+        correct is int ? correct : int.tryParse(correct?.toString() ?? '') ?? 0;
     return QuizQuestion(
       question: map['question']?.toString() ?? '',
       options: opts,
@@ -132,10 +131,8 @@ class Post {
 
   /// Tiempo de lectura estimado en minutos (≈ 200 palabras/min). Mínimo 1.
   int get readingMinutes {
-    final words = contentMarkdown
-        .split(RegExp(r'\s+'))
-        .where((w) => w.isNotEmpty)
-        .length;
+    final words =
+        contentMarkdown.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
     if (words == 0) return 1;
     return (words / 200).ceil().clamp(1, 99);
   }

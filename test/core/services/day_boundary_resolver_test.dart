@@ -83,8 +83,10 @@ void main() {
         DayBoundaryResolver.isInDayOf(at(2026, 5, 9, 23, 59), ref),
         isTrue,
       );
-      expect(DayBoundaryResolver.isInDayOf(at(2026, 5, 10, 0, 0), ref), isFalse);
-      expect(DayBoundaryResolver.isInDayOf(at(2026, 5, 8, 23, 59), ref), isFalse);
+      expect(
+          DayBoundaryResolver.isInDayOf(at(2026, 5, 10, 0, 0), ref), isFalse);
+      expect(
+          DayBoundaryResolver.isInDayOf(at(2026, 5, 8, 23, 59), ref), isFalse);
     });
   });
 

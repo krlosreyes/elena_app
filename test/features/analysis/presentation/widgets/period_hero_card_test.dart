@@ -63,8 +63,7 @@ void main() {
       expect(find.textContaining('+15 vs tu promedio'), findsOneWidget);
     });
 
-    testWidgets('sin HOY muestra "—" y mensaje de placeholder',
-        (tester) async {
+    testWidgets('sin HOY muestra "—" y mensaje de placeholder', (tester) async {
       await tester.pumpWidget(_wrap(
         PeriodHeroCard(
           data: _comp(avg: 0),

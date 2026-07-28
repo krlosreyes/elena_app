@@ -168,8 +168,7 @@ class _WakeUpQualityOverlayState extends ConsumerState<WakeUpQualityOverlay> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.bedtime_rounded,
-              color: Color(0xFF818CF8), size: 28),
+          const Icon(Icons.bedtime_rounded, color: Color(0xFF818CF8), size: 28),
           const SizedBox(height: 12),
           const Text(
             '¿CÓMO DORMISTE?',

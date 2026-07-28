@@ -56,20 +56,17 @@ final nextMealProvider = Provider<NextMealState>((ref) {
   final cheatDay = ref.watch(cheatDayProvider);
   // Watch del pulso para refrescar cada 10s. Si el stream aún no emitió
   // (primera apertura), usar DateTime.now() como fallback.
-  final now =
-      ref.watch(metabolicPulseProvider).valueOrNull ?? DateTime.now();
+  final now = ref.watch(metabolicPulseProvider).valueOrNull ?? DateTime.now();
 
-  final lastMealAt =
-      MealIntervalRules.lastMealOf(nutritionState.todayLogs);
+  final lastMealAt = MealIntervalRules.lastMealOf(nutritionState.todayLogs);
   final nextMealAt = MealIntervalRules.nextSuggestedAt(lastMealAt);
   final inWindow = MealIntervalRules.isInNotificationWindow(
     lastMealAt: lastMealAt,
     now: now,
   );
 
-  final minutesUntil = nextMealAt == null
-      ? 0
-      : nextMealAt.difference(now).inMinutes;
+  final minutesUntil =
+      nextMealAt == null ? 0 : nextMealAt.difference(now).inMinutes;
 
   return NextMealState(
     nextMealAt: nextMealAt,

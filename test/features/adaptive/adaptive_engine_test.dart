@@ -28,8 +28,8 @@ StreakEntry _entry(int imrScore, {String date = '2026-01-01'}) => StreakEntry(
       imrScore: imrScore,
     );
 
-List<StreakEntry> _history(List<int> imrScores) =>
-    List.generate(imrScores.length, (i) => _entry(imrScores[i], date: '2026-01-${i + 1}'));
+List<StreakEntry> _history(List<int> imrScores) => List.generate(
+    imrScores.length, (i) => _entry(imrScores[i], date: '2026-01-${i + 1}'));
 
 /// Usuario adulto sin patologías declaradas — el caso "sin restricción
 /// de Eje A" (tope 22:2). Suficiente para los tests de
@@ -83,7 +83,9 @@ void main() {
       expect(result, isNull);
     });
 
-    test('engagement excelente + IMR estable + protocolo intermedio → level up de protocolo', () {
+    test(
+        'engagement excelente + IMR estable + protocolo intermedio → level up de protocolo',
+        () {
       final result = AdaptiveEngine.evaluateProtocolAdjustment(
         engagement: EngagementLevel.excelente,
         history: stableHistory,
@@ -102,7 +104,9 @@ void main() {
     // elección consciente del usuario (Eje A). Estos dos tests usaban
     // '16:8' como "ya en el tope"; se actualizan a '20:4', el tope
     // real de la escalera automática.
-    test('engagement excelente + protocolo ya en el tope (20:4) + meta de ejercicio baja → sugiere subir ejercicio', () {
+    test(
+        'engagement excelente + protocolo ya en el tope (20:4) + meta de ejercicio baja → sugiere subir ejercicio',
+        () {
       final result = AdaptiveEngine.evaluateProtocolAdjustment(
         engagement: EngagementLevel.excelente,
         history: stableHistory,
@@ -116,7 +120,9 @@ void main() {
       expect(result.newExerciseGoal, 40);
     });
 
-    test('engagement excelente + protocolo tope + meta de ejercicio ya alta (>=45) → sin sugerencia', () {
+    test(
+        'engagement excelente + protocolo tope + meta de ejercicio ya alta (>=45) → sin sugerencia',
+        () {
       final result = AdaptiveEngine.evaluateProtocolAdjustment(
         engagement: EngagementLevel.excelente,
         history: stableHistory,
@@ -140,7 +146,9 @@ void main() {
 
     // ── SPEC-257 Eje A: la elegibilidad médica manda sobre la adherencia ──
 
-    test('eligibility con tope por debajo del siguiente nivel → sin sugerencia aunque el comportamiento sea perfecto', () {
+    test(
+        'eligibility con tope por debajo del siguiente nivel → sin sugerencia aunque el comportamiento sea perfecto',
+        () {
       // IMC < 20 (bajo peso moderado) → tope 20:4 (FastingEligibility).
       final eligibility = FastingEligibility.assess(
         _user().copyWith(weight: 50, height: 165), // IMC ≈ 18.4 → bloqueado
@@ -159,7 +167,8 @@ void main() {
     });
 
     test('eligibility permite el siguiente nivel → sugerencia normal', () {
-      final eligibility = FastingEligibility.assess(_user()); // sin restricción, tope 22:2
+      final eligibility =
+          FastingEligibility.assess(_user()); // sin restricción, tope 22:2
       final result = AdaptiveEngine.evaluateProtocolAdjustment(
         engagement: EngagementLevel.excelente,
         history: stableHistory,
@@ -185,7 +194,9 @@ void main() {
       expect(result.newProtocol, '14:10');
     });
 
-    test('engagement crítico en el piso (Ninguno) → sin sugerencia, no hay a dónde bajar', () {
+    test(
+        'engagement crítico en el piso (Ninguno) → sin sugerencia, no hay a dónde bajar',
+        () {
       final result = AdaptiveEngine.evaluateProtocolAdjustment(
         engagement: EngagementLevel.critico,
         history: const [],
@@ -195,7 +206,9 @@ void main() {
       expect(result, isNull);
     });
 
-    test('protocolo elegido a mano fuera de la escalera automática (22:2) + crítico → baja al tope automático (20:4)', () {
+    test(
+        'protocolo elegido a mano fuera de la escalera automática (22:2) + crítico → baja al tope automático (20:4)',
+        () {
       final result = AdaptiveEngine.evaluateProtocolAdjustment(
         engagement: EngagementLevel.critico,
         history: const [],
@@ -207,7 +220,9 @@ void main() {
       expect(result.newProtocol, '20:4');
     });
 
-    test('hipoglucemia reportada → simplify inmediato aunque el engagement sea neutro', () {
+    test(
+        'hipoglucemia reportada → simplify inmediato aunque el engagement sea neutro',
+        () {
       final result = AdaptiveEngine.evaluateProtocolAdjustment(
         engagement: EngagementLevel.neutro,
         history: const [],
@@ -220,7 +235,9 @@ void main() {
       expect(result.newProtocol, '14:10');
     });
 
-    test('engagement bueno (no excelente) → sin sugerencia aunque el IMR sea estable', () {
+    test(
+        'engagement bueno (no excelente) → sin sugerencia aunque el IMR sea estable',
+        () {
       final result = AdaptiveEngine.evaluateProtocolAdjustment(
         engagement: EngagementLevel.bueno,
         history: stableHistory,

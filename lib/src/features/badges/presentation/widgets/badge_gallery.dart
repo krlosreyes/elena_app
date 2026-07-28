@@ -70,7 +70,8 @@ class _CategoryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final meta = kBadgeCategoryMeta[category]!;
     final defs = BadgeCatalog.forCategory(category);
-    final earnedInCategory = defs.where((d) => earnedIds.contains(d.badgeId)).toList();
+    final earnedInCategory =
+        defs.where((d) => earnedIds.contains(d.badgeId)).toList();
     final hasAny = earnedInCategory.isNotEmpty;
     final highest = hasAny
         ? earnedInCategory.reduce((a, b) => a.level > b.level ? a : b)
@@ -85,7 +86,8 @@ class _CategoryCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: const Color(0xFF1E293B),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: color.withValues(alpha: hasAny ? 0.4 : 0.15)),
+          border:
+              Border.all(color: color.withValues(alpha: hasAny ? 0.4 : 0.15)),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -97,7 +99,9 @@ class _CategoryCard extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: color.withValues(alpha: hasAny ? 0.18 : 0.08),
-                border: Border.all(color: color.withValues(alpha: hasAny ? 0.6 : 0.2), width: 1.5),
+                border: Border.all(
+                    color: color.withValues(alpha: hasAny ? 0.6 : 0.2),
+                    width: 1.5),
               ),
               child: Icon(meta.icon, color: color, size: 24),
             ),
@@ -132,12 +136,14 @@ class _CategoryCard extends StatelessWidget {
   }
 }
 
-void _showCategorySheet(BuildContext context, String category, Set<String> earnedIds) {
+void _showCategorySheet(
+    BuildContext context, String category, Set<String> earnedIds) {
   showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (_) => _CategoryDetailSheet(category: category, earnedIds: earnedIds),
+    builder: (_) =>
+        _CategoryDetailSheet(category: category, earnedIds: earnedIds),
   );
 }
 
@@ -191,7 +197,11 @@ class _CategoryDetailSheet extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 18),
-            for (final def in defs) _LevelTile(def: def, earned: earnedIds.contains(def.badgeId), color: meta.color),
+            for (final def in defs)
+              _LevelTile(
+                  def: def,
+                  earned: earnedIds.contains(def.badgeId),
+                  color: meta.color),
           ],
         ),
       ),
@@ -204,7 +214,8 @@ class _LevelTile extends StatelessWidget {
   final bool earned;
   final Color color;
 
-  const _LevelTile({required this.def, required this.earned, required this.color});
+  const _LevelTile(
+      {required this.def, required this.earned, required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -215,7 +226,8 @@ class _LevelTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: earned ? 0.05 : 0.02),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: tileColor.withValues(alpha: earned ? 0.4 : 0.15)),
+        border:
+            Border.all(color: tileColor.withValues(alpha: earned ? 0.4 : 0.15)),
       ),
       child: Row(
         children: [
@@ -232,7 +244,9 @@ class _LevelTile extends StatelessWidget {
                 Text(
                   def.name,
                   style: TextStyle(
-                    color: earned ? Colors.white : Colors.white.withValues(alpha: 0.45),
+                    color: earned
+                        ? Colors.white
+                        : Colors.white.withValues(alpha: 0.45),
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
                   ),

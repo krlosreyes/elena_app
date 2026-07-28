@@ -97,7 +97,8 @@ void main() {
       expect(
         () => svc.safeAdd(const EntitlementStatus.free()),
         returnsNormally,
-        reason: 'El guard isClosed debe prevenir StateError al agregar tras dispose()',
+        reason:
+            'El guard isClosed debe prevenir StateError al agregar tras dispose()',
       );
     });
 
@@ -131,7 +132,8 @@ void main() {
       container.dispose();
 
       expect(svc.disposeCalled, isTrue,
-          reason: 'ref.onDispose debe llamar dispose() al destruir el container');
+          reason:
+              'ref.onDispose debe llamar dispose() al destruir el container');
       expect(svc.isControllerClosed, isTrue);
     });
   });

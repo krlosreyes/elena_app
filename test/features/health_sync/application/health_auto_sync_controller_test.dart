@@ -126,7 +126,8 @@ void main() {
     clock.value = clock.value.add(const Duration(minutes: 10));
     await controller.runIfDue(userId: 'user-1');
 
-    expect(syncService.syncCalls, 1, reason: 'debounce debe bloquear el 2do run');
+    expect(syncService.syncCalls, 1,
+        reason: 'debounce debe bloquear el 2do run');
   });
 
   test('runIfDue sí sincroniza tras pasar 15 min', () async {
@@ -137,7 +138,8 @@ void main() {
     clock.value = clock.value.add(const Duration(minutes: 16));
     await controller.runIfDue(userId: 'user-1');
 
-    expect(syncService.syncCalls, 2, reason: 'tras 15 min el debounce debe liberar');
+    expect(syncService.syncCalls, 2,
+        reason: 'tras 15 min el debounce debe liberar');
   });
 
   test('runNow ignora el debounce aunque el último run haya sido hace segundos',
@@ -148,6 +150,7 @@ void main() {
     // Sin avanzar el reloj — runNow debe correr igual (botón manual).
     await controller.runNow(userId: 'user-1');
 
-    expect(syncService.syncCalls, 2, reason: 'runNow no debe respetar el debounce');
+    expect(syncService.syncCalls, 2,
+        reason: 'runNow no debe respetar el debounce');
   });
 }

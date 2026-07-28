@@ -37,8 +37,7 @@ class MealTarget {
   int get hashCode => Object.hash(meals, allowsSnack);
 
   @override
-  String toString() =>
-      'MealTarget(meals: $meals, allowsSnack: $allowsSnack)';
+  String toString() => 'MealTarget(meals: $meals, allowsSnack: $allowsSnack)';
 }
 
 /// Servicio puro (sin Riverpod, sin Flutter) que mapea el string del
@@ -72,8 +71,7 @@ class MealTargetService {
   /// Default seguro para protocolos desconocidos o vacíos. Coincide con
   /// "Ninguno" — 3 comidas + snack — porque es el comportamiento de un
   /// adulto sano sin TRF.
-  static const MealTarget _fallback =
-      MealTarget(meals: 3, allowsSnack: true);
+  static const MealTarget _fallback = MealTarget(meals: 3, allowsSnack: true);
 
   /// Infiere el [MealTarget] desde el string del protocolo.
   ///

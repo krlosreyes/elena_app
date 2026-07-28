@@ -297,7 +297,7 @@ class _StreakRing extends StatelessWidget {
         return const Color(0xFF22C55E); // verde
       case StreakRiskLevel.atRiskMedium:
         return const Color(0xFFF59E0B); // ámbar — mismo tono que
-        // StreakAtRiskBanner usaba para su único estado de aviso.
+      // StreakAtRiskBanner usaba para su único estado de aviso.
       case StreakRiskLevel.atRiskHigh:
         return const Color(0xFFEF4444); // rojo
     }

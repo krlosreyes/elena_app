@@ -256,8 +256,7 @@ class _RestDayPromptSheetState extends ConsumerState<_RestDayPromptSheet> {
             const SizedBox(height: 8),
             Center(
               child: TextButton(
-                onPressed:
-                    _saving ? null : () => Navigator.of(context).pop(),
+                onPressed: _saving ? null : () => Navigator.of(context).pop(),
                 child: Text(
                   'Ahora no',
                   style: TextStyle(

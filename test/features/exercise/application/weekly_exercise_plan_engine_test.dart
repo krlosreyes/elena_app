@@ -40,8 +40,7 @@ void main() {
         isExcited: false,
         profile: baseProfile,
       );
-      final rest =
-          plan.days.where((d) => d.type == PlanSessionType.descanso);
+      final rest = plan.days.where((d) => d.type == PlanSessionType.descanso);
       expect(rest.length, 1);
     });
 
@@ -192,7 +191,8 @@ void main() {
       final fuerzaDays =
           plan.days.where((d) => d.type == PlanSessionType.fuerza);
       expect(
-        fuerzaDays.every((d) => d.recommendedPhase == CircadianPhase.motorFuerza),
+        fuerzaDays
+            .every((d) => d.recommendedPhase == CircadianPhase.motorFuerza),
         isTrue,
       );
     });
@@ -239,8 +239,7 @@ void main() {
   });
 
   group('WeeklyExercisePlanEngine.generate — lesiones (§4.5)', () {
-    test('Con lesión declarada, el rationale de fuerza menciona seguridad',
-        () {
+    test('Con lesión declarada, el rationale de fuerza menciona seguridad', () {
       final injured = baseProfile.copyWith(
         injuries: [InjuryTag.rodilla],
       );

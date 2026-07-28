@@ -552,8 +552,8 @@ class _ImrTrendPainter extends CustomPainter {
       final date = rangeStart.add(Duration(days: daysOffset));
       final x = plot.left +
           plot.width * (daysOffset / (daysInPeriod - 1).clamp(1, 1000));
-      _drawText(canvas, _shortDate(date), Offset(x - 16, plot.bottom + 6),
-          style);
+      _drawText(
+          canvas, _shortDate(date), Offset(x - 16, plot.bottom + 6), style);
     }
   }
 

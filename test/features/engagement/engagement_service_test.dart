@@ -9,7 +9,8 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('EngagementService.calculateEngagement — período de gracia', () {
-    test('menos de kGracePeriodDays días con actividad → neutro/Calibrando', () {
+    test('menos de kGracePeriodDays días con actividad → neutro/Calibrando',
+        () {
       final state = EngagementService.calculateEngagement(0.95, historyDays: 2);
       expect(state.level, EngagementLevel.neutro);
       expect(state.status, 'Calibrando');

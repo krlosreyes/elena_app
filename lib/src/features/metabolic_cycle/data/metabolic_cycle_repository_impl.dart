@@ -20,10 +20,8 @@ class MetabolicCycleRepositoryImpl implements MetabolicCycleRepository {
   final FirebaseFirestore _firestore;
   final MetabolicCycleMapper _mapper;
 
-  CollectionReference<Map<String, dynamic>> _col(String userId) => _firestore
-      .collection('users')
-      .doc(userId)
-      .collection('metabolic_cycles');
+  CollectionReference<Map<String, dynamic>> _col(String userId) =>
+      _firestore.collection('users').doc(userId).collection('metabolic_cycles');
 
   @override
   Future<void> save(String userId, MetabolicCycle cycle) async {
@@ -81,8 +79,8 @@ class MetabolicCycleRepositoryImpl implements MetabolicCycleRepository {
         .limit(limit)
         .snapshots()
         .map((snap) => snap.docs
-            .map((doc) =>
-                _mapper.fromMap(Map<String, dynamic>.from(doc.data())))
+            .map(
+                (doc) => _mapper.fromMap(Map<String, dynamic>.from(doc.data())))
             .whereType<MetabolicCycle>()
             .where((c) => c.isClosed)
             .toList());
@@ -122,8 +120,7 @@ class MetabolicCycleRepositoryImpl implements MetabolicCycleRepository {
   /// escritura a la caché local al instante — fetchOpenCycle posterior
   /// (incluso en el mismo frame) devuelve el valor correcto.
   @override
-  Future<void> updateLiveScore(
-      String userId, String cycleId, int score) async {
+  Future<void> updateLiveScore(String userId, String cycleId, int score) async {
     await _col(userId)
         .doc(cycleId)
         .set({'liveScore': score}, SetOptions(merge: true));

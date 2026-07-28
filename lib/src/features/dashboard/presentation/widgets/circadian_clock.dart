@@ -96,7 +96,8 @@ class _CircadianClockState extends State<CircadianClock>
   }
 
   void _syncPulse() {
-    final reduceMotion = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    final reduceMotion =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
     final shouldAnimate = widget.fastingState.isActive && !reduceMotion;
     if (shouldAnimate) {
       if (!_pulse.isAnimating) _pulse.repeat(reverse: true);

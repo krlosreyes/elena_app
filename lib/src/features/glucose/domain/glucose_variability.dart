@@ -62,10 +62,9 @@ class GlucoseVariability {
     final mean = valuesMgDl.reduce((a, b) => a + b) / valuesMgDl.length;
     if (mean <= 0) return GlucoseVariabilityResult.insufficientData;
 
-    final variance = valuesMgDl
-            .map((v) => (v - mean) * (v - mean))
-            .reduce((a, b) => a + b) /
-        valuesMgDl.length;
+    final variance =
+        valuesMgDl.map((v) => (v - mean) * (v - mean)).reduce((a, b) => a + b) /
+            valuesMgDl.length;
     final sd = math.sqrt(variance);
     final cv = (sd / mean) * 100;
 

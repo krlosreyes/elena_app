@@ -74,8 +74,7 @@ class GoalProgressComputer {
 
     final exerciseAvg =
         exerciseDocsCount == 0 ? 0.0 : sumExerciseMin / exerciseDocsCount;
-    final sleepAvg =
-        sleepDocsCount == 0 ? 0.0 : sumSleepHours / sleepDocsCount;
+    final sleepAvg = sleepDocsCount == 0 ? 0.0 : sumSleepHours / sleepDocsCount;
     final hydroAvg =
         hydroDocsCount == 0 ? 0.0 : sumHydroLiters / hydroDocsCount;
 

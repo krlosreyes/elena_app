@@ -115,134 +115,134 @@ class MetabolicCycleService {
     }
     _evaluating = true;
     try {
-    final openCycle = await _repository.fetchOpenCycle(userId);
+      final openCycle = await _repository.fetchOpenCycle(userId);
 
-    // Caso 1: no hay ciclo abierto — abrir uno nuevo si hay nuevo ayuno.
-    if (openCycle == null) {
-      if (input.newFastingStartedExplicitly &&
-          input.newFastingStartedAt != null) {
-        // SPEC-184 (2026-06-05): defensa contra apertura sospechosa.
-        // Si el `newFastingStartedAt` difiere significativamente de
-        // `now`, probablemente venimos del bootstrap del FastingNotifier
-        // que NO debería haber pasado por aquí (cf. SPEC-183).
-        // Loguear warning para que se vea en Crashlytics si vuelve a
-        // pasar. Decision: NO bloqueamos la apertura (preservar
-        // comportamiento legítimo de "viaje en el tiempo" via
-        // startFastingManual) pero la marcamos.
-        final deltaMinutes =
-            input.now.difference(input.newFastingStartedAt!).inMinutes.abs();
-        if (deltaMinutes > 5) {
-          AppLogger.warning(
-            '[cycle.open.suspicious] startedAt difiere de now por '
-            '${deltaMinutes}min. Posible bootstrap mal etiquetado '
-            'o viaje en el tiempo legítimo. '
-            'Ver docs/METABOLIC_DAY_CONSTITUTION.md §5.',
+      // Caso 1: no hay ciclo abierto — abrir uno nuevo si hay nuevo ayuno.
+      if (openCycle == null) {
+        if (input.newFastingStartedExplicitly &&
+            input.newFastingStartedAt != null) {
+          // SPEC-184 (2026-06-05): defensa contra apertura sospechosa.
+          // Si el `newFastingStartedAt` difiere significativamente de
+          // `now`, probablemente venimos del bootstrap del FastingNotifier
+          // que NO debería haber pasado por aquí (cf. SPEC-183).
+          // Loguear warning para que se vea en Crashlytics si vuelve a
+          // pasar. Decision: NO bloqueamos la apertura (preservar
+          // comportamiento legítimo de "viaje en el tiempo" via
+          // startFastingManual) pero la marcamos.
+          final deltaMinutes =
+              input.now.difference(input.newFastingStartedAt!).inMinutes.abs();
+          if (deltaMinutes > 5) {
+            AppLogger.warning(
+              '[cycle.open.suspicious] startedAt difiere de now por '
+              '${deltaMinutes}min. Posible bootstrap mal etiquetado '
+              'o viaje en el tiempo legítimo. '
+              'Ver docs/METABOLIC_DAY_CONSTITUTION.md §5.',
+            );
+          }
+          final fresh = MetabolicCycleResolver.openCycle(
+            startedAt: input.newFastingStartedAt!,
+            fastingProtocol: input.currentProtocol,
+            tzOffsetMinutes: input.tzOffsetMinutes,
           );
+          _persistCycle(userId, fresh);
+          // SPEC-184: log estructurado con motivo. Permite reconstruir el
+          // historial de aperturas desde Crashlytics sin tocar Firestore.
+          AppLogger.info(
+            '[cycle.open] cycleId=${fresh.cycleId} '
+            'startedAt=${fresh.startedAt.toIso8601String()} '
+            'protocol=${fresh.fastingProtocol} '
+            'source=userInitiated',
+          );
+          return MetabolicCycleCheckResult.opened(fresh);
         }
-        final fresh = MetabolicCycleResolver.openCycle(
+        return MetabolicCycleCheckResult.noop();
+      }
+
+      // Caso 2: hay ciclo abierto — chequear si debe cerrarse.
+      final reason = MetabolicCycleResolver.shouldClose(
+        openCycle: openCycle,
+        now: input.now,
+        currentProtocol: input.currentProtocol,
+        expectedWindowCloseTime: input.expectedWindowCloseTime,
+        lastMealTime: input.lastMealTime,
+        sleepDetectedAfterLastMeal: input.sleepDetectedAfterLastMeal,
+        newFastingStartedExplicitly: input.newFastingStartedExplicitly,
+        newFastingStartedAt: input.newFastingStartedAt,
+      );
+
+      if (reason == null) {
+        return MetabolicCycleCheckResult.noop();
+      }
+
+      // Cierre: construir feedback + ciclo cerrado + persistir.
+      final closeTime = _determineCloseTime(reason, input, openCycle);
+      final feedback = CycleFeedbackGenerator.generate(
+        magnitudes: input.currentMagnitudes,
+        fastingDurationHours: _computeFastingHours(openCycle, input),
+        feedingWindowHours: _computeFeedingHours(input),
+        windowClosedAt: input.actualWindowClosedAt,
+        recentInsightIds: input.recentInsightIds,
+      );
+
+      // SPEC-227: preferir el liveScore stampado en el ciclo abierto (~10s
+      // antes del cierre) sobre `input.currentDailyScore`, que puede estar
+      // stale por el ordering de listeners Riverpod (e.g., StreakNotifier
+      // reseteando fastingMagnitude antes de que el evaluador capture el
+      // snapshot). liveScore fue calculado con el estado real del ciclo.
+      // Fallback a input.currentDailyScore si aún no hay stamp (primer
+      // ciclo o primer tick tras apertura).
+      final scoreAtClose = openCycle.liveScore ?? input.currentDailyScore;
+
+      final closed = openCycle.close(
+        closedAt: closeTime,
+        reason: reason,
+        fastingDurationHours: _computeFastingHours(openCycle, input),
+        feedingWindowHours: _computeFeedingHours(input),
+        dailyScore: scoreAtClose,
+        pillarsCompleted: input.currentPillarsCompleted,
+        magnitudes: input.currentMagnitudes,
+        feedback: feedback,
+      );
+      _persistCycle(userId, closed);
+      // SPEC-184: log estructurado del cierre. Incluye reason, duración
+      // del ayuno y duración de ventana para diagnóstico rápido. Ver
+      // docs/METABOLIC_DAY_CONSTITUTION.md §6.
+      final cycleDurationHours =
+          closeTime.difference(openCycle.startedAt).inMinutes / 60.0;
+      AppLogger.info(
+        '[cycle.close] cycleId=${closed.cycleId} '
+        'closedAt=${closeTime.toIso8601String()} '
+        'reason=${reason.value} '
+        'durationHours=${cycleDurationHours.toStringAsFixed(2)} '
+        'score=${closed.dailyScore}',
+      );
+
+      // Si el cierre fue por nuevo ayuno explícito, abrir el siguiente.
+      MetabolicCycle? opened;
+      if (reason == ClosureReason.manualNextFasting &&
+          input.newFastingStartedAt != null) {
+        opened = MetabolicCycleResolver.openCycle(
           startedAt: input.newFastingStartedAt!,
           fastingProtocol: input.currentProtocol,
           tzOffsetMinutes: input.tzOffsetMinutes,
         );
-        _persistCycle(userId, fresh);
-        // SPEC-184: log estructurado con motivo. Permite reconstruir el
-        // historial de aperturas desde Crashlytics sin tocar Firestore.
+        _persistCycle(userId, opened);
+        // SPEC-184: log estructurado de re-apertura encadenada.
         AppLogger.info(
-          '[cycle.open] cycleId=${fresh.cycleId} '
-          'startedAt=${fresh.startedAt.toIso8601String()} '
-          'protocol=${fresh.fastingProtocol} '
-          'source=userInitiated',
+          '[cycle.open] cycleId=${opened.cycleId} '
+          'startedAt=${opened.startedAt.toIso8601String()} '
+          'protocol=${opened.fastingProtocol} '
+          'source=chainedAfterClose',
         );
-        return MetabolicCycleCheckResult.opened(fresh);
       }
-      return MetabolicCycleCheckResult.noop();
-    }
+      // 20-jul: rama `ClosureReason.protocolChanged` retirada — el
+      // resolver ya no devuelve esa razón (ver metabolic_cycle_resolver.
+      // dart), así que reabrir un ciclo encadenado por cambio de
+      // protocolo ya no aplica. El enum value se conserva en
+      // closure_reason.dart por compatibilidad con ciclos históricos ya
+      // persistidos con esa razón.
 
-    // Caso 2: hay ciclo abierto — chequear si debe cerrarse.
-    final reason = MetabolicCycleResolver.shouldClose(
-      openCycle: openCycle,
-      now: input.now,
-      currentProtocol: input.currentProtocol,
-      expectedWindowCloseTime: input.expectedWindowCloseTime,
-      lastMealTime: input.lastMealTime,
-      sleepDetectedAfterLastMeal: input.sleepDetectedAfterLastMeal,
-      newFastingStartedExplicitly: input.newFastingStartedExplicitly,
-      newFastingStartedAt: input.newFastingStartedAt,
-    );
-
-    if (reason == null) {
-      return MetabolicCycleCheckResult.noop();
-    }
-
-    // Cierre: construir feedback + ciclo cerrado + persistir.
-    final closeTime = _determineCloseTime(reason, input, openCycle);
-    final feedback = CycleFeedbackGenerator.generate(
-      magnitudes: input.currentMagnitudes,
-      fastingDurationHours: _computeFastingHours(openCycle, input),
-      feedingWindowHours: _computeFeedingHours(input),
-      windowClosedAt: input.actualWindowClosedAt,
-      recentInsightIds: input.recentInsightIds,
-    );
-
-    // SPEC-227: preferir el liveScore stampado en el ciclo abierto (~10s
-    // antes del cierre) sobre `input.currentDailyScore`, que puede estar
-    // stale por el ordering de listeners Riverpod (e.g., StreakNotifier
-    // reseteando fastingMagnitude antes de que el evaluador capture el
-    // snapshot). liveScore fue calculado con el estado real del ciclo.
-    // Fallback a input.currentDailyScore si aún no hay stamp (primer
-    // ciclo o primer tick tras apertura).
-    final scoreAtClose = openCycle.liveScore ?? input.currentDailyScore;
-
-    final closed = openCycle.close(
-      closedAt: closeTime,
-      reason: reason,
-      fastingDurationHours: _computeFastingHours(openCycle, input),
-      feedingWindowHours: _computeFeedingHours(input),
-      dailyScore: scoreAtClose,
-      pillarsCompleted: input.currentPillarsCompleted,
-      magnitudes: input.currentMagnitudes,
-      feedback: feedback,
-    );
-    _persistCycle(userId, closed);
-    // SPEC-184: log estructurado del cierre. Incluye reason, duración
-    // del ayuno y duración de ventana para diagnóstico rápido. Ver
-    // docs/METABOLIC_DAY_CONSTITUTION.md §6.
-    final cycleDurationHours =
-        closeTime.difference(openCycle.startedAt).inMinutes / 60.0;
-    AppLogger.info(
-      '[cycle.close] cycleId=${closed.cycleId} '
-      'closedAt=${closeTime.toIso8601String()} '
-      'reason=${reason.value} '
-      'durationHours=${cycleDurationHours.toStringAsFixed(2)} '
-      'score=${closed.dailyScore}',
-    );
-
-    // Si el cierre fue por nuevo ayuno explícito, abrir el siguiente.
-    MetabolicCycle? opened;
-    if (reason == ClosureReason.manualNextFasting &&
-        input.newFastingStartedAt != null) {
-      opened = MetabolicCycleResolver.openCycle(
-        startedAt: input.newFastingStartedAt!,
-        fastingProtocol: input.currentProtocol,
-        tzOffsetMinutes: input.tzOffsetMinutes,
-      );
-      _persistCycle(userId, opened);
-      // SPEC-184: log estructurado de re-apertura encadenada.
-      AppLogger.info(
-        '[cycle.open] cycleId=${opened.cycleId} '
-        'startedAt=${opened.startedAt.toIso8601String()} '
-        'protocol=${opened.fastingProtocol} '
-        'source=chainedAfterClose',
-      );
-    }
-    // 20-jul: rama `ClosureReason.protocolChanged` retirada — el
-    // resolver ya no devuelve esa razón (ver metabolic_cycle_resolver.
-    // dart), así que reabrir un ciclo encadenado por cambio de
-    // protocolo ya no aplica. El enum value se conserva en
-    // closure_reason.dart por compatibilidad con ciclos históricos ya
-    // persistidos con esa razón.
-
-    return MetabolicCycleCheckResult.closed(closed: closed, opened: opened);
+      return MetabolicCycleCheckResult.closed(closed: closed, opened: opened);
     } finally {
       // SPEC-214: siempre liberar el flag, incluso si el método lanzó.
       _evaluating = false;

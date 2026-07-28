@@ -365,8 +365,8 @@ class StreakEngine {
   /// depende de IMR. Ahora solo mide completación binaria de pilares.
   static double computeWeeklyCompletionRate(List<StreakEntry> history) {
     final now = DateTime.now();
-    final cutoff = DayBoundaryResolver.startOfDay(now)
-        .subtract(const Duration(days: 6));
+    final cutoff =
+        DayBoundaryResolver.startOfDay(now).subtract(const Duration(days: 6));
 
     final lastWeek = history.where((e) {
       final eDate = DateTime.tryParse(e.date);
@@ -385,8 +385,8 @@ class StreakEngine {
   /// ScoreEngine (rompe circularidad).
   static double computeWeeklyEngagementRate(List<StreakEntry> history) {
     final now = DateTime.now();
-    final cutoff = DayBoundaryResolver.startOfDay(now)
-        .subtract(const Duration(days: 6));
+    final cutoff =
+        DayBoundaryResolver.startOfDay(now).subtract(const Duration(days: 6));
 
     final lastWeek = history.where((e) {
       final eDate = DateTime.tryParse(e.date);
@@ -420,8 +420,8 @@ class StreakEngine {
   static double computeWeeklyQualityScore(List<StreakEntry> history) {
     final now = DateTime.now();
     // SPEC-138: inicio del día vía fuente única.
-    final cutoff = DayBoundaryResolver.startOfDay(now)
-        .subtract(const Duration(days: 6));
+    final cutoff =
+        DayBoundaryResolver.startOfDay(now).subtract(const Duration(days: 6));
 
     final lastWeek = history.where((e) {
       final eDate = DateTime.tryParse(e.date);
@@ -453,8 +453,8 @@ class StreakEngine {
   /// escala 2-4 semanas; 30d cubre el límite superior conservador.
   static double computeMonthlyQualityScore(List<StreakEntry> history) {
     final now = DateTime.now();
-    final cutoff = DayBoundaryResolver.startOfDay(now)
-        .subtract(const Duration(days: 29));
+    final cutoff =
+        DayBoundaryResolver.startOfDay(now).subtract(const Duration(days: 29));
 
     final lastMonth = history.where((e) {
       final eDate = DateTime.tryParse(e.date);
@@ -481,8 +481,8 @@ class StreakEngine {
   static int computeActiveDaysLast90(List<StreakEntry> history) {
     if (history.isEmpty) return 0;
     final now = DateTime.now();
-    final cutoff = DayBoundaryResolver.startOfDay(now)
-        .subtract(const Duration(days: 89));
+    final cutoff =
+        DayBoundaryResolver.startOfDay(now).subtract(const Duration(days: 89));
     final daysInWindow = <String>{};
     for (final e in history) {
       if (!e.qualifiesForStreak) continue;

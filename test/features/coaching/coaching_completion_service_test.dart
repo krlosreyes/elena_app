@@ -23,7 +23,8 @@ CoachingAction _a(Pillar p, {String id = 'x'}) => CoachingAction(
 void main() {
   group('CoachingCompletionService (SPEC-194)', () {
     test('actividad en el pilar recomendado cuenta una vez (dedup)', () {
-      final s = CoachingCompletionService()..setActive(_a(Pillar.sleep, id: 's1'));
+      final s = CoachingCompletionService()
+        ..setActive(_a(Pillar.sleep, id: 's1'));
       expect(s.onPillarActivity(Pillar.sleep), isTrue);
       expect(s.onPillarActivity(Pillar.sleep), isFalse); // ya contada
     });
@@ -34,7 +35,8 @@ void main() {
     });
 
     test('una nueva acción (otro id) puede contar de nuevo', () {
-      final s = CoachingCompletionService()..setActive(_a(Pillar.sleep, id: 's1'));
+      final s = CoachingCompletionService()
+        ..setActive(_a(Pillar.sleep, id: 's1'));
       expect(s.onPillarActivity(Pillar.sleep), isTrue);
       s.setActive(_a(Pillar.sleep, id: 's2'));
       expect(s.onPillarActivity(Pillar.sleep), isTrue);

@@ -18,7 +18,8 @@ Post _post(String id, PillarTag pillar, {int day = 1}) => Post(
       status: 'published',
     );
 
-Observation _baselineBelow(String label, {double strength = 0.5}) => Observation(
+Observation _baselineBelow(String label, {double strength = 0.5}) =>
+    Observation(
       type: ObservationType.baseline,
       subject: label,
       headline: 'h',
@@ -40,7 +41,8 @@ void main() {
     test('baseline usa el label directo', () {
       expect(FeedMatcher.pillarOfObservation(_baselineBelow('Ejercicio')).name,
           'ejercicio');
-      expect(FeedMatcher.pillarOfObservation(_baselineBelow('Hidratación')).name,
+      expect(
+          FeedMatcher.pillarOfObservation(_baselineBelow('Hidratación')).name,
           'hidratacion');
     });
     test('racha- y meta- se desprefijan', () {
@@ -165,7 +167,8 @@ void main() {
       expect(feed.isEmpty, isTrue);
     });
 
-    test('pilar general (observación no mapeable) → destacado más reciente', () {
+    test('pilar general (observación no mapeable) → destacado más reciente',
+        () {
       final posts = [
         _post('n1', PillarTag.nutricion, day: 5),
         _post('e1', PillarTag.ejercicio, day: 4),

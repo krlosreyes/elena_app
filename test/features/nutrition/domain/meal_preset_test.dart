@@ -90,7 +90,8 @@ void main() {
   });
 
   group('MealPreset — igualdad e isNotEmpty', () {
-    test('dos presets con el mismo id son iguales aunque difieran en '
+    test(
+        'dos presets con el mismo id son iguales aunque difieran en '
         'otros campos', () {
       final a = MealPreset(
         id: 'same',

@@ -23,10 +23,8 @@ class FirestoreFastingIntervalV1Source implements FastingIntervalDataSource {
       : _firestore = firestore ?? FirebaseFirestore.instance;
 
   // SPEC-217: subcolección por uid — aislamiento garantizado por path.
-  CollectionReference<Map<String, dynamic>> _col(String userId) => _firestore
-      .collection('users')
-      .doc(userId)
-      .collection('fasting_history');
+  CollectionReference<Map<String, dynamic>> _col(String userId) =>
+      _firestore.collection('users').doc(userId).collection('fasting_history');
 
   @override
   Stream<Map<String, dynamic>?> streamLatest(String userId) {
@@ -123,8 +121,7 @@ class FirestoreFastingIntervalV1Source implements FastingIntervalDataSource {
     bool? isFastingFilter,
   }) async {
     // SPEC-97 + SPEC-100: buscar intervalos abiertos y mutar startTime.
-    Query<Map<String, dynamic>> q =
-        _col(userId).where('endTime', isNull: true);
+    Query<Map<String, dynamic>> q = _col(userId).where('endTime', isNull: true);
     if (isFastingFilter != null) {
       q = q.where('isFasting', isEqualTo: isFastingFilter);
     }

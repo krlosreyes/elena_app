@@ -29,8 +29,7 @@ void main() {
       expect(find.text('IMR'), findsOneWidget);
     });
 
-    testWidgets('muestra sub-label de delta positivo en HOY',
-        (tester) async {
+    testWidgets('muestra sub-label de delta positivo en HOY', (tester) async {
       await tester.pumpWidget(_wrap(
         DualScoreRing(
           dailyScore: 87,
@@ -43,8 +42,7 @@ void main() {
       expect(find.text('↑5 vs ayer'), findsOneWidget);
     });
 
-    testWidgets('muestra sub-label de delta negativo en HOY',
-        (tester) async {
+    testWidgets('muestra sub-label de delta negativo en HOY', (tester) async {
       await tester.pumpWidget(_wrap(
         DualScoreRing(
           dailyScore: 75,

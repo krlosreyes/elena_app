@@ -198,8 +198,7 @@ class NutritionNotifier extends StateNotifier<NutritionState>
           // cycle == null, newSince == _currentCycleStartedAt (ambos null)
           // y la igualdad bloqueaba la suscripción inicial. Subscribe
           // siempre que no haya subscription activa.
-          if (!hasActiveSubscription ||
-              newSince != _currentCycleStartedAt) {
+          if (!hasActiveSubscription || newSince != _currentCycleStartedAt) {
             _currentCycleStartedAt = newSince;
             _subscribeFor(newSince);
           }
@@ -221,11 +220,12 @@ class NutritionNotifier extends StateNotifier<NutritionState>
   /// nutrition_logs en Firestore — bug post-SPEC-194 al quitar el
   /// placeholder. Cuando el usuario inicie el próximo ayuno, el
   /// listener al cycle re-suscribe automáticamente con la nueva ventana.
-  void _subscribeFor(DateTime? cycleStartedAt, {bool forceFreshBaseline = false}) {
+  void _subscribeFor(DateTime? cycleStartedAt,
+      {bool forceFreshBaseline = false}) {
     final userId = _activeUserId;
     if (userId == null) return;
-    final since = cycleStartedAt ??
-        DayBoundaryResolver.startOfDay(DateTime.now());
+    final since =
+        cycleStartedAt ?? DayBoundaryResolver.startOfDay(DateTime.now());
     // SPEC-253: diagnóstico (Carlos reportó comidas desapareciendo al
     // registrar/editar). Se deja el logging — es barato y sigue siendo
     // útil para depurar futuras regresiones de la ventana de consulta.
@@ -304,8 +304,7 @@ class NutritionNotifier extends StateNotifier<NutritionState>
     final freshIds = fresh.map((l) => l.id).toSet();
     final missing = baseline.where(
       (old) =>
-          !freshIds.contains(old.id) &&
-          !_explicitlyRemovedIds.contains(old.id),
+          !freshIds.contains(old.id) && !_explicitlyRemovedIds.contains(old.id),
     );
     if (missing.isEmpty) return fresh;
     AppLogger.warning(
@@ -396,8 +395,7 @@ class NutritionNotifier extends StateNotifier<NutritionState>
         throw MealTooSoonException(
           lastMealAt: lastMealAt!,
           attemptedAt: timestamp,
-          canRegisterAt:
-              lastMealAt.add(MealIntervalRules.minInterval),
+          canRegisterAt: lastMealAt.add(MealIntervalRules.minInterval),
         );
       case MealIntervalCheck.warning:
         if (!forceLog) {
@@ -675,7 +673,8 @@ class NutritionNotifier extends StateNotifier<NutritionState>
           .read(nutritionRepositoryProvider)
           .deleteMealById(userId, mealId)
           .catchError((Object e) {
-        AppLogger.error('deleteMealById: Firestore falló (reintenta al sync)', e);
+        AppLogger.error(
+            'deleteMealById: Firestore falló (reintenta al sync)', e);
       }),
     );
 

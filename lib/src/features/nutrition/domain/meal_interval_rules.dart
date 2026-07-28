@@ -178,8 +178,7 @@ class MealIntervalWarning implements Exception {
   });
 
   Duration get sinceLastMeal => attemptedAt.difference(lastMealAt);
-  Duration get untilRecommended =>
-      recommendedAt.difference(attemptedAt);
+  Duration get untilRecommended => recommendedAt.difference(attemptedAt);
 
   @override
   String toString() => 'MealIntervalWarning(since: $sinceLastMeal, '

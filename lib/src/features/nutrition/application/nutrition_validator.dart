@@ -61,7 +61,8 @@ class NutritionValidator {
     }
 
     // Regla 2: Extremo en AUTOFAGIA
-    if (currentOrchestratorFastingBand == OrchestratorFastingBand.autofagia && carbsG > 100) {
+    if (currentOrchestratorFastingBand == OrchestratorFastingBand.autofagia &&
+        carbsG > 100) {
       return (
         true,
         '⚠️  En Autofagia profunda con >100g carbos. '

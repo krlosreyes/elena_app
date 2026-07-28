@@ -49,14 +49,14 @@ class BodyCompositionScreen extends ConsumerWidget {
           userAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (e, _) => Center(
-              child:
-                  Text('Error: $e', style: const TextStyle(color: Colors.white)),
+              child: Text('Error: $e',
+                  style: const TextStyle(color: Colors.white)),
             ),
             data: (user) {
               if (user == null) {
                 return const Center(
-                  child:
-                      Text('Sin datos', style: TextStyle(color: Colors.white54)),
+                  child: Text('Sin datos',
+                      style: TextStyle(color: Colors.white54)),
                 );
               }
               return _BodyCompositionContent(user: user);
@@ -102,7 +102,8 @@ class BodyCompositionScreen extends ConsumerWidget {
                         width: 68,
                         height: 68,
                         decoration: BoxDecoration(
-                          color: AppColors.metabolicGreen.withValues(alpha: 0.14),
+                          color:
+                              AppColors.metabolicGreen.withValues(alpha: 0.14),
                           borderRadius: BorderRadius.circular(22),
                         ),
                         child: const Icon(
@@ -136,7 +137,8 @@ class BodyCompositionScreen extends ConsumerWidget {
                         width: double.infinity,
                         child: FilledButton(
                           onPressed: () => openPaywall(
-                            context, ref,
+                            context,
+                            ref,
                             feature: GatedFeature.bodyComposition,
                           ),
                           style: FilledButton.styleFrom(

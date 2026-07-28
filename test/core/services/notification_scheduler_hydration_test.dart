@@ -158,8 +158,10 @@ void main() {
     test('Reparación nunca supera el tope circadiano 21:30', () {
       for (var h = 18; h <= 23; h++) {
         final lock = NotificationScheduler.repairLockActiveTime(sleepAt(h, 45));
-        final afterCap = lock.hour > 21 || (lock.hour == 21 && lock.minute > 30);
-        expect(afterCap, isFalse, reason: 'sleep $h:45 → ${lock.hour}:${lock.minute}');
+        final afterCap =
+            lock.hour > 21 || (lock.hour == 21 && lock.minute > 30);
+        expect(afterCap, isFalse,
+            reason: 'sleep $h:45 → ${lock.hour}:${lock.minute}');
       }
     });
   });

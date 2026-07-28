@@ -137,14 +137,16 @@ class CycleFeedbackGenerator {
       candidates.add((
         pillar: 'fasting',
         gap: kAchievementThreshold - m.fastingMagnitude,
-        copy: 'Ayuno corto — mañana apunta al 80% del protocolo para activar autofagia',
+        copy:
+            'Ayuno corto — mañana apunta al 80% del protocolo para activar autofagia',
       ));
     }
     if (m.sleepQualityScore < kAchievementThreshold) {
       candidates.add((
         pillar: 'sleep',
         gap: kAchievementThreshold - m.sleepQualityScore,
-        copy: 'Sueño bajo — Spiegel 1999: <7h desregula leptina y aumenta hambre al día siguiente',
+        copy:
+            'Sueño bajo — Spiegel 1999: <7h desregula leptina y aumenta hambre al día siguiente',
       ));
     }
     if (m.hydrationMagnitude < kAchievementThreshold) {

@@ -85,10 +85,10 @@ class MealPreset {
       name: rawName.isNotEmpty ? rawName : 'Mi plato',
       foodIds: (json['foodIds'] as List<dynamic>?)?.cast<String>() ??
           const <String>[],
-      createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ??
-          _epoch(),
-      lastUsedAt: DateTime.tryParse(json['lastUsedAt'] as String? ?? '') ??
-          _epoch(),
+      createdAt:
+          DateTime.tryParse(json['createdAt'] as String? ?? '') ?? _epoch(),
+      lastUsedAt:
+          DateTime.tryParse(json['lastUsedAt'] as String? ?? '') ?? _epoch(),
       useCount: (json['useCount'] as num?)?.toInt() ?? 1,
     );
   }

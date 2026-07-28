@@ -41,8 +41,7 @@ void main() {
   group('computeCurrentStreak — asOf ancla al día metabólico', () {
     test(
         'ciclo abierto que empezó lunes sigue contando el martes '
-        '(ayuno extendido cruzando medianoche, dentro del límite de 28h)',
-        () {
+        '(ayuno extendido cruzando medianoche, dentro del límite de 28h)', () {
       // Racha de 3 días metabólicos: sáb, dom, lun (lun = el ciclo que
       // sigue abierto — el usuario inició su ayuno el lunes a las 23:50 y
       // sigue ayunando el martes de madrugada, sin haber cerrado ventana).
@@ -100,7 +99,8 @@ void main() {
       expect(streakWithWallClock, 0);
     });
 
-    test('sin asOf (default), preserva el comportamiento previo basado en '
+    test(
+        'sin asOf (default), preserva el comportamiento previo basado en '
         'DateTime.now() real — no rompe a computeAdherenceTrend', () {
       final today = DateTime.now();
       final todayKey =
@@ -116,7 +116,8 @@ void main() {
   });
 
   group('computeCurrentStreakWithFreezes — asOf ancla al día metabólico', () {
-    test('ciclo abierto que empezó ayer (por el ancla del ciclo) sigue '
+    test(
+        'ciclo abierto que empezó ayer (por el ancla del ciclo) sigue '
         'protegiendo la racha visible al usuario', () {
       final history = [
         _qualifying('2026-07-11'),

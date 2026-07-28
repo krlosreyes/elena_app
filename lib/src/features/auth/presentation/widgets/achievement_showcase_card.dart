@@ -84,7 +84,8 @@ class AchievementShowcaseCard extends ConsumerWidget {
                         child: _BadgeCircle(badge: b),
                       )),
                   if (badgeState.earned.length > preview.length)
-                    _MoreCircle(count: badgeState.earned.length - preview.length),
+                    _MoreCircle(
+                        count: badgeState.earned.length - preview.length),
                 ],
               )
             else

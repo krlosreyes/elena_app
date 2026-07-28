@@ -59,7 +59,8 @@ Future<ProviderContainer> _makeContainerWithEmission({
 // ─── Tests ──────────────────────────────────────────────────────────────────
 
 void main() {
-  group('resolvedDailyScoreSeriesProvider — jerarquía de fuentes (SPEC-219)', () {
+  group('resolvedDailyScoreSeriesProvider — jerarquía de fuentes (SPEC-219)',
+      () {
     test(
       'usa ciclos cerrados cuando tienen puntos',
       () async {
@@ -116,7 +117,8 @@ void main() {
           dailyScoreSeriesProvider.overrideWith((ref) => streak),
         ]);
         addTearDown(container.dispose);
-        await Future.delayed(Duration.zero); // Pump para subscribirse sin emitir.
+        await Future.delayed(
+            Duration.zero); // Pump para subscribirse sin emitir.
 
         // Verificar que efectivamente está en AsyncLoading.
         final closedState = container.read(closedCycleScoreSeriesProvider);

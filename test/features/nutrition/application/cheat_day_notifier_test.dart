@@ -142,8 +142,7 @@ void main() {
     test('rehidratación en día distinto refleja "no activo hoy"', () async {
       // Pre-poblar SP con un activo de ayer.
       final yesterday = DateTime.now().subtract(const Duration(days: 1));
-      final yesterdayIso =
-          '${yesterday.year.toString().padLeft(4, '0')}-'
+      final yesterdayIso = '${yesterday.year.toString().padLeft(4, '0')}-'
           '${yesterday.month.toString().padLeft(2, '0')}-'
           '${yesterday.day.toString().padLeft(2, '0')}';
       SharedPreferences.setMockInitialValues({

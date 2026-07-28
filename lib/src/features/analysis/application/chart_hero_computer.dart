@@ -151,8 +151,18 @@ class ChartHeroComputer {
   }
 
   static const _monthsShort = [
-    'ene', 'feb', 'mar', 'abr', 'may', 'jun',
-    'jul', 'ago', 'sep', 'oct', 'nov', 'dic',
+    'ene',
+    'feb',
+    'mar',
+    'abr',
+    'may',
+    'jun',
+    'jul',
+    'ago',
+    'sep',
+    'oct',
+    'nov',
+    'dic',
   ];
 
   static String _monthShort(DateTime d) => _monthsShort[d.month - 1];

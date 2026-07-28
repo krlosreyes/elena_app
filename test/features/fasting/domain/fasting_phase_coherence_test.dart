@@ -43,7 +43,8 @@ void main() {
         expect(
           orden[i].startsAt,
           greaterThan(orden[i - 1].startsAt),
-          reason: '${orden[i].name} debe empezar después de ${orden[i - 1].name}',
+          reason:
+              '${orden[i].name} debe empezar después de ${orden[i - 1].name}',
         );
       }
     });
@@ -106,7 +107,8 @@ void main() {
           expect(
             next.milestoneName,
             isNot(s.phase.milestoneName),
-            reason: 'a los ${m}min el nombre del hito repite el de la fase actual',
+            reason:
+                'a los ${m}min el nombre del hito repite el de la fase actual',
           );
         }
       },

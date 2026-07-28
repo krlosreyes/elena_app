@@ -36,7 +36,7 @@ class CoachingAction {
     required this.circadianImpact,
     this.minutesToDeadline,
     this.actionableNow = true,
-  })  : assert(circadianImpact >= 0.0 && circadianImpact <= 1.0,
+  }) : assert(circadianImpact >= 0.0 && circadianImpact <= 1.0,
             'circadianImpact debe estar en [0,1]');
 
   /// Identificador semántico estable (para telemetría y anti-fatiga).

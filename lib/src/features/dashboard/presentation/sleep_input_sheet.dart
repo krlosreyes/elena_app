@@ -67,10 +67,12 @@ class _SleepInputSheetState extends ConsumerState<SleepInputSheet> {
       final user = ref.read(currentUserStreamProvider).valueOrNull;
       final profile = user?.profile;
       _bedtime = profile != null
-          ? TimeOfDay(hour: profile.sleepTime.hour, minute: profile.sleepTime.minute)
+          ? TimeOfDay(
+              hour: profile.sleepTime.hour, minute: profile.sleepTime.minute)
           : const TimeOfDay(hour: 22, minute: 30);
       _wakeTime = profile != null
-          ? TimeOfDay(hour: profile.wakeUpTime.hour, minute: profile.wakeUpTime.minute)
+          ? TimeOfDay(
+              hour: profile.wakeUpTime.hour, minute: profile.wakeUpTime.minute)
           : const TimeOfDay(hour: 7, minute: 0);
       _showDetail = false;
     }

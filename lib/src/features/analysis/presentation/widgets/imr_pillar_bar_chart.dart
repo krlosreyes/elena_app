@@ -23,8 +23,8 @@ import 'package:elena_app/src/features/analysis/domain/aggregation_mode.dart';
 // ─── Modelo interno ────────────────────────────────────────────────────────
 
 class _BarData {
-  final DateTime date;  // para ordenar
-  final String label;   // texto eje X
+  final DateTime date; // para ordenar
+  final String label; // texto eje X
   final double fastingAvg;
   final double sleepAvg;
   final double hydrationAvg;
@@ -53,15 +53,16 @@ class _Pilar {
   final String name;
   final Color color;
   final double Function(_BarData) progress;
-  const _Pilar({required this.name, required this.color, required this.progress});
+  const _Pilar(
+      {required this.name, required this.color, required this.progress});
 }
 
 const List<_Pilar> _pilares = [
-  _Pilar(name: 'Ayuno',       color: Color(0xFF10B981), progress: _fastingOf),
-  _Pilar(name: 'Nutrición',   color: Color(0xFFF59E0B), progress: _nutritionOf),
+  _Pilar(name: 'Ayuno', color: Color(0xFF10B981), progress: _fastingOf),
+  _Pilar(name: 'Nutrición', color: Color(0xFFF59E0B), progress: _nutritionOf),
   _Pilar(name: 'Hidratación', color: Color(0xFF38BDF8), progress: _hydrationOf),
-  _Pilar(name: 'Ejercicio',   color: Color(0xFFEF4444), progress: _exerciseOf),
-  _Pilar(name: 'Sueño',       color: Color(0xFF818CF8), progress: _sleepOf),
+  _Pilar(name: 'Ejercicio', color: Color(0xFFEF4444), progress: _exerciseOf),
+  _Pilar(name: 'Sueño', color: Color(0xFF818CF8), progress: _sleepOf),
 ];
 
 double _fastingOf(_BarData d) => d.fastingAvg;
@@ -74,8 +75,19 @@ double _sleepOf(_BarData d) => d.sleepAvg;
 
 const _weekdayAbbr = ['', 'L', 'M', 'X', 'J', 'V', 'S', 'D'];
 const _monthAbbr = [
-  '', 'ene', 'feb', 'mar', 'abr', 'may', 'jun',
-  'jul', 'ago', 'sep', 'oct', 'nov', 'dic',
+  '',
+  'ene',
+  'feb',
+  'mar',
+  'abr',
+  'may',
+  'jun',
+  'jul',
+  'ago',
+  'sep',
+  'oct',
+  'nov',
+  'dic',
 ];
 
 String _dayLabel(DateTime dt) => '${_weekdayAbbr[dt.weekday]} ${dt.day}';
@@ -100,7 +112,8 @@ class ImrPillarBarChart extends StatelessWidget {
 
     if (bars.isEmpty) return _emptyState();
 
-    final avgImr = bars.map((b) => b.imrAvg).reduce((a, b) => a + b) / bars.length;
+    final avgImr =
+        bars.map((b) => b.imrAvg).reduce((a, b) => a + b) / bars.length;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),

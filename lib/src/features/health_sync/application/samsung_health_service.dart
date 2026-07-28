@@ -37,7 +37,8 @@ class SamsungHealthService {
   Future<bool> isAvailable() async {
     if (!_isAndroid) return false;
     try {
-      return await _channel.invokeMethod<bool>('isSamsungHealthAvailable') ?? false;
+      return await _channel.invokeMethod<bool>('isSamsungHealthAvailable') ??
+          false;
     } catch (e) {
       AppLogger.debug('SamsungHealth.isAvailable falló: $e');
       return false;
@@ -108,7 +109,8 @@ class SamsungHealthService {
         );
       }).toList();
     } on PlatformException catch (e) {
-      AppLogger.warning('SamsungHealth.readSleep error: ${e.code} ${e.message}');
+      AppLogger.warning(
+          'SamsungHealth.readSleep error: ${e.code} ${e.message}');
       return [];
     } catch (e) {
       AppLogger.debug('SamsungHealth.readSleep falló: $e');

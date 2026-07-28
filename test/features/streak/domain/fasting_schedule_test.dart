@@ -56,7 +56,8 @@ void main() {
     // todo y caía al default (3) — el usuario veía "5" persistido en
     // Perfil pero el ring se comportaba como si hubiera puesto 3. Ahora
     // se recorta (clamp) al borde más cercano, respetando la intención.
-    test('goal activo por ENCIMA del rango (5) → se recorta a 4, no se ignora', () {
+    test('goal activo por ENCIMA del rango (5) → se recorta a 4, no se ignora',
+        () {
       final goals = {
         GoalType.fastingDaysPerWeek: UserGoal(
           type: GoalType.fastingDaysPerWeek,
@@ -105,7 +106,9 @@ void main() {
   });
 
   group('FastingSchedule.isRestDay', () {
-    test('protocolo no-Novato → nunca es día de descanso, aunque no esté programado', () {
+    test(
+        'protocolo no-Novato → nunca es día de descanso, aunque no esté programado',
+        () {
       // Domingo 2026-01-04, día no programado — pero 16:8 es ventana diaria.
       final sunday = DateTime(2026, 1, 4);
       expect(

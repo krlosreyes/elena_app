@@ -102,8 +102,8 @@ class FastingCheckIn {
     return FastingCheckIn(
       id: id,
       userId: (m['userId'] as String?) ?? '',
-      timestamp: DateTime.tryParse(m['timestamp'] as String? ?? '') ??
-          DateTime.now(),
+      timestamp:
+          DateTime.tryParse(m['timestamp'] as String? ?? '') ?? DateTime.now(),
       fastingHour: (m['fastingHour'] as num?)?.toInt() ?? 0,
       feeling: feeling,
       cycleId: m['cycleId'] as String?,

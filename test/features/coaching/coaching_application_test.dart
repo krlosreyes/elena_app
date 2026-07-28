@@ -41,7 +41,8 @@ WeeklyCoachingInsight _insight({
 void main() {
   group('WeakPillarGenerator', () {
     test('genera la acción del pilar más débil reusando su copy', () {
-      final actions = WeakPillarGenerator.generate(_insight(weakest: WeakPillar.sleep));
+      final actions =
+          WeakPillarGenerator.generate(_insight(weakest: WeakPillar.sleep));
       expect(actions, hasLength(1));
       expect(actions.first.pillar, Pillar.sleep);
       expect(actions.first.id, 'weak_pillar_sleep');
@@ -53,7 +54,8 @@ void main() {
     });
 
     test('meals mapea al pilar de nutrición', () {
-      final actions = WeakPillarGenerator.generate(_insight(weakest: WeakPillar.meals));
+      final actions =
+          WeakPillarGenerator.generate(_insight(weakest: WeakPillar.meals));
       expect(actions.first.pillar, Pillar.nutrition);
     });
   });
@@ -69,7 +71,8 @@ void main() {
         CircadianPhase.creatividad,
         minutesToIntestinalLock: 30,
       );
-      final close = actions.firstWhere((a) => a.id == 'circadian_close_kitchen');
+      final close =
+          actions.firstWhere((a) => a.id == 'circadian_close_kitchen');
       expect(close.urgencyKind, ActionUrgencyKind.deadlineHard);
       expect(close.minutesToDeadline, 30);
       expect(close.pillar, Pillar.nutrition);

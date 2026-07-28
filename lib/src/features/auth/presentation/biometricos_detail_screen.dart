@@ -158,8 +158,7 @@ class _Body extends ConsumerWidget {
               ProfileDataRow.readonly('Edad', '${user.age} años'),
               ProfileDataRow.readonly(
                   'Género', user.gender == 'M' ? 'Masculino' : 'Femenino'),
-              ProfileDataRow.readonly(
-                  'Estatura', '${user.height.toInt()} cm'),
+              ProfileDataRow.readonly('Estatura', '${user.height.toInt()} cm'),
               // 17-jul (P0, propuesta "un Perfil que da orgullo abrir"):
               // las condiciones médicas viven acá, no en el subtítulo de
               // identidad — ver profile_identity_card.dart.
@@ -249,8 +248,8 @@ class _Body extends ConsumerWidget {
     if (context.mounted) _showIncoherenceNotice(context);
   }
 
-  Future<void> _editWeight(BuildContext context, WidgetRef ref,
-      UserModel user, BiometricLockState lock) async {
+  Future<void> _editWeight(BuildContext context, WidgetRef ref, UserModel user,
+      BiometricLockState lock) async {
     final value = await EditBiometryValueSheet.show(
       context,
       title: 'Editar peso',

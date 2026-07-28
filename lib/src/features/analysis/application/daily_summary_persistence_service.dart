@@ -140,8 +140,7 @@ class DailySummaryPersistenceService {
     final uid = _ref.read(authStateProvider).value?.uid;
     if (uid == null) return;
     final summary = _ref.read(dailySummaryProvider);
-    final closingInstant =
-        DateTime.now().subtract(const Duration(minutes: 1));
+    final closingInstant = DateTime.now().subtract(const Duration(minutes: 1));
     _debounceTimer?.cancel();
     await _persistNow(uid, summary, closingInstant);
   }

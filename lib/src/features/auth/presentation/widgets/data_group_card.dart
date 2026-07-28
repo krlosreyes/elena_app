@@ -73,7 +73,8 @@ class ProfileDataRow extends StatelessWidget {
     this.onInfoTap,
   });
 
-  factory ProfileDataRow.readonly(String label, String value) => ProfileDataRow._(
+  factory ProfileDataRow.readonly(String label, String value) =>
+      ProfileDataRow._(
         kind: ProfileDataRowKind.readonly,
         label: label,
         value: value,

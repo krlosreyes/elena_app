@@ -77,7 +77,8 @@ void main() {
               'volver a redirigir — de lo contrario el router entra en loop');
     });
 
-    test('perfil PARTIAL en /login también redirige una sola vez a '
+    test(
+        'perfil PARTIAL en /login también redirige una sola vez a '
         '/onboarding (mismo invariante que NEW)', () {
       final authState = AsyncValue<AppAccount?>.data(
         _account(status: AppProfileStatus.partialProfile),

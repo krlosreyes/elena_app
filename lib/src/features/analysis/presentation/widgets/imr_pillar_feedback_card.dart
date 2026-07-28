@@ -95,8 +95,8 @@ class ImrPillarFeedbackCard extends StatelessWidget {
 
           // Sección: Mantener
           if (maintain.isNotEmpty) ...[
-            _sectionHeader('✅ Vas bien — mantén el ritmo',
-                const Color(0xFF10B981)),
+            _sectionHeader(
+                '✅ Vas bien — mantén el ritmo', const Color(0xFF10B981)),
             const SizedBox(height: 8),
             ...maintain.map((r) => _pillarRow(r)),
             const SizedBox(height: 14),
@@ -104,8 +104,7 @@ class ImrPillarFeedbackCard extends StatelessWidget {
 
           // Sección: Oportunidad de mejora
           if (improve.isNotEmpty) ...[
-            _sectionHeader(
-                '🎯 Oportunidad de mejora', const Color(0xFFF59E0B)),
+            _sectionHeader('🎯 Oportunidad de mejora', const Color(0xFFF59E0B)),
             const SizedBox(height: 8),
             ...improve.map((r) => _pillarRow(r)),
           ],
@@ -143,8 +142,7 @@ class ImrPillarFeedbackCard extends StatelessWidget {
               style: TextStyle(
                 color: Colors.white.withValues(alpha: highlight ? 1.0 : 0.75),
                 fontSize: 13,
-                fontWeight:
-                    highlight ? FontWeight.w700 : FontWeight.w500,
+                fontWeight: highlight ? FontWeight.w700 : FontWeight.w500,
               ),
             ),
           ),
@@ -169,9 +167,8 @@ class ImrPillarFeedbackCard extends StatelessWidget {
               '$pct%',
               textAlign: TextAlign.right,
               style: TextStyle(
-                color: highlight
-                    ? r.color
-                    : Colors.white.withValues(alpha: 0.65),
+                color:
+                    highlight ? r.color : Colors.white.withValues(alpha: 0.65),
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
               ),

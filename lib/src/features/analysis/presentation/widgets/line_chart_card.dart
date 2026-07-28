@@ -123,8 +123,7 @@ class _LineChartCardState extends State<LineChartCard> {
 
   @override
   Widget build(BuildContext context) {
-    final heroValue =
-        ChartHeroComputer.aggregateValue(series, heroAggregation);
+    final heroValue = ChartHeroComputer.aggregateValue(series, heroAggregation);
     final dateRange =
         ChartHeroComputer.formatDateRange(series, aggregationMode);
 
@@ -318,8 +317,7 @@ class _LinePainter extends CustomPainter {
       return plotLeft + (i / (values.length - 1)) * plotWidth;
     }
 
-    double yOf(double v) =>
-        plotBottom - (v - yMin) / yRange * plotHeight;
+    double yOf(double v) => plotBottom - (v - yMin) / yRange * plotHeight;
 
     final path = Path();
     for (int i = 0; i < values.length; i++) {
@@ -480,14 +478,24 @@ class _LinePainter extends CustomPainter {
   }
 
   static const _monthsShort = [
-    'ene', 'feb', 'mar', 'abr', 'may', 'jun',
-    'jul', 'ago', 'sep', 'oct', 'nov', 'dic',
+    'ene',
+    'feb',
+    'mar',
+    'abr',
+    'may',
+    'jun',
+    'jul',
+    'ago',
+    'sep',
+    'oct',
+    'nov',
+    'dic',
   ];
 
   String _fmtDate(DateTime dt) {
     if (series.points.isEmpty) return '';
-    final span = series.points.last.weekStart
-        .difference(series.points.first.weekStart);
+    final span =
+        series.points.last.weekStart.difference(series.points.first.weekStart);
     if (span.inDays > 60) {
       return _monthsShort[dt.month - 1];
     }

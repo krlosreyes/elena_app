@@ -140,8 +140,7 @@ void main() {
     userStream.emit(null);
     await Future<void>.delayed(Duration.zero);
 
-    expect(service.backfillCalls, 0,
-        reason: 'Null user no dispara backfill');
+    expect(service.backfillCalls, 0, reason: 'Null user no dispara backfill');
 
     userStream.emit(_user());
     await Future<void>.delayed(Duration.zero);

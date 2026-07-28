@@ -77,7 +77,9 @@ void main() {
       expect(e.hasMedicalSupervision, isFalse);
     });
 
-    test('diabetes medicada CON supervisión → desbloquea OMAD (regla de severidad: supervisión gana)', () {
+    test(
+        'diabetes medicada CON supervisión → desbloquea OMAD (regla de severidad: supervisión gana)',
+        () {
       final e = FastingEligibility.assess(
         _user(pathologies: [
           FastingPathologyFlags.diabetesMedicada,

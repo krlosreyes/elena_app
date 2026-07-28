@@ -126,7 +126,9 @@ void main() {
     });
 
     test('score >= 75 -> excellent', () {
-      final b = PlateBuilder()..add(_food('pollo'))..add(_food('aguacate'));
+      final b = PlateBuilder()
+        ..add(_food('pollo'))
+        ..add(_food('aguacate'));
       expect(b.qualityPercent, greaterThanOrEqualTo(75));
       expect(b.quality(), PlateQuality.excellent);
     });
@@ -141,7 +143,9 @@ void main() {
     });
 
     test('score 35-59 -> needsWork', () {
-      final b = PlateBuilder()..add(_food('pollo'))..add(_food('arroz'));
+      final b = PlateBuilder()
+        ..add(_food('pollo'))
+        ..add(_food('arroz'));
       expect(b.qualityPercent, inInclusiveRange(35, 59));
       expect(b.quality(), PlateQuality.needsWork);
     });
@@ -162,7 +166,9 @@ void main() {
     });
 
     test('excellent -> null', () {
-      final b = PlateBuilder()..add(_food('pollo'))..add(_food('aguacate'));
+      final b = PlateBuilder()
+        ..add(_food('pollo'))
+        ..add(_food('aguacate'));
       expect(b.tip(), isNull);
     });
 
@@ -172,7 +178,9 @@ void main() {
     });
 
     test('solo carbos -> sugerir proteina Y grasa', () {
-      final b = PlateBuilder()..add(_food('arroz'))..add(_food('pan'));
+      final b = PlateBuilder()
+        ..add(_food('arroz'))
+        ..add(_food('pan'));
       final t = b.tip();
       expect(t, isNotNull);
       expect(t!.toLowerCase(), contains('solo tiene carbos'));
@@ -234,7 +242,9 @@ void main() {
     });
 
     test('score ~52 -> a1e1', () {
-      final b = PlateBuilder()..add(_food('pollo'))..add(_food('arroz'));
+      final b = PlateBuilder()
+        ..add(_food('pollo'))
+        ..add(_food('arroz'));
       expect(b.derivedMealRatio, MealRatio.a1e1);
     });
 
@@ -342,8 +352,8 @@ void main() {
       // Margarina tiene qualityScore=30 pero NOVA 4. Pollo+aguacate
       // sostienen el plato por encima del 60% pero el UPF% no es 0.
       final b = PlateBuilder()
-        ..add(_food('pollo'))      // q95, slots 2
-        ..add(_food('aguacate'))   // q100, slots 1
+        ..add(_food('pollo')) // q95, slots 2
+        ..add(_food('aguacate')) // q100, slots 1
         ..add(_food('margarina')); // q30, slots 1
       // q = (95*2 + 100*1 + 30*1) / 4 = 320/4 = 80
       expect(b.qualityPercent, 80);

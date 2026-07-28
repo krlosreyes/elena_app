@@ -113,11 +113,10 @@ class CoachingFatigueNotifier extends StateNotifier<CoachingFatigueState> {
           ((j['shown'] as List?)?.cast<String>() ?? const []).toSet(),
       completedTodayActionIds:
           ((j['completed'] as List?)?.cast<String>() ?? const []).toSet(),
-      ignoredStreakByActionId:
-          ((j['ignored'] as Map?)?.map(
-                (k, v) => MapEntry(k as String, (v as num).toInt()),
-              ) ??
-              const {}),
+      ignoredStreakByActionId: ((j['ignored'] as Map?)?.map(
+            (k, v) => MapEntry(k as String, (v as num).toInt()),
+          ) ??
+          const {}),
     );
   }
 

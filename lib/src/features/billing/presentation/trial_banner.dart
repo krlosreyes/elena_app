@@ -150,7 +150,7 @@ class TrialBanner extends ConsumerWidget {
   static Color _accentColor(int daysRemaining) {
     if (daysRemaining <= 3) return const Color(0xFFFB923C); // naranja urgente
     if (daysRemaining <= 7) return const Color(0xFFEAB308); // ámbar aviso
-    return AppColors.metabolicGreen;                         // verde informativo
+    return AppColors.metabolicGreen; // verde informativo
   }
 
   static String _mainLabel(int daysRemaining) {

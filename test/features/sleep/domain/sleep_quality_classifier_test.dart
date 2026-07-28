@@ -114,8 +114,7 @@ void main() {
       expect(SleepQualityClassifier.isNocturnalQualitySleep(log), isTrue);
     });
 
-    test('siesta vespertina de la misma noche de atribución NO califica',
-        () {
+    test('siesta vespertina de la misma noche de atribución NO califica', () {
       // Esta es la siesta que, antes del fix, le ganaba al sueño real
       // en `_resolveLatest` por tener `wokeUp` más tardío.
       final log = _log(

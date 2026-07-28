@@ -78,9 +78,7 @@ class OnboardingHealthStep extends ConsumerWidget {
           'más tarde desde Perfil > Salud.',
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: (isDark
-                    ? AppColors.textSecondary
-                    : const Color(0xFF475569))
+            color: (isDark ? AppColors.textSecondary : const Color(0xFF475569))
                 .withValues(alpha: 0.7),
             fontSize: 13,
             height: 1.5,

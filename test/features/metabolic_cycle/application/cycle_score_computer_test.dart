@@ -64,7 +64,8 @@ void main() {
       expect(score, 100);
     });
 
-    test('sleep 0.5 + hydration 1.0 → (0.25*0.5 + 0.15*1.0) / 0.40 ≈ 68.75 → 69',
+    test(
+        'sleep 0.5 + hydration 1.0 → (0.25*0.5 + 0.15*1.0) / 0.40 ≈ 68.75 → 69',
         () {
       final score = CycleScoreComputer.compute(
         sleepQualityScore: 0.5,
@@ -73,8 +74,7 @@ void main() {
       expect(score, 69);
     });
 
-    test(
-        'cuatro magnitudes presentes — fasting NaN/null se ignora sin romper',
+    test('cuatro magnitudes presentes — fasting NaN/null se ignora sin romper',
         () {
       final score = CycleScoreComputer.compute(
         sleepQualityScore: 1.0,

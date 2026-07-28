@@ -34,8 +34,8 @@ class HabitosEntryCard extends StatelessWidget {
                 color: _color.withValues(alpha: 0.18),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(Icons.checklist_rounded,
-                  color: _color, size: 22),
+              child:
+                  const Icon(Icons.checklist_rounded, color: _color, size: 22),
             ),
             const SizedBox(width: 14),
             Expanded(

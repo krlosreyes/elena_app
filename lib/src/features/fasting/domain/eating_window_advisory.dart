@@ -74,8 +74,7 @@ class EatingWindowAdvisory {
     return EatingWindowAdvisory(
       crossesLock: true,
       windowOpensAt: abre,
-      suggestedTargetHours:
-          sugerido >= kMinimoSugeribleHoras ? sugerido : null,
+      suggestedTargetHours: sugerido >= kMinimoSugeribleHoras ? sugerido : null,
     );
   }
 

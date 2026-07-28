@@ -61,8 +61,8 @@ Widget _wrap(
     overrides: [
       coachingSelectionProvider.overrideWith((ref) => selection),
       sharedPreferencesProvider.overrideWithValue(prefs),
-      featureGateProvider.overrideWithValue(
-          FeatureGate(isPremium: premium, isInTrial: false)),
+      featureGateProvider
+          .overrideWithValue(FeatureGate(isPremium: premium, isInTrial: false)),
       // BUGFIX (auditoría 2026-07-12): `coachingFatigueProvider` (leído por
       // NextBestActionCard) hace `ref.read(appStateRepositoryProvider)`
       // incondicionalmente, que construye `AppStateRepository()` con
@@ -75,7 +75,8 @@ Widget _wrap(
       // `CoachingFatigueNotifier` ya sabe saltarse la reconciliación con
       // Firestore cuando repo o uid son null, así que esto reproduce el
       // comportamiento real sin tocar Firebase.
-      coachingFatigueProvider.overrideWith((ref) => CoachingFatigueNotifier(prefs)),
+      coachingFatigueProvider
+          .overrideWith((ref) => CoachingFatigueNotifier(prefs)),
     ],
     child: const MaterialApp(home: Scaffold(body: NextBestActionCard())),
   );
@@ -91,7 +92,8 @@ void main() {
 
   testWidgets('renderiza la acción principal con CTA "Saber más"',
       (tester) async {
-    await tester.pumpWidget(_wrap(CoachingSelection(primary: _action()), prefs));
+    await tester
+        .pumpWidget(_wrap(CoachingSelection(primary: _action()), prefs));
     expect(find.text('Tu siguiente paso'), findsOneWidget);
     expect(find.text('Sueño'), findsOneWidget); // chip de pilar
     expect(find.text('Saber más'), findsOneWidget);
@@ -101,7 +103,8 @@ void main() {
   });
 
   testWidgets('tap "Saber más" abre el explainer con la cita', (tester) async {
-    await tester.pumpWidget(_wrap(CoachingSelection(primary: _action()), prefs));
+    await tester
+        .pumpWidget(_wrap(CoachingSelection(primary: _action()), prefs));
     await tester.tap(find.text('Saber más'));
     await tester.pumpAndSettle();
     expect(find.text('Por qué'), findsOneWidget);
@@ -111,7 +114,8 @@ void main() {
   testWidgets('selección vacía → no renderiza card', (tester) async {
     await tester.pumpWidget(_wrap(const CoachingSelection(), prefs));
     expect(find.text('Tu siguiente paso'), findsNothing);
-    expect(find.byType(NextBestActionCard), findsOneWidget); // existe pero vacío
+    expect(
+        find.byType(NextBestActionCard), findsOneWidget); // existe pero vacío
   });
 
   group('SPEC-197 gating', () {
@@ -123,7 +127,8 @@ void main() {
         prefs,
         premium: true,
       ));
-      expect(find.text('Tu siguiente paso'), findsOneWidget); // primaria visible
+      expect(
+          find.text('Tu siguiente paso'), findsOneWidget); // primaria visible
       expect(find.textContaining('También:'), findsNothing);
     });
 

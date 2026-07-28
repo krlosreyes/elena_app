@@ -50,37 +50,32 @@ void main() {
   group('GlucoseClassifier.classify — postprandial2h', () {
     test('< 70 → bajo', () {
       expect(
-        GlucoseClassifier.classify(
-            65, GlucoseReadingContext.postprandial2h),
+        GlucoseClassifier.classify(65, GlucoseReadingContext.postprandial2h),
         GlucoseClassification.bajo,
       );
     });
 
     test('70..139 → en rango', () {
       expect(
-        GlucoseClassifier.classify(
-            139, GlucoseReadingContext.postprandial2h),
+        GlucoseClassifier.classify(139, GlucoseReadingContext.postprandial2h),
         GlucoseClassification.enRango,
       );
     });
 
     test('140..199 → elevado (borde inferior y superior)', () {
       expect(
-        GlucoseClassifier.classify(
-            140, GlucoseReadingContext.postprandial2h),
+        GlucoseClassifier.classify(140, GlucoseReadingContext.postprandial2h),
         GlucoseClassification.elevado,
       );
       expect(
-        GlucoseClassifier.classify(
-            199, GlucoseReadingContext.postprandial2h),
+        GlucoseClassifier.classify(199, GlucoseReadingContext.postprandial2h),
         GlucoseClassification.elevado,
       );
     });
 
     test('> 199 → alto', () {
       expect(
-        GlucoseClassifier.classify(
-            200, GlucoseReadingContext.postprandial2h),
+        GlucoseClassifier.classify(200, GlucoseReadingContext.postprandial2h),
         GlucoseClassification.alto,
       );
     });

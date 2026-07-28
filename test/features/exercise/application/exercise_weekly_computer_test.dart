@@ -99,10 +99,10 @@ void main() {
 
   group('SPEC-161 — pickTier', () {
     test('<50% → sedentary', () {
-      expect(ExerciseWeeklyComputer.pickTier(0.30),
-          ExerciseInsightTier.sedentary);
-      expect(ExerciseWeeklyComputer.pickTier(0.49),
-          ExerciseInsightTier.sedentary);
+      expect(
+          ExerciseWeeklyComputer.pickTier(0.30), ExerciseInsightTier.sedentary);
+      expect(
+          ExerciseWeeklyComputer.pickTier(0.49), ExerciseInsightTier.sedentary);
     });
 
     test('50-80% → low', () {

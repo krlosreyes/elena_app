@@ -35,7 +35,8 @@ void main() {
     });
 
     test('sin goal → fallback al UserModel', () {
-      expect(PillarGoalResolver.exerciseMinutes(const {}, _user(exGoal: 25)), 25);
+      expect(
+          PillarGoalResolver.exerciseMinutes(const {}, _user(exGoal: 25)), 25);
     });
 
     test('goal inactivo se ignora (fallback)', () {

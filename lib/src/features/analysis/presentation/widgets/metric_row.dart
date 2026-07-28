@@ -130,21 +130,16 @@ class _DeltaLabel extends StatelessWidget {
     }
     final isUp = delta > 0;
     final isGood = betterIf == 'up' ? isUp : !isUp;
-    final color = isGood
-        ? const Color(0xFF22C55E)
-        : const Color(0xFFF59E0B);
-    final icon = isUp
-        ? Icons.arrow_upward_rounded
-        : Icons.arrow_downward_rounded;
+    final color = isGood ? const Color(0xFF22C55E) : const Color(0xFFF59E0B);
+    final icon =
+        isUp ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded;
     final formatted = fmt(delta.abs());
     return Row(
       children: [
         Icon(icon, color: color, size: 11),
         const SizedBox(width: 2),
         Text(
-          unit.isEmpty
-              ? '$formatted vs inicio'
-              : '$formatted $unit vs inicio',
+          unit.isEmpty ? '$formatted vs inicio' : '$formatted $unit vs inicio',
           style: TextStyle(
             color: color,
             fontSize: 10,

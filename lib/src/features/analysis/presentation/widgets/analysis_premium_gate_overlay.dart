@@ -105,7 +105,8 @@ class AnalysisPremiumGateOverlay extends ConsumerWidget {
                                 width: double.infinity,
                                 child: FilledButton(
                                   onPressed: () => openPaywall(
-                                    context, ref,
+                                    context,
+                                    ref,
                                     feature: GatedFeature.analyticsHistory,
                                   ),
                                   style: FilledButton.styleFrom(

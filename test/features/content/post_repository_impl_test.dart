@@ -127,7 +127,8 @@ void main() {
 
   test('la caché sobrevive a roundtrip JSON con quiz y referencias', () async {
     final sp = await prefs();
-    await PostRepositoryImpl(source: _FakeSource([_doc('a', 'sueno')]), prefs: sp)
+    await PostRepositoryImpl(
+            source: _FakeSource([_doc('a', 'sueno')]), prefs: sp)
         .fetchPublished();
 
     final offline = await PostRepositoryImpl(

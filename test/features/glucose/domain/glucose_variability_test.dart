@@ -15,8 +15,7 @@ void main() {
     });
 
     test('con exactamente 7 valores → sí calcula', () {
-      final result =
-          GlucoseVariability.compute([90, 95, 100, 92, 88, 91, 93]);
+      final result = GlucoseVariability.compute([90, 95, 100, 92, 88, 91, 93]);
       expect(result.sampleSize, 7);
       expect(result.hasEnoughData, isTrue);
     });
@@ -40,16 +39,17 @@ void main() {
     test('alta dispersión (%CV ≥ 36%) → isHighVariability true', () {
       // Media 100, con dispersión amplia (60-140) → %CV muy por encima
       // del umbral de Monnier (36%).
-      final result = GlucoseVariability.compute(
-          [60, 140, 60, 140, 60, 140, 100]);
-      expect(result.coefficientOfVariationPercent,
-          greaterThanOrEqualTo(GlucoseVariability.kHighVariabilityThresholdPercent));
+      final result =
+          GlucoseVariability.compute([60, 140, 60, 140, 60, 140, 100]);
+      expect(
+          result.coefficientOfVariationPercent,
+          greaterThanOrEqualTo(
+              GlucoseVariability.kHighVariabilityThresholdPercent));
       expect(result.isHighVariability, isTrue);
     });
 
     test('baja dispersión (%CV < 36%) → isHighVariability false', () {
-      final result =
-          GlucoseVariability.compute([95, 98, 100, 97, 99, 96, 101]);
+      final result = GlucoseVariability.compute([95, 98, 100, 97, 99, 96, 101]);
       expect(result.isHighVariability, isFalse);
     });
   });

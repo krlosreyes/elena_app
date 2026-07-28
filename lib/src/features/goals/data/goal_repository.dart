@@ -86,7 +86,8 @@ class GoalRepositoryImpl implements GoalRepository {
         // Si Firestore tiene un doc con schema antiguo o campo desconocido,
         // ahora queda traza para diagnóstico. El goal se omite pero no se
         // rompe la carga del resto.
-        AppLogger.warning('[GoalRepository] goal inválido key=${entry.key}: $e');
+        AppLogger.warning(
+            '[GoalRepository] goal inválido key=${entry.key}: $e');
       }
     }
     return result;

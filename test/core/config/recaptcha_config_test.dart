@@ -21,8 +21,7 @@ void main() {
         expect(
           recaptchaIsPlaceholder,
           isTrue,
-          reason:
-              'Si este test falla, la `kRecaptchaSiteKey` ya no es el '
+          reason: 'Si este test falla, la `kRecaptchaSiteKey` ya no es el '
               'placeholder. Verifica que la nueva key esté registrada en '
               'reCAPTCHA Admin (https://www.google.com/recaptcha/admin) '
               'con los dominios de producción listados en '
@@ -47,8 +46,7 @@ void main() {
         expect(
           kRecaptchaSiteKey.startsWith('6L'),
           isTrue,
-          reason:
-              'reCAPTCHA v3 site keys de Google empiezan con "6L". '
+          reason: 'reCAPTCHA v3 site keys de Google empiezan con "6L". '
               'Si esto falla, la key configurada NO es válida.',
         );
       },

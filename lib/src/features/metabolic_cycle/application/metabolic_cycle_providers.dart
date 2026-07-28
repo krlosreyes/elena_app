@@ -17,16 +17,14 @@ import 'package:elena_app/src/features/metabolic_cycle/domain/metabolic_cycle.da
 
 /// Service singleton para la sesión. NO autoDispose — debe preservar
 /// estado interno (futuro: caching, debounce, etc.).
-final metabolicCycleServiceProvider =
-    Provider<MetabolicCycleService>((ref) {
+final metabolicCycleServiceProvider = Provider<MetabolicCycleService>((ref) {
   final repo = ref.watch(metabolicCycleRepositoryProvider);
   return MetabolicCycleService(repository: repo);
 });
 
 /// Stream del ciclo metabólico actualmente abierto. Null si no hay.
 /// Emite null mientras el usuario no está autenticado.
-final currentMetabolicCycleProvider =
-    StreamProvider<MetabolicCycle?>((ref) {
+final currentMetabolicCycleProvider = StreamProvider<MetabolicCycle?>((ref) {
   final account = ref.watch(authStateProvider).value;
   if (account == null) return Stream.value(null);
   return ref
@@ -35,8 +33,7 @@ final currentMetabolicCycleProvider =
 });
 
 /// Stream del último ciclo cerrado. Fuente del card de cierre.
-final lastClosedMetabolicCycleProvider =
-    StreamProvider<MetabolicCycle?>((ref) {
+final lastClosedMetabolicCycleProvider = StreamProvider<MetabolicCycle?>((ref) {
   final account = ref.watch(authStateProvider).value;
   if (account == null) return Stream.value(null);
   return ref
@@ -58,8 +55,7 @@ final metabolicCyclesHistoryProvider =
 /// semanal (last_week_meals_ratio, last_week_hydration, last_week_exercise,
 /// weekly_coaching). Sin reloj: la "semana" no es 7 días sino 7 ciclos
 /// cerrados consecutivos. Ver METABOLIC_DAY_CONSTITUTION.md §1.
-final last7ClosedCyclesProvider =
-    StreamProvider<List<MetabolicCycle>>((ref) {
+final last7ClosedCyclesProvider = StreamProvider<List<MetabolicCycle>>((ref) {
   final account = ref.watch(authStateProvider).value;
   if (account == null) return Stream.value(const []);
   return ref
@@ -69,8 +65,7 @@ final last7ClosedCyclesProvider =
 
 /// SPEC-190: últimos 14 ciclos cerrados para period_comparison_provider
 /// ("últimos 7 vs los 7 anteriores").
-final last14ClosedCyclesProvider =
-    StreamProvider<List<MetabolicCycle>>((ref) {
+final last14ClosedCyclesProvider = StreamProvider<List<MetabolicCycle>>((ref) {
   final account = ref.watch(authStateProvider).value;
   if (account == null) return Stream.value(const []);
   return ref
@@ -119,7 +114,8 @@ final cycleClosureDismissalProvider =
 /// un sheet inmediato ("arrancaste tu ayuno, así cerró tu día anterior") en
 /// vez de dejar una tarjeta pasiva que aparece desconectada en la mañana.
 /// El evaluador lo setea; el Dashboard lo consume y lo limpia.
-final cycleClosureMomentProvider = StateProvider<MetabolicCycle?>((ref) => null);
+final cycleClosureMomentProvider =
+    StateProvider<MetabolicCycle?>((ref) => null);
 
 /// SPEC-202.2: ventana de frescura. Si el cierre ocurrió hace más de esto, la
 /// tarjeta pasiva NO se muestra — evita el pop desconectado de la mañana
@@ -178,8 +174,6 @@ final cycleScoreMigrationProvider = Provider<void>((ref) {
 
   // Future.microtask para no bloquear el build del árbol de widgets.
   Future.microtask(() {
-    ref
-        .read(cycleScoreMigrationServiceProvider)
-        .runIfNeeded(account.uid);
+    ref.read(cycleScoreMigrationServiceProvider).runIfNeeded(account.uid);
   });
 });

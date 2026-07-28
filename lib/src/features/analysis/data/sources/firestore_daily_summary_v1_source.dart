@@ -52,8 +52,7 @@ class FirestoreDailySummaryV1Source implements DailySummaryDataSource {
         // Fix Web: cloud_firestore_web puede retornar
         // LegacyJavaScriptObject como `data()` aunque la collection
         // esté tipada. Forzamos conversión a Map Dart con .from().
-        .map((snap) => snap.docs
-            .map((d) => Map<String, dynamic>.from(d.data()))
-            .toList());
+        .map((snap) =>
+            snap.docs.map((d) => Map<String, dynamic>.from(d.data())).toList());
   }
 }

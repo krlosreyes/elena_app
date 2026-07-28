@@ -15,7 +15,8 @@ import 'package:flutter/services.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
 
 /// Callback para acciones que llegan del Watch.
-typedef WatchActionHandler = void Function(String action, Map<String, dynamic> data);
+typedef WatchActionHandler = void Function(
+    String action, Map<String, dynamic> data);
 
 class WatchConnectivityService {
   WatchConnectivityService._();
@@ -116,7 +117,8 @@ class WatchConnectivityService {
     } on MissingPluginException {
       // No-op.
     } on PlatformException catch (e) {
-      AppLogger.warning('[WatchConnectivity] sendFastingUpdate falló: ${e.message}');
+      AppLogger.warning(
+          '[WatchConnectivity] sendFastingUpdate falló: ${e.message}');
     }
   }
 
@@ -137,7 +139,8 @@ class WatchConnectivityService {
     } on MissingPluginException {
       // No-op.
     } on PlatformException catch (e) {
-      AppLogger.warning('[WatchConnectivity] sendHydrationUpdate falló: ${e.message}');
+      AppLogger.warning(
+          '[WatchConnectivity] sendHydrationUpdate falló: ${e.message}');
     }
   }
 
@@ -156,7 +159,8 @@ class WatchConnectivityService {
     } on MissingPluginException {
       // No-op.
     } on PlatformException catch (e) {
-      AppLogger.warning('[WatchConnectivity] sendScoreUpdate falló: ${e.message}');
+      AppLogger.warning(
+          '[WatchConnectivity] sendScoreUpdate falló: ${e.message}');
     }
   }
 }

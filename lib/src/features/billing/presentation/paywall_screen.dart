@@ -189,10 +189,10 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
   String? _annualSavings() {
     if (_packages.length < 2) return null;
     try {
-      final monthly = _packages.firstWhere(
-          (p) => p.period == BillingPeriod.monthly);
-      final annual = _packages.firstWhere(
-          (p) => p.period == BillingPeriod.annual);
+      final monthly =
+          _packages.firstWhere((p) => p.period == BillingPeriod.monthly);
+      final annual =
+          _packages.firstWhere((p) => p.period == BillingPeriod.annual);
 
       // Extraer número del priceString (ej. "US$4.99/mes" → 4.99).
       double parsePrice(String s) {
@@ -225,8 +225,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
     final Color subtitleColor;
 
     if (isInTrial && daysRemaining > 3) {
-      subtitle =
-          'Ya tienes acceso completo. Suscríbete para no perderlo.';
+      subtitle = 'Ya tienes acceso completo. Suscríbete para no perderlo.';
       featuresHeader = 'LO QUE SEGUIRÁS TENIENDO';
       ctaLabel = 'Asegurar mi plan';
       subtitleColor = AppColors.metabolicGreen;
@@ -482,8 +481,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
         String? perMonth;
         if (isAnnual && _packages.length > 1) {
           try {
-            final match =
-                RegExp(r'[\d,]+\.?\d*').firstMatch(pkg.priceString);
+            final match = RegExp(r'[\d,]+\.?\d*').firstMatch(pkg.priceString);
             if (match != null) {
               final total =
                   double.tryParse(match.group(0)!.replaceAll(',', '')) ?? 0;
@@ -646,8 +644,8 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                       ? null
                       : [
                           BoxShadow(
-                            color:
-                                AppColors.metabolicGreen.withValues(alpha: 0.35),
+                            color: AppColors.metabolicGreen
+                                .withValues(alpha: 0.35),
                             blurRadius: 16,
                             offset: const Offset(0, 4),
                           ),
@@ -659,8 +657,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w900,
-                      color:
-                          _packages.isEmpty ? Colors.white38 : Colors.black,
+                      color: _packages.isEmpty ? Colors.white38 : Colors.black,
                       letterSpacing: 0.2,
                     ),
                   ),

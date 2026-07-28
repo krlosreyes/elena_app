@@ -308,7 +308,8 @@ class HealthSyncService {
           AppLogger.debug('HealthSync HC: ${metric.label} → permiso OK');
         } else {
           denied.add(metric);
-          AppLogger.debug('HealthSync HC: ${metric.label} → sin permiso (has=$has)');
+          AppLogger.debug(
+              'HealthSync HC: ${metric.label} → sin permiso (has=$has)');
         }
       } catch (e) {
         denied.add(metric);
@@ -446,13 +447,11 @@ class HealthSyncService {
     final allPoints = <hp.HealthDataPoint>[];
     for (final type in types) {
       try {
-        final points = await _plugin
-            .getHealthDataFromTypes(
-              types: [type],
-              startTime: start,
-              endTime: end,
-            )
-            .timeout(kFetchTimeout);
+        final points = await _plugin.getHealthDataFromTypes(
+          types: [type],
+          startTime: start,
+          endTime: end,
+        ).timeout(kFetchTimeout);
         AppLogger.info(
           'HealthSync: ${metric.label}/${type.name} → ${points.length} samples',
         );

@@ -9,11 +9,9 @@ import 'package:elena_app/src/features/progress/domain/biometric_checkin.dart';
 import 'package:elena_app/src/features/streak/domain/streak_entry.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-DateTime _ago(DateTime now, int days) =>
-    now.subtract(Duration(days: days));
+DateTime _ago(DateTime now, int days) => now.subtract(Duration(days: days));
 
-String _isoDate(DateTime dt) =>
-    '${dt.year.toString().padLeft(4, '0')}-'
+String _isoDate(DateTime dt) => '${dt.year.toString().padLeft(4, '0')}-'
     '${dt.month.toString().padLeft(2, '0')}-'
     '${dt.day.toString().padLeft(2, '0')}';
 
@@ -333,11 +331,9 @@ void main() {
       final logs = <NutritionLog>[
         // Ventana current: días 1-7. 5 logs con datos NOVA.
         // 5 platos con (1/4) = 25% cada uno → agregado 25%.
-        for (int d = 1; d <= 5; d++)
-          nLog(now, d, upfSlots: 1, totalSlots: 4),
+        for (int d = 1; d <= 5; d++) nLog(now, d, upfSlots: 1, totalSlots: 4),
         // Ventana past: días 28-35. 5 logs con (3/4) = 75% cada uno → 75%.
-        for (int d = 28; d <= 32; d++)
-          nLog(now, d, upfSlots: 3, totalSlots: 4),
+        for (int d = 28; d <= 32; d++) nLog(now, d, upfSlots: 3, totalSlots: 4),
       ];
       final snap = TransformationComputer.compute(
         biometricHistory: const [],
@@ -359,8 +355,7 @@ void main() {
         // 5 logs pre-138 en ventana current (sin NOVA)
         for (int d = 1; d <= 5; d++) nLog(now, d),
         // 5 logs NOVA en ventana past
-        for (int d = 28; d <= 32; d++)
-          nLog(now, d, upfSlots: 0, totalSlots: 5),
+        for (int d = 28; d <= 32; d++) nLog(now, d, upfSlots: 0, totalSlots: 5),
       ];
       final snap = TransformationComputer.compute(
         biometricHistory: const [],

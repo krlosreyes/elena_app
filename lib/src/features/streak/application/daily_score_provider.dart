@@ -78,9 +78,8 @@ final dailyScoreDeltaProvider = Provider<int?>((ref) {
 /// calendárico cuando no hay ciclo o el protocolo es 'Ninguno'.
 final displayDailyScoreProvider = Provider<int>((ref) {
   final cycle = ref.watch(currentMetabolicCycleProvider).valueOrNull;
-  final cycleHours = cycle == null
-      ? null
-      : fastingHoursForProtocol(cycle.fastingProtocol);
+  final cycleHours =
+      cycle == null ? null : fastingHoursForProtocol(cycle.fastingProtocol);
 
   if (cycle == null || cycleHours == null) {
     return ref.watch(dailyScoreProvider);
@@ -101,16 +100,14 @@ final displayDailyScoreProvider = Provider<int>((ref) {
 /// `dailyScoreDeltaProvider`.
 final displayDailyScoreDeltaProvider = Provider<int?>((ref) {
   final cycle = ref.watch(currentMetabolicCycleProvider).valueOrNull;
-  final cycleHours = cycle == null
-      ? null
-      : fastingHoursForProtocol(cycle.fastingProtocol);
+  final cycleHours =
+      cycle == null ? null : fastingHoursForProtocol(cycle.fastingProtocol);
 
   if (cycle == null || cycleHours == null) {
     return ref.watch(dailyScoreDeltaProvider);
   }
 
-  final lastClosed =
-      ref.watch(lastClosedMetabolicCycleProvider).valueOrNull;
+  final lastClosed = ref.watch(lastClosedMetabolicCycleProvider).valueOrNull;
   final lastScore = lastClosed?.dailyScore;
   if (lastScore == null) return null;
 

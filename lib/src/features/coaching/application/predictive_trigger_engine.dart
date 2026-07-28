@@ -34,7 +34,8 @@ class PredictiveTriggerEngine {
     if (goalReached) return null;
 
     // 2. Fuera de la ventana de vigilia (antes de despertar o tras el cutoff).
-    final cutoff = sleepHour < kRepairCutoffHour ? sleepHour : kRepairCutoffHour;
+    final cutoff =
+        sleepHour < kRepairCutoffHour ? sleepHour : kRepairCutoffHour;
     if (now.hour < wakeHour || now.hour >= cutoff) return null;
 
     // 3. Tomó agua hace muy poco → dar espacio.
@@ -77,7 +78,8 @@ class PredictiveTriggerEngine {
     return ActionablePrompt(
       id: 'fasting_close_$bucket',
       title: '¡Protocolo completado! 🎉',
-      message: 'Alcanzaste tu meta de ayuno. ¿Lo cerramos y abrimos la ventana de alimentación?',
+      message:
+          'Alcanzaste tu meta de ayuno. ¿Lo cerramos y abrimos la ventana de alimentación?',
       options: const [
         PromptOption(
           label: 'Cerrar ayuno',
@@ -97,8 +99,10 @@ class PredictiveTriggerEngine {
   static ActionablePrompt? exercisePrompt({
     required bool goalReached,
     required DateTime now,
+
     /// Hora mínima para proponer ejercicio (default: 6h, tras despertar).
     int wakeHour = 6,
+
     /// Hora de corte — no molestar después de esta hora.
     int cutoffHour = 20,
   }) {
@@ -110,7 +114,8 @@ class PredictiveTriggerEngine {
     return ActionablePrompt(
       id: 'exercise_$bucket',
       title: 'Momento de moverte 💪',
-      message: '30 minutos de actividad moderada hoy marcan la diferencia. ¿Ya lo hiciste?',
+      message:
+          '30 minutos de actividad moderada hoy marcan la diferencia. ¿Ya lo hiciste?',
       options: const [
         PromptOption(
           label: 'Sí, lo registro',
@@ -130,8 +135,10 @@ class PredictiveTriggerEngine {
   static ActionablePrompt? nutritionPrompt({
     required bool windowOpen,
     required DateTime now,
+
     /// Tiempo desde la última comida; null = nunca ha comido hoy.
     required Duration? sinceLastMeal,
+
     /// Gap mínimo para no molestar si comió hace poco (default: 2h).
     Duration minGap = const Duration(hours: 2),
   }) {
@@ -257,6 +264,7 @@ class PredictiveTriggerEngine {
     required DateTime now,
     required int wakeHour,
     required int sleepHour,
+
     /// Timestamp del último check-in respondido (null = ninguno este ciclo).
     DateTime? lastCheckInAt,
   }) {

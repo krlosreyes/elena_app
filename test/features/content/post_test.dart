@@ -63,7 +63,8 @@ void main() {
       expect(p.title, 'Por qué sigues con hambre');
       expect(p.slug, 'por-que-sigues-con-hambre');
       expect(p.pillar, PillarTag.nutricion);
-      expect(p.imageUrl, 'https://storage.googleapis.com/elena/posts/img-1.jpeg');
+      expect(
+          p.imageUrl, 'https://storage.googleapis.com/elena/posts/img-1.jpeg');
       expect(p.references.length, 2);
       expect(p.quiz.length, 1);
       expect(p.status, 'published');
@@ -105,8 +106,8 @@ void main() {
     });
 
     test('images vacío → imageUrl null', () {
-      final p = Post.fromMap({...
-        _realishDoc(),
+      final p = Post.fromMap({
+        ..._realishDoc(),
         'images': <String>[],
       });
       expect(p.imageUrl, isNull);
@@ -121,7 +122,8 @@ void main() {
           {'url': 'https://storage.googleapis.com/elena/posts/img-2.jpeg'},
         ],
       });
-      expect(p.imageUrl, 'https://storage.googleapis.com/elena/posts/img-2.jpeg');
+      expect(
+          p.imageUrl, 'https://storage.googleapis.com/elena/posts/img-2.jpeg');
     });
 
     test('images[] con Map {src: ...} (shape alterno) se extrae igual', () {
@@ -131,7 +133,8 @@ void main() {
           {'src': 'https://storage.googleapis.com/elena/posts/img-3.jpeg'},
         ],
       });
-      expect(p.imageUrl, 'https://storage.googleapis.com/elena/posts/img-3.jpeg');
+      expect(
+          p.imageUrl, 'https://storage.googleapis.com/elena/posts/img-3.jpeg');
     });
 
     test('images[] con referencia gs:// se normaliza a URL descargable', () {
@@ -155,7 +158,8 @@ void main() {
 
     test('images[] con URL https ya válida no se toca', () {
       final p = Post.fromMap(_realishDoc());
-      expect(p.imageUrl, 'https://storage.googleapis.com/elena/posts/img-1.jpeg');
+      expect(
+          p.imageUrl, 'https://storage.googleapis.com/elena/posts/img-1.jpeg');
     });
 
     test('title cae a metadata si falta top-level', () {
@@ -181,7 +185,8 @@ void main() {
       expect(restored.imageUrl, original.imageUrl);
       expect(restored.references, original.references);
       expect(restored.quiz.length, original.quiz.length);
-      expect(restored.quiz.first.correctIndex, original.quiz.first.correctIndex);
+      expect(
+          restored.quiz.first.correctIndex, original.quiz.first.correctIndex);
       expect(restored.publishedAt, original.publishedAt);
       expect(restored.status, original.status);
     });

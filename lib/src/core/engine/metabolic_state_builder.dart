@@ -93,7 +93,8 @@ class MetabolicStateBuilder {
     final DateTime? stableLastMeal =
         fasting.startTime ?? user.profile.lastMealGoal;
     final double circadianAlignment = stableLastMeal != null
-        ? _calculateCircadianAlignment(stableLastMeal, user.profile.lastMealGoal)
+        ? _calculateCircadianAlignment(
+            stableLastMeal, user.profile.lastMealGoal)
         : 1.0; // sin dato real → neutral (no penalizar)
 
     // ── sleepQuality ─────────────────────────────────────────────────────

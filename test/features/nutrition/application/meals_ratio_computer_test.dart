@@ -138,8 +138,7 @@ void main() {
   });
 
   group('SPEC-158 — insights por tier', () {
-    test('todos los tiers no-vacíos tienen headline + action + citation',
-        () {
+    test('todos los tiers no-vacíos tienen headline + action + citation', () {
       for (final t in MealsRatioInsightTier.values) {
         if (t == MealsRatioInsightTier.empty) continue;
         final ins = MealsRatioInsight.forTier(t);

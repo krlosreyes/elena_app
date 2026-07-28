@@ -302,8 +302,7 @@ class GoalsProgressDashboard extends ConsumerWidget {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                       side: BorderSide(
-                        color:
-                            AppColors.metabolicGreen.withValues(alpha: 0.40),
+                        color: AppColors.metabolicGreen.withValues(alpha: 0.40),
                       ),
                     ),
                     textStyle: const TextStyle(

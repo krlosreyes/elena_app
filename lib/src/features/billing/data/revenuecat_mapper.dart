@@ -43,10 +43,11 @@ EntitlementStatus mapCustomerInfoToEntitlementStatus(CustomerInfo info) {
   final ent = info.entitlements.all[kPremiumEntitlementId];
   if (ent == null || !ent.isActive) return const EntitlementStatus.free();
 
-  final exp =
-      ent.expirationDate != null ? DateTime.tryParse(ent.expirationDate!) : null;
-  final isTrial = ent.periodType == PeriodType.trial ||
-      ent.periodType == PeriodType.intro;
+  final exp = ent.expirationDate != null
+      ? DateTime.tryParse(ent.expirationDate!)
+      : null;
+  final isTrial =
+      ent.periodType == PeriodType.trial || ent.periodType == PeriodType.intro;
 
   return EntitlementStatus(
     isPremium: true,

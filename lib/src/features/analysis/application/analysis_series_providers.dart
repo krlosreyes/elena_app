@@ -56,8 +56,7 @@ final cycleClosureBumpProvider = Provider<String?>((ref) {
   return lastClosed?.cycleId;
 });
 
-String _dateIso(DateTime dt) =>
-    '${dt.year.toString().padLeft(4, '0')}-'
+String _dateIso(DateTime dt) => '${dt.year.toString().padLeft(4, '0')}-'
     '${dt.month.toString().padLeft(2, '0')}-'
     '${dt.day.toString().padLeft(2, '0')}';
 
@@ -168,9 +167,7 @@ final closedCycleScoreSeriesProvider =
     //      si el ciclo acaba de cerrar y Firestore no se actualizó todavía).
     var allPoints = closedPoints;
     final openCycle = ref.read(currentMetabolicCycleProvider).valueOrNull;
-    if (openCycle != null &&
-        openCycle.isOpen &&
-        openCycle.liveScore != null) {
+    if (openCycle != null && openCycle.isOpen && openCycle.liveScore != null) {
       final now = DateTime.now();
       if (!now.isBefore(rangeStart)) {
         final todayKey = _dateIso(now);
@@ -389,9 +386,8 @@ final fastingHabitSeriesProvider =
       // SPEC-168.4.7: 2000 cubre ~5 años de uso diario sin egress
       // problemático y elimina el corte silencioso para rango "Todo".
       .watchRecentCompleted(account.uid, limit: 2000)) {
-    final inRange = intervals
-        .where((i) => !i.startTime.isBefore(rangeStart))
-        .toList();
+    final inRange =
+        intervals.where((i) => !i.startTime.isBefore(rangeStart)).toList();
     final points = TemporalAggregator.aggregate(
       items: inRange,
       timestampOf: (i) => i.startTime,
@@ -421,13 +417,12 @@ final nutritionHabitSeriesProvider =
   }
   final rangeStart = ref.watch(analysisRangeStartProvider);
   final mode = _currentMode(ref);
-  await for (final logs in ref
-      .watch(nutritionRepositoryProvider)
-      .watchSinceLogs(
-    account.uid,
-    rangeStart,
-    until: _todayLocal().add(const Duration(days: 1)),
-  )) {
+  await for (final logs
+      in ref.watch(nutritionRepositoryProvider).watchSinceLogs(
+            account.uid,
+            rangeStart,
+            until: _todayLocal().add(const Duration(days: 1)),
+          )) {
     final fractionPoints = TemporalAggregator.aggregate(
       items: logs,
       timestampOf: (l) => l.timestamp,

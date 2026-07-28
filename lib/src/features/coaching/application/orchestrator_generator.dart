@@ -51,7 +51,8 @@ class OrchestratorGenerator {
         return (
           title: 'Hidrátate mientras ayunas',
           action: 'Toma agua ahora — acompaña a tu cuerpo durante el ayuno.',
-          reason: 'Durante el ayuno la hidratación sostiene la limpieza celular.',
+          reason:
+              'Durante el ayuno la hidratación sostiene la limpieza celular.',
           citation: '· Mattson 2017',
           confidence: ConfidenceLevel.medium,
           circadian: 0.4,

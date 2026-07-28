@@ -291,12 +291,10 @@ class _DayRow extends StatelessWidget {
                 Text(
                   '${day.day}',
                   style: TextStyle(
-                    color: isToday
-                        ? AppColors.textPrimary
-                        : AppColors.textMuted,
+                    color:
+                        isToday ? AppColors.textPrimary : AppColors.textMuted,
                     fontSize: 12,
-                    fontWeight:
-                        isToday ? FontWeight.w700 : FontWeight.w500,
+                    fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,
                   ),
                 ),
               ],

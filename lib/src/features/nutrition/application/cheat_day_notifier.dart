@@ -120,8 +120,7 @@ class CheatDayNotifier extends StateNotifier<CheatDayState> {
     final todayIso = _isoDate(reference);
     final thisWeekIso = isoWeek(reference);
 
-    final activeDate =
-        activeIso != null ? DateTime.tryParse(activeIso) : null;
+    final activeDate = activeIso != null ? DateTime.tryParse(activeIso) : null;
 
     state = CheatDayState(
       isActiveToday: activeIso == todayIso,
@@ -142,7 +141,8 @@ class CheatDayNotifier extends StateNotifier<CheatDayState> {
     final localLastWeek = _prefs.getString(_kLastWeekIsoKey);
 
     // Solo aplica si Firestore tiene datos distintos a SharedPreferences.
-    if (remoteActiveDate == localActiveDate && remoteLastWeek == localLastWeek) {
+    if (remoteActiveDate == localActiveDate &&
+        remoteLastWeek == localLastWeek) {
       return;
     }
 

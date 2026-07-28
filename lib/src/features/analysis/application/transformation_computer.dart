@@ -101,8 +101,7 @@ class TransformationComputer {
     bool inWindow(NutritionLog log, Duration start, Duration end) {
       final from = now.subtract(start);
       final to = now.subtract(end);
-      return !log.timestamp.isBefore(from) &&
-          !log.timestamp.isAfter(to);
+      return !log.timestamp.isBefore(from) && !log.timestamp.isAfter(to);
     }
 
     final currentLogs = nutritionHistory
@@ -271,8 +270,7 @@ class TransformationComputer {
     if (streakHistory.isEmpty) {
       return TransformationDelta.empty(label: 'Sueño', unit: 'h prom');
     }
-    final sorted = [...streakHistory]
-      ..sort((a, b) => b.date.compareTo(a.date));
+    final sorted = [...streakHistory]..sort((a, b) => b.date.compareTo(a.date));
 
     double? avgInWindow(List<StreakEntry> window) {
       final values = window
@@ -285,12 +283,10 @@ class TransformationComputer {
     }
 
     // Últimos 30 días (recientes).
-    final currentWindow = sorted
-        .where((e) {
-          final d = DateTime.tryParse(e.date);
-          return d != null && d.isAfter(now.subtract(const Duration(days: 30)));
-        })
-        .toList();
+    final currentWindow = sorted.where((e) {
+      final d = DateTime.tryParse(e.date);
+      return d != null && d.isAfter(now.subtract(const Duration(days: 30)));
+    }).toList();
     final current = avgInWindow(currentWindow);
 
     // 30 días anteriores: [now-60d, now-30d].

@@ -31,8 +31,7 @@ class PaywallNudges {
       await NotificationService.scheduleAt(
         id: NotificationIds.paywallNudgeDay5,
         title: 'Tu progreso está tomando forma',
-        body:
-            'Mira cómo evoluciona tu tendencia con Premium. Estás a tiempo.',
+        body: 'Mira cómo evoluciona tu tendencia con Premium. Estás a tiempo.',
         scheduledTime: dates[0],
         repeatsDaily: false,
       );

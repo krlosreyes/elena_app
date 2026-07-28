@@ -139,7 +139,8 @@ class AppStateRepository {
   // Estructura: { completed: true }
 
   Future<void> setOnboardingCompleted(String uid) async {
-    await _doc(uid, 'onboarding').set({'completed': true}, SetOptions(merge: true));
+    await _doc(uid, 'onboarding')
+        .set({'completed': true}, SetOptions(merge: true));
   }
 }
 

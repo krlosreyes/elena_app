@@ -89,8 +89,7 @@ void main() {
         now: DateTime(2026, 7, 17, 20, 0),
       );
       expect(result, 16.0,
-          reason:
-              'el ciclo ya cerrado sigue siendo la fuente de verdad, '
+          reason: 'el ciclo ya cerrado sigue siendo la fuente de verdad, '
               'sin depender de que el ciclo activo nuevo lo "recuerde"');
     });
 
@@ -144,7 +143,8 @@ void main() {
       expect(result, 0.0);
     });
 
-    test('ignora intervalos sin cerrar (endTime null) — el activo se evalúa aparte',
+    test(
+        'ignora intervalos sin cerrar (endTime null) — el activo se evalúa aparte',
         () {
       final intervals = [
         _interval(

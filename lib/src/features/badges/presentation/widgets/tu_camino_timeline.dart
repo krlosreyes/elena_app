@@ -33,7 +33,8 @@ class TuCaminoTimeline extends ConsumerWidget {
     // bloqueado flotando sin contexto.
     if (earned.isEmpty) return const SizedBox.shrink();
 
-    final sorted = [...earned]..sort((a, b) => a.unlockedAt.compareTo(b.unlockedAt));
+    final sorted = [...earned]
+      ..sort((a, b) => a.unlockedAt.compareTo(b.unlockedAt));
     final nodeCount = sorted.length + (nextProgress != null ? 1 : 0);
 
     return Column(
@@ -41,7 +42,8 @@ class TuCaminoTimeline extends ConsumerWidget {
       children: [
         const Text(
           'Tu camino',
-          style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700),
+          style: TextStyle(
+              color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 12),
         SizedBox(
@@ -77,18 +79,24 @@ class TuCaminoTimeline extends ConsumerWidget {
           const SizedBox(height: 8),
           Text(
             _remainingText(nextProgress),
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.45), fontSize: 11),
+            style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.45), fontSize: 11),
           ),
         ],
       ],
     );
   }
 
-  String _levelLabel(BadgeDefinition def) => def.name.contains('—') ? def.name.split('—').last.trim() : def.name;
+  String _levelLabel(BadgeDefinition def) =>
+      def.name.contains('—') ? def.name.split('—').last.trim() : def.name;
 
   String _remainingText(BadgeProgress progress) {
-    final unit = progress.definition.category == BadgeCategory.checkin ? 'check-in' : 'día';
-    final unitPlural = progress.definition.category == BadgeCategory.checkin ? 'check-ins' : 'días';
+    final unit = progress.definition.category == BadgeCategory.checkin
+        ? 'check-in'
+        : 'día';
+    final unitPlural = progress.definition.category == BadgeCategory.checkin
+        ? 'check-ins'
+        : 'días';
     final n = progress.remaining;
     return n == 1
         ? 'Te falta 1 $unit más para tu próxima insignia'
@@ -137,9 +145,13 @@ class _TimelineNode extends StatelessWidget {
               height: 44,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: filled ? color.withValues(alpha: 0.18) : Colors.white.withValues(alpha: 0.05),
+                color: filled
+                    ? color.withValues(alpha: 0.18)
+                    : Colors.white.withValues(alpha: 0.05),
                 border: Border.all(
-                  color: filled ? color.withValues(alpha: 0.7) : Colors.white.withValues(alpha: 0.25),
+                  color: filled
+                      ? color.withValues(alpha: 0.7)
+                      : Colors.white.withValues(alpha: 0.25),
                   width: 1.5,
                 ),
               ),

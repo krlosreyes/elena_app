@@ -22,8 +22,9 @@ String presentableError(Object error) {
   final raw = error.toString();
   const exceptionPrefix = 'Exception: ';
 
-  final withoutPrefix =
-      raw.startsWith(exceptionPrefix) ? raw.substring(exceptionPrefix.length) : raw;
+  final withoutPrefix = raw.startsWith(exceptionPrefix)
+      ? raw.substring(exceptionPrefix.length)
+      : raw;
 
   final trimmed = withoutPrefix.trim();
   if (trimmed.isEmpty) {

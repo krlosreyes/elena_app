@@ -49,8 +49,8 @@ class _HangingSaveRepo implements MetabolicCycleRepository {
       const [];
 
   @override
-  Future<void> updateLiveScore(String userId, String cycleId, int score) async {
-  }
+  Future<void> updateLiveScore(
+      String userId, String cycleId, int score) async {}
 }
 
 CycleMagnitudes _mag(double q) => CycleMagnitudes(
@@ -174,7 +174,8 @@ void main() {
         now: now,
       );
       expect(cycle, isNull,
-          reason: 'sin ayuno persistido no debemos crear ciclo automáticamente');
+          reason:
+              'sin ayuno persistido no debemos crear ciclo automáticamente');
       // Y no debe haber escrito nada en Firestore.
       final after = await repo.fetchOpenCycle('u1');
       expect(after, isNull);

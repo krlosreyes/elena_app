@@ -67,8 +67,8 @@ class _FakeRepo implements MetabolicCycleRepository {
       [];
 
   @override
-  Future<void> updateLiveScore(String userId, String cycleId, int score) async {
-  }
+  Future<void> updateLiveScore(
+      String userId, String cycleId, int score) async {}
 }
 
 // ─── Input helpers ────────────────────────────────────────────────────────────
@@ -91,8 +91,7 @@ MetabolicCycleEvaluationInput _input({
 
 void main() {
   group('SPEC-214 — serialización evaluateAndApply', () {
-    test(
-        'SPEC-214-01: primera llamada alcanza el repositorio normalmente',
+    test('SPEC-214-01: primera llamada alcanza el repositorio normalmente',
         () async {
       final repo = _FakeRepo();
       final svc = MetabolicCycleService(repository: repo);
@@ -128,8 +127,7 @@ void main() {
       );
 
       // Lanzamos las dos llamadas sin await para que sean concurrentes
-      final futureA =
-          svc.evaluateAndApply(userId: 'u1', input: openingInput);
+      final futureA = svc.evaluateAndApply(userId: 'u1', input: openingInput);
       // B llega mientras A todavía está en fetchOpenCycle (simulado lento)
       final futureB = svc.evaluateAndApply(userId: 'u1', input: _input());
 
@@ -161,8 +159,7 @@ void main() {
       // Segunda llamada independiente (no concurrente)
       await svc.evaluateAndApply(userId: 'u1', input: _input());
       expect(repo.fetchCallCount, 2,
-          reason:
-              'Una vez completada la primera, la siguiente debe correr '
+          reason: 'Una vez completada la primera, la siguiente debe correr '
               '(flag liberado en finally)');
     });
 

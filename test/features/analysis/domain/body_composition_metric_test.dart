@@ -122,8 +122,7 @@ void main() {
   group('SPEC-157 — WHTR.selectValue', () {
     test('retorna cintura/altura cuando ambos presentes', () {
       final ci = _checkIn(weight: 80, waist: 90);
-      final v = BodyCompositionMetric.whtr
-          .selectValue(ci, heightCm: 175);
+      final v = BodyCompositionMetric.whtr.selectValue(ci, heightCm: 175);
       expect(v, closeTo(90 / 175, 0.0001));
     });
 

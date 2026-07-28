@@ -64,8 +64,7 @@ class CoachingActionRouter {
           await NotificationService.scheduleAt(
             id: NotificationIds.hydrationSnooze,
             title: '💧 ¿Lo tomamos ahora?',
-            body:
-                'Tu cuerpo sigue esperando ese vaso. Un toque y queda '
+            body: 'Tu cuerpo sigue esperando ese vaso. Un toque y queda '
                 'registrado.',
             scheduledTime: DateTime.now().add(const Duration(minutes: 5)),
             repeatsDaily: false,
@@ -126,7 +125,8 @@ class CoachingActionRouter {
               'surface': 'notification',
             },
           );
-          AppLogger.debug('[CoachingActionRouter] ejercicio registrado vía prompt');
+          AppLogger.debug(
+              '[CoachingActionRouter] ejercicio registrado vía prompt');
           break;
 
         // SPEC-224: Nutrición — comida simple con defaults seguros.
@@ -143,8 +143,7 @@ class CoachingActionRouter {
                   forceLog: true,
                 );
           } catch (e) {
-            AppLogger.warning(
-                '[CoachingActionRouter] logMeal descartado: $e');
+            AppLogger.warning('[CoachingActionRouter] logMeal descartado: $e');
           }
           await PendingActionQueue.remove(action.id);
           applied++;
@@ -156,7 +155,8 @@ class CoachingActionRouter {
               'surface': 'notification',
             },
           );
-          AppLogger.debug('[CoachingActionRouter] comida registrada vía prompt');
+          AppLogger.debug(
+              '[CoachingActionRouter] comida registrada vía prompt');
           break;
 
         // SPEC-232: check-in emocional durante ayuno.
@@ -164,8 +164,7 @@ class CoachingActionRouter {
         case PendingActionType.checkInFeeling:
           if (user == null || user.id.isEmpty) continue;
           final ordinal = (action.amount ?? 0).toInt();
-          final feeling = ordinal >= 0 &&
-                  ordinal < FastingFeeling.values.length
+          final feeling = ordinal >= 0 && ordinal < FastingFeeling.values.length
               ? FastingFeeling.values[ordinal]
               : FastingFeeling.good; // fallback seguro
           final fastingState = ref.read(fastingProvider);

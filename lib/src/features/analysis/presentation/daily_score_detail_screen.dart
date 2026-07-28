@@ -138,7 +138,8 @@ class _DailyScoreDetailScreenState
               SegmentedRangeControl(
                 locked: !isPremium,
                 onLockedTap: () => openPaywall(
-                  context, ref,
+                  context,
+                  ref,
                   feature: GatedFeature.analyticsHistory,
                 ),
               ),
@@ -250,7 +251,8 @@ class _DailyScoreDetailScreenState
                 ),
               ),
               onPressed: () => openPaywall(
-                context, ref,
+                context,
+                ref,
                 feature: GatedFeature.analyticsHistory,
               ),
               child: const Text(

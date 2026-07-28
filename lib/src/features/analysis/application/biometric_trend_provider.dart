@@ -23,8 +23,8 @@ const List<int> kBiometricTrendWindowDays = [30, 60, 90];
 ///
 /// La query subyacente es watchHistory(limit: 365) — el filtro es
 /// client-side. Costo: despreciable (al peor 365 docs / usuario).
-final biometricTrendProvider = StreamProvider.family
-    .autoDispose<List<BiometricCheckIn>, int>((ref, days) {
+final biometricTrendProvider =
+    StreamProvider.family.autoDispose<List<BiometricCheckIn>, int>((ref, days) {
   final account = ref.watch(authStateProvider).value;
   if (account == null) return Stream.value(const []);
 
@@ -50,7 +50,6 @@ final biometricTrendProvider = StreamProvider.family
   });
 });
 
-String _dateKey(DateTime dt) =>
-    '${dt.year.toString().padLeft(4, '0')}-'
+String _dateKey(DateTime dt) => '${dt.year.toString().padLeft(4, '0')}-'
     '${dt.month.toString().padLeft(2, '0')}-'
     '${dt.day.toString().padLeft(2, '0')}';

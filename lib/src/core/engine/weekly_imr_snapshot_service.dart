@@ -51,12 +51,10 @@ const Duration kWeeklyImrStaleness = Duration(days: 7);
 String buildWeekISO(DateTime dt) {
   // Move to nearest Thursday for ISO week.
   final thursday = dt.add(Duration(days: 4 - ((dt.weekday + 6) % 7 + 1)));
-  final firstThursday =
-      DateTime(thursday.year, 1, 4).add(Duration(
+  final firstThursday = DateTime(thursday.year, 1, 4).add(Duration(
     days: 4 - ((DateTime(thursday.year, 1, 4).weekday + 6) % 7 + 1),
   ));
-  final week = 1 +
-      ((thursday.difference(firstThursday).inDays) / 7).round();
+  final week = 1 + ((thursday.difference(firstThursday).inDays) / 7).round();
   return '${thursday.year.toString().padLeft(4, '0')}-W'
       '${week.toString().padLeft(2, '0')}';
 }

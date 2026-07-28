@@ -169,8 +169,7 @@ class _ElenaAppState extends ConsumerState<ElenaApp>
     // `runIfDue()` cuando hay un usuario completo. El controller
     // tiene debouncing interno (15 min) — el listener puede
     // dispararse N veces sin generar N syncs.
-    ref.listen<AsyncValue<UserModel?>>(currentUserStreamProvider,
-        (prev, next) {
+    ref.listen<AsyncValue<UserModel?>>(currentUserStreamProvider, (prev, next) {
       final user = next.value;
       if (user == null || user.id.isEmpty) return;
       // SPEC-199 Fase A: en cold start, las acciones encoladas (agua) se
@@ -230,7 +229,9 @@ class _ElenaAppState extends ConsumerState<ElenaApp>
       // está autenticado y el perfil está completo (isComplete), ejecutamos
       // el flush aquí — el router ya dejará pasar la navegación al destino real.
       final account = next.value;
-      if (account != null && account.isComplete && NotificationRouter.hasPending) {
+      if (account != null &&
+          account.isComplete &&
+          NotificationRouter.hasPending) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           final navContext = rootNavigatorKey.currentContext;
           if (navContext != null) {

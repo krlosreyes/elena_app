@@ -61,8 +61,7 @@ class AnalysisPillarsTab extends ConsumerStatefulWidget {
   const AnalysisPillarsTab({super.key});
 
   @override
-  ConsumerState<AnalysisPillarsTab> createState() =>
-      _AnalysisPillarsTabState();
+  ConsumerState<AnalysisPillarsTab> createState() => _AnalysisPillarsTabState();
 }
 
 class _AnalysisPillarsTabState extends ConsumerState<AnalysisPillarsTab>

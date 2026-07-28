@@ -48,7 +48,8 @@ class BadgeState {
   /// mismo error que ya se evitó al diseñar `evaluate()`.
   final BadgeProgress? nextProgress;
 
-  const BadgeState({this.earned = const [], this.isLoading = true, this.nextProgress});
+  const BadgeState(
+      {this.earned = const [], this.isLoading = true, this.nextProgress});
 
   BadgeState copyWith({
     List<EarnedBadge>? earned,
@@ -59,7 +60,8 @@ class BadgeState {
       BadgeState(
         earned: earned ?? this.earned,
         isLoading: isLoading ?? this.isLoading,
-        nextProgress: clearNextProgress ? null : (nextProgress ?? this.nextProgress),
+        nextProgress:
+            clearNextProgress ? null : (nextProgress ?? this.nextProgress),
       );
 
   Set<String> get earnedIds => earned.map((b) => b.badgeId).toSet();
@@ -151,9 +153,8 @@ class BadgeNotifier extends StateNotifier<BadgeState> {
     _historySub?.cancel();
     final source = FirestoreStreakV1Source();
     const mapper = StreakEntryMapper();
-    _historySub = source
-        .streamSince(userId: userId, cutoffDateKey: _epochCutoff)
-        .listen(
+    _historySub =
+        source.streamSince(userId: userId, cutoffDateKey: _epochCutoff).listen(
       (maps) {
         _fullHistory = maps
             .map((m) {
@@ -192,14 +193,18 @@ class BadgeNotifier extends StateNotifier<BadgeState> {
     // desbloqueado en esta misma pasada — si no, el nodo "próxima meta" de
     // la línea de tiempo podría señalar por un instante una insignia que
     // el usuario acaba de ganar.
-    final earnedIdsAfterThisPass = {...state.earnedIds, ...newlyUnlocked.map((b) => b.badgeId)};
+    final earnedIdsAfterThisPass = {
+      ...state.earnedIds,
+      ...newlyUnlocked.map((b) => b.badgeId)
+    };
     final nextProgress = BadgeEngine.nextClosest(
       fullStreakHistory: _fullHistory,
       biometricHistory: biometricHistory,
       alreadyUnlockedIds: earnedIdsAfterThisPass,
     );
     if (mounted) {
-      state = state.copyWith(nextProgress: nextProgress, clearNextProgress: nextProgress == null);
+      state = state.copyWith(
+          nextProgress: nextProgress, clearNextProgress: nextProgress == null);
     }
 
     if (newlyUnlocked.isEmpty) {

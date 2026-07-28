@@ -45,8 +45,7 @@ void main() {
   group('SPEC-208 — fastingHours post-cierre de ayuno', () {
     const protocol = '16:8'; // target = 16h
 
-    test(
-        'SPEC-208-A: ayuno activo → fastingHours = duración real acumulada',
+    test('SPEC-208-A: ayuno activo → fastingHours = duración real acumulada',
         () {
       final hours = computeFastingHours(
         isActive: true,
@@ -67,8 +66,7 @@ void main() {
 
     test(
         'SPEC-208-B: ayuno cerrado + completedToday=true → '
-        'fastingHours = target (16h) → evaluateFasting=true',
-        () {
+        'fastingHours = target (16h) → evaluateFasting=true', () {
       // Caso bug: ANTES el código usaba 0.0, lo que causaba
       // evaluateFasting=false después de cerrar el ayuno.
       final hoursConBug = 0.0; // comportamiento previo al fix
@@ -99,8 +97,7 @@ void main() {
 
     test(
         'SPEC-208-C: ayuno cerrado sin completar (60% del target) → '
-        'fastingHours parcial → evaluateFasting=false',
-        () {
+        'fastingHours parcial → evaluateFasting=false', () {
       // 60% de 16h = 9.6h < 12.8h (80% del target) → no completado
       final hours = computeFastingHours(
         isActive: false,
@@ -121,8 +118,7 @@ void main() {
 
     test(
         'SPEC-208-D: sin ayuno hoy (closedProgressToday=null) → '
-        'fastingHours = 0.0 → evaluateFasting=false',
-        () {
+        'fastingHours = 0.0 → evaluateFasting=false', () {
       final hours = computeFastingHours(
         isActive: false,
         duration: Duration.zero,
@@ -141,8 +137,7 @@ void main() {
 
     test(
         'SPEC-208-E: protocolo Ninguno + completedToday=true → '
-        'fastingHours = 10.0 → evaluateFasting=true',
-        () {
+        'fastingHours = 10.0 → evaluateFasting=true', () {
       const ningunoProtocol = 'Ninguno';
       final hours = computeFastingHours(
         isActive: false,
@@ -162,8 +157,7 @@ void main() {
 
     test(
         'SPEC-208-F: ayuno de 18:6 cerrado completado → '
-        'fastingHours = 18h → evaluateFasting=true',
-        () {
+        'fastingHours = 18h → evaluateFasting=true', () {
       const protocol186 = '18:6';
       final hours = computeFastingHours(
         isActive: false,

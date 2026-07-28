@@ -119,8 +119,7 @@ void main() {
       );
     });
 
-    testWidgets('Oculta CTA cuando onStartNextFasting es null',
-        (tester) async {
+    testWidgets('Oculta CTA cuando onStartNextFasting es null', (tester) async {
       await tester.pumpWidget(
         _wrap(
           CycleClosureCardView(
@@ -222,8 +221,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester
-          .tap(find.byKey(const Key('cycle_closure_dismiss_button')));
+      await tester.tap(find.byKey(const Key('cycle_closure_dismiss_button')));
       await tester.pumpAndSettle();
       expect(dismissed, isTrue);
     });

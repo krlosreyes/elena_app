@@ -38,7 +38,8 @@ void main() {
         aggregation: WeeklyAggregation.sum,
       );
       expect(res.length, 2);
-      expect(res[0].weekStart, _d(2026, 6, 1)); // lunes 1 jun (jun 4/5 caen acá)
+      expect(
+          res[0].weekStart, _d(2026, 6, 1)); // lunes 1 jun (jun 4/5 caen acá)
       expect(res[0].value, 3.0);
       expect(res[0].sampleCount, 2);
       expect(res[1].weekStart, _d(2026, 6, 8)); // lunes 8 jun (jun 9 cae acá)
@@ -139,11 +140,11 @@ void main() {
 
     test('weeksToShow limita a las últimas N semanas con data', () {
       final items = [
-        _Sample(_d(2026, 5, 4), 1),  // semana 1
+        _Sample(_d(2026, 5, 4), 1), // semana 1
         _Sample(_d(2026, 5, 11), 2), // semana 2
         _Sample(_d(2026, 5, 18), 3), // semana 3
         _Sample(_d(2026, 5, 25), 4), // semana 4
-        _Sample(_d(2026, 6, 1), 5),  // semana 5
+        _Sample(_d(2026, 6, 1), 5), // semana 5
       ];
       final res = WeeklyAggregator.aggregate<_Sample>(
         items: items,

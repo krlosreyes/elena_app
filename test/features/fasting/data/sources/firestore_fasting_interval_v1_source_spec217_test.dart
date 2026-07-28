@@ -26,13 +26,11 @@ Map<String, dynamic>? _selectLatest(List<Map<String, dynamic>> docs) {
 
 void main() {
   group('SPEC-217 — prioridad streamLatest (lógica pura SPEC-100)', () {
-    test(
-        'SPEC-217-01: lista vacía → null', () {
+    test('SPEC-217-01: lista vacía → null', () {
       expect(_selectLatest([]), isNull);
     });
 
-    test(
-        'SPEC-217-02: ayuno abierto gana sobre cualquier otro doc', () {
+    test('SPEC-217-02: ayuno abierto gana sobre cualquier otro doc', () {
       final docs = [
         {'isFasting': false, 'endTime': null, 'label': 'ventana'},
         {'isFasting': true, 'endTime': null, 'label': 'ayuno-abierto'},
@@ -42,8 +40,8 @@ void main() {
       expect(result?['label'], 'ayuno-abierto');
     });
 
-    test(
-        'SPEC-217-03: sin ayuno abierto → primera ventana de comida abierta', () {
+    test('SPEC-217-03: sin ayuno abierto → primera ventana de comida abierta',
+        () {
       final docs = [
         {'isFasting': true, 'endTime': 'ts', 'label': 'ayuno-cerrado'},
         {'isFasting': false, 'endTime': null, 'label': 'ventana-abierta'},
@@ -52,8 +50,8 @@ void main() {
       expect(result?['label'], 'ventana-abierta');
     });
 
-    test(
-        'SPEC-217-04: todo cerrado → primer doc (más reciente por startTime)', () {
+    test('SPEC-217-04: todo cerrado → primer doc (más reciente por startTime)',
+        () {
       final docs = [
         {'isFasting': true, 'endTime': 'ts2', 'label': 'reciente'},
         {'isFasting': true, 'endTime': 'ts1', 'label': 'antiguo'},
@@ -62,8 +60,7 @@ void main() {
       expect(result?['label'], 'reciente');
     });
 
-    test(
-        'SPEC-217-05: un solo doc cerrado → ese doc', () {
+    test('SPEC-217-05: un solo doc cerrado → ese doc', () {
       final docs = [
         {'isFasting': true, 'endTime': 'ts', 'label': 'único'},
       ];

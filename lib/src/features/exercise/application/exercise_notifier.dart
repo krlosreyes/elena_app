@@ -79,8 +79,7 @@ class ExerciseNotifier extends StateNotifier<ExerciseState>
       (previous, next) {
         next.whenData((cycle) {
           final newSince = cycle?.startedAt;
-          if (!hasActiveSubscription ||
-              newSince != _currentCycleStartedAt) {
+          if (!hasActiveSubscription || newSince != _currentCycleStartedAt) {
             _currentCycleStartedAt = newSince;
             _subscribeFor(newSince);
           }
@@ -99,8 +98,8 @@ class ExerciseNotifier extends StateNotifier<ExerciseState>
   void _subscribeFor(DateTime? cycleStartedAt) {
     final userId = _activeUserId;
     if (userId == null || userId.isEmpty) return;
-    final since = cycleStartedAt ??
-        DayBoundaryResolver.startOfDay(DateTime.now());
+    final since =
+        cycleStartedAt ?? DayBoundaryResolver.startOfDay(DateTime.now());
     final repo = ref.read(exerciseRepositoryProvider);
     attachSubscription(repo.watchSince(userId, since).listen(
       (logs) {
@@ -121,7 +120,8 @@ class ExerciseNotifier extends StateNotifier<ExerciseState>
       },
       onError: (Object err) {
         // SPEC-211: no cambiar state — el dato anterior sigue siendo válido.
-        AppLogger.warning('[ExerciseNotifier] stream error (transitorio): $err');
+        AppLogger.warning(
+            '[ExerciseNotifier] stream error (transitorio): $err');
       },
       onDone: () {
         // SPEC-211: Firestore cerró el stream (token refresh, reconexión).
@@ -196,7 +196,9 @@ class ExerciseNotifier extends StateNotifier<ExerciseState>
         if (mounted) state = state.copyWith(isSaving: false);
       }).catchError((Object e) {
         // Error REAL (no el offline pendiente): informar a la UI.
-        if (mounted) state = state.copyWith(isSaving: false, error: 'Fallo al guardar: $e');
+        if (mounted)
+          state =
+              state.copyWith(isSaving: false, error: 'Fallo al guardar: $e');
       }),
     );
   }
@@ -218,7 +220,8 @@ class ExerciseNotifier extends StateNotifier<ExerciseState>
           .catchError((Object e) {
         AppLogger.error('ExerciseNotifier.removeLastSession falló', e);
         if (mounted) {
-          state = state.copyWith(error: 'No pudimos eliminar la sesión. Revisa tu conexión.');
+          state = state.copyWith(
+              error: 'No pudimos eliminar la sesión. Revisa tu conexión.');
         }
       }),
     );

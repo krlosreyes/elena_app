@@ -44,13 +44,13 @@ class GoalProgressSection extends ConsumerWidget {
         ),
       ),
     );
-    final weeklyAdherence = ref
-        .watch(streakProvider.select((s) => s.weeklyAdherence));
+    final weeklyAdherence =
+        ref.watch(streakProvider.select((s) => s.weeklyAdherence));
     final sleepState = ref.watch(sleepProvider);
     final todayMinutes =
         ref.watch(exerciseProvider.select((s) => s.todayMinutes));
-    final currentAmountLiters = ref
-        .watch(hydrationProvider.select((s) => s.currentAmountLiters));
+    final currentAmountLiters =
+        ref.watch(hydrationProvider.select((s) => s.currentAmountLiters));
 
     double current0(GoalType type) {
       switch (type) {

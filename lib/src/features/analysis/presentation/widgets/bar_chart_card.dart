@@ -131,8 +131,7 @@ class _BarChartCardState extends State<BarChartCard> {
     // SPEC-168.1: hero block arriba del chart. Si no hay valor (serie
     // vacía), no renderizamos el bloque — el chart muestra "Sin datos"
     // y eso es suficiente.
-    final heroValue =
-        ChartHeroComputer.aggregateValue(series, heroAggregation);
+    final heroValue = ChartHeroComputer.aggregateValue(series, heroAggregation);
     final dateRange =
         ChartHeroComputer.formatDateRange(series, aggregationMode);
     // SPEC-168.3: cómputo del achievement del objetivo. Solo se
@@ -210,8 +209,7 @@ class _BarChartCardState extends State<BarChartCard> {
                   selectedIndex: _selectedIndex,
                 ),
               ),
-              if (_selectedIndex != null)
-                _buildTooltipLayer(size),
+              if (_selectedIndex != null) _buildTooltipLayer(size),
             ],
           ),
         );
@@ -373,8 +371,7 @@ class _BarsPainter extends CustomPainter {
         topRight: const Radius.circular(3),
       );
       // SPEC-168.8: usar value original (no clamp) para evaluar vs target.
-      final reachedTarget =
-          targetValue == null || values[i] >= targetValue!;
+      final reachedTarget = targetValue == null || values[i] >= targetValue!;
       canvas.drawRRect(rect, reachedTarget ? brightPaint : dimPaint);
 
       // SPEC-168.7: outline blanco sobre la barra seleccionada.
@@ -531,16 +528,26 @@ class _BarsPainter extends CustomPainter {
   }
 
   static const _monthsShort = [
-    'ene', 'feb', 'mar', 'abr', 'may', 'jun',
-    'jul', 'ago', 'sep', 'oct', 'nov', 'dic',
+    'ene',
+    'feb',
+    'mar',
+    'abr',
+    'may',
+    'jun',
+    'jul',
+    'ago',
+    'sep',
+    'oct',
+    'nov',
+    'dic',
   ];
 
   String _fmtDate(DateTime dt) {
     // Si la serie cubre <2 meses, mostramos día + mes ("5 jun").
     // Si cubre más, solo mes ("jun").
     if (series.points.isEmpty) return '';
-    final span = series.points.last.weekStart
-        .difference(series.points.first.weekStart);
+    final span =
+        series.points.last.weekStart.difference(series.points.first.weekStart);
     if (span.inDays > 60) {
       return _monthsShort[dt.month - 1];
     }

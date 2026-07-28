@@ -751,8 +751,9 @@ class FastingConsciousnessCard extends ConsumerWidget {
     // `unknown` (tratado como Excitado solo para esta decisión).
     int rank(String p) => FastingEligibility.ladder.indexOf(p);
     final declaredNS = NervousSystem.fromPersistenceKey(user.nervousSystem);
-    final guardrailNS =
-        declaredNS == NervousSystem.unknown ? NervousSystem.excited : declaredNS;
+    final guardrailNS = declaredNS == NervousSystem.unknown
+        ? NervousSystem.excited
+        : declaredNS;
     final isUpwardPastSixteenEight =
         rank(selected) > rank('16:8') && rank(selected) > rank(currentProtocol);
     final warningKey = '$selected-on-excited';

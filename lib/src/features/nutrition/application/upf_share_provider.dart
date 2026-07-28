@@ -26,8 +26,7 @@ const int kUpfWeeklyWindowDays = 7;
 /// devuelve `UpfShareResult.empty()`.
 ///
 /// Útil para mostrar el chip del plato actual en contexto del día.
-final dailyUpfShareProvider =
-    StreamProvider.autoDispose<UpfShareResult>((ref) {
+final dailyUpfShareProvider = StreamProvider.autoDispose<UpfShareResult>((ref) {
   final account = ref.watch(authStateProvider).value;
   final cycle = ref.watch(currentMetabolicCycleProvider).valueOrNull;
 

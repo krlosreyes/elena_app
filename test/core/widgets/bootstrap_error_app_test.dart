@@ -26,8 +26,7 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('no depende de Riverpod ni del tema de la app',
-        (tester) async {
+    testWidgets('no depende de Riverpod ni del tema de la app', (tester) async {
       // Se monta como raíz absoluta, sin ProviderScope ni AppTheme: si
       // dependiera de ellos, cualquiera podría ser justamente lo que falló.
       await tester.pumpWidget(BootstrapErrorApp(onRetry: () async {}));
@@ -51,8 +50,7 @@ void main() {
       expect(find.text('FirebaseException: plist ausente'), findsOneWidget);
     });
 
-    testWidgets('sin detalle técnico no se muestra la sección',
-        (tester) async {
+    testWidgets('sin detalle técnico no se muestra la sección', (tester) async {
       await tester.pumpWidget(BootstrapErrorApp(onRetry: () async {}));
       expect(find.text('Detalle técnico'), findsNothing);
     });

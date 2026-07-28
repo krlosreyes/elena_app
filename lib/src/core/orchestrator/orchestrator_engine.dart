@@ -61,7 +61,8 @@ class OrchestratorEngine {
     }
 
     // ── 1. Fases biológicas ──────────────────────────────────────────────
-    final fastingPhase = _determineOrchestratorFastingBand(state.fastingHoursRaw);
+    final fastingPhase =
+        _determineOrchestratorFastingBand(state.fastingHoursRaw);
     // SPEC-51: la fase circadiana viene del CircadianEngine (fuente única).
     final circadianPhase = CircadianEngine.currentPhase(now);
 
@@ -152,7 +153,8 @@ class OrchestratorEngine {
   /// El enum canónico para display es `OrchestratorFastingBand` de `fasting_status.dart`.
   /// Pendiente: recibir directamente `OrchestratorFastingBand` del dashboard y usar
   /// `.orchestratorBand` en lugar de recalcular desde horas.
-  static OrchestratorFastingBand _determineOrchestratorFastingBand(double fastingHoursRaw) {
+  static OrchestratorFastingBand _determineOrchestratorFastingBand(
+      double fastingHoursRaw) {
     if (fastingHoursRaw < 4) return OrchestratorFastingBand.alerta;
     if (fastingHoursRaw < 8) return OrchestratorFastingBand.gluconeogenesis;
     if (fastingHoursRaw < 12) return OrchestratorFastingBand.cetosis;
@@ -199,7 +201,8 @@ class OrchestratorEngine {
     required double sleepQuality,
   }) {
     // Autofagia profunda + sueño malo → riesgo de catabolismo
-    if (fastingPhase == OrchestratorFastingBand.autofagia && sleepQuality < 0.4) {
+    if (fastingPhase == OrchestratorFastingBand.autofagia &&
+        sleepQuality < 0.4) {
       return false;
     }
 
@@ -295,7 +298,8 @@ class OrchestratorEngine {
     final List<String> violations = [];
 
     // Deshidratación en autofagia
-    if (fastingPhase == OrchestratorFastingBand.autofagia && state.hydrationLevel < 0.5) {
+    if (fastingPhase == OrchestratorFastingBand.autofagia &&
+        state.hydrationLevel < 0.5) {
       violations.add(
         'Riesgo deshidratación en Autofagia: hidratación al '
         '${(state.hydrationLevel * 100).toStringAsFixed(0)}%',
@@ -344,7 +348,8 @@ class OrchestratorEngine {
     final List<Recommendation> recs = [];
 
     // Hidratación urgente en autofagia
-    if (fastingPhase == OrchestratorFastingBand.autofagia && state.hydrationLevel < 0.5) {
+    if (fastingPhase == OrchestratorFastingBand.autofagia &&
+        state.hydrationLevel < 0.5) {
       recs.add(const Recommendation(
         id: 'hydrate_during_autophagy',
         priority: RecommendationPriority.high,

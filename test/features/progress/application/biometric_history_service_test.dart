@@ -59,8 +59,7 @@ Future<Map<String, dynamic>?> _readHistoryDoc(
   return snap.data();
 }
 
-String _todayKey(DateTime now) =>
-    '${now.year.toString().padLeft(4, '0')}-'
+String _todayKey(DateTime now) => '${now.year.toString().padLeft(4, '0')}-'
     '${now.month.toString().padLeft(2, '0')}-'
     '${now.day.toString().padLeft(2, '0')}';
 
@@ -89,7 +88,8 @@ void main() {
   });
 
   group('SPEC-143 §8.1 — updateFromProfileEdit', () {
-    test('Escribe a ambos lugares atómicamente con source profile_edit', () async {
+    test('Escribe a ambos lugares atómicamente con source profile_edit',
+        () async {
       await service.updateFromProfileEdit(
         currentUser: _user(),
         delta: const BiometricDelta(weight: 73.0),
@@ -99,7 +99,8 @@ void main() {
       expect(userDoc!['weight'], 73.0);
       expect(userDoc['waistCircumference'], 90.0, reason: 'No tocado');
 
-      final histDoc = await _readHistoryDoc(firestore, 'u1', _todayKey(fixedNow));
+      final histDoc =
+          await _readHistoryDoc(firestore, 'u1', _todayKey(fixedNow));
       expect(histDoc!['weight'], 73.0);
       expect(histDoc['source'], BiometricSource.profileEdit);
       expect(histDoc['previousValues'], isA<Map<String, dynamic>>());
@@ -112,7 +113,8 @@ void main() {
         delta: const BiometricDelta(),
       );
 
-      final histDoc = await _readHistoryDoc(firestore, 'u1', _todayKey(fixedNow));
+      final histDoc =
+          await _readHistoryDoc(firestore, 'u1', _todayKey(fixedNow));
       expect(histDoc, isNull, reason: 'No debería existir doc histórico');
     });
 
@@ -126,7 +128,8 @@ void main() {
         ),
       );
 
-      final histDoc = await _readHistoryDoc(firestore, 'u1', _todayKey(fixedNow));
+      final histDoc =
+          await _readHistoryDoc(firestore, 'u1', _todayKey(fixedNow));
       final prev = histDoc!['previousValues'] as Map<String, dynamic>;
       expect(prev['weight'], 75.0);
       expect(prev['bodyFatPercentage'], 20.0);
@@ -150,7 +153,8 @@ void main() {
         checkInData: checkin,
       );
 
-      final histDoc = await _readHistoryDoc(firestore, 'u1', _todayKey(fixedNow));
+      final histDoc =
+          await _readHistoryDoc(firestore, 'u1', _todayKey(fixedNow));
       expect(histDoc!['source'], BiometricSource.checkinSheet);
       expect(histDoc['notes'], 'check-in semanal');
       expect(histDoc['imrScore'], 72);
@@ -164,17 +168,20 @@ void main() {
         delta: const BiometricDelta(weight: 75.2),
       );
 
-      final histDoc = await _readHistoryDoc(firestore, 'u1', _todayKey(fixedNow));
+      final histDoc =
+          await _readHistoryDoc(firestore, 'u1', _todayKey(fixedNow));
       expect(histDoc, isNull);
     });
 
-    test('Delta significativo → SÍ escribe con source healthkit_sync', () async {
+    test('Delta significativo → SÍ escribe con source healthkit_sync',
+        () async {
       await service.updateFromHealthKitSync(
         currentUser: _user(weight: 75.0),
         delta: const BiometricDelta(weight: 73.0),
       );
 
-      final histDoc = await _readHistoryDoc(firestore, 'u1', _todayKey(fixedNow));
+      final histDoc =
+          await _readHistoryDoc(firestore, 'u1', _todayKey(fixedNow));
       expect(histDoc, isNotNull);
       expect(histDoc!['source'], BiometricSource.healthkitSync);
     });
@@ -187,7 +194,8 @@ void main() {
         newBodyFatPercentage: 18.5,
       );
 
-      final histDoc = await _readHistoryDoc(firestore, 'u1', _todayKey(fixedNow));
+      final histDoc =
+          await _readHistoryDoc(firestore, 'u1', _todayKey(fixedNow));
       expect(histDoc!['source'], BiometricSource.bodyFatRecompute);
       expect(histDoc['bodyFatPercentage'], 18.5);
     });
@@ -259,7 +267,8 @@ void main() {
         () async {
       await service.writeOnboardingBaseline(currentUser: _user());
 
-      final histDoc = await _readHistoryDoc(firestore, 'u1', _todayKey(fixedNow));
+      final histDoc =
+          await _readHistoryDoc(firestore, 'u1', _todayKey(fixedNow));
       expect(histDoc, isNotNull);
       expect(histDoc!['source'], BiometricSource.onboardingBaseline);
       expect(histDoc['previousValues'], isNull,
@@ -289,9 +298,9 @@ void main() {
         delta: const BiometricDelta(weight: 73.0),
       );
 
-      final histDoc = await _readHistoryDoc(firestore, 'u1', _todayKey(fixedNow));
-      expect(histDoc!['weight'], 73.0,
-          reason: 'Último write del día gana');
+      final histDoc =
+          await _readHistoryDoc(firestore, 'u1', _todayKey(fixedNow));
+      expect(histDoc!['weight'], 73.0, reason: 'Último write del día gana');
       expect(histDoc['previousValues']['weight'], 74.0,
           reason: 'previousValues apunta al penúltimo, no al primer original');
     });
@@ -319,7 +328,8 @@ void main() {
     test('Persiste con source spec_143_backfill', () async {
       await service.writeSpec143BackfillEntry(currentUser: _user());
 
-      final histDoc = await _readHistoryDoc(firestore, 'u1', _todayKey(fixedNow));
+      final histDoc =
+          await _readHistoryDoc(firestore, 'u1', _todayKey(fixedNow));
       expect(histDoc!['source'], BiometricSource.spec143Backfill);
     });
   });

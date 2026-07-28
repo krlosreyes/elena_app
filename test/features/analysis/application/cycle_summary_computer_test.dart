@@ -126,8 +126,8 @@ void main() {
       final c2 = _closedCycle(cycleId: 'middle');
       final c3 = _closedCycle(cycleId: 'newer');
       final result = CycleSummaryComputer.fromCycles([c1, c2, c3]);
-      expect(result.map((s) => s.cycleId).toList(),
-          ['older', 'middle', 'newer']);
+      expect(
+          result.map((s) => s.cycleId).toList(), ['older', 'middle', 'newer']);
     });
   });
 }

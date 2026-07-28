@@ -97,8 +97,7 @@ class ProfileIdentityCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
             onTap: () => context.push('/analysis/resultados'),
             child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: zoneColor.withValues(alpha: 0.5)),

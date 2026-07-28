@@ -110,7 +110,8 @@ class FastingRingPainter extends CustomPainter {
         center.dy + radius * math.sin(angle));
 
     // Anillo expansivo que crece y se desvanece (0→1).
-    final double ringRadius = strokeWidthFasting + (strokeWidthFasting * 2.2 * celebrateT);
+    final double ringRadius =
+        strokeWidthFasting + (strokeWidthFasting * 2.2 * celebrateT);
     canvas.drawCircle(
         pos,
         ringRadius,

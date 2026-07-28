@@ -48,8 +48,8 @@ void main() {
     testWidgets('sin lecturas muestra estado vacío, sin CustomPaint',
         (tester) async {
       await tester.pumpWidget(_wrap(const GlucoseChart(readings: [])));
-      expect(find.text('Todavía no hay lecturas para graficar.'),
-          findsOneWidget);
+      expect(
+          find.text('Todavía no hay lecturas para graficar.'), findsOneWidget);
       // 27-jul (auditoría): antes esto era `find.byType(CustomPaint)` con
       // `findsNothing`, y llevaba fallando desde que Flutter empezó a montar
       // un `CustomPaint` propio dentro de Scaffold/Material. El test afirmaba
@@ -59,7 +59,8 @@ void main() {
       expect(_chartPainter, findsNothing);
     });
 
-    testWidgets('con 1 lectura renderiza sin excepción (xFor divide por 0 '
+    testWidgets(
+        'con 1 lectura renderiza sin excepción (xFor divide por 0 '
         'evitado)', (tester) async {
       await tester.pumpWidget(_wrap(GlucoseChart(readings: [
         _reading(95, DateTime(2026, 7, 20)),
@@ -68,7 +69,8 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('con varias lecturas de igual valor (range==0, clamp a 1) '
+    testWidgets(
+        'con varias lecturas de igual valor (range==0, clamp a 1) '
         'renderiza sin excepción', (tester) async {
       await tester.pumpWidget(_wrap(GlucoseChart(readings: [
         _reading(90, DateTime(2026, 7, 18)),
@@ -79,7 +81,8 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('con lecturas variadas dentro y fuera de la banda 100 '
+    testWidgets(
+        'con lecturas variadas dentro y fuera de la banda 100 '
         'renderiza sin excepción', (tester) async {
       await tester.pumpWidget(_wrap(GlucoseChart(readings: [
         _reading(80, DateTime(2026, 7, 18)),

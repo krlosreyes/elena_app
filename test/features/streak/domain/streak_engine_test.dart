@@ -111,7 +111,8 @@ void main() {
       expect(e.qualifiesForStreak, isFalse);
     });
 
-    test('3 pilares con ayuno + sueño: califica (SPEC-06 + regla pilar core)', () {
+    test('3 pilares con ayuno + sueño: califica (SPEC-06 + regla pilar core)',
+        () {
       final e = make(fasting: true, sleep: true, hydration: true);
       expect(e.pillarsCompleted, 3);
       expect(e.qualifiesForStreak, isTrue);

@@ -52,7 +52,8 @@ void main() {
         _entry('2026-06-03', fasting: true),
       ];
       expect(
-        ObservationDetector.detect(habitWeekly: const [], dailyEntries: entries),
+        ObservationDetector.detect(
+            habitWeekly: const [], dailyEntries: entries),
         isEmpty,
       );
     });
@@ -61,8 +62,7 @@ void main() {
   group('RF-02 — racha', () {
     test('5 días consecutivos cerrando ayuno → observación de racha', () {
       final entries = [
-        for (int d = 1; d <= 5; d++)
-          _entry('2026-06-0$d', fasting: true),
+        for (int d = 1; d <= 5; d++) _entry('2026-06-0$d', fasting: true),
       ];
       final obs = ObservationDetector.detect(
         habitWeekly: const [],

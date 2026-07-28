@@ -11,11 +11,13 @@ void main() {
   group('NervousSystem.values', () {
     test('expone exactamente passive, excited, unknown', () {
       expect(NervousSystem.values, hasLength(3));
-      expect(NervousSystem.values, containsAll([
-        NervousSystem.passive,
-        NervousSystem.excited,
-        NervousSystem.unknown,
-      ]));
+      expect(
+          NervousSystem.values,
+          containsAll([
+            NervousSystem.passive,
+            NervousSystem.excited,
+            NervousSystem.unknown,
+          ]));
     });
   });
 
@@ -59,7 +61,8 @@ void main() {
 
     test('clave desconocida cae a unknown', () {
       expect(NervousSystem.fromPersistenceKey('foo'), NervousSystem.unknown);
-      expect(NervousSystem.fromPersistenceKey('PASSIVE'), NervousSystem.unknown);
+      expect(
+          NervousSystem.fromPersistenceKey('PASSIVE'), NervousSystem.unknown);
     });
   });
 
@@ -162,7 +165,8 @@ void main() {
       expect(s.classify(), NervousSystem.passive);
     });
 
-    test('caso límite: excited=3 vs unknown=3 simultáneo (no debería ocurrir '
+    test(
+        'caso límite: excited=3 vs unknown=3 simultáneo (no debería ocurrir '
         'con 5 preguntas, pero por defensa: unknown gana)', () {
       const s = NervousSystemScore(passive: 0, excited: 3, unknown: 3);
       expect(s.classify(), NervousSystem.unknown);

@@ -63,7 +63,8 @@ Future<void> _bootstrapProtegido() async {
       reason: 'bootstrap_failed',
       fatal: true,
     );
-    AppLogger.error('Bootstrap falló; montando pantalla de error.', error, stack);
+    AppLogger.error(
+        'Bootstrap falló; montando pantalla de error.', error, stack);
     // `ensureInitialized` es idempotente y puede no haberse ejecutado si el
     // fallo ocurrió en la primera línea de `_bootstrap`.
     WidgetsFlutterBinding.ensureInitialized();
@@ -262,8 +263,7 @@ Future<List<Override>> _initBilling() async {
   // 1. RevenueCat con keys reales (producción o QA con sandbox).
   const iosKey = String.fromEnvironment('RC_IOS_KEY');
   const androidKey = String.fromEnvironment('RC_ANDROID_KEY');
-  final key =
-      defaultTargetPlatform == TargetPlatform.iOS ? iosKey : androidKey;
+  final key = defaultTargetPlatform == TargetPlatform.iOS ? iosKey : androidKey;
   if (key.isNotEmpty) {
     final service =
         RevenueCatBillingService(apiKey: key, debugLogging: kDebugMode);

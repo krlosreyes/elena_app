@@ -21,8 +21,7 @@ class AnalysisSummaryTab extends ConsumerStatefulWidget {
   const AnalysisSummaryTab({super.key});
 
   @override
-  ConsumerState<AnalysisSummaryTab> createState() =>
-      _AnalysisSummaryTabState();
+  ConsumerState<AnalysisSummaryTab> createState() => _AnalysisSummaryTabState();
 }
 
 class _AnalysisSummaryTabState extends ConsumerState<AnalysisSummaryTab>

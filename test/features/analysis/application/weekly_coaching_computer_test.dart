@@ -222,7 +222,8 @@ void main() {
         expect(
           hasVerb,
           isTrue,
-          reason: 'Acción de ${p.name} no empieza con imperativo: ${p.suggestedAction}',
+          reason:
+              'Acción de ${p.name} no empieza con imperativo: ${p.suggestedAction}',
         );
       }
     });

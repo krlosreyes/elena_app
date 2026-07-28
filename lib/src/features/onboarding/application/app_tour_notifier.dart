@@ -104,8 +104,7 @@ const List<TourStep> kTourSteps = [
   TourStep(
     emoji: '⏱️',
     title: 'Pilar 1 · Ayuno',
-    body:
-        'Cada hora de ayuno mueve a tu cuerpo por fases: baja la insulina, '
+    body: 'Cada hora de ayuno mueve a tu cuerpo por fases: baja la insulina, '
         'empieza la cetosis y aumenta el uso de grasa. Inicia tu ayuno con '
         'el botón verde de la tarjeta de abajo.',
     spotlight: TourSpotlightArea.fastingRing,
@@ -180,8 +179,7 @@ const List<TourStep> kTourSteps = [
   TourStep(
     emoji: '🎯',
     title: '¡Todo listo!',
-    body:
-        'Ya conoces tu app. Comienza registrando tu primer ayuno con el '
+    body: 'Ya conoces tu app. Comienza registrando tu primer ayuno con el '
         'botón "Iniciar Ayuno" ⏱️ del Dashboard. '
         '¡Tu metabolismo te lo va a agradecer!',
     spotlight: TourSpotlightArea.none,
@@ -237,9 +235,11 @@ class AppTourNotifier extends StateNotifier<AppTourState> {
 
   /// Verifica si el tour ya se completó (para ESTA cuenta) y lo activa si no.
   Future<bool> tryActivate() async {
-    if (state.isActive) return false; // tour ya corriendo — no resetear al navegar
+    if (state.isActive)
+      return false; // tour ya corriendo — no resetear al navegar
     final key = _prefsKey;
-    if (key == null) return false; // sin sesión aún — no hay uid para namespacing
+    if (key == null)
+      return false; // sin sesión aún — no hay uid para namespacing
     final prefs = _ref.read(sharedPreferencesProvider);
 
     // REGRESIÓN DE P0-2 encontrada y corregida en la auditoría en vivo del

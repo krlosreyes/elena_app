@@ -143,7 +143,8 @@ void main() {
       expect(etrf, isNull);
     });
 
-    test('sleep 22:00 + lastMealGoal 20:30 → NO programa (eTRF 19:00 < 20:30 es before, agenda 19:00)',
+    test(
+        'sleep 22:00 + lastMealGoal 20:30 → NO programa (eTRF 19:00 < 20:30 es before, agenda 19:00)',
         () {
       // sleep 22 - 3h = 19:00. lastMeal 20:30. 19:00 < 20:30 → agenda.
       final etrf = computeETRFPreSleep(

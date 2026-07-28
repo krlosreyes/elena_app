@@ -297,7 +297,13 @@ class ExerciseWeeklyCard extends ConsumerWidget {
   }
 
   static const _daysShort = [
-    'lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom',
+    'lun',
+    'mar',
+    'mié',
+    'jue',
+    'vie',
+    'sáb',
+    'dom',
   ];
 
   String _dayShort(int weekday) => _daysShort[(weekday - 1).clamp(0, 6)];

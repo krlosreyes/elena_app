@@ -63,7 +63,8 @@ class WeeklyAggregator {
     for (final entry in entries) {
       final weekStart = entry.key;
       final weekItems = entry.value;
-      final value = _aggregateBatch(weekItems, valueOf, timestampOf, aggregation);
+      final value =
+          _aggregateBatch(weekItems, valueOf, timestampOf, aggregation);
       points.add(TimeSeriesPoint(
         weekStart: weekStart,
         value: value,
@@ -98,8 +99,7 @@ class WeeklyAggregator {
       case WeeklyAggregation.sum:
         return batch.fold<double>(0, (acc, item) => acc + valueOf(item));
       case WeeklyAggregation.avg:
-        final sum =
-            batch.fold<double>(0, (acc, item) => acc + valueOf(item));
+        final sum = batch.fold<double>(0, (acc, item) => acc + valueOf(item));
         return sum / batch.length;
       case WeeklyAggregation.count:
         return batch.length.toDouble();
@@ -108,9 +108,7 @@ class WeeklyAggregator {
           ..sort((a, b) => timestampOf(a).compareTo(timestampOf(b)));
         return valueOf(sorted.last);
       case WeeklyAggregation.max:
-        return batch
-            .map(valueOf)
-            .reduce((a, b) => a > b ? a : b);
+        return batch.map(valueOf).reduce((a, b) => a > b ? a : b);
     }
   }
 }

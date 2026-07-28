@@ -143,16 +143,16 @@ class CycleComparisonService {
       previousCount: previousSummaries.length,
       imrScore: CyclePillarDelta(
           current: cur.imr.toDouble(), previous: prev.imr.toDouble()),
-      fastingMagnitude: CyclePillarDelta(
-          current: cur.fasting, previous: prev.fasting),
-      sleepQualityScore: CyclePillarDelta(
-          current: cur.sleep, previous: prev.sleep),
-      hydrationMagnitude: CyclePillarDelta(
-          current: cur.hydration, previous: prev.hydration),
-      exerciseMagnitude: CyclePillarDelta(
-          current: cur.exercise, previous: prev.exercise),
-      nutritionMagnitude: CyclePillarDelta(
-          current: cur.nutrition, previous: prev.nutrition),
+      fastingMagnitude:
+          CyclePillarDelta(current: cur.fasting, previous: prev.fasting),
+      sleepQualityScore:
+          CyclePillarDelta(current: cur.sleep, previous: prev.sleep),
+      hydrationMagnitude:
+          CyclePillarDelta(current: cur.hydration, previous: prev.hydration),
+      exerciseMagnitude:
+          CyclePillarDelta(current: cur.exercise, previous: prev.exercise),
+      nutritionMagnitude:
+          CyclePillarDelta(current: cur.nutrition, previous: prev.nutrition),
       currentRangeStart: rangeStart,
       currentRangeEnd: rangeEnd,
     );
@@ -181,11 +181,9 @@ class CycleComparisonService {
       imr: docs.fold<double>(0, (s, d) => s + d.imrScore) / n,
       fasting: docs.fold<double>(0, (s, d) => s + d.fastingMagnitude) / n,
       sleep: docs.fold<double>(0, (s, d) => s + d.sleepQualityScore) / n,
-      hydration:
-          docs.fold<double>(0, (s, d) => s + d.hydrationMagnitude) / n,
+      hydration: docs.fold<double>(0, (s, d) => s + d.hydrationMagnitude) / n,
       exercise: docs.fold<double>(0, (s, d) => s + d.exerciseMagnitude) / n,
-      nutrition:
-          docs.fold<double>(0, (s, d) => s + d.nutritionMagnitude) / n,
+      nutrition: docs.fold<double>(0, (s, d) => s + d.nutritionMagnitude) / n,
     );
   }
 }

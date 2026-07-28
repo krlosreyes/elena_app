@@ -112,8 +112,7 @@ class FastingEligibility {
         maxProtocol: 'Ninguno',
         blocked: true,
         hasMedicalSupervision: false,
-        reason:
-            'El ayuno intermitente no está diseñado para menores de edad.',
+        reason: 'El ayuno intermitente no está diseñado para menores de edad.',
       );
     }
 
@@ -167,8 +166,7 @@ class FastingEligibility {
     // 6. Diabetes medicada con insulina o sulfonilureas — riesgo real de
     // hipoglucemia severa. Tope 14:10 salvo supervisión médica activa
     // (que implica ajuste de dosis ya conversado con su médico).
-    if (has(FastingPathologyFlags.diabetesMedicada) &&
-        !hasMedicalSupervision) {
+    if (has(FastingPathologyFlags.diabetesMedicada) && !hasMedicalSupervision) {
       return const FastingEligibility(
         maxProtocol: '14:10',
         blocked: false,

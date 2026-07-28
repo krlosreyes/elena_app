@@ -180,8 +180,7 @@ void main() {
       expect(ns['score'], {'passive': 1, 'excited': 3, 'unknown': 1});
     });
 
-    test('protocolWarningAccepted null persiste como null en onboarding',
-        () {
+    test('protocolWarningAccepted null persiste como null en onboarding', () {
       final map = mapper.toMap(user());
       final onboarding = map['onboarding'] as Map<String, dynamic>;
       expect(onboarding['protocolWarningAccepted'], isNull);
@@ -205,8 +204,8 @@ void main() {
       final round = mapper.fromMap(map);
       expect(round.nervousSystem, 'passive');
       expect(round.nervousSystemDeclared, isTrue);
-      expect(round.nervousSystemScore,
-          {'passive': 4, 'excited': 0, 'unknown': 1});
+      expect(
+          round.nervousSystemScore, {'passive': 4, 'excited': 0, 'unknown': 1});
       expect(round.protocolWarningAccepted, '20:4-on-excited');
     });
   });

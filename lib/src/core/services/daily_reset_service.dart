@@ -138,7 +138,9 @@ class DailyResetNotifier extends StateNotifier<void> {
   Future<void> triggerCalendarSafetyNet({bool flushClosingDay = false}) async {
     try {
       if (flushClosingDay) {
-        await _ref.read(dailySummaryPersistenceServiceProvider).flushClosingDay();
+        await _ref
+            .read(dailySummaryPersistenceServiceProvider)
+            .flushClosingDay();
       }
       _ref.read(uiInteractionProvider.notifier).resetDismissals();
       AppLogger.debug(
@@ -204,7 +206,8 @@ class DailyResetNotifier extends StateNotifier<void> {
       // SPEC-242: dar tiempo a que todos los listeners de pilares disparen
       // (todos sincrónicos en Riverpod, pero el microtask queue necesita
       // un frame para propagarse a través de ref.listen). 150ms es seguro.
-      Future.delayed(const Duration(milliseconds: 150), streakNotifier.endReset);
+      Future.delayed(
+          const Duration(milliseconds: 150), streakNotifier.endReset);
 
       AppLogger.debug(
         'SPEC-58: reset diario completado en 5 pilares + descartes UI.',

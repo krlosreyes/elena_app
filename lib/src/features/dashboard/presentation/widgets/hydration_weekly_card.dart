@@ -172,7 +172,8 @@ class HydrationWeeklyCard extends ConsumerWidget {
             ),
           ),
           const SizedBox(width: 8),
-          SizedBox(width: 100, child: _buildDiscreteBar(d.percentVsTarget, color)),
+          SizedBox(
+              width: 100, child: _buildDiscreteBar(d.percentVsTarget, color)),
           const SizedBox(width: 10),
           SizedBox(
             width: 40,
@@ -296,7 +297,13 @@ class HydrationWeeklyCard extends ConsumerWidget {
   }
 
   static const _daysShort = [
-    'lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom',
+    'lun',
+    'mar',
+    'mié',
+    'jue',
+    'vie',
+    'sáb',
+    'dom',
   ];
 
   String _dayShort(int weekday) => _daysShort[(weekday - 1).clamp(0, 6)];

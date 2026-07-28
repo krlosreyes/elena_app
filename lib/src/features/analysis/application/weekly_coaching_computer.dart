@@ -58,7 +58,8 @@ class WeeklyCoachingComputer {
     if (previous.isNotEmpty) {
       fastingDelta = fastingAvg - _avg(previous, (d) => d.fastingProgress);
       sleepDelta = sleepAvg - _avg(previous, (d) => d.sleepProgress);
-      hydrationDelta = hydrationAvg - _avg(previous, (d) => d.hydrationProgress);
+      hydrationDelta =
+          hydrationAvg - _avg(previous, (d) => d.hydrationProgress);
       exerciseDelta = exerciseAvg - _avg(previous, (d) => d.exerciseProgress);
       mealsDelta = mealsAvg - _avg(previous, (d) => d.mealsProgress);
     }
@@ -188,8 +189,7 @@ class WeeklyCoachingComputer {
   /// cerrados en la ventana actual) — el widget muestra "N ciclos"
   /// en lugar de "N días" como copy. El campo conserva el nombre
   /// por retrocompatibilidad con el widget.
-  static WeeklyCoachingInsight fromCycleComparison(
-      CycleComparison comparison) {
+  static WeeklyCoachingInsight fromCycleComparison(CycleComparison comparison) {
     if (comparison.currentCount == 0) {
       return WeeklyCoachingInsight.empty(
         rangeStart: comparison.currentRangeStart ?? DateTime.now(),
@@ -204,16 +204,13 @@ class WeeklyCoachingComputer {
     final exerciseAvg = comparison.exerciseMagnitude.current;
     final mealsAvg = comparison.nutritionMagnitude.current;
 
-    final fastingDelta =
-        hasPrevious ? comparison.fastingMagnitude.delta : null;
-    final sleepDelta =
-        hasPrevious ? comparison.sleepQualityScore.delta : null;
+    final fastingDelta = hasPrevious ? comparison.fastingMagnitude.delta : null;
+    final sleepDelta = hasPrevious ? comparison.sleepQualityScore.delta : null;
     final hydrationDelta =
         hasPrevious ? comparison.hydrationMagnitude.delta : null;
     final exerciseDelta =
         hasPrevious ? comparison.exerciseMagnitude.delta : null;
-    final mealsDelta =
-        hasPrevious ? comparison.nutritionMagnitude.delta : null;
+    final mealsDelta = hasPrevious ? comparison.nutritionMagnitude.delta : null;
 
     final weakest = pickWeakPillar(
       fastingAvg: fastingAvg,

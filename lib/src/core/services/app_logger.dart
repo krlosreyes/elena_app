@@ -30,8 +30,10 @@ class AppLogger {
   static void verbose(String message, [dynamic error, StackTrace? stackTrace]) {
     if (kDebugMode) {
       final scrubbedMessage = PiiScrubber.scrub(message);
-      final scrubbedError = error != null ? PiiScrubber.scrub(error.toString()) : null;
-      _logger.d('$scrubbedMessage${scrubbedError != null ? '\nError: $scrubbedError' : ''}');
+      final scrubbedError =
+          error != null ? PiiScrubber.scrub(error.toString()) : null;
+      _logger.d(
+          '$scrubbedMessage${scrubbedError != null ? '\nError: $scrubbedError' : ''}');
       if (stackTrace != null) _logger.d(stackTrace);
     }
   }
@@ -54,7 +56,8 @@ class AppLogger {
   /// Nivel: WARNING - Advertencias importantes
   static void warning(String message, [dynamic error]) {
     _logger.w(PiiScrubber.scrub(message));
-    if (error != null) _logger.w('Error: ${PiiScrubber.scrub(error.toString())}');
+    if (error != null)
+      _logger.w('Error: ${PiiScrubber.scrub(error.toString())}');
   }
 
   /// Nivel: ERROR - Errores de aplicación
@@ -77,7 +80,8 @@ class AppLogger {
 
   /// ✅ TASK 1.4.1: Log de eventos de autenticación (sin datos sensibles)
   static void logAuthEvent(String event, {String? userId}) {
-    info('🔐 AUTH: $event${userId != null ? ' (user: ${truncateUid(userId)})' : ''}');
+    info(
+        '🔐 AUTH: $event${userId != null ? ' (user: ${truncateUid(userId)})' : ''}');
   }
 
   /// SEC-07 (auditoría 2026-07-11): trunca un UID de Firebase Auth para

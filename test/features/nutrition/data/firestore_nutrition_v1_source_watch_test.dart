@@ -28,10 +28,8 @@ void main() {
     source = FirestoreNutritionV1Source(firestore);
   });
 
-  CollectionReference<Map<String, dynamic>> col() => firestore
-      .collection('users')
-      .doc(userId)
-      .collection('nutrition_history');
+  CollectionReference<Map<String, dynamic>> col() =>
+      firestore.collection('users').doc(userId).collection('nutrition_history');
 
   Future<void> seedMeal(String id, DateTime ts) =>
       col().doc(id).set({'timestamp': Timestamp.fromDate(ts)});

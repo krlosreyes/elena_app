@@ -136,7 +136,8 @@ class _AnalysisPillarDetailScreenState
               SegmentedRangeControl(
                 locked: !isPremium,
                 onLockedTap: () => openPaywall(
-                  context, ref,
+                  context,
+                  ref,
                   feature: GatedFeature.analyticsHistory,
                 ),
               ),
@@ -249,7 +250,8 @@ class _AnalysisPillarDetailScreenState
                 ),
               ),
               onPressed: () => openPaywall(
-                context, ref,
+                context,
+                ref,
                 feature: GatedFeature.analyticsHistory,
               ),
               child: const Text(
@@ -271,23 +273,23 @@ class _AnalysisPillarDetailScreenState
       case ChartMetric.nutritionAPct:
         return _nutritionTrend(mode);
       case ChartMetric.imr:
-        return _genericTrend(imrSeriesProvider, 'IMR', '',
-            AppColors.metabolicGreen, 'up', mode);
+        return _genericTrend(
+            imrSeriesProvider, 'IMR', '', AppColors.metabolicGreen, 'up', mode);
       case ChartMetric.weight:
         return _genericTrend(weightSeriesProvider, 'Peso', 'kg',
             const Color(0xFF60A5FA), 'down', mode);
       case ChartMetric.bodyFatPct:
-        return _genericTrend(bodyFatSeriesProvider, 'Grasa corporal',
-            '%', _accentBodyFat, 'down', mode);
+        return _genericTrend(bodyFatSeriesProvider, 'Grasa corporal', '%',
+            _accentBodyFat, 'down', mode);
       case ChartMetric.fastingHours:
         return _genericTrend(fastingHabitSeriesProvider, 'Ayuno', 'h',
             AppColors.metabolicGreen, 'up', mode);
       case ChartMetric.hydrationLiters:
-        return _genericTrend(hydrationHabitSeriesProvider, 'Hidratación',
-            'L', const Color(0xFF38BDF8), 'up', mode);
+        return _genericTrend(hydrationHabitSeriesProvider, 'Hidratación', 'L',
+            const Color(0xFF38BDF8), 'up', mode);
       case ChartMetric.exerciseMin:
-        return _genericTrend(exerciseHabitSeriesProvider, 'Ejercicio',
-            'min', const Color(0xFF14B8A6), 'up', mode);
+        return _genericTrend(exerciseHabitSeriesProvider, 'Ejercicio', 'min',
+            const Color(0xFF14B8A6), 'up', mode);
       case ChartMetric.sleepHours:
         return _genericTrend(sleepHabitSeriesProvider, 'Sueño', 'h',
             const Color(0xFF818CF8), 'up', mode);
@@ -370,8 +372,7 @@ class _AnalysisPillarDetailScreenState
   String _nutritionTrendHeadline(MetricSeries s) {
     final points = s.points.where((p) => p.sampleCount > 0).toList();
     if (points.isEmpty) return 'Sin registros en este rango.';
-    final avg =
-        points.fold<double>(0, (a, b) => a + b.value) / points.length;
+    final avg = points.fold<double>(0, (a, b) => a + b.value) / points.length;
     final pct = avg.round();
     if (pct >= 70) {
       return 'Tu alimentación viene sólida: $pct % A-dominante en promedio.';
@@ -485,8 +486,7 @@ class _AnalysisPillarDetailScreenState
   // completo) por `.select((a) => a.valueOrNull?.fastingProtocol)`
   // porque solo usa ese campo.
 
-  static String _isoDate(DateTime d) =>
-      '${d.year.toString().padLeft(4, '0')}-'
+  static String _isoDate(DateTime d) => '${d.year.toString().padLeft(4, '0')}-'
       '${d.month.toString().padLeft(2, '0')}-'
       '${d.day.toString().padLeft(2, '0')}';
 
@@ -522,8 +522,7 @@ class _AnalysisPillarDetailScreenState
   Widget _fastingCard(AggregationMode mode, String periodLabel) {
     final s = ref.watch(fastingHabitSeriesProvider);
     if (s.value == null) return _loadingBox();
-    final target =
-        ref.watch(goalForChartProvider(ChartMetric.fastingHours));
+    final target = ref.watch(goalForChartProvider(ChartMetric.fastingHours));
     final targetLabel =
         ref.watch(goalLabelForChartProvider(ChartMetric.fastingHours));
     return BarChartCard(
@@ -553,10 +552,9 @@ class _AnalysisPillarDetailScreenState
   Widget _hydrationCard(AggregationMode mode, String periodLabel) {
     final s = ref.watch(hydrationHabitSeriesProvider);
     if (s.value == null) return _loadingBox();
-    final target =
-        ref.watch(goalForChartProvider(ChartMetric.hydrationLiters));
-    final targetLabel = ref
-        .watch(goalLabelForChartProvider(ChartMetric.hydrationLiters));
+    final target = ref.watch(goalForChartProvider(ChartMetric.hydrationLiters));
+    final targetLabel =
+        ref.watch(goalLabelForChartProvider(ChartMetric.hydrationLiters));
     return BarChartCard(
       series: s.value!,
       accent: const Color(0xFF38BDF8),
@@ -572,8 +570,7 @@ class _AnalysisPillarDetailScreenState
   Widget _exerciseCard(AggregationMode mode, String periodLabel) {
     final s = ref.watch(exerciseHabitSeriesProvider);
     if (s.value == null) return _loadingBox();
-    final target =
-        ref.watch(goalForChartProvider(ChartMetric.exerciseMin));
+    final target = ref.watch(goalForChartProvider(ChartMetric.exerciseMin));
     final targetLabel =
         ref.watch(goalLabelForChartProvider(ChartMetric.exerciseMin));
     return BarChartCard(

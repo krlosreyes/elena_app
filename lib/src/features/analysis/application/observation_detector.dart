@@ -138,11 +138,31 @@ class ObservationDetector {
     if (ascending.isEmpty) return null;
 
     final candidates = <({String label, String verb, int days})>[
-      (label: 'Ayuno', verb: 'cerrando tu ayuno', days: _currentStreak(ascending, (e) => e.fastingCompleted)),
-      (label: 'Sueño', verb: 'durmiendo bien', days: _currentStreak(ascending, (e) => e.sleepCompleted)),
-      (label: 'Hidratación', verb: 'cumpliendo tu hidratación', days: _currentStreak(ascending, (e) => e.hydrationCompleted)),
-      (label: 'Ejercicio', verb: 'moviéndote', days: _currentStreak(ascending, (e) => e.exerciseLogged)),
-      (label: 'Nutrición', verb: 'comiendo en tu ventana', days: _currentStreak(ascending, (e) => e.nutritionLogged)),
+      (
+        label: 'Ayuno',
+        verb: 'cerrando tu ayuno',
+        days: _currentStreak(ascending, (e) => e.fastingCompleted)
+      ),
+      (
+        label: 'Sueño',
+        verb: 'durmiendo bien',
+        days: _currentStreak(ascending, (e) => e.sleepCompleted)
+      ),
+      (
+        label: 'Hidratación',
+        verb: 'cumpliendo tu hidratación',
+        days: _currentStreak(ascending, (e) => e.hydrationCompleted)
+      ),
+      (
+        label: 'Ejercicio',
+        verb: 'moviéndote',
+        days: _currentStreak(ascending, (e) => e.exerciseLogged)
+      ),
+      (
+        label: 'Nutrición',
+        verb: 'comiendo en tu ventana',
+        days: _currentStreak(ascending, (e) => e.nutritionLogged)
+      ),
     ];
 
     candidates.sort((a, b) => b.days.compareTo(a.days));
@@ -175,7 +195,8 @@ class ObservationDetector {
       if (expected != null && !_sameDay(d, expected)) break; // hueco
       if (!completed(e)) break;
       streak++;
-      expected = DateTime(d.year, d.month, d.day).subtract(const Duration(days: 1));
+      expected =
+          DateTime(d.year, d.month, d.day).subtract(const Duration(days: 1));
     }
     return streak;
   }
@@ -183,9 +204,8 @@ class ObservationDetector {
   // ─── RF-03: cercanía a la meta (hidratación) ───────────────────────────
 
   static Observation? _detectGoalProximity(List<StreakEntry> ascending) {
-    final recent = ascending
-        .where((e) => e.hydrationMagnitude != null)
-        .toList();
+    final recent =
+        ascending.where((e) => e.hydrationMagnitude != null).toList();
     if (recent.length < 2) return null;
     final lastN = recent.length <= kRecentDaysForGoal
         ? recent

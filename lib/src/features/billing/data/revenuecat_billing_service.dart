@@ -10,8 +10,7 @@
 import 'dart:async';
 
 import 'package:flutter/services.dart' show PlatformException;
-import 'package:purchases_flutter/purchases_flutter.dart'
-    hide PurchaseResult;
+import 'package:purchases_flutter/purchases_flutter.dart' hide PurchaseResult;
 
 import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/core/services/crashlytics_service.dart';
@@ -94,7 +93,8 @@ class RevenueCatBillingService implements BillingService {
       if (current == null) return const [];
       _packageCache
         ..clear()
-        ..addEntries(current.availablePackages.map((p) => MapEntry(p.identifier, p)));
+        ..addEntries(
+            current.availablePackages.map((p) => MapEntry(p.identifier, p)));
       return current.availablePackages.map(_mapPackage).toList();
     } catch (e) {
       AppLogger.warning('RevenueCat getOfferings falló: $e');
@@ -113,8 +113,7 @@ class RevenueCatBillingService implements BillingService {
       if (rcPkg == null) {
         return PurchaseResult.error('Paquete no disponible.');
       }
-      final result =
-          await Purchases.purchase(PurchaseParams.package(rcPkg));
+      final result = await Purchases.purchase(PurchaseParams.package(rcPkg));
       final status = _mapCustomerInfo(result.customerInfo);
       _last = status;
       if (!_controller.isClosed) _controller.add(status);

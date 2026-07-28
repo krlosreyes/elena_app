@@ -78,13 +78,13 @@ class InteractiveCoachingCard extends ConsumerWidget {
                             style: FilledButton.styleFrom(
                               backgroundColor: accent,
                             ),
-                            onPressed: () => _onOption(
-                                context, ref, pillarPrompt, option),
+                            onPressed: () =>
+                                _onOption(context, ref, pillarPrompt, option),
                             child: Text(option.label),
                           )
                         : TextButton(
-                            onPressed: () => _onOption(
-                                context, ref, pillarPrompt, option),
+                            onPressed: () =>
+                                _onOption(context, ref, pillarPrompt, option),
                             child: Text(option.label),
                           ),
                   ),
@@ -256,8 +256,7 @@ class InteractiveCoachingCard extends ConsumerWidget {
   void _dismiss(WidgetRef ref, String promptId, PromptPillar pillar) {
     ref.read(dismissedHydrationPromptProvider.notifier).state = promptId;
     // Anti-fatiga: incrementar conteo de dismisses.
-    final counts =
-        Map<String, int>.from(ref.read(dismissCountTodayProvider));
+    final counts = Map<String, int>.from(ref.read(dismissCountTodayProvider));
     counts[promptId] = (counts[promptId] ?? 0) + 1;
     ref.read(dismissCountTodayProvider.notifier).state = counts;
   }

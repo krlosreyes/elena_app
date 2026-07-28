@@ -42,7 +42,8 @@ class MealHistorySheet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final logs = ref.watch(nutritionProvider).todayLogs;
     // Orden cronológico ascendente (más antigua arriba).
-    final sorted = [...logs]..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+    final sorted = [...logs]
+      ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
 
     return DraggableScrollableSheet(
       initialChildSize: 0.6,

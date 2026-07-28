@@ -176,6 +176,7 @@ class _StubRepo implements AuthRepository {
   Future<void> deleteAccount() async {}
 
   @override
-  Future<int?> getTrialExpiresAtClaimMillis({bool forceRefresh = false}) async =>
+  Future<int?> getTrialExpiresAtClaimMillis(
+          {bool forceRefresh = false}) async =>
       null;
 }

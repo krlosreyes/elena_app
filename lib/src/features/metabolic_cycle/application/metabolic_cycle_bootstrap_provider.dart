@@ -46,8 +46,7 @@ final metabolicCycleBootstrapProvider = Provider<void>((ref) {
   Future<void> runBootstrap(UserModel user) async {
     final appState = ref.read(appStateRepositoryProvider);
     final fasting = ref.read(fastingProvider);
-    final hasActiveFasting =
-        fasting.isActive && fasting.startTime != null;
+    final hasActiveFasting = fasting.isActive && fasting.startTime != null;
 
     // SPEC-193: detectar desync "ayuno activo sin ciclo abierto".
     // Hacemos fetch directo al repo (no al stream) para tener un
@@ -80,8 +79,7 @@ final metabolicCycleBootstrapProvider = Provider<void>((ref) {
                 protocol: user.fastingProtocol,
                 lastFastingStartTime: fasting.startTime,
                 now: DateTime.now(),
-                tzOffsetMinutes:
-                    DateTime.now().timeZoneOffset.inMinutes,
+                tzOffsetMinutes: DateTime.now().timeZoneOffset.inMinutes,
               );
       await appState.setMigrationFlag(user.id, _kBootstrapMigrationKey);
       AppLogger.info(
@@ -130,8 +128,7 @@ final metabolicCycleBootstrapProvider = Provider<void>((ref) {
       // repetir runBootstrap en cada tick del state.
       if (previous != null &&
           previous.isActive &&
-          previous.activationSource ==
-              FastingActivationSource.bootstrap) {
+          previous.activationSource == FastingActivationSource.bootstrap) {
         return;
       }
       final user = ref.read(currentUserStreamProvider).valueOrNull;

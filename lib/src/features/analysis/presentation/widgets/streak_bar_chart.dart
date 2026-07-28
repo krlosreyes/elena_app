@@ -33,8 +33,10 @@ class StreakBarChart extends StatelessWidget {
   });
 
   static const int _days = 30;
-  static const _qualifiedColor = Colors.orange; // mismo color que la flama del header
-  static const _loggedColor = Color(0xFF64748B); // gris pizarra: "intentó, no calificó"
+  static const _qualifiedColor =
+      Colors.orange; // mismo color que la flama del header
+  static const _loggedColor =
+      Color(0xFF64748B); // gris pizarra: "intentó, no calificó"
   static const _protectedColor = Color(0xFFF59E0B);
 
   @override
@@ -126,7 +128,11 @@ class StreakBarChart extends StatelessWidget {
       children: [
         _legendItem(color: _qualifiedColor, label: 'calificó'),
         _legendItem(color: _loggedColor, label: 'no llegó al mínimo'),
-        _legendItem(color: null, icon: Icons.circle, iconColor: _protectedColor, label: 'protegido'),
+        _legendItem(
+            color: null,
+            icon: Icons.circle,
+            iconColor: _protectedColor,
+            label: 'protegido'),
       ],
     );
   }
@@ -154,7 +160,8 @@ class StreakBarChart extends StatelessWidget {
         const SizedBox(width: 6),
         Text(
           label,
-          style: TextStyle(color: Colors.white.withValues(alpha: 0.40), fontSize: 10),
+          style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.40), fontSize: 10),
         ),
       ],
     );
@@ -174,7 +181,8 @@ class StreakBarChart extends StatelessWidget {
     required Set<String> protectedDates,
   }) {
     const barGap = 2.5; // debe coincidir con _StreakBarsPainter._barGap
-    const yAxisRightWidth = 20.0; // debe coincidir con _StreakBarsPainter._yAxisRightWidth
+    const yAxisRightWidth =
+        20.0; // debe coincidir con _StreakBarsPainter._yAxisRightWidth
     final n = days.length;
     if (n == 0) return;
     final plotRight = width - yAxisRightWidth;
@@ -278,7 +286,8 @@ class _StreakBarsPainter extends CustomPainter {
         continue;
       }
 
-      final pillars = entry.pillarsCompleted.toDouble().clamp(yMin, yMax).toDouble();
+      final pillars =
+          entry.pillarsCompleted.toDouble().clamp(yMin, yMax).toDouble();
       final barHeight = pillars <= 0
           ? 2.0 // barra mínima visible aunque sea 0 pilares (día registrado)
           : (pillars - yMin) / (yMax - yMin) * plotHeight;
@@ -319,7 +328,8 @@ class _StreakBarsPainter extends CustomPainter {
     bool isToday = false,
   }) {
     final xCenter = index * (barWidth + _barGap) + barWidth / 2;
-    final text = isToday ? 'hoy' : '${date.day} ${_monthsShort[date.month - 1]}';
+    final text =
+        isToday ? 'hoy' : '${date.day} ${_monthsShort[date.month - 1]}';
     final tp = TextPainter(
       text: TextSpan(
         text: text,
@@ -340,7 +350,8 @@ class _StreakBarsPainter extends CustomPainter {
     final tp = TextPainter(
       text: TextSpan(
         text: text,
-        style: TextStyle(color: color, fontSize: 8, fontWeight: FontWeight.w700),
+        style:
+            TextStyle(color: color, fontSize: 8, fontWeight: FontWeight.w700),
       ),
       textDirection: TextDirection.ltr,
     )..layout();
@@ -348,13 +359,25 @@ class _StreakBarsPainter extends CustomPainter {
   }
 
   static const _monthsShort = [
-    'ene', 'feb', 'mar', 'abr', 'may', 'jun',
-    'jul', 'ago', 'sep', 'oct', 'nov', 'dic',
+    'ene',
+    'feb',
+    'mar',
+    'abr',
+    'may',
+    'jun',
+    'jul',
+    'ago',
+    'sep',
+    'oct',
+    'nov',
+    'dic',
   ];
 
   @override
   bool shouldRepaint(covariant _StreakBarsPainter old) =>
-      old.days != days || old.byDate != byDate || old.protectedDates != protectedDates;
+      old.days != days ||
+      old.byDate != byDate ||
+      old.protectedDates != protectedDates;
 }
 
 /// P5 (2026-07-15): bottom sheet con el desglose de un día específico del
@@ -374,8 +397,18 @@ class _DayDetailSheet extends StatelessWidget {
   });
 
   static const _months = [
-    'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
-    'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
+    'enero',
+    'febrero',
+    'marzo',
+    'abril',
+    'mayo',
+    'junio',
+    'julio',
+    'agosto',
+    'septiembre',
+    'octubre',
+    'noviembre',
+    'diciembre',
   ];
 
   @override
@@ -414,12 +447,16 @@ class _DayDetailSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          _statusChip(qualifies: qualifies, isProtected: isProtected, hasEntry: entry != null),
+          _statusChip(
+              qualifies: qualifies,
+              isProtected: isProtected,
+              hasEntry: entry != null),
           const SizedBox(height: 18),
           if (entry == null)
             Text(
               'No hay registro para este día.',
-              style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 13),
+              style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.6), fontSize: 13),
             )
           else ...[
             _pillarRow('Ayuno', entry.fastingCompleted),
@@ -429,7 +466,8 @@ class _DayDetailSheet extends StatelessWidget {
             _pillarRow('Nutrición', entry.nutritionLogged),
             const SizedBox(height: 14),
             Text(
-              _whyText(qualifies: qualifies, isProtected: isProtected, entry: entry),
+              _whyText(
+                  qualifies: qualifies, isProtected: isProtected, entry: entry),
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.65),
                 fontSize: 12,
@@ -448,7 +486,8 @@ class _DayDetailSheet extends StatelessWidget {
     required bool hasEntry,
   }) {
     if (!hasEntry) return _chip('Sin registro', const Color(0xFF64748B));
-    if (isProtected) return _chip('Protegido por una reserva', const Color(0xFFF59E0B));
+    if (isProtected)
+      return _chip('Protegido por una reserva', const Color(0xFFF59E0B));
     return qualifies
         ? _chip('Calificó para la racha', Colors.orange)
         : _chip('No llegó al mínimo', const Color(0xFF64748B));
@@ -464,7 +503,8 @@ class _DayDetailSheet extends StatelessWidget {
       ),
       child: Text(
         text,
-        style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w700),
+        style:
+            TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w700),
       ),
     );
   }
@@ -485,7 +525,9 @@ class _DayDetailSheet extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              color: completed ? Colors.white : Colors.white.withValues(alpha: 0.45),
+              color: completed
+                  ? Colors.white
+                  : Colors.white.withValues(alpha: 0.45),
               fontSize: 14,
               fontWeight: FontWeight.w600,
             ),

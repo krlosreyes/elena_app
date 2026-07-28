@@ -8,7 +8,8 @@ import 'package:flutter/material.dart';
 import 'package:elena_app/src/features/content/domain/post.dart';
 
 class PostQuizView extends StatefulWidget {
-  const PostQuizView({super.key, required this.questions, required this.accent});
+  const PostQuizView(
+      {super.key, required this.questions, required this.accent});
   final List<QuizQuestion> questions;
   final Color accent;
 
@@ -126,13 +127,12 @@ class _PostQuizViewState extends State<PostQuizView> {
         border = const Color(0xFF10B981);
         bg = const Color(0xFF10B981).withValues(alpha: 0.12);
         text = Colors.white;
-        trailing = const Icon(Icons.check_circle,
-            color: Color(0xFF10B981), size: 18);
+        trailing =
+            const Icon(Icons.check_circle, color: Color(0xFF10B981), size: 18);
       } else if (isChosen) {
         border = Colors.redAccent;
         bg = Colors.redAccent.withValues(alpha: 0.10);
-        trailing =
-            const Icon(Icons.cancel, color: Colors.redAccent, size: 18);
+        trailing = const Icon(Icons.cancel, color: Colors.redAccent, size: 18);
       }
     }
 
@@ -157,8 +157,7 @@ class _PostQuizViewState extends State<PostQuizView> {
                     color: text,
                     fontSize: 13.5,
                     height: 1.3,
-                    fontWeight:
-                        isChosen ? FontWeight.w700 : FontWeight.w500,
+                    fontWeight: isChosen ? FontWeight.w700 : FontWeight.w500,
                   ),
                 ),
               ),

@@ -54,8 +54,7 @@ final hasCompletedFastingTodayProvider = Provider<bool>((ref) {
       start: lastClosed.startTime,
       end: endTime,
     );
-    belongsToCurrentWindow =
-        attributionDay == DayBoundaryResolver.dayKey(now);
+    belongsToCurrentWindow = attributionDay == DayBoundaryResolver.dayKey(now);
   }
   if (!belongsToCurrentWindow) return false;
 

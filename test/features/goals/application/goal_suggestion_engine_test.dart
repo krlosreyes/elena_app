@@ -31,8 +31,8 @@ void main() {
   GoalSuggestion fasting(UserModel u) =>
       GoalSuggestionEngine.suggest(u)[GoalType.fastingDaysPerWeek]!;
   GoalSuggestion bodyFat(String gender, double bf) =>
-      GoalSuggestionEngine.suggest(_user(gender: gender, bodyFat: bf))[
-          GoalType.bodyFatTarget]!;
+      GoalSuggestionEngine.suggest(
+          _user(gender: gender, bodyFat: bf))[GoalType.bodyFatTarget]!;
 
   group('Ayuno — piso de 3 días (SPEC-203.1)', () {
     test('principiante (0 días) → meta 3, no 2', () {
@@ -49,8 +49,8 @@ void main() {
 
   group('Ejercicio — actividad real (SPEC-203.2)', () {
     GoalSuggestion ex(UserModel u, {double? recent}) =>
-        GoalSuggestionEngine.suggest(u, recentExerciseMinPerDay: recent)[
-            GoalType.exerciseMinPerDay]!;
+        GoalSuggestionEngine.suggest(u,
+            recentExerciseMinPerDay: recent)[GoalType.exerciseMinPerDay]!;
 
     test('sin actividad real → "estimado" (cae al goal)', () {
       final s = ex(_user());

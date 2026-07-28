@@ -44,7 +44,9 @@ class NewCycleMealsWarningDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final mealsLabel = mealsCount == 1 ? '1 comida registrada' : '$mealsCount comidas registradas';
+    final mealsLabel = mealsCount == 1
+        ? '1 comida registrada'
+        : '$mealsCount comidas registradas';
 
     return AlertDialog(
       backgroundColor: const Color(0xFF1E293B),

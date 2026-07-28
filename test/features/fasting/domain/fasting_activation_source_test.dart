@@ -16,7 +16,8 @@ void main() {
   group('SPEC-183 — FastingActivationSource', () {
     test('los 3 valores del enum están definidos', () {
       expect(FastingActivationSource.values.length, 3);
-      expect(FastingActivationSource.values, contains(FastingActivationSource.none));
+      expect(FastingActivationSource.values,
+          contains(FastingActivationSource.none));
       expect(FastingActivationSource.values,
           contains(FastingActivationSource.bootstrap));
       expect(FastingActivationSource.values,

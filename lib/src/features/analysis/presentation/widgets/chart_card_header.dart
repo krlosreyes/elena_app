@@ -96,8 +96,7 @@ class _DeltaPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final isUp = delta > 0;
     final isGood = betterIf == 'up' ? isUp : !isUp;
-    final color =
-        isGood ? const Color(0xFF34D399) : const Color(0xFFFB923C);
+    final color = isGood ? const Color(0xFF34D399) : const Color(0xFFFB923C);
     final icon =
         isUp ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded;
     final formatted = _fmt(delta.abs());

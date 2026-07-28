@@ -56,9 +56,8 @@ class TodaysProgressSection extends ConsumerWidget {
     // ── Sueño ──────────────────────────────────────────────────────────
     final cycleSleep = ref.watch(currentCycleSleepProvider);
     final sleepTargetH = ref.watch(effectiveSleepGoalProvider);
-    final sleepHoursToday = cycleSleep == null
-        ? 0.0
-        : cycleSleep.duration.inMinutes / 60.0;
+    final sleepHoursToday =
+        cycleSleep == null ? 0.0 : cycleSleep.duration.inMinutes / 60.0;
     final sleepProgress = cycleSleep == null
         ? 0.0
         : (cycleSleep.duration.inMinutes / (sleepTargetH * 60)).clamp(0.0, 1.0);

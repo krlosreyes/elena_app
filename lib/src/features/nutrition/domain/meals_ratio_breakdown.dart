@@ -7,10 +7,10 @@ import 'package:elena_app/src/features/nutrition/domain/meal_ratio.dart';
 /// Tier del insight según % A-dominante de la semana.
 enum MealsRatioInsightTier {
   empty,
-  poor,        // < 50%
+  poor, // < 50%
   insufficient, // 50-69%
-  good,         // 70-79%
-  excellent,    // ≥ 80%
+  good, // 70-79%
+  excellent, // ≥ 80%
 }
 
 class MealsRatioBreakdown {
@@ -55,8 +55,7 @@ class MealsRatioBreakdown {
   }
 
   /// Fracción de A-dominantes (0..1). 0 si no hay logs.
-  double get aDominantFraction =>
-      total == 0 ? 0 : aDominantCount / total;
+  double get aDominantFraction => total == 0 ? 0 : aDominantCount / total;
 
   /// % de A-dominantes redondeado (0..100).
   int get aDominantPercent => (aDominantFraction * 100).round();

@@ -129,8 +129,7 @@ class HydrationNotifier extends StateNotifier<HydrationState>
           // cycle == null, newSince == _currentCycleStartedAt (ambos null)
           // y la igualdad bloqueaba la suscripción inicial. Subscribe
           // siempre que no haya subscription activa.
-          if (!hasActiveSubscription ||
-              newSince != _currentCycleStartedAt) {
+          if (!hasActiveSubscription || newSince != _currentCycleStartedAt) {
             _currentCycleStartedAt = newSince;
             _subscribeFor(newSince);
           }
@@ -169,8 +168,8 @@ class HydrationNotifier extends StateNotifier<HydrationState>
   void _subscribeFor(DateTime? cycleStartedAt) {
     final userId = _activeUserId;
     if (userId == null) return;
-    final since = cycleStartedAt ??
-        DayBoundaryResolver.startOfDay(DateTime.now());
+    final since =
+        cycleStartedAt ?? DayBoundaryResolver.startOfDay(DateTime.now());
     attachSubscription(_ref
         .read(hydrationRepositoryProvider)
         .watchSince(userId, since)
@@ -301,8 +300,7 @@ class HydrationNotifier extends StateNotifier<HydrationState>
         AppLogger.error('HydrationNotifier.removeLastWater falló', e);
         if (mounted) {
           state = state.copyWith(
-            lastWriteError:
-                'No pudimos descontar el vaso. Revisa tu conexión.',
+            lastWriteError: 'No pudimos descontar el vaso. Revisa tu conexión.',
           );
         }
       }),

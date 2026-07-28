@@ -320,7 +320,8 @@ class StreakNotifier extends StateNotifier<StreakState> {
           );
         } else {
           AppLogger.error(
-            '[StreakNotifier] Error en historial de ayunos', e,
+            '[StreakNotifier] Error en historial de ayunos',
+            e,
           );
         }
       },
@@ -375,16 +376,16 @@ class StreakNotifier extends StateNotifier<StreakState> {
       recentCompleted: _recentCompletedFasting,
       now: DateTime.now(),
     );
-    final double fastingHours = liveActiveFastingHours > bestClosedFastingHoursToday
-        ? liveActiveFastingHours
-        : bestClosedFastingHoursToday;
+    final double fastingHours =
+        liveActiveFastingHours > bestClosedFastingHoursToday
+            ? liveActiveFastingHours
+            : bestClosedFastingHoursToday;
 
     // FIX: Duration.inHours trunca al entero (6:59 → 6, no 6.98).
     // Usar inSeconds/3600.0 para precisión decimal.
-    final double sleepHours =
-        sleep.lastLog == null
-            ? 0.0
-            : sleep.lastLog!.duration.inSeconds / 3600.0;
+    final double sleepHours = sleep.lastLog == null
+        ? 0.0
+        : sleep.lastLog!.duration.inSeconds / 3600.0;
 
     // SPEC-65: magnitudes continuas. Calculadas una sola vez aquí — NO
     // duplicamos la lógica de los `evaluateX` (esos siguen siendo el
@@ -489,8 +490,7 @@ class StreakNotifier extends StateNotifier<StreakState> {
     // ciclo SÍ se evaluó con el historial ya sincronizado) sigue
     // teniéndolo. Monotónico dentro del día calendario — una vez true,
     // se mantiene true.
-    final bool fastingOk =
-        rawFasting || (prevToday?.fastingCompleted ?? false);
+    final bool fastingOk = rawFasting || (prevToday?.fastingCompleted ?? false);
 
     // Sueño/hidratación/ejercicio/nutrición: ninguno de los 4 se resetea
     // por abrir un ciclo de ayuno nuevo (solo `FastingNotifier` toca sus
@@ -540,7 +540,8 @@ class StreakNotifier extends StateNotifier<StreakState> {
       // magnitud tampoco caiga a ~0 cuando arranca el segundo ciclo del
       // día. Sin esto, `dailyQualityScore` de hoy se hundiría igual
       // aunque `fastingCompleted` ya quedara protegido arriba.
-      fastingMagnitude: hwm(prevToday?.fastingMagnitude, fastingMagnitudeOrNull),
+      fastingMagnitude:
+          hwm(prevToday?.fastingMagnitude, fastingMagnitudeOrNull),
       sleepQualityScore: _resetInProgress
           ? hwm(prevToday?.sleepQualityScore, sleepQualityScore)
           : sleepQualityScore,
@@ -762,8 +763,18 @@ class StreakNotifier extends StateNotifier<StreakState> {
     if (d == today) return 'hoy';
     if (d == yesterday) return 'ayer';
     const months = [
-      'ene', 'feb', 'mar', 'abr', 'may', 'jun',
-      'jul', 'ago', 'sep', 'oct', 'nov', 'dic',
+      'ene',
+      'feb',
+      'mar',
+      'abr',
+      'may',
+      'jun',
+      'jul',
+      'ago',
+      'sep',
+      'oct',
+      'nov',
+      'dic',
     ];
     return 'el ${d.day} de ${months[d.month - 1]}';
   }

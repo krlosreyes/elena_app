@@ -177,9 +177,8 @@ class PillarRing extends StatelessWidget {
               '${(progress.clamp(0.0, 1.0) * 100).round()}%',
               style: TextStyle(
                 fontSize: 10,
-                color: isSelected
-                    ? color
-                    : Colors.white.withValues(alpha: 0.45),
+                color:
+                    isSelected ? color : Colors.white.withValues(alpha: 0.45),
                 fontWeight: FontWeight.w700,
                 fontFamily: 'monospace',
                 height: 1.0,

@@ -384,14 +384,24 @@ class _BicolorBarsPainter extends CustomPainter {
   }
 
   static const _monthsShort = [
-    'ene', 'feb', 'mar', 'abr', 'may', 'jun',
-    'jul', 'ago', 'sep', 'oct', 'nov', 'dic',
+    'ene',
+    'feb',
+    'mar',
+    'abr',
+    'may',
+    'jun',
+    'jul',
+    'ago',
+    'sep',
+    'oct',
+    'nov',
+    'dic',
   ];
 
   String _fmtDate(DateTime dt) {
     if (series.points.isEmpty) return '';
-    final span = series.points.last.weekStart
-        .difference(series.points.first.weekStart);
+    final span =
+        series.points.last.weekStart.difference(series.points.first.weekStart);
     if (span.inDays > 60) return _monthsShort[dt.month - 1];
     return '${dt.day} ${_monthsShort[dt.month - 1]}';
   }

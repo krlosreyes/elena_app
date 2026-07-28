@@ -17,8 +17,7 @@ void main() {
   });
 
   group('SPEC-149.1 Bug 1a — CycleClosureDismissalNotifier', () {
-    test('estado inicial es null cuando prefs no tiene valor previo',
-        () async {
+    test('estado inicial es null cuando prefs no tiene valor previo', () async {
       final prefs = await SharedPreferences.getInstance();
       final notifier = CycleClosureDismissalNotifier(prefs);
 

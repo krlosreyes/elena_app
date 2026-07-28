@@ -65,7 +65,8 @@ class SleepPillarCard extends ConsumerWidget {
               fmt: fmt,
               isManual: isManual,
             )
-          : _waitingChildren(context: context, accent: accent, isManual: isManual),
+          : _waitingChildren(
+              context: context, accent: accent, isManual: isManual),
     );
   }
 

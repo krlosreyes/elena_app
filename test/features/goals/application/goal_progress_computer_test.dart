@@ -93,8 +93,7 @@ void main() {
       expect(values[GoalType.fastingDaysPerWeek], 2.0);
     });
 
-    test('exercise se reconstruye multiplicando por la meta del usuario',
-        () {
+    test('exercise se reconstruye multiplicando por la meta del usuario', () {
       final values = GoalProgressComputer.buildCurrentValues(
         user: _user(exerciseGoalMinutes: 30),
         weekDocs: [

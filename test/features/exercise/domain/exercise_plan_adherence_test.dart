@@ -115,7 +115,8 @@ void main() {
       expect(resultHiit, PlanAdherenceLevel.fullMatch);
     });
 
-    test('Log legacy sin type → beneficio de la duda (fullMatch si dura lo suficiente)',
+    test(
+        'Log legacy sin type → beneficio de la duda (fullMatch si dura lo suficiente)',
         () {
       final result = ExercisePlanAdherence.evaluate(
         scheduled: scheduledStrength,

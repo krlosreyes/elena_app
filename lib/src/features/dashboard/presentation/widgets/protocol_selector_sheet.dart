@@ -247,132 +247,132 @@ class _ProtocolItem extends StatelessWidget {
     return Opacity(
       opacity: isLocked ? 0.45 : 1.0,
       child: InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: AppColors.backgroundDark,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: isCurrent
-                ? AppColors.metabolicGreen
-                : Colors.white.withValues(alpha: 0.06),
-            width: isCurrent ? 1.5 : 1,
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: AppColors.backgroundDark,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: isCurrent
+                  ? AppColors.metabolicGreen
+                  : Colors.white.withValues(alpha: 0.06),
+              width: isCurrent ? 1.5 : 1,
+            ),
+            boxShadow: isCurrent
+                ? [
+                    BoxShadow(
+                      color: AppColors.metabolicGreen.withValues(alpha: 0.25),
+                      blurRadius: 12,
+                    ),
+                  ]
+                : null,
           ),
-          boxShadow: isCurrent
-              ? [
-                  BoxShadow(
-                    color: AppColors.metabolicGreen.withValues(alpha: 0.25),
-                    blurRadius: 12,
-                  ),
-                ]
-              : null,
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Nombre + nivel
-            SizedBox(
-              width: 72,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    info.code,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: info.levelColor.withValues(alpha: 0.18),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      info.level.toUpperCase(),
-                      style: TextStyle(
-                        fontSize: 9,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Nombre + nivel
+              SizedBox(
+                width: 72,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      info.code,
+                      style: const TextStyle(
+                        fontSize: 18,
                         fontWeight: FontWeight.w900,
-                        letterSpacing: 0.8,
-                        color: info.levelColor,
+                        color: Colors.white,
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            // Descripción + badges
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      if (isCurrent)
-                        const _Badge(
-                          label: 'ACTUAL',
-                          color: AppColors.metabolicGreen,
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: info.levelColor.withValues(alpha: 0.18),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        info.level.toUpperCase(),
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.8,
+                          color: info.levelColor,
                         ),
-                      if (isRecommended)
-                        const _Badge(
-                          label: 'RECOMENDADO',
-                          color: Color(0xFF60A5FA),
-                        ),
-                      // SPEC-257 Eje A: badge visible en vez de ocultar el
-                      // protocolo del todo — transparencia sobre por qué
-                      // no está disponible hoy.
-                      if (isLocked)
-                        const _Badge(
-                          label: 'NO DISPONIBLE',
-                          color: Color(0xFF94A3B8),
-                        ),
-                    ],
-                  ),
-                  if (isCurrent || isRecommended || isLocked)
-                    const SizedBox(height: 6),
-                  Text(
-                    isLocked && lockReason != null
-                        ? lockReason!
-                        : info.description,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.white.withValues(alpha: 0.75),
-                      height: 1.4,
+                      ),
                     ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Descripción + badges
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        if (isCurrent)
+                          const _Badge(
+                            label: 'ACTUAL',
+                            color: AppColors.metabolicGreen,
+                          ),
+                        if (isRecommended)
+                          const _Badge(
+                            label: 'RECOMENDADO',
+                            color: Color(0xFF60A5FA),
+                          ),
+                        // SPEC-257 Eje A: badge visible en vez de ocultar el
+                        // protocolo del todo — transparencia sobre por qué
+                        // no está disponible hoy.
+                        if (isLocked)
+                          const _Badge(
+                            label: 'NO DISPONIBLE',
+                            color: Color(0xFF94A3B8),
+                          ),
+                      ],
+                    ),
+                    if (isCurrent || isRecommended || isLocked)
+                      const SizedBox(height: 6),
+                    Text(
+                      isLocked && lockReason != null
+                          ? lockReason!
+                          : info.description,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.white.withValues(alpha: 0.75),
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (isCurrent)
+                const Padding(
+                  padding: EdgeInsets.only(left: 8),
+                  child: Icon(
+                    Icons.check_circle_rounded,
+                    color: AppColors.metabolicGreen,
+                    size: 20,
                   ),
-                ],
-              ),
-            ),
-            if (isCurrent)
-              const Padding(
-                padding: EdgeInsets.only(left: 8),
-                child: Icon(
-                  Icons.check_circle_rounded,
-                  color: AppColors.metabolicGreen,
-                  size: 20,
+                )
+              else if (isLocked)
+                Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: Icon(
+                    Icons.lock_rounded,
+                    color: Colors.white.withValues(alpha: 0.35),
+                    size: 18,
+                  ),
                 ),
-              )
-            else if (isLocked)
-              Padding(
-                padding: const EdgeInsets.only(left: 8),
-                child: Icon(
-                  Icons.lock_rounded,
-                  color: Colors.white.withValues(alpha: 0.35),
-                  size: 18,
-                ),
-              ),
-          ],
+            ],
+          ),
         ),
-      ),
       ),
     );
   }

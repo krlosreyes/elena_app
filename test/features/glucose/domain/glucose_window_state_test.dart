@@ -54,7 +54,8 @@ void main() {
       expect(state.closedReason, GlucoseWindowClosedReason.firstMealLogged);
     });
 
-    test('comida registrada ANTES de despertar (día previo) no cierra la '
+    test(
+        'comida registrada ANTES de despertar (día previo) no cierra la '
         'ventana', () {
       final state = GlucoseWindowState.compute(
         wokeUpToday: wokeUp,
@@ -86,7 +87,8 @@ void main() {
       expect(state.isOpen, isTrue);
     });
 
-    test('wokeUpToday en el futuro (reloj desincronizado) → notWokenYet, '
+    test(
+        'wokeUpToday en el futuro (reloj desincronizado) → notWokenYet, '
         'conservador', () {
       final state = GlucoseWindowState.compute(
         wokeUpToday: wokeUp,

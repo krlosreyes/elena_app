@@ -106,7 +106,8 @@ void main() {
       controller.add(55);
       await Future<void>.delayed(Duration.zero);
       expect(dataAfterError, 55,
-          reason: 'La suscripción debe seguir activa tras un error transitorio');
+          reason:
+              'La suscripción debe seguir activa tras un error transitorio');
 
       await controller.close();
     });

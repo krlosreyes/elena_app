@@ -154,7 +154,8 @@ class _CelebrationBanner extends StatelessWidget {
                 Text(
                   _subtitle,
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.85), // SPEC-237 BUG-E
+                    color:
+                        Colors.white.withValues(alpha: 0.85), // SPEC-237 BUG-E
                     fontSize: 13,
                     height: 1.3,
                   ),
@@ -193,7 +194,9 @@ class _CelebrationBanner extends StatelessWidget {
         final p = event.pillarsCompleted;
         return '$p/5 pilares';
       case CelebrationType.badgeUnlocked:
-        final def = event.badge != null ? BadgeCatalog.byId(event.badge!.badgeId) : null;
+        final def = event.badge != null
+            ? BadgeCatalog.byId(event.badge!.badgeId)
+            : null;
         return def != null ? 'Nueva insignia: ${def.name}' : 'Nueva insignia';
     }
   }
@@ -236,7 +239,9 @@ class _CelebrationBanner extends StatelessWidget {
         }
         return '¡Hoy cuentas para tu racha!';
       case CelebrationType.badgeUnlocked:
-        final def = event.badge != null ? BadgeCatalog.byId(event.badge!.badgeId) : null;
+        final def = event.badge != null
+            ? BadgeCatalog.byId(event.badge!.badgeId)
+            : null;
         return def?.description ?? 'Sigue así — cada pilar cuenta.';
     }
   }

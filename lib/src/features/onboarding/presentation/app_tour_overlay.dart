@@ -113,8 +113,8 @@ class _AppTourOverlayState extends ConsumerState<AppTourOverlay>
 
     if (delta.abs() < 24) return; // ya está en buen lugar, no mover
 
-    final targetOffset = (ctrl.offset + delta)
-        .clamp(0.0, ctrl.position.maxScrollExtent);
+    final targetOffset =
+        (ctrl.offset + delta).clamp(0.0, ctrl.position.maxScrollExtent);
     ctrl.animateTo(
       targetOffset,
       duration: const Duration(milliseconds: 380),
@@ -152,8 +152,8 @@ class _AppTourOverlayState extends ConsumerState<AppTourOverlay>
 
     if (delta.abs() < 24) return;
 
-    final targetOffset = (ctrl.offset + delta)
-        .clamp(0.0, ctrl.position.maxScrollExtent);
+    final targetOffset =
+        (ctrl.offset + delta).clamp(0.0, ctrl.position.maxScrollExtent);
     ctrl.animateTo(
       targetOffset,
       duration: const Duration(milliseconds: 380),
@@ -285,8 +285,10 @@ class _SpotlightOverlay extends StatelessWidget {
   final TourSpotlightArea area;
   final Size screenSize;
   final GlobalKey? pillarRowKey;
+
   /// GlobalKey del DualScoreRing para medir posición real del scoreCard.
   final GlobalKey? dualScoreRingKey;
+
   /// Altura del safe area inferior (home indicator) obtenida de MediaQuery.
   /// Se usa para calcular el límite inferior real del spotlight sin invadir
   /// el tab bar ni el home indicator.
@@ -361,8 +363,8 @@ class _SpotlightOverlay extends StatelessWidget {
               as RenderBox?;
           if (rb != null && rb.hasSize) {
             final offset = rb.localToGlobal(Offset.zero);
-            const titlePad = 50.0;  // espacio para el título "PROGRESO HOY"
-            const motivPad = 40.0;  // espacio para la frase motivacional
+            const titlePad = 50.0; // espacio para el título "PROGRESO HOY"
+            const motivPad = 40.0; // espacio para la frase motivacional
             holeRect = Rect.fromLTWH(
               w * 0.04,
               offset.dy - titlePad,
@@ -406,20 +408,20 @@ class _SpotlightOverlay extends StatelessWidget {
   /// (h*0.57, rowWidth calculado con scrollPad=42).
   static Rect _ringColumn(int index, double w, double h, GlobalKey? rowKey) {
     // ── Posición y dimensiones reales desde el GlobalKey ───────────────────
-    double rowTop    = h * 0.57;       // fallback Y
-    double rowHeight = h * 0.13;       // fallback alto
-    double rowLeft   = 42.0;           // fallback X: scrollPad(24)+cardPad(18)
-    double rowWidth  = w - 2 * 42.0;  // fallback ancho
+    double rowTop = h * 0.57; // fallback Y
+    double rowHeight = h * 0.13; // fallback alto
+    double rowLeft = 42.0; // fallback X: scrollPad(24)+cardPad(18)
+    double rowWidth = w - 2 * 42.0; // fallback ancho
 
     if (rowKey?.currentContext != null) {
       final renderBox =
           rowKey!.currentContext!.findRenderObject() as RenderBox?;
       if (renderBox != null && renderBox.hasSize) {
         final offset = renderBox.localToGlobal(Offset.zero);
-        rowTop    = offset.dy;
+        rowTop = offset.dy;
         rowHeight = renderBox.size.height;
-        rowLeft   = offset.dx;
-        rowWidth  = renderBox.size.width;
+        rowLeft = offset.dx;
+        rowWidth = renderBox.size.width;
       }
     }
 
@@ -429,9 +431,8 @@ class _SpotlightOverlay extends StatelessWidget {
     // spaceAround: espacio a cada lado de un ring = (rowWidth - n*ringSize)/(n*2)
     final halfGap = (rowWidth - n * ringSize) / (n * 2.0);
     // Centro X del anillo `index` en coordenadas de pantalla.
-    final cx = rowLeft + halfGap
-        + index * (ringSize + 2.0 * halfGap)
-        + ringSize / 2.0;
+    final cx =
+        rowLeft + halfGap + index * (ringSize + 2.0 * halfGap) + ringSize / 2.0;
 
     // Padding lateral ampliado (16pt) para dar más presencia visual al spotlight
     // y que el anillo quede bien enmarcado, no justo en el borde.
@@ -446,6 +447,7 @@ class _SpotlightOverlay extends StatelessWidget {
 
 class _SpotlightPainter extends CustomPainter {
   final Rect? holeRect;
+
   /// Coordenada Y máxima permitida para el borde inferior del spotlight.
   /// Calculada como screenHeight - tabBarH - safeBottom - 4.
   /// Si es null, cae al fallback h*0.90 (comportamiento previo).
@@ -627,8 +629,7 @@ class _CoachCard extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Text(step.emoji,
-                      style: const TextStyle(fontSize: 28)),
+                  Text(step.emoji, style: const TextStyle(fontSize: 28)),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(

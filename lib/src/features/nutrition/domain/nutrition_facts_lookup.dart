@@ -397,8 +397,12 @@ class NutritionFactsLookup {
     NutritionFactsEntry(
       name: 'Sopa de pollo',
       aliases: [
-        'sopa pollo', 'sopa de pollo', 'caldo pollo',
-        'caldo de pollo', 'consomé pollo', 'consomé de pollo',
+        'sopa pollo',
+        'sopa de pollo',
+        'caldo pollo',
+        'caldo de pollo',
+        'consomé pollo',
+        'consomé de pollo',
       ],
       servingDescription: '1 taza (240ml)',
       calories: 75,
@@ -411,8 +415,11 @@ class NutritionFactsLookup {
     NutritionFactsEntry(
       name: 'Sopa de verduras',
       aliases: [
-        'sopa verduras', 'sopa de verduras', 'sopa vegetales',
-        'sopa de vegetales', 'minestrone',
+        'sopa verduras',
+        'sopa de verduras',
+        'sopa vegetales',
+        'sopa de vegetales',
+        'minestrone',
       ],
       servingDescription: '1 taza (240ml)',
       calories: 60,
@@ -425,8 +432,11 @@ class NutritionFactsLookup {
     NutritionFactsEntry(
       name: 'Caldo de res',
       aliases: [
-        'caldo res', 'caldo de res', 'caldo de carne',
-        'consomé res', 'sopa de res',
+        'caldo res',
+        'caldo de res',
+        'caldo de carne',
+        'consomé res',
+        'sopa de res',
       ],
       servingDescription: '1 taza (240ml)',
       calories: 38,
@@ -450,8 +460,10 @@ class NutritionFactsLookup {
     NutritionFactsEntry(
       name: 'Sopa de frijoles',
       aliases: [
-        'sopa frijoles', 'sopa de frijoles',
-        'sopa de porotos', 'sopa de caraotas',
+        'sopa frijoles',
+        'sopa de frijoles',
+        'sopa de porotos',
+        'sopa de caraotas',
       ],
       servingDescription: '1 taza (240ml)',
       calories: 128,
@@ -488,7 +500,10 @@ class NutritionFactsLookup {
     NutritionFactsEntry(
       name: 'Manzanilla',
       aliases: [
-        'manzanilla', 'té de manzanilla', 'te manzanilla', 'chamomile',
+        'manzanilla',
+        'té de manzanilla',
+        'te manzanilla',
+        'chamomile',
       ],
       servingDescription: '1 taza (240ml)',
       calories: 2,
@@ -523,7 +538,11 @@ class NutritionFactsLookup {
     NutritionFactsEntry(
       name: 'Té de menta',
       aliases: [
-        'te menta', 'té de menta', 'menta', 'hierbabuena', 'peppermint',
+        'te menta',
+        'té de menta',
+        'menta',
+        'hierbabuena',
+        'peppermint',
       ],
       servingDescription: '1 taza (240ml)',
       calories: 2,

@@ -153,8 +153,7 @@ void main() {
     });
 
     test('weeklyMinLogsWithNova >= 5 (datos accionables)', () {
-      expect(UpfThresholds.weeklyMinLogsWithNova,
-          greaterThanOrEqualTo(5));
+      expect(UpfThresholds.weeklyMinLogsWithNova, greaterThanOrEqualTo(5));
     });
   });
 }

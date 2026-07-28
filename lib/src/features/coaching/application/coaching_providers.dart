@@ -37,8 +37,11 @@ import 'package:elena_app/src/features/goals/application/goal_notifier.dart';
 final coachingSnapshotProvider = Provider.autoDispose<CoachingSnapshot>((ref) {
   final now = DateTime.now();
   final weekly = ref.watch(weeklyCoachingProvider).valueOrNull;
-  final activeGoalTypes =
-      ref.watch(goalsProvider).values.where((g) => g.isActive).map((g) => g.type);
+  final activeGoalTypes = ref
+      .watch(goalsProvider)
+      .values
+      .where((g) => g.isActive)
+      .map((g) => g.type);
   final engagement = ref.watch(engagementProvider).level;
   // Adenda §8: factor circadiano en vivo (el mismo que entra al IMR).
   final liveCircadianScore =
@@ -73,7 +76,8 @@ final coachingCandidatesProvider =
 
   return [
     if (weekly != null) ...WeakPillarGenerator.generate(weekly),
-    ...CircadianGenerator.generate(phase, minutesToIntestinalLock: minutesToLock),
+    ...CircadianGenerator.generate(phase,
+        minutesToIntestinalLock: minutesToLock),
     ...AdaptiveGenerator.generate(ref.watch(adaptiveProvider)),
     ...OrchestratorGenerator.generate(
       ref.watch(orchestratorProvider).recommendations,

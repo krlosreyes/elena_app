@@ -193,14 +193,18 @@ class ScoreEngine {
   /// s1 neutro (ni bueno ni malo) cuando el usuario no tiene
   /// `waistCircumference` registrado.
   static const double _kStructureDefaultWhtrScore = 0.5;
+
   /// Umbral WHtR superior de la normalización (Browning 2010).
   /// SPEC-70: ref §2.3 — umbrales WHtR 0.45–0.60.
   static const double _kWhtrUpperThreshold = 0.60;
+
   /// Rango (0.60 - 0.45) usado para normalizar WHtR a [0, 1].
   static const double _kWhtrRange = 0.15;
+
   /// Peso de WHtR dentro del bloque Estructura.
   /// SPEC-70: ref §2.1, §2.2 — pesos 0.65 WHtR + 0.35 FFMI.
   static const double _kStructureWhtrWeight = 0.65;
+
   /// Peso de FFMI dentro del bloque Estructura.
   static const double _kStructureFfmiWeight = 0.35;
 
@@ -208,18 +212,24 @@ class ScoreEngine {
   /// Centro (horas de ayuno) de la sigmoid metabólica (Mattson 2017,
   /// Anton 2018). SPEC-70: ref §3.1.
   static const double _kFastingSigmoidCenterHours = 14.0;
+
   /// Ancho de la sigmoid metabólica.
   static const double _kFastingSigmoidWidthHours = 1.5;
+
   /// Centro (hora del día de la última comida) de la sigmoid eTRF.
   /// SPEC-70.2: ref IMR_BIBLIOGRAPHY.md §3.3.
   static const double _kEtrfSigmoidCenterHour = 17.0;
+
   /// Ancho de la sigmoid eTRF.
   static const double _kEtrfSigmoidWidthHours = 1.0;
+
   /// Amplitud del bonus eTRF (techo ≈1.15x, Sutton 2018).
   static const double _kEtrfBonusAmplitude = 0.15;
+
   /// Peso de la sigmoid de ayuno dentro del bloque Metabolismo.
   /// SPEC-70: ref §3.2 — pesos 0.70 sigmoid + 0.30 calidad semanal.
   static const double _kMetabolicSigmoidWeight = 0.70;
+
   /// Peso de `weeklyQualityScore` dentro del bloque Metabolismo.
   static const double _kMetabolicWeeklyQualityWeight = 0.30;
 
@@ -227,12 +237,16 @@ class ScoreEngine {
   /// Penalización de `circadianScore` al comer tras el bloqueo intestinal
   /// (21:30, Lopez-Minguez 2018). SPEC-70.5.
   static const double _kCircadianLockPenaltyScore = 0.5;
+
   /// Bonus de `circadianScore` al comer antes de `profile.lastMealGoal`.
   static const double _kCircadianEarlyBonusScore = 1.1;
+
   /// Minutos de ejercicio que equivalen a 1.0 en `sExercise` (60min = 1.0).
   static const double _kExerciseMinutesNormalization = 60.0;
+
   /// Techo permitido de `sExercise` (permite "sobre-cumplimiento" hasta 1.2).
   static const double _kExerciseScoreUpperClamp = 1.2;
+
   /// Pesos del bloque Conducta (recalibrados SPEC-70.5). Suma = 1.0.
   /// Antes (SPEC-70): Circadiano 28% / Sueño 20% / Ejercicio 20% /
   /// Nutrición 12% / Hidratación 20%. Ahora: Circadiano 38% / Hidratación 10%.
@@ -332,8 +346,7 @@ class ScoreEngine {
         (1.0 +
             math.exp(-(mealHourFloat - _kEtrfSigmoidCenterHour) /
                 _kEtrfSigmoidWidthHours));
-    final double etrfBonus =
-        1.0 + _kEtrfBonusAmplitude * (1.0 - etrfSigmoid);
+    final double etrfBonus = 1.0 + _kEtrfBonusAmplitude * (1.0 - etrfSigmoid);
     // SPEC-70: ref §3.2 — pesos 0.70 sigmoid + 0.30 calidad semanal.
     final double metabolicBlock = ((_kMetabolicSigmoidWeight * s4) +
             (_kMetabolicWeeklyQualityWeight * weeklySignal.clamp(0.0, 1.0))) *
@@ -420,9 +433,9 @@ class ScoreEngine {
         _metabolicAgeFromStructure(user.age, structureBlock);
 
     // SPEC-229: detecta datos poblacionales en bloque Estructura (50% del IMR).
-    final bool isPartial = (user.waistCircumference == null ||
-            user.waistCircumference! <= 0) ||
-        (user.bodyFatPercentage == null || user.bodyFatPercentage! <= 0);
+    final bool isPartial =
+        (user.waistCircumference == null || user.waistCircumference! <= 0) ||
+            (user.bodyFatPercentage == null || user.bodyFatPercentage! <= 0);
 
     return IMRv2Result(
       totalScore: score,
@@ -499,9 +512,9 @@ class ScoreEngine {
 
     // SPEC-229: baseline siempre es parcial (sin comportamiento Y posiblemente
     // sin biometrías reales). El 50% estructura ya usa defaults poblacionales.
-    final bool baselineIsPartial = (user.waistCircumference == null ||
-            user.waistCircumference! <= 0) ||
-        (user.bodyFatPercentage == null || user.bodyFatPercentage! <= 0);
+    final bool baselineIsPartial =
+        (user.waistCircumference == null || user.waistCircumference! <= 0) ||
+            (user.bodyFatPercentage == null || user.bodyFatPercentage! <= 0);
 
     return IMRv2Result(
       totalScore: score,
@@ -574,8 +587,7 @@ class ScoreEngine {
     // Conteo de "entradas válidas": entradas con magnitudes (no legacy
     // sin magnitudes). Esto es proxy de "días que ya generaron señal
     // suficiente para el promedio mensual".
-    final qualifiedHistory =
-        history.where((e) => e.hasMagnitudes).toList();
+    final qualifiedHistory = history.where((e) => e.hasMagnitudes).toList();
     final hasEnoughHistory = qualifiedHistory.length >= 7;
 
     final double raw;

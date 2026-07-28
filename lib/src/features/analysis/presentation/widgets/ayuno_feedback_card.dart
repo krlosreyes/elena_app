@@ -121,8 +121,7 @@ class AyunoFeedbackCard extends StatelessWidget {
                       child: LinearProgressIndicator(
                         value: (avg / (targetHours * 1.5)).clamp(0.0, 1.0),
                         minHeight: 8,
-                        backgroundColor:
-                            Colors.white.withValues(alpha: 0.08),
+                        backgroundColor: Colors.white.withValues(alpha: 0.08),
                         valueColor: AlwaysStoppedAnimation<Color>(
                           _colorFor(avg, targetHours),
                         ),
@@ -167,14 +166,12 @@ class AyunoFeedbackCard extends StatelessWidget {
             decoration: BoxDecoration(
               color: status.color.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                  color: status.color.withValues(alpha: 0.25)),
+              border: Border.all(color: status.color.withValues(alpha: 0.25)),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(status.emoji,
-                    style: const TextStyle(fontSize: 20)),
+                Text(status.emoji, style: const TextStyle(fontSize: 20)),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(

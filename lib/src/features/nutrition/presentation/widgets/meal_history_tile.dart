@@ -142,8 +142,7 @@ class _MealHistoryTileState extends ConsumerState<MealHistoryTile> {
               const SizedBox(width: 8),
               // Badge ratio
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: ratioColor.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
@@ -312,14 +311,12 @@ class _TileButton extends StatelessWidget {
           foregroundColor: color,
           elevation: 0,
           padding: const EdgeInsets.symmetric(vertical: 8),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           side: BorderSide(color: color.withValues(alpha: 0.40)),
         ),
         icon: Icon(icon, size: 14),
         label: Text(label,
-            style:
-                const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
       );
     }
     return OutlinedButton.icon(

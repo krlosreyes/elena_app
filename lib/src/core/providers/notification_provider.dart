@@ -86,7 +86,8 @@ class NotificationSchedulerNotifier extends StateNotifier<void> {
     // criterio que goalsProvider arriba.
     _ref.listen<bool>(
       glucoseProtocolStateProvider.select(
-        (s) => (s.valueOrNull?.protocolActive ?? false) &&
+        (s) =>
+            (s.valueOrNull?.protocolActive ?? false) &&
             !(s.valueOrNull?.paused ?? false),
       ),
       (previous, next) {
@@ -130,8 +131,7 @@ class NotificationSchedulerNotifier extends StateNotifier<void> {
     // de ciclo). Evita re-schedules en cada tick del stream del usuario.
     if (!force && _lastProfile == user.profile) return;
     _lastProfile = user.profile;
-    final openCycle =
-        _ref.read(currentMetabolicCycleProvider).valueOrNull;
+    final openCycle = _ref.read(currentMetabolicCycleProvider).valueOrNull;
     AppLogger.info(
       '[NotificationProvider] Reprogramando agenda '
       '(cycle=${openCycle?.cycleId ?? "-"}).',
@@ -140,8 +140,8 @@ class NotificationSchedulerNotifier extends StateNotifier<void> {
     // mientras el usuario está en ayuno activo.
     final isFasting = _ref.read(fastingProvider).isActive;
     final glucoseState = _ref.read(glucoseProtocolStateProvider).valueOrNull;
-    final glucoseProtocolActive =
-        (glucoseState?.protocolActive ?? false) && !(glucoseState?.paused ?? false);
+    final glucoseProtocolActive = (glucoseState?.protocolActive ?? false) &&
+        !(glucoseState?.paused ?? false);
     await NotificationScheduler.scheduleCircadianDay(
       user,
       openCycle: openCycle,

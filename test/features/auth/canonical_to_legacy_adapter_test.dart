@@ -253,8 +253,8 @@ void main() {
       });
       expect(r['nervousSystem'], 'excited');
       expect(r['nervousSystemDeclared'], isTrue);
-      expect(r['nervousSystemScore'],
-          {'passive': 1, 'excited': 3, 'unknown': 1});
+      expect(
+          r['nervousSystemScore'], {'passive': 1, 'excited': 3, 'unknown': 1});
     });
 
     test('classification "passive" es aceptada', () {

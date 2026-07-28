@@ -28,7 +28,8 @@ class StreakAtRiskBanner extends ConsumerWidget {
 
     if (!atRisk || dismissed) return const SizedBox.shrink();
 
-    final currentStreak = ref.watch(streakProvider.select((s) => s.currentStreak));
+    final currentStreak =
+        ref.watch(streakProvider.select((s) => s.currentStreak));
     final reason = ref.watch(
       streakProvider.select((s) => s.todayEntry?.missReason),
     );
@@ -57,7 +58,8 @@ class StreakAtRiskBanner extends ConsumerWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.local_fire_department_rounded, color: _amber, size: 24),
+          const Icon(Icons.local_fire_department_rounded,
+              color: _amber, size: 24),
           const SizedBox(width: 12),
           Expanded(
             child: Column(

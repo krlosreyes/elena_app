@@ -72,8 +72,7 @@ class CircadianGenerator {
           id: 'circadian_main_meal_early',
           title: 'Tu comida principal, temprano',
           actionText: 'Si vas a hacer tu comida más grande, que sea ahora.',
-          reason:
-              'Comer fuerte temprano aprovecha tu mejor sensibilidad a la '
+          reason: 'Comer fuerte temprano aprovecha tu mejor sensibilidad a la '
               'insulina del día.',
           pillar: Pillar.nutrition,
           confidence: ConfidenceLevel.medium,
@@ -101,8 +100,7 @@ class CircadianGenerator {
           id: 'circadian_winddown',
           title: 'Baja el ritmo',
           actionText: 'Baja luces y prepara tu descanso para dormir mejor.',
-          reason:
-              'Las horas previas al sueño preparan la reparación nocturna.',
+          reason: 'Las horas previas al sueño preparan la reparación nocturna.',
           pillar: Pillar.sleep,
           confidence: ConfidenceLevel.medium,
           citation: '· Walker 2017',

@@ -174,8 +174,7 @@ void main() {
           startedAt: DateTime(2026, 6, 2),
           closedAt: DateTime(2026, 6, 3),
           score: 80);
-      final summary =
-          CyclesHistoryComputer.compute(closedCycles: [c1, c2]);
+      final summary = CyclesHistoryComputer.compute(closedCycles: [c1, c2]);
       expect(summary.bestCycle?.dailyScore, 80);
       expect(summary.worstCycle, isNull);
     });

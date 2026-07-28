@@ -27,8 +27,8 @@ class FirestoreHydrationV1Source implements HydrationDataSource {
     Query<Map<String, dynamic>> query = _collection(userId).where('timestamp',
         isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay));
     if (endOfDay != null) {
-      query = query.where('timestamp',
-          isLessThan: Timestamp.fromDate(endOfDay));
+      query =
+          query.where('timestamp', isLessThan: Timestamp.fromDate(endOfDay));
     }
     return query
         .snapshots()
@@ -36,9 +36,8 @@ class FirestoreHydrationV1Source implements HydrationDataSource {
         // LegacyJavaScriptObject como `data()` aunque la collection
         // esté tipada como Map<String, dynamic>. Forzamos conversión
         // a Map Dart con .from() — funciona idéntico en mobile.
-        .map((snap) => snap.docs
-            .map((d) => Map<String, dynamic>.from(d.data()))
-            .toList());
+        .map((snap) =>
+            snap.docs.map((d) => Map<String, dynamic>.from(d.data())).toList());
   }
 
   @override
@@ -55,8 +54,7 @@ class FirestoreHydrationV1Source implements HydrationDataSource {
     required DateTime since,
   }) async {
     final snap = await _collection(userId)
-        .where('timestamp',
-            isGreaterThanOrEqualTo: Timestamp.fromDate(since))
+        .where('timestamp', isGreaterThanOrEqualTo: Timestamp.fromDate(since))
         .orderBy('timestamp', descending: true)
         .limit(1)
         .get();

@@ -82,8 +82,8 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text("Enlace enviado si el correo existe.")));
+    ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Enlace enviado si el correo existe.")));
     Navigator.pop(context);
   }
 

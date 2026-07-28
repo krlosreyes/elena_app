@@ -398,10 +398,8 @@ void main() {
         samsung_health.SamsungSleepSession(
           start: start,
           end: end.add(const Duration(minutes: 30)),
-          durationMinutes: end
-                  .add(const Duration(minutes: 30))
-                  .difference(start)
-                  .inMinutes,
+          durationMinutes:
+              end.add(const Duration(minutes: 30)).difference(start).inMinutes,
         ),
       ]);
 

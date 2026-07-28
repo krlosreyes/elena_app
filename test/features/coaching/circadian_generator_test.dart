@@ -65,24 +65,21 @@ void main() {
 
   group('Menú fase→acción (§4) + circadianImpact (§3/§8)', () {
     test('ALERTA → hidratar al despertar (neutral 0.30)', () {
-      final a = byId(
-          CircadianGenerator.generate(CircadianPhase.alerta),
+      final a = byId(CircadianGenerator.generate(CircadianPhase.alerta),
           'circadian_morning_hydrate');
       expect(a, isNotNull);
       expect(a!.circadianImpact, kCircNeutral);
     });
 
     test('RECESO → comida principal temprana (bonus 0.85)', () {
-      final a = byId(
-          CircadianGenerator.generate(CircadianPhase.receso),
+      final a = byId(CircadianGenerator.generate(CircadianPhase.receso),
           'circadian_main_meal_early');
       expect(a, isNotNull);
       expect(a!.circadianImpact, kCircEarlyMealBonus);
     });
 
     test('MOTOR/FUERZA → entrenar (actividad en fase 0.75)', () {
-      final a = byId(
-          CircadianGenerator.generate(CircadianPhase.motorFuerza),
+      final a = byId(CircadianGenerator.generate(CircadianPhase.motorFuerza),
           'circadian_train_peak');
       expect(a, isNotNull);
       expect(a!.circadianImpact, kCircPhaseAlignedActivity);
@@ -106,8 +103,8 @@ void main() {
 
   test('todos los circadianImpact quedan en [0,1]', () {
     for (final phase in CircadianPhase.values) {
-      for (final a in CircadianGenerator.generate(phase,
-          minutesToIntestinalLock: 30)) {
+      for (final a
+          in CircadianGenerator.generate(phase, minutesToIntestinalLock: 30)) {
         expect(a.circadianImpact, inInclusiveRange(0.0, 1.0),
             reason: '${a.id} fuera de rango');
       }

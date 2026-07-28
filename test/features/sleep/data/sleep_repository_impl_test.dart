@@ -82,7 +82,8 @@ void main() {
 
   tearDown(() => source.dispose());
 
-  test('sin manual: gana el automático con wokeUp más tardío (sin cambios de comportamiento)',
+  test(
+      'sin manual: gana el automático con wokeUp más tardío (sin cambios de comportamiento)',
       () async {
     final future = repo.watchLatest(userId).first;
     source.emit([
@@ -148,7 +149,8 @@ void main() {
     expect(result?.id, 'sleep_20260527');
   });
 
-  test('manual de una noche vieja NO gana sobre un automático de una noche más reciente',
+  test(
+      'manual de una noche vieja NO gana sobre un automático de una noche más reciente',
       () async {
     // "Manual gana" es un criterio DENTRO de la misma noche, no un
     // comodín global — una noche más reciente siempre gana sobre una
@@ -202,7 +204,8 @@ void main() {
     expect(result?.id, 'hk_sleep_real');
   });
 
-  test('17-jul: solo hay una siesta capturada (sin sueño nocturno real) → null, no la siesta',
+  test(
+      '17-jul: solo hay una siesta capturada (sin sueño nocturno real) → null, no la siesta',
       () async {
     final future = repo.watchLatest(userId).first;
     source.emit([
@@ -216,7 +219,8 @@ void main() {
     expect(result, isNull);
   });
 
-  test('doc corrupto se descarta en silencio, el resto se resuelve igual', () async {
+  test('doc corrupto se descarta en silencio, el resto se resuelve igual',
+      () async {
     // "Corrupto" en el sentido que el mapper realmente rechaza: el
     // constructor de SleepLog valida rangos de los campos SPEC-69
     // (subjectiveQuality debe ser 1-5). Timestamps ausentes o mal

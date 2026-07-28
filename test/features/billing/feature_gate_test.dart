@@ -111,7 +111,8 @@ void main() {
             isLocked: true,
             onUpgrade: () => tapped = true,
             label: 'Histórico Premium',
-            child: const SizedBox(width: 300, height: 220, child: Text('contenido')),
+            child: const SizedBox(
+                width: 300, height: 220, child: Text('contenido')),
           ),
         ),
       ));

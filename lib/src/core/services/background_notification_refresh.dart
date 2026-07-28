@@ -46,7 +46,8 @@ Future<bool> _runRefresh() async {
     final prefs = await SharedPreferences.getInstance();
 
     // ── 2a. Hidratación completada → cancelar reminders restantes ──────
-    final hydrationCompleted = prefs.getBool('hydration_goal_completed') ?? false;
+    final hydrationCompleted =
+        prefs.getBool('hydration_goal_completed') ?? false;
     if (hydrationCompleted) {
       await NotificationService.cancelHydration();
       AppLogger.debug(
