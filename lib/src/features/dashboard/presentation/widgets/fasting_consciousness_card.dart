@@ -22,11 +22,86 @@ import 'package:elena_app/src/features/dashboard/domain/relative_day_label.dart'
 import 'package:elena_app/src/features/dashboard/presentation/widgets/early_fasting_end_dialog.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/new_cycle_meals_warning_dialog.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/protocol_selector_sheet.dart';
+import 'package:elena_app/src/features/metabolic_cycle/domain/metabolic_day_copy.dart';
+import 'package:elena_app/src/features/metabolic_cycle/presentation/widgets/metabolic_day_explainer_sheet.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
 import 'package:elena_app/src/features/nutrition/domain/nervous_system.dart';
 import 'package:elena_app/src/features/streak/domain/fasting_eligibility.dart';
 import 'package:elena_app/src/features/streak/domain/fasting_symptom_log.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
+
+/// Línea que nombra el Día Metabólico en el Dashboard y abre su
+/// explicación (28-jul).
+///
+/// El texto cambia con el estado porque la regla que enseña es distinta
+/// en cada uno, y enseñarla cuando es verdad se recuerda mejor que
+/// leerla en abstracto:
+///
+/// - Con ayuno activo, el ciclo YA está corriendo → se dice que empezó
+///   con ese ayuno.
+/// - Sin ayuno, el ciclo no ha empezado (constitución §1: "si no hay
+///   ciclo abierto, el día metabólico no ha empezado todavía") → se dice
+///   qué lo va a abrir.
+///
+/// Con protocolo 'Ninguno' no se promete nada de eso: ese usuario está
+/// en modo calendárico y su día sí cierra a medianoche. Decirle que su
+/// día lo marca su ayuno sería falso.
+class _MetabolicDayLabel extends StatelessWidget {
+  final bool isActive;
+  final String fastingProtocol;
+
+  const _MetabolicDayLabel({
+    required this.isActive,
+    required this.fastingProtocol,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final String texto;
+    if (usaDiaCalendario(fastingProtocol)) {
+      texto = 'Tu día metabólico va con el calendario';
+    } else if (isActive) {
+      texto = 'Tu día metabólico empezó con este ayuno';
+    } else {
+      texto = 'Tu día metabólico empieza al iniciar el ayuno';
+    }
+
+    return Semantics(
+      button: true,
+      label: '$texto. Toca para saber qué es tu día metabólico.',
+      child: InkWell(
+        onTap: () => showMetabolicDayExplainerSheet(
+          context,
+          fastingProtocol: fastingProtocol,
+        ),
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
+            children: [
+              Flexible(
+                child: Text(
+                  texto,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.5),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+              Icon(
+                Icons.info_outline_rounded,
+                size: 13,
+                color: Colors.white.withValues(alpha: 0.4),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 class FastingConsciousnessCard extends ConsumerWidget {
   const FastingConsciousnessCard({super.key, required this.state});
@@ -123,6 +198,22 @@ class FastingConsciousnessCard extends ConsumerWidget {
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 8),
+          // 28-jul: el Día Metabólico no se nombraba en NINGÚN sitio del
+          // estado normal del Dashboard. Solo aparecía al cerrarse un
+          // ciclo, en el diálogo de comidas y en un estado concreto del
+          // pilar sueño — es decir, el usuario se enteraba de que existe
+          // la primera vez que uno se le cerraba, cuando ya había pasado
+          // algo que no entendía. Mismo defecto que teníamos con las
+          // reservas de racha.
+          //
+          // Va aquí porque esta tarjeta ES el día metabólico dibujado:
+          // arranca con el ciclo y lo acompaña entero. Nombrarlo donde ya
+          // se está mirando cuesta una línea.
+          _MetabolicDayLabel(
+            isActive: isActive,
+            fastingProtocol: state.fastingProtocol,
           ),
           const SizedBox(height: 14),
           // SPEC-119: fila de metadatos del protocolo. El cronómetro
