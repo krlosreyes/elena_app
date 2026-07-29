@@ -273,7 +273,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   child: Column(
                     children: [
                       const SizedBox(height: 10),
-                      const ElenaHeader(title: "Metamorfosis Real"),
+                      const ElenaHeader(),
                       const SizedBox(height: 10),
 
                       // Propuesta "racha protagonista" (2026-07-15, P1): la

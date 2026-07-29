@@ -143,7 +143,7 @@ void main() {
           ],
           child: const MaterialApp(
             home: Scaffold(
-              body: ElenaHeader(title: 'Metamorfosis Real'),
+              body: ElenaHeader(),
             ),
           ),
         ),
@@ -153,7 +153,7 @@ void main() {
       expect(find.byType(ProfileAvatar), findsOneWidget);
       expect(find.byType(CircleAvatar), findsNothing);
       expect(find.text('C'), findsOneWidget);
-      expect(find.text('CARLOS'), findsOneWidget);
+      expect(find.text('Hoy'), findsOneWidget);
     });
   });
 }

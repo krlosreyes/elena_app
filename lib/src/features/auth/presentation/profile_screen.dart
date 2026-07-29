@@ -27,6 +27,7 @@ import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:elena_app/src/core/widgets/page_hero.dart';
 
 // 17-jul (2da vuelta de feedback): "Datos biométricos", "Ritmos
 // circadianos", "Protocolo de ayuno" y "Mis objetivos" dejaron de
@@ -50,19 +51,16 @@ class ProfileScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
+      // 29-jul: el AppBar tenía el título "Perfil" a 18 · w700 — el
+      // MISMO tratamiento que sus propias pantallas hijas (Tus
+      // resultados, Tus hábitos, Insignias), así que por el título no
+      // se distinguía si estabas en la pestaña o dentro de ella.
+      // Ahora el título es un `PageHero` en el cuerpo, como en Progreso
+      // y en el Dashboard, y el AppBar queda solo como barra de estado.
+      // Sin subtítulo a propósito: la card de identidad que va justo
+      // debajo ya dice "Tu perfil metabólico", y repetirlo sería ruido.
       appBar: AppBar(
-        // SPEC-116: título en sentence-case, peso w700, sin tracking
-        // agresivo. La identidad clínica vive ahora en la card del
-        // usuario (subtítulo bajo el nombre).
-        title: const Text(
-          'Perfil',
-          style: TextStyle(
-            fontWeight: FontWeight.w700,
-            fontSize: 18,
-            letterSpacing: 0,
-          ),
-        ),
-        centerTitle: false,
+        toolbarHeight: 0,
         backgroundColor: AppColors.backgroundDark,
         elevation: 0,
         automaticallyImplyLeading: false,
@@ -146,6 +144,8 @@ class _ProfileBody extends ConsumerWidget {
       key: const PageStorageKey<String>('perfil_scroll'),
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
       children: [
+        const PageHero(title: 'Perfil'),
+        const SizedBox(height: 16),
         // ── Identidad + IMR ─────────────────────────────────────────
         ProfileIdentityCard(user: user, imrResult: badgeImr),
         if (showLongitudinalDisclaimer) ...[

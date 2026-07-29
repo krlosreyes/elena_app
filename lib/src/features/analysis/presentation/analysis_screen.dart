@@ -39,6 +39,7 @@ import 'package:elena_app/src/features/glucose/presentation/widgets/glucose_entr
 // loading/empty state) — no requiere que AnalysisScreen deje de ser
 // StatelessWidget.
 import 'package:elena_app/src/features/analysis/presentation/widgets/weekly_coaching_card.dart';
+import 'package:elena_app/src/core/widgets/page_hero.dart';
 
 class AnalysisScreen extends StatelessWidget {
   const AnalysisScreen({super.key});
@@ -119,61 +120,14 @@ class AnalysisScreen extends StatelessWidget {
     // estaba enlazada desde ningún otro lugar de la app; queda el
     // archivo sin uso por si se retoma más adelante, pero sin entry
     // point visible.
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Progreso',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 34,
-            fontWeight: FontWeight.w800,
-            height: 1.05,
-            letterSpacing: -0.5,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          _todayLabel(),
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.55),
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
+    //
+    // 29-jul: el estilo del título y las listas de días/meses vivían
+    // acá. Al llevar el mismo hero a Perfil y al Dashboard habrían
+    // hecho falta tres copias, así que se movieron a `PageHero` y
+    // `heroTodayLabel`.
+    return PageHero(
+      title: 'Progreso',
+      subtitle: heroTodayLabel(),
     );
-  }
-
-  static const _daysLong = [
-    'lunes',
-    'martes',
-    'miércoles',
-    'jueves',
-    'viernes',
-    'sábado',
-    'domingo',
-  ];
-
-  static const _monthsLong = [
-    'enero',
-    'febrero',
-    'marzo',
-    'abril',
-    'mayo',
-    'junio',
-    'julio',
-    'agosto',
-    'septiembre',
-    'octubre',
-    'noviembre',
-    'diciembre',
-  ];
-
-  String _todayLabel() {
-    final n = DateTime.now();
-    final day = _daysLong[(n.weekday - 1).clamp(0, 6)];
-    final month = _monthsLong[n.month - 1];
-    return '$day, ${n.day} de $month';
   }
 }

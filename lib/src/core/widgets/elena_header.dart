@@ -2,17 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:elena_app/src/core/theme/app_theme.dart';
+import 'package:elena_app/src/core/widgets/page_hero.dart';
 import 'package:elena_app/src/core/widgets/profile_avatar.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 
+/// Encabezado del Dashboard: el hero "Hoy" + el avatar que lleva a Perfil.
+///
+/// 29-jul: el Dashboard era la única pestaña raíz SIN título — mostraba
+/// el nombre del usuario en mayúsculas y "Metamorfosis Real" debajo,
+/// mientras Progreso tenía un hero de 34 px y Perfil un AppBar de 18.
+/// Al unificar los tres heroes, este espacio pasa a decir en qué
+/// pestaña estás, que es lo que hacía falta; el nombre del usuario sale
+/// de acá porque el avatar ya comunica identidad y es el que navega a
+/// Perfil, donde el nombre sí se muestra completo.
 class ElenaHeader extends ConsumerWidget {
-  final String title;
-
-  const ElenaHeader({
-    super.key,
-    required this.title,
-  });
+  const ElenaHeader({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -24,6 +28,13 @@ class ElenaHeader extends ConsumerWidget {
 
         return Row(
           children: [
+            Expanded(
+              child: PageHero(
+                title: 'Hoy',
+                subtitle: heroTodayLabel(),
+              ),
+            ),
+            const SizedBox(width: 12),
             // El avatar lleva al perfil del usuario.
             //
             // 29-jul: era un CircleAvatar con la inicial calculada acá
@@ -31,39 +42,11 @@ class ElenaHeader extends ConsumerWidget {
             // avatar que hay en Perfil, con reglas distintas y sin la
             // foto del proveedor. Se reemplaza por `ProfileAvatar`, que
             // ahora es la fuente única: misma foto de Google, misma
-            // inicial de respaldo, en las dos pantallas. El tamaño 40 es
-            // el diámetro que tenía el `CircleAvatar` por defecto
-            // (radio 20), así que el header no cambia de altura.
+            // inicial de respaldo, en las dos pantallas.
             InkWell(
               onTap: () => context.go('/profile'),
               customBorder: const CircleBorder(),
-              child: ProfileAvatar(name: user.name, size: 40),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    user.name.toUpperCase(),
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 13,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  Text(
-                    title,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 10,
-                      color: AppColors.metabolicGreen,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
+              child: ProfileAvatar(name: user.name, size: 44),
             ),
             // 22-jul: el badge de racha que vivía acá (`_StreakBadge`,
             // commit fb32b03, "un solo indicador") se quitó del header.
