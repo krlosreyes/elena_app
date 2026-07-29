@@ -66,7 +66,7 @@ class ResultsEntryCard extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Tus Resultados',
+                    'Tus resultados',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 14,

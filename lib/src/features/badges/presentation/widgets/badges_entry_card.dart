@@ -59,7 +59,7 @@ class BadgesEntryCard extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Insignias',
+                    'Tus insignias',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 14,

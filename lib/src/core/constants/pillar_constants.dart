@@ -45,9 +45,42 @@ abstract class PillarConstants {
   // ── Etiquetas de dimensión de tracking (para UI compacta) ────────────────────
   // Cuando un pilar funcional agrupa varias dimensiones (Soporte Metabólico),
   // estas etiquetas identifican la métrica específica en filas de resumen.
+  //
+  // 29-jul (barrido de coherencia en Simulador): estas dos constantes
+  // existían desde SPEC-17 y NO las usaba nadie — cero referencias en
+  // toda la app. Mientras tanto cada widget escribía su propia etiqueta
+  // a mano, y el pilar de nutrición terminó con cuatro nombres para el
+  // usuario según dónde mirara:
+  //
+  //   Dashboard (anillos)      → "Comidas"
+  //   Progreso ("Tus hábitos") → "nutrición"
+  //   IMR (satélites)          → "Comidas"
+  //   Resumen semanal          → "Comidas", junto a "Hidrat." y "Ejerc."
+  //
+  // Los cinco pilares son la columna vertebral del producto; que uno se
+  // llame distinto según la pantalla obliga al usuario a deducir que
+  // habla de lo mismo. Se completa el juego de las cinco etiquetas y se
+  // hace que la UI las consuma, que era la intención original de
+  // SPEC-17. Los nombres FUNCIONALES largos de arriba ("Nutrición
+  // Científica") siguen siendo los del pilar en tooltips y reportes;
+  // estos son su forma corta para anillos y filas.
 
+  static const String trackingLabelAyuno = 'Ayuno';
+  static const String trackingLabelEjercicio = 'Ejercicio';
+  static const String trackingLabelNutricion = 'Nutrición';
   static const String trackingLabelSueno = 'Sueño';
   static const String trackingLabelHidratacion = 'Hidratación';
+
+  /// Las cinco etiquetas cortas, en el orden en que se muestran.
+  /// Existe para que un test pueda afirmar que la UI no inventa nombres
+  /// fuera de este juego.
+  static const List<String> trackingLabels = [
+    trackingLabelAyuno,
+    trackingLabelSueno,
+    trackingLabelHidratacion,
+    trackingLabelEjercicio,
+    trackingLabelNutricion,
+  ];
 
   // ── Descripciones científicas breves (1-2 oraciones) ─────────────────────────
   // RF-17-04: DEBE incluir una definición científica breve visible en la UI.

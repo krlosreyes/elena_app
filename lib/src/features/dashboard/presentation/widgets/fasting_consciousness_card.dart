@@ -634,7 +634,7 @@ class FastingConsciousnessCard extends ConsumerWidget {
         label: Text(
           isActive
               ? 'Finalizar Ayuno'
-              : (completedToday ? 'Iniciar nuevo ayuno' : 'Iniciar Ayuno'),
+              : (completedToday ? 'Iniciar nuevo ayuno' : 'Iniciar ayuno'),
           style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w800,

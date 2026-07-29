@@ -39,7 +39,7 @@ class ResultadosDetailScreen extends ConsumerWidget {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: const Text(
-          'Tus Resultados',
+          'Tus resultados',
           style: TextStyle(
               fontWeight: FontWeight.w700, fontSize: 18, letterSpacing: 0),
         ),

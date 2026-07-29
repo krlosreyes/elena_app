@@ -51,7 +51,7 @@ class HabitosDetailScreen extends ConsumerWidget {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: const Text(
-          'Tus Hábitos',
+          'Tus hábitos',
           style: TextStyle(
               fontWeight: FontWeight.w700, fontSize: 18, letterSpacing: 0),
         ),

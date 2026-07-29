@@ -15,6 +15,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/analysis/application/weekly_coaching_provider.dart';
 import 'package:elena_app/src/features/analysis/domain/weekly_coaching_insight.dart';
+import 'package:elena_app/src/core/constants/pillar_constants.dart';
 
 /// Umbral para considerar un delta "significativo" en la UI. Coincide
 /// con el patrón del CycleClosureCard (SPEC-149) — ±5% es ruido,
@@ -83,16 +84,21 @@ class WeeklyCoachingCard extends ConsumerWidget {
         if (i.isEmpty)
           _buildEmptyState()
         else ...[
-          _buildPillarRow(
-              'Ayuno', i.fastingAvg, i.fastingDelta, const Color(0xFF22D3A8)),
-          _buildPillarRow(
-              'Sueño', i.sleepAvg, i.sleepDelta, const Color(0xFF818CF8)),
-          _buildPillarRow('Hidrat.', i.hydrationAvg, i.hydrationDelta,
-              const Color(0xFF38BDF8)),
-          _buildPillarRow('Ejerc.', i.exerciseAvg, i.exerciseDelta,
-              const Color(0xFF14B8A6)),
-          _buildPillarRow(
-              'Comidas', i.mealsAvg, i.mealsDelta, const Color(0xFFFB923C)),
+          // 29-jul: las cinco filas usaban etiquetas propias, dos de
+          // ellas truncadas ("Hidrat.", "Ejerc.") porque la columna de
+          // 64 px no daba para "Hidratación". Se ensancha la columna y
+          // se consumen las etiquetas canónicas — el usuario ve el
+          // mismo nombre acá que en los anillos del Dashboard.
+          _buildPillarRow(PillarConstants.trackingLabelAyuno, i.fastingAvg,
+              i.fastingDelta, const Color(0xFF22D3A8)),
+          _buildPillarRow(PillarConstants.trackingLabelSueno, i.sleepAvg,
+              i.sleepDelta, const Color(0xFF818CF8)),
+          _buildPillarRow(PillarConstants.trackingLabelHidratacion,
+              i.hydrationAvg, i.hydrationDelta, const Color(0xFF38BDF8)),
+          _buildPillarRow(PillarConstants.trackingLabelEjercicio, i.exerciseAvg,
+              i.exerciseDelta, const Color(0xFF14B8A6)),
+          _buildPillarRow(PillarConstants.trackingLabelNutricion, i.mealsAvg,
+              i.mealsDelta, const Color(0xFFFB923C)),
           const SizedBox(height: 14),
           _buildDivider(),
           const SizedBox(height: 14),
@@ -153,6 +159,13 @@ class WeeklyCoachingCard extends ConsumerWidget {
   String _formatRange(DateTime start, DateTime end) {
     final sm = _monthsShort[start.month - 1];
     final em = _monthsShort[end.month - 1];
+    // 29-jul: al primer día de uso, inicio y fin son el mismo día y el
+    // header mostraba "JUL 29–29" — un rango de un día a sí mismo.
+    // Justo lo que ve un usuario recién registrado, que es cuando peor
+    // cae que la app se vea descuidada.
+    if (start.month == end.month && start.day == end.day) {
+      return '$sm ${start.day}';
+    }
     if (start.month == end.month) {
       return '$sm ${start.day}–${end.day}';
     }
@@ -173,7 +186,9 @@ class WeeklyCoachingCard extends ConsumerWidget {
       child: Row(
         children: [
           SizedBox(
-            width: 64,
+            // 80 y no 64: "Hidratación" completa no entra en 64 px a
+            // 12 px w700, que es lo que forzó las abreviaturas.
+            width: 80,
             child: Text(
               label,
               style: TextStyle(

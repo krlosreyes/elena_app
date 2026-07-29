@@ -13,6 +13,7 @@ import 'package:flutter/material.dart';
 
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/analysis/domain/daily_summary.dart';
+import 'package:elena_app/src/core/constants/pillar_constants.dart';
 
 class ImrRingWithSatellites extends StatelessWidget {
   final DailySummary summary;
@@ -22,27 +23,27 @@ class ImrRingWithSatellites extends StatelessWidget {
   /// Configuración de cada pilar (orden = posición en el pentágono).
   static const List<_PillarSpec> _pillars = [
     _PillarSpec(
-      label: 'Sueño',
+      label: PillarConstants.trackingLabelSueno,
       icon: Icons.nightlight_round,
       color: Color(0xFF818CF8),
     ),
     _PillarSpec(
-      label: 'Hidratación',
+      label: PillarConstants.trackingLabelHidratacion,
       icon: Icons.water_drop_rounded,
       color: Color(0xFF38BDF8),
     ),
     _PillarSpec(
-      label: 'Ejercicio',
+      label: PillarConstants.trackingLabelEjercicio,
       icon: Icons.fitness_center_rounded,
       color: Color(0xFF14B8A6),
     ),
     _PillarSpec(
-      label: 'Comidas',
+      label: PillarConstants.trackingLabelNutricion,
       icon: Icons.restaurant_rounded,
       color: Color(0xFFFB923C),
     ),
     _PillarSpec(
-      label: 'Ayuno',
+      label: PillarConstants.trackingLabelAyuno,
       icon: Icons.timer_rounded,
       color: AppColors.metabolicGreen,
     ),

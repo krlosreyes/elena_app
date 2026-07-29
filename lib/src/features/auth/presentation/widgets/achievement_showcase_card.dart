@@ -60,7 +60,7 @@ class AchievementShowcaseCard extends ConsumerWidget {
               children: [
                 const Expanded(
                   child: Text(
-                    'Tus logros',
+                    'Tus insignias',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 15,
@@ -117,7 +117,7 @@ class AchievementShowcaseCard extends ConsumerWidget {
             Text(
               hasEarned
                   ? '${badgeState.earned.length}/$totalBadges insignias · $streakLabel'
-                  : 'Tus primeras insignias van a aparecer acá',
+                  : 'Tus primeras insignias van a aparecer aquí',
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.55),
                 fontSize: 12.5,

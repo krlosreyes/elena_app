@@ -180,7 +180,7 @@ const List<TourStep> kTourSteps = [
     emoji: '🎯',
     title: '¡Todo listo!',
     body: 'Ya conoces tu app. Comienza registrando tu primer ayuno con el '
-        'botón "Iniciar Ayuno" ⏱️ del Dashboard. '
+        'botón "Iniciar ayuno" ⏱️ del Dashboard. '
         '¡Tu metabolismo te lo va a agradecer!',
     spotlight: TourSpotlightArea.none,
     navigateTo: '/dashboard',

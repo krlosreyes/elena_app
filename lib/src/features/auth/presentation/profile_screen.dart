@@ -220,6 +220,10 @@ class _ProfileBody extends ConsumerWidget {
         // es la misma categoría (datos clínicos sincronizados/medidos),
         // no un ajuste de "Configuración" de un pilar existente.
         const GlucoseProtocolEntryCard(),
+        const SizedBox(height: 10),
+        // 29-jul: movida desde "Legal". Es una declaración de salud que
+        // gatea el ayuno, no un documento informativo.
+        const ProfileHealthConditionsCard(),
         const SizedBox(height: 24),
 
         // ── Legal ───────────────────────────────────────────────────

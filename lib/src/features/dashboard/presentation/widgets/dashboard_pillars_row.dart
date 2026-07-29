@@ -18,6 +18,7 @@ import 'package:elena_app/src/features/streak/application/daily_score_provider.d
 import 'package:elena_app/src/features/streak/application/streak_notifier.dart';
 import 'package:elena_app/src/features/streak/domain/fasting_schedule.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
+import 'package:elena_app/src/core/constants/pillar_constants.dart';
 
 /// Fila horizontal de 5 anillos circulares — uno por pilar.
 /// Cada anillo es interactivo y abre su sheet de input correspondiente.
@@ -275,7 +276,7 @@ class DashboardPillarsRow extends ConsumerWidget {
                 // la insignia de "descanso" (isRestDay) toma precedencia
                 // visual sobre el check verde dentro de `PillarRing`.
                 progress: isFastingRestDay ? 1.0 : fastingProgress,
-                label: 'Ayuno',
+                label: PillarConstants.trackingLabelAyuno,
                 isSelected: selectedPillar == SelectedPillar.ayuno,
                 completed: !isFastingRestDay && fastingProgress >= 1.0,
                 showPercent: !isFastingRestDay,
@@ -287,7 +288,7 @@ class DashboardPillarsRow extends ConsumerWidget {
                 icon: Icons.nightlight_round,
                 color: const Color(0xFF818CF8),
                 progress: sleepProgress,
-                label: 'Sueño',
+                label: PillarConstants.trackingLabelSueno,
                 isSelected: selectedPillar == SelectedPillar.sueno,
                 completed: sleepCompleted,
                 showPercent: true,
@@ -298,7 +299,7 @@ class DashboardPillarsRow extends ConsumerWidget {
                 icon: Icons.water_drop_rounded,
                 color: Colors.blueAccent,
                 progress: hydrationProgress,
-                label: 'Hidratación',
+                label: PillarConstants.trackingLabelHidratacion,
                 isSelected: selectedPillar == SelectedPillar.hidratacion,
                 completed: hydrationGoalReached,
                 showPercent: true,
@@ -320,7 +321,7 @@ class DashboardPillarsRow extends ConsumerWidget {
                   icon: Icons.fitness_center_rounded,
                   color: Colors.tealAccent,
                   progress: progress,
-                  label: 'Ejercicio',
+                  label: PillarConstants.trackingLabelEjercicio,
                   isSelected: selectedPillar == SelectedPillar.ejercicio,
                   completed: exerciseTodayMinutes >= goal,
                   showPercent: true,
@@ -337,7 +338,7 @@ class DashboardPillarsRow extends ConsumerWidget {
                   icon: Icons.restaurant_rounded,
                   color: Colors.orangeAccent,
                   progress: nutritionScore,
-                  label: 'Comidas',
+                  label: PillarConstants.trackingLabelNutricion,
                   isSelected: selectedPillar == SelectedPillar.comidas,
                   completed: nutritionMealsLogged >= nutritionTargetMeals,
                   showPercent: true,

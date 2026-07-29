@@ -43,7 +43,7 @@ class HabitosEntryCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Tus Hábitos',
+                    'Tus hábitos',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 14,

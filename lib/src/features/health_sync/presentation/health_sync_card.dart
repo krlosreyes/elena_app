@@ -211,7 +211,7 @@ class _HealthSyncCardState extends ConsumerState<HealthSyncCard>
           const SizedBox(width: 6),
           Expanded(
             child: Text(
-              'Sync automático en segundo plano: Premium.',
+              'La sincronización automática en segundo plano es Premium.',
               style: TextStyle(
                 fontSize: 11.5,
                 color: Colors.white.withValues(alpha: 0.5),
@@ -589,10 +589,10 @@ class _HealthSyncCardState extends ConsumerState<HealthSyncCard>
     if (isRunning) return 'Sincronizando ahora…';
     if (lastRun == null) return 'Aún no se ha sincronizado.';
     final diff = DateTime.now().difference(lastRun);
-    if (diff.inMinutes < 1) return 'Última sync: hace instantes';
-    if (diff.inMinutes < 60) return 'Última sync: hace ${diff.inMinutes} min';
-    if (diff.inHours < 24) return 'Última sync: hace ${diff.inHours} h';
-    return 'Última sync: hace ${diff.inDays} días';
+    if (diff.inMinutes < 1) return 'Sincronizado hace instantes';
+    if (diff.inMinutes < 60) return 'Sincronizado hace ${diff.inMinutes} min';
+    if (diff.inHours < 24) return 'Sincronizado hace ${diff.inHours} h';
+    return 'Sincronizado hace ${diff.inDays} días';
   }
 
   String _formatNothingImported(

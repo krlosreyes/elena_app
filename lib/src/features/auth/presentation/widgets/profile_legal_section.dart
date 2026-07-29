@@ -22,14 +22,14 @@ class ProfileLegalSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        _LegalEntryCard(
-          icon: Icons.health_and_safety_outlined,
-          color: const Color(0xFFF87171),
-          title: 'Condiciones médicas',
-          subtitle: 'Poblaciones de riesgo del IMR',
-          onTap: () => context.push('/profile/disclaimer'),
-        ),
-        const SizedBox(height: 10),
+        // 29-jul: "Condiciones médicas" vivía acá, entre la política de
+        // privacidad y los términos de uso. Es lo único de esta sección
+        // que NO es un documento informativo: es lo que el usuario
+        // declaró sobre su salud, y es lo que decide si puede o no
+        // iniciar un ayuno (`FastingEligibility`). Enterrado en "Legal"
+        // se leía como letra pequeña que nadie abre. Se movió a "Salud",
+        // junto a la sincronización y la glucosa. Ver
+        // `ProfileHealthConditionsCard` en este mismo archivo.
         _LegalEntryCard(
           icon: Icons.privacy_tip_outlined,
           color: const Color(0xFF2DD4BF),
@@ -46,6 +46,28 @@ class ProfileLegalSection extends StatelessWidget {
           onTap: () => context.push('/legal/terms'),
         ),
       ],
+    );
+  }
+}
+
+/// Declaración de salud del usuario — sección "Salud" del Perfil.
+///
+/// 29-jul: extraída de `ProfileLegalSection`. El subtítulo decía
+/// "Poblaciones de riesgo del IMR", jerga que describe la mecánica
+/// interna en vez de lo que el usuario encuentra al entrar. Lo que hay
+/// dentro son las condiciones que él mismo marcó (embarazo, diabetes,
+/// trastorno alimentario…) y que gatean los protocolos de ayuno.
+class ProfileHealthConditionsCard extends StatelessWidget {
+  const ProfileHealthConditionsCard({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return _LegalEntryCard(
+      icon: Icons.health_and_safety_outlined,
+      color: const Color(0xFFF87171),
+      title: 'Condiciones médicas',
+      subtitle: 'Lo que declaraste sobre tu salud',
+      onTap: () => context.push('/profile/disclaimer'),
     );
   }
 }
