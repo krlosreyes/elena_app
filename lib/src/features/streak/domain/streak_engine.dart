@@ -1,4 +1,5 @@
 import 'package:elena_app/src/core/services/day_boundary_resolver.dart';
+import 'package:elena_app/src/features/streak/domain/rest_day_policy.dart';
 import 'package:elena_app/src/features/streak/domain/streak_entry.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart'
     show FastingInterval;
@@ -23,10 +24,19 @@ class StreakFreezeState {
   /// True si algún día de la cadena actual fue perdonado por una reserva.
   final bool currentStreakHasProtectedDay;
 
+  /// Días de la cadena actual que fueron descansos planificados válidos.
+  ///
+  /// Separado de [currentStreakHasProtectedDay] a propósito: un día
+  /// perdonado y un día descansado no son lo mismo y no se le deben
+  /// contar igual al usuario. Uno es "se te pasó y te cubrimos"; el otro
+  /// es "lo planificaste y lo cumpliste".
+  final int currentStreakRestDays;
+
   const StreakFreezeState({
     required this.currentStreak,
     required this.freezesAvailable,
     required this.currentStreakHasProtectedDay,
+    this.currentStreakRestDays = 0,
   });
 }
 
@@ -176,6 +186,7 @@ class StreakEngine {
   static StreakFreezeState computeCurrentStreakWithFreezes(
     List<StreakEntry> history, {
     DateTime? asOf,
+    RestDayPolicy? restPolicy,
   }) {
     if (history.isEmpty) {
       return const StreakFreezeState(
@@ -187,8 +198,9 @@ class StreakEngine {
 
     // Paso 1 (adelante, cronológico): marcar qué fechas quedan protegidas
     // y calcular cuántas reservas quedan disponibles al final.
-    final forward = _forwardPassProtection(history);
+    final forward = _forwardPassProtection(history, restPolicy: restPolicy);
     final protectedDates = forward.protectedDates;
+    final restDates = forward.restDates;
     final banked = forward.banked;
 
     // Paso 2 (atrás, igual que computeCurrentStreak): un día cuenta si
@@ -199,7 +211,9 @@ class StreakEngine {
     final yesterday = _dateKey(now.subtract(const Duration(days: 1)));
 
     bool countsForStreak(StreakEntry e) =>
-        e.qualifiesForStreak || protectedDates.contains(e.date);
+        e.qualifiesForStreak ||
+        protectedDates.contains(e.date) ||
+        restDates.contains(e.date);
 
     int start = 0;
     if (descending.isNotEmpty &&
@@ -211,6 +225,7 @@ class StreakEngine {
     int streak = 0;
     String? expectedDate;
     bool hasProtectedDay = false;
+    int restDaysInStreak = 0;
 
     for (int i = start; i < descending.length; i++) {
       final entry = descending[i];
@@ -234,12 +249,14 @@ class StreakEngine {
         }
       }
       if (protectedDates.contains(entry.date)) hasProtectedDay = true;
+      if (restDates.contains(entry.date)) restDaysInStreak++;
     }
 
     return StreakFreezeState(
       currentStreak: streak,
       freezesAvailable: banked,
       currentStreakHasProtectedDay: hasProtectedDay,
+      currentStreakRestDays: restDaysInStreak,
     );
   }
 
@@ -248,9 +265,28 @@ class StreakEngine {
   /// pintar el heatmap de racha en Progreso. Reusa el mismo cálculo
   /// forward que [computeCurrentStreakWithFreezes] (§ misma mecánica,
   /// una sola fuente de verdad).
-  static Set<String> computeProtectedDates(List<StreakEntry> history) {
+  static Set<String> computeProtectedDates(
+    List<StreakEntry> history, {
+    RestDayPolicy? restPolicy,
+  }) {
     if (history.isEmpty) return const {};
-    return _forwardPassProtection(history).protectedDates;
+    return _forwardPassProtection(history, restPolicy: restPolicy)
+        .protectedDates;
+  }
+
+  /// Set de fechas ('yyyy-MM-dd') que fueron descansos planificados
+  /// válidos — declarados por adelantado Y con el suelo cumplido.
+  ///
+  /// Se pinta distinto que [computeProtectedDates] en el histórico: el
+  /// usuario tiene que poder distinguir de un vistazo el día que planificó
+  /// del día que se le pasó. Si los dos se vieran igual, el descanso
+  /// dejaría de sentirse como una decisión suya.
+  static Set<String> computeRestDates(
+    List<StreakEntry> history, {
+    required RestDayPolicy restPolicy,
+  }) {
+    if (history.isEmpty) return const {};
+    return _forwardPassProtection(history, restPolicy: restPolicy).restDates;
   }
 
   /// Propuesta "racha protagonista" (2026-07-15, P3): encuentra el día
@@ -262,13 +298,21 @@ class StreakEngine {
   /// `null` si no hay ningún día así en el historial (defensivo — no
   /// debería ocurrir cuando se llama justo tras detectar una ruptura,
   /// pero evita un crash si el caller lo hace en otro momento).
+  ///
+  /// [restDates] — descansos planificados válidos. Van excluidos por la
+  /// misma razón que los días protegidos: un descanso que el usuario
+  /// planificó y cumplió no rompió nada, y señalarlo como "el día que te
+  /// costó la racha" sería acusarlo de haber seguido su propio plan.
   static StreakEntry? findBreakingEntry(
     List<StreakEntry> history,
-    Set<String> protectedDates,
-  ) {
+    Set<String> protectedDates, {
+    Set<String> restDates = const {},
+  }) {
     final descending = _sortedDescending(history);
     for (final entry in descending) {
-      if (!entry.qualifiesForStreak && !protectedDates.contains(entry.date)) {
+      if (!entry.qualifiesForStreak &&
+          !protectedDates.contains(entry.date) &&
+          !restDates.contains(entry.date)) {
         return entry;
       }
     }
@@ -277,13 +321,32 @@ class StreakEngine {
 
   /// Paso 1 compartido por [computeCurrentStreakWithFreezes] y
   /// [computeProtectedDates]: recorre el historial en orden cronológico
-  /// y devuelve qué fechas quedaron protegidas por una reserva, más
-  /// cuántas reservas quedan disponibles al final del historial.
-  static ({Set<String> protectedDates, int banked}) _forwardPassProtection(
-    List<StreakEntry> history,
-  ) {
+  /// y devuelve qué fechas quedaron protegidas por una reserva, cuáles
+  /// fueron descansos planificados válidos, y cuántas reservas quedan
+  /// disponibles al final del historial.
+  ///
+  /// ORDEN DE LAS RAMAS (importa, y no es arbitrario):
+  ///
+  ///   1. ¿Calificó de verdad? → día real. Aunque estuviera declarado
+  ///      como descanso: si el usuario descansaba y aun así completó 3
+  ///      pilares, eso es un día real y merece contar como tal para ganar
+  ///      reservas. No se le castiga por haber rendido de más.
+  ///   2. ¿Es descanso declarado y cumple el suelo? → descanso válido.
+  ///   3. ¿Hay reserva? → se perdona.
+  ///   4. Si no → rompe.
+  ///
+  /// El descanso va ANTES de la reserva a propósito: descansar no debe
+  /// gastar el colchón que existe para los olvidos. Era justo lo que
+  /// pasaba antes de que existiera [RestDayPolicy] — la app le cobraba al
+  /// usuario por descansar bien.
+  static ({Set<String> protectedDates, Set<String> restDates, int banked})
+      _forwardPassProtection(
+    List<StreakEntry> history, {
+    RestDayPolicy? restPolicy,
+  }) {
     final ascending = _sortedAscending(history);
     final protectedDates = <String>{};
+    final restDates = <String>{};
     int banked = 0;
     int consecutiveRealQualifying = 0;
     DateTime? prevDate;
@@ -301,8 +364,29 @@ class StreakEngine {
         consecutiveRealQualifying = 0;
       }
 
+      // Solo los días que suman de verdad pueden disparar la ganancia de
+      // una reserva. Sin esta bandera, un descanso (que deja el contador
+      // intacto) volvería a satisfacer `% 7 == 0` al día siguiente y
+      // regalaría una reserva por descansar — justo lo contrario de lo
+      // que queremos.
+      bool earnedRealDay = false;
+
       if (entry.qualifiesForStreak) {
         consecutiveRealQualifying++;
+        earnedRealDay = true;
+      } else if (restPolicy != null &&
+          restPolicy.isRestDay(entry.date) &&
+          RestDayPolicy.meetsRestFloor(entry)) {
+        // Descanso planificado que cumplió el suelo. NO consume reserva y
+        // NO reinicia el contador de días reales: es transparente.
+        //
+        // La transparencia no es un detalle. Si el descanso reiniciara el
+        // contador, el usuario con descanso semanal fijo no llegaría
+        // jamás a 7 días reales seguidos y por tanto NUNCA ganaría una
+        // reserva — el más constante se quedaría sin red para el día que
+        // de verdad se le olvide. Al dejarlo pasar, 6 días reales +
+        // descanso + 1 real suman los 7 que hacen falta.
+        restDates.add(entry.date);
       } else if (isNextCalendarDay && banked > 0) {
         // Perdona este día puntual — consume una reserva.
         banked--;
@@ -312,7 +396,8 @@ class StreakEngine {
         consecutiveRealQualifying = 0;
       }
 
-      if (consecutiveRealQualifying > 0 &&
+      if (earnedRealDay &&
+          consecutiveRealQualifying > 0 &&
           consecutiveRealQualifying % 7 == 0 &&
           banked < 2) {
         banked++;
@@ -321,7 +406,11 @@ class StreakEngine {
       prevDate = d;
     }
 
-    return (protectedDates: protectedDates, banked: banked);
+    return (
+      protectedDates: protectedDates,
+      restDates: restDates,
+      banked: banked,
+    );
   }
 
   /// Calcula la racha más larga de toda la historia.

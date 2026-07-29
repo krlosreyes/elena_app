@@ -81,6 +81,21 @@ const USER_SUBCOLLECTIONS = [
                         // tras eliminar cuenta (gap GDPR Art.17).
   // Ayuno
   "fasting_history",   // SPEC-217: nueva subcolección (reemplaza colección plana)
+  // Documentos de configuración por módulo (`{modulo}_meta/{doc}`).
+  //
+  // 28-jul: los tres faltaban. `exercise_meta/profile` existe desde el
+  // 21-jul y `glucose_meta/protocol` desde el 23-jul, y ninguno se
+  // borraba al eliminar la cuenta — el mismo gap de GDPR Art.17 que se
+  // corrigió para `badges` el 18-jul, repetido dos veces más.
+  //
+  // La causa es estructural y conviene dejarla escrita: esta lista es
+  // manual, así que cada subcolección nueva depende de que quien la crea
+  // se acuerde de venir aquí. No hay nada que falle si se olvida —
+  // simplemente quedan datos huérfanos, en silencio. Si aparece un
+  // cuarto `_meta`, va aquí.
+  "exercise_meta",     // perfil de hábitos de ejercicio
+  "glucose_meta",      // estado del protocolo de glucosa (incl. consentimiento)
+  "streak_meta",       // 28-jul: política de descanso planificado
 ];
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
