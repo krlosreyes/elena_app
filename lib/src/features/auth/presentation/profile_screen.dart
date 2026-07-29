@@ -120,7 +120,30 @@ class _ProfileBody extends ConsumerWidget {
     // 17-jul: 2do rediseño — "Tu identidad" (logros + transformación)
     // arriba, "Configuración" (cards colapsadas) abajo. Ver Propuesta
     // "un Perfil que da orgullo abrir".
+    // 29-jul: "scroll infinito" en Perfil, reproducido en Simulador.
+    //
+    // SÍNTOMA REAL: el mismo arrastre de 300 px da dos resultados
+    // opuestos. Recién entrado a Perfil no mueve NADA —el gesto se pierde
+    // entero— y con la pantalla asentada salta de golpe casi hasta el
+    // final. El usuario lo vive como una lista que no se deja controlar;
+    // de ahí "infinito", aunque la lista sí termina.
+    //
+    // CAUSA: esta pantalla monta cuatro widgets autocontenidos que
+    // observan sus propios providers y CRECEN al resolver
+    // (AchievementShowcaseCard, TransformationCardLive,
+    // BodyCompositionCard, HealthSyncCard). Mientras todos cargan, el
+    // ListView se reconstruye varias veces por segundo; sin una key
+    // estable, Flutter trata cada reconstrucción como una lista nueva,
+    // descarta el ScrollPosition y con él el gesto en curso.
+    //
+    // El `AnimatedSize` que se puso el 20-jul alrededor de HealthSyncCard
+    // suavizaba la animación de UNA card, pero no impedía que la posición
+    // se perdiera — por eso el problema siguió vivo nueve días.
+    //
+    // La PageStorageKey le da identidad a la lista: la posición sobrevive
+    // a los rebuilds y, de regalo, también a cambiar de pestaña y volver.
     return ListView(
+      key: const PageStorageKey<String>('perfil_scroll'),
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
       children: [
         // ── Identidad + IMR ─────────────────────────────────────────
