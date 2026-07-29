@@ -1,3 +1,4 @@
+import 'package:elena_app/src/core/config/build_info.dart';
 import 'package:elena_app/src/core/config/feature_flags.dart';
 import 'package:elena_app/src/core/engine/imr_persistence_provider.dart';
 import 'package:elena_app/src/core/engine/longitudinal_imr_provider.dart';
@@ -247,6 +248,22 @@ class _ProfileBody extends ConsumerWidget {
 
         // ── Acciones destructivas (text buttons sutiles) ────────────
         const ProfileDangerZoneActions(),
+
+        // 29-jul: identidad del binario instalado. Deliberadamente
+        // discreto y al final de todo — no es información que el
+        // usuario busque, pero es lo primero que hay que preguntarle
+        // cuando reporte "no me aparece el cambio". Ver build_info.dart.
+        const SizedBox(height: 28),
+        Center(
+          child: SelectableText(
+            BuildInfo.label,
+            style: TextStyle(
+              fontSize: 11,
+              color: Colors.white.withValues(alpha: 0.30),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
       ],
     );
   }
