@@ -200,6 +200,64 @@ void main() {
     });
   });
 
+  group('mover el descanso de una semana', () {
+    const policy = RestDayPolicy(weeklyRestWeekday: 7); // domingo
+
+    test('los candidatos son los días futuros de esa semana', () {
+      // Lunes 27-jul. La semana va del 27 al 2-ago; solo quedan 28..2.
+      final candidatos = policy.movableDatesInWeekOf(lunes, now: lunes);
+      expect(candidatos, [
+        '2026-07-28',
+        '2026-07-29',
+        '2026-07-30',
+        '2026-07-31',
+        '2026-08-01',
+        '2026-08-02',
+      ]);
+    });
+
+    test('no ofrece hoy ni los días ya pasados de la semana', () {
+      final jueves = DateTime(2026, 7, 30);
+      final candidatos = policy.movableDatesInWeekOf(jueves, now: jueves);
+      expect(candidatos, ['2026-07-31', '2026-08-01', '2026-08-02']);
+      expect(candidatos, isNot(contains('2026-07-30')));
+      expect(candidatos, isNot(contains('2026-07-27')));
+    });
+
+    test('una semana que ya terminó no admite cambios', () {
+      final semanaPasada = DateTime(2026, 7, 20);
+      expect(
+        policy.movableDatesInWeekOf(semanaPasada, now: lunes),
+        isEmpty,
+      );
+    });
+
+    test('todo candidato ofrecido es aceptado por declare', () {
+      // La razón de que esta lista viva en el dominio: si la UI armara
+      // la suya, podría ofrecer un día que `declare` rechaza en silencio
+      // y el usuario tocaría sin que pasara nada.
+      for (final fecha in policy.movableDatesInWeekOf(lunes, now: lunes)) {
+        expect(policy.canDeclare(fecha, now: lunes), isTrue);
+        expect(policy.declare(fecha, now: lunes).isRestDay(fecha), isTrue,
+            reason: '"$fecha" se ofreció pero no se pudo declarar');
+      }
+    });
+
+    test('isMovedWeekOf distingue la semana tocada de las demás', () {
+      final movida = policy.declare('2026-07-30', now: lunes);
+      expect(movida.isMovedWeekOf('2026-07-30'), isTrue);
+      expect(movida.isMovedWeekOf('2026-08-02'), isTrue,
+          reason:
+              'el domingo 2-ago es de la MISMA semana ISO que el jueves 30');
+      expect(movida.isMovedWeekOf('2026-08-09'), isFalse,
+          reason: 'la semana siguiente no está movida');
+    });
+
+    test('sin día fijo no hay nada que mover, aunque haya fechas', () {
+      expect(RestDayPolicy.disabled.isMovedWeekOf('2026-07-30'), isFalse);
+    });
+  });
+
   group('serialización', () {
     test('ida y vuelta preserva la política', () {
       const original = RestDayPolicy(

@@ -89,12 +89,21 @@ class _RestDayEntry extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final weekday =
-        ref.watch(streakProvider.select((s) => s.restPolicy.weeklyRestWeekday));
+    final policy = ref.watch(streakProvider.select((s) => s.restPolicy));
+    final nextRest = ref.watch(streakProvider.select((s) => s.nextRestDate));
+    final weekday = policy.weeklyRestWeekday;
 
-    final subtitle = weekday == null
-        ? 'Sin configurar — elige un día'
-        : 'Cada ${_nombres[weekday - 1]}';
+    // Si el descanso de esta semana está movido, decir "Cada domingo"
+    // sería mentir sobre lo que va a pasar. Gana lo concreto.
+    final String subtitle;
+    if (nextRest != null && policy.isMovedWeekOf(nextRest)) {
+      final d = DateTime.parse(nextRest);
+      subtitle = 'Esta semana: ${_nombres[d.weekday - 1]} ${d.day}';
+    } else if (weekday == null) {
+      subtitle = 'Sin configurar — elige un día';
+    } else {
+      subtitle = 'Cada ${_nombres[weekday - 1]}';
+    }
 
     return InkWell(
       onTap: () => showRestDaySettingsSheet(context),

@@ -192,6 +192,35 @@ class RestDayPolicy {
     return copyWith(movedDates: next);
   }
 
+  /// Fechas de la semana de [day] a las que se puede mover el descanso
+  /// estando [now] en curso, en orden cronológico.
+  ///
+  /// Son los días de esa semana ISO que pasan [canDeclare] — es decir,
+  /// los que todavía no llegaron. Devuelve vacío si esa semana ya no
+  /// admite cambios (porque terminó, o porque solo queda hoy).
+  ///
+  /// Existe en el dominio y no en la UI a propósito: la regla de "solo
+  /// hacia adelante" es la que sostiene todo el mecanismo, y si la
+  /// pantalla construyera su propia lista de candidatos podría ofrecer un
+  /// día que `declare` va a rechazar en silencio. El usuario tocaría una
+  /// opción y no pasaría nada.
+  List<String> movableDatesInWeekOf(DateTime day, {required DateTime now}) {
+    final d = DateTime(day.year, day.month, day.day);
+    final monday = d.subtract(Duration(days: d.weekday - 1));
+    return [
+      for (var i = 0; i < 7; i++)
+        DayBoundaryResolver.dayKeyIso(monday.add(Duration(days: i))),
+    ].where((k) => canDeclare(k, now: now)).toList();
+  }
+
+  /// True si el descanso de la semana de [dateKey] está movido respecto
+  /// del día fijo. `false` si no hay día fijo (no hay de qué moverse).
+  bool isMovedWeekOf(String dateKey) {
+    final week = _weekKeyOfDateString(dateKey);
+    if (week == null) return false;
+    return movedDates.any((k) => _weekKeyOfDateString(k) == week);
+  }
+
   /// Cancela el descanso puntual de la semana de [dateKey]. El día fijo,
   /// si lo hay, vuelve a aplicar.
   RestDayPolicy cancelMoveForWeekOf(String dateKey) {
