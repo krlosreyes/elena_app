@@ -124,11 +124,22 @@ class OnboardingSectionTitle extends StatelessWidget {
 /// SPEC-119: renombrado de `_DisclaimerItem` (privado) a
 /// `DisclaimerItem` (público) al extraerlo — sin cambios de
 /// comportamiento.
+/// Una condición del disclaimer médico.
+///
+/// 27-jul-2026: pasa de informativa a DECLARABLE. Cuando se le pasa
+/// [onToggle], se dibuja como opción marcable y lo que el usuario marque
+/// alimenta `pathologies`, que es lo que lee el gate de
+/// `FastingEligibility.assess()`. Sin [onToggle] se comporta como antes,
+/// solo lectura — así los consumidores existentes no cambian.
 class DisclaimerItem extends StatelessWidget {
   final IconData icon;
   final String title;
   final String body;
   final bool isDark;
+
+  /// `null` = solo lectura (comportamiento histórico).
+  final VoidCallback? onToggle;
+  final bool selected;
 
   const DisclaimerItem({
     super.key,
@@ -136,6 +147,8 @@ class DisclaimerItem extends StatelessWidget {
     required this.title,
     required this.body,
     required this.isDark,
+    this.onToggle,
+    this.selected = false,
   });
 
   @override
@@ -145,48 +158,95 @@ class DisclaimerItem extends StatelessWidget {
         (isDark ? Colors.white : Colors.black87).withValues(alpha: 0.65);
     final iconColor =
         isDark ? const Color(0xFF10B981) : const Color(0xFF0F172A);
+    // Ámbar, no rojo: declarar una condición no es un error del usuario.
+    const selectedColor = Color(0xFFF59E0B);
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: iconColor.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            alignment: Alignment.center,
-            child: Icon(icon, color: iconColor, size: 18),
+    final fila = Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color:
+                (selected ? selectedColor : iconColor).withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(10),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                    color: textPrimary,
-                  ),
+          alignment: Alignment.center,
+          child:
+              Icon(icon, color: selected ? selectedColor : iconColor, size: 18),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  color: textPrimary,
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  body,
-                  style: TextStyle(
-                    fontSize: 11.5,
-                    height: 1.45,
-                    color: textSecondary,
-                  ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                body,
+                style: TextStyle(
+                  fontSize: 11.5,
+                  height: 1.45,
+                  color: textSecondary,
                 ),
-              ],
-            ),
+              ),
+            ],
+          ),
+        ),
+        if (onToggle != null) ...[
+          const SizedBox(width: 8),
+          Icon(
+            selected ? Icons.check_circle : Icons.circle_outlined,
+            color: selected
+                ? selectedColor
+                : textSecondary.withValues(alpha: 0.45),
+            size: 22,
           ),
         ],
+      ],
+    );
+
+    if (onToggle == null) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: fila,
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Semantics(
+        checked: selected,
+        button: true,
+        label: '$title. $body',
+        child: InkWell(
+          onTap: onToggle,
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              color: selected
+                  ? selectedColor.withValues(alpha: 0.08)
+                  : Colors.transparent,
+              border: Border.all(
+                color: selected
+                    ? selectedColor.withValues(alpha: 0.55)
+                    : (isDark ? Colors.white : Colors.black)
+                        .withValues(alpha: 0.10),
+              ),
+            ),
+            child: fila,
+          ),
+        ),
       ),
     );
   }

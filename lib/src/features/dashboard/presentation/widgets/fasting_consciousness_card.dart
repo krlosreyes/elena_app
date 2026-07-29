@@ -641,6 +641,63 @@ class FastingConsciousnessCard extends ConsumerWidget {
     }
 
     // No activo: iniciar.
+
+    // GATE MÉDICO — verificado en Simulador, 28-jul-2026.
+    //
+    // `FastingEligibility.assess()` ya se consultaba en este archivo,
+    // pero SOLO para pintar el selector de protocolo (`_onProtocolChipTap`).
+    // El botón de iniciar no lo miraba. Resultado comprobado: con
+    // "Embarazo o lactancia" declarado, el protocolo quedaba recortado a
+    // "Ninguno" con su candado… y el ayuno arrancaba igual, contando
+    // hitos y celebrando, con la app acompañando.
+    //
+    // El recorte del protocolo protege el DATO; esto protege la ACCIÓN.
+    // Sin las dos, el cribado del onboarding es decorativo.
+    final userForFastingGate = ref.read(currentUserStreamProvider).valueOrNull;
+    if (userForFastingGate != null) {
+      final gate = FastingEligibility.assess(userForFastingGate);
+      if (gate.blocked) {
+        if (!context.mounted) return;
+        await showDialog<void>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: AppColors.surfaceDark,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: const Row(
+              children: [
+                Icon(Icons.health_and_safety_outlined,
+                    color: Color(0xFFF59E0B), size: 20),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text('Ayuno no recomendado',
+                      style:
+                          TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+                ),
+              ],
+            ),
+            content: Text(
+              // El motivo lo redacta el propio gate, para que no haya dos
+              // versiones del criterio médico.
+              '${gate.reason}\n\nPuedes cambiar lo que declaraste desde '
+              'Perfil › Datos biométricos si tu situación cambia.',
+              style: const TextStyle(
+                  color: Color(0xFF94A3B8), fontSize: 13, height: 1.45),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('ENTENDIDO',
+                    style: TextStyle(
+                        color: Color(0xFF10B981), fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+        );
+        return;
+      }
+    }
+
     // SPEC-254: avisar si iniciar el ayuno va a sacar de la vista comidas
     // ya registradas en el ciclo actual (ver
     // new_cycle_meals_warning_dialog.dart — el mecanismo NO es pérdida de

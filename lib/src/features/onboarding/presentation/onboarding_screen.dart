@@ -63,6 +63,132 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   // avanza al paso 1 hasta que el usuario marque el checkbox.
   bool _disclaimerAccepted = false;
 
+  /// Condiciones del disclaimer declaradas, derivadas de `_pathologies`.
+  ///
+  /// NO es estado propio: se calcula. La primera versión de esto guardaba
+  /// las declaraciones en un Set aparte y las fusionaba con
+  /// `_pathologies` solo al guardar, y el resultado fue el bug que este
+  /// cambio venía a arreglar — declarabas "Embarazo o lactancia" en el
+  /// paso 0 y dos pantallas después la fila decía "Patologías: Ninguna",
+  /// porque esa fila lee `_pathologies` directo. El dato persistido
+  /// habría sido correcto, pero al usuario se le contradecía en pantalla.
+  /// Con una sola fuente, todo lo que lea `_pathologies` ve lo mismo.
+  Set<String> get _declaredConditions => kHealthDisclaimerConditions
+      .map((c) => c.pathologyFlag)
+      .where(_pathologies.contains)
+      .toSet();
+
+  /// Avisos de lo que cambia en el protocolo por lo declarado. Lista
+  /// vacía si nada de lo marcado afecta al ayuno.
+  ///
+  /// El texto lo pone `FastingEligibility.efectoSobreElAyuno`, que vive
+  /// junto a las reglas — aquí solo se pinta.
+  List<Widget> _efectosDeclarados() {
+    final efectos = _declaredConditions
+        .map(FastingEligibility.efectoSobreElAyuno)
+        .whereType<String>()
+        .toList();
+    if (efectos.isEmpty) return const [];
+
+    const amber = Color(0xFFF59E0B);
+    return [
+      const SizedBox(height: 12),
+      Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: amber.withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: amber.withValues(alpha: 0.40)),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(Icons.info_outline_rounded, color: amber, size: 18),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Qué cambia en tu plan',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w900,
+                      color: amber,
+                      letterSpacing: 0.6,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  ...efectos.map(
+                    (e) => Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Text(
+                        '· Por lo que declaraste, $e.',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFFCBD5E1),
+                          height: 1.45,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const Text(
+                    'Puedes cambiarlo desde tu perfil si tu situación cambia.',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      color: Color(0xFF94A3B8),
+                      height: 1.4,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    ];
+  }
+
+  /// Marca o desmarca una condición del cribado sobre `_pathologies`.
+  void _toggleDeclaredCondition(String flag) {
+    setState(() {
+      if (_pathologies.contains(flag)) {
+        _pathologies.remove(flag);
+      } else {
+        _pathologies
+          ..remove(kSinPatologias)
+          ..add(flag);
+      }
+      if (_pathologies.isEmpty) _pathologies = [kSinPatologias];
+      // Marcar una condición y "ninguna" a la vez es contradictorio:
+      // gana lo último que tocó el usuario.
+      _declaredNone = false;
+    });
+  }
+
+  /// "Ninguna aplica a mí": limpia solo las condiciones del disclaimer.
+  /// Lo que el usuario haya marcado en el selector de patologías del
+  /// paso 3 no se toca — son listas distintas y ninguna manda sobre la
+  /// otra.
+  void _toggleDeclaredNone() {
+    setState(() {
+      _declaredNone = !_declaredNone;
+      if (_declaredNone) {
+        for (final c in kHealthDisclaimerConditions) {
+          _pathologies.remove(c.pathologyFlag);
+        }
+        if (_pathologies.isEmpty) _pathologies = [kSinPatologias];
+      }
+    });
+  }
+
+  /// Declaración explícita de "ninguna aplica". Se guarda aparte del set
+  /// vacío a propósito: sin ella no se puede distinguir "no tengo
+  /// ninguna" de "no contesté", y no contestar era exactamente el estado
+  /// en el que quedaban todos los usuarios antes de este cambio.
+  bool _declaredNone = false;
+
   // SPEC-74: prefill desde AppAccount.rawProfile (cuenta MR existente).
   // Inicializado en initState, una sola vez por sesión de onboarding.
   OnboardingPrefill _prefill = OnboardingPrefill.empty;
@@ -516,6 +642,21 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         _disclaimerAccepted = true;
       }
 
+      // Las condiciones marcadas se derivan de `_pathologies`, que ya
+      // viene rehidratado — no hay nada que copiar.
+      //
+      // "Ninguna aplica" es distinto: solo se da por respondido si el
+      // perfil declaró bajo la versión ACTUAL del disclaimer. Verificado
+      // en Simulador (28-jul): sin esta condición, una cuenta creada con
+      // v1 llegaba al cribado nuevo con "Ninguna aplica a mí" ya marcado
+      // —porque su `pathologies` era `['Ninguna']` por defecto, no por
+      // declaración— y bastaba con pulsar continuar para saltárselo
+      // entero. Eso vaciaba de sentido el bump de versión, que existe
+      // precisamente para que esos perfiles vuelvan a declarar.
+      _declaredNone = !disclaimerNeedsReprompt &&
+          _declaredConditions.isEmpty &&
+          _pathologies.contains(kSinPatologias);
+
       _activeSteps = activeSteps;
     });
   }
@@ -696,6 +837,21 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         ),
         const SizedBox(height: 24),
 
+        // 27-jul-2026: la lista pasa de informativa a DECLARABLE. Ver la
+        // nota larga en `kHealthDisclaimerConditions`: el gate de
+        // `FastingEligibility.assess()` ya existía y funcionaba, pero
+        // nunca recibía el dato porque esta pantalla solo pedía "he
+        // leído".
+        Text(
+          kHealthDisclaimerPrompt,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w800,
+            color: isDark ? Colors.white : Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 12),
+
         // SPEC-76: consume la lista canonicalizada de
         // `health_disclaimer.dart`. Cambios al texto pasan por allá.
         ...kHealthDisclaimerConditions.map(
@@ -704,8 +860,29 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             title: c.title,
             body: c.body,
             isDark: isDark,
+            selected: _declaredConditions.contains(c.pathologyFlag),
+            onToggle: () => _toggleDeclaredCondition(c.pathologyFlag),
           ),
         ),
+
+        // Opción explícita de "ninguna". Sin ella, no marcar nada sería
+        // ambiguo entre "no tengo ninguna" y "no leí la lista", y ese es
+        // justo el estado en el que quedaban TODOS los usuarios antes.
+        DisclaimerItem(
+          icon: Icons.check_circle_outline,
+          title: kHealthDisclaimerNoneText,
+          body: 'Ninguna de las condiciones de arriba es mi caso.',
+          isDark: isDark,
+          selected: _declaredNone,
+          onToggle: _toggleDeclaredNone,
+        ),
+
+        // Aviso de consecuencia. Ver `FastingEligibility.efectoSobreElAyuno`:
+        // el recorte del protocolo ocurre al guardar, así que sin esto el
+        // usuario declaraba embarazo, seguía viendo "Ayuno 16:8" el resto
+        // del onboarding, y se encontraba el ayuno bloqueado al final sin
+        // explicación.
+        ..._efectosDeclarados(),
 
         const SizedBox(height: 8),
         Container(
@@ -1755,6 +1932,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       shirtSize: _shirtSize,
       mealsPerDay: _mealsPerDay,
       fastingProtocol: _fastingProtocol,
+      // El cribado del paso 0 y el selector del paso 3 escriben los dos
+      // en `_pathologies`, que es fuente única. Ver `_declaredConditions`.
       pathologies: _pathologies,
       // SPEC-70.8 / SPEC-76: persistir aceptación del disclaimer
       // clínico con su versión. La versión permite re-prompt si en
@@ -2220,7 +2399,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     // bloquea.
     final currentOriginalIndex =
         _activeSteps.isNotEmpty ? _activeSteps[_currentStep] : 0;
-    final canProceed = (currentOriginalIndex != 0 || _disclaimerAccepted) &&
+    // 27-jul-2026: el paso 0 exige además una RESPUESTA al cribado, no
+    // solo aceptar el disclaimer. Sin esto se podría seguir sin declarar
+    // nada, que es el estado en el que quedaban todos los usuarios y el
+    // motivo de que `FastingEligibility.assess()` nunca recibiera datos.
+    final cribadoRespondido = _declaredNone || _declaredConditions.isNotEmpty;
+    final canProceed = (currentOriginalIndex != 0 ||
+            (_disclaimerAccepted && cribadoRespondido)) &&
         (currentOriginalIndex != 1 || _weightTouched);
     final isLastStep = _currentStep == _activeSteps.length - 1;
     final disabledColor = isDark ? Colors.white24 : Colors.grey;

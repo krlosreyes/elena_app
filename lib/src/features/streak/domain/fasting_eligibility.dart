@@ -94,6 +94,33 @@ class FastingEligibility {
     return user.weight / (hMeters * hMeters);
   }
 
+  /// Qué le va a pasar al protocolo de ayuno si el usuario declara
+  /// [flag]. `null` si esa condición no afecta al ayuno.
+  ///
+  /// Existe para poder AVISAR en el momento de declarar, no después.
+  /// Verificado en Simulador (28-jul-2026): al declarar embarazo en el
+  /// cribado, el usuario seguía viendo "Ayuno 16:8" durante el resto del
+  /// onboarding y solo al terminar se encontraba el ayuno bloqueado, sin
+  /// que nadie le hubiera explicado por qué. El recorte lo hace
+  /// [clamp] justo antes de guardar (ver `_applyFastingEligibility` en
+  /// onboarding_screen), y eso no se puede adelantar porque el protocolo
+  /// se elige en un paso anterior al cribado — pero sí se puede avisar.
+  ///
+  /// Vive junto a `assess()` a propósito: si cambian las reglas de
+  /// arriba, el aviso está a la vista y no se queda desactualizado en
+  /// otro archivo.
+  static String? efectoSobreElAyuno(String flag) => switch (flag) {
+        FastingPathologyFlags.embarazoLactancia =>
+          'el ayuno queda desactivado mientras dure',
+        FastingPathologyFlags.trastornoAlimentario =>
+          'el ayuno queda desactivado hasta que lo evalúe un profesional '
+              'de salud mental',
+        FastingPathologyFlags.diabetesMedicada =>
+          'tu protocolo se limita a 14/10 hasta que ajustes la medicación '
+              'con tu médico',
+        _ => null,
+      };
+
   /// SPEC-257 §4 Eje A — evalúa las contraindicaciones ya citadas en el
   /// spec (Fung: menores, embarazo/lactancia, trastorno alimentario,
   /// IMC<18.5, IMC 18.5–20, diabetes medicada con insulina/sulfonilureas).
