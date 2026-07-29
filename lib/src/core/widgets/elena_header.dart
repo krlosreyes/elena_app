@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:elena_app/src/core/theme/app_theme.dart';
+import 'package:elena_app/src/core/widgets/profile_avatar.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 
 class ElenaHeader extends ConsumerWidget {
@@ -20,25 +21,23 @@ class ElenaHeader extends ConsumerWidget {
     return userAsync.when(
       data: (user) {
         if (user == null) return const SizedBox.shrink();
-        final initial = user.name.isNotEmpty ? user.name[0].toUpperCase() : "U";
 
         return Row(
           children: [
             // El avatar lleva al perfil del usuario.
+            //
+            // 29-jul: era un CircleAvatar con la inicial calculada acá
+            // (`user.name[0]`) — una segunda implementación del mismo
+            // avatar que hay en Perfil, con reglas distintas y sin la
+            // foto del proveedor. Se reemplaza por `ProfileAvatar`, que
+            // ahora es la fuente única: misma foto de Google, misma
+            // inicial de respaldo, en las dos pantallas. El tamaño 40 es
+            // el diámetro que tenía el `CircleAvatar` por defecto
+            // (radio 20), así que el header no cambia de altura.
             InkWell(
               onTap: () => context.go('/profile'),
               customBorder: const CircleBorder(),
-              child: CircleAvatar(
-                backgroundColor:
-                    AppColors.metabolicGreen.withValues(alpha: 0.1),
-                child: Text(
-                  initial,
-                  style: const TextStyle(
-                    color: AppColors.metabolicGreen,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
+              child: ProfileAvatar(name: user.name, size: 40),
             ),
             const SizedBox(width: 12),
             Expanded(

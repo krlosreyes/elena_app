@@ -1,4 +1,6 @@
-// 29-jul: el avatar de Perfil pasó de icono fijo a foto del proveedor.
+// 29-jul: el avatar del usuario pasó de dos implementaciones distintas
+// (un icono fijo en Perfil, una inicial calculada a mano en el header
+// del Dashboard) a un único `ProfileAvatar` con la foto del proveedor.
 //
 // Lo que se protege aquí es la CADENA DE RESPALDO, no la foto. La foto
 // es lo fácil; lo que rompe en producción es el caso sin foto (toda
@@ -14,15 +16,33 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:elena_app/src/core/widgets/elena_header.dart';
+import 'package:elena_app/src/core/widgets/profile_avatar.dart';
 import 'package:elena_app/src/features/auth/domain/app_account.dart';
-import 'package:elena_app/src/features/auth/presentation/widgets/profile_identity_card.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
+import 'package:elena_app/src/shared/domain/models/user_model.dart';
+import 'package:elena_app/src/shared/providers/user_provider.dart';
 
 AppAccount _cuenta({String? photoUrl}) => AppAccount(
       uid: 'u1',
       email: 'a@b.com',
       profileStatus: AppProfileStatus.completeProfile,
       photoUrl: photoUrl,
+    );
+
+UserModel _usuario(String nombre) => UserModel(
+      id: 'u1',
+      name: nombre,
+      age: 35,
+      gender: 'M',
+      weight: 80,
+      height: 180,
+      profile: CircadianProfile(
+        wakeUpTime: DateTime(2026, 1, 1, 6),
+        sleepTime: DateTime(2026, 1, 1, 22),
+        firstMealGoal: DateTime(2026, 1, 1, 8),
+        lastMealGoal: DateTime(2026, 1, 1, 18),
+      ),
     );
 
 Widget _montar({required String name, AppAccount? cuenta}) {
@@ -50,6 +70,7 @@ void main() {
 
     // Un nombre que empieza por emoji o por letra acentuada no debe
     // partir el grafema por la mitad — de ahí `.characters` y no [0].
+    // Esto es exactamente lo que hacía mal el header del Dashboard.
     test('no parte grafemas compuestos', () {
       expect(ProfileAvatar.initialOf('Ángela'), 'Á');
       expect(ProfileAvatar.initialOf('👍 test'), '👍');
@@ -103,6 +124,36 @@ void main() {
 
       expect(find.text('C'), findsOneWidget);
       expect(tester.takeException(), isNull);
+    });
+  });
+
+  // El header del Dashboard tenía su PROPIA copia del avatar. Este test
+  // existe para que no vuelva a divergir: si alguien reintroduce un
+  // CircleAvatar acá, la foto de Google deja de verse en el Dashboard y
+  // nadie se entera hasta que un usuario lo reporta.
+  group('ElenaHeader', () {
+    testWidgets('usa el ProfileAvatar compartido, no su propia copia',
+        (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            authStateProvider.overrideWith((ref) => Stream.value(_cuenta())),
+            currentUserStreamProvider
+                .overrideWith((ref) => Stream.value(_usuario('Carlos'))),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(
+              body: ElenaHeader(title: 'Metamorfosis Real'),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(ProfileAvatar), findsOneWidget);
+      expect(find.byType(CircleAvatar), findsNothing);
+      expect(find.text('C'), findsOneWidget);
+      expect(find.text('CARLOS'), findsOneWidget);
     });
   });
 }
