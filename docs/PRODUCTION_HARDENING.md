@@ -154,3 +154,71 @@ Antes de submission, ejecutar todos los escenarios listados en `SPEC-73 §smoke 
 8. Paleta canónica visible.
 
 Documentar resultado de cada uno antes de aprobar el release.
+
+---
+
+## 9. Cloud Functions desplegadas (GDPR Art.17)
+
+**Estado: onUserDeleted desplegada el 29-jul-2026. Pendiente verificar en
+vivo que el borrado limpia Firestore.**
+
+### Por qué esta sección existe
+
+`deleteAccount()` en el cliente borra la cuenta de Auth y **no** borra
+Firestore. La limpieza en cascada la hace `onUserDeleted` en servidor
+(ver el comentario extenso en `firebase_auth_repository.dart`, que
+explica por qué el orden anterior destruía datos ante un fallo).
+
+Ese cambio se hizo el 27-jul verificando que el código de la función
+cubría estrictamente más que el cliente. **No se verificó que estuviera
+desplegada, y no lo estaba.** Durante dos días, borrar una cuenta eliminó
+el usuario de Auth y dejó todos sus datos en Firestore.
+
+Lo peligroso es que no da ninguna señal: la app no falla, el usuario ve
+"cuenta eliminada" y se marcha convencido, y los datos se quedan. Solo se
+detecta mirando Firestore a propósito o corriendo `functions:list`.
+
+### Dependencia de facturación
+
+Desplegar Cloud Functions **exige el plan Blaze**. El proyecto estaba en
+Spark, así que hasta el 29-jul era literalmente imposible cumplir GDPR
+Art.17 en esta configuración. Es una dependencia de coste, no solo
+técnica, y no estaba documentada en ningún sitio.
+
+Con Blaze activo, conviene:
+- Alerta de presupuesto en Google Cloud.
+- Política de limpieza de Artifact Registry (`firebase functions:artifacts:setpolicy`),
+  ya configurada a 1 día el 29-jul. Sin ella las imágenes de contenedor
+  se acumulan con cada deploy.
+
+### Verificación antes de cada release
+
+`scripts/release_ios.sh` aborta si `onUserDeleted` no aparece en
+`firebase functions:list`. Se puede saltar con `SKIP_FUNCTIONS_CHECK=1`,
+pero hacerlo significa publicar una app cuyo borrado de cuenta no borra
+nada.
+
+**El check de despliegue no basta.** Desplegada no es lo mismo que
+funcionando — es la misma clase de suposición que causó el problema. La
+prueba real es de extremo a extremo:
+
+1. Crear cuenta de prueba y generar datos (ayuno, hidratación, comida).
+2. Anotar el uid y comprobar en consola que `users/{uid}` tiene
+   subcolecciones.
+3. Borrar la cuenta desde Perfil.
+4. Esperar ~30 s, recargar Firestore: `users/{uid}` debe haber
+   desaparecido por completo.
+5. Si queda algo: `firebase functions:log --only onUserDeleted`.
+
+### Datos huérfanos pendientes de limpiar
+
+Las cuentas borradas ANTES del 29-jul no dispararon la función y sus
+datos siguen en Firestore. No se limpian solos. Hay que borrar a mano sus
+`users/{uid}` — incluida CLAUDE3 y las cuentas de prueba de esa semana.
+
+### Nota sobre regiones
+
+`onUserDeleted` quedó en `us-east1` y `calculateMTIv2` en `us-central1`.
+No rompe nada (los triggers de Auth se disparan igual), pero son dos
+regiones sin motivo. A tener en cuenta si algún día se añade una función
+que las coordine.

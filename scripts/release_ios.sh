@@ -32,6 +32,53 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
+# ── Guardarraíl: onUserDeleted tiene que estar DESPLEGADA ──────────────
+#
+# 29-jul-2026. `deleteAccount()` en el cliente borra la cuenta de Auth y
+# ya NO borra Firestore: el borrado en cascada lo hace `onUserDeleted` en
+# servidor (ver el comentario largo en firebase_auth_repository.dart).
+#
+# El 27-jul se hizo ese cambio verificando que el código de la función
+# cubría estrictamente más que el cliente. Lo que NO se verificó es que
+# estuviera desplegada. No lo estaba — llevaba desde siempre sin subir, y
+# durante dos días el borrado de cuenta eliminó usuarios de Auth dejando
+# todos sus datos huérfanos en Firestore. Incumplimiento de GDPR Art.17
+# que no daba ninguna señal: la app no falla, el usuario ve "cuenta
+# eliminada", y los datos se quedan.
+#
+# Un guardarraíl que existe en el repo y no en producción no protege
+# nada. Por eso esto se comprueba antes de construir una build: no se
+# publica una app cuyo borrado de cuenta depende de una función que no
+# está arriba.
+#
+# NOTA DE COSTES: desplegar functions obliga a tener el proyecto en plan
+# Blaze. Es una dependencia de facturación, no solo técnica.
+echo "0/2  Verificando que onUserDeleted está desplegada..."
+if ! command -v firebase >/dev/null 2>&1; then
+  echo ""
+  echo "ERROR: no se encuentra el CLI de firebase, así que no se puede"
+  echo "comprobar si onUserDeleted está desplegada. Instálalo con:"
+  echo "  npm install -g firebase-tools"
+  echo ""
+  echo "Si necesitas construir igualmente y sabes lo que haces:"
+  echo "  SKIP_FUNCTIONS_CHECK=1 ./scripts/release_ios.sh"
+  [ "${SKIP_FUNCTIONS_CHECK:-0}" = "1" ] || exit 1
+elif ! firebase functions:list 2>/dev/null | grep -q "onUserDeleted"; then
+  echo ""
+  echo "════════════════════════════════════════════════════════════"
+  echo "ABORTADO — onUserDeleted NO está desplegada."
+  echo ""
+  echo "Borrar una cuenta eliminaría el usuario de Auth y dejaría TODOS"
+  echo "sus datos en Firestore. Es el gap de GDPR Art.17 del 27-jul."
+  echo ""
+  echo "Despliégala antes de construir:"
+  echo "  firebase deploy --only functions:onUserDeleted"
+  echo "════════════════════════════════════════════════════════════"
+  [ "${SKIP_FUNCTIONS_CHECK:-0}" = "1" ] || exit 1
+else
+  echo "     ✓ onUserDeleted está arriba."
+fi
+
 PUBSPEC="pubspec.yaml"
 
 CURRENT_LINE=$(grep -E '^version: ' "$PUBSPEC")
