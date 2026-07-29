@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/core/utils/error_presentation.dart';
 import 'package:elena_app/src/features/auth/application/auth_controller.dart';
+import 'package:elena_app/src/features/auth/presentation/widgets/google_sign_in_button.dart';
 import 'package:elena_app/src/features/auth/presentation/widgets/legal_footer.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
@@ -169,6 +170,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                 fontWeight: FontWeight.bold)),
                   ),
                 ),
+
+                // 29-jul: registrarse con Google. Es el MISMO botón que
+                // en login — Google no distingue "registro" de "entrada",
+                // crea la cuenta si no existe. Ponerlo también aquí evita
+                // que quien llegó a esta pantalla tenga que volver atrás
+                // para usarlo.
+                const SizedBox(height: 20),
+                const AuthDividerOr(),
+                const SizedBox(height: 16),
+                const GoogleSignInButton(),
 
                 // SPEC-77: footer legal antes de continuar.
                 const LegalFooter(actionVerb: 'registrarte'),

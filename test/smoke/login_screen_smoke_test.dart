@@ -126,6 +126,24 @@ class _StubRepo implements AuthRepository {
   Future<void> reauthenticateWithPassword(String password) async =>
       throw UnimplementedError();
 
+  // 29-jul-2026: ingreso con Google. Mismo motivo que arriba — este fake
+  // enumera los miembros de la interfaz, así que crecen juntos.
+  @override
+  Future<AppAccount?> signInWithGoogle() async => throw UnimplementedError();
+
+  @override
+  Future<AppAccount> linkPendingGoogleCredential({
+    required String pendingCredentialToken,
+    required String password,
+  }) async =>
+      throw UnimplementedError();
+
+  @override
+  List<AuthProviderKind> currentUserProviders() => const [];
+
+  @override
+  Future<bool> reauthenticateWithGoogle() async => throw UnimplementedError();
+
   @override
   Future<AppAccount> signInWithEmail({
     required String email,

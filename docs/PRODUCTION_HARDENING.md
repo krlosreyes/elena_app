@@ -159,8 +159,9 @@ Documentar resultado de cada uno antes de aprobar el release.
 
 ## 9. Cloud Functions desplegadas (GDPR Art.17)
 
-**Estado: onUserDeleted desplegada el 29-jul-2026. Pendiente verificar en
-vivo que el borrado limpia Firestore.**
+**Estado: onUserDeleted desplegada Y VERIFICADA en vivo el 29-jul-2026 —
+borrar la cuenta limpia Firestore de verdad.** `onUserCreated` desplegada
+el mismo día (fija el claim `trialExpiresAt` del trial).
 
 ### Por qué esta sección existe
 

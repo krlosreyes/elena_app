@@ -28,6 +28,13 @@ dependencies:
   firebase_app_check: ^0.4.1+5
   firebase_crashlytics: ^5.0.0 # SPEC-80: observabilidad de crashes (mobile only)
   firebase_analytics: ^12.0.0 # SPEC-193: analytics de negocio + eventos de conducta (mobile)
+  # Ingreso con Google (29-jul-2026). La 7.x rompió la API entera respecto
+  # de la 6.x: `GoogleSignIn()` ya no se construye (ahora `.instance`),
+  # `signIn()` pasó a `authenticate()`, hay que llamar `initialize()` antes
+  # de nada, y `accessToken` desapareció de GoogleSignInAuthentication —
+  # para Firebase basta el `idToken`. Cualquier ejemplo de internet
+  # anterior a la 7.0 no compila.
+  google_sign_in: ^7.2.0
 
   # Utilities
   intl: ^0.20.2

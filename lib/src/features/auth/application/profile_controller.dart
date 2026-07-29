@@ -263,6 +263,45 @@ class ProfileController extends StateNotifier<ProfileEditState> {
     }
   }
 
+  /// Cómo hay que confirmar la identidad de ESTE usuario antes de borrar
+  /// su cuenta (29-jul).
+  ///
+  /// La pantalla no debe asumir contraseña. Un usuario que entró solo con
+  /// Google no tiene ninguna, así que pedirle una lo dejaría atascado —
+  /// es decir, sin poder borrar su cuenta, que es justo el bloqueante de
+  /// App Store 5.1.1(v) que cerramos el 27-jul.
+  ///
+  /// Prioriza contraseña cuando el usuario tiene ambas: es el flujo que
+  /// ya está probado y no abre una pantalla externa.
+  AuthProviderKind? reauthMethod() {
+    final providers = ref.read(authRepositoryProvider).currentUserProviders();
+    if (providers.contains(AuthProviderKind.password)) {
+      return AuthProviderKind.password;
+    }
+    if (providers.contains(AuthProviderKind.google)) {
+      return AuthProviderKind.google;
+    }
+    // Ni contraseña ni Google: no sabemos reautenticar. La pantalla debe
+    // decirlo en vez de pedir algo que no existe.
+    return null;
+  }
+
+  /// Reautentica reabriendo el flujo de Google. `false` si cancela.
+  Future<bool> reauthenticateWithGoogle() async {
+    state = state.copyWith(isSaving: true, errorMessage: null);
+    try {
+      final ok =
+          await ref.read(authRepositoryProvider).reauthenticateWithGoogle();
+      state = state.copyWith(isSaving: false);
+      return ok;
+    } catch (e) {
+      // Mismo criterio que la vía de contraseña: un fallo al confirmar no
+      // expulsa a nadie de su sesión.
+      state = state.copyWith(isSaving: false, errorMessage: e.toString());
+      rethrow;
+    }
+  }
+
   /// Confirma la identidad con la contraseña, para que Firebase acepte
   /// el borrado inmediatamente después. Ver [deleteAccount].
   Future<void> reauthenticate(String password) async {

@@ -51,6 +51,17 @@ class AppAccount extends Equatable {
 
   final DateTime? createdAt;
 
+  /// Foto de perfil del proveedor de identidad (29-jul).
+  ///
+  /// Hoy solo la trae Google: Firebase la expone en `User.photoURL` y
+  /// hasta ahora se descartaba, así que el avatar de Perfil mostraba un
+  /// icono genérico incluso para quien entró con su cuenta de Google y
+  /// tiene foto.
+  ///
+  /// `null` para cuentas de email y contraseña, que no tienen foto. La UI
+  /// debe caer a la inicial del nombre — nunca asumir que existe.
+  final String? photoUrl;
+
   const AppAccount({
     required this.uid,
     required this.email,
@@ -58,6 +69,7 @@ class AppAccount extends Equatable {
     required this.profileStatus,
     this.rawProfile,
     this.createdAt,
+    this.photoUrl,
   });
 
   /// Conveniencia para el router: el usuario está listo para `/dashboard`.
@@ -75,6 +87,7 @@ class AppAccount extends Equatable {
     AppProfileStatus? profileStatus,
     Map<String, dynamic>? rawProfile,
     DateTime? createdAt,
+    String? photoUrl,
   }) {
     return AppAccount(
       uid: uid ?? this.uid,
@@ -83,6 +96,7 @@ class AppAccount extends Equatable {
       profileStatus: profileStatus ?? this.profileStatus,
       rawProfile: rawProfile ?? this.rawProfile,
       createdAt: createdAt ?? this.createdAt,
+      photoUrl: photoUrl ?? this.photoUrl,
     );
   }
 
@@ -94,5 +108,6 @@ class AppAccount extends Equatable {
         profileStatus,
         rawProfile,
         createdAt,
+        photoUrl,
       ];
 }

@@ -7,19 +7,6 @@
 		<string>com.metamorfosis.elena.notification-refresh</string>
 		<string>com.metamorfosis.elena.healthkit-update</string>
 	</array>
-	<!-- 20-jul: desactivado como diagnóstico del bug "scroll infinito" en
-	     Perfil — solo se reproduce en el iPhone físico (nunca en
-	     Duplicación de iPhone en el Mac) y no se resuelve forzando 60Hz
-	     por Accesibilidad. Esta clave es la que habilita CoreAnimation a
-	     rendear por encima de 60Hz (ProMotion) vía CADisplayLink, el
-	     mecanismo interno de Impeller (motor de render por default en
-	     iOS). El cap de Accesibilidad no siempre anula esto de forma
-	     confiable para apps que usan CADisplayLink directamente. Si tras
-	     este cambio el bug desaparece, confirma un problema de
-	     Impeller+ProMotion y esta clave se queda apagada (o se reporta
-	     upstream a Flutter). Si sigue igual, se puede revertir a <true/>.
-	<key>CADisableMinimumFrameDurationOnPhone</key>
-	<false/> -->
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
@@ -38,8 +25,21 @@
 	<string>$(FLUTTER_BUILD_NAME)</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.193971045461-0hvc1bbv5oberogi4pi4jm8elirpquel</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSAppTransportSecurity</key>
@@ -51,29 +51,6 @@
 	<string>ElenaApp sincroniza con Apple Health para leer tu peso, sueño y actividad física, y así calcular tu IMR sin pedirte que ingreses todo manualmente.</string>
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>ElenaApp puede registrar en Apple Health los datos que ingresas manualmente en la app, para que tu historial esté unificado.</string>
-	<!-- REL-01 (auditoría 2026-07-11): NSCameraUsageDescription y
-	     NSPhotoLibraryUsageDescription se retiraron — no hay ningún flujo
-	     de cámara/galería implementado en lib/ (sin image_picker ni camera
-	     en pubspec.yaml). Declarar permisos sin funcionalidad real detrás
-	     es un riesgo bajo Apple Guideline 5.1.1 y confunde la revisión del
-	     Privacy Nutrition Label. Si se implementa "foto de perfil" o
-	     "escanear alimentos" en un release futuro, reintroducir la(s)
-	     clave(s) correspondiente(s) en ESE momento, junto con el flujo real.
-	     AUD-05 (auditoría 2026-07-12) — REVERTIDO el mismo día: se había
-	     retirado NSHealthUpdateUsageDescription razonando por grep de
-	     HealthDataAccess.WRITE/writeData en lib/ (capa Dart). Error de
-	     método: App Store Connect valida contra los símbolos de HealthKit
-	     enlazados en el BINARIO compilado (el plugin `health` nativo
-	     referencia APIs de escritura de HKHealthStore internamente aunque
-	     la app nunca las invoque desde Dart), no contra el código fuente
-	     de la app. Validation failed (409) al subir el build 1.0.0+17:
-	     "Missing purpose string... should contain a
-	     NSHealthUpdateUsageDescription key". Se restaura la clave.
-	     A diferencia de Cámara/Galería (REL-01, sin SDK nativo de por
-	     medio), este caso NO es seguro de retirar solo con grep de Dart —
-	     cualquier permiso respaldado por un plugin nativo (HealthKit,
-	     etc.) debe verificarse con una validación real de Transporter/
-	     Xcode antes de asumir que es seguro quitarlo. -->
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -107,6 +84,8 @@
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
+	<key>UIRequiresFullScreen</key>
+	<true/>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
@@ -116,9 +95,5 @@
 		<string>UIInterfaceOrientationPortrait</string>
 		<string>UIInterfaceOrientationPortraitUpsideDown</string>
 	</array>
-	<key>UIRequiresFullScreen</key>
-	<true/>
-	<key>ITSAppUsesNonExemptEncryption</key>
-	<false/>
 </dict>
 </plist>

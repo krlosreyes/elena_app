@@ -231,6 +231,36 @@ class _FakeAuthRepository implements AuthRepository {
     lastPassword = password;
   }
 
+  // ── Google (29-jul-2026) ────────────────────────────────────────────
+  //
+  // `providersDelUsuario` es configurable porque el borrado de cuenta
+  // decide CÓMO reautenticar según el proveedor: pedirle la contraseña a
+  // quien solo entró con Google lo dejaría sin poder borrar su cuenta.
+  List<AuthProviderKind> providersDelUsuario = const [
+    AuthProviderKind.password
+  ];
+  bool reauthGoogleCalled = false;
+  bool googleReauthCancelada = false;
+
+  @override
+  List<AuthProviderKind> currentUserProviders() => providersDelUsuario;
+
+  @override
+  Future<bool> reauthenticateWithGoogle() async {
+    reauthGoogleCalled = true;
+    return !googleReauthCancelada;
+  }
+
+  @override
+  Future<AppAccount?> signInWithGoogle() async => throw UnimplementedError();
+
+  @override
+  Future<AppAccount> linkPendingGoogleCredential({
+    required String pendingCredentialToken,
+    required String password,
+  }) async =>
+      throw UnimplementedError();
+
   @override
   Future<void> deleteAccount() async {
     deleteCalled = true;

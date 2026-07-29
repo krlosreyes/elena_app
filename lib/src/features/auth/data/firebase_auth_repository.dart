@@ -18,6 +18,7 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 import 'package:elena_app/firebase_options.dart';
 import 'package:elena_app/src/features/auth/domain/app_account.dart';
@@ -213,6 +214,203 @@ class FirebaseAuthRepository implements AuthRepository {
   // (patrón offline-first, ver `feedback_offline_first_pattern.md`)
   // dejaría el método sin terminar nunca.
   @override
+  // ── Google ─────────────────────────────────────────────────────────────
+  //
+  // Notas de la API 7.x, que rompió todo lo anterior:
+  //   - `GoogleSignIn()` ya no se construye: es `GoogleSignIn.instance`.
+  //   - Hay que llamar `initialize()` UNA vez antes de nada. Se hace
+  //     perezosamente aquí (`_ensureGoogleInitialized`) en vez de en
+  //     main.dart para no meter latencia ni un fallo de red en el
+  //     arranque de una app que la mayoría de días no usa Google.
+  //   - `signIn()` pasó a `authenticate()`, y cancelar LANZA en vez de
+  //     devolver null.
+  //   - `accessToken` desapareció. Para Firebase basta el `idToken`.
+  //
+  // En iOS no se pasa `clientId`: el plugin lo lee de
+  // GoogleService-Info.plist. Pasarlo a mano sería un tercer sitio donde
+  // vive el mismo dato.
+
+  bool _googleInitialized = false;
+
+  Future<void> _ensureGoogleInitialized() async {
+    if (_googleInitialized) return;
+    await GoogleSignIn.instance.initialize();
+    _googleInitialized = true;
+  }
+
+  /// Credenciales de Google a la espera de que el usuario confirme su
+  /// contraseña para vincularlas (ver [GoogleAccountNeedsLinkingException]).
+  ///
+  /// Vive en memoria y solo dentro del repositorio: una credencial de
+  /// OAuth no tiene por qué pasar por la capa de presentación, así que a
+  /// la UI solo le viaja un token opaco con el que volver a pedirla.
+  final Map<String, AuthCredential> _pendingGoogleCredentials = {};
+
+  /// True si el usuario canceló el selector de cuentas.
+  ///
+  /// Cancelar NO es un error: no debe pintar mensaje rojo. En la 7.x la
+  /// cancelación llega como excepción, así que hay que distinguirla del
+  /// fallo real.
+  bool _isGoogleCancellation(Object e) =>
+      e is GoogleSignInException &&
+      e.code == GoogleSignInExceptionCode.canceled;
+
+  /// Abre el selector de Google y devuelve la credencial para Firebase.
+  /// `null` si el usuario cancela.
+  Future<AuthCredential?> _obtenerCredencialGoogle() async {
+    await _ensureGoogleInitialized();
+    try {
+      final cuenta = await GoogleSignIn.instance.authenticate();
+      final idToken = cuenta.authentication.idToken;
+      if (idToken == null) {
+        throw Exception(
+          'Google no devolvió la identificación de tu cuenta. Inténtalo '
+          'de nuevo en un momento.',
+        );
+      }
+      return GoogleAuthProvider.credential(idToken: idToken);
+    } catch (e) {
+      if (_isGoogleCancellation(e)) return null;
+      rethrow;
+    }
+  }
+
+  @override
+  Future<AppAccount?> signInWithGoogle() async {
+    final credencial = await _obtenerCredencialGoogle();
+    if (credencial == null) return null;
+
+    try {
+      final resultado =
+          await _auth.signInWithCredential(credencial).timeout(_kDocTimeout);
+      return _buildAccount(resultado.user!);
+    } on TimeoutException {
+      throw Exception(
+        'La conexión está tardando más de lo esperado. Verifica tu red e '
+        'inténtalo de nuevo.',
+      );
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'account-exists-with-different-credential') {
+        // Ese correo ya existe en Elena con contraseña. Guardamos la
+        // credencial y dejamos que la UI pida la contraseña para VINCULAR
+        // — crear una segunda cuenta con el mismo email partiría el
+        // historial de esa persona en dos.
+        final email = e.email;
+        final pendiente = e.credential;
+        if (email == null || pendiente == null) {
+          throw Exception(
+            'Ya existe una cuenta con ese correo, pero no pudimos '
+            'identificarla. Entra con tu contraseña.',
+          );
+        }
+        final token = 'google:$email:${DateTime.now().microsecondsSinceEpoch}';
+        _pendingGoogleCredentials[token] = pendiente;
+        throw GoogleAccountNeedsLinkingException(
+          email: email,
+          pendingCredentialToken: token,
+        );
+      }
+      if (e.code == 'operation-not-allowed') {
+        // Google no está habilitado como proveedor en Firebase Console.
+        // Mensaje explícito porque el error crudo es indescifrable y es
+        // el fallo más probable la primera vez que se despliega esto.
+        throw Exception(
+          'El ingreso con Google no está disponible ahora mismo. Entra '
+          'con tu correo y contraseña.',
+        );
+      }
+      throw _handleAuthException(e);
+    }
+  }
+
+  @override
+  Future<AppAccount> linkPendingGoogleCredential({
+    required String pendingCredentialToken,
+    required String password,
+  }) async {
+    final pendiente = _pendingGoogleCredentials[pendingCredentialToken];
+    if (pendiente == null) {
+      throw Exception(
+        'La confirmación caducó. Vuelve a tocar "Continuar con Google".',
+      );
+    }
+
+    final email = pendingCredentialToken.split(':').elementAtOrNull(1);
+    if (email == null || email.isEmpty) {
+      throw Exception('No pudimos identificar la cuenta. Inténtalo de nuevo.');
+    }
+
+    try {
+      // 1. Entrar con la contraseña: es lo que demuestra que esa cuenta
+      //    es suya. Sin este paso, cualquiera con una cuenta de Google
+      //    del mismo correo podría apropiarse de la de Elena.
+      final resultado = await _auth
+          .signInWithEmailAndPassword(email: email, password: password)
+          .timeout(_kDocTimeout);
+
+      // 2. Unir Google al MISMO usuario. A partir de aquí entra como
+      //    quiera, con un único uid.
+      await resultado.user!.linkWithCredential(pendiente).timeout(_kDocTimeout);
+
+      _pendingGoogleCredentials.remove(pendingCredentialToken);
+      return _buildAccount(_auth.currentUser!);
+    } on TimeoutException {
+      throw Exception(
+        'La conexión está tardando más de lo esperado. No se vinculó '
+        'nada; inténtalo de nuevo.',
+      );
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'provider-already-linked' ||
+          e.code == 'credential-already-in-use') {
+        // Ya estaban unidas (doble toque, o vinculado desde otro
+        // dispositivo). El objetivo está cumplido: no es un error.
+        _pendingGoogleCredentials.remove(pendingCredentialToken);
+        return _buildAccount(_auth.currentUser!);
+      }
+      throw _handleAuthException(e);
+    }
+  }
+
+  @override
+  List<AuthProviderKind> currentUserProviders() {
+    final user = _auth.currentUser;
+    if (user == null) return const [];
+    return user.providerData
+        .map((info) => AuthProviderKind.fromProviderId(info.providerId))
+        .whereType<AuthProviderKind>()
+        .toList();
+  }
+
+  @override
+  Future<bool> reauthenticateWithGoogle() async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw Exception('No hay sesión activa. Vuelve a iniciar sesión.');
+    }
+
+    final credencial = await _obtenerCredencialGoogle();
+    if (credencial == null) return false;
+
+    try {
+      await user.reauthenticateWithCredential(credencial).timeout(_kDocTimeout);
+      return true;
+    } on TimeoutException {
+      throw Exception(
+        'La confirmación está tardando más de lo esperado. Verifica tu '
+        'conexión e inténtalo de nuevo.',
+      );
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'user-mismatch') {
+        throw Exception(
+          'Esa cuenta de Google no es la de esta sesión. Elige la misma '
+          'con la que entraste.',
+        );
+      }
+      throw _handleAuthException(e);
+    }
+  }
+
+  @override
   Future<void> reauthenticateWithPassword(String password) async {
     final user = _auth.currentUser;
     if (user == null) {
@@ -371,6 +569,11 @@ class FirebaseAuthRepository implements AuthRepository {
       profileStatus: status,
       rawProfile: rawProfile,
       createdAt: createdAt,
+      // 29-jul: la foto la pone el proveedor (hoy solo Google) y Firebase
+      // la expone aquí. Se prefiere la de Auth sobre la del doc porque
+      // es la que el usuario acaba de ver al elegir su cuenta; el doc de
+      // Firestore es el respaldo para cuentas MR que ya traían `photoUrl`.
+      photoUrl: firebaseUser.photoURL ?? (rawProfile?['photoUrl'] as String?),
     );
   }
 

@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/auth/application/profile_controller.dart';
 import 'package:elena_app/src/features/auth/domain/auth_repository.dart'
-    show ReauthRequiredException;
+    show AuthProviderKind, ReauthRequiredException;
 import 'package:elena_app/src/core/utils/error_presentation.dart';
 
 /// SPEC-116: logout y delete account pasan a text buttons sutiles
@@ -153,10 +153,36 @@ class ProfileDangerZoneActions extends ConsumerWidget {
             // remedio era un mensaje diciéndole que cerrara sesión y
             // volviera a entrar — flojo para App Store 5.1.1(v), que
             // exige que borrar la cuenta sea sencillo.
-            final password = await _pedirPassword(navigator, e.email);
-            if (password == null) return; // canceló: no se borra nada
+            //
+            // 29-jul: la vía depende del proveedor. Pedirle la contraseña
+            // a quien entró solo con Google lo dejaría ante un campo que
+            // no puede rellenar — o sea, sin poder borrar su cuenta, que
+            // es exactamente el bloqueante que este código vino a cerrar.
             try {
-              await controller.reauthenticate(password);
+              switch (controller.reauthMethod()) {
+                case AuthProviderKind.password:
+                  final password = await _pedirPassword(navigator, e.email);
+                  if (password == null) return; // canceló: no se borra nada
+                  await controller.reauthenticate(password);
+
+                case AuthProviderKind.google:
+                  // Reabre el selector de Google. Cancelar ahí tampoco
+                  // borra nada.
+                  final ok = await controller.reauthenticateWithGoogle();
+                  if (!ok) return;
+
+                case null:
+                  // Ni contraseña ni Google. No inventamos un diálogo que
+                  // no lleva a ninguna parte: se dice qué hacer.
+                  avisarError(
+                    Exception(
+                      'Para borrar tu cuenta necesitamos confirmar tu '
+                      'identidad. Cierra sesión, vuelve a entrar y '
+                      'reinténtalo.',
+                    ),
+                  );
+                  return;
+              }
               await controller.deleteAccount();
               avisarExito();
             } catch (e2) {

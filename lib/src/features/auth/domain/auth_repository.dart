@@ -32,6 +32,65 @@ class ReauthRequiredException implements Exception {
       'continuar. Tus datos siguen intactos.';
 }
 
+/// Proveedores de identidad que Elena soporta.
+///
+/// Existe para que la UI no tenga que comparar los literales de Firebase
+/// (`'password'`, `'google.com'`). Importa sobre todo en el borrado de
+/// cuenta: la reautenticación es distinta según con qué entró el usuario,
+/// y pedirle una contraseña a alguien que solo usó Google lo dejaría sin
+/// poder borrar su cuenta.
+enum AuthProviderKind {
+  password,
+  google;
+
+  /// Traduce el `providerId` de Firebase. Devuelve `null` para
+  /// proveedores que Elena no ofrece (Apple, Facebook…): quien reciba
+  /// `null` debe tratarlo como "no sé reautenticar esto" y no asumir
+  /// contraseña.
+  static AuthProviderKind? fromProviderId(String providerId) =>
+      switch (providerId) {
+        'password' => AuthProviderKind.password,
+        'google.com' => AuthProviderKind.google,
+        _ => null,
+      };
+}
+
+/// El email de la cuenta de Google ya existe en Elena registrado con
+/// contraseña.
+///
+/// Firebase lo señala como `account-exists-with-different-credential`. Es
+/// el caso más común y confuso del login social: la persona se registró
+/// con `alguien@gmail.com` y contraseña hace meses, hoy pulsa "Continuar
+/// con Google" y —sin este manejo— recibe un error críptico que la deja
+/// fuera de su propia cuenta.
+///
+/// Se lanza tipada para que la pantalla pueda ofrecer lo único que
+/// resuelve de verdad: pedir la contraseña una vez y VINCULAR ambos
+/// métodos al mismo usuario. Crear una segunda cuenta con el mismo correo
+/// no es opción — partiría su historial en dos.
+class GoogleAccountNeedsLinkingException implements Exception {
+  const GoogleAccountNeedsLinkingException({
+    required this.email,
+    required this.pendingCredentialToken,
+  });
+
+  /// Email en conflicto. Se muestra para que entienda de qué cuenta se
+  /// habla.
+  final String email;
+
+  /// Identificador opaco de la credencial de Google pendiente, guardada
+  /// en el repositorio a la espera de la contraseña.
+  ///
+  /// No viaja la credencial en sí: es material sensible y no tiene por
+  /// qué pasar por la capa de presentación.
+  final String pendingCredentialToken;
+
+  @override
+  String toString() =>
+      'Ya tienes una cuenta con este correo. Confirma tu contraseña una '
+      'vez y dejamos las dos formas de entrar unidas.';
+}
+
 abstract class AuthRepository {
   /// Stream del estado de autenticación.
   ///
@@ -99,11 +158,60 @@ abstract class AuthRepository {
   /// exigiría rehacer todo ese flujo y queda fuera de alcance.
   Future<void> reauthenticateWithPassword(String password);
 
+  // ── Google ────────────────────────────────────────────────────────────
+
+  /// Entra (o registra) con Google.
+  ///
+  /// Devuelve `null` si la persona cierra el selector de cuentas sin
+  /// elegir ninguna. Cancelar no es un error: no debe pintar mensaje
+  /// rojo ni registrarse como fallo.
+  ///
+  /// Lanza [GoogleAccountNeedsLinkingException] si el email de esa cuenta
+  /// de Google ya existe en Elena registrado con contraseña. La UI debe
+  /// pedir la contraseña y llamar a [linkPendingGoogleCredential].
+  Future<AppAccount?> signInWithGoogle();
+
+  /// Cierra la vinculación pendiente que dejó
+  /// [GoogleAccountNeedsLinkingException]: comprueba la contraseña y une
+  /// Google al MISMO usuario.
+  ///
+  /// A partir de aquí la persona puede entrar de las dos formas, con un
+  /// único uid y un único historial. Es la razón de ser de todo el
+  /// mecanismo: sin esto tendríamos dos cuentas con el mismo correo y los
+  /// datos partidos.
+  ///
+  /// [pendingCredentialToken] es el que viajó en la excepción.
+  Future<AppAccount> linkPendingGoogleCredential({
+    required String pendingCredentialToken,
+    required String password,
+  });
+
+  /// Con qué proveedores puede entrar el usuario actual.
+  ///
+  /// Vacío si no hay sesión. Un usuario vinculado devuelve los dos.
+  ///
+  /// Lo consume el borrado de cuenta para decidir CÓMO reautenticar —
+  /// ver [reauthenticateWithGoogle].
+  List<AuthProviderKind> currentUserProviders();
+
+  /// Reautentica al usuario actual reabriendo el flujo de Google.
+  ///
+  /// Existe porque [reauthenticateWithPassword] no sirve para quien entró
+  /// solo con Google: no tiene contraseña que confirmar. Sin esta vía,
+  /// un usuario de Google que topa con `requires-recent-login` al borrar
+  /// su cuenta se quedaría ante un diálogo pidiéndole algo que no existe
+  /// — es decir, sin poder borrar su cuenta, que es justo el bloqueante
+  /// de App Store 5.1.1(v).
+  ///
+  /// Devuelve `false` si cancela el selector. No lanza en ese caso.
+  Future<bool> reauthenticateWithGoogle();
+
   /// Elimina la cuenta de Firebase Auth.
   ///
   /// Lanza [ReauthRequiredException] si Firebase pide sesión reciente.
-  /// En ese caso NO se ha borrado nada: la UI debe pedir la contraseña,
-  /// llamar a [reauthenticateWithPassword] y reintentar.
+  /// En ese caso NO se ha borrado nada: la UI debe reautenticar por la
+  /// vía que corresponda al proveedor ([currentUserProviders]) y
+  /// reintentar.
   Future<void> deleteAccount();
 
   /// FIRE-01 (auditoría técnica 21-jul): lee el custom claim

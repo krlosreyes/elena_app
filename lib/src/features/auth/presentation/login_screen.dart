@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/core/utils/error_presentation.dart';
 import 'package:elena_app/src/features/auth/application/auth_controller.dart';
+import 'package:elena_app/src/features/auth/presentation/widgets/google_sign_in_button.dart';
 import 'package:elena_app/src/features/auth/presentation/widgets/legal_footer.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -168,6 +169,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   color: Colors.white)),
                     ),
                   ),
+                  const SizedBox(height: 20),
+
+                  // 29-jul: ingreso con Google. Va DESPUÉS del formulario
+                  // de email a propósito — el sistema propio sigue siendo
+                  // el camino principal, y eso es además lo que hace que
+                  // no nos aplique la obligación de Sign in with Apple
+                  // (App Store 4.8 se activa solo si el login social es
+                  // EXCLUSIVO).
+                  const AuthDividerOr(),
+                  const SizedBox(height: 16),
+                  const GoogleSignInButton(),
                   const SizedBox(height: 24),
 
                   // Registro
