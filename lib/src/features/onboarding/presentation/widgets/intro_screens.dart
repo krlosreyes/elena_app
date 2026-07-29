@@ -6,11 +6,24 @@
 //   100 — IntroWelcomeStep    (Identidad: Unidad + Autoridad)
 //   105 — IntroProtocolStep   (Compromiso y coherencia) ← NUEVA
 //   101 — IntroInsightStep    (Reciprocidad + Autoridad) ← sustituye IntroImrStep
+//   103 — IntroMetabolicDayStep (qué es tu día metabólico) ← RESTAURADA 28-jul
 //   104 — IntroNotificationsStep (por qué avisar + activar) ← rediseñada
 //
 // Pantallas eliminadas:
 //   102 — IntroDataStep       → privacidad absorbida en header de Biometría (onboarding_screen)
-//   103 — IntroMetabolicDayStep → movida a coaching card post-Day-1 (SPEC-249, deferred)
+//
+// Sobre la 103 (28-jul-2026): se había retirado con la nota "movida a
+// coaching card post-Day-1 (SPEC-249, deferred)". Ese spec nunca existió
+// —no hay archivo en specs/ ni una sola referencia en lib/ más allá de
+// las dos notas que lo prometían— así que la explicación se quitó y el
+// reemplazo no llegó nunca. Mientras tanto "Día Metabólico" siguió
+// apareciendo en 10 pantallas en mayúsculas, como si el usuario ya
+// supiera qué es.
+//
+// Vuelve, pero con el texto viniendo de `metabolic_day_copy.dart` en vez
+// de escrito aquí: ahora la misma definición sirve al onboarding y a la
+// hoja explicativa, y los cierres automáticos se derivan de las
+// constantes del resolver.
 //
 // Reglas de copy:
 //   - Español neutro LatAm. CERO voseo (no vos/acá/tenés/empezás/cumplís).
@@ -23,6 +36,9 @@ import 'package:elena_app/src/core/theme/app_theme.dart';
 // ver la nota en `IntroInsightStep._timelineFor`.
 import 'package:elena_app/src/features/fasting/domain/fasting_status.dart'
     show FastingPhase;
+// Fuente única del copy del Día Metabólico — compartida con la hoja
+// explicativa. Ver la nota de cabecera sobre el paso 103.
+import 'package:elena_app/src/features/metabolic_cycle/domain/metabolic_day_copy.dart';
 
 // ── PASO 100 — Identidad ─────────────────────────────────────────────
 // Principios: Unidad + Autoridad
@@ -498,6 +514,196 @@ class IntroInsightStep extends StatelessWidget {
 // inventar nada: sin avisos, la app depende de que el usuario se acuerde.
 // Si algún día hay volumen real para medir la diferencia, se puede
 // volver a poner un número — CON su fuente y su fecha.
+
+// ── PASO 103 — Qué es tu Día Metabólico ──────────────────────────────
+//
+// Va DESPUÉS de elegir protocolo (105) y del insight (101), y antes de
+// notificaciones (104). El orden importa: la definición habla de "tu
+// ayuno", así que solo tiene sentido cuando el usuario ya eligió uno.
+//
+// Todo el texto viene de `metabolic_day_copy.dart`. Este paso solo lo
+// pinta — la misma definición se muestra luego en la hoja explicativa
+// accesible desde el Dashboard, y dos redacciones distintas de la misma
+// regla es como empiezan las incoherencias.
+
+class IntroMetabolicDayStep extends StatelessWidget {
+  final bool isDark;
+
+  /// Protocolo elegido en el paso 105. Decide si se muestra la nota del
+  /// modo calendárico — con 'Ninguno' el ciclo SÍ va con el reloj y
+  /// cierra a medianoche, que es lo contrario de lo que dice la
+  /// definición principal. Callarlo dejaría a esa persona sin entender
+  /// lo que ve.
+  final String protocol;
+
+  const IntroMetabolicDayStep({
+    super.key,
+    required this.isDark,
+    this.protocol = '16:8',
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final textPrimary =
+        isDark ? AppColors.textPrimary : const Color(0xFF1E293B);
+    final textSecondary =
+        isDark ? AppColors.textSecondary : const Color(0xFF475569);
+    final esCalendario = usaDiaCalendario(protocol);
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
+      children: [
+        Center(
+          child: Container(
+            width: 96,
+            height: 96,
+            decoration: BoxDecoration(
+              color: AppColors.metabolicGreen.withValues(alpha: 0.14),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.autorenew_rounded,
+              color: AppColors.metabolicGreen,
+              size: 48,
+            ),
+          ),
+        ),
+        const SizedBox(height: 28),
+        Text(
+          'Tu día no empieza a medianoche',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: textPrimary,
+            fontSize: 22,
+            fontWeight: FontWeight.w700,
+            height: 1.25,
+          ),
+        ),
+        const SizedBox(height: 20),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.metabolicGreen.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: AppColors.metabolicGreen.withValues(alpha: 0.22),
+            ),
+          ),
+          child: Text(
+            kMetabolicDayCoreDefinition,
+            style: TextStyle(
+              color: textPrimary,
+              fontSize: 15,
+              height: 1.5,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          kMetabolicDayRationale,
+          style: TextStyle(
+            color: textSecondary,
+            fontSize: 14,
+            height: 1.55,
+          ),
+        ),
+        const SizedBox(height: 24),
+        _MetabolicDayRow(
+          icon: Icons.play_circle_outline_rounded,
+          title: kMetabolicDayStartTitle,
+          body: kMetabolicDayStartBody,
+          textPrimary: textPrimary,
+          textSecondary: textSecondary,
+        ),
+        const SizedBox(height: 10),
+        _MetabolicDayRow(
+          icon: Icons.flag_outlined,
+          title: kMetabolicDayEndTitle,
+          body: kMetabolicDayEndBody,
+          textPrimary: textPrimary,
+          textSecondary: textSecondary,
+        ),
+        const SizedBox(height: 10),
+        _MetabolicDayRow(
+          icon: Icons.shield_outlined,
+          title: kMetabolicDayAutoCloseTitle,
+          body: kMetabolicDayAutoCloseBody,
+          textPrimary: textPrimary,
+          textSecondary: textSecondary,
+        ),
+        if (esCalendario) ...[
+          const SizedBox(height: 10),
+          _MetabolicDayRow(
+            icon: Icons.calendar_today_rounded,
+            title: kMetabolicDayCalendarTitle,
+            body: kMetabolicDayCalendarBody,
+            textPrimary: textPrimary,
+            textSecondary: textSecondary,
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _MetabolicDayRow extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String body;
+  final Color textPrimary;
+  final Color textSecondary;
+
+  const _MetabolicDayRow({
+    required this.icon,
+    required this.title,
+    required this.body,
+    required this.textPrimary,
+    required this.textSecondary,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.metabolicGreen.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: AppColors.metabolicGreen, size: 18),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: textPrimary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  body,
+                  style: TextStyle(
+                    color: textSecondary,
+                    fontSize: 13,
+                    height: 1.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class IntroNotificationsStep extends StatelessWidget {
   final bool isDark;

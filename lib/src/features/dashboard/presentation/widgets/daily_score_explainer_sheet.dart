@@ -16,6 +16,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:elena_app/src/core/theme/app_theme.dart';
+import 'package:elena_app/src/features/metabolic_cycle/presentation/widgets/metabolic_day_explainer_sheet.dart';
 
 void showDailyScoreExplainerSheet(BuildContext context) {
   showModalBottomSheet<void>(
@@ -136,14 +137,54 @@ class _DailyScoreExplainerSheet extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
+            // 28-jul: esto decía "Fuentes: IMR_BIBLIOGRAPHY §6 (Score del
+            // Día) + §13 (Día Metabólico)". Le estábamos mostrando al
+            // usuario números de sección de un documento interno que no
+            // puede abrir. La afirmación (que los pesos vienen de
+            // literatura) es cierta y se queda; la referencia de archivo
+            // sobra.
             Text(
               'Los pesos del HOY se basan en literatura científica sobre el '
-              'impacto metabólico de cada hábito. Fuentes: IMR_BIBLIOGRAPHY '
-              '§6 (Score del Día) + §13 (Día Metabólico).',
+              'impacto metabólico de cada hábito.',
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.45),
                 fontSize: 11,
                 height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 14),
+            // El score se calcula por día metabólico, no por día de
+            // calendario. Sin esta entrada, el usuario que ve su score
+            // "reiniciarse" a una hora rara no tiene dónde entenderlo.
+            InkWell(
+              onTap: () {
+                Navigator.of(context).pop();
+                showMetabolicDayExplainerSheet(context);
+              },
+              borderRadius: BorderRadius.circular(10),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Row(
+                  children: [
+                    Icon(Icons.autorenew_rounded,
+                        size: 15,
+                        color: AppColors.metabolicGreen.withValues(alpha: 0.9)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '¿Qué es tu Día Metabólico?',
+                        style: TextStyle(
+                          color:
+                              AppColors.metabolicGreen.withValues(alpha: 0.9),
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    Icon(Icons.chevron_right_rounded,
+                        size: 18, color: Colors.white.withValues(alpha: 0.35)),
+                  ],
+                ),
               ),
             ),
           ],

@@ -81,7 +81,7 @@ class NewCycleMealsWarningDialog extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Tenés $mealsLabel en tu Día Metabólico actual',
+                    'Tienes $mealsLabel en tu Día Metabólico actual',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 13,
@@ -94,7 +94,7 @@ class NewCycleMealsWarningDialog extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           const Text(
-            'Al iniciar el ayuno arrancás un nuevo Día Metabólico. Esas '
+            'Al iniciar el ayuno arrancas un nuevo Día Metabólico. Esas '
             'comidas van a quedar fuera de la vista de "Hoy" — se '
             'conservan en tu historial, no se borran.',
             style: TextStyle(

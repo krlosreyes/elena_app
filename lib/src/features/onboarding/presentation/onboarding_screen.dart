@@ -218,13 +218,23 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   //   101 — Insight personalizado (Reciprocidad) ← sustituye "Tus dos números"
   //   104 — Notificaciones (después de Hábitos, sin cambio de posición)
   // Eliminados: 102 ("Tus datos son tuyos") → privacidad en header Biometría.
-  //             103 ("Día Metabólico") → coaching card post-Day-1 (SPEC-249).
+  //
+  // 103 ("Día Metabólico") RESTAURADO el 28-jul-2026. Se había quitado
+  // apuntando a "coaching card post-Day-1 (SPEC-249)", pero ese spec
+  // nunca existió: no hay archivo en specs/ ni implementación en lib/.
+  // La explicación se retiró y el reemplazo no llegó, mientras el término
+  // seguía saliendo en 10 pantallas sin definir.
+  //
+  // Va después de 101 y antes de 104: la definición habla de "tu ayuno",
+  // así que necesita que el protocolo ya esté elegido en 105.
   static const int _kIntroProtocolStepId = 105;
+  static const int _kIntroMetabolicDayId = 103;
   static const int _kIntroNotificationsId = 104;
   static const List<int> _kIntroStepIds = [
     100,
     _kIntroProtocolStepId,
     101,
+    _kIntroMetabolicDayId,
   ];
 
   // SPEC-132 Bloque E: id del paso "Conectar Apple Health / Health
@@ -695,6 +705,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         case 101:
           // Reciprocidad: insight científico personalizado al protocolo elegido.
           return IntroInsightStep(
+            isDark: isDark,
+            protocol: _fastingProtocol,
+          );
+        case _kIntroMetabolicDayId: // 103
+          // Qué es el Día Metabólico. Recibe el protocolo porque con
+          // 'Ninguno' el ciclo SÍ es calendárico y hay que decirlo — es
+          // el caso de quien no eligió ayuno y también el de quien lo
+          // tiene bloqueado por el cribado médico.
+          return IntroMetabolicDayStep(
             isDark: isDark,
             protocol: _fastingProtocol,
           );
