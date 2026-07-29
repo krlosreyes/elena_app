@@ -22,7 +22,9 @@ import 'package:elena_app/src/core/services/firestore_errors.dart';
 import 'package:elena_app/src/features/goals/application/goal_notifier.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart'
     show currentMetabolicCycleProvider;
+import 'package:elena_app/src/features/streak/data/rest_day_policy_repository.dart';
 import 'package:elena_app/src/features/streak/domain/fasting_schedule.dart';
+import 'package:elena_app/src/features/streak/domain/rest_day_policy.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -67,6 +69,25 @@ class StreakState {
   /// por una reserva — para mostrar un indicador sutil en la UI.
   final bool streakHasProtectedDay;
 
+  /// Días de descanso planificado dentro de la racha actual (28-jul).
+  ///
+  /// Deliberadamente separado de [streakHasProtectedDay]: un día
+  /// perdonado y un día descansado no son lo mismo y la UI no debe
+  /// contarlos igual. "Se te pasó y te cubrimos" vs "lo planificaste y lo
+  /// cumpliste" — mezclarlos convertiría el descanso en algo de lo que
+  /// disculparse.
+  final int streakRestDays;
+
+  /// La política de descanso vigente. `RestDayPolicy.disabled` mientras
+  /// el usuario no configure nada: la funcionalidad es opt-in y no
+  /// aparece sola.
+  final RestDayPolicy restPolicy;
+
+  /// Fecha ('yyyy-MM-dd') del próximo descanso planificado, o `null` si
+  /// no hay ninguno configurado. Se expone desde el estado para que la
+  /// UI no tenga que recalcular semanas por su cuenta.
+  final String? nextRestDate;
+
   /// "Racha de Calidad" (25-jul-2026, diferenciador de mercado): días
   /// consecutivos con composición real de plato ≥60% (Cociente A), no
   /// solo "registró algo". Ver `StreakEngine.computeNutritionQualityStreak`
@@ -91,7 +112,13 @@ class StreakState {
     this.freezesAvailable = 0,
     this.streakHasProtectedDay = false,
     this.nutritionQualityStreak = 0,
+    this.streakRestDays = 0,
+    this.restPolicy = RestDayPolicy.disabled,
+    this.nextRestDate,
   });
+
+  /// True si HOY es el día de descanso planificado del usuario.
+  bool isRestDayToday(String todayKey) => restPolicy.isRestDay(todayKey);
 
   StreakState copyWith({
     int? currentStreak,
@@ -104,6 +131,10 @@ class StreakState {
     int? freezesAvailable,
     bool? streakHasProtectedDay,
     int? nutritionQualityStreak,
+    int? streakRestDays,
+    RestDayPolicy? restPolicy,
+    String? nextRestDate,
+    bool clearNextRestDate = false,
   }) =>
       StreakState(
         currentStreak: currentStreak ?? this.currentStreak,
@@ -118,6 +149,10 @@ class StreakState {
             streakHasProtectedDay ?? this.streakHasProtectedDay,
         nutritionQualityStreak:
             nutritionQualityStreak ?? this.nutritionQualityStreak,
+        streakRestDays: streakRestDays ?? this.streakRestDays,
+        restPolicy: restPolicy ?? this.restPolicy,
+        nextRestDate:
+            clearNextRestDate ? null : (nextRestDate ?? this.nextRestDate),
       );
 }
 
@@ -214,6 +249,30 @@ class StreakNotifier extends StateNotifier<StreakState> {
       _ref.read(currentMetabolicCycleProvider).valueOrNull?.startedAt ??
       DateTime.now();
 
+  /// Política de descanso vigente (28-jul). `disabled` mientras el
+  /// documento no exista o el stream aún no haya emitido: el descanso es
+  /// opt-in y su ausencia debe comportarse EXACTAMENTE como antes de que
+  /// existiera esta funcionalidad — ni un día perdonado de más.
+  RestDayPolicy get _restPolicy =>
+      _ref.read(restDayPolicyProvider).valueOrNull ?? RestDayPolicy.disabled;
+
+  /// Próximo descanso planificado a partir de hoy, mirando esta semana y
+  /// la siguiente.
+  ///
+  /// Dos semanas bastan y no es arbitrario: con un descanso por semana,
+  /// si el de esta semana ya pasó, el siguiente está necesariamente en la
+  /// que viene.
+  String? _nextRestDateFrom(RestDayPolicy policy) {
+    if (!policy.isEnabled) return null;
+    final anchor = _todayAnchor;
+    final todayKey = DayBoundaryResolver.dayKeyIso(anchor);
+
+    final thisWeek = policy.restDateForWeekOf(anchor);
+    if (thisWeek != null && thisWeek.compareTo(todayKey) >= 0) return thisWeek;
+
+    return policy.restDateForWeekOf(anchor.add(const Duration(days: 7)));
+  }
+
   StreakNotifier(this._ref) : super(const StreakState()) {
     _init();
   }
@@ -255,6 +314,18 @@ class StreakNotifier extends StateNotifier<StreakState> {
     _ref.listen(hydrationProvider, (_, __) => _evaluateToday());
     _ref.listen(exerciseProvider, (_, __) => _evaluateToday());
     _ref.listen(nutritionProvider, (_, __) => _evaluateToday());
+
+    // 28-jul: la política de descanso cambia la racha VISIBLE sin que
+    // cambie ningún pilar — al elegir día fijo o mover el descanso de
+    // esta semana. Sin este listener el número no se actualizaría hasta
+    // el siguiente registro de un pilar, y el usuario vería su elección
+    // "no hacer nada" durante horas.
+    //
+    // Se recalcula sobre el historial ya cargado (`state.history`) en vez
+    // de refetchear: la política no cambia los datos, solo cómo se leen.
+    _ref.listen(restDayPolicyProvider, (_, __) {
+      if (state.history.isNotEmpty) _rebuildState(state.history);
+    });
   }
 
   // ── Stream de historial Firestore ───────────────────────────────────────────
@@ -662,9 +733,16 @@ class StreakNotifier extends StateNotifier<StreakState> {
     // SPEC-255 RF-02: racha "protegida" (con reservas) — SOLO para el
     // número que ve el usuario. computeAdherenceTrend (IMR longitudinal)
     // sigue usando computeCurrentStreak sin protección, sin cambios aquí.
+    //
+    // 28-jul: entra también `restPolicy`. El descanso planificado NO se
+    // mezcla con las reservas — va antes en el orden de ramas del motor,
+    // porque descansar no debe gastar el colchón que existe para los
+    // olvidos (ver `_forwardPassProtection`).
+    final restPolicy = _restPolicy;
     final freezeState = StreakEngine.computeCurrentStreakWithFreezes(
       history,
       asOf: _todayAnchor,
+      restPolicy: restPolicy,
     );
     final prevStreak = state.currentStreak;
     final prevProtected = state.streakHasProtectedDay;
@@ -687,6 +765,10 @@ class StreakNotifier extends StateNotifier<StreakState> {
       weeklyQualityScore: newQualityScore,
       freezesAvailable: freezeState.freezesAvailable,
       streakHasProtectedDay: freezeState.currentStreakHasProtectedDay,
+      streakRestDays: freezeState.currentStreakRestDays,
+      restPolicy: restPolicy,
+      nextRestDate: _nextRestDateFrom(restPolicy),
+      clearNextRestDate: !restPolicy.isEnabled,
       nutritionQualityStreak: nutritionQualityStreak,
     );
 
@@ -734,9 +816,28 @@ class StreakNotifier extends StateNotifier<StreakState> {
       // fuente que ya usa computeCurrentStreakWithFreezes, ver §
       // findBreakingEntry) y StreakEntry.missReason (única fuente del
       // "por qué", compartida con el widget de HOY y el bar chart).
-      final protectedDates = StreakEngine.computeProtectedDates(state.history);
-      final breakingEntry =
-          StreakEngine.findBreakingEntry(state.history, protectedDates);
+      //
+      // 28-jul: se pasan también los descansos planificados. Culpar de la
+      // ruptura a un día que el usuario declaró y cumplió sería acusarlo
+      // de haber seguido su propio plan — y ese texto es justo el que
+      // aparece en el momento más sensible, cuando acaba de perder la
+      // racha.
+      final restPolicy = _restPolicy;
+      final protectedDates = StreakEngine.computeProtectedDates(
+        state.history,
+        restPolicy: restPolicy,
+      );
+      final restDates = restPolicy.isEnabled
+          ? StreakEngine.computeRestDates(
+              state.history,
+              restPolicy: restPolicy,
+            )
+          : const <String>{};
+      final breakingEntry = StreakEngine.findBreakingEntry(
+        state.history,
+        protectedDates,
+        restDates: restDates,
+      );
       _ref.read(celebrationEventProvider.notifier).state = CelebrationEvent(
         type: CelebrationType.streakBroken,
         pillarsCompleted: 0,
@@ -894,13 +995,33 @@ final streakProvider =
 /// cierre única porque el Día Metabólico se ancla al usuario, no al reloj
 /// (METABOLIC_DAY_CONSTITUTION §9). 18:00 da margen razonable para
 /// actuar sin sentirse prematuro.
-final streakAtRiskProvider = Provider<bool>((ref) {
-  final streak = ref.watch(streakProvider);
+/// 28-jul: tampoco se avisa si HOY es el descanso planificado. Meter
+/// prisa a alguien el día que él mismo declaró para descansar es la
+/// versión más clara de lo que este trabajo viene a arreglar — sería
+/// tratar su plan como un fallo.
+///
+/// La regla vive en [shouldWarnStreakAtRisk] (función pura) y no dentro
+/// del provider a propósito: el provider depende de `streakProvider`, que
+/// arrastra Firestore y los 5 pilares, y de `DateTime.now()`. Con la
+/// regla dentro, un test tendría que reimplementarla para probarla — es
+/// decir, fotografiaría el comportamiento en vez de exigirlo, y seguiría
+/// pasando en verde si alguien rompiera el provider. Extraída, el test y
+/// la app ejecutan literalmente el mismo código.
+bool shouldWarnStreakAtRisk(StreakState streak, {required int hour}) {
   final todayQualifies = streak.todayEntry?.qualifiesForStreak ?? false;
   if (todayQualifies) return false;
   if (streak.currentStreak <= 0) return false;
   if (streak.freezesAvailable > 0) return false;
-  return DateTime.now().hour >= 18;
+  final todayKey = streak.todayEntry?.date;
+  if (todayKey != null && streak.restPolicy.isRestDay(todayKey)) return false;
+  return hour >= 18;
+}
+
+final streakAtRiskProvider = Provider<bool>((ref) {
+  return shouldWarnStreakAtRisk(
+    ref.watch(streakProvider),
+    hour: DateTime.now().hour,
+  );
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -955,6 +1076,15 @@ final streakRiskLevelProvider = Provider<StreakRiskLevel>((ref) {
   final fastingInProgress =
       ref.watch(fastingProvider.select((s) => s.isActive));
   if (fastingInProgress) return StreakRiskLevel.onTrack;
+
+  // 28-jul: el día de descanso planificado no es riesgo. Va DESPUÉS de
+  // `todayQualifies` a propósito: si el usuario descansaba pero aun así
+  // completó sus pilares, se lleva el verde por mérito propio, no por
+  // estar descansando.
+  final todayKey = streak.todayEntry?.date;
+  if (todayKey != null && streak.restPolicy.isRestDay(todayKey)) {
+    return StreakRiskLevel.onTrack;
+  }
 
   final noSafetyNet = streak.freezesAvailable <= 0;
   final pastThreshold = DateTime.now().hour >= 18;

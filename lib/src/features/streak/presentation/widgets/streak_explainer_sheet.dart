@@ -116,6 +116,21 @@ class _StreakExplainerSheet extends StatelessWidget {
                   'perdona automáticamente y tu racha sigue. Es gratis '
                   'para todos — no depende de tu plan.',
             ),
+            const SizedBox(height: 10),
+            // 28-jul: el descanso planificado se explica JUNTO a las
+            // reservas y no en otra pantalla, porque la diferencia entre
+            // los dos es justo lo que hay que entender. Si el usuario no
+            // ve que son mecanismos distintos, va a creer que descansar
+            // le cuesta algo — que es exactamente lo que pasaba antes.
+            _RuleCard(
+              accent: const Color(0xFFF59E0B),
+              icon: Icons.nightlight_round,
+              title: 'Y descansar no gasta reserva',
+              body: 'Puedes elegir un día fijo a la semana para descansar. '
+                  'Ese día solo se te pide dormir y beber agua, y tu racha '
+                  'sigue intacta sin tocar tus reservas. Se elige por '
+                  'adelantado: es un plan, no un comodín de última hora.',
+            ),
             const SizedBox(height: 20),
             Container(
               padding: const EdgeInsets.all(14),
