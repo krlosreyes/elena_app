@@ -2,7 +2,8 @@
 // FastingState. Verifican el contrato mínimo:
 //   - default es `none`
 //   - copyWith preserva o actualiza el source
-//   - los 3 valores del enum están definidos
+//   - los 4 valores del enum están definidos (SPEC-260 añadió
+//     ongoingRegistration)
 //
 // La cobertura del comportamiento end-to-end (bootstrap NO crea ciclo,
 // userInitiated SÍ crea ciclo) se valida manualmente en iPhone/Chrome
@@ -14,14 +15,17 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('SPEC-183 — FastingActivationSource', () {
-    test('los 3 valores del enum están definidos', () {
-      expect(FastingActivationSource.values.length, 3);
+    test('los 4 valores del enum están definidos', () {
+      expect(FastingActivationSource.values.length, 4);
       expect(FastingActivationSource.values,
           contains(FastingActivationSource.none));
       expect(FastingActivationSource.values,
           contains(FastingActivationSource.bootstrap));
       expect(FastingActivationSource.values,
           contains(FastingActivationSource.userInitiated));
+      // SPEC-260: registrar un ayuno ya en curso sin resetear pilares.
+      expect(FastingActivationSource.values,
+          contains(FastingActivationSource.ongoingRegistration));
     });
 
     test('FastingState inicial: activationSource es none', () {
