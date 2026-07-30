@@ -418,6 +418,37 @@ class FastingConsciousnessCard extends ConsumerWidget {
               ),
             ),
           ],
+          // SPEC-260 (2026-07-30): registro de ayuno olvidado. Cuando NO
+          // hay ayuno activo, el usuario que empezó a ayunar pero olvidó
+          // registrarlo puede darlo de alta con su hora real de inicio.
+          // A diferencia de "Iniciar Ayuno" (día nuevo, resetea pilares),
+          // esta vía ancla el Día Metabólico a la hora pasada SIN resetear
+          // hidratación/nutrición/ejercicio/sueño (registerOngoingFast).
+          if (!isActive) ...[
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              height: 44,
+              child: TextButton.icon(
+                onPressed: state.isSaving
+                    ? null
+                    : () => _showOngoingFastPicker(context, ref, state),
+                icon: Icon(
+                  Icons.history_rounded,
+                  color: Colors.white.withValues(alpha: 0.7),
+                  size: 18,
+                ),
+                label: Text(
+                  '¿Ya venías ayunando? Registra la hora',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.8),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -1056,6 +1087,103 @@ class FastingConsciousnessCard extends ConsumerWidget {
     await ref
         .read(fastingProvider.notifier)
         .correctFastingStartTime(finalDateTime);
+  }
+
+  /// SPEC-260 (2026-07-30): picker para registrar un ayuno que YA venía en
+  /// curso (el usuario olvidó darle "Iniciar" al empezar). Elige fecha +
+  /// hora pasadas y las envía a `registerOngoingFast`, que ancla el Día
+  /// Metabólico a esa hora SIN resetear los otros pilares.
+  ///
+  /// Se diferencia de `_showCorrectStartTimePicker` en que aplica al
+  /// estado INACTIVO y no clampa contra el target: un ayuno olvidado pudo
+  /// llevar muchas horas y es legítimo registrarlo así (el límite sano es
+  /// 24h atrás, igual que en la corrección).
+  Future<void> _showOngoingFastPicker(
+    BuildContext context,
+    WidgetRef ref,
+    FastingState state,
+  ) async {
+    final DateTime now = DateTime.now();
+    final DateTime earliest = now.subtract(const Duration(hours: 24));
+
+    final DateTime? pickedDate = await showDatePicker(
+      context: context,
+      initialDate: now,
+      firstDate: earliest,
+      lastDate: now,
+      builder: (context, child) => Theme(
+        data: ThemeData.dark().copyWith(
+          colorScheme: const ColorScheme.dark(
+            primary: AppColors.metabolicGreen,
+          ),
+          dialogTheme:
+              DialogThemeData(backgroundColor: const Color(0xFF1E293B)),
+        ),
+        child: child!,
+      ),
+    );
+    if (pickedDate == null) return;
+
+    if (!context.mounted) return;
+    final TimeOfDay? pickedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(now),
+      builder: (context, child) => Theme(
+        data: ThemeData.dark().copyWith(
+          colorScheme: const ColorScheme.dark(
+            primary: AppColors.metabolicGreen,
+          ),
+          dialogTheme:
+              DialogThemeData(backgroundColor: const Color(0xFF1E293B)),
+        ),
+        child: child!,
+      ),
+    );
+    if (pickedTime == null) return;
+
+    final DateTime finalDateTime = DateTime(
+      pickedDate.year,
+      pickedDate.month,
+      pickedDate.day,
+      pickedTime.hour,
+      pickedTime.minute,
+    );
+
+    // Validación defensiva (también vive en el notifier).
+    if (finalDateTime.isAfter(now)) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('La hora de inicio no puede ser futura.'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+    if (now.difference(finalDateTime).inHours > 24) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'El inicio no puede ser más de 24h atrás.',
+          ),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+
+    await ref.read(fastingProvider.notifier).registerOngoingFast(finalDateTime);
+
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Ayuno registrado. Tu avance de los demás pilares se mantiene.',
+        ),
+        backgroundColor: AppColors.metabolicGreen,
+      ),
+    );
   }
 
   /// Copia local de `_showManualTimePicker` (el dashboard mantiene la suya

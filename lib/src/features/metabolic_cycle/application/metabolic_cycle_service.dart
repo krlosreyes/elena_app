@@ -329,6 +329,76 @@ class MetabolicCycleService {
     return cycle;
   }
 
+  /// SPEC-260 (2026-07-30): re-ancla el ciclo metabólico ABIERTO a
+  /// [newStartedAt] sin cerrarlo ni resetear pilares.
+  ///
+  /// Disparado cuando el usuario corrige/registra la hora real de inicio
+  /// de su ayuno. El Día Metabólico se ancla al inicio del ayuno
+  /// (METABOLIC_DAY_CONSTITUTION.md §2), así que corregir esa hora debe
+  /// mover el ancla del ciclo — pero NO debe reiniciar
+  /// hidratación/nutrición/ejercicio/sueño.
+  ///
+  /// Clave: NO pasa por `evaluateAndApply`. El reset de pilares vive
+  /// EXCLUSIVAMENTE en el path cierre+apertura del evaluador
+  /// (`triggerDailyReset`, gatillado por `hasClosure && hasOpening`).
+  /// Al re-anclar sin cerrar, ese path nunca corre → los pilares del día
+  /// se preservan intactos. `StreakNotifier` recalcula solo la magnitud
+  /// de AYUNO desde la nueva duración, que es justo lo deseado.
+  ///
+  /// Comportamiento:
+  ///   - Hay ciclo abierto → se re-ancla (merge sobre el MISMO doc).
+  ///   - No hay ciclo abierto y se pasó [protocol] → se abre uno
+  ///     retroactivo anclado a [newStartedAt] (apertura simple, sin
+  ///     cierre previo → sin reset).
+  ///   - No hay ciclo abierto y no hay [protocol] → no-op (retorna null).
+  ///
+  /// Idempotente: si el ciclo ya está anclado a [newStartedAt], no
+  /// escribe. Retorna el ciclo resultante (o null si no pudo actuar).
+  Future<MetabolicCycle?> reanchorOpenCycle({
+    required String userId,
+    required DateTime newStartedAt,
+    String? protocol,
+    int tzOffsetMinutes = 0,
+  }) async {
+    final open = await _repository.fetchOpenCycle(userId);
+
+    if (open == null) {
+      if (protocol == null) {
+        AppLogger.warning(
+          '[cycle.reanchor.skip] no hay ciclo abierto y no se pasó '
+          'protocolo para abrir uno retroactivo. userId=$userId',
+        );
+        return null;
+      }
+      final opened = MetabolicCycleResolver.openCycle(
+        startedAt: newStartedAt,
+        fastingProtocol: protocol,
+        tzOffsetMinutes: tzOffsetMinutes,
+      );
+      _persistCycle(userId, opened);
+      AppLogger.info(
+        '[cycle.open] cycleId=${opened.cycleId} '
+        'startedAt=${opened.startedAt.toIso8601String()} '
+        'protocol=${opened.fastingProtocol} '
+        'source=reanchorRetroactive',
+      );
+      return opened;
+    }
+
+    // Idempotencia: ya anclado a esa hora → nada que hacer.
+    if (open.startedAt == newStartedAt) return open;
+
+    final reanchored = open.reanchor(newStartedAt: newStartedAt);
+    _persistCycle(userId, reanchored);
+    AppLogger.info(
+      '[cycle.reanchor] cycleId=${reanchored.cycleId} '
+      'from=${open.startedAt.toIso8601String()} '
+      'to=${reanchored.startedAt.toIso8601String()} '
+      'source=userCorrection',
+    );
+    return reanchored;
+  }
+
   // ─── Lógica interna ──────────────────────────────────────────────────────
 
   DateTime _determineCloseTime(

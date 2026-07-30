@@ -421,6 +421,122 @@ void main() {
     });
   });
 
+  group('SPEC-260 — reanchorOpenCycle (corregir hora sin resetear)', () {
+    test('Con ciclo abierto → re-ancla startedAt preservando el doc', () async {
+      final originalStart = DateTime(2026, 7, 30, 6, 0);
+      await repo.save(
+        'u1',
+        MetabolicCycle.open(
+          startedAt: originalStart,
+          fastingProtocol: '16:8',
+          tzOffsetMinutes: 0,
+        ),
+      );
+
+      final corrected = DateTime(2026, 7, 29, 21, 15);
+      final result = await service.reanchorOpenCycle(
+        userId: 'u1',
+        newStartedAt: corrected,
+        protocol: '16:8',
+      );
+
+      expect(result, isNotNull);
+      expect(result!.startedAt, corrected);
+      expect(result.isOpen, isTrue);
+
+      // El ciclo abierto leído de Firestore refleja la corrección.
+      final abierto = await repo.fetchOpenCycle('u1');
+      expect(abierto!.startedAt, corrected);
+
+      // Y NO se abrió/cerró ningún ciclo extra: sigue habiendo 1 doc.
+      final snap = await firestore
+          .collection('users')
+          .doc('u1')
+          .collection('metabolic_cycles')
+          .get();
+      expect(snap.docs.length, 1,
+          reason: 're-anclar reusa el mismo doc, no crea otro');
+    });
+
+    test('Sin ciclo abierto + protocolo → abre uno retroactivo (sin cierre)',
+        () async {
+      final corrected = DateTime(2026, 7, 29, 21, 15);
+      final result = await service.reanchorOpenCycle(
+        userId: 'u1',
+        newStartedAt: corrected,
+        protocol: '18:6',
+      );
+
+      expect(result, isNotNull);
+      expect(result!.startedAt, corrected);
+      expect(result.isOpen, isTrue);
+      expect(result.fastingProtocol, '18:6');
+
+      final abierto = await repo.fetchOpenCycle('u1');
+      expect(abierto!.startedAt, corrected);
+    });
+
+    test('Sin ciclo abierto y sin protocolo → no-op (retorna null)', () async {
+      final result = await service.reanchorOpenCycle(
+        userId: 'u1',
+        newStartedAt: DateTime(2026, 7, 29, 21, 15),
+      );
+      expect(result, isNull);
+      final abierto = await repo.fetchOpenCycle('u1');
+      expect(abierto, isNull);
+    });
+
+    test('Idempotente: re-anclar a la MISMA hora no crea escrituras nuevas',
+        () async {
+      final start = DateTime(2026, 7, 30, 6, 0);
+      await repo.save(
+        'u1',
+        MetabolicCycle.open(
+          startedAt: start,
+          fastingProtocol: '16:8',
+          tzOffsetMinutes: 0,
+        ),
+      );
+      final result = await service.reanchorOpenCycle(
+        userId: 'u1',
+        newStartedAt: start,
+        protocol: '16:8',
+      );
+      expect(result!.startedAt, start);
+      final snap = await firestore
+          .collection('users')
+          .doc('u1')
+          .collection('metabolic_cycles')
+          .get();
+      expect(snap.docs.length, 1);
+    });
+
+    test('re-anclar NO cierra el ciclo: closedAt permanece null', () async {
+      final originalStart = DateTime(2026, 7, 30, 6, 0);
+      await repo.save(
+        'u1',
+        MetabolicCycle.open(
+          startedAt: originalStart,
+          fastingProtocol: '16:8',
+          tzOffsetMinutes: 0,
+        ),
+      );
+      await service.reanchorOpenCycle(
+        userId: 'u1',
+        newStartedAt: DateTime(2026, 7, 29, 21, 15),
+        protocol: '16:8',
+      );
+      final snap = await firestore
+          .collection('users')
+          .doc('u1')
+          .collection('metabolic_cycles')
+          .get();
+      expect(snap.docs.length, 1);
+      expect(snap.docs.single.data()['closedAt'], isNull,
+          reason: 'reanchor jamás debe cerrar el ciclo');
+    });
+  });
+
   group('SPEC-149 §8.3 — persistencia mapper', () {
     test('Ciclo cerrado: round-trip preserva campos del feedback', () async {
       final fastingAt = DateTime(2026, 6, 1, 21, 0);

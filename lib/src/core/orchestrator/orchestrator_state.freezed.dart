@@ -17,7 +17,8 @@ final _privateConstructorUsedError = UnsupportedError(
 /// @nodoc
 mixin _$OrchestratorState {
 // ── Fases biológicas (tipadas) ──────────────────────────────────────
-  OrchestratorFastingBand get fastingPhase => throw _privateConstructorUsedError;
+  OrchestratorFastingBand get fastingPhase =>
+      throw _privateConstructorUsedError;
   CircadianPhase get circadianPhase =>
       throw _privateConstructorUsedError; // ── Decisiones booleanas ────────────────────────────────────────────
   bool get canExerciseNow => throw _privateConstructorUsedError;

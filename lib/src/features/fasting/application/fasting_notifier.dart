@@ -14,6 +14,7 @@ import 'package:elena_app/src/features/coaching/application/coaching_completion_
 import 'package:elena_app/src/core/services/firestore_errors.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
 import 'package:elena_app/src/features/fasting/data/fasting_interval_repository_impl.dart';
+import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/core/services/live_activity_service.dart';
 import 'package:elena_app/src/core/services/notification_router.dart';
@@ -316,6 +317,140 @@ class FastingNotifier extends StateNotifier<FastingState> {
           .catchError((Object e) {
         AppLogger.error('No se pudo corregir la hora de inicio (reintenta)', e);
       }),
+    );
+
+    // SPEC-260 (2026-07-30): re-anclar el Día Metabólico a la hora
+    // corregida SIN resetear pilares. El ancla del ciclo ES el inicio del
+    // ayuno; corregir la hora debe moverla, pero corregir NO es cerrar+
+    // abrir, así que no pasa por `triggerDailyReset` — hidratación,
+    // nutrición, ejercicio y sueño quedan intactos. Ver
+    // reanchorOpenCycle() en MetabolicCycleService.
+    unawaited(
+      _ref
+          .read(metabolicCycleServiceProvider)
+          .reanchorOpenCycle(
+            userId: uid,
+            newStartedAt: newStart,
+            protocol: state.fastingProtocol,
+            tzOffsetMinutes: DateTime.now().timeZoneOffset.inMinutes,
+          )
+          .catchError((Object e) {
+        AppLogger.warning(
+          '[fasting.correctStart] reanchor del ciclo falló (reintenta al '
+          'sincronizar): $e',
+        );
+        return null;
+      }),
+    );
+  }
+
+  /// SPEC-260 (2026-07-30): registra un ayuno que YA venía en curso,
+  /// eligiendo su hora real de inicio ("empecé anoche a las 21:15 pero lo
+  /// registro al despertar").
+  ///
+  /// A diferencia de `startFastingManual`, este método NO marca la
+  /// activación como `userInitiated`, así que el evaluador del ciclo NO
+  /// cierra el ciclo previo ni dispara `triggerDailyReset`. En su lugar
+  /// ancla el Día Metabólico a [start] directamente vía
+  /// `reanchorOpenCycle`, preservando el avance de los otros 4 pilares.
+  /// Este es el corazón del fix: registrar un ayuno olvidado sin perder
+  /// el progreso del día.
+  ///
+  /// Si YA hay un ayuno activo, delega en `correctFastingStartTime` (es
+  /// una corrección, no un alta).
+  ///
+  /// Precondiciones (validadas también en la UI):
+  ///   - `start < now` (no se acepta hora futura)
+  ///   - `start > now - 24h` (límite sano)
+  Future<void> registerOngoingFast(DateTime start) async {
+    if (state.isActive) {
+      await correctFastingStartTime(start);
+      return;
+    }
+
+    final uid = _ref.read(authStateProvider).value?.uid;
+    if (uid == null) return;
+
+    final now = DateTime.now();
+    if (start.isAfter(now)) return;
+    if (now.difference(start).inHours > 24) return;
+
+    final duration = now.difference(start);
+
+    // Update optimista. `ongoingRegistration` (NO `userInitiated`) evita
+    // que el evaluador dispare cierre+apertura+reset. El anclado del ciclo
+    // lo hacemos explícitamente más abajo.
+    state = state.copyWith(
+      isSaving: false,
+      startTime: start,
+      isActive: true,
+      duration: duration,
+      phase: FastingState.determinePhase(duration),
+      activationSource: FastingActivationSource.ongoingRegistration,
+      completedToday: false,
+      closedProgressToday: 0.0,
+    );
+    _fastingEndConfirmedToday = false;
+
+    final repo = _ref.read(fastingIntervalRepositoryProvider);
+
+    unawaited(NotificationScheduler.scheduleFastingMilestones(start));
+    unawaited(LiveActivityService.start(
+      startedAt: start,
+      protocol: state.fastingProtocol,
+      targetHours: state.targetHours,
+    ));
+    unawaited(NotificationService.cancelFeeding());
+
+    // Persistir el intervalo (offline-first). Rollback solo ante error REAL.
+    unawaited(
+      repo
+          .transitionTo(userId: uid, isFasting: true, startTime: start)
+          .then((_) {
+        AnalyticsService.logEvent(
+          AnalyticsEvents.fastingStarted,
+          params: {AnalyticsParams.protocol: state.fastingProtocol},
+        );
+        _ref.read(coachingCompletionProvider).onPillarActivity(Pillar.fasting);
+      }).catchError((Object e) {
+        if (!mounted) return;
+        state = state.copyWith(
+          isActive: false,
+          startTime: null,
+          duration: Duration.zero,
+          phase: FastingPhase.none,
+          activationSource: FastingActivationSource.none,
+        );
+        AppLogger.warning(
+            'registerOngoingFast falló, rollback aplicado: $e', e);
+      }),
+    );
+
+    // Anclar el Día Metabólico a la hora registrada SIN reset. Si hay un
+    // ciclo abierto (p.ej. el del día previo aún sin cerrar), se re-ancla
+    // a [start]; si no hay ninguno, se abre uno retroactivo. En ambos
+    // casos NO hay cierre → NO hay `triggerDailyReset` → pilares intactos.
+    unawaited(
+      _ref
+          .read(metabolicCycleServiceProvider)
+          .reanchorOpenCycle(
+            userId: uid,
+            newStartedAt: start,
+            protocol: state.fastingProtocol,
+            tzOffsetMinutes: now.timeZoneOffset.inMinutes,
+          )
+          .catchError((Object e) {
+        AppLogger.warning(
+          '[fasting.registerOngoing] anclado del ciclo falló (reintenta al '
+          'sincronizar): $e',
+        );
+        return null;
+      }),
+    );
+
+    AppLogger.info(
+      'Ayuno en curso registrado con inicio en $start '
+      '(duración inicial: ${duration.inHours}h). Sin reset de pilares.',
     );
   }
 

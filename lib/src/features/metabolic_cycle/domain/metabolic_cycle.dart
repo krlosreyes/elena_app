@@ -111,6 +111,55 @@ class MetabolicCycle {
     );
   }
 
+  /// SPEC-260 (2026-07-30): re-ancla un ciclo ABIERTO a un nuevo
+  /// `startedAt` sin cerrarlo ni tocar el progreso de los pilares.
+  ///
+  /// Caso de uso: el usuario corrige la hora de inicio de su ayuno
+  /// ("empecé a las 21:15 pero lo registré al despertar"). El Día
+  /// Metabólico debe seguir esa corrección — su ancla ES el inicio del
+  /// ayuno (ver METABOLIC_DAY_CONSTITUTION.md §2) — pero mover el ancla
+  /// NO debe reiniciar hidratación/nutrición/ejercicio/sueño: esos
+  /// pilares viven en el StreakEntry del día, no en el ciclo, y solo se
+  /// resetean en el path de cierre+apertura (`triggerDailyReset`). Este
+  /// método evita ese path a propósito.
+  ///
+  /// Decisión de diseño — `cycleId` SE PRESERVA: aunque el formato
+  /// canónico del id es el ISO de `startedAt` (idempotencia cross-device
+  /// al ABRIR), re-anclar es una acción deliberada de UN dispositivo.
+  /// Mantener el mismo id garantiza que el `save` (merge sobre
+  /// `doc(cycleId)`) actualice el MISMO documento en vez de crear uno
+  /// nuevo y dejar el anterior abierto (dos ciclos abiertos = data
+  /// malformada). El invariante id==ISO(startedAt) se relaja solo para
+  /// ciclos corregidos a mano, sin consecuencias funcionales: los streams
+  /// ordenan por el CAMPO `startedAt`, no por el id del documento.
+  ///
+  /// Lanza [StateError] si el ciclo ya está cerrado (no se re-ancla un
+  /// ciclo histórico) y [ArgumentError] si `newStartedAt` es futuro
+  /// respecto a [now] cuando se provee.
+  MetabolicCycle reanchor({
+    required DateTime newStartedAt,
+    DateTime? now,
+  }) {
+    if (isClosed) {
+      throw StateError(
+        'No se puede re-anclar un ciclo cerrado (cycleId: $cycleId).',
+      );
+    }
+    if (now != null && newStartedAt.isAfter(now)) {
+      throw ArgumentError(
+        'newStartedAt ($newStartedAt) no puede ser futuro respecto a $now.',
+      );
+    }
+    return MetabolicCycle(
+      cycleId: cycleId,
+      startedAt: newStartedAt,
+      // closedAt/closureReason/etc. permanecen null: sigue ABIERTO.
+      fastingProtocol: fastingProtocol,
+      tzOffsetMinutes: tzOffsetMinutes,
+      liveScore: liveScore,
+    );
+  }
+
   /// Devuelve una copia cerrada del ciclo con los datos del momento del
   /// cierre. NO muta este objeto (preservamos inmutabilidad).
   MetabolicCycle close({

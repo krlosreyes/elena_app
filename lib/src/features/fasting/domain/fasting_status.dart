@@ -153,6 +153,15 @@ enum FastingActivationSource {
 
   /// El usuario presionó "iniciar ayuno" en la UI (tap consciente).
   userInitiated,
+
+  /// SPEC-260 (2026-07-30): el usuario REGISTRÓ un ayuno que ya venía en
+  /// curso ("empecé anoche, lo registro al despertar"), eligiendo la hora
+  /// pasada. NO es el inicio de un día metabólico nuevo, sino la
+  /// corrección de una omisión — por eso el evaluador NO debe cerrar el
+  /// ciclo previo ni disparar `triggerDailyReset`. El anclado del ciclo
+  /// lo hace `FastingNotifier.registerOngoingFast` directamente vía
+  /// `MetabolicCycleService.reanchorOpenCycle`, preservando los pilares.
+  ongoingRegistration,
 }
 
 class FastingState {

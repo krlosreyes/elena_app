@@ -68,6 +68,86 @@ void main() {
       expect(closed.cycleId, open.cycleId, reason: 'cycleId se preserva');
     });
 
+    test('reanchor() mueve startedAt y preserva cycleId sin cerrar', () {
+      final open = MetabolicCycle.open(
+        startedAt: started,
+        fastingProtocol: '16:8',
+        tzOffsetMinutes: -300,
+      );
+      final nuevoInicio = started.subtract(const Duration(hours: 9));
+      final reanchored = open.reanchor(newStartedAt: nuevoInicio);
+
+      expect(open.startedAt, started, reason: 'original no debe mutarse');
+      expect(reanchored.startedAt, nuevoInicio);
+      expect(reanchored.isOpen, isTrue, reason: 'sigue abierto');
+      expect(reanchored.closedAt, isNull);
+      expect(reanchored.cycleId, open.cycleId,
+          reason: 'el cycleId se preserva para actualizar el mismo doc');
+      expect(reanchored.fastingProtocol, '16:8');
+      expect(reanchored.tzOffsetMinutes, -300);
+    });
+
+    test('reanchor() preserva liveScore del ciclo abierto', () {
+      final open = MetabolicCycle(
+        cycleId: MetabolicCycle.buildCycleId(started),
+        startedAt: started,
+        fastingProtocol: '16:8',
+        tzOffsetMinutes: 0,
+        liveScore: 73,
+      );
+      final reanchored = open.reanchor(
+          newStartedAt: started.subtract(const Duration(hours: 2)));
+      expect(reanchored.liveScore, 73);
+    });
+
+    test('reanchor() lanza StateError si el ciclo ya está cerrado', () {
+      final closed = MetabolicCycle.open(
+        startedAt: started,
+        fastingProtocol: '16:8',
+        tzOffsetMinutes: 0,
+      ).close(
+        closedAt: started.add(const Duration(hours: 20)),
+        reason: ClosureReason.manualNextFasting,
+        fastingDurationHours: 16,
+        feedingWindowHours: 8,
+        dailyScore: 80,
+        pillarsCompleted: const CyclePillarsCompleted(
+          fasting: true,
+          sleep: true,
+          hydration: true,
+          exercise: true,
+          nutrition: true,
+        ),
+        magnitudes: const CycleMagnitudes(
+          fastingMagnitude: 1,
+          sleepQualityScore: 1,
+          hydrationMagnitude: 1,
+          exerciseMagnitude: 1,
+          nutritionMagnitude: 1,
+        ),
+        feedback: const CycleFeedback(achievements: [], gaps: [], insight: 'x'),
+      );
+      expect(
+        () => closed.reanchor(newStartedAt: started),
+        throwsStateError,
+      );
+    });
+
+    test('reanchor() lanza ArgumentError si newStartedAt es futuro vs now', () {
+      final open = MetabolicCycle.open(
+        startedAt: started,
+        fastingProtocol: '16:8',
+        tzOffsetMinutes: 0,
+      );
+      expect(
+        () => open.reanchor(
+          newStartedAt: started.add(const Duration(hours: 1)),
+          now: started,
+        ),
+        throwsArgumentError,
+      );
+    });
+
     test('close() falla si closedAt <= startedAt', () {
       final open = MetabolicCycle.open(
         startedAt: started,
