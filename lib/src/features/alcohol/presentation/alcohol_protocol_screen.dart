@@ -10,16 +10,20 @@
 // (70 kg) en esta versión; personalizarlo con el peso real del usuario es
 // un ajuste menor cuando se conecte el perfil.
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elena_app/src/core/theme/app_theme.dart';
+import 'package:elena_app/src/features/alcohol/application/alcohol_recommendation_provider.dart';
 import 'package:elena_app/src/features/alcohol/application/consumption_notifier.dart';
 import 'package:elena_app/src/features/alcohol/domain/alcohol_catalog.dart';
 import 'package:elena_app/src/features/alcohol/domain/alcohol_catalog_item.dart';
 import 'package:elena_app/src/features/alcohol/domain/alcohol_impact.dart';
 import 'package:elena_app/src/features/alcohol/domain/alcohol_math.dart';
 import 'package:elena_app/src/features/alcohol/domain/consumption_session.dart';
+import 'package:elena_app/src/features/alcohol/domain/drink_recommendation.dart';
+import 'package:elena_app/src/features/alcohol/domain/drink_type.dart';
 
 const Color _accent = Color(0xFFB4654A);
 const Color _card = Color(0xFF1E293B);
@@ -169,7 +173,7 @@ class _IntroBody extends StatelessWidget {
               const Icon(Icons.wine_bar, color: _accent, size: 30),
               const SizedBox(height: 12),
               const Text(
-                'Vas a compartir unos tragos',
+                'Vamos a compartir unos tragos 🍻',
                 style: TextStyle(
                     color: Colors.white,
                     fontSize: 18,
@@ -177,7 +181,7 @@ class _IntroBody extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Sin sermones. Te acompaño en cuatro pasos para que el impacto '
+                'Te acompaño en cuatro pasos para que el impacto '
                 'metabólico sea el mínimo posible y la recuperación, la máxima.',
                 style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.7),
@@ -229,49 +233,71 @@ class _IntroBody extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────
 // Fase A · Antes (preparación)
 // ─────────────────────────────────────────────────────────────────────
-class _AntesBody extends StatelessWidget {
+class _AntesBody extends ConsumerWidget {
   const _AntesBody({required this.session, required this.notifier});
   final ConsumptionSession session;
   final ConsumptionNotifier notifier;
 
   @override
-  Widget build(BuildContext context) {
-    final budget = session.budgetStandardUnits.clamp(1.0, 8.0).toDouble();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final type = DrinkTypes.byId(session.drinkTypeId);
+    final rec = ref.watch(drinkRecommendationProvider);
+
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
       children: [
-        const _PhaseTitle('Antes de salir', 'Prepara la noche en 30 segundos.'),
+        const _PhaseTitle('Antes de salir', 'Arma tu plan en 30 segundos.'),
         const SizedBox(height: 16),
 
-        // Meta de la noche
-        _sectionLabel('TU META DE LA NOCHE'),
-        Text(
-          '${budget.toStringAsFixed(0)} UEA  ·  ~${budget.toStringAsFixed(0)} tragos',
-          style: const TextStyle(
-              color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800),
+        // 1) Tipo de trago
+        _sectionLabel('¿QUÉ VAS A TOMAR?'),
+        _PickerField(
+          value: type?.label ?? 'Elegir tipo de trago',
+          icon: Icons.local_bar,
+          onTap: () => _showDrinkTypePicker(context),
         ),
-        Slider(
-          value: budget,
-          min: 1,
-          max: 8,
-          divisions: 7,
-          activeColor: _accent,
-          label: '${budget.toStringAsFixed(0)} UEA',
-          onChanged: (v) => notifier.setBudget(v),
-        ),
-        Text(
-          '1 UEA = 10 g de alcohol puro (una cerveza, una copa de vino o un trago).',
-          style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.45), fontSize: 11),
+        if (type != null) ...[
+          const SizedBox(height: 6),
+          _hint(type.hint),
+        ],
+        const SizedBox(height: 20),
+
+        // 2) Hora de inicio
+        _sectionLabel('¿A QUÉ HORA ARRANCA?'),
+        _PickerField(
+          value: session.startTime != null
+              ? _hhmm(session.startTime!)
+              : 'Elegir hora de inicio',
+          icon: Icons.schedule,
+          onTap: () async {
+            final picked = await showTimePicker(
+              context: context,
+              initialTime: session.startTime != null
+                  ? TimeOfDay.fromDateTime(session.startTime!)
+                  : TimeOfDay.now(),
+              helpText: '¿A qué hora arranca la fiesta?',
+            );
+            if (picked == null) return;
+            final now = DateTime.now();
+            notifier.setStartTime(DateTime(
+                now.year, now.month, now.day, picked.hour, picked.minute));
+          },
         ),
         const SizedBox(height: 20),
 
-        // Hora de dormir → último trago
-        _sectionLabel('¿A QUÉ HORA PIENSAS DORMIR?'),
-        _BedtimePicker(session: session, notifier: notifier),
+        // 3) Agenda de mañana
+        _sectionLabel('MAÑANA, ¿QUÉ TIENES?'),
+        _ScheduleSelector(session: session, notifier: notifier),
         const SizedBox(height: 20),
 
-        // Preparación
+        // 4) Plan
+        if (rec != null)
+          _PlanCard(rec: rec, type: type)
+        else
+          _hint('Elige el tipo de trago y la hora de inicio para ver tu plan.'),
+        const SizedBox(height: 20),
+
+        // 5) Preparación
         _sectionLabel('PREPARACIÓN'),
         _SwitchTile(
           label: 'Me hidraté antes (agua + electrolitos)',
@@ -287,84 +313,287 @@ class _AntesBody extends StatelessWidget {
 
         _PrimaryCta(
           label: 'Empezar a registrar',
-          onPressed: notifier.advancePhase, // Antes → Durante
+          onPressed: () {
+            if (rec != null) {
+              notifier.applyPlan(rec);
+            } else {
+              notifier.advancePhase();
+            }
+          },
         ),
         const SizedBox(height: 16),
         _disclaimer(),
       ],
     );
   }
+
+  Future<void> _showDrinkTypePicker(BuildContext context) async {
+    final options = DrinkTypes.all;
+    var sel = options.indexWhere((o) => o.id == session.drinkTypeId);
+    if (sel < 0) sel = 0;
+    await showCupertinoModalPopup<void>(
+      context: context,
+      builder: (ctx) => Container(
+        height: 300,
+        color: _card,
+        child: Column(
+          children: [
+            Align(
+              alignment: Alignment.centerRight,
+              child: CupertinoButton(
+                onPressed: () {
+                  notifier.setDrinkType(options[sel].id);
+                  Navigator.of(ctx).pop();
+                },
+                child: const Text('Listo',
+                    style:
+                        TextStyle(color: _accent, fontWeight: FontWeight.w700)),
+              ),
+            ),
+            Expanded(
+              child: CupertinoPicker(
+                scrollController: FixedExtentScrollController(initialItem: sel),
+                itemExtent: 40,
+                backgroundColor: _card,
+                onSelectedItemChanged: (i) => sel = i,
+                children: options
+                    .map((o) => Center(
+                          child: Text(o.label,
+                              style: const TextStyle(
+                                  color: Colors.white, fontSize: 16)),
+                        ))
+                    .toList(),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
-class _BedtimePicker extends StatelessWidget {
-  const _BedtimePicker({required this.session, required this.notifier});
+class _PickerField extends StatelessWidget {
+  const _PickerField({
+    required this.value,
+    required this.icon,
+    required this.onTap,
+  });
+  final String value;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        decoration: BoxDecoration(
+          color: _card,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: _accent.withValues(alpha: 0.3)),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: _accent, size: 20),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                value,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600),
+              ),
+            ),
+            Icon(Icons.chevron_right_rounded,
+                color: Colors.white.withValues(alpha: 0.3)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ScheduleSelector extends StatelessWidget {
+  const _ScheduleSelector({required this.session, required this.notifier});
   final ConsumptionSession session;
   final ConsumptionNotifier notifier;
 
   @override
   Widget build(BuildContext context) {
-    final bedtime = session.bedtime;
-    final lastCall = session.lastCallTarget;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: () async {
-            final picked = await showTimePicker(
-              context: context,
-              initialTime: bedtime != null
-                  ? TimeOfDay(hour: bedtime.hour, minute: bedtime.minute)
-                  : const TimeOfDay(hour: 23, minute: 0),
-              helpText: '¿A qué hora piensas dormir?',
-            );
-            if (picked == null) return;
-            final now = DateTime.now();
-            var dt = DateTime(
-                now.year, now.month, now.day, picked.hour, picked.minute);
-            if (dt.isBefore(now)) dt = dt.add(const Duration(days: 1));
-            notifier.setBedtime(dt);
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-            decoration: BoxDecoration(
-              color: _card,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: _accent.withValues(alpha: 0.3)),
+        Row(
+          children: [
+            _choice(
+              label: 'Descanso',
+              selected: !session.worksTomorrow,
+              onTap: () => notifier.setSchedule(worksTomorrow: false),
             ),
-            child: Row(
-              children: [
-                const Icon(Icons.bedtime_outlined, color: _accent, size: 20),
-                const SizedBox(width: 12),
-                Text(
-                  bedtime != null ? _hhmm(bedtime) : 'Elegir hora',
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600),
-                ),
-                const Spacer(),
-                Icon(Icons.chevron_right_rounded,
-                    color: Colors.white.withValues(alpha: 0.3)),
-              ],
+            const SizedBox(width: 10),
+            _choice(
+              label: 'Trabajo',
+              selected: session.worksTomorrow,
+              onTap: () => notifier.setSchedule(
+                  worksTomorrow: true, wakeTime: session.wakeTime),
             ),
-          ),
+          ],
         ),
-        if (lastCall != null) ...[
-          const SizedBox(height: 8),
-          Text(
-            'Último trago sugerido: ${_hhmm(lastCall)}  (3 h antes de dormir, '
-            'para proteger tu sueño).',
-            style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.6),
-                fontSize: 12,
-                height: 1.4),
+        if (session.worksTomorrow) ...[
+          const SizedBox(height: 10),
+          _PickerField(
+            value: session.wakeTime != null
+                ? '¿Te levantas a las ${_hhmm(session.wakeTime!)}?'
+                : '¿A qué hora te levantas?',
+            icon: Icons.alarm,
+            onTap: () async {
+              final picked = await showTimePicker(
+                context: context,
+                initialTime: session.wakeTime != null
+                    ? TimeOfDay.fromDateTime(session.wakeTime!)
+                    : const TimeOfDay(hour: 7, minute: 0),
+                helpText: '¿A qué hora te levantas mañana?',
+              );
+              if (picked == null) return;
+              // Mañana: día siguiente al inicio (o a hoy).
+              final base = session.startTime ?? DateTime.now();
+              final wake = DateTime(base.year, base.month, base.day,
+                      picked.hour, picked.minute)
+                  .add(const Duration(days: 1));
+              notifier.setSchedule(worksTomorrow: true, wakeTime: wake);
+            },
           ),
         ],
       ],
     );
   }
+
+  Widget _choice({
+    required String label,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: selected ? _accent.withValues(alpha: 0.20) : _card,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+                color: _accent.withValues(alpha: selected ? 0.6 : 0.25)),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: selected ? 1 : 0.7),
+              fontSize: 14,
+              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
+
+class _PlanCard extends StatelessWidget {
+  const _PlanCard({required this.rec, required this.type});
+  final DrinkRecommendation rec;
+  final DrinkTypeOption? type;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _card,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _accent.withValues(alpha: 0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.auto_awesome, color: _accent, size: 18),
+              const SizedBox(width: 8),
+              const Text('Tu plan de esta noche',
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _row(Icons.local_bar,
+              '${rec.drinks} ${rec.drinks == 1 ? "trago" : "tragos"} · uno cada ~${rec.spacingMinutes} min'),
+          _row(Icons.local_drink_outlined,
+              '${rec.waterGlasses} ${rec.waterGlasses == 1 ? "vaso" : "vasos"} de agua (1:1) + 500 ml antes'),
+          _row(Icons.wine_bar, 'Tómalo en ${rec.vessel}, sin servidas dobles'),
+          _row(Icons.nightlight_round,
+              'Último trago ${_hhmm(rec.lastCall)} · a dormir ${_hhmm(rec.bedtime)}'),
+          if (type != null && type!.highCongeners)
+            _row(Icons.warning_amber_rounded,
+                'Es un destilado oscuro: si puedes, prefiere uno claro (menos resaca)'),
+          if (type != null && type!.carbonated)
+            _row(Icons.bubble_chart_outlined,
+                'Es carbonatado: entra rápido, sórbelo y espacia'),
+          const SizedBox(height: 6),
+          _row(Icons.restaurant,
+              'Come proteína/grasa/fibra antes: baja el pico de alcohol hasta 20–57 %'),
+          if (rec.tight) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Ventana corta (mañana madrugas): pocos tragos y temprano es lo que '
+              'protege tu descanso.',
+              style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.7),
+                  fontSize: 12,
+                  height: 1.4),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _row(IconData icon, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: _accent, size: 16),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(text,
+                style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.9),
+                    fontSize: 13,
+                    height: 1.4)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+Widget _hint(String text) => Text(
+      text,
+      style: TextStyle(
+          color: Colors.white.withValues(alpha: 0.55),
+          fontSize: 12,
+          height: 1.4),
+    );
 
 // ─────────────────────────────────────────────────────────────────────
 // Fase B · Durante (en vivo)

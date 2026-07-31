@@ -16,7 +16,12 @@ import 'package:elena_app/src/shared/providers/user_provider.dart';
 /// de acá porque el avatar ya comunica identidad y es el que navega a
 /// Perfil, donde el nombre sí se muestra completo.
 class ElenaHeader extends ConsumerWidget {
-  const ElenaHeader({super.key});
+  const ElenaHeader({super.key, this.actions});
+
+  /// Widget opcional que se inserta entre el título "Hoy" y el avatar.
+  /// El Dashboard lo usa para el acceso al Protocolo de Consumo Consciente
+  /// (SPEC-261.4). ElenaHeader se mantiene agnóstico del feature.
+  final Widget? actions;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -34,7 +39,11 @@ class ElenaHeader extends ConsumerWidget {
                 subtitle: heroTodayLabel(),
               ),
             ),
-            const SizedBox(width: 12),
+            if (actions != null) ...[
+              actions!,
+              const SizedBox(width: 4),
+            ],
+            const SizedBox(width: 8),
             // El avatar lleva al perfil del usuario.
             //
             // 29-jul: era un CircleAvatar con la inicial calculada acá

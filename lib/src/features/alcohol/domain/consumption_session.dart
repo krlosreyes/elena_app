@@ -34,6 +34,19 @@ class ConsumptionSession {
   /// `lastCallTarget` (bedtime − margen) y el riesgo de sueño de la Fase C.
   final DateTime? bedtime;
 
+  // ── Insumos del plan personalizado (SPEC-261.4) ─────────────────────
+  /// Tipo de trago elegido en el picker (id de DrinkTypeOption).
+  final String? drinkTypeId;
+
+  /// Hora de inicio de la fiesta.
+  final DateTime? startTime;
+
+  /// ¿Mañana trabaja? Define la hora de dormir recomendada.
+  final bool worksTomorrow;
+
+  /// Hora de levantarse mañana (si trabaja).
+  final DateTime? wakeTime;
+
   // ── Acciones de mitigación (Fase A y D) ─────────────────────────────
   final bool hydratedBefore;
   final bool ateBefore;
@@ -45,6 +58,10 @@ class ConsumptionSession {
     this.drinks = const [],
     this.lastCallTarget,
     this.bedtime,
+    this.drinkTypeId,
+    this.startTime,
+    this.worksTomorrow = false,
+    this.wakeTime,
     this.hydratedBefore = false,
     this.ateBefore = false,
     this.recoveryFastPlanned = false,
@@ -117,6 +134,10 @@ class ConsumptionSession {
     List<DrinkEvent>? drinks,
     DateTime? lastCallTarget,
     DateTime? bedtime,
+    String? drinkTypeId,
+    DateTime? startTime,
+    bool? worksTomorrow,
+    DateTime? wakeTime,
     bool? hydratedBefore,
     bool? ateBefore,
     bool? recoveryFastPlanned,
@@ -127,9 +148,32 @@ class ConsumptionSession {
       drinks: drinks ?? this.drinks,
       lastCallTarget: lastCallTarget ?? this.lastCallTarget,
       bedtime: bedtime ?? this.bedtime,
+      drinkTypeId: drinkTypeId ?? this.drinkTypeId,
+      startTime: startTime ?? this.startTime,
+      worksTomorrow: worksTomorrow ?? this.worksTomorrow,
+      wakeTime: wakeTime ?? this.wakeTime,
       hydratedBefore: hydratedBefore ?? this.hydratedBefore,
       ateBefore: ateBefore ?? this.ateBefore,
       recoveryFastPlanned: recoveryFastPlanned ?? this.recoveryFastPlanned,
+    );
+  }
+
+  /// Metadatos persistibles (sin `drinks`, que viven en alcohol_history).
+  /// Usado por el mapper para el documento `alcohol_session/current`.
+  ConsumptionSession copyMetaFrom(ConsumptionSession meta) {
+    return ConsumptionSession(
+      phase: meta.phase,
+      budgetStandardUnits: meta.budgetStandardUnits,
+      drinks: drinks, // se conservan los del stream
+      lastCallTarget: meta.lastCallTarget,
+      bedtime: meta.bedtime,
+      drinkTypeId: meta.drinkTypeId,
+      startTime: meta.startTime,
+      worksTomorrow: meta.worksTomorrow,
+      wakeTime: meta.wakeTime,
+      hydratedBefore: meta.hydratedBefore,
+      ateBefore: meta.ateBefore,
+      recoveryFastPlanned: meta.recoveryFastPlanned,
     );
   }
 }

@@ -13,7 +13,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:elena_app/src/features/alcohol/application/consumption_notifier.dart';
-import 'package:elena_app/src/features/alcohol/application/consumption_trigger_evaluator.dart';
 import 'package:elena_app/src/features/alcohol/domain/consumption_session.dart';
 
 class AlcoholProtocolCard extends ConsumerWidget {
@@ -25,25 +24,17 @@ class AlcoholProtocolCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final session = ref.watch(consumptionProvider);
-    final weekend = ConsumptionTriggerEvaluator.isWeekendWindow(DateTime.now());
 
-    // Fuera de la ventana de fin de semana y sin sesión activa → no se
-    // insinúa. Entre semana el usuario la activa a mano desde Perfil.
-    if (!session.isActive && !weekend) return const SizedBox.shrink();
+    // SPEC-261.4: el acceso vive ahora en el ícono del header. Esta card es
+    // solo el ESTADO en vivo cuando hay una sesión activa; si no, se oculta.
+    if (!session.isActive) return const SizedBox.shrink();
 
-    final String title;
-    final String subtitle;
-    if (session.isActive) {
-      title = 'Protocolo de consumo activo';
-      final unidades = session.totalStandardUnits;
-      final presupuesto = session.budgetStandardUnits;
-      subtitle =
-          '${unidades.toStringAsFixed(1)} de ${presupuesto.toStringAsFixed(1)} '
-          'UEA · ${_phaseLabel(session.phase)}';
-    } else {
-      title = '¿Se viene plan hoy?';
-      subtitle = 'Actívalo y disfruta con el mínimo costo metabólico';
-    }
+    const title = 'Modo fiesta activo';
+    final unidades = session.totalStandardUnits;
+    final presupuesto = session.budgetStandardUnits;
+    final subtitle =
+        '${unidades.toStringAsFixed(1)} de ${presupuesto.toStringAsFixed(1)} '
+        'UEA · ${_phaseLabel(session.phase)}';
 
     return Padding(
       padding: const EdgeInsets.only(top: 12),
