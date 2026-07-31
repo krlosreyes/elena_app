@@ -1,12 +1,14 @@
-// SPEC-261: pantalla del Protocolo de Consumo Consciente.
+// SPEC-261 / SPEC-261.2: pantalla del Protocolo de Consumo Consciente.
 //
-// Reducción de daño, sin moralizar. Acompaña en cuatro fases (Antes /
-// Durante / Después / Recuperación). Todo el estado vive en
-// `consumptionProvider`; esta pantalla solo lo dibuja y dispara acciones.
+// Reducción de daño, sin moralizar. NO es un tablero de controles sueltos:
+// es un VIAJE GUIADO por cuatro fases (Antes / Durante / Después /
+// Recuperación). La app muestra en cada fase UNA acción principal y avanza
+// de forma contextual (registrar el primer trago mueve Antes → Durante).
 //
-// El reloj de metabolización usa un peso de referencia (70 kg) en esta
-// primera versión; personalizarlo con el peso real del usuario es un ajuste
-// menor cuando se conecte el perfil.
+// Todo el estado vive en `consumptionProvider`; esta pantalla lo dibuja y
+// dispara acciones. El reloj de metabolización usa un peso de referencia
+// (70 kg) en esta versión; personalizarlo con el peso real del usuario es
+// un ajuste menor cuando se conecte el perfil.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,15 +21,29 @@ import 'package:elena_app/src/features/alcohol/domain/alcohol_impact.dart';
 import 'package:elena_app/src/features/alcohol/domain/alcohol_math.dart';
 import 'package:elena_app/src/features/alcohol/domain/consumption_session.dart';
 
+const Color _accent = Color(0xFFB4654A);
+const Color _card = Color(0xFF1E293B);
+const Color _over = Color(0xFFE879A6);
+
 class AlcoholProtocolScreen extends ConsumerWidget {
   const AlcoholProtocolScreen({super.key});
-
-  static const _accent = Color(0xFFB4654A);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final session = ref.watch(consumptionProvider);
     final notifier = ref.read(consumptionProvider.notifier);
+
+    final body = switch (session.phase) {
+      ConsumptionPhase.inactive => _IntroBody(notifier: notifier),
+      ConsumptionPhase.antes =>
+        _AntesBody(session: session, notifier: notifier),
+      ConsumptionPhase.durante =>
+        _DuranteBody(session: session, notifier: notifier),
+      ConsumptionPhase.despues =>
+        _DespuesBody(session: session, notifier: notifier),
+      ConsumptionPhase.recuperacion =>
+        _RecuperacionBody(session: session, notifier: notifier),
+    };
 
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
@@ -57,20 +73,83 @@ class AlcoholProtocolScreen extends ConsumerWidget {
       ),
       body: SafeArea(
         child: session.isActive
-            ? _ActiveBody(session: session, notifier: notifier, accent: _accent)
-            : _IntroBody(notifier: notifier, accent: _accent),
+            ? Column(
+                children: [
+                  _PhaseStepper(phase: session.phase),
+                  Expanded(child: body),
+                ],
+              )
+            : body,
       ),
     );
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// Intro (protocolo inactivo)
+// Indicador de fase (guía visual del viaje)
+// ─────────────────────────────────────────────────────────────────────
+class _PhaseStepper extends StatelessWidget {
+  const _PhaseStepper({required this.phase});
+  final ConsumptionPhase phase;
+
+  static const _labels = ['Antes', 'Durante', 'Después', 'Recup.'];
+
+  int get _index => switch (phase) {
+        ConsumptionPhase.inactive => 0,
+        ConsumptionPhase.antes => 0,
+        ConsumptionPhase.durante => 1,
+        ConsumptionPhase.despues => 2,
+        ConsumptionPhase.recuperacion => 3,
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
+      child: Row(
+        children: List.generate(_labels.length, (i) {
+          final active = i <= _index;
+          return Expanded(
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        height: 3,
+                        color: active
+                            ? _accent
+                            : Colors.white.withValues(alpha: 0.12),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  _labels[i],
+                  style: TextStyle(
+                    color: active
+                        ? Colors.white.withValues(alpha: 0.9)
+                        : Colors.white.withValues(alpha: 0.35),
+                    fontSize: 11,
+                    fontWeight: i == _index ? FontWeight.w700 : FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Fase 0 · Intro (protocolo inactivo)
 // ─────────────────────────────────────────────────────────────────────
 class _IntroBody extends StatelessWidget {
-  const _IntroBody({required this.notifier, required this.accent});
+  const _IntroBody({required this.notifier});
   final ConsumptionNotifier notifier;
-  final Color accent;
 
   @override
   Widget build(BuildContext context) {
@@ -80,14 +159,14 @@ class _IntroBody extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: const Color(0xFF1E293B),
+            color: _card,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: accent.withValues(alpha: 0.3)),
+            border: Border.all(color: _accent.withValues(alpha: 0.3)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.wine_bar, color: accent, size: 30),
+              const Icon(Icons.wine_bar, color: _accent, size: 30),
               const SizedBox(height: 12),
               const Text(
                 'Vas a compartir unos tragos',
@@ -98,7 +177,7 @@ class _IntroBody extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Sin sermones. Activamos un plan simple para que el impacto '
+                'Sin sermones. Te acompaño en cuatro pasos para que el impacto '
                 'metabólico sea el mínimo posible y la recuperación, la máxima.',
                 style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.7),
@@ -110,38 +189,18 @@ class _IntroBody extends StatelessWidget {
         ),
         const SizedBox(height: 20),
         _phaseTile(
-            '1 · Antes', 'Hidratarte, comer algo y fijar tu meta de la noche.'),
+            '1 · Antes', 'Fijar tu meta, tu hora de dormir y prepararte.'),
         _phaseTile('2 · Durante', 'Registrar cada trago, agua 1:1 y espaciar.'),
         _phaseTile('3 · Después', 'Agua + electrolitos y cuidar el sueño.'),
         _phaseTile('4 · Recuperación',
             'Ayuno de recuperación e hidratación al día siguiente.'),
         const SizedBox(height: 24),
-        SizedBox(
-          width: double.infinity,
-          child: FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: accent,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14)),
-            ),
-            onPressed: () => notifier.startProtocol(),
-            child: const Text('Activar protocolo',
-                style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white)),
-          ),
+        _PrimaryCta(
+          label: 'Activar protocolo',
+          onPressed: () => notifier.startProtocol(),
         ),
         const SizedBox(height: 16),
-        Text(
-          'Esto no es consejo médico. La estimación de alcoholemia es '
-          'orientativa y nunca debe usarse para decidir si conducir.',
-          style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.4),
-              fontSize: 11,
-              height: 1.4),
-        ),
+        _disclaimer(),
       ],
     );
   }
@@ -168,17 +227,152 @@ class _IntroBody extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// Cuerpo activo
+// Fase A · Antes (preparación)
 // ─────────────────────────────────────────────────────────────────────
-class _ActiveBody extends StatelessWidget {
-  const _ActiveBody({
-    required this.session,
-    required this.notifier,
-    required this.accent,
-  });
+class _AntesBody extends StatelessWidget {
+  const _AntesBody({required this.session, required this.notifier});
   final ConsumptionSession session;
   final ConsumptionNotifier notifier;
-  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final budget = session.budgetStandardUnits.clamp(1.0, 8.0).toDouble();
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
+      children: [
+        const _PhaseTitle('Antes de salir', 'Prepara la noche en 30 segundos.'),
+        const SizedBox(height: 16),
+
+        // Meta de la noche
+        _sectionLabel('TU META DE LA NOCHE'),
+        Text(
+          '${budget.toStringAsFixed(0)} UEA  ·  ~${budget.toStringAsFixed(0)} tragos',
+          style: const TextStyle(
+              color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800),
+        ),
+        Slider(
+          value: budget,
+          min: 1,
+          max: 8,
+          divisions: 7,
+          activeColor: _accent,
+          label: '${budget.toStringAsFixed(0)} UEA',
+          onChanged: (v) => notifier.setBudget(v),
+        ),
+        Text(
+          '1 UEA = 10 g de alcohol puro (una cerveza, una copa de vino o un trago).',
+          style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.45), fontSize: 11),
+        ),
+        const SizedBox(height: 20),
+
+        // Hora de dormir → último trago
+        _sectionLabel('¿A QUÉ HORA PIENSAS DORMIR?'),
+        _BedtimePicker(session: session, notifier: notifier),
+        const SizedBox(height: 20),
+
+        // Preparación
+        _sectionLabel('PREPARACIÓN'),
+        _SwitchTile(
+          label: 'Me hidraté antes (agua + electrolitos)',
+          value: session.hydratedBefore,
+          onChanged: notifier.setHydratedBefore,
+        ),
+        _SwitchTile(
+          label: 'Comí proteína / grasa / fibra antes',
+          value: session.ateBefore,
+          onChanged: notifier.setAteBefore,
+        ),
+        const SizedBox(height: 24),
+
+        _PrimaryCta(
+          label: 'Empezar a registrar',
+          onPressed: notifier.advancePhase, // Antes → Durante
+        ),
+        const SizedBox(height: 16),
+        _disclaimer(),
+      ],
+    );
+  }
+}
+
+class _BedtimePicker extends StatelessWidget {
+  const _BedtimePicker({required this.session, required this.notifier});
+  final ConsumptionSession session;
+  final ConsumptionNotifier notifier;
+
+  @override
+  Widget build(BuildContext context) {
+    final bedtime = session.bedtime;
+    final lastCall = session.lastCallTarget;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () async {
+            final picked = await showTimePicker(
+              context: context,
+              initialTime: bedtime != null
+                  ? TimeOfDay(hour: bedtime.hour, minute: bedtime.minute)
+                  : const TimeOfDay(hour: 23, minute: 0),
+              helpText: '¿A qué hora piensas dormir?',
+            );
+            if (picked == null) return;
+            final now = DateTime.now();
+            var dt = DateTime(
+                now.year, now.month, now.day, picked.hour, picked.minute);
+            if (dt.isBefore(now)) dt = dt.add(const Duration(days: 1));
+            notifier.setBedtime(dt);
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            decoration: BoxDecoration(
+              color: _card,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: _accent.withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.bedtime_outlined, color: _accent, size: 20),
+                const SizedBox(width: 12),
+                Text(
+                  bedtime != null ? _hhmm(bedtime) : 'Elegir hora',
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600),
+                ),
+                const Spacer(),
+                Icon(Icons.chevron_right_rounded,
+                    color: Colors.white.withValues(alpha: 0.3)),
+              ],
+            ),
+          ),
+        ),
+        if (lastCall != null) ...[
+          const SizedBox(height: 8),
+          Text(
+            'Último trago sugerido: ${_hhmm(lastCall)}  (3 h antes de dormir, '
+            'para proteger tu sueño).',
+            style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.6),
+                fontSize: 12,
+                height: 1.4),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Fase B · Durante (en vivo)
+// ─────────────────────────────────────────────────────────────────────
+class _DuranteBody extends StatelessWidget {
+  const _DuranteBody({required this.session, required this.notifier});
+  final ConsumptionSession session;
+  final ConsumptionNotifier notifier;
 
   @override
   Widget build(BuildContext context) {
@@ -189,27 +383,235 @@ class _ActiveBody extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
       children: [
-        _summaryCard(grams, session, clearH, netCost),
+        _SummaryCard(
+            session: session, grams: grams, clearH: clearH, netCost: netCost),
+        const SizedBox(height: 16),
+        _LastCallBanner(session: session),
         const SizedBox(height: 20),
-        _mitigationSection(),
+        _DrinksList(session: session, notifier: notifier),
         const SizedBox(height: 20),
-        _drinksSection(),
-        const SizedBox(height: 20),
-        _catalogSection(),
+        _Catalog(notifier: notifier),
+        const SizedBox(height: 24),
+        _PrimaryCta(
+          label: 'Terminé por hoy',
+          onPressed: notifier.advancePhase, // Durante → Después
+        ),
       ],
     );
   }
+}
 
-  Widget _summaryCard(
-      double grams, ConsumptionSession s, double clearH, double netCost) {
-    final unidades = s.totalStandardUnits;
-    final over = s.budgetExceeded;
+class _LastCallBanner extends StatelessWidget {
+  const _LastCallBanner({required this.session});
+  final ConsumptionSession session;
+
+  @override
+  Widget build(BuildContext context) {
+    final target = session.lastCallTarget;
+    if (target == null) return const SizedBox.shrink();
+    final now = DateTime.now();
+    final remaining = target.difference(now);
+    final passed = remaining.isNegative;
+    final text = passed
+        ? 'Ya pasó tu hora de último trago (${_hhmm(target)}). Cerrar acá cuida tu sueño.'
+        : 'Último trago a las ${_hhmm(target)} · faltan ${AlcoholMath.formatHours(remaining.inMinutes / 60)}.';
+    final color = passed ? _over : _accent;
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(passed ? Icons.nightlight_round : Icons.timer_outlined,
+              color: color, size: 18),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(text,
+                style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.85),
+                    fontSize: 12.5,
+                    height: 1.4)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Fase C · Después (cierre de la noche)
+// ─────────────────────────────────────────────────────────────────────
+class _DespuesBody extends StatelessWidget {
+  const _DespuesBody({required this.session, required this.notifier});
+  final ConsumptionSession session;
+  final ConsumptionNotifier notifier;
+
+  @override
+  Widget build(BuildContext context) {
+    final risk = session.sleepRisk;
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
+      children: [
+        const _PhaseTitle('Cierra la noche', 'Dos gestos para dormir mejor.'),
+        const SizedBox(height: 16),
+        _SleepRiskCard(risk: risk, session: session),
+        const SizedBox(height: 16),
+        _tip(Icons.local_drink_outlined,
+            'Un vaso grande de agua + electrolitos antes de acostarte.'),
+        _tip(Icons.watch_later_outlined,
+            'Cuanto más tiempo entre el último trago y la cama, mejor tu REM.'),
+        const SizedBox(height: 24),
+        _PrimaryCta(
+          label: 'Buenas noches',
+          onPressed: notifier.advancePhase, // Después → Recuperación
+        ),
+      ],
+    );
+  }
+}
+
+class _SleepRiskCard extends StatelessWidget {
+  const _SleepRiskCard({required this.risk, required this.session});
+  final SleepRisk risk;
+  final ConsumptionSession session;
+
+  @override
+  Widget build(BuildContext context) {
+    final (label, msg, color) = switch (risk) {
+      SleepRisk.none => (
+          'Sin datos de sueño',
+          'Fija tu hora de dormir la próxima para estimar el impacto en tu sueño.',
+          Colors.white24,
+        ),
+      SleepRisk.low => (
+          'Riesgo de sueño: bajo',
+          'Tu último trago dejó margen antes de dormir. El alcohol igual altera '
+              'el REM, pero le diste tiempo a tu cuerpo.',
+          _accent,
+        ),
+      SleepRisk.high => (
+          'Riesgo de sueño: alto',
+          'Tu último trago fue muy cerca de dormir. Espera lo posible antes de '
+              'acostarte e hidrátate; probablemente notes el sueño más fragmentado.',
+          _over,
+        ),
+    };
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _card,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.nightlight_round, color: color, size: 18),
+              const SizedBox(width: 8),
+              Text(label,
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(msg,
+              style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.75),
+                  fontSize: 13,
+                  height: 1.5)),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Fase D · Recuperación (día siguiente)
+// ─────────────────────────────────────────────────────────────────────
+class _RecuperacionBody extends StatelessWidget {
+  const _RecuperacionBody({required this.session, required this.notifier});
+  final ConsumptionSession session;
+  final ConsumptionNotifier notifier;
+
+  @override
+  Widget build(BuildContext context) {
+    final netCost = AlcoholImpact.netCostForSession(session);
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
+      children: [
+        const _PhaseTitle(
+            'Recuperación', 'Hoy tu cuerpo restaura lo que el alcohol frenó.'),
+        const SizedBox(height: 16),
+        _SwitchTile(
+          label: 'Voy a extender mi ayuno de recuperación',
+          value: session.recoveryFastPlanned,
+          onChanged: notifier.setRecoveryFastPlanned,
+        ),
+        const SizedBox(height: 8),
+        _tip(Icons.self_improvement_outlined,
+            'Prioriza hidratación y movimiento ligero. Nada de entrenamiento intenso hoy.'),
+        _tip(Icons.eco_outlined,
+            'Extender el ayuno ayuda a recuperar autofagia y oxidación de grasa.'),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: _accent.withValues(alpha: 0.10),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: _accent.withValues(alpha: 0.3)),
+          ),
+          child: Text(
+            'La noche costó ${AlcoholImpact.label(netCost).toLowerCase()} '
+            '(${netCost.toStringAsFixed(0)} pts a tu Score del Día). Lo que hagas '
+            'hoy no lo borra, pero sí acelera la vuelta a tu línea de base.',
+            style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.85),
+                fontSize: 13,
+                height: 1.5),
+          ),
+        ),
+        const SizedBox(height: 24),
+        _PrimaryCta(
+          label: 'Cerrar protocolo',
+          onPressed: notifier.endProtocol,
+        ),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Piezas compartidas
+// ─────────────────────────────────────────────────────────────────────
+class _SummaryCard extends StatelessWidget {
+  const _SummaryCard({
+    required this.session,
+    required this.grams,
+    required this.clearH,
+    required this.netCost,
+  });
+  final ConsumptionSession session;
+  final double grams;
+  final double clearH;
+  final double netCost;
+
+  @override
+  Widget build(BuildContext context) {
+    final unidades = session.totalStandardUnits;
+    final over = session.budgetExceeded;
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
+        color: _card,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: accent.withValues(alpha: 0.3)),
+        border: Border.all(color: _accent.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -218,8 +620,8 @@ class _ActiveBody extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _metric('${unidades.toStringAsFixed(1)} UEA',
-                  'de ${s.budgetStandardUnits.toStringAsFixed(1)}',
-                  color: over ? const Color(0xFFE879A6) : Colors.white),
+                  'de ${session.budgetStandardUnits.toStringAsFixed(1)}',
+                  color: over ? _over : Colors.white),
               _metric('${grams.toStringAsFixed(0)} g', 'alcohol'),
               _metric(AlcoholMath.formatHours(clearH), 'para volver a cero'),
             ],
@@ -238,7 +640,7 @@ class _ActiveBody extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             over
-                ? 'Vas por encima de tu meta. Sin juzgar: un vaso de agua y bajá el ritmo.'
+                ? 'Vas por encima de tu meta. Sin juzgar: un vaso de agua y baja el ritmo.'
                 : 'Vas dentro del plan. Un vaso de agua por trago te mantiene ahí.',
             style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.55), fontSize: 12),
@@ -262,43 +664,17 @@ class _ActiveBody extends StatelessWidget {
       ],
     );
   }
+}
 
-  Widget _mitigationSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _sectionLabel('REDUCCIÓN DE DAÑO'),
-        _switchTile('Me hidraté antes (agua + electrolitos)',
-            session.hydratedBefore, notifier.setHydratedBefore),
-        _switchTile('Comí proteína/grasa/fibra antes', session.ateBefore,
-            notifier.setAteBefore),
-        _switchTile('Plan de ayuno de recuperación mañana',
-            session.recoveryFastPlanned, notifier.setRecoveryFastPlanned),
-      ],
-    );
-  }
+class _DrinksList extends StatelessWidget {
+  const _DrinksList({required this.session, required this.notifier});
+  final ConsumptionSession session;
+  final ConsumptionNotifier notifier;
 
-  Widget _switchTile(String label, bool value, ValueChanged<bool> onChanged) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(label,
-                style: const TextStyle(color: Colors.white, fontSize: 13)),
-          ),
-          Switch(
-            value: value,
-            onChanged: onChanged,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _drinksSection() {
+  @override
+  Widget build(BuildContext context) {
     if (session.drinks.isEmpty) {
-      return _sectionLabel('AÚN SIN TRAGOS REGISTRADOS');
+      return _sectionLabel('AÚN SIN TRAGOS · REGISTRA EL PRIMERO ABAJO');
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -322,7 +698,7 @@ class _ActiveBody extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 6),
               child: Row(
                 children: [
-                  Icon(Icons.circle, size: 7, color: accent),
+                  const Icon(Icons.circle, size: 7, color: _accent),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(d.name,
@@ -339,14 +715,19 @@ class _ActiveBody extends StatelessWidget {
       ],
     );
   }
+}
 
-  Widget _catalogSection() {
-    final categories = DrinkCategory.values;
+class _Catalog extends StatelessWidget {
+  const _Catalog({required this.notifier});
+  final ConsumptionNotifier notifier;
+
+  @override
+  Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _sectionLabel('REGISTRAR UN TRAGO'),
-        for (final cat in categories) ..._categoryBlock(cat),
+        for (final cat in DrinkCategory.values) ..._categoryBlock(cat),
       ],
     );
   }
@@ -369,23 +750,12 @@ class _ActiveBody extends StatelessWidget {
         children: items
             .map((item) => _DrinkChip(
                   item: item,
-                  accent: accent,
                   onTap: () => notifier.logDrink(item),
                 ))
             .toList(),
       ),
     ];
   }
-
-  Widget _sectionLabel(String text) => Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: Text(text,
-            style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.45),
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.5)),
-      );
 
   static String _categoryLabel(DrinkCategory c) => switch (c) {
         DrinkCategory.cerveza => 'Cervezas',
@@ -399,13 +769,8 @@ class _ActiveBody extends StatelessWidget {
 }
 
 class _DrinkChip extends StatelessWidget {
-  const _DrinkChip({
-    required this.item,
-    required this.accent,
-    required this.onTap,
-  });
+  const _DrinkChip({required this.item, required this.onTap});
   final AlcoholCatalogItem item;
-  final Color accent;
   final VoidCallback onTap;
 
   @override
@@ -416,14 +781,14 @@ class _DrinkChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: const Color(0xFF1E293B),
+          color: _card,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: accent.withValues(alpha: 0.25)),
+          border: Border.all(color: _accent.withValues(alpha: 0.25)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.add, size: 14, color: accent),
+            const Icon(Icons.add, size: 14, color: _accent),
             const SizedBox(width: 6),
             Text(item.name,
                 style: const TextStyle(color: Colors.white, fontSize: 12)),
@@ -436,4 +801,127 @@ class _DrinkChip extends StatelessWidget {
       ),
     );
   }
+}
+
+class _PhaseTitle extends StatelessWidget {
+  const _PhaseTitle(this.title, this.subtitle);
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title,
+            style: const TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.w800)),
+        const SizedBox(height: 4),
+        Text(subtitle,
+            style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.6), fontSize: 13)),
+      ],
+    );
+  }
+}
+
+class _SwitchTile extends StatelessWidget {
+  const _SwitchTile({
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+  final String label;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(label,
+                style: const TextStyle(color: Colors.white, fontSize: 13)),
+          ),
+          Switch(value: value, onChanged: onChanged),
+        ],
+      ),
+    );
+  }
+}
+
+class _PrimaryCta extends StatelessWidget {
+  const _PrimaryCta({required this.label, required this.onPressed});
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: FilledButton(
+        style: FilledButton.styleFrom(
+          backgroundColor: _accent,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        ),
+        onPressed: onPressed,
+        child: Text(label,
+            style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: Colors.white)),
+      ),
+    );
+  }
+}
+
+Widget _tip(IconData icon, String text) {
+  return Padding(
+    padding: const EdgeInsets.only(bottom: 10),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, color: _accent, size: 18),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(text,
+              style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.8),
+                  fontSize: 13,
+                  height: 1.45)),
+        ),
+      ],
+    ),
+  );
+}
+
+Widget _sectionLabel(String text) => Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Text(text,
+          style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.45),
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.5)),
+    );
+
+Widget _disclaimer() => Text(
+      'Esto no es consejo médico. La estimación de alcoholemia es orientativa '
+      'y nunca debe usarse para decidir si conducir.',
+      style: TextStyle(
+          color: Colors.white.withValues(alpha: 0.4),
+          fontSize: 11,
+          height: 1.4),
+    );
+
+String _hhmm(DateTime dt) {
+  final h = dt.hour.toString().padLeft(2, '0');
+  final m = dt.minute.toString().padLeft(2, '0');
+  return '$h:$m';
 }

@@ -117,13 +117,17 @@ class ConsumptionNotifier extends StateNotifier<ConsumptionSession>
     );
   }
 
-  /// Calcula la hora objetivo del último trago dejando [marginHours] de
-  /// margen antes de dormir, para proteger el sueño.
-  void computeLastCall(DateTime bedtime, {double marginHours = 3}) {
+  /// Registra la hora de dormir y calcula la hora objetivo del último trago
+  /// dejando el margen de sueño (por defecto 3 h) para proteger el REM.
+  /// Guarda ambas: `bedtime` (para el riesgo de sueño de la Fase C) y
+  /// `lastCallTarget` (para la cuenta regresiva de la Fase B).
+  void setBedtime(DateTime bedtime,
+      {Duration margin = ConsumptionSession.sleepMargin}) {
     if (!mounted) return;
-    final target =
-        bedtime.subtract(Duration(minutes: (marginHours * 60).round()));
-    state = state.copyWith(lastCallTarget: target);
+    state = state.copyWith(
+      bedtime: bedtime,
+      lastCallTarget: bedtime.subtract(margin),
+    );
   }
 
   /// Avanza a la siguiente fase de forma lineal.
@@ -157,6 +161,12 @@ class ConsumptionNotifier extends StateNotifier<ConsumptionSession>
   }) {
     final user = _ref.read(currentUserStreamProvider).value;
     if (user == null) return;
+
+    // Guiado y contextual: el primer trago mueve la sesión de "Antes" a
+    // "Durante" sin que el usuario tenga que tocar nada.
+    if (mounted && state.phase == ConsumptionPhase.antes) {
+      state = state.copyWith(phase: ConsumptionPhase.durante);
+    }
 
     final event = DrinkEvent.fromCatalog(
       item,

@@ -13,6 +13,10 @@ import 'package:elena_app/src/features/alcohol/domain/drink_event.dart';
 /// Fase del protocolo. Avanza de forma lineal, salvo `inactive`.
 enum ConsumptionPhase { inactive, antes, durante, despues, recuperacion }
 
+/// Riesgo de impacto en el sueño según cuándo fue el último trago frente a
+/// la hora de dormir. Sin juicio: informa para que el usuario decida.
+enum SleepRisk { none, low, high }
+
 class ConsumptionSession {
   final ConsumptionPhase phase;
 
@@ -26,6 +30,10 @@ class ConsumptionSession {
   /// que se calcula desde la hora de dormir del usuario.
   final DateTime? lastCallTarget;
 
+  /// Hora de dormir declarada por el usuario en la Fase A. De aquí sale
+  /// `lastCallTarget` (bedtime − margen) y el riesgo de sueño de la Fase C.
+  final DateTime? bedtime;
+
   // ── Acciones de mitigación (Fase A y D) ─────────────────────────────
   final bool hydratedBefore;
   final bool ateBefore;
@@ -36,6 +44,7 @@ class ConsumptionSession {
     this.budgetStandardUnits = 4.0,
     this.drinks = const [],
     this.lastCallTarget,
+    this.bedtime,
     this.hydratedBefore = false,
     this.ateBefore = false,
     this.recoveryFastPlanned = false,
@@ -53,6 +62,30 @@ class ConsumptionSession {
   double get remainingStandardUnits => budgetStandardUnits - totalStandardUnits;
 
   bool get budgetExceeded => totalStandardUnits > budgetStandardUnits;
+
+  /// Momento del último trago registrado (o null si no hay ninguno).
+  DateTime? get lastDrinkAt {
+    if (drinks.isEmpty) return null;
+    var latest = drinks.first.timestamp;
+    for (final d in drinks) {
+      if (d.timestamp.isAfter(latest)) latest = d.timestamp;
+    }
+    return latest;
+  }
+
+  /// Margen recomendado entre el último trago y dormir, para proteger REM.
+  static const Duration sleepMargin = Duration(hours: 3);
+
+  /// Riesgo de impacto en el sueño según el último trago vs la hora de
+  /// dormir. Sin bedtime o sin tragos → `none`. Dentro del margen de 3 h
+  /// → `low`; con el último trago demasiado cerca de dormir → `high`.
+  SleepRisk get sleepRisk {
+    final last = lastDrinkAt;
+    final bt = bedtime;
+    if (last == null || bt == null) return SleepRisk.none;
+    final safeCutoff = bt.subtract(sleepMargin);
+    return last.isAfter(safeCutoff) ? SleepRisk.high : SleepRisk.low;
+  }
 
   /// Proporción de tragos acompañados de agua (regla 1:1). 0..1.
   double get hydrationRatio {
@@ -83,6 +116,7 @@ class ConsumptionSession {
     double? budgetStandardUnits,
     List<DrinkEvent>? drinks,
     DateTime? lastCallTarget,
+    DateTime? bedtime,
     bool? hydratedBefore,
     bool? ateBefore,
     bool? recoveryFastPlanned,
@@ -92,6 +126,7 @@ class ConsumptionSession {
       budgetStandardUnits: budgetStandardUnits ?? this.budgetStandardUnits,
       drinks: drinks ?? this.drinks,
       lastCallTarget: lastCallTarget ?? this.lastCallTarget,
+      bedtime: bedtime ?? this.bedtime,
       hydratedBefore: hydratedBefore ?? this.hydratedBefore,
       ateBefore: ateBefore ?? this.ateBefore,
       recoveryFastPlanned: recoveryFastPlanned ?? this.recoveryFastPlanned,
