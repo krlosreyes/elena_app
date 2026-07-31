@@ -15,6 +15,9 @@ import 'package:elena_app/src/features/goals/application/pillar_goal_providers.d
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
 import 'package:elena_app/src/features/onboarding/application/tour_targets_provider.dart';
 import 'package:elena_app/src/features/streak/application/daily_score_provider.dart';
+// SPEC-261.1: Score del Día de presentación con el costo del alcohol
+// descontado (equivale al display cuando no hay consumo).
+import 'package:elena_app/src/features/alcohol/application/alcohol_score_provider.dart';
 import 'package:elena_app/src/features/streak/application/streak_notifier.dart';
 import 'package:elena_app/src/features/streak/domain/fasting_schedule.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
@@ -68,7 +71,9 @@ class DashboardPillarsRow extends ConsumerWidget {
     // metabólico. Cuando hay ciclo abierto con protocolo conocido, el
     // score y el delta reflejan el ciclo en vivo, no el día calendárico.
     // Fallback al legacy cuando no hay ciclo o protocolo == 'Ninguno'.
-    final dailyScore = ref.watch(displayDailyScoreProvider);
+    // SPEC-261.1: el Score del Día mostrado descuenta el costo del alcohol
+    // de la sesión activa (0 cuando no hay consumo → idéntico al display).
+    final dailyScore = ref.watch(dailyScoreWithConsumptionProvider);
     final delta = ref.watch(displayDailyScoreDeltaProvider);
 
     // STATE-01: solo los campos que este widget pinta, no los objetos
