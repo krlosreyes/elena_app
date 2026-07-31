@@ -105,11 +105,20 @@ abstract final class ConsumptionTriggerEvaluator {
     return (ratio * 4).clamp(0.0, 1.0);
   }
 
-  /// ¿Estamos en una franja social (tarde-noche)? La usa la card del
-  /// dashboard para insinuarse con suavidad aunque aún no haya historial
-  /// personal que eleve P(consumo) por encima del umbral.
-  static bool isSocialWindow(DateTime now) =>
-      now.hour >= socialHourStart && now.hour <= socialHourEnd;
+  /// Hora (0-23) desde la que se abre la ventana el jueves.
+  static const int weekendStartHour = 6;
+
+  /// ¿Estamos en la ventana automática de fin de semana? Abre el jueves a
+  /// las 6:00 y permanece activa jueves, viernes, sábado y domingo. La card
+  /// del dashboard la usa para insinuarse sola; entre semana el usuario la
+  /// activa a mano desde el punto de entrada permanente (Perfil).
+  static bool isWeekendWindow(DateTime now) {
+    final wd = now.weekday;
+    if (wd == DateTime.thursday) return now.hour >= weekendStartHour;
+    return wd == DateTime.friday ||
+        wd == DateTime.saturday ||
+        wd == DateTime.sunday;
+  }
 
   /// Score por día/hora de contexto: jueves–sábado en franja social = 1.
   static double _dayHourContextScore(DateTime now) {

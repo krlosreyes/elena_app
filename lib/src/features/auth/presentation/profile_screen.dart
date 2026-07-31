@@ -21,6 +21,7 @@ import 'package:elena_app/src/features/auth/presentation/widgets/profile_danger_
 import 'package:elena_app/src/features/auth/presentation/widgets/profile_identity_card.dart';
 import 'package:elena_app/src/features/auth/presentation/widgets/profile_legal_section.dart';
 import 'package:elena_app/src/features/auth/presentation/widgets/protocolo_entry_card.dart';
+import 'package:elena_app/src/features/auth/presentation/widgets/alcohol_protocol_entry_card.dart';
 import 'package:elena_app/src/features/auth/presentation/widgets/ritmos_entry_card.dart';
 import 'package:elena_app/src/features/health_sync/presentation/health_sync_card.dart';
 import 'package:elena_app/src/features/profile/presentation/widgets/body_composition_card.dart';
@@ -195,6 +196,11 @@ class _ProfileBody extends ConsumerWidget {
         // ExerciseProfile — /onboarding lo rebota al dashboard porque
         // su perfil ya está completo (ver router_redirect.dart).
         const ExerciseHabitsEntryCard(),
+        const SizedBox(height: 12),
+        // SPEC-261.3: entrada permanente al Protocolo de Consumo Consciente
+        // para activarlo cuando el usuario quiera (también entre semana si
+        // tiene un evento), sin depender de la ventana automática del finde.
+        const AlcoholProtocolEntryCard(),
         const SizedBox(height: 24),
 
         // ── SPEC-132: sincronización con Apple Health / Health Connect

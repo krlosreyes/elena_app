@@ -45,11 +45,28 @@ void main() {
     });
   });
 
-  group('isSocialWindow', () {
-    test('tarde-noche = true, mañana = false', () {
-      expect(ConsumptionTriggerEvaluator.isSocialWindow(fridayNight), isTrue);
+  group('isWeekendWindow', () {
+    test('el jueves abre a las 6:00 (antes = false)', () {
+      final juevesTemprano = DateTime(2026, 7, 30, 5, 59); // jueves 05:59
+      final juevesSeis = DateTime(2026, 7, 30, 6, 0); // jueves 06:00
       expect(
-          ConsumptionTriggerEvaluator.isSocialWindow(mondayMorning), isFalse);
+          ConsumptionTriggerEvaluator.isWeekendWindow(juevesTemprano), isFalse);
+      expect(ConsumptionTriggerEvaluator.isWeekendWindow(juevesSeis), isTrue);
+    });
+
+    test('viernes, sábado y domingo = true todo el día', () {
+      expect(ConsumptionTriggerEvaluator.isWeekendWindow(fridayNight), isTrue);
+      final sabado = DateTime(2026, 8, 1, 3); // sábado madrugada
+      final domingo = DateTime(2026, 8, 2, 23); // domingo noche
+      expect(ConsumptionTriggerEvaluator.isWeekendWindow(sabado), isTrue);
+      expect(ConsumptionTriggerEvaluator.isWeekendWindow(domingo), isTrue);
+    });
+
+    test('lunes a miércoles = false', () {
+      final miercoles = DateTime(2026, 7, 29, 20); // miércoles noche
+      expect(
+          ConsumptionTriggerEvaluator.isWeekendWindow(mondayMorning), isFalse);
+      expect(ConsumptionTriggerEvaluator.isWeekendWindow(miercoles), isFalse);
     });
   });
 

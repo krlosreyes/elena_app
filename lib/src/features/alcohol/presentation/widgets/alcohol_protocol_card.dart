@@ -25,10 +25,11 @@ class AlcoholProtocolCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final session = ref.watch(consumptionProvider);
-    final social = ConsumptionTriggerEvaluator.isSocialWindow(DateTime.now());
+    final weekend = ConsumptionTriggerEvaluator.isWeekendWindow(DateTime.now());
 
-    // Fuera de franja social y sin sesión activa → no se insinúa.
-    if (!session.isActive && !social) return const SizedBox.shrink();
+    // Fuera de la ventana de fin de semana y sin sesión activa → no se
+    // insinúa. Entre semana el usuario la activa a mano desde Perfil.
+    if (!session.isActive && !weekend) return const SizedBox.shrink();
 
     final String title;
     final String subtitle;

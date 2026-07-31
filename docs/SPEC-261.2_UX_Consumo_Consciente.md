@@ -55,8 +55,13 @@ El indicador de fase (stepper) es visible siempre que la sesión está activa.
 - CTA: **Cerrar protocolo**.
 
 ## Entrada al viaje
-- `AlcoholProtocolCard` (dashboard) aparece en franja social o si la sesión está
-  activa → navega a `/protocolo-alcohol`.
+- **Automática (dashboard):** `AlcoholProtocolCard` aparece en la **ventana de
+  fin de semana** —jueves desde las 6:00 a.m. y todo viernes, sábado y
+  domingo— o siempre que haya una sesión activa. Fuera de esa ventana se
+  oculta. Regla en `ConsumptionTriggerEvaluator.isWeekendWindow`.
+- **Permanente (manual):** `AlcoholProtocolEntryCard` en **Perfil >
+  Configuración**, visible siempre. Es la vía para activarlo entre semana si
+  hay un evento. Ambas navegan a `/protocolo-alcohol`.
 
 ## Nivel de guía (decisión: guiada y contextual)
 - Auto-avance en la señal obvia (1er trago → Durante). El resto de transiciones
