@@ -99,8 +99,7 @@ class ConsumptionNotifier extends StateNotifier<ConsumptionSession>
     state = state.copyWith(budgetStandardUnits: standardUnits);
   }
 
-  void setHydratedBefore(bool value) =>
-      _setFlag(hydratedBefore: value);
+  void setHydratedBefore(bool value) => _setFlag(hydratedBefore: value);
   void setAteBefore(bool value) => _setFlag(ateBefore: value);
   void setRecoveryFastPlanned(bool value) =>
       _setFlag(recoveryFastPlanned: value);

@@ -10,8 +10,8 @@ void main() {
 
   // Viernes reales garantizados: parten de un viernes conocido y restan
   // semanas completas (mismo día de semana y misma franja horaria).
-  List<DateTime> manyFridayNights(int n) =>
-      List.generate(n, (i) => fridayNight.subtract(Duration(days: 7 * (i + 1))));
+  List<DateTime> manyFridayNights(int n) => List.generate(
+      n, (i) => fridayNight.subtract(Duration(days: 7 * (i + 1))));
 
   group('intención declarada', () {
     test('es determinante: prob 1.0 y muestra CTA', () {
@@ -42,6 +42,14 @@ void main() {
       // Solo el score de día/hora (0.20). No alcanza el umbral.
       expect(f.probability, closeTo(0.20, 0.001));
       expect(f.shouldPromptProtocol, isFalse);
+    });
+  });
+
+  group('isSocialWindow', () {
+    test('tarde-noche = true, mañana = false', () {
+      expect(ConsumptionTriggerEvaluator.isSocialWindow(fridayNight), isTrue);
+      expect(
+          ConsumptionTriggerEvaluator.isSocialWindow(mondayMorning), isFalse);
     });
   });
 

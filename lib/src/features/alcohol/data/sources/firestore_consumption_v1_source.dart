@@ -28,7 +28,8 @@ class FirestoreConsumptionV1Source implements ConsumptionDataSource {
       isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay),
     );
     if (endOfDay != null) {
-      query = query.where('timestamp', isLessThan: Timestamp.fromDate(endOfDay));
+      query =
+          query.where('timestamp', isLessThan: Timestamp.fromDate(endOfDay));
     }
     return query.snapshots().map(
           (snap) => snap.docs

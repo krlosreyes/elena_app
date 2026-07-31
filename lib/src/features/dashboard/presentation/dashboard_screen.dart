@@ -50,6 +50,8 @@ import 'package:elena_app/src/features/dashboard/application/ui_interaction_noti
 import 'package:elena_app/src/features/glucose/application/glucose_providers.dart';
 import 'package:elena_app/src/features/glucose/presentation/widgets/glucose_consent_sheet.dart';
 import 'package:elena_app/src/features/glucose/presentation/widgets/glucose_morning_reminder_card.dart';
+// SPEC-261: card de entrada al Protocolo de Consumo Consciente (alcohol).
+import 'package:elena_app/src/features/alcohol/presentation/widgets/alcohol_protocol_card.dart';
 
 // SPEC-88 fix: BodyCompositionCard y GoalsDashboardWidget se retiraron
 // del Dashboard. La primera vive ahora en Profile; la segunda queda
@@ -300,6 +302,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       // abierta (GlucoseWindowState.isOpen == false), mismo
                       // criterio "widget autocontenido" que StreakAtRiskBanner.
                       const GlucoseMorningReminderCard(),
+
+                      // SPEC-261: Protocolo de Consumo Consciente. Se muestra
+                      // en franja social o si hay sesión activa; se oculta sola
+                      // el resto del tiempo (widget autocontenido, opt-in).
+                      const AlcoholProtocolCard(),
 
                       // BANNER DE ENGAGEMENT (SPEC-07 + SPEC-72.2 dismiss por sesión)
                       const EngagementBanner(),

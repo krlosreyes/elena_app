@@ -44,15 +44,13 @@ class ConsumptionSession {
   bool get isActive => phase != ConsumptionPhase.inactive;
 
   /// Gramos de alcohol acumulados en la sesión.
-  double get totalGrams =>
-      drinks.fold<double>(0, (sum, d) => sum + d.grams);
+  double get totalGrams => drinks.fold<double>(0, (sum, d) => sum + d.grams);
 
   /// UEA acumuladas.
   double get totalStandardUnits => totalGrams / 10.0;
 
   /// Cuántas UEA quedan dentro del presupuesto (puede ser negativo).
-  double get remainingStandardUnits =>
-      budgetStandardUnits - totalStandardUnits;
+  double get remainingStandardUnits => budgetStandardUnits - totalStandardUnits;
 
   bool get budgetExceeded => totalStandardUnits > budgetStandardUnits;
 

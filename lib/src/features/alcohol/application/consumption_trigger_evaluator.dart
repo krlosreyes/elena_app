@@ -105,6 +105,12 @@ abstract final class ConsumptionTriggerEvaluator {
     return (ratio * 4).clamp(0.0, 1.0);
   }
 
+  /// ¿Estamos en una franja social (tarde-noche)? La usa la card del
+  /// dashboard para insinuarse con suavidad aunque aún no haya historial
+  /// personal que eleve P(consumo) por encima del umbral.
+  static bool isSocialWindow(DateTime now) =>
+      now.hour >= socialHourStart && now.hour <= socialHourEnd;
+
   /// Score por día/hora de contexto: jueves–sábado en franja social = 1.
   static double _dayHourContextScore(DateTime now) {
     final inSocialHour =
