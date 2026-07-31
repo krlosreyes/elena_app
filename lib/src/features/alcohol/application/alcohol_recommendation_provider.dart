@@ -26,8 +26,8 @@ final drinkRecommendationProvider = Provider<DrinkRecommendation?>((ref) {
     start.year,
     start.month,
     start.day,
-    user.sleepTime.hour,
-    user.sleepTime.minute,
+    user.profile.sleepTime.hour,
+    user.profile.sleepTime.minute,
   );
 
   return DrinkRecommendation.compute(

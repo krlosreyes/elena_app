@@ -8,6 +8,7 @@
 //
 // Todo es determinístico y sin I/O ni reloj propio: 100% testeable.
 
+import 'package:elena_app/src/features/alcohol/domain/alcohol_catalog_item.dart';
 import 'package:elena_app/src/features/alcohol/domain/alcohol_math.dart';
 import 'package:elena_app/src/features/alcohol/domain/drink_type.dart';
 
