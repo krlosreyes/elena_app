@@ -958,9 +958,67 @@ class _DrinksList extends StatelessWidget {
   }
 }
 
-class _Catalog extends StatelessWidget {
+class _Catalog extends StatefulWidget {
   const _Catalog({required this.notifier});
   final ConsumptionNotifier notifier;
+
+  @override
+  State<_Catalog> createState() => _CatalogState();
+}
+
+class _CatalogState extends State<_Catalog> {
+  AlcoholCatalogItem _selected = AlcoholCatalog.all.first;
+
+  Future<void> _openPicker() async {
+    final options = AlcoholCatalog.all;
+    var sel = options.indexOf(_selected);
+    if (sel < 0) sel = 0;
+    await showCupertinoModalPopup<void>(
+      context: context,
+      builder: (ctx) => Container(
+        height: 300,
+        color: _card,
+        child: Column(
+          children: [
+            Align(
+              alignment: Alignment.centerRight,
+              child: CupertinoButton(
+                onPressed: () {
+                  setState(() => _selected = options[sel]);
+                  Navigator.of(ctx).pop();
+                },
+                child: const Text('Listo',
+                    style:
+                        TextStyle(color: _accent, fontWeight: FontWeight.w700)),
+              ),
+            ),
+            Expanded(
+              child: CupertinoPicker(
+                scrollController: FixedExtentScrollController(initialItem: sel),
+                itemExtent: 40,
+                backgroundColor: _card,
+                onSelectedItemChanged: (i) => sel = i,
+                children: options
+                    .map((o) => Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Text(
+                              '${o.name}  ·  ${o.standardUnitsFor().toStringAsFixed(1)} UEA',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                  color: Colors.white, fontSize: 16),
+                            ),
+                          ),
+                        ))
+                    .toList(),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -968,78 +1026,45 @@ class _Catalog extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _sectionLabel('REGISTRAR UN TRAGO'),
-        for (final cat in DrinkCategory.values) ..._categoryBlock(cat),
+        const SizedBox(height: 8),
+        _PickerField(
+          value:
+              '${_selected.name}  ·  ${_selected.standardUnitsFor().toStringAsFixed(1)} UEA',
+          icon: Icons.local_bar,
+          onTap: _openPicker,
+        ),
+        const SizedBox(height: 10),
+        InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () => widget.notifier.logDrink(_selected),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            decoration: BoxDecoration(
+              color: _accent,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.add, size: 18, color: Colors.white),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    'Registrar ${_selected.name}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ],
-    );
-  }
-
-  List<Widget> _categoryBlock(DrinkCategory cat) {
-    final items = AlcoholCatalog.byCategory(cat);
-    if (items.isEmpty) return const [];
-    return [
-      Padding(
-        padding: const EdgeInsets.only(top: 12, bottom: 6),
-        child: Text(_categoryLabel(cat),
-            style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.55),
-                fontSize: 12,
-                fontWeight: FontWeight.w600)),
-      ),
-      Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: items
-            .map((item) => _DrinkChip(
-                  item: item,
-                  onTap: () => notifier.logDrink(item),
-                ))
-            .toList(),
-      ),
-    ];
-  }
-
-  static String _categoryLabel(DrinkCategory c) => switch (c) {
-        DrinkCategory.cerveza => 'Cervezas',
-        DrinkCategory.vino => 'Vinos',
-        DrinkCategory.espumanteFortificado => 'Espumantes y fortificados',
-        DrinkCategory.destilado => 'Destilados',
-        DrinkCategory.aguardienteLatam => 'Aguardientes',
-        DrinkCategory.coctel => 'Cócteles',
-        DrinkCategory.sinAlcohol => 'Sin / bajo alcohol',
-      };
-}
-
-class _DrinkChip extends StatelessWidget {
-  const _DrinkChip({required this.item, required this.onTap});
-  final AlcoholCatalogItem item;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(20),
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: _card,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: _accent.withValues(alpha: 0.25)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.add, size: 14, color: _accent),
-            const SizedBox(width: 6),
-            Text(item.name,
-                style: const TextStyle(color: Colors.white, fontSize: 12)),
-            const SizedBox(width: 6),
-            Text('${item.standardUnitsFor().toStringAsFixed(1)} UEA',
-                style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.45), fontSize: 11)),
-          ],
-        ),
-      ),
     );
   }
 }
