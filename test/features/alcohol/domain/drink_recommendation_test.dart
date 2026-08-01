@@ -80,6 +80,16 @@ void main() {
       expect(r.spacingMinutes, greaterThanOrEqualTo(45));
     });
 
+    test('inicio tarde (22:00) NO manda el dormir a la noche siguiente', () {
+      // Regresión: antes bedtime saltaba a 22:00 del día siguiente (24 h) y el
+      // plan mostraba horas absurdas (último trago antes del inicio).
+      final r = vinoAt(DateTime(2026, 8, 1, 22, 0)); // sale a las 22:00
+      expect(
+          r.bedtime, DateTime(2026, 8, 2, 2, 0)); // dormir 02:00 esa madrugada
+      expect(r.bedtime.difference(r.lastCall), const Duration(hours: 3));
+      expect(r.tight, isTrue); // ventana chiquita: 0–1 servidas
+    });
+
     test('noche laboral (madrugas 7:00) → plan mínimo', () {
       final r = DrinkRecommendation.compute(
         type: vino,

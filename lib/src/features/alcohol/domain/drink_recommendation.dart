@@ -72,7 +72,7 @@ class DrinkRecommendation {
   /// Tope de madrugada para noche de descanso. NO usamos el reloj circadiano
   /// habitual (haría la ventana negativa cuando la salida es temprano): quien
   /// sale a las 20:00 no se acuesta a su hora fisiológica. Damos una ventana
-  /// realista hasta ~02:00 (o su hábito si trasnocha más aún).
+  /// realista hasta ~02:00 de la noche en curso, fijo.
   static const int restNightCapHour = 2;
   static const int restNightCapMinute = 0;
 
@@ -104,21 +104,16 @@ class DrinkRecommendation {
         bedtime = bedtime.add(const Duration(days: 1));
       }
     } else {
-      // Noche de descanso: tope realista de madrugada, o su hábito si
-      // trasnocha aún más. NUNCA la hora circadiana temprano (colapsaría la
-      // ventana y daría "0 tragos / último trago antes de salir").
-      final habitualOnNight = _nextOccurrenceAfter(
-        startTime,
-        habitualBedtime.hour,
-        habitualBedtime.minute,
-      );
-      final capOnNight = _nextOccurrenceAfter(
+      // Noche de descanso: dormir = el tope realista de madrugada (~02:00) de
+      // ESTA noche. No lo comparamos contra el hábito circadiano: si el usuario
+      // sale tarde (p. ej. 22:00) y su hábito es 22:00, ese hábito se iría a la
+      // noche siguiente y el "dormir" quedaba 24 h después (horas absurdas en
+      // el plan). El tope de madrugada siempre cae en la noche en curso.
+      bedtime = _nextOccurrenceAfter(
         startTime,
         restNightCapHour,
         restNightCapMinute,
       );
-      bedtime =
-          habitualOnNight.isAfter(capOnNight) ? habitualOnNight : capOnNight;
     }
     final lastCall = bedtime.subtract(lastCallMargin);
     final windowMin = lastCall.difference(startTime).inMinutes;
