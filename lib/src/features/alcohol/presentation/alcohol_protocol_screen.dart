@@ -535,10 +535,11 @@ class _PlanCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           _row(Icons.local_bar,
-              '${rec.drinks} ${rec.drinks == 1 ? "trago" : "tragos"} · uno cada ~${rec.spacingMinutes} min'),
+              '${rec.drinks} × ${rec.servingLabel} · una cada ${_spacingText(rec.spacingMinutes)}'),
           _row(Icons.local_drink_outlined,
               '${rec.waterGlasses} ${rec.waterGlasses == 1 ? "vaso" : "vasos"} de agua (1:1) + 500 ml antes'),
-          _row(Icons.wine_bar, 'Tómalo en ${rec.vessel}, sin servidas dobles'),
+          _row(Icons.wine_bar,
+              'Servida estándar (${rec.servingLabel}), sin dobles ni "llenar la copa"'),
           _row(Icons.nightlight_round,
               'Último trago ${_hhmm(rec.lastCall)} · a dormir ${_hhmm(rec.bedtime)}'),
           if (type != null && type!.highCongeners)
@@ -550,17 +551,18 @@ class _PlanCard extends StatelessWidget {
           const SizedBox(height: 6),
           _row(Icons.restaurant,
               'Come proteína/grasa/fibra antes: baja el pico de alcohol hasta 20–57 %'),
-          if (rec.tight) ...[
-            const SizedBox(height: 8),
-            Text(
-              'Ventana corta (mañana madrugas): pocos tragos y temprano es lo que '
-              'protege tu descanso.',
-              style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.7),
-                  fontSize: 12,
-                  height: 1.4),
-            ),
-          ],
+          const SizedBox(height: 8),
+          Text(
+            rec.tight
+                ? 'Tu cuerpo y el tiempo dan para poco: una servida bien '
+                    'espaciada es lo que te deja en zona social.'
+                : 'Este plan te mantiene en zona social. Pasarte de ahí ya no '
+                    'es "una copa más", es emborracharte.',
+            style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.7),
+                fontSize: 12,
+                height: 1.4),
+          ),
         ],
       ),
     );
@@ -594,6 +596,9 @@ Widget _hint(String text) => Text(
           fontSize: 12,
           height: 1.4),
     );
+
+/// Minutos → texto legible del espaciado, ej. 132 → "2 h 12 min".
+String _spacingText(int minutes) => AlcoholMath.formatHours(minutes / 60);
 
 // ─────────────────────────────────────────────────────────────────────
 // Fase B · Durante (en vivo)

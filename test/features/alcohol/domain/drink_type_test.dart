@@ -15,10 +15,12 @@ void main() {
     expect(DrinkTypes.byId('no-existe'), isNull);
   });
 
-  test('todos traen etiqueta y hint no vacíos', () {
+  test('todos traen etiqueta, hint y servida física válidos', () {
     for (final t in DrinkTypes.all) {
       expect(t.label.trim(), isNotEmpty);
       expect(t.hint.trim(), isNotEmpty);
+      expect(t.servingMl, greaterThan(0));
+      expect(t.abv, greaterThan(0));
     }
   });
 

@@ -164,7 +164,8 @@ class ConsumptionNotifier extends StateNotifier<ConsumptionSession>
   /// el registro (Durante).
   void applyPlan(DrinkRecommendation r) {
     if (!mounted) return;
-    final budget = r.drinks < 1 ? 1.0 : r.drinks.toDouble();
+    // El presupuesto del tracking va en UEA, no en servidas físicas.
+    final budget = r.budgetUnits < 1.0 ? 1.0 : r.budgetUnits;
     state = state.copyWith(
       budgetStandardUnits: budget,
       bedtime: r.bedtime,
