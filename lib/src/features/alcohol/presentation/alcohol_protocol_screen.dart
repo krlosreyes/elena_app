@@ -13,6 +13,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/alcohol/application/alcohol_recommendation_provider.dart';
@@ -65,6 +66,12 @@ class AlcoholProtocolScreen extends ConsumerWidget {
         ),
         centerTitle: false,
         actions: [
+          IconButton(
+            icon: Icon(Icons.history_rounded,
+                color: Colors.white.withValues(alpha: 0.8), size: 22),
+            tooltip: 'Tus salidas',
+            onPressed: () => context.push('/protocolo-alcohol/historial'),
+          ),
           if (session.isActive)
             TextButton(
               onPressed: notifier.endProtocol,

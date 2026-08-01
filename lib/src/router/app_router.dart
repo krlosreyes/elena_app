@@ -55,6 +55,7 @@ import 'package:elena_app/src/features/auth/presentation/objetivos_detail_screen
 // usuarios existentes — configurar/editar ExerciseProfile desde Perfil.
 import 'package:elena_app/src/features/exercise/presentation/exercise_habits_detail_screen.dart';
 // SPEC-261: Protocolo de Consumo Consciente (alcohol).
+import 'package:elena_app/src/features/alcohol/presentation/alcohol_history_screen.dart';
 import 'package:elena_app/src/features/alcohol/presentation/alcohol_protocol_screen.dart';
 
 /// SPEC-222: llave global del navigator raíz para deeplink routing
@@ -219,6 +220,12 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/protocolo-alcohol',
         name: 'protocolo-alcohol',
         builder: (context, state) => const AlcoholProtocolScreen(),
+      ),
+      // SPEC-261.9: historial de salidas (tendencia + lista).
+      GoRoute(
+        path: '/protocolo-alcohol/historial',
+        name: 'protocolo-alcohol-historial',
+        builder: (context, state) => const AlcoholHistoryScreen(),
       ),
       // SPEC-137 §RF-137-12: vista semanal del pilar Nutrición.
       // Navegable desde el botón "Ver semana →" del card "Nutrición
