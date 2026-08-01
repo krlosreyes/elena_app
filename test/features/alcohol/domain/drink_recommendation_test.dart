@@ -30,7 +30,7 @@ void main() {
       final r = vinoAt(DateTime(2026, 8, 1, 18, 0));
       expect(r.drinks, 2); // 2 COPAS reales, no 2 UEA
       expect(r.spacingMinutes, 132); // 86 min/UEA × 1,54 UEA/copa
-      expect(r.servingLabel, 'copa de 150 ml');
+      expect(r.servingLabel, 'copa de vino (150 ml)');
       expect(r.waterGlasses, 2);
       expect(r.tight, isFalse);
       // budgetUnits es UEA (para el tracking): 2 copas × ~1,54.

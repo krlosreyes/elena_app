@@ -8,7 +8,6 @@
 //
 // Todo es determinístico y sin I/O ni reloj propio: 100% testeable.
 
-import 'package:elena_app/src/features/alcohol/domain/alcohol_catalog_item.dart';
 import 'package:elena_app/src/features/alcohol/domain/alcohol_math.dart';
 import 'package:elena_app/src/features/alcohol/domain/drink_type.dart';
 
@@ -32,10 +31,7 @@ class DrinkRecommendation {
   /// Hora del último trago (bedtime − margen de sueño).
   final DateTime lastCall;
 
-  /// Recipiente sugerido para el tipo elegido (copa/vaso/trago).
-  final String vessel;
-
-  /// Etiqueta legible de la servida, ej. "copa de 150 ml".
+  /// Etiqueta legible de la servida, ej. "copa de vino (150 ml)".
   final String servingLabel;
 
   /// La ventana/tope apenas dan para una servida: plan mínimo.
@@ -48,7 +44,6 @@ class DrinkRecommendation {
     required this.waterGlasses,
     required this.bedtime,
     required this.lastCall,
-    required this.vessel,
     required this.servingLabel,
     required this.tight,
   });
@@ -118,11 +113,8 @@ class DrinkRecommendation {
     final lastCall = bedtime.subtract(lastCallMargin);
     final windowMin = lastCall.difference(startTime).inMinutes;
 
-    // 2) Física de UNA servida real (una copa, un vaso, un trago).
-    final gramsPerServing = AlcoholMath.gramsOfAlcohol(
-      volumeMl: type.servingMl,
-      abv: type.abv,
-    );
+    // 2) Física de UNA servida real (declarada por el tipo en gramos puros).
+    final gramsPerServing = type.gramsPerServing;
     final ueaPerServing =
         gramsPerServing <= 0 ? 1.0 : AlcoholMath.standardUnits(gramsPerServing);
 
@@ -170,8 +162,7 @@ class DrinkRecommendation {
       waterGlasses: servings,
       bedtime: bedtime,
       lastCall: lastCall,
-      vessel: type.vessel.label,
-      servingLabel: '${type.vessel.label} de ${type.servingMl.round()} ml',
+      servingLabel: type.servingLabel,
       tight: servings <= 1,
     );
   }

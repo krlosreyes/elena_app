@@ -358,9 +358,16 @@ class _AntesBody extends ConsumerWidget {
                 onSelectedItemChanged: (i) => sel = i,
                 children: options
                     .map((o) => Center(
-                          child: Text(o.label,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Text(
+                              o.label,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
-                                  color: Colors.white, fontSize: 16)),
+                                  color: Colors.white, fontSize: 16),
+                            ),
+                          ),
                         ))
                     .toList(),
               ),
@@ -539,7 +546,7 @@ class _PlanCard extends StatelessWidget {
           _row(Icons.local_drink_outlined,
               '${rec.waterGlasses} ${rec.waterGlasses == 1 ? "vaso" : "vasos"} de agua (1:1) + 500 ml antes'),
           _row(Icons.wine_bar,
-              'Servida estándar (${rec.servingLabel}), sin dobles ni "llenar la copa"'),
+              'Una servida = ${rec.servingLabel}. Sin dobles ni "rellenar".'),
           _row(Icons.nightlight_round,
               'Último trago ${_hhmm(rec.lastCall)} · a dormir ${_hhmm(rec.bedtime)}'),
           if (type != null && type!.highCongeners)

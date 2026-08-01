@@ -15,17 +15,26 @@ void main() {
     expect(DrinkTypes.byId('no-existe'), isNull);
   });
 
-  test('todos traen etiqueta, hint y servida física válidos', () {
+  test('todos traen etiqueta, hint, servida y gramos válidos', () {
     for (final t in DrinkTypes.all) {
       expect(t.label.trim(), isNotEmpty);
       expect(t.hint.trim(), isNotEmpty);
-      expect(t.servingMl, greaterThan(0));
-      expect(t.abv, greaterThan(0));
+      expect(t.servingLabel.trim(), isNotEmpty);
+      expect(t.gramsPerServing, greaterThan(0));
     }
   });
 
-  test('hay al menos un claro y un oscuro con congéneres', () {
-    expect(DrinkTypes.byId('destilado-oscuro')!.highCongeners, isTrue);
-    expect(DrinkTypes.byId('destilado-claro')!.highCongeners, isFalse);
+  test('tragos populares reconocibles, sin "destilado claro/oscuro"', () {
+    final labels = DrinkTypes.all.map((t) => t.label.toLowerCase());
+    expect(labels.any((l) => l.contains('destilado')), isFalse);
+    expect(DrinkTypes.byId('cuba-libre'), isNotNull);
+    expect(DrinkTypes.byId('mojito'), isNotNull);
+    expect(DrinkTypes.byId('pina-colada'), isNotNull);
+    expect(DrinkTypes.byId('crema-whisky'), isNotNull);
+  });
+
+  test('congéneres: whisky sí, tequila no', () {
+    expect(DrinkTypes.byId('whisky')!.highCongeners, isTrue);
+    expect(DrinkTypes.byId('tequila')!.highCongeners, isFalse);
   });
 }
