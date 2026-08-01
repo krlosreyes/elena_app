@@ -52,7 +52,6 @@ import 'package:elena_app/src/features/glucose/presentation/widgets/glucose_cons
 import 'package:elena_app/src/features/glucose/presentation/widgets/glucose_morning_reminder_card.dart';
 // SPEC-261: card de entrada al Protocolo de Consumo Consciente (alcohol).
 import 'package:elena_app/src/features/alcohol/presentation/widgets/alcohol_protocol_card.dart';
-import 'package:elena_app/src/features/alcohol/presentation/widgets/alcohol_header_button.dart';
 
 // SPEC-88 fix: BodyCompositionCard y GoalsDashboardWidget se retiraron
 // del Dashboard. La primera vive ahora en Profile; la segunda queda
@@ -276,9 +275,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   child: Column(
                     children: [
                       const SizedBox(height: 10),
-                      const ElenaHeader(
-                        actions: AlcoholHeaderButton(),
-                      ),
+                      const ElenaHeader(),
                       const SizedBox(height: 10),
 
                       // Propuesta "racha protagonista" (2026-07-15, P1): la

@@ -13,6 +13,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:elena_app/src/features/alcohol/application/consumption_notifier.dart';
+import 'package:elena_app/src/features/alcohol/application/consumption_trigger_evaluator.dart';
 import 'package:elena_app/src/features/alcohol/domain/consumption_session.dart';
 
 class AlcoholProtocolCard extends ConsumerWidget {
@@ -24,17 +25,29 @@ class AlcoholProtocolCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final session = ref.watch(consumptionProvider);
+    final active = session.isActive;
+    final inWindow =
+        ConsumptionTriggerEvaluator.isWeekendWindow(DateTime.now());
 
-    // SPEC-261.4: el acceso vive ahora en el ícono del header. Esta card es
-    // solo el ESTADO en vivo cuando hay una sesión activa; si no, se oculta.
-    if (!session.isActive) return const SizedBox.shrink();
+    // SPEC-261.8: esta card es el ACCESO PRIMARIO al protocolo.
+    //   - Sesión activa → estado en vivo (acompañamiento en curso).
+    //   - Fin de semana sin sesión → invitación suave a armar el plan.
+    //   - Resto → oculta (opt-in, sin nagging).
+    if (!active && !inWindow) return const SizedBox.shrink();
 
-    const title = 'Modo fiesta activo';
-    final unidades = session.totalStandardUnits;
-    final presupuesto = session.budgetStandardUnits;
-    final subtitle =
-        '${unidades.toStringAsFixed(1)} de ${presupuesto.toStringAsFixed(1)} '
-        'UEA · ${_phaseLabel(session.phase)}';
+    final String title;
+    final String subtitle;
+    if (active) {
+      title = 'Modo fiesta activo';
+      final unidades = session.totalStandardUnits;
+      final presupuesto = session.budgetStandardUnits;
+      subtitle =
+          '${unidades.toStringAsFixed(1)} de ${presupuesto.toStringAsFixed(1)} '
+          'UEA · ${_phaseLabel(session.phase)}';
+    } else {
+      title = '¿Sales esta noche?';
+      subtitle = 'Arma tu plan: menos borrachera, mejor descanso.';
+    }
 
     return Padding(
       padding: const EdgeInsets.only(top: 12),
