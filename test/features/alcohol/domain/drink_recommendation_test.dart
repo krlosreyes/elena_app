@@ -78,5 +78,21 @@ void main() {
       final r = rest();
       expect(r.bedtime.difference(r.lastCall), const Duration(hours: 3));
     });
+
+    test('descanso con hábito temprano (22:00) NO colapsa la ventana', () {
+      // Reproduce el bug del screenshot: cerveza 20:00, Descanso, hábito 22:00.
+      final r = DrinkRecommendation.compute(
+        type: cerveza,
+        weightKg: 70,
+        sex: WidmarkSex.male,
+        startTime: start,
+        worksTomorrow: false,
+        habitualBedtime: DateTime(2026, 8, 1, 22, 0), // hábito temprano
+      );
+      expect(r.drinks, greaterThan(0)); // ya no es 0
+      expect(r.lastCall.isAfter(start), isTrue); // último trago tras el inicio
+      // Duerme en la madrugada (tope realista), no a las 22:00.
+      expect(r.bedtime.isAfter(DateTime(2026, 8, 2, 0, 0)), isTrue);
+    });
   });
 }

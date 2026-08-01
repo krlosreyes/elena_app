@@ -47,6 +47,20 @@ class DrinkRecommendation {
   /// Tope de UEA para no salir de la zona social, aunque el tiempo diera más.
   static const int socialZoneCapUnits = 6;
 
+  /// Tope de madrugada para noche de descanso. NO usamos el reloj circadiano
+  /// habitual (haría la ventana negativa cuando la salida es temprano): quien
+  /// sale a las 20:00 no se acuesta a su hora fisiológica. Damos una ventana
+  /// realista hasta ~02:00 (o su hábito si trasnocha más aún).
+  static const int restNightCapHour = 2;
+  static const int restNightCapMinute = 0;
+
+  /// Próxima vez que caen `hour:minute` DESPUÉS de `base` (hoy o mañana).
+  static DateTime _nextOccurrenceAfter(DateTime base, int hour, int minute) {
+    var t = DateTime(base.year, base.month, base.day, hour, minute);
+    if (!t.isAfter(base)) t = t.add(const Duration(days: 1));
+    return t;
+  }
+
   static DrinkRecommendation compute({
     required DrinkTypeOption type,
     required double weightKg,
@@ -61,14 +75,28 @@ class DrinkRecommendation {
     // 1) Hora de dormir según la agenda de mañana.
     DateTime bedtime;
     if (worksTomorrow && wakeTime != null) {
+      // Noche laboral: protegemos el sueño → dormir = levantarse − necesidad.
       bedtime =
           wakeTime.subtract(Duration(minutes: (sleepNeedHours * 60).round()));
+      if (!bedtime.isAfter(startTime)) {
+        bedtime = bedtime.add(const Duration(days: 1));
+      }
     } else {
-      bedtime = habitualBedtime;
-    }
-    // La cama tiene que ser DESPUÉS del inicio; si no, es de la madrugada.
-    if (!bedtime.isAfter(startTime)) {
-      bedtime = bedtime.add(const Duration(days: 1));
+      // Noche de descanso: tope realista de madrugada, o su hábito si
+      // trasnocha aún más. NUNCA la hora circadiana temprano (colapsaría la
+      // ventana y daría "0 tragos / último trago antes de salir").
+      final habitualOnNight = _nextOccurrenceAfter(
+        startTime,
+        habitualBedtime.hour,
+        habitualBedtime.minute,
+      );
+      final capOnNight = _nextOccurrenceAfter(
+        startTime,
+        restNightCapHour,
+        restNightCapMinute,
+      );
+      bedtime =
+          habitualOnNight.isAfter(capOnNight) ? habitualOnNight : capOnNight;
     }
     final lastCall = bedtime.subtract(lastCallMargin);
 
