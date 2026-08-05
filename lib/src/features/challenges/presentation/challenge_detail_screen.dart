@@ -62,6 +62,12 @@ class _ChallengeDetailScreenState extends ConsumerState<ChallengeDetailScreen> {
             style: TextStyle(fontWeight: FontWeight.w800, fontSize: 20)),
         centerTitle: false,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.help_outline_rounded,
+                color: AppColors.textSecondary),
+            tooltip: 'Cómo funciona',
+            onPressed: () => _showHowItWorks(context),
+          ),
           challengeAsync.maybeWhen(
             data: (c) => (c != null && c.ownerId == myId)
                 ? IconButton(
@@ -94,7 +100,16 @@ class _ChallengeDetailScreenState extends ConsumerState<ChallengeDetailScreen> {
                         fontSize: 12,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 1)),
-                const SizedBox(height: 8),
+                const SizedBox(height: 4),
+                const Text(
+                  'Cada día que cumples tus pilares suma 1 punto. Gana quien '
+                  'más días sume al final.',
+                  style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                      height: 1.35),
+                ),
+                const SizedBox(height: 12),
                 leaderboardAsync.when(
                   loading: () => const Padding(
                     padding: EdgeInsets.all(24),
@@ -218,6 +233,55 @@ class _ChallengeDetailScreenState extends ConsumerState<ChallengeDetailScreen> {
         ),
       );
 
+  void _showHowItWorks(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppColors.bgSurface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: const [
+            Text('Cómo funciona el reto',
+                style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800)),
+            SizedBox(height: 16),
+            _HowRow(
+              icon: Icons.favorite_rounded,
+              title: 'Se mide constancia, no peso',
+              body: 'Compites por sostener el hábito. La báscula no entra: '
+                  'lo que cuenta es cumplir tus pilares cada día.',
+            ),
+            _HowRow(
+              icon: Icons.check_circle_rounded,
+              title: 'Un día cumplido = 1 punto',
+              body: 'Suma un punto cada día que califica para tu racha '
+                  '(al menos 3 pilares, igual que en tu racha personal).',
+            ),
+            _HowRow(
+              icon: Icons.emoji_events_rounded,
+              title: 'Gana quien más días sume',
+              body: 'Al terminar el período, el primero del tablero es quien '
+                  'fue más constante. Sin trampas: sale de tu actividad real.',
+            ),
+            _HowRow(
+              icon: Icons.group_add_rounded,
+              title: 'Invita con el código',
+              body: 'Comparte el código de invitación. Quien lo tenga puede '
+                  'unirse y aparecer en el tablero.',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _confirmDelete(BuildContext context) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -254,6 +318,46 @@ class _ChallengeDetailScreenState extends ConsumerState<ChallengeDetailScreen> {
             .showSnackBar(SnackBar(content: Text(e.message)));
       }
     }
+  }
+}
+
+// ── Fila del explainer "cómo funciona" ──────────────────────────────────────
+class _HowRow extends StatelessWidget {
+  const _HowRow({required this.icon, required this.title, required this.body});
+  final IconData icon;
+  final String title;
+  final String body;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: _accent, size: 22),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title,
+                    style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700)),
+                const SizedBox(height: 2),
+                Text(body,
+                    style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                        height: 1.35)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
