@@ -998,7 +998,7 @@ class FastingConsciousnessCard extends ConsumerWidget {
     final Duration maxBack = Duration(hours: targetHours);
     final DateTime targetEarliest =
         now.subtract(maxBack).add(const Duration(minutes: 1));
-    final DateTime hardEarliest = now.subtract(const Duration(hours: 24));
+    final DateTime hardEarliest = now.subtract(const Duration(days: 7));
     // El más RECIENTE de ambos límites (el más restrictivo).
     final DateTime earliest =
         targetEarliest.isAfter(hardEarliest) ? targetEarliest : hardEarliest;
@@ -1057,12 +1057,12 @@ class FastingConsciousnessCard extends ConsumerWidget {
       );
       return;
     }
-    if (now.difference(finalDateTime).inHours > 24) {
+    if (now.difference(finalDateTime) > const Duration(days: 7)) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'La corrección no puede ser más de 24h atrás.',
+            'La corrección no puede ser de hace más de 7 días.',
           ),
           backgroundColor: Colors.redAccent,
         ),
@@ -1096,15 +1096,15 @@ class FastingConsciousnessCard extends ConsumerWidget {
   ///
   /// Se diferencia de `_showCorrectStartTimePicker` en que aplica al
   /// estado INACTIVO y no clampa contra el target: un ayuno olvidado pudo
-  /// llevar muchas horas y es legítimo registrarlo así (el límite sano es
-  /// 24h atrás, igual que en la corrección).
+  /// llevar muchas horas y es legítimo registrarlo así (la guarda amplia es
+  /// 7 días atrás, igual que en la corrección y en el inicio manual).
   Future<void> _showOngoingFastPicker(
     BuildContext context,
     WidgetRef ref,
     FastingState state,
   ) async {
     final DateTime now = DateTime.now();
-    final DateTime earliest = now.subtract(const Duration(hours: 24));
+    final DateTime earliest = now.subtract(const Duration(days: 7));
 
     final DateTime? pickedDate = await showDatePicker(
       context: context,
@@ -1160,12 +1160,12 @@ class FastingConsciousnessCard extends ConsumerWidget {
       );
       return;
     }
-    if (now.difference(finalDateTime).inHours > 24) {
+    if (now.difference(finalDateTime) > const Duration(days: 7)) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'El inicio no puede ser más de 24h atrás.',
+            'El inicio no puede ser de hace más de 7 días.',
           ),
           backgroundColor: Colors.redAccent,
         ),

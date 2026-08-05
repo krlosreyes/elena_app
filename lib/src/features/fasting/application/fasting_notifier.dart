@@ -275,7 +275,7 @@ class FastingNotifier extends StateNotifier<FastingState> {
   /// Precondiciones:
   ///   - `state.isActive == true`
   ///   - `newStart < now` (no se acepta hora futura)
-  ///   - `newStart > now - 24h` (límite sano)
+  ///   - `newStart > now - 7 días` (guarda amplia; no limitamos ayunos largos)
   ///
   /// Si alguna falla, no-op silencioso. El caller (UI) ya validó.
   /// Si la corrección es exitosa, reagenda los hitos de notification
@@ -287,7 +287,7 @@ class FastingNotifier extends StateNotifier<FastingState> {
 
     final now = DateTime.now();
     if (newStart.isAfter(now)) return;
-    if (now.difference(newStart).inHours > 24) return;
+    if (now.difference(newStart) > const Duration(days: 7)) return;
 
     final repo = _ref.read(fastingIntervalRepositoryProvider);
     final newDuration = now.difference(newStart);
@@ -361,7 +361,8 @@ class FastingNotifier extends StateNotifier<FastingState> {
   ///
   /// Precondiciones (validadas también en la UI):
   ///   - `start < now` (no se acepta hora futura)
-  ///   - `start > now - 24h` (límite sano)
+  ///   - `start > now - 7 días` (guarda amplia; un ayuno olvidado o extendido
+  ///     puede llevar muchas horas y es legítimo registrarlo así)
   Future<void> registerOngoingFast(DateTime start) async {
     if (state.isActive) {
       await correctFastingStartTime(start);
@@ -373,7 +374,7 @@ class FastingNotifier extends StateNotifier<FastingState> {
 
     final now = DateTime.now();
     if (start.isAfter(now)) return;
-    if (now.difference(start).inHours > 24) return;
+    if (now.difference(start) > const Duration(days: 7)) return;
 
     final duration = now.difference(start);
 
