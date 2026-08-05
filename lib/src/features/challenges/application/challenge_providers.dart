@@ -1,5 +1,6 @@
 // SPEC-263: providers de lectura de retos (streams reactivos para la UI).
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elena_app/src/features/challenges/data/challenge_repository.dart';
@@ -42,6 +43,18 @@ final challengeLeaderboardProvider =
       .watch(challengeRepositoryProvider)
       .watchScores(code)
       .map(ChallengeScoring.leaderboard);
+});
+
+/// SPEC-264 fase 2: preferencia de recibir zumbidos por push (default true si
+/// el campo no existe). La Cloud Function consulta el mismo flag.
+final receiveNudgesProvider = StreamProvider<bool>((ref) {
+  final uid = ref.watch(currentUserStreamProvider).valueOrNull?.id;
+  if (uid == null || uid.isEmpty) return Stream<bool>.value(true);
+  return FirebaseFirestore.instance
+      .collection('users')
+      .doc(uid)
+      .snapshots()
+      .map((snap) => (snap.data()?['receiveNudges'] as bool?) ?? true);
 });
 
 /// SPEC-264: interacciones (zumbidos) dirigidas al usuario actual en un reto.

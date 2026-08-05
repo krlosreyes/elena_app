@@ -48,6 +48,8 @@ class ChallengesScreen extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
               children: [
                 _intro(),
+                const SizedBox(height: 12),
+                const _ReceiveNudgesToggle(),
                 const SizedBox(height: 16),
                 Row(
                   children: [
@@ -165,6 +167,41 @@ class ChallengesScreen extends ConsumerWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (_) => const _JoinChallengeSheet(),
+    );
+  }
+}
+
+// ── Opt-out de recibir zumbidos (SPEC-264 fase 2) ───────────────────────────
+class _ReceiveNudgesToggle extends ConsumerWidget {
+  const _ReceiveNudgesToggle();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final value = ref.watch(receiveNudgesProvider).valueOrNull ?? true;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.bgSurface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.notifications_active_rounded,
+              color: AppColors.textSecondary, size: 18),
+          const SizedBox(width: 10),
+          const Expanded(
+            child: Text('Recibir zumbidos de mis rivales',
+                style: TextStyle(color: AppColors.textPrimary, fontSize: 13)),
+          ),
+          Switch(
+            value: value,
+            activeColor: _accent,
+            onChanged: (v) =>
+                ref.read(challengeControllerProvider).setReceiveNudges(v),
+          ),
+        ],
+      ),
     );
   }
 }

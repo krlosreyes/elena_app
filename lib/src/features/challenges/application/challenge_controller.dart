@@ -13,6 +13,7 @@
 
 import 'dart:async';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elena_app/src/core/services/app_logger.dart';
@@ -294,6 +295,23 @@ class ChallengeController {
       AppLogger.error('ChallengeController.sendNudge falló', e);
       throw const ChallengeException(
         'No pudimos enviar la interacción. Inténtalo de nuevo.',
+      );
+    }
+  }
+
+  /// SPEC-264 fase 2: opt-out de recibir zumbidos por push. Escribe el flag
+  /// que la Cloud Function `onNudgeCreated` consulta antes de enviar.
+  Future<void> setReceiveNudges(bool value) async {
+    final user = _requireUser();
+    try {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.id)
+          .set({'receiveNudges': value}, SetOptions(merge: true));
+    } catch (e) {
+      AppLogger.error('ChallengeController.setReceiveNudges falló', e);
+      throw const ChallengeException(
+        'No pudimos guardar tu preferencia. Inténtalo de nuevo.',
       );
     }
   }

@@ -19,6 +19,7 @@ import 'package:elena_app/src/features/challenges/domain/challenge_rings.dart';
 import 'package:elena_app/src/features/challenges/domain/challenge_score.dart';
 import 'package:elena_app/src/features/challenges/domain/challenge_scoring.dart';
 import 'package:elena_app/src/features/challenges/domain/nudge.dart';
+import 'package:elena_app/src/features/challenges/presentation/nudge_buzz.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 
 const Color _accent = AppColors.accent;
@@ -77,13 +78,8 @@ class _ChallengeDetailScreenState extends ConsumerState<ChallengeDetailScreen> {
         _seenNudgeIds.add(n.id);
         final kind = n.kind;
         if (kind != null && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              backgroundColor: _accent,
-              content: Text(kind.messageFrom(n.fromName),
-                  style: const TextStyle(fontWeight: FontWeight.w700)),
-            ),
-          );
+          // Buzz in-app: vibración + overlay que tiembla (estilo MSN).
+          showNudgeBuzz(context, kind: kind, fromName: n.fromName);
         }
       }
     });

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/core/engine/imr_persistence_provider.dart';
 import 'package:elena_app/src/core/engine/metabolic_state_provider.dart';
 import 'package:elena_app/src/core/widgets/elena_header.dart';
@@ -275,15 +274,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   child: Column(
                     children: [
                       const SizedBox(height: 10),
-                      ElenaHeader(
-                        // SPEC-263: acceso directo a Retos de constancia.
-                        actions: IconButton(
-                          icon: const Icon(Icons.emoji_events_rounded,
-                              color: AppColors.accent, size: 24),
-                          tooltip: 'Retos',
-                          onPressed: () => context.push('/retos'),
-                        ),
-                      ),
+                      const ElenaHeader(),
                       const SizedBox(height: 10),
 
                       // Propuesta "racha protagonista" (2026-07-15, P1): la

@@ -40,14 +40,37 @@ por rival (resalta a quien "va colgado hoy"); hoja de envío de interacción con
 costo en perlas; recepción in-app por SnackBar (con baseline para no spamear el
 histórico); banner de cierre con ganador + "Otra vuelta (revancha)".
 
-## Límites de la v1 (deliberados)
-- **Sin push:** los zumbidos aparecen in-app (al abrir el reto), no como
-  notificación del sistema. El push (Cloud Function + FCM) es una fase posterior.
-- **Rate-limit / opt-out:** el catálogo cerrado + `fromUid/toUid` en reglas
-  evita forjar y auto-zumbarse, pero el cooldown/cap por par y el opt-out de
-  recepción quedan para la fase de push (donde el server puede imponerlos).
+## Push remoto (fase 2 — implementado)
+
+Además del "buzz" in-app (vibración + overlay que tiembla, `nudge_buzz.dart`,
+funciona con la app abierta), se agregó **push FCM** para despertar la app en
+background/cerrada:
+
+- **App:** `firebase_messaging` + `PushMessagingService` (permiso, token en
+  `users/{uid}/fcm_tokens/{token}`, refresh, background handler). Se engancha en
+  `main.dart` (`PushMessagingService.init()`), registra el token por sesión vía
+  `idTokenChanges`.
+- **Backend:** `functions/src/index.ts` → `onNudgeCreated` (trigger v2 sobre
+  `challenges/{code}/nudges/{nudgeId}`) envía FCM al `toUid`, respetando
+  **opt-out** (`users/{uid}.receiveNudges`) y un **tope de 6/hora** por
+  destinatario (`users/{uid}/push_state/nudges`). Limpia tokens muertos.
+- **Opt-out UI:** switch "Recibir zumbidos" en la pantalla de Retos
+  (`receiveNudgesProvider` + `setReceiveNudges`).
+
+### Lo que Carlos DEBE configurar (solo él)
+1. **iOS APNs:** subir a Firebase la *APNs Authentication Key* (o certificado)
+   desde Apple Developer, y habilitar Push Notifications + Background Modes
+   (Remote notifications) en el target iOS de Xcode. Sin esto, iOS **no**
+   entrega; Android funciona apenas se despliega la Function.
+2. `flutter pub get` (si falla la versión de `firebase_messaging`, correr
+   `flutter pub add firebase_messaging` para que resuelva la compatible).
+3. Desplegar la Function: `firebase deploy --only functions:onNudgeCreated`.
+
+## Otros límites v1
 - **Cierre del reto:** se detecta en cliente al abrir un reto terminado (no hay
   cron). El resultado se cuenta una sola vez (idempotente por código).
+- **Cooldown por par emisor→receptor:** el tope actual es por destinatario/hora
+  (global), no por par. Suficiente para v1.
 
 ## Tests
 Dominio: `challenge_rings_test`, `nudge_test`, `reto_badges_test`,

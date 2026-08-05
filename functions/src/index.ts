@@ -30,6 +30,8 @@ import * as admin from "firebase-admin";
 import { auth } from "firebase-functions/v1";
 import { EventContext } from "firebase-functions/v1";
 import { https } from "firebase-functions/v2";
+// SPEC-264 fase 2: trigger v2 de Firestore para el push de zumbidos.
+import { onDocumentCreated } from "firebase-functions/v2/firestore";
 import { UserRecord } from "firebase-admin/auth";
 import {
   Firestore,
@@ -355,3 +357,106 @@ export const onUserDeleted = auth.user().onDelete(async (user: UserRecord, _cont
 
   log("Borrado en cascada completado");
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SPEC-264 (fase 2): push remoto de los "zumbidos" de Retos.
+//
+// Al crearse challenges/{code}/nudges/{nudgeId}, se envía una notificación FCM
+// al destinatario (toUid), respetando su opt-out (users/{uid}.receiveNudges) y
+// un tope anti-spam por hora. Los tokens viven en users/{uid}/fcm_tokens/*
+// (los escribe la app, PushMessagingService). El mensaje es POSITIVO y sale de
+// un catálogo cerrado espejo del de la app (challenges/domain/nudge.dart).
+//
+// iOS: requiere APNs configurado en Firebase (certificado/clave de Apple
+// Developer). Sin eso, Apple no entrega; Android funciona apenas se despliega.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Copy de recepción por tipo de interacción (espejo de NudgeCatalog en Dart). */
+function nudgeBody(typeId: string, fromName: string): string {
+  switch (typeId) {
+    case "porra":
+      return `¡${fromName} te está echando porras! 👏`;
+    case "zumbido":
+      return `¡${fromName} te dio un zumbido! No pierdas el ritmo hoy 💪`;
+    case "fuego":
+      return `¡${fromName} reconoce tu constancia! 🔥`;
+    default:
+      return `¡${fromName} te está animando en el reto!`;
+  }
+}
+
+/** Códigos de error de FCM que indican un token muerto (se debe borrar). */
+function isDeadToken(code: string | undefined): boolean {
+  return (
+    code === "messaging/registration-token-not-registered" ||
+    code === "messaging/invalid-registration-token" ||
+    code === "messaging/invalid-argument"
+  );
+}
+
+const NUDGE_CAP_PER_HOUR = 6;
+
+export const onNudgeCreated = onDocumentCreated(
+  "challenges/{code}/nudges/{nudgeId}",
+  async (event) => {
+    const data = event.data?.data();
+    if (!data) return;
+
+    const toUid: string = data.toUid;
+    const fromName: string = data.fromName || "Alguien";
+    const typeId: string = data.typeId;
+    if (!toUid || !typeId) return;
+
+    const db = admin.firestore();
+
+    // 1. Opt-out: si el usuario apagó los zumbidos, no se envía.
+    const userSnap = await db.doc(`users/${toUid}`).get();
+    if (userSnap.exists && userSnap.get("receiveNudges") === false) return;
+
+    // 2. Anti-spam: tope por hora (ventana deslizante simple).
+    const stateRef = db.doc(`users/${toUid}/push_state/nudges`);
+    const stateSnap = await stateRef.get();
+    const now = Date.now();
+    let windowStart = now;
+    let count = 0;
+    if (stateSnap.exists) {
+      windowStart = stateSnap.get("windowStart") || now;
+      count = stateSnap.get("count") || 0;
+    }
+    if (now - windowStart > 3_600_000) {
+      windowStart = now;
+      count = 0;
+    }
+    if (count >= NUDGE_CAP_PER_HOUR) return;
+
+    // 3. Tokens del destinatario.
+    const tokensSnap = await db.collection(`users/${toUid}/fcm_tokens`).get();
+    const tokenDocs = tokensSnap.docs.filter((d) => !!d.get("token"));
+    const tokens = tokenDocs.map((d) => d.get("token") as string);
+    if (tokens.length === 0) return;
+
+    // 4. Envío multicast.
+    const resp = await admin.messaging().sendEachForMulticast({
+      tokens,
+      notification: { title: "Elena", body: nudgeBody(typeId, fromName) },
+      data: { type: "nudge", code: String(event.params.code) },
+      android: { priority: "high" },
+      apns: { payload: { aps: { sound: "default" } } },
+    });
+
+    // 5. Limpieza de tokens muertos.
+    await Promise.all(
+      resp.responses.map(async (r, i) => {
+        if (!r.success && isDeadToken(r.error?.code)) {
+          await tokenDocs[i].ref.delete().catch(() => undefined);
+        }
+      }),
+    );
+
+    // 6. Actualiza el contador anti-spam.
+    await stateRef.set(
+      { windowStart, count: count + 1, updatedAt: now },
+      { merge: true },
+    );
+  },
+);
