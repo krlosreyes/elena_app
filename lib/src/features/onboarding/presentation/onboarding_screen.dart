@@ -984,8 +984,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           if (_prefill.filledCount > 0)
             PrefillChip(filledCount: _prefill.filledCount),
           OnboardingStepHeader(
-              title: "Hardware Base",
-              sub: "Identidad y Antropometría",
+              title: "Tu cuerpo hoy",
+              sub: "Para calcular tu edad metabólica (IMR)",
               isDark: isDark),
           OnboardingStepHelperLine(
             text: 'Estas medidas nos sirven para estimar tu composición '
@@ -1042,7 +1042,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       _weightTouched = true;
                     }),
                   )),
-          OnboardingSectionTitle(title: "TALLAS (INFERENCIA)", isDark: isDark),
+          OnboardingSectionTitle(
+              title: "TALLAS (SOLO PARA ESTIMAR MEDIDAS)", isDark: isDark),
           Row(children: [
             Expanded(
                 child: _pickerSelector(
@@ -1078,7 +1079,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                           },
                         ))),
           ]),
-          OnboardingSectionTitle(title: "MEDIDAS CRÍTICAS IMR", isDark: isDark),
+          OnboardingSectionTitle(
+              title: "LO QUE MÁS AFINA TU IMR", isDark: isDark),
           _pickerSelector(
               label: "Cintura",
               displayValue: "${_waist.toInt()} cm",
@@ -1114,7 +1116,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         children: [
           OnboardingStepHeader(
               title: "Ritmo Circadiano",
-              sub: "Sincronización horaria",
+              sub: "Para alinear tu ventana con tus horarios",
               isDark: isDark),
           OnboardingStepHelperLine(
             text: 'Tu reloj biológico decide cuándo el ayuno funciona mejor. '

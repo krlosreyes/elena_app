@@ -611,7 +611,10 @@ class NotificationScheduler {
           hour: current.hour,
           minute: current.minute,
           title: message.title,
-          body: message.body,
+          // Retro tester (1-ago): el recordatorio no invitaba a REGISTRAR.
+          // Se añade el llamado a la acción al cuerpo (los botones ya existen)
+          // en un solo lugar, sin tocar los 12 mensajes curados del pool.
+          body: '${message.body} ¿Ya lo tomaste? Regístralo con un toque.',
           // SPEC-199 Fase A: cada recordatorio de hidratación es accionable
           // (botones "Sí, lo registro" / "Aún no").
           actionableHydration: true,
