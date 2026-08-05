@@ -319,6 +319,55 @@ service cloud.firestore {
         );
     }
 
+    // ─────────────────────────────────────────────────────────────────
+    // SPEC-263: Retos de constancia (competencia social sana).
+    //
+    // Modelo de DOS documentos, cada uno con UN SOLO escritor, para que las
+    // reglas sean simples y a prueba de balas:
+    //   challenges/{code}              → metadata. Crea el dueño; "unirse" =
+    //                                    agregarte SOLO a ti a memberIds; borra
+    //                                    el dueño.
+    //   challenges/{code}/scores/{uid} → tu puntaje. SOLO tú (uid del path).
+    //
+    // El `code` es el id del doc y actúa como capacidad de invitación:
+    // conocerlo permite leer el reto y su tablero (read: signedIn). Los códigos
+    // son aleatorios (alfabeto de 31 símbolos), así que enumerarlos es inviable.
+    // No se comparten datos de salud crudos — solo un nombre y un puntaje.
+    // ─────────────────────────────────────────────────────────────────
+    match /challenges/{code} {
+      allow read: if signedIn();
+
+      // Crear: el creador es el dueño y el ÚNICO miembro inicial.
+      allow create: if signedIn()
+        && withinSizeLimit()
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.memberIds.hasOnly([request.auth.uid])
+        && request.resource.data.memberIds.size() == 1;
+
+      // Unirse: SOLO puedes agregarte a ti mismo a memberIds; nada más cambia.
+      // (affectedKeys == memberIds → nombre/fechas/dueño inmutables; no estabas
+      // dentro; ahora sí; no removiste a nadie; exactamente uno agregado = tú.)
+      allow update: if signedIn()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberIds'])
+        && !(request.auth.uid in resource.data.memberIds)
+        && (request.auth.uid in request.resource.data.memberIds)
+        && request.resource.data.memberIds.hasAll(resource.data.memberIds)
+        && request.resource.data.memberIds.size() == resource.data.memberIds.size() + 1;
+
+      // Borrar: solo el dueño. (Nada de withinSizeLimit/request.resource en
+      // DELETE — ver FIX-DELETE arriba.)
+      allow delete: if signedIn() && resource.data.ownerId == request.auth.uid;
+
+      // Puntaje: cada quien escribe SOLO su propio doc (id == uid).
+      match /scores/{uid} {
+        allow read: if signedIn();
+        allow create, update: if signedIn()
+          && request.auth.uid == uid
+          && withinSizeLimit();
+        allow delete: if signedIn() && request.auth.uid == uid;
+      }
+    }
+
     // FIRE-06 (cerrado 22-jul): la regla de la colección plana
     // fasting_history (SPEC-50.4 legacy, TODO-SPEC-217-inc5) se retiró.
     // La colección se confirmó vacía en producción

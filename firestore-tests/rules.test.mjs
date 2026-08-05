@@ -581,3 +581,227 @@ describe('catch-all — coleccion no declarada queda denegada por defecto', () =
     );
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────
+// SPEC-263 (2026-08-05): Retos de constancia. El invariante mas delicado
+// del modelo es "unirse": un miembro puede AGREGARSE a memberIds, pero no
+// puede modificar el reto de ninguna otra forma (renombrarlo, mover fechas,
+// robar la propiedad, ni echar a otro). Cada caso de abuso plausible tiene
+// su test para que ninguna relajacion futura de las reglas pase inadvertida.
+// ─────────────────────────────────────────────────────────────────────
+describe('SPEC-263 — challenges/{code}: metadata del reto', () => {
+  const baseChallenge = (ownerId) => ({
+    name: 'Reto de agosto',
+    ownerId,
+    ownerName: 'Ana',
+    startDateKey: '2026-08-01',
+    endDateKey: '2026-08-31',
+    memberIds: [ownerId],
+  });
+
+  it('un usuario no autenticado no puede leer ni crear un reto', async () => {
+    const db = testEnv.unauthenticatedContext().firestore();
+    await assertFails(db.collection('challenges').doc('ABC234').get());
+    await assertFails(
+      db.collection('challenges').doc('ABC234').set(baseChallenge('userA')),
+    );
+  });
+
+  it('el dueño puede crear un reto donde es el unico miembro inicial', async () => {
+    const db = testEnv.authenticatedContext('userA').firestore();
+    await assertSucceeds(
+      db.collection('challenges').doc('ABC234').set(baseChallenge('userA')),
+    );
+  });
+
+  it('no puedes crear un reto a nombre de otro (ownerId != tu uid)', async () => {
+    const db = testEnv.authenticatedContext('userA').firestore();
+    await assertFails(
+      db.collection('challenges').doc('ABC234').set(baseChallenge('userB')),
+    );
+  });
+
+  it('no puedes crear un reto con otros ya dentro de memberIds', async () => {
+    const db = testEnv.authenticatedContext('userA').firestore();
+    await assertFails(
+      db.collection('challenges').doc('ABC234').set({
+        ...baseChallenge('userA'),
+        memberIds: ['userA', 'userB'],
+      }),
+    );
+  });
+
+  it('cualquier miembro autenticado que conozca el codigo puede leer el reto', async () => {
+    await seed((db) =>
+      db.collection('challenges').doc('ABC234').set(baseChallenge('userA')),
+    );
+    const db = testEnv.authenticatedContext('userB').firestore();
+    await assertSucceeds(db.collection('challenges').doc('ABC234').get());
+  });
+
+  it('unirse = agregarte SOLO a ti a memberIds (permitido)', async () => {
+    await seed((db) =>
+      db.collection('challenges').doc('ABC234').set(baseChallenge('userA')),
+    );
+    const db = testEnv.authenticatedContext('userB').firestore();
+    await assertSucceeds(
+      db.collection('challenges').doc('ABC234').update({
+        memberIds: ['userA', 'userB'],
+      }),
+    );
+  });
+
+  it('al unirte NO puedes cambiar el nombre ni las fechas del reto', async () => {
+    await seed((db) =>
+      db.collection('challenges').doc('ABC234').set(baseChallenge('userA')),
+    );
+    const db = testEnv.authenticatedContext('userB').firestore();
+    await assertFails(
+      db.collection('challenges').doc('ABC234').update({
+        memberIds: ['userA', 'userB'],
+        name: 'Reto secuestrado',
+      }),
+    );
+  });
+
+  it('no puedes agregar a un TERCERO (solo a ti mismo)', async () => {
+    await seed((db) =>
+      db.collection('challenges').doc('ABC234').set(baseChallenge('userA')),
+    );
+    const db = testEnv.authenticatedContext('userB').firestore();
+    await assertFails(
+      db.collection('challenges').doc('ABC234').update({
+        memberIds: ['userA', 'userC'],
+      }),
+    );
+  });
+
+  it('no puedes ECHAR a otro miembro (memberIds no puede encoger ni sustituir)', async () => {
+    await seed((db) =>
+      db.collection('challenges').doc('ABC234').set({
+        ...baseChallenge('userA'),
+        memberIds: ['userA', 'userB'],
+      }),
+    );
+    const db = testEnv.authenticatedContext('userB').firestore();
+    // Quitar a userA mientras "me agrego" (sustitucion) — rechazado.
+    await assertFails(
+      db.collection('challenges').doc('ABC234').update({
+        memberIds: ['userB'],
+      }),
+    );
+  });
+
+  it('un miembro que ya esta dentro no puede "re-unirse" (no altera memberIds)', async () => {
+    await seed((db) =>
+      db.collection('challenges').doc('ABC234').set({
+        ...baseChallenge('userA'),
+        memberIds: ['userA', 'userB'],
+      }),
+    );
+    const db = testEnv.authenticatedContext('userB').firestore();
+    await assertFails(
+      db.collection('challenges').doc('ABC234').update({
+        memberIds: ['userA', 'userB'],
+      }),
+    );
+  });
+
+  it('solo el dueño puede borrar el reto', async () => {
+    await seed((db) =>
+      db.collection('challenges').doc('ABC234').set({
+        ...baseChallenge('userA'),
+        memberIds: ['userA', 'userB'],
+      }),
+    );
+    const other = testEnv.authenticatedContext('userB').firestore();
+    await assertFails(other.collection('challenges').doc('ABC234').delete());
+    const owner = testEnv.authenticatedContext('userA').firestore();
+    await assertSucceeds(owner.collection('challenges').doc('ABC234').delete());
+  });
+});
+
+describe('SPEC-263 — challenges/{code}/scores/{uid}: puntaje de un solo escritor', () => {
+  const seedChallenge = () =>
+    seed((db) =>
+      db.collection('challenges').doc('ABC234').set({
+        name: 'Reto de agosto',
+        ownerId: 'userA',
+        ownerName: 'Ana',
+        startDateKey: '2026-08-01',
+        endDateKey: '2026-08-31',
+        memberIds: ['userA', 'userB'],
+      }),
+    );
+
+  it('cada quien escribe SOLO su propio doc de puntaje (id == uid)', async () => {
+    await seedChallenge();
+    const db = testEnv.authenticatedContext('userB').firestore();
+    await assertSucceeds(
+      db.collection('challenges').doc('ABC234').collection('scores').doc('userB').set({
+        uid: 'userB',
+        displayName: 'Bruno',
+        points: 5,
+      }),
+    );
+  });
+
+  it('no puedes escribir el puntaje de OTRO (uid del path distinto al tuyo)', async () => {
+    await seedChallenge();
+    const db = testEnv.authenticatedContext('userB').firestore();
+    await assertFails(
+      db.collection('challenges').doc('ABC234').collection('scores').doc('userA').set({
+        uid: 'userA',
+        displayName: 'Ana',
+        points: 99,
+      }),
+    );
+  });
+
+  it('cualquier miembro autenticado puede LEER el tablero (todos los puntajes)', async () => {
+    await seedChallenge();
+    await seed((db) =>
+      db.collection('challenges').doc('ABC234').collection('scores').doc('userA').set({
+        uid: 'userA',
+        displayName: 'Ana',
+        points: 7,
+      }),
+    );
+    const db = testEnv.authenticatedContext('userB').firestore();
+    await assertSucceeds(
+      db.collection('challenges').doc('ABC234').collection('scores').doc('userA').get(),
+    );
+  });
+
+  it('un usuario no autenticado no puede leer ni escribir puntajes', async () => {
+    await seedChallenge();
+    const db = testEnv.unauthenticatedContext().firestore();
+    await assertFails(
+      db.collection('challenges').doc('ABC234').collection('scores').doc('userB').get(),
+    );
+    await assertFails(
+      db.collection('challenges').doc('ABC234').collection('scores').doc('userB').set({
+        uid: 'userB',
+        points: 1,
+      }),
+    );
+  });
+
+  it('puedes borrar tu propio puntaje (salir del reto), no el ajeno', async () => {
+    await seedChallenge();
+    await seed((db) => {
+      const scores = db.collection('challenges').doc('ABC234').collection('scores');
+      return Promise.all([
+        scores.doc('userA').set({ uid: 'userA', displayName: 'Ana', points: 7 }),
+        scores.doc('userB').set({ uid: 'userB', displayName: 'Bruno', points: 5 }),
+      ]);
+    });
+    const db = testEnv.authenticatedContext('userB').firestore();
+    await assertFails(
+      db.collection('challenges').doc('ABC234').collection('scores').doc('userA').delete(),
+    );
+    await assertSucceeds(
+      db.collection('challenges').doc('ABC234').collection('scores').doc('userB').delete(),
+    );
+  });
+});
