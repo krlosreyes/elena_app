@@ -14,6 +14,8 @@ import 'package:elena_app/src/features/coaching/application/coaching_completion_
 import 'package:elena_app/src/core/services/firestore_errors.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
 import 'package:elena_app/src/features/fasting/data/fasting_interval_repository_impl.dart';
+import 'package:elena_app/src/features/gamification/application/gamification_notifier.dart';
+import 'package:elena_app/src/features/gamification/domain/star_action.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/core/services/live_activity_service.dart';
@@ -491,6 +493,19 @@ class FastingNotifier extends StateNotifier<FastingState> {
       completedToday: reachedTarget ? true : state.completedToday,
       closedProgressToday: achievedFraction,
     );
+
+    // SPEC-262: cerrar un ayuno otorga estrellas + XP y suma a las horas de
+    // ayuno de por vida (gamificación, best-effort: nunca rompe el cierre).
+    try {
+      final hours = fastingDuration.inMinutes / 60.0;
+      if (hours > 0) {
+        final g = _ref.read(gamificationProvider.notifier);
+        g.recordFastingHours(hours);
+        g.reward(StarAction.fastingCompleted);
+      }
+    } catch (_) {
+      // best-effort
+    }
 
     // Notificaciones locales (no requieren red) — de inmediato.
     unawaited(_scheduleFeedingWindowNotifs(manualTime, state.fastingProtocol));

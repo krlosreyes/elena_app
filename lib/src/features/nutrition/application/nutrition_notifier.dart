@@ -24,6 +24,8 @@ import 'package:elena_app/src/core/services/analytics_service.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/core/services/day_boundary_resolver.dart';
 import 'package:elena_app/src/features/coaching/application/coaching_completion_service.dart';
+import 'package:elena_app/src/features/gamification/application/gamification_notifier.dart';
+import 'package:elena_app/src/features/gamification/domain/star_action.dart';
 import 'package:elena_app/src/core/services/notification_scheduler.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart';
 import 'package:elena_app/src/features/metabolic_cycle/domain/metabolic_cycle.dart';
@@ -452,6 +454,10 @@ class NutritionNotifier extends StateNotifier<NutritionState>
       final optimisticLogs = List<NutritionLog>.from(optimisticBase)..add(log);
       state = _recalculate(optimisticLogs, state.targetMeals);
     }
+
+    // SPEC-262: una comida NUEVA otorga estrellas + XP (no en edición).
+    // best-effort: nunca puede romper el registro de la comida.
+    if (replacingLogId == null) awardStar(_ref, StarAction.meal);
 
     // SPEC-193/194: analytics (se auto-encola sin red) + coaching.
     AnalyticsService.logEvent(

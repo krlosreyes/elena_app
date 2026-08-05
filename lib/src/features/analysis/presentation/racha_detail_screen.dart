@@ -6,6 +6,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/streak_bar_chart.dart';
@@ -46,6 +47,16 @@ class RachaDetailScreen extends ConsumerWidget {
               fontWeight: FontWeight.w700, fontSize: 18, letterSpacing: 0),
         ),
         centerTitle: false,
+        actions: [
+          // SPEC-262: acceso a "Tus estadísticas" (estrellas, congeladores,
+          // nivel, tienda).
+          IconButton(
+            icon: const Icon(Icons.insights_rounded,
+                color: Colors.white, size: 22),
+            tooltip: 'Tus estadísticas',
+            onPressed: () => context.push('/estadisticas'),
+          ),
+        ],
       ),
       body: SafeArea(
         child: ListView(

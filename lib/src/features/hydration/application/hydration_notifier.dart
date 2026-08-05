@@ -3,6 +3,8 @@ import 'dart:async';
 // IMPORTANTE: Esta es la ruta al archivo que creamos para centralizar el usuario
 import 'package:elena_app/src/core/analytics/analytics_events.dart';
 import 'package:elena_app/src/core/offline_first_stream_mixin.dart';
+import 'package:elena_app/src/features/gamification/application/gamification_notifier.dart';
+import 'package:elena_app/src/features/gamification/domain/star_action.dart';
 import 'package:elena_app/src/core/orchestrator/biological_phases.dart';
 import 'package:elena_app/src/core/services/analytics_service.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
@@ -216,6 +218,10 @@ class HydrationNotifier extends StateNotifier<HydrationState>
     // Usamos el .value del AsyncValue del provider centralizado
     final user = _ref.read(currentUserStreamProvider).value;
     if (user == null) return;
+
+    // SPEC-262: registrar agua otorga estrellas + XP (gamificación,
+    // best-effort: no puede romper el registro del pilar).
+    if (amount > 0) awardStar(_ref, StarAction.water);
 
     final bool wasReached = state.isGoalReached;
     final bool reached =
