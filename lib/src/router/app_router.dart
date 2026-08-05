@@ -58,6 +58,9 @@ import 'package:elena_app/src/features/exercise/presentation/exercise_habits_det
 import 'package:elena_app/src/features/alcohol/presentation/alcohol_history_screen.dart';
 import 'package:elena_app/src/features/alcohol/presentation/alcohol_protocol_screen.dart';
 import 'package:elena_app/src/features/gamification/presentation/gamification_stats_screen.dart';
+// SPEC-263: Retos de constancia (competencia social sana).
+import 'package:elena_app/src/features/challenges/presentation/challenges_screen.dart';
+import 'package:elena_app/src/features/challenges/presentation/challenge_detail_screen.dart';
 
 /// SPEC-222: llave global del navigator raíz para deeplink routing
 /// desde notificaciones (cold start + foreground).
@@ -234,6 +237,21 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/estadisticas',
         name: 'estadisticas',
         builder: (context, state) => const GamificationStatsScreen(),
+      ),
+      // SPEC-263: Retos de constancia. Lista y detalle por código.
+      GoRoute(
+        path: '/retos',
+        name: 'retos',
+        builder: (context, state) => const ChallengesScreen(),
+        routes: [
+          GoRoute(
+            path: ':code',
+            name: 'reto-detalle',
+            builder: (context, state) => ChallengeDetailScreen(
+              code: state.pathParameters['code']!,
+            ),
+          ),
+        ],
       ),
       // SPEC-137 §RF-137-12: vista semanal del pilar Nutrición.
       // Navegable desde el botón "Ver semana →" del card "Nutrición

@@ -43,6 +43,8 @@ class GamificationStatsScreen extends ConsumerWidget {
           children: [
             _RachaCard(),
             const SizedBox(height: 12),
+            _RetosCard(),
+            const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(
@@ -122,6 +124,57 @@ class _RachaCard extends StatelessWidget {
                           fontWeight: FontWeight.w800)),
                   SizedBox(height: 2),
                   Text('Días, récord y protección',
+                      style: TextStyle(color: Colors.white54, fontSize: 12)),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded, color: Colors.white30),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Retos (competencia social sana por constancia) ──────────────────────
+class _RetosCard extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    const green = AppColors.accent;
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: () => context.push('/retos'),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.bgSurface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: green.withValues(alpha: 0.4)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: green.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.emoji_events_rounded,
+                  color: green, size: 24),
+            ),
+            const SizedBox(width: 14),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Retos con amigos',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800)),
+                  SizedBox(height: 2),
+                  Text('Compite por constancia, no por peso',
                       style: TextStyle(color: Colors.white54, fontSize: 12)),
                 ],
               ),
