@@ -1,12 +1,14 @@
-// SPEC-262: "Tus estadísticas" — la economía de gamificación.
+// SPEC-262: la economía de gamificación (estrellas, congeladores, ayuno de
+// por vida, nivel y Tienda).
 //
-// Todo lo que se muestra es REAL y persistido: estrellas ganadas por acciones
-// registradas, XP/nivel derivados del XP total, congeladores en inventario y
-// horas de ayuno de por vida. La racha vive en su propia pantalla (link).
+// SPEC-263 (5-ago-2026): dejó de ser una pantalla propia ("Tus estadísticas")
+// que se enlazaba con "Tu racha". Ahora su contenido se EMBEBE dentro de "Tu
+// racha" (racha_detail_screen.dart) como `GamificationStatsBody`, para que
+// todo el estado del hábito viva en UNA sola pantalla coherente en vez de dos
+// que rebotaban entre sí. Todo lo que se muestra es REAL y persistido.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/gamification/application/gamification_notifier.dart';
@@ -15,174 +17,53 @@ import 'package:elena_app/src/features/gamification/domain/shop_item.dart';
 
 const Color _gold = Color(0xFFF59E0B); // estrellas
 const Color _ice = Color(0xFF60A5FA); // congeladores
-const Color _flame = Color(0xFFEF6C4D); // racha
 
-class GamificationStatsScreen extends ConsumerWidget {
-  const GamificationStatsScreen({super.key});
+/// Bloque embebible con la economía de gamificación. Se monta dentro de "Tu
+/// racha" (no tiene Scaffold propio); asume vivir en un ListView con padding.
+class GamificationStatsBody extends ConsumerWidget {
+  const GamificationStatsBody({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = ref.watch(gamificationProvider);
-    return Scaffold(
-      backgroundColor: AppColors.backgroundDark,
-      appBar: AppBar(
-        backgroundColor: AppColors.backgroundDark,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded,
-              color: Colors.white, size: 20),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: const Text('Tus estadísticas',
-            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 20)),
-        centerTitle: false,
-      ),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
           children: [
-            _RachaCard(),
-            const SizedBox(height: 12),
-            _RetosCard(),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _StatCard(
-                    label: 'ESTRELLAS',
-                    value: '${s.stars}',
-                    icon: Icons.star_rounded,
-                    color: _gold,
-                    onInfo: () => _showInfo(context, _InfoTopic.estrellas),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _StatCard(
-                    label: 'CONGELADORES',
-                    value: '${s.frosties}',
-                    icon: Icons.ac_unit_rounded,
-                    color: _ice,
-                    onInfo: () => _showInfo(context, _InfoTopic.congeladores),
-                  ),
-                ),
-              ],
+            Expanded(
+              child: _StatCard(
+                label: 'ESTRELLAS',
+                value: '${s.stars}',
+                icon: Icons.star_rounded,
+                color: _gold,
+                onInfo: () => _showInfo(context, _InfoTopic.estrellas),
+              ),
             ),
-            const SizedBox(height: 12),
-            _FastingCard(hours: s.lifetimeFastingHours),
-            const SizedBox(height: 12),
-            _LevelCard(
-                state: s, onInfo: () => _showInfo(context, _InfoTopic.nivel)),
-            const SizedBox(height: 24),
-            _sectionTitle('TIENDA'),
-            const SizedBox(height: 8),
-            _shopHint(),
-            const SizedBox(height: 10),
-            ...Shop.items.map((it) => _ShopRow(item: it, state: s)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _StatCard(
+                label: 'CONGELADORES',
+                value: '${s.frosties}',
+                icon: Icons.ac_unit_rounded,
+                color: _ice,
+                onInfo: () => _showInfo(context, _InfoTopic.congeladores),
+              ),
+            ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-// ── Racha (link a la pantalla real de racha) ───────────────────────────
-class _RachaCard extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(16),
-      onTap: () => context.push('/analysis/racha'),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.bgSurface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: _flame.withValues(alpha: 0.4)),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: _flame.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(Icons.local_fire_department_rounded,
-                  color: _flame, size: 24),
-            ),
-            const SizedBox(width: 14),
-            const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Tu racha',
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800)),
-                  SizedBox(height: 2),
-                  Text('Días, récord y protección',
-                      style: TextStyle(color: Colors.white54, fontSize: 12)),
-                ],
-              ),
-            ),
-            const Icon(Icons.chevron_right_rounded, color: Colors.white30),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── Retos (competencia social sana por constancia) ──────────────────────
-class _RetosCard extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    const green = AppColors.accent;
-    return InkWell(
-      borderRadius: BorderRadius.circular(16),
-      onTap: () => context.push('/retos'),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.bgSurface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: green.withValues(alpha: 0.4)),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: green.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(Icons.emoji_events_rounded,
-                  color: green, size: 24),
-            ),
-            const SizedBox(width: 14),
-            const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Retos con amigos',
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800)),
-                  SizedBox(height: 2),
-                  Text('Compite por constancia, no por peso',
-                      style: TextStyle(color: Colors.white54, fontSize: 12)),
-                ],
-              ),
-            ),
-            const Icon(Icons.chevron_right_rounded, color: Colors.white30),
-          ],
-        ),
-      ),
+        const SizedBox(height: 12),
+        _FastingCard(hours: s.lifetimeFastingHours),
+        const SizedBox(height: 12),
+        _LevelCard(
+            state: s, onInfo: () => _showInfo(context, _InfoTopic.nivel)),
+        const SizedBox(height: 24),
+        _sectionTitle('TIENDA'),
+        const SizedBox(height: 8),
+        _shopHint(),
+        const SizedBox(height: 10),
+        ...Shop.items.map((it) => _ShopRow(item: it, state: s)),
+      ],
     );
   }
 }

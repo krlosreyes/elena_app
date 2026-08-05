@@ -57,7 +57,6 @@ import 'package:elena_app/src/features/exercise/presentation/exercise_habits_det
 // SPEC-261: Protocolo de Consumo Consciente (alcohol).
 import 'package:elena_app/src/features/alcohol/presentation/alcohol_history_screen.dart';
 import 'package:elena_app/src/features/alcohol/presentation/alcohol_protocol_screen.dart';
-import 'package:elena_app/src/features/gamification/presentation/gamification_stats_screen.dart';
 // SPEC-263: Retos de constancia (competencia social sana).
 import 'package:elena_app/src/features/challenges/presentation/challenges_screen.dart';
 import 'package:elena_app/src/features/challenges/presentation/challenge_detail_screen.dart';
@@ -233,10 +232,13 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ),
       // SPEC-262: Tus estadísticas (gamificación: estrellas, congeladores,
       // nivel/XP, ayuno de por vida, tienda).
+      // SPEC-263: "Tus estadísticas" se fusionó dentro de "Tu racha"
+      // (/analysis/racha). Se conserva la ruta como redirect para no romper
+      // deep-links viejos (notificaciones, accesos guardados).
       GoRoute(
         path: '/estadisticas',
         name: 'estadisticas',
-        builder: (context, state) => const GamificationStatsScreen(),
+        redirect: (context, state) => '/analysis/racha',
       ),
       // SPEC-263: Retos de constancia. Lista y detalle por código.
       GoRoute(

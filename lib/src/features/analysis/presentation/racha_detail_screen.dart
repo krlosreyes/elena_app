@@ -6,11 +6,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/streak_bar_chart.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/streak_summary_card.dart';
+import 'package:elena_app/src/features/gamification/presentation/gamification_stats_screen.dart';
 import 'package:elena_app/src/features/streak/application/streak_notifier.dart';
 import 'package:elena_app/src/features/streak/domain/streak_engine.dart';
 import 'package:elena_app/src/features/streak/presentation/widgets/rest_day_settings_sheet.dart';
@@ -47,16 +47,6 @@ class RachaDetailScreen extends ConsumerWidget {
               fontWeight: FontWeight.w700, fontSize: 18, letterSpacing: 0),
         ),
         centerTitle: false,
-        actions: [
-          // SPEC-262: acceso a "Tus estadísticas" (estrellas, congeladores,
-          // nivel, tienda).
-          IconButton(
-            icon: const Icon(Icons.insights_rounded,
-                color: Colors.white, size: 22),
-            tooltip: 'Tus estadísticas',
-            onPressed: () => context.push('/estadisticas'),
-          ),
-        ],
       ),
       body: SafeArea(
         child: ListView(
@@ -70,6 +60,20 @@ class RachaDetailScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
             const _RestDayEntry(),
+            const SizedBox(height: 28),
+            // SPEC-263: la economía de gamificación vive acá, junto a la racha
+            // que protege — antes era una segunda pantalla ("Tus estadísticas")
+            // que se enlazaba con esta. Una sola pantalla, un solo lugar.
+            const Text(
+              'TUS RECOMPENSAS',
+              style: TextStyle(
+                  color: Colors.white54,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.5),
+            ),
+            const SizedBox(height: 12),
+            const GamificationStatsBody(),
           ],
         ),
       ),
