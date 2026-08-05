@@ -3,9 +3,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elena_app/src/features/challenges/data/challenge_repository.dart';
+import 'package:elena_app/src/features/challenges/data/nudge_repository.dart';
 import 'package:elena_app/src/features/challenges/domain/challenge.dart';
 import 'package:elena_app/src/features/challenges/domain/challenge_score.dart';
 import 'package:elena_app/src/features/challenges/domain/challenge_scoring.dart';
+import 'package:elena_app/src/features/challenges/domain/nudge.dart';
 import 'package:elena_app/src/features/streak/application/streak_notifier.dart';
 import 'package:elena_app/src/features/streak/domain/streak_entry.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
@@ -40,4 +42,15 @@ final challengeLeaderboardProvider =
       .watch(challengeRepositoryProvider)
       .watchScores(code)
       .map(ChallengeScoring.leaderboard);
+});
+
+/// SPEC-264: interacciones (zumbidos) dirigidas al usuario actual en un reto.
+/// Alimenta la recepción in-app (banner/animación).
+final incomingNudgesProvider =
+    StreamProvider.family<List<Nudge>, String>((ref, code) {
+  final uid = ref.watch(currentUserStreamProvider).valueOrNull?.id;
+  if (uid == null || uid.isEmpty) {
+    return Stream<List<Nudge>>.value(const []);
+  }
+  return ref.watch(nudgeRepositoryProvider).watchForRecipient(code, uid);
 });

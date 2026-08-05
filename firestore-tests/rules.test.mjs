@@ -805,3 +805,109 @@ describe('SPEC-263 — challenges/{code}/scores/{uid}: puntaje de un solo escrit
     );
   });
 });
+
+describe('SPEC-264 — challenges/{code}/nudges: interacciones sociales', () => {
+  const seedChallenge = () =>
+    seed((db) =>
+      db.collection('challenges').doc('ABC234').set({
+        name: 'Reto de agosto',
+        ownerId: 'userA',
+        ownerName: 'Ana',
+        startDateKey: '2026-08-01',
+        endDateKey: '2026-08-31',
+        memberIds: ['userA', 'userB'],
+      }),
+    );
+
+  const nudges = (db) =>
+    db.collection('challenges').doc('ABC234').collection('nudges');
+
+  it('puedo enviar un zumbido a nombre mío dirigido a otro', async () => {
+    await seedChallenge();
+    const db = testEnv.authenticatedContext('userB').firestore();
+    await assertSucceeds(
+      nudges(db).add({
+        fromUid: 'userB',
+        fromName: 'Bruno',
+        toUid: 'userA',
+        typeId: 'zumbido',
+        createdAt: 123,
+      }),
+    );
+  });
+
+  it('no puedo forjar el remitente (fromUid != mi uid)', async () => {
+    await seedChallenge();
+    const db = testEnv.authenticatedContext('userB').firestore();
+    await assertFails(
+      nudges(db).add({
+        fromUid: 'userA',
+        fromName: 'Ana',
+        toUid: 'userA',
+        typeId: 'zumbido',
+        createdAt: 123,
+      }),
+    );
+  });
+
+  it('no puedo enviarme un zumbido a mí mismo', async () => {
+    await seedChallenge();
+    const db = testEnv.authenticatedContext('userB').firestore();
+    await assertFails(
+      nudges(db).add({
+        fromUid: 'userB',
+        fromName: 'Bruno',
+        toUid: 'userB',
+        typeId: 'zumbido',
+        createdAt: 123,
+      }),
+    );
+  });
+
+  it('un miembro autenticado puede leer las interacciones', async () => {
+    await seedChallenge();
+    await seed((db) =>
+      nudges(db).doc('n1').set({
+        fromUid: 'userA',
+        fromName: 'Ana',
+        toUid: 'userB',
+        typeId: 'porra',
+        createdAt: 123,
+      }),
+    );
+    const db = testEnv.authenticatedContext('userB').firestore();
+    await assertSucceeds(nudges(db).doc('n1').get());
+  });
+
+  it('las interacciones no se pueden editar', async () => {
+    await seedChallenge();
+    await seed((db) =>
+      nudges(db).doc('n1').set({
+        fromUid: 'userA',
+        fromName: 'Ana',
+        toUid: 'userB',
+        typeId: 'porra',
+        createdAt: 123,
+      }),
+    );
+    const db = testEnv.authenticatedContext('userA').firestore();
+    await assertFails(nudges(db).doc('n1').update({ typeId: 'fuego' }));
+  });
+
+  it('el destinatario puede borrar las suyas; un tercero no', async () => {
+    await seedChallenge();
+    await seed((db) =>
+      nudges(db).doc('n1').set({
+        fromUid: 'userA',
+        fromName: 'Ana',
+        toUid: 'userB',
+        typeId: 'porra',
+        createdAt: 123,
+      }),
+    );
+    const other = testEnv.authenticatedContext('userA').firestore();
+    await assertFails(nudges(other).doc('n1').delete());
+    const me = testEnv.authenticatedContext('userB').firestore();
+    await assertSucceeds(nudges(me).doc('n1').delete());
+  });
+});

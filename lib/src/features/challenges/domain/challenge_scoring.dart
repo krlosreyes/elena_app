@@ -18,6 +18,9 @@ abstract final class ChallengeScoring {
       '${d.day.toString().padLeft(2, '0')}';
 
   /// Puntos de constancia: días que califican en [startKey, endKey] inclusive.
+  ///
+  /// SPEC-264: superado por [pillarPoints] como métrica del reto. Se conserva
+  /// como utilidad (y para su test de regresión).
   static int consistencyPoints(
     List<StreakEntry> history, {
     required String startKey,
@@ -29,6 +32,24 @@ abstract final class ChallengeScoring {
           e.date.compareTo(endKey) <= 0 &&
           e.qualifiesForStreak) {
         points++;
+      }
+    }
+    return points;
+  }
+
+  /// SPEC-264 (métrica vigente del reto): PUNTOS POR PILAR. Cada anillo cerrado
+  /// suma 1 (máx 5/día); se acumulan en [startKey, endKey] inclusive. Premia
+  /// también los días parciales — cada pilar cuenta. Sigue siendo constancia
+  /// (no peso): sale del registro real de pilares, no se puede inflar.
+  static int pillarPoints(
+    List<StreakEntry> history, {
+    required String startKey,
+    required String endKey,
+  }) {
+    var points = 0;
+    for (final e in history) {
+      if (e.date.compareTo(startKey) >= 0 && e.date.compareTo(endKey) <= 0) {
+        points += e.pillarsCompleted;
       }
     }
     return points;

@@ -32,6 +32,12 @@ class BadgeCategory {
   static const String resiliencia = 'resiliencia';
   static const String bienvenida = 'bienvenida';
 
+  /// SPEC-264: retos de constancia (competencia social). Se otorgan por
+  /// EVENTO (al cierre de un reto, desde ChallengeController), no por el
+  /// conteo de `streak_history` que usa BadgeEngine — por eso `retos` NO
+  /// aparece en `BadgeEngine._categoryCounts`.
+  static const String retos = 'retos';
+
   /// Whitelist cerrada — también se usa para validar `category` en
   /// firestore.rules, así un cliente comprometido no puede inventar
   /// categorías arbitrarias.
@@ -58,6 +64,7 @@ class BadgeCategory {
     imr,
     checkin,
     resiliencia,
+    retos,
   ];
 }
 
@@ -375,6 +382,50 @@ class BadgeCatalog {
         threshold: 1,
         name: 'Bienvenida',
         description: 'Completaste tu primer pilar en ElenaApp.'),
+
+    // ── SPEC-264: Retos de constancia (otorgadas por evento al cierre) ────
+    BadgeDefinition(
+        badgeId: 'retos_participar',
+        category: BadgeCategory.retos,
+        level: 1,
+        threshold: 1,
+        name: 'A competir',
+        description: 'Te uniste a tu primer reto de constancia.'),
+    BadgeDefinition(
+        badgeId: 'retos_terminar',
+        category: BadgeCategory.retos,
+        level: 2,
+        threshold: 1,
+        name: 'Hasta el final',
+        description: 'Terminaste tu primer reto, ganes o no.'),
+    BadgeDefinition(
+        badgeId: 'retos_ganar_1',
+        category: BadgeCategory.retos,
+        level: 3,
+        threshold: 1,
+        name: 'Primera victoria',
+        description: 'Ganaste tu primer reto de constancia.'),
+    BadgeDefinition(
+        badgeId: 'retos_ganar_3',
+        category: BadgeCategory.retos,
+        level: 4,
+        threshold: 3,
+        name: 'Competidor',
+        description: 'Ganaste 3 retos de constancia.'),
+    BadgeDefinition(
+        badgeId: 'retos_ganar_10',
+        category: BadgeCategory.retos,
+        level: 5,
+        threshold: 10,
+        name: 'Imparable',
+        description: 'Ganaste 10 retos de constancia.'),
+    BadgeDefinition(
+        badgeId: 'retos_revancha',
+        category: BadgeCategory.retos,
+        level: 6,
+        threshold: 3,
+        name: 'Otra vuelta',
+        description: 'Encadenaste 3 revanchas. Así se forma el hábito.'),
   ];
 
   static BadgeDefinition? byId(String badgeId) {

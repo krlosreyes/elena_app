@@ -1,11 +1,13 @@
-// SPEC-262: la economía de gamificación (estrellas, congeladores, ayuno de
-// por vida, nivel y Tienda).
+// SPEC-262 / SPEC-264: la economía de gamificación (perlas, congeladores, ayuno
+// de por vida y nivel).
 //
-// SPEC-263 (5-ago-2026): dejó de ser una pantalla propia ("Tus estadísticas")
-// que se enlazaba con "Tu racha". Ahora su contenido se EMBEBE dentro de "Tu
-// racha" (racha_detail_screen.dart) como `GamificationStatsBody`, para que
-// todo el estado del hábito viva en UNA sola pantalla coherente en vez de dos
-// que rebotaban entre sí. Todo lo que se muestra es REAL y persistido.
+// SPEC-263: se embebe dentro de "Tu racha" como `GamificationStatsBody`.
+// SPEC-264: "estrellas" pasa a llamarse "perlas" DE CARA AL USUARIO (las claves
+// persistidas en Firestore siguen siendo `stars`/`totalStarsEarned` para no
+// romper datos). Las perlas ya NO compran congeladores: los congeladores se
+// ganan solo por constancia (1 cada 6 días que califican) y las perlas se usan
+// para animar a los rivales en los Retos (zumbidos). Por eso la "Tienda" deja
+// de vender y pasa a explicar la economía.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,9 +15,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/gamification/application/gamification_notifier.dart';
 import 'package:elena_app/src/features/gamification/domain/gamification_state.dart';
-import 'package:elena_app/src/features/gamification/domain/shop_item.dart';
 
-const Color _gold = Color(0xFFF59E0B); // estrellas
+const Color _pearl = Color(0xFFD8B4E2); // perlas (nácar lila)
 const Color _ice = Color(0xFF60A5FA); // congeladores
 
 /// Bloque embebible con la economía de gamificación. Se monta dentro de "Tu
@@ -33,11 +34,11 @@ class GamificationStatsBody extends ConsumerWidget {
           children: [
             Expanded(
               child: _StatCard(
-                label: 'ESTRELLAS',
+                label: 'PERLAS',
                 value: '${s.stars}',
-                icon: Icons.star_rounded,
-                color: _gold,
-                onInfo: () => _showInfo(context, _InfoTopic.estrellas),
+                icon: Icons.blur_circular_rounded,
+                color: _pearl,
+                onInfo: () => _showInfo(context, _InfoTopic.perlas),
               ),
             ),
             const SizedBox(width: 12),
@@ -58,11 +59,9 @@ class GamificationStatsBody extends ConsumerWidget {
         _LevelCard(
             state: s, onInfo: () => _showInfo(context, _InfoTopic.nivel)),
         const SizedBox(height: 24),
-        _sectionTitle('TIENDA'),
+        _sectionTitle('CÓMO FUNCIONA LA ECONOMÍA'),
         const SizedBox(height: 8),
-        _shopHint(),
-        const SizedBox(height: 10),
-        ...Shop.items.map((it) => _ShopRow(item: it, state: s)),
+        _economyHint(),
       ],
     );
   }
@@ -256,78 +255,6 @@ class _LevelCard extends StatelessWidget {
   }
 }
 
-class _ShopRow extends ConsumerWidget {
-  const _ShopRow({required this.item, required this.state});
-  final ShopItem item;
-  final GamificationState state;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final affordable = state.canAfford(item);
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: AppColors.bgSurface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.ac_unit_rounded, color: _ice, size: 22),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(item.label,
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600)),
-          ),
-          Opacity(
-            opacity: affordable ? 1 : 0.4,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(20),
-              onTap: () {
-                final ok =
-                    ref.read(gamificationProvider.notifier).buyFrosty(item);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(ok
-                        ? '¡Listo! +${item.frostyQty} '
-                            '${item.frostyQty == 1 ? "congelador" : "congeladores"}'
-                        : 'Te faltan estrellas para este paquete.'),
-                    backgroundColor: ok ? AppColors.metabolicGreen : _gold,
-                  ),
-                );
-              },
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: _gold),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.star_rounded, color: _gold, size: 16),
-                    const SizedBox(width: 6),
-                    Text('${item.starCost}',
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700)),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 Widget _sectionTitle(String t) => Text(
       t,
       style: const TextStyle(
@@ -337,29 +264,74 @@ Widget _sectionTitle(String t) => Text(
           letterSpacing: 0.5),
     );
 
-Widget _shopHint() => const Text(
-      'Canjea las estrellas que ganas registrando tus hábitos por '
-      'congeladores que protegen tu racha.',
-      style: TextStyle(color: Colors.white38, fontSize: 12, height: 1.4),
+Widget _economyHint() => Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.bgSurface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+      ),
+      child: const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _EconomyRow(
+            icon: Icons.blur_circular_rounded,
+            color: _pearl,
+            text: 'Ganas perlas registrando tus hábitos. Se usan para animar '
+                'a tus rivales en los Retos (zumbidos, porras).',
+          ),
+          SizedBox(height: 12),
+          _EconomyRow(
+            icon: Icons.ac_unit_rounded,
+            color: _ice,
+            text: 'Los congeladores protegen tu racha. Se ganan siendo '
+                'constante: 1 cada 6 días que cumples. No se compran.',
+          ),
+        ],
+      ),
     );
 
-enum _InfoTopic { estrellas, congeladores, nivel }
+class _EconomyRow extends StatelessWidget {
+  const _EconomyRow(
+      {required this.icon, required this.color, required this.text});
+  final IconData icon;
+  final Color color;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, color: color, size: 20),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(text,
+              style: const TextStyle(
+                  color: Colors.white70, fontSize: 13, height: 1.4)),
+        ),
+      ],
+    );
+  }
+}
+
+enum _InfoTopic { perlas, congeladores, nivel }
 
 void _showInfo(BuildContext context, _InfoTopic topic) {
   final (title, body) = switch (topic) {
-    _InfoTopic.estrellas => (
-        'Estrellas',
-        'Ganas estrellas cada vez que registras un hábito saludable: tomar '
-            'agua, una comida, cerrar tu ayuno, y más. Son una moneda: '
-            'canjéalas en la Tienda por congeladores. No se compran con dinero '
-            'ni se pueden farmear — cada estrella nace de algo que hiciste de '
-            'verdad.'
+    _InfoTopic.perlas => (
+        'Perlas',
+        'Ganas perlas cada vez que registras un hábito saludable: tomar agua, '
+            'una comida, cerrar tu ayuno, y más. Son la moneda social de Elena: '
+            'se usan para animar a tus rivales en los Retos (zumbidos, porras). '
+            'No se compran con dinero ni se pueden farmear — cada perla nace de '
+            'algo que hiciste de verdad.'
       ),
     _InfoTopic.congeladores => (
         'Congeladores',
-        'Un congelador protege tu racha un día que no llegues al mínimo. Ganas '
-            'uno gratis cada 6 días que califican, o los canjeas con estrellas '
-            'en la Tienda. Guárdalos para cuando de verdad los necesites.'
+        'Un congelador protege tu racha un día que no llegues al mínimo. Se '
+            'ganan solo siendo constante: 1 gratis cada 6 días que califican. '
+            'No se compran — son un reflejo de tu constancia, no de tu saldo.'
       ),
     _InfoTopic.nivel => (
         'Nivel y XP',

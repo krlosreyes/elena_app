@@ -40,6 +40,24 @@ void main() {
     expect(pts, 2);
   });
 
+  test('pillarPoints suma pilares cerrados por día en el rango', () {
+    // _entry(qualifies:true) → ayuno+sueño+hidratación = 3 pilares.
+    // _entry(qualifies:false) → solo hidratación = 1 pilar.
+    final history = [
+      _entry('2026-07-31', qualifies: true), // fuera del rango
+      _entry('2026-08-01', qualifies: true), // 3
+      _entry('2026-08-02', qualifies: false), // 1
+      _entry('2026-08-03', qualifies: true), // 3
+      _entry('2026-09-05', qualifies: true), // fuera del rango
+    ];
+    final pts = ChallengeScoring.pillarPoints(
+      history,
+      startKey: '2026-08-01',
+      endKey: '2026-08-31',
+    );
+    expect(pts, 7); // 3 + 1 + 3
+  });
+
   test('leaderboard ordena por puntos y desempata por nombre', () {
     final board = ChallengeScoring.leaderboard(const [
       ChallengeScore(uid: 'a', displayName: 'Ana', points: 3),

@@ -156,7 +156,7 @@ service cloud.firestore {
                      && request.resource.data.category in [
                           'racha', 'ayuno', 'sueno', 'hidratacion',
                           'ejercicio', 'nutricion', 'imr', 'checkin',
-                          'resiliencia', 'bienvenida'
+                          'resiliencia', 'bienvenida', 'retos'
                         ];
       }
 
@@ -365,6 +365,22 @@ service cloud.firestore {
           && request.auth.uid == uid
           && withinSizeLimit();
         allow delete: if signedIn() && request.auth.uid == uid;
+      }
+
+      // SPEC-264: zumbidos (interacciones sociales positivas). Solo puedes
+      // CREAR una interacción a nombre tuyo (fromUid == tú) y dirigida a OTRO
+      // (toUid != tú). No se editan. El destinatario puede borrar las suyas
+      // (marcarlas como vistas). El tono positivo se garantiza en el cliente
+      // con un catálogo cerrado (typeId), no con texto libre.
+      match /nudges/{nudgeId} {
+        allow read: if signedIn();
+        allow create: if signedIn()
+          && withinSizeLimit()
+          && request.resource.data.fromUid == request.auth.uid
+          && request.resource.data.toUid != request.auth.uid;
+        allow update: if false;
+        allow delete: if signedIn()
+          && resource.data.toUid == request.auth.uid;
       }
     }
 

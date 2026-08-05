@@ -27,6 +27,23 @@ class GamificationState {
   /// Horas de ayuno acumuladas de por vida.
   final double lifetimeFastingHours;
 
+  // ── SPEC-264: marcador de retos (para insignias y récord) ───────────────
+  /// Retos a los que se unió/creó (de por vida).
+  final int retosJoined;
+
+  /// Retos que terminó (llegaron a su fin estando el usuario dentro).
+  final int retosFinished;
+
+  /// Retos ganados (quedó 1º del tablero al cierre).
+  final int retosWon;
+
+  /// Revanchas iniciadas (encadenar retos — el motor del hábito).
+  final int retosRematches;
+
+  /// Códigos de retos cuyo resultado YA se contabilizó (idempotencia: reabrir
+  /// un reto terminado no vuelve a sumar finished/won).
+  final List<String> retosCountedCodes;
+
   const GamificationState({
     this.stars = 0,
     this.totalStarsEarned = 0,
@@ -34,6 +51,11 @@ class GamificationState {
     this.frosties = 0,
     this.daysTowardFrosty = 0,
     this.lifetimeFastingHours = 0,
+    this.retosJoined = 0,
+    this.retosFinished = 0,
+    this.retosWon = 0,
+    this.retosRematches = 0,
+    this.retosCountedCodes = const [],
   });
 
   /// Cada cuántos días que califican se gana un congelador.
@@ -49,6 +71,11 @@ class GamificationState {
     int? frosties,
     int? daysTowardFrosty,
     double? lifetimeFastingHours,
+    int? retosJoined,
+    int? retosFinished,
+    int? retosWon,
+    int? retosRematches,
+    List<String>? retosCountedCodes,
   }) =>
       GamificationState(
         stars: stars ?? this.stars,
@@ -57,7 +84,33 @@ class GamificationState {
         frosties: frosties ?? this.frosties,
         daysTowardFrosty: daysTowardFrosty ?? this.daysTowardFrosty,
         lifetimeFastingHours: lifetimeFastingHours ?? this.lifetimeFastingHours,
+        retosJoined: retosJoined ?? this.retosJoined,
+        retosFinished: retosFinished ?? this.retosFinished,
+        retosWon: retosWon ?? this.retosWon,
+        retosRematches: retosRematches ?? this.retosRematches,
+        retosCountedCodes: retosCountedCodes ?? this.retosCountedCodes,
       );
+
+  /// SPEC-264: registra actividad de retos (unirse/revancha) para récord.
+  GamificationState recordChallenge({
+    int joined = 0,
+    int rematches = 0,
+  }) =>
+      copyWith(
+        retosJoined: retosJoined + joined,
+        retosRematches: retosRematches + rematches,
+      );
+
+  /// SPEC-264: contabiliza el RESULTADO de un reto una sola vez (idempotente
+  /// por [code]). No muta si ese reto ya se contó.
+  GamificationState recordOutcome(String code, {required bool didWin}) {
+    if (retosCountedCodes.contains(code)) return this;
+    return copyWith(
+      retosFinished: retosFinished + 1,
+      retosWon: retosWon + (didWin ? 1 : 0),
+      retosCountedCodes: [...retosCountedCodes, code],
+    );
+  }
 
   // ── Transiciones puras ────────────────────────────────────────────────
 
@@ -113,6 +166,14 @@ class GamificationState {
     return copyWith(frosties: frosties - 1);
   }
 
+  /// SPEC-264: gasta [perlas] en una interacción social (zumbido/porra).
+  /// Devuelve `null` si no alcanza (no muta). `totalStarsEarned` no baja:
+  /// es récord histórico, solo baja el saldo gastable.
+  GamificationState? spend(int perlas) {
+    if (perlas <= 0 || stars < perlas) return null;
+    return copyWith(stars: stars - perlas);
+  }
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -122,7 +183,13 @@ class GamificationState {
           xp == other.xp &&
           frosties == other.frosties &&
           daysTowardFrosty == other.daysTowardFrosty &&
-          lifetimeFastingHours == other.lifetimeFastingHours;
+          lifetimeFastingHours == other.lifetimeFastingHours &&
+          retosJoined == other.retosJoined &&
+          retosFinished == other.retosFinished &&
+          retosWon == other.retosWon &&
+          retosRematches == other.retosRematches &&
+          retosCountedCodes.length == other.retosCountedCodes.length &&
+          retosCountedCodes.join(',') == other.retosCountedCodes.join(',');
 
   @override
   int get hashCode => Object.hash(
@@ -132,5 +199,10 @@ class GamificationState {
         frosties,
         daysTowardFrosty,
         lifetimeFastingHours,
+        retosJoined,
+        retosFinished,
+        retosWon,
+        retosRematches,
+        Object.hashAll(retosCountedCodes),
       );
 }

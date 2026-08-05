@@ -114,8 +114,8 @@ void main() {
     expect(challenge.memberIds, ['u1']);
     expect(challenge.code.length, 6);
     expect(repo.challenges[challenge.code], isNotNull);
-    // 3 días que califican en la ventana (01, 02, 04).
-    expect(repo.scores[challenge.code]!['u1']!.points, 3);
+    // SPEC-264 puntos por pilar: 01→3, 02→3, 03→1, 04→3 = 10.
+    expect(repo.scores[challenge.code]!['u1']!.points, 10);
     expect(repo.scores[challenge.code]!['u1']!.displayName, 'Carlos');
   });
 
@@ -157,7 +157,7 @@ void main() {
 
     expect(joined.memberIds, containsAll(['owner', 'u1']));
     expect(repo.challenges['ABC234']!.isMember('u1'), isTrue);
-    expect(repo.scores['ABC234']!['u1']!.points, 3);
+    expect(repo.scores['ABC234']!['u1']!.points, 10);
   });
 
   test('unirse a un código inexistente lanza error legible', () async {
@@ -190,6 +190,6 @@ void main() {
 
     final r = await c.read(challengeControllerProvider).joinByCode('ABC234');
     expect(r.memberIds, ['u1']);
-    expect(repo.scores['ABC234']!['u1']!.points, 3);
+    expect(repo.scores['ABC234']!['u1']!.points, 10);
   });
 }

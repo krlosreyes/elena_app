@@ -116,6 +116,41 @@ class GamificationNotifier extends StateNotifier<GamificationState> {
     return true;
   }
 
+  /// SPEC-264: gasta perlas en una interacción social (zumbido). Devuelve true
+  /// si alcanzó el saldo.
+  bool spendPerlas(int perlas) {
+    if (!mounted) return false;
+    final next = state.spend(perlas);
+    if (next == null) return false;
+    state = next;
+    _persist();
+    return true;
+  }
+
+  /// SPEC-264: se unió/creó un reto.
+  void recordChallengeJoined() {
+    if (!mounted) return;
+    state = state.recordChallenge(joined: 1);
+    _persist();
+  }
+
+  /// SPEC-264: un reto en el que estaba llegó a su fin ([didWin] si ganó).
+  /// Idempotente por [code]: reabrir un reto terminado no vuelve a contar.
+  void recordChallengeOutcome({required String code, required bool didWin}) {
+    if (!mounted) return;
+    final next = state.recordOutcome(code, didWin: didWin);
+    if (next == state) return; // ya se contó este reto
+    state = next;
+    _persist();
+  }
+
+  /// SPEC-264: inició una revancha (encadena reto + cuenta como unión nueva).
+  void recordRematch() {
+    if (!mounted) return;
+    state = state.recordChallenge(rematches: 1, joined: 1);
+    _persist();
+  }
+
   @override
   void dispose() {
     _sub?.cancel();

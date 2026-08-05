@@ -14,6 +14,11 @@ class GamificationMapper {
         'frosties': s.frosties,
         'daysTowardFrosty': s.daysTowardFrosty,
         'lifetimeFastingHours': s.lifetimeFastingHours,
+        'retosJoined': s.retosJoined,
+        'retosFinished': s.retosFinished,
+        'retosWon': s.retosWon,
+        'retosRematches': s.retosRematches,
+        'retosCountedCodes': s.retosCountedCodes,
         'updatedAt': FieldValue.serverTimestamp(),
       };
 
@@ -24,6 +29,13 @@ class GamificationMapper {
         frosties: _int(m['frosties']),
         daysTowardFrosty: _int(m['daysTowardFrosty']),
         lifetimeFastingHours: _double(m['lifetimeFastingHours']),
+        retosJoined: _int(m['retosJoined']),
+        retosFinished: _int(m['retosFinished']),
+        retosWon: _int(m['retosWon']),
+        retosRematches: _int(m['retosRematches']),
+        retosCountedCodes:
+            (m['retosCountedCodes'] as List?)?.whereType<String>().toList() ??
+                const [],
       );
 
   static int _int(dynamic v) {
