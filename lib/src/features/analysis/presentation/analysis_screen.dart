@@ -94,7 +94,8 @@ class AnalysisScreen extends StatelessWidget {
         onTap: (index) {
           if (index == 0) context.go('/dashboard');
           if (index == 1) context.go('/analysis');
-          if (index == 2) context.go('/profile');
+          if (index == 2) context.go('/retos');
+          if (index == 3) context.go('/profile');
         },
         items: const [
           BottomNavigationBarItem(
@@ -104,6 +105,10 @@ class AnalysisScreen extends StatelessWidget {
           BottomNavigationBarItem(
             icon: Icon(Icons.insights_rounded),
             label: 'Progreso',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.emoji_events_rounded),
+            label: 'Retos',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person),

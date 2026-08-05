@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:elena_app/src/core/theme/app_theme.dart';
+import 'package:elena_app/src/features/dashboard/presentation/widgets/dashboard_bottom_nav.dart';
 import 'package:elena_app/src/features/challenges/application/challenge_controller.dart';
 import 'package:elena_app/src/features/challenges/application/challenge_providers.dart';
 import 'package:elena_app/src/features/challenges/domain/challenge.dart';
@@ -28,15 +29,12 @@ class ChallengesScreen extends ConsumerWidget {
       appBar: AppBar(
         backgroundColor: AppColors.backgroundDark,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded,
-              color: Colors.white, size: 20),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+        automaticallyImplyLeading: false,
         title: const Text('Retos',
             style: TextStyle(fontWeight: FontWeight.w800, fontSize: 20)),
         centerTitle: false,
       ),
+      bottomNavigationBar: const DashboardBottomNav(),
       body: SafeArea(
         child: challengesAsync.when(
           loading: () => const Center(

@@ -12,7 +12,8 @@ class DashboardBottomNav extends StatelessWidget {
     final String location = GoRouterState.of(context).matchedLocation;
     int currentIndex = 0;
     if (location.startsWith('/analysis')) currentIndex = 1;
-    if (location.startsWith('/profile')) currentIndex = 2;
+    if (location.startsWith('/retos')) currentIndex = 2;
+    if (location.startsWith('/profile')) currentIndex = 3;
     return BottomNavigationBar(
         backgroundColor: const Color(0xFF0F172A),
         selectedItemColor: AppColors.metabolicGreen,
@@ -24,13 +25,16 @@ class DashboardBottomNav extends StatelessWidget {
           // SPEC-197: gate vive dentro de AnalysisScreen (blur overlay).
           // Todos los usuarios navegan; free users ven el soft gate allí.
           if (index == 1) context.go('/analysis');
-          if (index == 2) context.go('/profile');
+          if (index == 2) context.go('/retos');
+          if (index == 3) context.go('/profile');
         },
         items: const [
           BottomNavigationBarItem(
               icon: Icon(Icons.grid_view_rounded), label: "Hoy"),
           BottomNavigationBarItem(
               icon: Icon(Icons.insights_rounded), label: "Progreso"),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.emoji_events_rounded), label: "Retos"),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: "Perfil")
         ]);
   }
