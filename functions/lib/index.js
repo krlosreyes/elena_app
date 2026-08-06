@@ -25,12 +25,14 @@
 // El borrado usa batches de 400 docs para no superar el límite de 500 de Firestore.
 // Se itera con while-loop hasta que no queden docs.
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.onUserDeleted = exports.onUserCreated = exports.migrateFastingHistory = void 0;
+exports.onNudgeCreated = exports.onUserDeleted = exports.onUserCreated = exports.migrateFastingHistory = void 0;
 const admin = require("firebase-admin");
 // onUserDeleted es un trigger v1 — no existe en firebase-functions/v2.
 // Se importa auth desde v1 y https desde v2 para coexistir en el mismo archivo.
 const v1_1 = require("firebase-functions/v1");
 const v2_1 = require("firebase-functions/v2");
+// SPEC-264 fase 2: trigger v2 de Firestore para el push de zumbidos.
+const firestore_1 = require("firebase-functions/v2/firestore");
 admin.initializeApp();
 // ─── Constantes ─────────────────────────────────────────────────────────────
 /** Máximo de docs por batch. Firestore limita a 500; dejamos margen. */
@@ -307,5 +309,90 @@ exports.onUserDeleted = v1_1.auth.user().onDelete(async (user, _context) => {
             `${failures.join(", ")}. Cloud Functions reintentará automáticamente.`);
     }
     log("Borrado en cascada completado");
+});
+// ─────────────────────────────────────────────────────────────────────────────
+// SPEC-264 (fase 2): push remoto de los "zumbidos" de Retos.
+//
+// Al crearse challenges/{code}/nudges/{nudgeId}, se envía una notificación FCM
+// al destinatario (toUid), respetando su opt-out (users/{uid}.receiveNudges) y
+// un tope anti-spam por hora. Los tokens viven en users/{uid}/fcm_tokens/*
+// (los escribe la app, PushMessagingService). El mensaje es POSITIVO y sale de
+// un catálogo cerrado espejo del de la app (challenges/domain/nudge.dart).
+//
+// iOS: requiere APNs configurado en Firebase (certificado/clave de Apple
+// Developer). Sin eso, Apple no entrega; Android funciona apenas se despliega.
+// ─────────────────────────────────────────────────────────────────────────────
+/** Copy de recepción por tipo de interacción (espejo de NudgeCatalog en Dart). */
+function nudgeBody(typeId, fromName) {
+    switch (typeId) {
+        case "porra":
+            return `¡${fromName} te está echando porras! 👏`;
+        case "zumbido":
+            return `¡${fromName} te dio un zumbido! No pierdas el ritmo hoy 💪`;
+        case "fuego":
+            return `¡${fromName} reconoce tu constancia! 🔥`;
+        default:
+            return `¡${fromName} te está animando en el reto!`;
+    }
+}
+/** Códigos de error de FCM que indican un token muerto (se debe borrar). */
+function isDeadToken(code) {
+    return (code === "messaging/registration-token-not-registered" ||
+        code === "messaging/invalid-registration-token" ||
+        code === "messaging/invalid-argument");
+}
+const NUDGE_CAP_PER_HOUR = 6;
+exports.onNudgeCreated = (0, firestore_1.onDocumentCreated)("challenges/{code}/nudges/{nudgeId}", async (event) => {
+    const data = event.data?.data();
+    if (!data)
+        return;
+    const toUid = data.toUid;
+    const fromName = data.fromName || "Alguien";
+    const typeId = data.typeId;
+    if (!toUid || !typeId)
+        return;
+    const db = admin.firestore();
+    // 1. Opt-out: si el usuario apagó los zumbidos, no se envía.
+    const userSnap = await db.doc(`users/${toUid}`).get();
+    if (userSnap.exists && userSnap.get("receiveNudges") === false)
+        return;
+    // 2. Anti-spam: tope por hora (ventana deslizante simple).
+    const stateRef = db.doc(`users/${toUid}/push_state/nudges`);
+    const stateSnap = await stateRef.get();
+    const now = Date.now();
+    let windowStart = now;
+    let count = 0;
+    if (stateSnap.exists) {
+        windowStart = stateSnap.get("windowStart") || now;
+        count = stateSnap.get("count") || 0;
+    }
+    if (now - windowStart > 3600000) {
+        windowStart = now;
+        count = 0;
+    }
+    if (count >= NUDGE_CAP_PER_HOUR)
+        return;
+    // 3. Tokens del destinatario.
+    const tokensSnap = await db.collection(`users/${toUid}/fcm_tokens`).get();
+    const tokenDocs = tokensSnap.docs.filter((d) => !!d.get("token"));
+    const tokens = tokenDocs.map((d) => d.get("token"));
+    if (tokens.length === 0)
+        return;
+    // 4. Envío multicast.
+    const resp = await admin.messaging().sendEachForMulticast({
+        tokens,
+        notification: { title: "Elena", body: nudgeBody(typeId, fromName) },
+        data: { type: "nudge", code: String(event.params.code) },
+        android: { priority: "high" },
+        apns: { payload: { aps: { sound: "default" } } },
+    });
+    // 5. Limpieza de tokens muertos.
+    await Promise.all(resp.responses.map(async (r, i) => {
+        if (!r.success && isDeadToken(r.error?.code)) {
+            await tokenDocs[i].ref.delete().catch(() => undefined);
+        }
+    }));
+    // 6. Actualiza el contador anti-spam.
+    await stateRef.set({ windowStart, count: count + 1, updatedAt: now }, { merge: true });
 });
 //# sourceMappingURL=index.js.map
