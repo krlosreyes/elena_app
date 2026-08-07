@@ -24,6 +24,7 @@ import 'package:elena_app/src/features/auth/presentation/widgets/protocolo_entry
 import 'package:elena_app/src/features/auth/presentation/widgets/alcohol_protocol_entry_card.dart';
 import 'package:elena_app/src/features/auth/presentation/widgets/ritmos_entry_card.dart';
 import 'package:elena_app/src/features/health_sync/presentation/health_sync_card.dart';
+import 'package:elena_app/src/features/nutrition/presentation/widgets/alimentacion_minuta_entry_card.dart';
 import 'package:elena_app/src/features/profile/presentation/widgets/body_composition_card.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
@@ -190,6 +191,10 @@ class _ProfileBody extends ConsumerWidget {
         const ProtocoloEntryCard(),
         const SizedBox(height: 12),
         const ObjetivosEntryCard(),
+        const SizedBox(height: 12),
+        // SPEC-270 (fase 2): entrada al onboarding del Pilar de Alimentación
+        // (evaluación dietética de 6 bloques) que alimenta la Minuta Diaria.
+        const AlimentacionMinutaEntryCard(),
         const SizedBox(height: 12),
         // Propuesta módulo Ejercicio (2026-07-21): sin esta card, un
         // usuario existente no tiene ningún camino para generar su

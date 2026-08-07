@@ -19,6 +19,7 @@ import 'package:elena_app/src/features/onboarding/presentation/onboarding_screen
 import 'package:elena_app/src/features/dashboard/presentation/dashboard_screen.dart';
 // SPEC-137: vista semanal del pilar Nutrición (Cociente A + heatmap).
 import 'package:elena_app/src/features/nutrition/presentation/nutrition_weekly_screen.dart';
+import 'package:elena_app/src/features/nutrition/presentation/intake_onboarding_screen.dart';
 import 'package:elena_app/src/features/auth/presentation/profile_screen.dart';
 import 'package:elena_app/src/features/analysis/presentation/analysis_screen.dart';
 // SPEC-168.4: pantalla detalle de un pilar (overview → chart completo).
@@ -262,6 +263,13 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/nutrition/weekly',
         name: 'nutrition-weekly',
         builder: (context, state) => const NutritionWeeklyScreen(),
+      ),
+      // SPEC-270: onboarding del Pilar de Alimentación (evaluación
+      // dietética en 6 bloques). Accesible desde Perfil > "Mi minuta diaria".
+      GoRoute(
+        path: '/nutrition/intake',
+        name: 'nutrition-intake',
+        builder: (context, state) => const IntakeOnboardingScreen(),
       ),
       GoRoute(
         path: '/profile/body-composition',

@@ -1,6 +1,6 @@
 # SPEC-270 — Onboarding del Pilar de Alimentación: evaluación dietética (intake)
 
-**Estado:** IMPLEMENTED — capa dominio + datos + servicio + tests. PENDIENTE de verificación (`flutter analyze` + `flutter test`) por Carlos, y de la UI de captura (fase 2 de este SPEC).
+**Estado:** IMPLEMENTED — dominio + datos + servicio + **UI de 6 bloques (fase 2)** + tests. Fase 1 verificada en verde (368 tests, analyze limpio, commit `43e4225`). Fase 2 PENDIENTE de `flutter analyze` + `flutter test` + validación en simulador por Carlos.
 **Versión:** 1.0
 **Fecha:** 2026-08-07
 **Autor:** Claude (líder de proyecto / full-stack) + Carlos (aprobación de alcance)
@@ -62,7 +62,7 @@ intake = {
 
 ## 6. Archivos
 
-Nuevos:
+Nuevos (fase 1 — dominio/datos):
 
 - `lib/src/features/nutrition/domain/nutrition_intake.dart`
 - `lib/src/features/nutrition/domain/protein_target_service.dart`
@@ -71,9 +71,20 @@ Nuevos:
 - `lib/src/features/nutrition/application/nutrition_intake_notifier.dart`
 - `test/features/nutrition/domain/nutrition_intake_test.dart`
 - `test/features/nutrition/domain/protein_target_service_test.dart`
-- `specs/SPEC-270-nutricion-intake-onboarding.md`
 
-No se modificó ningún archivo existente (onboarding, rules, score, UserModel).
+Nuevos (fase 2 — UI):
+
+- `lib/src/features/nutrition/application/intake_draft.dart` — builder puro draft → dominio.
+- `lib/src/features/nutrition/presentation/intake_onboarding_screen.dart` — flujo de 6 bloques (PageView), selector de alimentos en bottom-sheet, guarda vía notifier.
+- `lib/src/features/nutrition/presentation/widgets/alimentacion_minuta_entry_card.dart` — entrada en Perfil.
+- `test/features/nutrition/application/intake_draft_test.dart`
+
+Modificados (fase 2 — wiring mínimo):
+
+- `lib/src/router/app_router.dart` — ruta `/nutrition/intake` (name `nutrition-intake`).
+- `lib/src/features/auth/presentation/profile_screen.dart` — inserta `AlimentacionMinutaEntryCard` entre las entry cards.
+
+Fase 1 no modificó ningún archivo existente. Fase 2 solo agrega una ruta y una card en Perfil (patrón idéntico a las entry cards existentes). No toca onboarding de alta, rules, score ni UserModel.
 
 ## 7. Tests
 
@@ -99,6 +110,12 @@ flutter test test/features/nutrition
 
 Esta entrega se escribió sin toolchain de Flutter en el entorno (no se pudo correr `analyze`/`test`). El código calca patrones existentes (`MealPreset`, `MealPresetRepositoryImpl`, `meal_preset_notifier`) y se verificaron las firmas de las APIs usadas (`currentUserStreamProvider`, `AppLogger.warning`, getters de `UserModel`). Cualquier ajuste de compilación se resuelve en el primer `flutter analyze` de Carlos.
 
-## 9. Siguiente paso
+## 9. Cómo llegar a la pantalla (validación en simulador)
 
-Fase 2 de SPEC-270: UI del onboarding del pilar (6 bloques) que arma un `NutritionIntake` y llama `saveIntake`. Luego SPEC-271 (capa de datos de `mealPlans`).
+Perfil (tab inferior) → tarjeta **"Mi minuta diaria"** (ámbar, entre "Mis objetivos" y "Hábitos de ejercicio") → abre el flujo de 6 bloques. Al terminar, "Guardar" persiste el intake en `users/{uid}/nutritionProfile/intake` y el subtítulo de la card pasa a "Configurada · N comidas". Volver a entrar precarga lo guardado (`IntakeDraft.fromIntake`).
+
+Test nuevo de fase 2: `test/features/nutrition/application/intake_draft_test.dart` (mapeo draft → dominio + round-trip `fromIntake(build())`).
+
+## 10. Siguiente paso
+
+SPEC-271: capa de datos de la Minuta (`mealPlans/{date}` + modelo + rules + índices), que habilita el motor de generación (SPEC-272).
