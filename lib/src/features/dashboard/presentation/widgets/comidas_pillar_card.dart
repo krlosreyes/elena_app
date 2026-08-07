@@ -14,6 +14,8 @@ import 'package:elena_app/src/features/nutrition/domain/meal_interval_rules.dart
 import 'package:elena_app/src/features/nutrition/domain/meal_ratio.dart';
 import 'package:elena_app/src/features/nutrition/domain/nutrition_log.dart';
 import 'package:elena_app/src/features/nutrition/presentation/meal_history_sheet.dart';
+import 'package:elena_app/src/features/nutrition/application/meal_plan_notifier.dart';
+import 'package:elena_app/src/features/nutrition/domain/minuta_adherence_score.dart';
 import 'package:elena_app/src/features/nutrition/presentation/plate_ratio_sheet.dart';
 import 'package:elena_app/src/features/streak/application/streak_notifier.dart';
 
@@ -44,7 +46,13 @@ class ComidasPillarCard extends ConsumerWidget {
     // dashboard_pillars_row.dart). El badge "N/M comidas" de abajo sigue
     // mostrando el conteo tal cual — está explícitamente etiquetado como
     // conteo, no se presta a confusión.
-    final progress = state.nutritionScore;
+    // SPEC-274.2: refleja la adherencia a la Minuta cuando el usuario ya la
+    // usa (marcó ≥1 comida); si no, cae al nutritionScore por calidad de
+    // plato de siempre (guardarraíl de no-regresión).
+    final progress = MinutaAdherenceScore.effective(
+      fallbackScore: state.nutritionScore,
+      plan: ref.watch(mealPlanNotifierProvider).plan,
+    );
     final pct = (progress * 100).round();
     const cocienteService = CocienteAService();
     final cocienteA = cocienteService.calculate(state.todayLogs);

@@ -12,7 +12,9 @@ import 'package:elena_app/src/features/hydration/application/hydration_notifier.
 import 'package:elena_app/src/features/fasting/data/fasting_interval_repository_impl.dart';
 import 'package:elena_app/src/features/sleep/domain/sleep_quality_calculator.dart';
 import 'package:elena_app/src/features/exercise/application/exercise_notifier.dart';
+import 'package:elena_app/src/features/nutrition/application/meal_plan_notifier.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
+import 'package:elena_app/src/features/nutrition/domain/minuta_adherence_score.dart';
 import 'package:elena_app/src/core/analytics/analytics_events.dart';
 import 'package:elena_app/src/core/providers/celebration_providers.dart';
 import 'package:elena_app/src/core/services/analytics_service.dart';
@@ -494,7 +496,15 @@ class StreakNotifier extends StateNotifier<StreakState> {
     // Sesiones largas pueden superar 1.0; el calc de dailyQualityScore
     // aplica clamp en [0, 1] ahí.
     final double exerciseMagnitude = exercise.todayMinutes / 30.0;
-    final double nutritionMagnitude = nutrition.nutritionScore.clamp(0.0, 1.0);
+    // SPEC-274.2: la magnitud de nutrición pasa a reflejar la ADHERENCIA a
+    // la Minuta cuando el usuario ya la usa (marcó ≥1 comida). Guardarraíl
+    // de no-regresión: sin minuta o sin marcar, cae al nutritionScore por
+    // calidad de plato de siempre (valor byte-idéntico). El gate binario de
+    // racha (evaluateNutrition) NO se toca — sigue siendo "¿registró?".
+    final double nutritionMagnitude = MinutaAdherenceScore.effective(
+      fallbackScore: nutrition.nutritionScore,
+      plan: _ref.read(mealPlanNotifierProvider).plan,
+    ).clamp(0.0, 1.0);
 
     // Evaluación cruda desde el estado actual de los providers.
     final rawFasting = StreakEngine.evaluateFasting(

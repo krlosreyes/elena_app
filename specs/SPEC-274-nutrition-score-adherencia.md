@@ -43,9 +43,18 @@ Modificados:
 
 - `lib/src/features/auth/presentation/widgets/todays_progress_section.dart` — la barra de Nutrición usa `effective()`.
 
-## 6. Paso siguiente (SPEC-274.2, test-gated)
+## 6. SPEC-274.2 — cableado completo del score (IMPLEMENTADO)
 
-Cablear la **racha** (`streak_notifier.dart` línea ~497: `nutritionMagnitude = effective(...)`) y las otras superficies del Dashboard (`comidas_pillar_card`, `dashboard_pillars_row`). **Por qué no ahora:** ambos leerían `mealPlanNotifierProvider`, que instancia la cadena de la minuta (auth incluido); los tests de racha existentes construyen `StreakNotifier` sin override de ese provider, así que el cambio exige tocar el setup de esos tests. Es un cambio de alto riesgo sobre el pipeline del Score del Día que NO conviene hacer a ciegas — se hace con el suite de racha corriendo. El guardarraíl `effective()` garantiza que el resultado sea idéntico cuando no hay minuta, así que la lógica no cambia para los tests; solo hay que darles el override del provider.
+Tras verificar que **ningún test monta el `StreakNotifier` real** (los tests de racha usan piezas puras — `StreakState`, `shouldWarnStreakAtRisk`, `StreakEngine` — o `dailyScoreProvider.overrideWithValue`), el cableado resultó test-safe y se aplicó:
+
+- `streak_notifier.dart` (~497): `nutritionMagnitude = effective(fallbackScore: nutrition.nutritionScore, plan: minuta de hoy)`. Alimenta el `dailyQualityScore` / Score del Día. El **gate binario de racha** (`evaluateNutrition`) NO se toca.
+- `dashboard_pillars_row.dart` (anillo de Nutrición del Dashboard) y `comidas_pillar_card.dart` (card "Nutrición Científica"): mismo `effective(...)`.
+
+Con esto la métrica visible es coherente en las tres superficies (Objetivos, Dashboard anillo, card) + la racha. `nutritionScoreRaw`/IMR siguen intactos. El guardarraíl mantiene todo byte-idéntico para quien no usa minuta.
+
+## 7. Paso siguiente
+
+SPEC-275: re-encuesta del intake (cada 4 semanas), variedad/rotación y recetario.
 
 Verificación (Carlos):
 

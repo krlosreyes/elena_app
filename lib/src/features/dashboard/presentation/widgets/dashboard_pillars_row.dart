@@ -19,6 +19,8 @@ import 'package:elena_app/src/features/streak/application/daily_score_provider.d
 // descontado (equivale al display cuando no hay consumo).
 import 'package:elena_app/src/features/alcohol/application/alcohol_score_provider.dart';
 import 'package:elena_app/src/features/streak/application/streak_notifier.dart';
+import 'package:elena_app/src/features/nutrition/application/meal_plan_notifier.dart';
+import 'package:elena_app/src/features/nutrition/domain/minuta_adherence_score.dart';
 import 'package:elena_app/src/features/streak/domain/fasting_schedule.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 import 'package:elena_app/src/core/constants/pillar_constants.dart';
@@ -104,6 +106,13 @@ class DashboardPillarsRow extends ConsumerWidget {
         ref.watch(nutritionProvider.select(
       (s) => (s.nutritionScore, s.mealsLoggedToday, s.targetMeals),
     ));
+    // SPEC-274.2: el anillo refleja la adherencia a la Minuta cuando el
+    // usuario ya la usa; si no, cae al nutritionScore por calidad de plato
+    // de siempre (guardarraíl de no-regresión).
+    final nutritionProgress = MinutaAdherenceScore.effective(
+      fallbackScore: nutritionScore,
+      plan: ref.watch(mealPlanNotifierProvider).plan,
+    );
 
     // SPEC-175 (2026-06-04): la regla "el sleep pertenece al ciclo"
     // vive en `currentCycleSleepProvider`. Si no pertenece, devuelve
@@ -342,7 +351,7 @@ class DashboardPillarsRow extends ConsumerWidget {
                 child: PillarRing(
                   icon: Icons.restaurant_rounded,
                   color: Colors.orangeAccent,
-                  progress: nutritionScore,
+                  progress: nutritionProgress,
                   label: PillarConstants.trackingLabelNutricion,
                   isSelected: selectedPillar == SelectedPillar.comidas,
                   completed: nutritionMealsLogged >= nutritionTargetMeals,
