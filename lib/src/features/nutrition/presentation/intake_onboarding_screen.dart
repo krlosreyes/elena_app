@@ -45,8 +45,8 @@ class _IntakeOnboardingScreenState
     } else {
       final user = ref.read(currentUserStreamProvider).valueOrNull;
       _draft = IntakeDraft.initial(
-        breakfastTime: _fmt(user?.firstMealGoal),
-        dinnerTime: _fmt(user?.lastMealGoal),
+        breakfastTime: _fmt(user?.profile.firstMealGoal),
+        dinnerTime: _fmt(user?.profile.lastMealGoal),
       );
     }
   }

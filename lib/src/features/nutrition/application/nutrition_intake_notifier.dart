@@ -135,8 +135,8 @@ class NutritionIntakeNotifier extends StateNotifier<NutritionIntakeState> {
       heightCm: user.height,
       gender: user.gender,
       pal: user.activityLevel,
-      windowFirst: _fmt(user.firstMealGoal),
-      windowLast: _fmt(user.lastMealGoal),
+      windowFirst: _fmt(user.profile.firstMealGoal),
+      windowLast: _fmt(user.profile.lastMealGoal),
     );
   }
 
