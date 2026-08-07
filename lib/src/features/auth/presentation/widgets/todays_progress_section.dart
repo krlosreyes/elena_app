@@ -28,7 +28,9 @@ import 'package:elena_app/src/features/sleep/application/sleep_notifier.dart';
 import 'package:elena_app/src/features/exercise/application/exercise_notifier.dart';
 import 'package:elena_app/src/features/goals/application/goal_notifier.dart';
 import 'package:elena_app/src/features/goals/application/pillar_goal_providers.dart';
+import 'package:elena_app/src/features/nutrition/application/meal_plan_notifier.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
+import 'package:elena_app/src/features/nutrition/domain/minuta_adherence_score.dart';
 import 'package:elena_app/src/features/streak/domain/fasting_schedule.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 
@@ -73,6 +75,14 @@ class TodaysProgressSection extends ConsumerWidget {
 
     // ── Nutrición ─────────────────────────────────────────────────────
     final nutrition = ref.watch(nutritionProvider);
+    // SPEC-274: la barra refleja la ADHERENCIA a la Minuta cuando el
+    // usuario ya la usa (marcó ≥1 comida); si no, cae al score por calidad
+    // de plato de siempre (cero cambio para no adoptantes).
+    final mealPlan = ref.watch(mealPlanNotifierProvider);
+    final nutritionProgress = MinutaAdherenceScore.effective(
+      fallbackScore: nutrition.nutritionScore,
+      plan: mealPlan.plan,
+    );
 
     final rows = <_PillarProgress>[
       _PillarProgress(
@@ -119,7 +129,7 @@ class TodaysProgressSection extends ConsumerWidget {
         label: 'Nutrición',
         subtitle:
             '${nutrition.mealsLoggedToday} de ${nutrition.targetMeals} comidas sugeridas',
-        progress: nutrition.nutritionScore,
+        progress: nutritionProgress,
       ),
     ];
 

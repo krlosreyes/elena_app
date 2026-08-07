@@ -26,7 +26,7 @@ class AlimentacionMinutaEntryCard extends ConsumerWidget {
 
     return InkWell(
       borderRadius: BorderRadius.circular(14),
-      onTap: () => context.push('/nutrition/intake'),
+      onTap: () => context.push('/nutrition/minuta'),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
         decoration: BoxDecoration(
