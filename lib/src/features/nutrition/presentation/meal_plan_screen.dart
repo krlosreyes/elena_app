@@ -13,6 +13,7 @@ import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/nutrition/application/meal_plan_notifier.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_intake_notifier.dart';
 import 'package:elena_app/src/features/nutrition/domain/food_catalog.dart';
+import 'package:elena_app/src/features/nutrition/domain/intake_resurvey_policy.dart';
 import 'package:elena_app/src/features/nutrition/domain/meal_plan.dart';
 import 'package:elena_app/src/features/nutrition/domain/nutrition_intake.dart';
 
@@ -79,9 +80,18 @@ class MealPlanScreen extends ConsumerWidget {
       return _EmptyIntake(onConfigure: () => context.push('/nutrition/intake'));
     }
 
+    final intake = intakeState.intake;
+    final resurveyDue = intake != null &&
+        const IntakeResurveyPolicy()
+            .isDue(updatedAt: intake.updatedAt, now: DateTime.now());
+
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
       children: [
+        if (resurveyDue) ...[
+          _ResurveyBanner(onUpdate: () => context.push('/nutrition/intake')),
+          const SizedBox(height: 12),
+        ],
         _PlanHeader(plan: plan),
         const SizedBox(height: 16),
         for (final entry in plan.meals)
@@ -362,6 +372,45 @@ class _AdherenceButton extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ─── Banner de re-encuesta (SPEC-275) ───────────────────────────────────────
+
+class _ResurveyBanner extends StatelessWidget {
+  final VoidCallback onUpdate;
+  const _ResurveyBanner({required this.onUpdate});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.bgSurface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _amber.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.event_repeat, color: _amber, size: 22),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Text(
+              'Ya pasó un tiempo. Actualiza cómo comes hoy para que tu minuta '
+              'evolucione contigo.',
+              style: TextStyle(
+                  color: AppColors.textSecondary, fontSize: 13, height: 1.4),
+            ),
+          ),
+          const SizedBox(width: 8),
+          TextButton(
+            onPressed: onUpdate,
+            child: const Text('Actualizar',
+                style: TextStyle(color: _amber, fontWeight: FontWeight.w700)),
+          ),
+        ],
       ),
     );
   }

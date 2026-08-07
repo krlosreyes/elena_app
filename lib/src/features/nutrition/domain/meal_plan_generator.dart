@@ -38,6 +38,7 @@ class MealPlanGenerator {
     String windowLast = '',
     int phase = 1,
     DateTime? now,
+    Set<String> avoidFoodIds = const {},
   }) {
     final banned = _bannedSet(intake.restrictions.allBanned);
 
@@ -55,7 +56,7 @@ class MealPlanGenerator {
       final perMealProtein = weightSum == 0
           ? 0.0
           : targetProteinG * (weights[mi] / weightSum);
-      entries.add(_buildEntry(meal, perMealProtein, phase, banned));
+      entries.add(_buildEntry(meal, perMealProtein, phase, banned, avoidFoodIds));
     }
 
     return MealPlan(
@@ -77,6 +78,7 @@ class MealPlanGenerator {
     double perMealProtein,
     int phase,
     Set<String> banned,
+    Set<String> avoid,
   ) {
     // 1) Base: solo items del catálogo (los de texto libre no se puntúan;
     //    el plan es prescriptivo y se arma con alimentos conocidos).
@@ -94,7 +96,8 @@ class MealPlanGenerator {
     final weakestIdx = _weakestIndex(base, phase);
     if (weakestIdx >= 0) {
       final weakest = base[weakestIdx];
-      final alt = _bestInCategory(weakest.category, banned, avoidId: weakest.id);
+      final alt = _bestInCategory(weakest.category, banned,
+          avoidId: weakest.id, avoid: avoid);
       if (alt != null && alt.qualityScore > weakest.qualityScore) {
         swappedFrom.add(weakest.id);
         swappedInto = alt;
@@ -105,17 +108,17 @@ class MealPlanGenerator {
     // 3) Garantías del plato (sin duplicar lo que ya hay).
     final hasProtein = base.any((f) => f.category == FoodCategory.protein);
     if (!hasProtein) {
-      final p = _bestInCategory(FoodCategory.protein, banned);
+      final p = _bestInCategory(FoodCategory.protein, banned, avoid: avoid);
       if (p != null) base.add(p);
     }
     final hasVeg = base.any(_isVegetable);
     if (!hasVeg) {
-      final v = _bestVegetable(banned);
+      final v = _bestVegetable(banned, avoid: avoid);
       if (v != null) base.add(v);
     }
     final hasFat = base.any((f) => f.category == FoodCategory.fat);
     if (!hasFat) {
-      final g = _bestInCategory(FoodCategory.fat, banned);
+      final g = _bestInCategory(FoodCategory.fat, banned, avoid: avoid);
       if (g != null) base.add(g);
     }
 
@@ -146,22 +149,34 @@ class MealPlanGenerator {
   /// Mejor alimento de una categoría (mayor qualityScore, desempate por id
   /// para determinismo), respetando exclusiones.
   Food? _bestInCategory(FoodCategory cat, Set<String> banned,
-      {String? avoidId}) {
+      {String? avoidId, Set<String> avoid = const {}}) {
     final candidates = FoodCatalog.byCategory(cat)
         .where((f) => f.id != avoidId && !_isBanned(f, banned))
         .toList()
       ..sort(_byQualityThenId);
-    return candidates.isEmpty ? null : candidates.first;
+    return _pick(candidates, avoid);
   }
 
   /// Mejor "vegetal": carbohidrato de alta calidad (verduras puntúan ≥70 en
   /// el catálogo; los almidones/harinas puntúan bajo).
-  Food? _bestVegetable(Set<String> banned) {
+  Food? _bestVegetable(Set<String> banned, {Set<String> avoid = const {}}) {
     final candidates = FoodCatalog.byCategory(FoodCategory.carb)
         .where((f) => f.qualityScore >= 70 && !_isBanned(f, banned))
         .toList()
       ..sort(_byQualityThenId);
-    return candidates.isEmpty ? null : candidates.first;
+    return _pick(candidates, avoid);
+  }
+
+  /// Elige el mejor candidato (lista ya ordenada) que NO esté en `avoid`
+  /// (rotación / variedad, SPEC-275). Si TODOS están evitados, devuelve el
+  /// mejor de todos modos — la variedad nunca sacrifica la calidad del plato.
+  Food? _pick(List<Food> sorted, Set<String> avoid) {
+    if (sorted.isEmpty) return null;
+    if (avoid.isEmpty) return sorted.first;
+    for (final f in sorted) {
+      if (!avoid.contains(f.id)) return f;
+    }
+    return sorted.first;
   }
 
   bool _isVegetable(Food f) =>
