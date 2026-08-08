@@ -4,6 +4,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/meals_locked_dialog.dart';
@@ -66,11 +67,15 @@ class ComidasPillarCard extends ConsumerWidget {
     // sobre nutritionMagnitude ya persistido — sin schema nuevo.
     final qualityStreak =
         ref.watch(streakProvider.select((s) => s.nutritionQualityStreak));
+    // SPEC-277: la Minuta es la fuente de verdad del pilar comida.
+    final mealPlan = ref.watch(mealPlanNotifierProvider).plan;
+    final int minutaDone = mealPlan?.adherentCount ?? 0;
+    final int minutaTotal = mealPlan?.meals.length ?? state.targetMeals;
 
     final card = PillarCardUi.shell(
       // Título vacío: la card se identifica por el badge de comidas.
       title: '',
-      badge: '${state.mealsLoggedToday}/${state.targetMeals} comidas',
+      badge: '$minutaDone/$minutaTotal de tu minuta',
       accent: accent,
       children: [
         if (isFastingActive) ...[
@@ -111,12 +116,12 @@ class ComidasPillarCard extends ConsumerWidget {
               ],
               const SizedBox(height: 18),
               PillarCardUi.primaryButton(
-                label: 'Registrar ${state.nextMealLabel}',
-                icon: Icons.restaurant_rounded,
+                label: 'Ver mi minuta de hoy',
+                icon: Icons.checklist_rounded,
                 color: accent,
-                onPressed: isFastingActive || state.isSaving
+                onPressed: isFastingActive
                     ? null
-                    : () => PlateRatioSheet.show(context),
+                    : () => context.push('/nutrition/minuta'),
               ),
               // ── Editar / Eliminar último plato ──────────────────────
               if (lastLog != null) ...[
