@@ -95,6 +95,32 @@ enum PlanItemRole {
       };
 }
 
+/// De dónde salió el alimento del plato (SPEC-276). Sirve para marcar en
+/// la UI qué es tuyo, qué es una mejora sugerida y qué es un rol que te
+/// faltaba. Por defecto `fromUser` (retro-compatible con planes viejos).
+enum PlanItemOrigin {
+  /// El usuario ya lo come (venía de su intake).
+  fromUser,
+
+  /// Mejora suave: cambiamos un alimento tuyo por una versión más sana.
+  upgrade,
+
+  /// Rol que te faltaba por completo: sugerencia nueva para probar.
+  newSuggestion;
+
+  String get wire => switch (this) {
+        PlanItemOrigin.fromUser => 'from_user',
+        PlanItemOrigin.upgrade => 'upgrade',
+        PlanItemOrigin.newSuggestion => 'new',
+      };
+
+  static PlanItemOrigin fromWire(String? w) => switch (w) {
+        'upgrade' => PlanItemOrigin.upgrade,
+        'new' => PlanItemOrigin.newSuggestion,
+        _ => PlanItemOrigin.fromUser, // default seguro
+      };
+}
+
 /// Porción "al ojímetro" con referencia de mano (El Milagro Metabólico:
 /// nada de gramos). palma≈proteína, puño≈vegetales, pulgar≈grasa.
 enum HandPortion {
@@ -130,22 +156,29 @@ class PlanItem {
   final PlanItemRole role;
   final HandPortion portion;
 
+  /// SPEC-276: de dónde salió (tuyo / mejora / sugerencia nueva).
+  final PlanItemOrigin origin;
+
   const PlanItem({
     required this.foodId,
     this.role = PlanItemRole.other,
     this.portion = HandPortion.fist,
+    this.origin = PlanItemOrigin.fromUser,
   });
 
   Map<String, dynamic> toJson() => {
         'foodId': foodId,
         'role': role.wire,
         'portion': portion.wire,
+        // Se omite cuando es lo normal (tuyo) para no ensuciar el doc.
+        if (origin != PlanItemOrigin.fromUser) 'origin': origin.wire,
       };
 
   factory PlanItem.fromJson(Map<String, dynamic> j) => PlanItem(
         foodId: (j['foodId'] as String?)?.trim() ?? '',
         role: PlanItemRole.fromWire(j['role'] as String?),
         portion: HandPortion.fromWire(j['portion'] as String?),
+        origin: PlanItemOrigin.fromWire(j['origin'] as String?),
       );
 
   @override
@@ -153,10 +186,11 @@ class PlanItem {
       other is PlanItem &&
       other.foodId == foodId &&
       other.role == role &&
-      other.portion == portion;
+      other.portion == portion &&
+      other.origin == origin;
 
   @override
-  int get hashCode => Object.hash(foodId, role, portion);
+  int get hashCode => Object.hash(foodId, role, portion, origin);
 }
 
 // ─── Comida del plan ────────────────────────────────────────────────────────

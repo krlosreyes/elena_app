@@ -45,6 +45,11 @@ class MealPlanScreen extends ConsumerWidget {
           ),
         ),
         actions: [
+          IconButton(
+            tooltip: 'Editar mis preferencias',
+            icon: const Icon(Icons.tune, color: AppColors.textSecondary),
+            onPressed: () => context.push('/nutrition/intake'),
+          ),
           if (state.hasPlan)
             IconButton(
               tooltip: 'Regenerar',
@@ -273,10 +278,20 @@ class _PlanItemRow extends StatelessWidget {
           ),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(
-              name,
-              style: const TextStyle(
-                  color: AppColors.textPrimary, fontSize: 14),
+            child: Row(
+              children: [
+                Flexible(
+                  child: Text(
+                    name,
+                    style: const TextStyle(
+                        color: AppColors.textPrimary, fontSize: 14),
+                  ),
+                ),
+                if (item.origin != PlanItemOrigin.fromUser) ...[
+                  const SizedBox(width: 6),
+                  _OriginTag(origin: item.origin),
+                ],
+              ],
             ),
           ),
           Text(
@@ -284,6 +299,36 @@ class _PlanItemRow extends StatelessWidget {
             style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// SPEC-276: etiqueta que explica un alimento que no venía de tus
+/// preferencias — "Nuevo" (rol que te faltaba) o "Mejora" (cambio sano).
+class _OriginTag extends StatelessWidget {
+  final PlanItemOrigin origin;
+  const _OriginTag({required this.origin});
+
+  @override
+  Widget build(BuildContext context) {
+    final (label, color) = switch (origin) {
+      PlanItemOrigin.upgrade => ('Mejora', AppColors.statusGood),
+      PlanItemOrigin.newSuggestion => ('Nuevo', _amber),
+      PlanItemOrigin.fromUser => ('', AppColors.textMuted),
+    };
+    if (label.isEmpty) return const SizedBox.shrink();
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withValues(alpha: 0.5)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+            color: color, fontSize: 10, fontWeight: FontWeight.w700),
       ),
     );
   }
