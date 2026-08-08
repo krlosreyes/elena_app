@@ -68,6 +68,11 @@ class MealPlanNotifier extends StateNotifier<MealPlanState> {
   bool _generating = false;
   StreamSubscription<MealPlan?>? _sub;
 
+  /// SPEC-280.1: marca de tiempo del intake con el que estamos alineados.
+  /// Si llega un intake con otra marca (el usuario editó sus preferencias),
+  /// re-generamos la minuta para que se adapte.
+  DateTime? _seenIntakeStamp;
+
   void _init() {
     _ref.listen<AsyncValue<UserModel?>>(
       currentUserStreamProvider,
@@ -90,10 +95,41 @@ class MealPlanNotifier extends StateNotifier<MealPlanState> {
       (previous, next) {
         _intake = next.intake;
         _intakeReady = !next.isLoading;
-        _maybeGenerate();
+        _handleIntakeChange();
       },
       fireImmediately: true,
     );
+  }
+
+  /// Reacciona a cambios del intake: genera si aún no hay plan, o re-genera
+  /// si el usuario EDITÓ sus preferencias (marca de tiempo distinta).
+  void _handleIntakeChange() {
+    final intake = _intake;
+    final user = _user;
+    if (intake == null || !_intakeReady) return;
+    final stamp = intake.updatedAt;
+    final userEdited = _seenIntakeStamp != null && stamp != _seenIntakeStamp;
+    _seenIntakeStamp = stamp;
+    if (user == null || !intake.isComplete) return;
+    if (!state.hasPlan) {
+      _maybeGenerate();
+      return;
+    }
+    if (userEdited) _regenerateFrom(user, intake);
+  }
+
+  /// Rehace y persiste la minuta a partir del intake dado (adaptación tras
+  /// editar preferencias). Offline-first.
+  void _regenerateFrom(UserModel user, NutritionIntake intake) {
+    final plan = _buildFor(user, intake);
+    if (mounted) {
+      state = state.copyWith(plan: plan, isGenerating: false, isLoading: false);
+    }
+    final repo = _ref.read(mealPlanRepositoryProvider);
+    unawaited(repo.savePlan(user.id, plan).catchError((Object e) {
+      AppLogger.warning(
+          'meal_plan: regen tras editar preferencias falló: $e');
+    }));
   }
 
   void _teardown() {
