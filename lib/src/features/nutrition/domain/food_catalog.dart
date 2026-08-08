@@ -32,7 +32,7 @@
 // - 0-14: muy bajo. Azúcar, panela, miel, harinas blancas, papa, yuca,
 //   bebidas dulces.
 //
-// Catálogo: 157 alimentos cubriendo cocina LatAm con énfasis Colombia/
+// Catálogo: 162 alimentos cubriendo cocina LatAm con énfasis Colombia/
 // Caribe. Curado con tabla de Carlos (22-may-2026) + alimentos críticos
 // faltantes (verduras, mariscos, frutas, bebidas, productos típicos).
 
@@ -154,6 +154,10 @@ enum ServingUnit {
   /// Puñados — frutos secos, semillas.
   /// Picker: 1 · 2 · 3
   handful,
+
+  /// Scoops — proteína en polvo (la medida del tarro, ~30 g).
+  /// Picker: ½ · 1 · 1½ · 2
+  scoop,
 }
 
 extension ServingUnitExt on ServingUnit {
@@ -199,6 +203,12 @@ extension ServingUnitExt on ServingUnit {
             '2 puñados',
             '3 puñados',
           ],
+        ServingUnit.scoop => [
+            '½ scoop',
+            '1 scoop (~30 g)',
+            '1½ scoops',
+            '2 scoops',
+          ],
       };
 
   /// Cuántas copias del Food se agregan al PlateBuilder por cada opción.
@@ -209,6 +219,7 @@ extension ServingUnitExt on ServingUnit {
         ServingUnit.cup => [1, 1, 1, 2, 2],
         ServingUnit.slice => [1, 1, 2, 2],
         ServingUnit.handful => [1, 1, 2],
+        ServingUnit.scoop => [1, 1, 2, 2],
       };
 }
 
@@ -317,7 +328,7 @@ class Food {
   }
 }
 
-/// Catálogo curado. 157 alimentos cubriendo cocina LatAm con énfasis
+/// Catálogo curado. 162 alimentos cubriendo cocina LatAm con énfasis
 /// Colombia/Caribe. Todos los alimentos llevan portionLabel y servingUnit
 /// para el picker de cantidad del plato.
 class FoodCatalog {
@@ -608,6 +619,78 @@ class FoodCatalog {
       portionLabel: '½ taza cocida',
       servingUnit: ServingUnit.cup,
       searchAliases: ['quinoa'],
+    ),
+    // ── Proteínas en polvo (suplementos, medidos en scoop) ──────────────────
+    // qualityScore alto: proteína magra con muy poca respuesta insulínica.
+    // NOVA 3 (procesado): son aislados/concentrados; no ultraprocesados con
+    // aditivos cosméticos si se elige uno limpio (sin azúcares añadidos).
+    Food(
+      id: 'proteina_whey',
+      name: 'Proteína whey (suero)',
+      category: FoodCategory.protein,
+      qualityScore: 85,
+      nova: NovaGroup.processed,
+      portionLabel: '1 scoop (~30 g)',
+      servingUnit: ServingUnit.scoop,
+      searchAliases: [
+        'proteina en polvo',
+        'whey',
+        'suero de leche',
+        'proteina de suero',
+        'batido de proteina',
+      ],
+    ),
+    Food(
+      id: 'proteina_bipro',
+      name: 'Proteína Bi-Pro',
+      category: FoodCategory.protein,
+      qualityScore: 88,
+      nova: NovaGroup.processed,
+      portionLabel: '1 scoop (~30 g)',
+      servingUnit: ServingUnit.scoop,
+      searchAliases: ['bipro', 'bi-pro', 'bi pro', 'aislado de suero'],
+    ),
+    Food(
+      id: 'proteina_isolate',
+      name: 'Proteína aislada (isolate)',
+      category: FoodCategory.protein,
+      qualityScore: 90,
+      nova: NovaGroup.processed,
+      portionLabel: '1 scoop (~30 g)',
+      servingUnit: ServingUnit.scoop,
+      searchAliases: [
+        'isolate',
+        'aislado',
+        'iso 100',
+        'whey isolate',
+        'proteina aislada',
+      ],
+    ),
+    Food(
+      id: 'proteina_caseina',
+      name: 'Proteína caseína',
+      category: FoodCategory.protein,
+      qualityScore: 84,
+      nova: NovaGroup.processed,
+      portionLabel: '1 scoop (~30 g)',
+      servingUnit: ServingUnit.scoop,
+      searchAliases: ['caseina', 'proteina de caseina'],
+    ),
+    Food(
+      id: 'proteina_vegetal',
+      name: 'Proteína vegetal en polvo',
+      category: FoodCategory.protein,
+      qualityScore: 82,
+      nova: NovaGroup.processed,
+      portionLabel: '1 scoop (~30 g)',
+      servingUnit: ServingUnit.scoop,
+      searchAliases: [
+        'proteina vegana',
+        'proteina de guisante',
+        'proteina de arroz',
+        'proteina de soya',
+        'plant protein',
+      ],
     ),
 
     // Caldos — proteína animal diluida; score moderado por dilución
