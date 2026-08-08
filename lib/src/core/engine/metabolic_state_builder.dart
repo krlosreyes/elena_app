@@ -17,6 +17,8 @@ import 'package:elena_app/src/features/exercise/application/exercise_state.dart'
 import 'package:elena_app/src/features/exercise/domain/exercise_load_calculator.dart';
 import 'package:elena_app/src/features/nutrition/application/cociente_a_service.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
+import 'package:elena_app/src/features/nutrition/domain/meal_plan.dart';
+import 'package:elena_app/src/features/nutrition/domain/minuta_adherence_score.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 
 /// Construye un [MetabolicState] a partir de los estados de cada pilar.
@@ -69,6 +71,7 @@ class MetabolicStateBuilder {
     required DateTime now,
     double weeklyQualityScore = 0.0,
     SleepLog? lastSleepLog,
+    MealPlan? mealPlan,
   }) {
     // ── fastingHours (normalizado via sigmoid) ───────────────────────────
     // Misma sigmoid que ScoreEngine: 1/(1+e^(-(h-14)/1.5))
@@ -139,8 +142,19 @@ class MetabolicStateBuilder {
     const cocienteAService = CocienteAService();
     final double cocienteA = cocienteAService.calculate(nutrition.todayLogs);
     final double glycemicLoad = cocienteA;
-    final double nutritionScoreRaw =
+    // SPEC-277: la Minuta Diaria es la FUENTE ÚNICA de verdad del pilar
+    // de comida para el IMR/Score. `nutritionScoreRaw` pasa a ser la
+    // adherencia del día a la minuta (fracción cumplida: Comí/Cambié).
+    // Guardarraíl de transición: si el usuario aún NO tiene minuta con
+    // marcas, cae a la fórmula previa (0.70·cocienteA + 0.30·ventana),
+    // que con el registrador retirado tiende a 0 — es decir, el pilar de
+    // comida se gana marcando la minuta. Ver minuta_adherence_score.dart.
+    final double legacyNutrition =
         (0.70 * cocienteA) + (0.30 * nutrition.windowAdherence);
+    final double nutritionScoreRaw = MinutaAdherenceScore.effective(
+      fallbackScore: legacyNutrition,
+      plan: mealPlan,
+    );
 
     // ── hydrationLevel ───────────────────────────────────────────────────
     // Calculado desde litros actuales / goal.

@@ -8,6 +8,7 @@ import 'package:elena_app/src/features/fasting/application/fasting_notifier.dart
 import 'package:elena_app/src/features/hydration/application/hydration_notifier.dart';
 import 'package:elena_app/src/features/exercise/application/exercise_notifier.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
+import 'package:elena_app/src/features/nutrition/application/meal_plan_notifier.dart';
 import 'package:elena_app/src/features/streak/application/streak_notifier.dart';
 import 'package:elena_app/src/features/sleep/application/sleep_notifier.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
@@ -54,6 +55,8 @@ final metabolicStateProvider = Provider<MetabolicState>((ref) {
   final exercise = ref.watch(exerciseProvider);
   final nutrition = ref.watch(nutritionProvider);
   final hydration = ref.watch(hydrationProvider);
+  // SPEC-277: la Minuta es la fuente única de verdad del pilar comida.
+  final mealPlan = ref.watch(mealPlanNotifierProvider).plan;
 
   // SPEC-52 RF-52-04: weeklyAdherence real desde StreakNotifier.
   // `select` evita reconstruir cuando otros campos del StreakState cambian.
@@ -102,6 +105,7 @@ final metabolicStateProvider = Provider<MetabolicState>((ref) {
     weeklyAdherence: weeklyAdherence,
     weeklyQualityScore: weeklyQualityScore,
     lastSleepLog: lastSleepLog,
+    mealPlan: mealPlan,
     // SPEC-72.9: el reloj se inyecta — el builder no llama DateTime.now()
     // internamente. Aquí pasamos el pulso de 10s para que el state sea
     // determinista entre builds consecutivos del mismo tick.

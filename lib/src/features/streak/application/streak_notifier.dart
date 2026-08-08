@@ -518,8 +518,15 @@ class StreakNotifier extends StateNotifier<StreakState> {
     final rawExercise = StreakEngine.evaluateExercise(
       exerciseMinutes: exercise.todayMinutes,
     );
+    // SPEC-277: el pilar Comidas de la racha se gana MARCANDO la Minuta
+    // (Comí/Cambié ≥1). La Minuta es la fuente única de verdad. Guardarraíl
+    // de transición: si el usuario aún no tiene minuta, cae al conteo viejo
+    // de comidas registradas (que con el registrador retirado tiende a 0).
+    final streakPlan = _ref.read(mealPlanNotifierProvider).plan;
     final rawNutrition = StreakEngine.evaluateNutrition(
-      mealsLogged: nutrition.mealsLoggedToday,
+      mealsLogged: streakPlan != null
+          ? streakPlan.adherentCount
+          : nutrition.mealsLoggedToday,
     );
 
     // ── SCORE DINÁMICO vs PROTECCIÓN DE RESET (SPEC-242) ────────────────
