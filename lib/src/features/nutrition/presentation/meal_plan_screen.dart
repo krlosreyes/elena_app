@@ -479,7 +479,9 @@ class _PlanItemRow extends StatelessWidget {
             ),
           ),
           Text(
-            _portionLabel(item.portion),
+            // SPEC-279: medida concreta y entendible por alimento (taza,
+            // ½ taza, unidad, gramos, scoop) en vez de palma/puño/pulgar.
+            food?.portionLabel ?? _portionLabel(item.portion),
             style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
           ),
         ],
