@@ -70,7 +70,6 @@ const _vege = DietType.vegetarian;
 const _vegan = DietType.vegan;
 
 // Conjuntos de compatibilidad frecuentes.
-const List<DietType> _all = [_omni, _pesc, _vege, _vegan];
 const List<DietType> _veggie = [_omni, _pesc, _vege]; // con huevo/lácteo
 const List<DietType> _fish = [_omni, _pesc]; // pescado/mariscos
 const List<DietType> _meat = [_omni]; // carne/pollo/pavo/cerdo
