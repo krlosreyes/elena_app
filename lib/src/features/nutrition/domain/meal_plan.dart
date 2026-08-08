@@ -314,6 +314,33 @@ class MealPlan {
     );
   }
 
+  /// SPEC-280: reemplaza un alimento del plato por otro que elige el usuario
+  /// (en la misma comida). Inmutable; si no encuentra el alimento, devuelve
+  /// el mismo plan.
+  MealPlan replaceItem(MealSlot slot, String oldFoodId, PlanItem newItem) {
+    var changed = false;
+    final updated = meals.map((m) {
+      if (m.slot != slot) return m;
+      final items = m.items.map((it) {
+        if (it.foodId == oldFoodId) {
+          changed = true;
+          return newItem;
+        }
+        return it;
+      }).toList(growable: false);
+      return MealPlanEntry(
+        slot: m.slot,
+        targetProteinG: m.targetProteinG,
+        items: items,
+        swappedFrom: m.swappedFrom,
+        rationale: m.rationale,
+        adherence: m.adherence,
+      );
+    }).toList(growable: false);
+    if (!changed) return this;
+    return copyWith(meals: updated);
+  }
+
   MealPlan copyWith({
     String? date,
     int? version,

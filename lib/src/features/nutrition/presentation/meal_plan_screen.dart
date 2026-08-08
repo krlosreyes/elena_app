@@ -107,6 +107,8 @@ class MealPlanScreen extends ConsumerWidget {
             onMark: (mark) => ref
                 .read(mealPlanNotifierProvider.notifier)
                 .markAdherence(entry.slot, mark),
+            onPickAlternative: (item) => _showAlternatives(
+                context, ref, entry.slot, item, intakeState.intake),
           ),
         const SizedBox(height: 8),
         const Text(
@@ -177,7 +179,13 @@ class _MealCard extends StatelessWidget {
   final MealPlanEntry entry;
   final NutritionIntake? intake;
   final ValueChanged<AdherenceMark> onMark;
-  const _MealCard({required this.entry, required this.onMark, this.intake});
+  final void Function(PlanItem item)? onPickAlternative;
+  const _MealCard({
+    required this.entry,
+    required this.onMark,
+    this.intake,
+    this.onPickAlternative,
+  });
 
   static String _slotLabel(MealSlot s) => switch (s) {
         MealSlot.breakfast => 'Desayuno',
@@ -238,7 +246,13 @@ class _MealCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          for (final item in entry.items) _PlanItemRow(item: item),
+          for (final item in entry.items)
+            _PlanItemRow(
+              item: item,
+              onTap: (onPickAlternative == null || item.foodId.isEmpty)
+                  ? null
+                  : () => onPickAlternative!(item),
+            ),
           if (entry.rationale.isNotEmpty) ...[
             const SizedBox(height: 6),
             Text(
@@ -426,7 +440,10 @@ class _RecipeTile extends StatelessWidget {
 
 class _PlanItemRow extends StatelessWidget {
   final PlanItem item;
-  const _PlanItemRow({required this.item});
+
+  /// SPEC-280: si se pasa, tocar el ítem abre alternativas para cambiarlo.
+  final VoidCallback? onTap;
+  const _PlanItemRow({required this.item, this.onTap});
 
   static String _portionLabel(HandPortion p) => switch (p) {
         HandPortion.palm => 'palma',
@@ -447,8 +464,8 @@ class _PlanItemRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final food = FoodCatalog.byId(item.foodId);
     final name = food?.name ?? item.foodId;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+    final row = Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
           Container(
@@ -482,6 +499,187 @@ class _PlanItemRow extends StatelessWidget {
             // ½ taza, unidad, gramos, scoop) en vez de palma/puño/pulgar.
             food?.portionLabel ?? _portionLabel(item.portion),
             style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+          ),
+          if (onTap != null) ...[
+            const SizedBox(width: 8),
+            const Icon(Icons.swap_horiz, size: 18, color: _amber),
+          ],
+        ],
+      ),
+    );
+    if (onTap == null) return row;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: row,
+    );
+  }
+}
+
+// ─── Alternativas por alimento (SPEC-280) ───────────────────────────────────
+
+bool _isVegFood(Food f) =>
+    f.category == FoodCategory.carb && f.qualityScore >= 70;
+
+bool _matchesRole(Food f, PlanItemRole role) => switch (role) {
+      PlanItemRole.protein => f.category == FoodCategory.protein,
+      PlanItemRole.veg => _isVegFood(f),
+      PlanItemRole.fat => f.category == FoodCategory.fat,
+      PlanItemRole.other => f.category == FoodCategory.carb && !_isVegFood(f),
+    };
+
+/// Alternativas para un alimento del plato: primero lo que el usuario ya come
+/// (de su intake) del mismo rol, luego opciones sanas del catálogo.
+List<Food> _alternativesFor(PlanItem item, NutritionIntake? intake) {
+  final userIds = <String>{};
+  if (intake != null) {
+    for (final m in intake.meals) {
+      for (final it in m.items) {
+        final id = it.foodId;
+        if (id != null && id.isNotEmpty) userIds.add(id);
+      }
+    }
+  }
+  int byQ(Food a, Food b) => b.qualityScore.compareTo(a.qualityScore);
+
+  final userFoods = userIds
+      .map(FoodCatalog.byId)
+      .whereType<Food>()
+      .where((f) => _matchesRole(f, item.role) && f.id != item.foodId)
+      .toList()
+    ..sort(byQ);
+
+  final catalog = FoodCatalog.all
+      .where((f) =>
+          _matchesRole(f, item.role) &&
+          f.id != item.foodId &&
+          !userIds.contains(f.id))
+      .toList()
+    ..sort(byQ);
+
+  return [...userFoods, ...catalog.take(10)].take(16).toList();
+}
+
+void _showAlternatives(
+  BuildContext context,
+  WidgetRef ref,
+  MealSlot slot,
+  PlanItem item,
+  NutritionIntake? intake,
+) {
+  final options = _alternativesFor(item, intake);
+  final userIds = <String>{
+    if (intake != null)
+      for (final m in intake.meals)
+        for (final it in m.items)
+          if (it.foodId != null && it.foodId!.isNotEmpty) it.foodId!,
+  };
+  showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: AppColors.bgBase,
+    isScrollControlled: true,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+    ),
+    builder: (_) => _AlternativesSheet(
+      current: item,
+      options: options,
+      userIds: userIds,
+      onPick: (food) {
+        ref.read(mealPlanNotifierProvider.notifier).chooseAlternative(
+              slot,
+              item.foodId,
+              PlanItem(
+                foodId: food.id,
+                role: item.role,
+                portion: item.portion,
+                origin: PlanItemOrigin.fromUser,
+              ),
+            );
+      },
+    ),
+  );
+}
+
+class _AlternativesSheet extends StatelessWidget {
+  final PlanItem current;
+  final List<Food> options;
+  final Set<String> userIds;
+  final ValueChanged<Food> onPick;
+  const _AlternativesSheet({
+    required this.current,
+    required this.options,
+    required this.userIds,
+    required this.onPick,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final currentFood = FoodCatalog.byId(current.foodId);
+    final maxH = MediaQuery.of(context).size.height * 0.72;
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxHeight: maxH),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 10),
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.borderDefault,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 4),
+            child: Text(
+              'Cambiar ${currentFood?.name ?? current.foodId}',
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 17,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(20, 0, 20, 8),
+            child: Text(
+              'Elige otra opción para esta comida. Se guarda en tu minuta.',
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+            ),
+          ),
+          Flexible(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(12, 4, 12, 24),
+              children: [
+                for (final f in options)
+                  ListTile(
+                    dense: true,
+                    onTap: () {
+                      onPick(f);
+                      Navigator.of(context).pop();
+                    },
+                    title: Text(
+                      f.name,
+                      style: const TextStyle(
+                          color: AppColors.textPrimary, fontSize: 14.5),
+                    ),
+                    subtitle: Text(
+                      f.portionLabel,
+                      style: const TextStyle(
+                          color: AppColors.textMuted, fontSize: 12),
+                    ),
+                    trailing: userIds.contains(f.id)
+                        ? const Text('Ya lo comes',
+                            style: TextStyle(color: _amber, fontSize: 11))
+                        : null,
+                  ),
+              ],
+            ),
           ),
         ],
       ),

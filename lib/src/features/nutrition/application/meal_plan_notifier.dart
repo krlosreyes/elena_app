@@ -173,6 +173,24 @@ class MealPlanNotifier extends StateNotifier<MealPlanState> {
     }));
   }
 
+  /// SPEC-280: el usuario elige otra opción para un alimento del plato; se
+  /// guarda en la minuta del día (offline-first).
+  Future<void> chooseAlternative(
+      MealSlot slot, String oldFoodId, PlanItem newItem) async {
+    final current = state.plan;
+    final user = _user;
+    if (current == null || user == null) return;
+
+    final updated = current.replaceItem(slot, oldFoodId, newItem);
+    if (identical(updated, current)) return;
+    if (mounted) state = state.copyWith(plan: updated);
+
+    final repo = _ref.read(mealPlanRepositoryProvider);
+    unawaited(repo.savePlan(user.id, updated).catchError((Object e) {
+      AppLogger.warning('meal_plan: chooseAlternative save falló: $e');
+    }));
+  }
+
   /// Rehace la minuta del día desde el intake actual (botón "Regenerar").
   Future<void> regenerate() async {
     final user = _user;
