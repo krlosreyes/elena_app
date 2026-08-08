@@ -16,7 +16,6 @@ import 'package:elena_app/src/features/nutrition/domain/food_catalog.dart';
 import 'package:elena_app/src/features/nutrition/domain/intake_resurvey_policy.dart';
 import 'package:elena_app/src/features/nutrition/domain/meal_plan.dart';
 import 'package:elena_app/src/features/nutrition/domain/nutrition_intake.dart';
-import 'package:elena_app/src/features/nutrition/domain/recipe_catalog.dart';
 import 'package:elena_app/src/features/nutrition/domain/recipe_match_service.dart';
 
 const Color _amber = AppColors.pillarNutricion;
