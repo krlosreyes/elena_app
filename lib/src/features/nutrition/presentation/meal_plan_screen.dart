@@ -16,6 +16,8 @@ import 'package:elena_app/src/features/nutrition/domain/food_catalog.dart';
 import 'package:elena_app/src/features/nutrition/domain/intake_resurvey_policy.dart';
 import 'package:elena_app/src/features/nutrition/domain/meal_plan.dart';
 import 'package:elena_app/src/features/nutrition/domain/nutrition_intake.dart';
+import 'package:elena_app/src/features/nutrition/domain/recipe_catalog.dart';
+import 'package:elena_app/src/features/nutrition/domain/recipe_match_service.dart';
 
 const Color _amber = AppColors.pillarNutricion;
 
@@ -102,6 +104,7 @@ class MealPlanScreen extends ConsumerWidget {
         for (final entry in plan.meals)
           _MealCard(
             entry: entry,
+            intake: intakeState.intake,
             onMark: (mark) => ref
                 .read(mealPlanNotifierProvider.notifier)
                 .markAdherence(entry.slot, mark),
@@ -173,8 +176,9 @@ class _PlanHeader extends StatelessWidget {
 
 class _MealCard extends StatelessWidget {
   final MealPlanEntry entry;
+  final NutritionIntake? intake;
   final ValueChanged<AdherenceMark> onMark;
-  const _MealCard({required this.entry, required this.onMark});
+  const _MealCard({required this.entry, required this.onMark, this.intake});
 
   static String _slotLabel(MealSlot s) => switch (s) {
         MealSlot.breakfast => 'Desayuno',
@@ -182,6 +186,21 @@ class _MealCard extends StatelessWidget {
         MealSlot.dinner => 'Cena',
         MealSlot.other => 'Otra comida',
       };
+
+  void _showRecipes(BuildContext context, NutritionIntake intake) {
+    final matches = const RecipeMatchService()
+        .match(intake: intake, slot: entry.slot, limit: 6);
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppColors.bgBase,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (_) =>
+          _RecipesSheet(title: _slotLabel(entry.slot), matches: matches),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -235,10 +254,175 @@ class _MealCard extends StatelessWidget {
           ],
           const SizedBox(height: 14),
           _AdherenceRow(current: entry.adherence, onMark: onMark),
+          if (intake != null) ...[
+            const SizedBox(height: 6),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  minimumSize: const Size(0, 0),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                onPressed: () => _showRecipes(context, intake!),
+                icon: const Icon(Icons.menu_book_outlined,
+                    size: 18, color: _amber),
+                label: const Text(
+                  'Recetas para esta comida',
+                  style: TextStyle(
+                      color: _amber,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
+}
+
+// ─── Recetas (bottom sheet) ─────────────────────────────────────────────────
+
+class _RecipesSheet extends StatelessWidget {
+  final String title;
+  final List<RecipeMatch> matches;
+  const _RecipesSheet({required this.title, required this.matches});
+
+  @override
+  Widget build(BuildContext context) {
+    final maxH = MediaQuery.of(context).size.height * 0.78;
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxHeight: maxH),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 10),
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.borderDefault,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 6),
+            child: Text(
+              'Recetas para tu $title',
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 17,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          if (matches.isEmpty)
+            const Padding(
+              padding: EdgeInsets.fromLTRB(20, 8, 20, 24),
+              child: Text(
+                'Aún no tenemos recetas que encajen con tus preferencias. '
+                'Prueba editar tus alimentos o restricciones.',
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+              ),
+            )
+          else
+            Flexible(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(12, 4, 12, 24),
+                children: [
+                  for (final m in matches) _RecipeTile(match: m),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RecipeTile extends StatelessWidget {
+  final RecipeMatch match;
+  const _RecipeTile({required this.match});
+
+  @override
+  Widget build(BuildContext context) {
+    final r = match.recipe;
+    final subtitle = '${r.prepMinutes} min · ${r.servings} '
+        '${r.servings == 1 ? 'porción' : 'porciones'}'
+        '${match.overlap > 0 ? ' · usas ${match.overlap} de tus ingredientes' : ''}';
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: AppColors.bgSurface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.borderDefault),
+      ),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          tilePadding: const EdgeInsets.symmetric(horizontal: 14),
+          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+          iconColor: _amber,
+          collapsedIconColor: AppColors.textMuted,
+          title: Text(
+            r.name,
+            style: const TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 14.5,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          subtitle: Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Text(subtitle,
+                style: const TextStyle(
+                    color: AppColors.textMuted, fontSize: 12)),
+          ),
+          children: [
+            _sectionLabel('Ingredientes'),
+            for (final ing in r.ingredients)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 3),
+                child: Text('• ${ing.text}',
+                    style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                        height: 1.35)),
+              ),
+            const SizedBox(height: 10),
+            _sectionLabel('Preparación'),
+            for (var i = 0; i < r.steps.length; i++)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text('${i + 1}. ${r.steps[i]}',
+                    style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                        height: 1.4)),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _sectionLabel(String text) => Padding(
+        padding: const EdgeInsets.only(bottom: 6),
+        child: Text(
+          text.toUpperCase(),
+          style: const TextStyle(
+            color: _amber,
+            fontSize: 11,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.5,
+          ),
+        ),
+      );
 }
 
 class _PlanItemRow extends StatelessWidget {
