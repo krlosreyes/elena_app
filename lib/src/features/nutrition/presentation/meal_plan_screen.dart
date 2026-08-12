@@ -16,6 +16,7 @@ import 'package:elena_app/src/features/nutrition/domain/food_catalog.dart';
 import 'package:elena_app/src/features/nutrition/domain/intake_resurvey_policy.dart';
 import 'package:elena_app/src/features/nutrition/domain/meal_plan.dart';
 import 'package:elena_app/src/features/nutrition/domain/nutrition_intake.dart';
+import 'package:elena_app/src/features/nutrition/domain/recipe_catalog.dart';
 import 'package:elena_app/src/features/nutrition/domain/recipe_match_service.dart';
 
 const Color _amber = AppColors.pillarNutricion;
@@ -103,12 +104,15 @@ class MealPlanScreen extends ConsumerWidget {
         for (final entry in plan.meals)
           _MealCard(
             entry: entry,
-            intake: intakeState.intake,
             onMark: (mark) => ref
                 .read(mealPlanNotifierProvider.notifier)
                 .markAdherence(entry.slot, mark),
             onPickAlternative: (item) => _showAlternatives(
                 context, ref, entry.slot, item, intakeState.intake),
+            onChangeDish: () => _showChangeDish(
+                context, ref, entry.slot, intakeState.intake),
+            onAddFood: () =>
+                _showAddFood(context, ref, entry.slot, intakeState.intake),
           ),
         const SizedBox(height: 8),
         const Text(
@@ -177,14 +181,16 @@ class _PlanHeader extends StatelessWidget {
 
 class _MealCard extends StatelessWidget {
   final MealPlanEntry entry;
-  final NutritionIntake? intake;
   final ValueChanged<AdherenceMark> onMark;
   final void Function(PlanItem item)? onPickAlternative;
+  final VoidCallback? onChangeDish;
+  final VoidCallback? onAddFood;
   const _MealCard({
     required this.entry,
     required this.onMark,
-    this.intake,
     this.onPickAlternative,
+    this.onChangeDish,
+    this.onAddFood,
   });
 
   static String _slotLabel(MealSlot s) => switch (s) {
@@ -194,23 +200,20 @@ class _MealCard extends StatelessWidget {
         MealSlot.other => 'Otra comida',
       };
 
-  void _showRecipes(BuildContext context, NutritionIntake intake) {
-    final matches = const RecipeMatchService()
-        .match(intake: intake, slot: entry.slot, limit: 6);
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: AppColors.bgBase,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
-      ),
-      builder: (_) =>
-          _RecipesSheet(title: _slotLabel(entry.slot), matches: matches),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
+    // SPEC-285: la comida es un PLATO (receta), no una lista de alimentos
+    // sueltos. Nombre + resumen arriba; ingredientes y preparación se
+    // despliegan; abajo las acciones (cambiar plato / agregar) y el ciclo.
+    final recipe =
+        entry.recipeId == null ? null : RecipeCatalog.byId(entry.recipeId!);
+    final dishName = recipe?.name ??
+        'Tu plato de ${_slotLabel(entry.slot).toLowerCase()}';
+    final subtitle = recipe != null
+        ? '${recipe.prepMinutes} min · '
+            '${recipe.servings == 1 ? '1 porción' : '${recipe.servings} porciones'}'
+        : '${entry.items.length} ingredientes';
+
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       padding: const EdgeInsets.all(16),
@@ -231,9 +234,10 @@ class _MealCard extends StatelessWidget {
               Text(
                 _slotLabel(entry.slot),
                 style: const TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
+                  color: AppColors.textMuted,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.4,
                 ),
               ),
               const Spacer(),
@@ -245,16 +249,30 @@ class _MealCard extends StatelessWidget {
                 ),
             ],
           ),
-          const SizedBox(height: 12),
-          for (final item in entry.items)
-            _PlanItemRow(
-              item: item,
-              onTap: (onPickAlternative == null || item.foodId.isEmpty)
-                  ? null
-                  : () => onPickAlternative!(item),
+          const SizedBox(height: 6),
+          Text(
+            dishName,
+            style: const TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 16.5,
+              fontWeight: FontWeight.w800,
+              height: 1.25,
             ),
-          if (entry.rationale.isNotEmpty) ...[
-            const SizedBox(height: 6),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            subtitle,
+            style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+          ),
+          const SizedBox(height: 10),
+          _DishDetails(
+            entry: entry,
+            recipe: recipe,
+            onPickAlternative: onPickAlternative,
+          ),
+          if (entry.rationale.isNotEmpty &&
+              !entry.rationale.startsWith('Receta sugerida')) ...[
+            const SizedBox(height: 8),
             Text(
               entry.rationale,
               style: const TextStyle(
@@ -265,32 +283,179 @@ class _MealCard extends StatelessWidget {
               ),
             ),
           ],
-          const SizedBox(height: 14),
-          _AdherenceRow(current: entry.adherence, onMark: onMark),
-          if (intake != null) ...[
-            const SizedBox(height: 6),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton.icon(
-                style: TextButton.styleFrom(
-                  padding: EdgeInsets.zero,
-                  minimumSize: const Size(0, 0),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              if (onChangeDish != null)
+                Expanded(
+                  child: _DishActionButton(
+                    label: 'Cambiar plato',
+                    icon: Icons.restaurant_menu,
+                    onTap: onChangeDish!,
+                  ),
                 ),
-                onPressed: () => _showRecipes(context, intake!),
-                icon: const Icon(Icons.menu_book_outlined,
-                    size: 18, color: _amber),
-                label: const Text(
-                  'Recetas para esta comida',
-                  style: TextStyle(
-                      color: _amber,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13),
+              if (onChangeDish != null && onAddFood != null)
+                const SizedBox(width: 8),
+              if (onAddFood != null)
+                Expanded(
+                  child: _DishActionButton(
+                    label: 'Agregar algo',
+                    icon: Icons.add,
+                    onTap: onAddFood!,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _AdherenceRow(current: entry.adherence, onMark: onMark),
+        ],
+      ),
+    );
+  }
+}
+
+/// SPEC-285: sección desplegable con los ingredientes (editables) y la
+/// preparación del plato.
+class _DishDetails extends StatelessWidget {
+  final MealPlanEntry entry;
+  final Recipe? recipe;
+  final void Function(PlanItem item)? onPickAlternative;
+  const _DishDetails({
+    required this.entry,
+    required this.recipe,
+    this.onPickAlternative,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final seasonings = recipe == null
+        ? const <RecipeIngredient>[]
+        : recipe!.ingredients
+            .where((i) => i.foodId == null || i.foodId!.isEmpty)
+            .toList();
+    final canEdit = onPickAlternative != null;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.bgElevated,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.borderDefault),
+      ),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          tilePadding: const EdgeInsets.symmetric(horizontal: 14),
+          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+          iconColor: _amber,
+          collapsedIconColor: AppColors.textSecondary,
+          title: const Text(
+            'Ver ingredientes y preparación',
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 13.5,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          children: [
+            _dishSectionLabel('Ingredientes'),
+            for (final item in entry.items)
+              _PlanItemRow(
+                item: item,
+                onTap: (!canEdit || item.foodId.isEmpty)
+                    ? null
+                    : () => onPickAlternative!(item),
+              ),
+            for (final ing in seasonings)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  children: [
+                    const Icon(Icons.circle,
+                        size: 6, color: AppColors.textMuted),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(ing.text,
+                          style: const TextStyle(
+                              color: AppColors.textSecondary, fontSize: 13)),
+                    ),
+                  ],
                 ),
               ),
+            if (canEdit && entry.items.any((i) => i.foodId.isNotEmpty))
+              const Padding(
+                padding: EdgeInsets.only(top: 6),
+                child: Text(
+                  'Toca un ingrediente para cambiarlo.',
+                  style: TextStyle(color: AppColors.textMuted, fontSize: 11.5),
+                ),
+              ),
+            if (recipe != null && recipe!.steps.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              _dishSectionLabel('Preparación'),
+              for (var i = 0; i < recipe!.steps.length; i++)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text('${i + 1}. ${recipe!.steps[i]}',
+                      style: const TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 13,
+                          height: 1.4)),
+                ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+Widget _dishSectionLabel(String text) => Padding(
+      padding: const EdgeInsets.only(bottom: 6, top: 2),
+      child: Text(
+        text.toUpperCase(),
+        style: const TextStyle(
+          color: _amber,
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+
+class _DishActionButton extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+  const _DishActionButton({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(10),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: _amber.withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: _amber.withValues(alpha: 0.35)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 16, color: _amber),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: const TextStyle(
+                  color: _amber, fontSize: 12.5, fontWeight: FontWeight.w700),
             ),
           ],
-        ],
+        ),
       ),
     );
   }
@@ -301,11 +466,24 @@ class _MealCard extends StatelessWidget {
 class _RecipesSheet extends StatelessWidget {
   final String title;
   final List<RecipeMatch> matches;
-  const _RecipesSheet({required this.title, required this.matches});
+
+  /// SPEC-285: si se pasa, cada receta muestra "Elegir este plato" para
+  /// cambiar la comida de la minuta por esa receta.
+  final ValueChanged<Recipe>? onChoose;
+
+  /// Id de la receta actualmente en la minuta (para marcarla).
+  final String? currentRecipeId;
+  const _RecipesSheet({
+    required this.title,
+    required this.matches,
+    this.onChoose,
+    this.currentRecipeId,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final maxH = MediaQuery.of(context).size.height * 0.78;
+    final maxH = MediaQuery.of(context).size.height * 0.82;
+    final heading = onChoose != null ? 'Cambiar tu $title' : 'Recetas para tu $title';
     return ConstrainedBox(
       constraints: BoxConstraints(maxHeight: maxH),
       child: Column(
@@ -326,7 +504,7 @@ class _RecipesSheet extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 14, 20, 6),
             child: Text(
-              'Recetas para tu $title',
+              heading,
               style: const TextStyle(
                 color: AppColors.textPrimary,
                 fontSize: 17,
@@ -348,7 +526,12 @@ class _RecipesSheet extends StatelessWidget {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(12, 4, 12, 24),
                 children: [
-                  for (final m in matches) _RecipeTile(match: m),
+                  for (final m in matches)
+                    _RecipeTile(
+                      match: m,
+                      onChoose: onChoose,
+                      isCurrent: m.recipe.id == currentRecipeId,
+                    ),
                 ],
               ),
             ),
@@ -360,7 +543,13 @@ class _RecipesSheet extends StatelessWidget {
 
 class _RecipeTile extends StatelessWidget {
   final RecipeMatch match;
-  const _RecipeTile({required this.match});
+  final ValueChanged<Recipe>? onChoose;
+  final bool isCurrent;
+  const _RecipeTile({
+    required this.match,
+    this.onChoose,
+    this.isCurrent = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -373,7 +562,9 @@ class _RecipeTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.bgSurface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.borderDefault),
+        border: Border.all(
+          color: isCurrent ? _amber.withValues(alpha: 0.5) : AppColors.borderDefault,
+        ),
       ),
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
@@ -382,13 +573,24 @@ class _RecipeTile extends StatelessWidget {
           childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
           iconColor: _amber,
           collapsedIconColor: AppColors.textMuted,
-          title: Text(
-            r.name,
-            style: const TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: 14.5,
-              fontWeight: FontWeight.w700,
-            ),
+          title: Row(
+            children: [
+              Flexible(
+                child: Text(
+                  r.name,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              if (isCurrent) ...[
+                const SizedBox(width: 8),
+                const Text('Actual',
+                    style: TextStyle(color: _amber, fontSize: 11)),
+              ],
+            ],
           ),
           subtitle: Padding(
             padding: const EdgeInsets.only(top: 2),
@@ -418,6 +620,29 @@ class _RecipeTile extends StatelessWidget {
                         fontSize: 13,
                         height: 1.4)),
               ),
+            if (onChoose != null && !isCurrent) ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    onChoose!(r);
+                    Navigator.of(context).pop();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _amber,
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  icon: const Icon(Icons.check, size: 18),
+                  label: const Text('Elegir este plato',
+                      style: TextStyle(fontWeight: FontWeight.w700)),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -436,6 +661,194 @@ class _RecipeTile extends StatelessWidget {
           ),
         ),
       );
+}
+
+// ─── Cambiar plato / Agregar (SPEC-285/287) ─────────────────────────────────
+
+void _showChangeDish(
+  BuildContext context,
+  WidgetRef ref,
+  MealSlot slot,
+  NutritionIntake? intake,
+) {
+  if (intake == null) return;
+  final matches = const RecipeMatchService()
+      .match(intake: intake, slot: slot, limit: 10);
+  String? current;
+  final plan0 = ref.read(mealPlanNotifierProvider).plan;
+  if (plan0 != null) {
+    for (final m in plan0.meals) {
+      if (m.slot == slot) {
+        current = m.recipeId;
+        break;
+      }
+    }
+  }
+  showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: AppColors.bgBase,
+    isScrollControlled: true,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+    ),
+    builder: (_) => _RecipesSheet(
+      title: _MealCard._slotLabel(slot),
+      matches: matches,
+      currentRecipeId: current,
+      onChoose: (recipe) => ref
+          .read(mealPlanNotifierProvider.notifier)
+          .chooseRecipe(slot, recipe.id),
+    ),
+  );
+}
+
+/// Alimentos que se pueden agregar a una comida: primero lo que el usuario ya
+/// come (su repertorio), luego opciones sanas del catálogo, excluyendo lo que
+/// ya está en el plato.
+List<Food> _addFoodOptions(NutritionIntake? intake, Set<String> already) {
+  final userIds = <String>{};
+  if (intake != null) {
+    for (final m in intake.meals) {
+      for (final it in m.items) {
+        final id = it.foodId;
+        if (id != null && id.isNotEmpty) userIds.add(id);
+      }
+    }
+  }
+  int byQ(Food a, Food b) => b.qualityScore.compareTo(a.qualityScore);
+  final userFoods = userIds
+      .map(FoodCatalog.byId)
+      .whereType<Food>()
+      .where((f) => !already.contains(f.id))
+      .toList()
+    ..sort(byQ);
+  final catalog = FoodCatalog.all
+      .where((f) =>
+          !already.contains(f.id) &&
+          !userIds.contains(f.id) &&
+          f.qualityScore >= 50)
+      .toList()
+    ..sort(byQ);
+  return [...userFoods, ...catalog.take(20)];
+}
+
+void _showAddFood(
+  BuildContext context,
+  WidgetRef ref,
+  MealSlot slot,
+  NutritionIntake? intake,
+) {
+  final plan = ref.read(mealPlanNotifierProvider).plan;
+  final already = <String>{
+    ...?plan?.meals
+        .where((m) => m.slot == slot)
+        .expand((m) => m.items)
+        .map((i) => i.foodId),
+  };
+  final userIds = <String>{
+    if (intake != null)
+      for (final m in intake.meals)
+        for (final it in m.items)
+          if (it.foodId != null && it.foodId!.isNotEmpty) it.foodId!,
+  };
+  final options = _addFoodOptions(intake, already);
+  showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: AppColors.bgBase,
+    isScrollControlled: true,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+    ),
+    builder: (_) => _AddFoodSheet(
+      options: options,
+      userIds: userIds,
+      onPick: (food) =>
+          ref.read(mealPlanNotifierProvider.notifier).addExtraFood(slot, food.id),
+    ),
+  );
+}
+
+class _AddFoodSheet extends StatelessWidget {
+  final List<Food> options;
+  final Set<String> userIds;
+  final ValueChanged<Food> onPick;
+  const _AddFoodSheet({
+    required this.options,
+    required this.userIds,
+    required this.onPick,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final maxH = MediaQuery.of(context).size.height * 0.72;
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxHeight: maxH),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 10),
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.borderDefault,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(20, 14, 20, 4),
+            child: Text(
+              'Agregar a esta comida',
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 17,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(20, 0, 20, 8),
+            child: Text(
+              'Suma algo que vas a comer y no está en el plato. Se guarda en tu minuta.',
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+            ),
+          ),
+          Flexible(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(12, 4, 12, 24),
+              children: [
+                for (final f in options)
+                  ListTile(
+                    dense: true,
+                    onTap: () {
+                      onPick(f);
+                      Navigator.of(context).pop();
+                    },
+                    title: Text(
+                      f.name,
+                      style: const TextStyle(
+                          color: AppColors.textPrimary, fontSize: 14.5),
+                    ),
+                    subtitle: Text(
+                      f.portionLabel,
+                      style: const TextStyle(
+                          color: AppColors.textMuted, fontSize: 12),
+                    ),
+                    trailing: userIds.contains(f.id)
+                        ? const Text('Ya lo comes',
+                            style: TextStyle(color: _amber, fontSize: 11))
+                        : const Icon(Icons.add, size: 18, color: _amber),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _PlanItemRow extends StatelessWidget {
