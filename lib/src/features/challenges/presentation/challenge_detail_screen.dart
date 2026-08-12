@@ -51,7 +51,8 @@ class _ChallengeDetailScreenState extends ConsumerState<ChallengeDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final challengeAsync = ref.watch(challengeProvider(widget.code));
-    final leaderboardAsync = ref.watch(challengeLeaderboardProvider(widget.code));
+    final leaderboardAsync =
+        ref.watch(challengeLeaderboardProvider(widget.code));
     final myId = ref.watch(currentUserStreamProvider).valueOrNull?.id ?? '';
 
     // Republica mi puntaje una sola vez, cuando llega la metadata del reto.
@@ -219,8 +220,8 @@ class _ChallengeDetailScreenState extends ConsumerState<ChallengeDetailScreen> {
                 fontWeight: FontWeight.w800)),
         const SizedBox(height: 6),
         Text('$statusLabel · ${c.memberCount} participantes',
-            style: const TextStyle(
-                color: AppColors.textSecondary, fontSize: 13)),
+            style:
+                const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
       ],
     );
   }
@@ -572,8 +573,8 @@ class _LeaderRow extends StatelessWidget {
                       fontWeight: FontWeight.w800)),
               const SizedBox(width: 4),
               const Text('pts',
-                  style: TextStyle(
-                      color: AppColors.textSecondary, fontSize: 12)),
+                  style:
+                      TextStyle(color: AppColors.textSecondary, fontSize: 12)),
               if (onNudge != null) ...[
                 const SizedBox(width: 6),
                 InkWell(
@@ -634,8 +635,7 @@ class _NudgeSheet extends ConsumerWidget {
                   fontWeight: FontWeight.w800)),
           const SizedBox(height: 4),
           const Text('Le llega como un mensaje tuyo. Solo buena onda.',
-              style:
-                  TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
           const SizedBox(height: 16),
           ...NudgeCatalog.all.map(
             (kind) => Padding(
@@ -644,8 +644,8 @@ class _NudgeSheet extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(12),
                 onTap: () => _send(context, ref, kind),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 14),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                   decoration: BoxDecoration(
                     color: AppColors.backgroundDark,
                     borderRadius: BorderRadius.circular(12),
@@ -664,8 +664,8 @@ class _NudgeSheet extends ConsumerWidget {
                       ),
                       Icon(Icons.blur_circular_rounded,
                           size: 16,
-                          color: const Color(0xFFD8B4E2)
-                              .withValues(alpha: 0.9)),
+                          color:
+                              const Color(0xFFD8B4E2).withValues(alpha: 0.9)),
                       const SizedBox(width: 4),
                       Text('${kind.cost}',
                           style: const TextStyle(
@@ -695,7 +695,8 @@ class _NudgeSheet extends ConsumerWidget {
           );
       navigator.pop();
       messenger.showSnackBar(
-        SnackBar(content: Text('${kind.emoji} enviado a ${target.displayName}')),
+        SnackBar(
+            content: Text('${kind.emoji} enviado a ${target.displayName}')),
       );
     } on ChallengeException catch (e) {
       messenger.showSnackBar(SnackBar(content: Text(e.message)));

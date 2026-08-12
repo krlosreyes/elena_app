@@ -15,10 +15,8 @@ class FirestoreNudgeV1Source implements NudgeDataSource {
   FirestoreNudgeV1Source({FirebaseFirestore? firestore})
       : _firestore = firestore ?? FirebaseFirestore.instance;
 
-  CollectionReference<Map<String, dynamic>> _nudges(String code) => _firestore
-      .collection('challenges')
-      .doc(code)
-      .collection('nudges');
+  CollectionReference<Map<String, dynamic>> _nudges(String code) =>
+      _firestore.collection('challenges').doc(code).collection('nudges');
 
   @override
   Future<void> send(String code, Map<String, dynamic> data) async {

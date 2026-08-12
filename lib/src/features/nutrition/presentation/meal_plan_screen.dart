@@ -109,8 +109,8 @@ class MealPlanScreen extends ConsumerWidget {
                 .markAdherence(entry.slot, mark),
             onPickAlternative: (item) => _showAlternatives(
                 context, ref, entry.slot, item, intakeState.intake),
-            onChangeDish: () => _showChangeDish(
-                context, ref, entry.slot, intakeState.intake),
+            onChangeDish: () =>
+                _showChangeDish(context, ref, entry.slot, intakeState.intake),
             onAddFood: () =>
                 _showAddFood(context, ref, entry.slot, intakeState.intake),
           ),
@@ -207,8 +207,8 @@ class _MealCard extends StatelessWidget {
     // despliegan; abajo las acciones (cambiar plato / agregar) y el ciclo.
     final recipe =
         entry.recipeId == null ? null : RecipeCatalog.byId(entry.recipeId!);
-    final dishName = recipe?.name ??
-        'Tu plato de ${_slotLabel(entry.slot).toLowerCase()}';
+    final dishName =
+        recipe?.name ?? 'Tu plato de ${_slotLabel(entry.slot).toLowerCase()}';
     final subtitle = recipe != null
         ? '${recipe.prepMinutes} min · '
             '${recipe.servings == 1 ? '1 porción' : '${recipe.servings} porciones'}'
@@ -244,8 +244,8 @@ class _MealCard extends StatelessWidget {
               if (entry.targetProteinG > 0)
                 Text(
                   '~${entry.targetProteinG.round()} g proteína',
-                  style: const TextStyle(
-                      color: AppColors.textMuted, fontSize: 12),
+                  style:
+                      const TextStyle(color: AppColors.textMuted, fontSize: 12),
                 ),
             ],
           ),
@@ -483,7 +483,8 @@ class _RecipesSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final maxH = MediaQuery.of(context).size.height * 0.82;
-    final heading = onChoose != null ? 'Cambiar tu $title' : 'Recetas para tu $title';
+    final heading =
+        onChoose != null ? 'Cambiar tu $title' : 'Recetas para tu $title';
     return ConstrainedBox(
       constraints: BoxConstraints(maxHeight: maxH),
       child: Column(
@@ -563,7 +564,9 @@ class _RecipeTile extends StatelessWidget {
         color: AppColors.bgSurface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isCurrent ? _amber.withValues(alpha: 0.5) : AppColors.borderDefault,
+          color: isCurrent
+              ? _amber.withValues(alpha: 0.5)
+              : AppColors.borderDefault,
         ),
       ),
       child: Theme(
@@ -595,8 +598,8 @@ class _RecipeTile extends StatelessWidget {
           subtitle: Padding(
             padding: const EdgeInsets.only(top: 2),
             child: Text(subtitle,
-                style: const TextStyle(
-                    color: AppColors.textMuted, fontSize: 12)),
+                style:
+                    const TextStyle(color: AppColors.textMuted, fontSize: 12)),
           ),
           children: [
             _sectionLabel('Ingredientes'),
@@ -672,8 +675,8 @@ void _showChangeDish(
   NutritionIntake? intake,
 ) {
   if (intake == null) return;
-  final matches = const RecipeMatchService()
-      .match(intake: intake, slot: slot, limit: 10);
+  final matches =
+      const RecipeMatchService().match(intake: intake, slot: slot, limit: 10);
   String? current;
   final plan0 = ref.read(mealPlanNotifierProvider).plan;
   if (plan0 != null) {
@@ -762,8 +765,9 @@ void _showAddFood(
     builder: (_) => _AddFoodSheet(
       options: options,
       userIds: userIds,
-      onPick: (food) =>
-          ref.read(mealPlanNotifierProvider.notifier).addExtraFood(slot, food.id),
+      onPick: (food) => ref
+          .read(mealPlanNotifierProvider.notifier)
+          .addExtraFood(slot, food.id),
     ),
   );
 }
@@ -1159,8 +1163,8 @@ class _OriginTag extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(
-            color: color, fontSize: 10, fontWeight: FontWeight.w700),
+        style:
+            TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w700),
       ),
     );
   }
@@ -1226,7 +1230,8 @@ class _AdherenceButton extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: selected ? color.withValues(alpha: 0.18) : AppColors.bgElevated,
+            color:
+                selected ? color.withValues(alpha: 0.18) : AppColors.bgElevated,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: selected ? color : AppColors.borderDefault,
@@ -1235,8 +1240,7 @@ class _AdherenceButton extends StatelessWidget {
           child: Column(
             children: [
               Icon(icon,
-                  size: 18,
-                  color: selected ? color : AppColors.textSecondary),
+                  size: 18, color: selected ? color : AppColors.textSecondary),
               const SizedBox(height: 4),
               Text(
                 label,

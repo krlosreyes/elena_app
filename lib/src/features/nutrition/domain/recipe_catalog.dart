@@ -94,7 +94,8 @@ class RecipeCatalog {
         RecipeIngredient('½ aguacate', foodId: 'aguacate'),
         RecipeIngredient('1 tomate picado', foodId: 'tomate'),
         RecipeIngredient('¼ de cebolla', foodId: 'cebolla'),
-        RecipeIngredient('1 cucharadita de aceite de oliva', foodId: 'aceite_oliva'),
+        RecipeIngredient('1 cucharadita de aceite de oliva',
+            foodId: 'aceite_oliva'),
         RecipeIngredient('Sal y pimienta al gusto'),
       ],
       steps: [
@@ -115,7 +116,8 @@ class RecipeCatalog {
         RecipeIngredient('4 claras de huevo', foodId: 'clara_huevo'),
         RecipeIngredient('1 taza de brócoli picado', foodId: 'brocoli'),
         RecipeIngredient('30 g de queso campesino', foodId: 'queso_campesino'),
-        RecipeIngredient('1 cucharadita de aceite de oliva', foodId: 'aceite_oliva'),
+        RecipeIngredient('1 cucharadita de aceite de oliva',
+            foodId: 'aceite_oliva'),
         RecipeIngredient('Sal y pimienta'),
       ],
       steps: [
@@ -132,10 +134,12 @@ class RecipeCatalog {
       prepMinutes: 5,
       diets: _veggie,
       ingredients: [
-        RecipeIngredient('1 taza de yogur griego sin azúcar', foodId: 'yogur_griego'),
+        RecipeIngredient('1 taza de yogur griego sin azúcar',
+            foodId: 'yogur_griego'),
         RecipeIngredient('½ taza de fresas', foodId: 'fresa'),
         RecipeIngredient('1 cucharada de nueces', foodId: 'nueces'),
-        RecipeIngredient('1 cucharadita de semillas de chía', foodId: 'semillas_chia'),
+        RecipeIngredient('1 cucharadita de semillas de chía',
+            foodId: 'semillas_chia'),
       ],
       steps: [
         'Sirve el yogur en un tazón.',
@@ -170,8 +174,10 @@ class RecipeCatalog {
       prepMinutes: 5,
       diets: _veganOk,
       ingredients: [
-        RecipeIngredient('3 cucharadas de semillas de chía', foodId: 'semillas_chia'),
-        RecipeIngredient('1 taza de leche de coco sin azúcar', foodId: 'leche_coco'),
+        RecipeIngredient('3 cucharadas de semillas de chía',
+            foodId: 'semillas_chia'),
+        RecipeIngredient('1 taza de leche de coco sin azúcar',
+            foodId: 'leche_coco'),
         RecipeIngredient('½ taza de arándanos', foodId: 'arandanos'),
         RecipeIngredient('Estevia al gusto (opcional)'),
       ],
@@ -193,7 +199,8 @@ class RecipeCatalog {
         RecipeIngredient('1 taza de champiñones', foodId: 'champinones'),
         RecipeIngredient('½ pimiento', foodId: 'pimiento'),
         RecipeIngredient('¼ de cebolla', foodId: 'cebolla'),
-        RecipeIngredient('1 cucharadita de aceite de oliva', foodId: 'aceite_oliva'),
+        RecipeIngredient('1 cucharadita de aceite de oliva',
+            foodId: 'aceite_oliva'),
         RecipeIngredient('Cúrcuma, sal y pimienta'),
       ],
       steps: [
@@ -215,7 +222,8 @@ class RecipeCatalog {
         RecipeIngredient('2 tazas de lechuga', foodId: 'lechuga'),
         RecipeIngredient('1 tomate', foodId: 'tomate'),
         RecipeIngredient('½ aguacate', foodId: 'aguacate'),
-        RecipeIngredient('1 cucharada de aceite de oliva', foodId: 'aceite_oliva'),
+        RecipeIngredient('1 cucharada de aceite de oliva',
+            foodId: 'aceite_oliva'),
         RecipeIngredient('Jugo de limón', foodId: 'limon'),
       ],
       steps: [
@@ -234,7 +242,8 @@ class RecipeCatalog {
       ingredients: [
         RecipeIngredient('1 filete de salmón', foodId: 'salmon'),
         RecipeIngredient('2 tazas de brócoli', foodId: 'brocoli'),
-        RecipeIngredient('1 cucharada de aceite de oliva', foodId: 'aceite_oliva'),
+        RecipeIngredient('1 cucharada de aceite de oliva',
+            foodId: 'aceite_oliva'),
         RecipeIngredient('1 cucharadita de ajonjolí', foodId: 'ajonjoli'),
         RecipeIngredient('Ajo, sal y pimienta', foodId: 'ajo'),
       ],
@@ -257,7 +266,8 @@ class RecipeCatalog {
         RecipeIngredient('½ cebolla', foodId: 'cebolla'),
         RecipeIngredient('½ pimiento', foodId: 'pimiento'),
         RecipeIngredient('1 tomate', foodId: 'tomate'),
-        RecipeIngredient('1 cucharada de aceite de oliva', foodId: 'aceite_oliva'),
+        RecipeIngredient('1 cucharada de aceite de oliva',
+            foodId: 'aceite_oliva'),
       ],
       steps: [
         'Sofríe cebolla, pimiento, zanahoria y tomate en el aceite.',
@@ -277,7 +287,8 @@ class RecipeCatalog {
         RecipeIngredient('2 tazas de kale', foodId: 'kale'),
         RecipeIngredient('1 cucharada de almendras', foodId: 'almendras'),
         RecipeIngredient('Jugo de limón', foodId: 'limon'),
-        RecipeIngredient('1 cucharada de aceite de oliva', foodId: 'aceite_oliva'),
+        RecipeIngredient('1 cucharada de aceite de oliva',
+            foodId: 'aceite_oliva'),
       ],
       steps: [
         'Masajea el kale con aceite y limón para suavizarlo.',
@@ -296,7 +307,8 @@ class RecipeCatalog {
         RecipeIngredient('1 taza de garbanzos cocidos', foodId: 'garbanzos'),
         RecipeIngredient('2 tazas de espinaca', foodId: 'espinaca'),
         RecipeIngredient('1 tomate', foodId: 'tomate'),
-        RecipeIngredient('1 cucharada de aceite de oliva', foodId: 'aceite_oliva'),
+        RecipeIngredient('1 cucharada de aceite de oliva',
+            foodId: 'aceite_oliva'),
         RecipeIngredient('Ajo y limón', foodId: 'ajo'),
       ],
       steps: [
@@ -318,7 +330,8 @@ class RecipeCatalog {
         RecipeIngredient('1 zanahoria', foodId: 'zanahoria'),
         RecipeIngredient('½ pimiento', foodId: 'pimiento'),
         RecipeIngredient('¼ de cebolla', foodId: 'cebolla'),
-        RecipeIngredient('1 cucharada de aceite de oliva', foodId: 'aceite_oliva'),
+        RecipeIngredient('1 cucharada de aceite de oliva',
+            foodId: 'aceite_oliva'),
       ],
       steps: [
         'Ralla la coliflor hasta que parezca arroz.',
@@ -338,7 +351,8 @@ class RecipeCatalog {
         RecipeIngredient('½ aguacate', foodId: 'aguacate'),
         RecipeIngredient('1 tomate', foodId: 'tomate'),
         RecipeIngredient('½ pepino', foodId: 'pepino'),
-        RecipeIngredient('1 cucharada de aceite de oliva', foodId: 'aceite_oliva'),
+        RecipeIngredient('1 cucharada de aceite de oliva',
+            foodId: 'aceite_oliva'),
         RecipeIngredient('Limón y cilantro', foodId: 'limon'),
       ],
       steps: [
@@ -378,7 +392,8 @@ class RecipeCatalog {
         RecipeIngredient('2 calabacines en tiras', foodId: 'calabacin'),
         RecipeIngredient('1 taza de champiñones', foodId: 'champinones'),
         RecipeIngredient('1 diente de ajo', foodId: 'ajo'),
-        RecipeIngredient('1 cucharada de aceite de oliva', foodId: 'aceite_oliva'),
+        RecipeIngredient('1 cucharada de aceite de oliva',
+            foodId: 'aceite_oliva'),
         RecipeIngredient('Albahaca, sal y pimienta'),
       ],
       steps: [
@@ -419,7 +434,8 @@ class RecipeCatalog {
         RecipeIngredient('200 g de carne molida magra', foodId: 'carne_res'),
         RecipeIngredient('1 tomate', foodId: 'tomate'),
         RecipeIngredient('¼ de cebolla', foodId: 'cebolla'),
-        RecipeIngredient('1 cucharada de aceite de oliva', foodId: 'aceite_oliva'),
+        RecipeIngredient('1 cucharada de aceite de oliva',
+            foodId: 'aceite_oliva'),
       ],
       steps: [
         'Parte las berenjenas a lo largo y retira parte de la pulpa.',
@@ -439,7 +455,8 @@ class RecipeCatalog {
         RecipeIngredient('1 aguacate', foodId: 'aguacate'),
         RecipeIngredient('2 tazas de lechuga', foodId: 'lechuga'),
         RecipeIngredient('Jugo de limón', foodId: 'limon'),
-        RecipeIngredient('1 cucharada de aceite de oliva', foodId: 'aceite_oliva'),
+        RecipeIngredient('1 cucharada de aceite de oliva',
+            foodId: 'aceite_oliva'),
       ],
       steps: [
         'Saltea el camarón en el aceite 2-3 minutos con ajo y sal.',
@@ -459,7 +476,8 @@ class RecipeCatalog {
         RecipeIngredient('2 tazas de brócoli', foodId: 'brocoli'),
         RecipeIngredient('½ pimiento', foodId: 'pimiento'),
         RecipeIngredient('1 cucharadita de ajonjolí', foodId: 'ajonjoli'),
-        RecipeIngredient('1 cucharada de aceite de oliva', foodId: 'aceite_oliva'),
+        RecipeIngredient('1 cucharada de aceite de oliva',
+            foodId: 'aceite_oliva'),
       ],
       steps: [
         'Corta el tofu en cubos y dóralo en el aceite.',
@@ -478,7 +496,8 @@ class RecipeCatalog {
         RecipeIngredient('1 filete de tilapia', foodId: 'tilapia'),
         RecipeIngredient('2 tazas de espinaca', foodId: 'espinaca'),
         RecipeIngredient('2 dientes de ajo', foodId: 'ajo'),
-        RecipeIngredient('1 cucharada de aceite de oliva', foodId: 'aceite_oliva'),
+        RecipeIngredient('1 cucharada de aceite de oliva',
+            foodId: 'aceite_oliva'),
         RecipeIngredient('Limón, sal y pimienta', foodId: 'limon'),
       ],
       steps: [
@@ -544,8 +563,10 @@ class RecipeCatalog {
       prepMinutes: 3,
       diets: _veggie,
       ingredients: [
-        RecipeIngredient('1 taza de yogur griego sin azúcar', foodId: 'yogur_griego'),
-        RecipeIngredient('1 cucharada de semillas de calabaza', foodId: 'semillas_calabaza'),
+        RecipeIngredient('1 taza de yogur griego sin azúcar',
+            foodId: 'yogur_griego'),
+        RecipeIngredient('1 cucharada de semillas de calabaza',
+            foodId: 'semillas_calabaza'),
       ],
       steps: [
         'Sirve el yogur y espolvorea las semillas de calabaza.',

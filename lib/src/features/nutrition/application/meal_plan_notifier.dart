@@ -129,8 +129,7 @@ class MealPlanNotifier extends StateNotifier<MealPlanState> {
     }
     final repo = _ref.read(mealPlanRepositoryProvider);
     unawaited(repo.savePlan(user.id, plan).catchError((Object e) {
-      AppLogger.warning(
-          'meal_plan: regen tras editar preferencias falló: $e');
+      AppLogger.warning('meal_plan: regen tras editar preferencias falló: $e');
     }));
   }
 

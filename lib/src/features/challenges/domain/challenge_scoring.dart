@@ -12,8 +12,7 @@ import 'package:elena_app/src/features/streak/domain/streak_entry.dart';
 
 abstract final class ChallengeScoring {
   /// Formatea una fecha como 'yyyy-MM-dd' (comparable con StreakEntry.date).
-  static String dateKey(DateTime d) =>
-      '${d.year.toString().padLeft(4, '0')}-'
+  static String dateKey(DateTime d) => '${d.year.toString().padLeft(4, '0')}-'
       '${d.month.toString().padLeft(2, '0')}-'
       '${d.day.toString().padLeft(2, '0')}';
 
@@ -60,7 +59,9 @@ abstract final class ChallengeScoring {
     final sorted = [...scores]..sort((a, b) {
         final byPoints = b.points.compareTo(a.points);
         if (byPoints != 0) return byPoints;
-        return a.displayName.toLowerCase().compareTo(b.displayName.toLowerCase());
+        return a.displayName
+            .toLowerCase()
+            .compareTo(b.displayName.toLowerCase());
       });
     return sorted;
   }

@@ -37,7 +37,8 @@ void main() {
 
   test('respeta la dieta: vegano no recibe recetas con animal', () {
     final res = svc.match(
-      intake: intake(foods: ['tofu', 'brocoli', 'aguacate'], diet: DietType.vegan),
+      intake:
+          intake(foods: ['tofu', 'brocoli', 'aguacate'], diet: DietType.vegan),
       slot: MealSlot.lunch,
     );
     expect(res, isNotEmpty);
@@ -75,7 +76,8 @@ void main() {
     final r2 = RecipeCatalog.byId('salmon_brocoli_vapor')!;
     final lista = svc.shoppingList([r1, r2]);
     // aceite_oliva está en ambas → aparece una sola vez.
-    final aceites = lista.where((t) => t.toLowerCase().contains('aceite de oliva'));
+    final aceites =
+        lista.where((t) => t.toLowerCase().contains('aceite de oliva'));
     expect(aceites.length, 1);
   });
 }

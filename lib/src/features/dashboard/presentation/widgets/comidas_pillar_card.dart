@@ -185,7 +185,6 @@ class ComidasPillarCard extends ConsumerWidget {
       ),
     );
   }
-
 }
 
 /// SPEC-286 — "Tu próxima comida": el plato que sigue en la minuta (primera
@@ -258,12 +257,13 @@ class _NextMealCard extends StatelessWidget {
     final entry = next;
     final recipe =
         entry.recipeId == null ? null : RecipeCatalog.byId(entry.recipeId!);
-    final dishName = recipe?.name ??
-        'Tu plato de ${_slotLabel(entry.slot).toLowerCase()}';
+    final dishName =
+        recipe?.name ?? 'Tu plato de ${_slotLabel(entry.slot).toLowerCase()}';
     final meta = <String>[
       _slotLabel(entry.slot),
       if (recipe != null) '${recipe.prepMinutes} min',
-      if (entry.targetProteinG > 0) '~${entry.targetProteinG.round()} g proteína',
+      if (entry.targetProteinG > 0)
+        '~${entry.targetProteinG.round()} g proteína',
     ].join(' · ');
 
     final seasonings = recipe == null
@@ -311,8 +311,7 @@ class _NextMealCard extends StatelessWidget {
               ),
               children: [
                 _label('Ingredientes', accent),
-                for (final it in entry.items)
-                  _bullet(_foodLine(it)),
+                for (final it in entry.items) _bullet(_foodLine(it)),
                 for (final ing in seasonings) _bullet(ing.text),
                 if (recipe != null && recipe.steps.isNotEmpty) ...[
                   const SizedBox(height: 8),

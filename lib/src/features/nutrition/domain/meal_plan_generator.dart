@@ -93,8 +93,8 @@ class MealPlanGenerator {
         final recipe = _pickRecipe(matches, dateId, meal.slot);
         entries.add(_entryFromRecipe(meal.slot, perMealProtein, recipe));
       } else {
-        entries
-            .add(_buildEntry(meal, perMealProtein, phase, banned, avoidFoodIds));
+        entries.add(
+            _buildEntry(meal, perMealProtein, phase, banned, avoidFoodIds));
       }
     }
 
@@ -202,8 +202,8 @@ class MealPlanGenerator {
 
     // 1) Proteína (palma) — exactamente UNA.
     final protein = _pick(proteins, avoid) ??
-        _pickNew(FoodCatalog.byCategory(FoodCategory.protein), banned, avoid,
-            plate);
+        _pickNew(
+            FoodCatalog.byCategory(FoodCategory.protein), banned, avoid, plate);
     if (protein != null) {
       plate.add(_Picked(
         food: protein,
@@ -283,8 +283,7 @@ class MealPlanGenerator {
     for (final p in plate) {
       if (p.origin != PlanItemOrigin.fromUser) continue;
       if (!_isWeak(p.food, phase)) continue;
-      if (weakest == null ||
-          p.food.qualityScore < weakest.food.qualityScore) {
+      if (weakest == null || p.food.qualityScore < weakest.food.qualityScore) {
         weakest = p;
       }
     }
@@ -379,10 +378,9 @@ class MealPlanGenerator {
 
   /// Catálogo de "vegetales": carbohidratos de alta calidad (verduras
   /// puntúan ≥70; almidones/harinas puntúan bajo).
-  List<Food> _vegCatalog() => FoodCatalog.byCategory(FoodCategory.carb)
-      .where(_isVegetable)
-      .toList()
-    ..sort(_byQualityThenId);
+  List<Food> _vegCatalog() =>
+      FoodCatalog.byCategory(FoodCategory.carb).where(_isVegetable).toList()
+        ..sort(_byQualityThenId);
 
   /// Mejor versión más sana de [from] dentro de su misma categoría, para la
   /// mejora suave. No baneada, no presente en el plato y SIN cautelas
@@ -450,8 +448,7 @@ class MealPlanGenerator {
       return 'Mejora: cambia $fromName por ${into.name} — te suma sin '
           'disparar la insulina.';
     }
-    final hasNew =
-        items.any((i) => i.origin == PlanItemOrigin.newSuggestion);
+    final hasNew = items.any((i) => i.origin == PlanItemOrigin.newSuggestion);
     if (hasNew) {
       return 'Completamos tu plato con proteína, vegetales y una grasa '
           'buena. Lo marcado con "Nuevo" es una sugerencia para probar.';

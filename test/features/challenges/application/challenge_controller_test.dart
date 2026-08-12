@@ -5,6 +5,7 @@ import 'package:elena_app/src/features/challenges/application/challenge_provider
 import 'package:elena_app/src/features/challenges/data/challenge_repository.dart';
 import 'package:elena_app/src/features/challenges/domain/challenge.dart';
 import 'package:elena_app/src/features/challenges/domain/challenge_score.dart';
+import 'package:elena_app/src/features/fasting/application/fasting_notifier.dart';
 import 'package:elena_app/src/features/streak/domain/streak_entry.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
@@ -92,6 +93,12 @@ ProviderContainer _container(_FakeChallengeRepository repo) {
     ),
     challengeRepositoryProvider.overrideWithValue(repo),
     challengeStreakHistoryProvider.overrideWithValue(history),
+    // El grafo de retos alcanza fastingProvider (vía streak); su `_init`
+    // escucha dos streams de Firebase. Los overrideamos con streams vacíos
+    // para que el FastingNotifier real se construya sin Firebase, como
+    // promete la cabecera del test.
+    lastFastingIntervalProvider.overrideWith((ref) => Stream.empty()),
+    lastCompletedFastingProvider.overrideWith((ref) => Stream.empty()),
   ]);
 }
 

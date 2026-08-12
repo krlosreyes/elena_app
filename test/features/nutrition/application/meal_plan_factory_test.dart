@@ -20,9 +20,12 @@ void main() {
   NutritionIntake intake() => NutritionIntake(
         updatedAt: DateTime(2026, 8, 8),
         meals: [
-          IntakeMeal(slot: MealSlot.breakfast, items: [IntakeItem(foodId: anyFat.id)]),
-          IntakeMeal(slot: MealSlot.lunch, items: [IntakeItem(foodId: anyFat.id)]),
-          IntakeMeal(slot: MealSlot.dinner, items: [IntakeItem(foodId: anyFat.id)]),
+          IntakeMeal(
+              slot: MealSlot.breakfast, items: [IntakeItem(foodId: anyFat.id)]),
+          IntakeMeal(
+              slot: MealSlot.lunch, items: [IntakeItem(foodId: anyFat.id)]),
+          IntakeMeal(
+              slot: MealSlot.dinner, items: [IntakeItem(foodId: anyFat.id)]),
         ],
       );
 

@@ -38,8 +38,7 @@ void main() {
   });
 
   test('ChallengeScore: round-trip', () {
-    const s =
-        ChallengeScore(uid: 'u1', displayName: 'Carlos', points: 12);
+    const s = ChallengeScore(uid: 'u1', displayName: 'Carlos', points: 12);
     final back = scoreMapper.fromMap(scoreMapper.toMap(s));
     expect(back.uid, 'u1');
     expect(back.displayName, 'Carlos');

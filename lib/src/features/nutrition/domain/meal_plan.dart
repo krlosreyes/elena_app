@@ -228,7 +228,8 @@ class MealPlanEntry {
     this.adherence,
   });
 
-  MealPlanEntry copyWith({AdherenceMark? adherence, bool clearAdherence = false}) {
+  MealPlanEntry copyWith(
+      {AdherenceMark? adherence, bool clearAdherence = false}) {
     return MealPlanEntry(
       slot: slot,
       targetProteinG: targetProteinG,

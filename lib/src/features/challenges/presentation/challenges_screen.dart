@@ -114,7 +114,8 @@ class ChallengesScreen extends ConsumerWidget {
         child: Column(
           children: [
             Icon(Icons.groups_2_rounded,
-                color: AppColors.textSecondary.withValues(alpha: 0.5), size: 56),
+                color: AppColors.textSecondary.withValues(alpha: 0.5),
+                size: 56),
             const SizedBox(height: 12),
             const Text(
               'Todavía no estás en ningún reto',
@@ -308,8 +309,7 @@ class _ActionButton extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(icon,
-                size: 18,
-                color: filled ? AppColors.backgroundDark : _accent),
+                size: 18, color: filled ? AppColors.backgroundDark : _accent),
             const SizedBox(width: 8),
             Text(
               label,
@@ -437,9 +437,8 @@ class _CreateChallengeSheetState extends ConsumerState<_CreateChallengeSheet> {
                       ),
                       child: Text('$d días',
                           style: TextStyle(
-                              color: selected
-                                  ? _accent
-                                  : AppColors.textSecondary,
+                              color:
+                                  selected ? _accent : AppColors.textSecondary,
                               fontWeight: FontWeight.w700)),
                     ),
                   ),
@@ -541,8 +540,7 @@ class _JoinChallengeSheetState extends ConsumerState<_JoinChallengeSheet> {
                   fontWeight: FontWeight.w800)),
           const SizedBox(height: 8),
           const Text('Escribe el código que te compartieron.',
-              style:
-                  TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
           const SizedBox(height: 16),
           TextField(
             controller: _codeCtrl,

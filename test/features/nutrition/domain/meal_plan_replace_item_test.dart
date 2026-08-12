@@ -28,7 +28,8 @@ void main() {
       const PlanItem(foodId: 'pescado', role: PlanItemRole.protein),
     );
     final meal = updated.meals.single;
-    expect(meal.items.map((i) => i.foodId), containsAll(['pescado', 'brocoli']));
+    expect(
+        meal.items.map((i) => i.foodId), containsAll(['pescado', 'brocoli']));
     expect(meal.items.any((i) => i.foodId == 'pollo'), false);
     // No pierde la adherencia ya marcada.
     expect(meal.adherence, AdherenceMark.ate);

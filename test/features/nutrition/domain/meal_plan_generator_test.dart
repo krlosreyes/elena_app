@@ -60,8 +60,8 @@ void main() {
   });
 
   test('la receta elegida encaja en la comida (slot) correspondiente', () {
-    final e = only(gen1(intakeWith(['huevo', 'aguacate'],
-        slot: MealSlot.breakfast)));
+    final e =
+        only(gen1(intakeWith(['huevo', 'aguacate'], slot: MealSlot.breakfast)));
     final recipe = RecipeCatalog.byId(e.recipeId!)!;
     expect(recipe.fitsSlot(MealSlot.breakfast), true);
   });

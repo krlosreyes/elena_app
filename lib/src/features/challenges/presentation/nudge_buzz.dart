@@ -30,8 +30,7 @@ Future<void> showNudgeBuzz(
     barrierLabel: 'zumbido',
     barrierColor: Colors.black54,
     transitionDuration: const Duration(milliseconds: 200),
-    pageBuilder: (_, __, ___) =>
-        _BuzzOverlay(kind: kind, fromName: fromName),
+    pageBuilder: (_, __, ___) => _BuzzOverlay(kind: kind, fromName: fromName),
   );
 }
 
@@ -109,8 +108,7 @@ class _BuzzOverlayState extends State<_BuzzOverlay>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(widget.kind.emoji,
-                      style: const TextStyle(fontSize: 56)),
+                  Text(widget.kind.emoji, style: const TextStyle(fontSize: 56)),
                   const SizedBox(height: 12),
                   Text(
                     widget.kind.messageFrom(widget.fromName),
