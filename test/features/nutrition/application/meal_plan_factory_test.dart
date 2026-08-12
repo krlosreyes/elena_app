@@ -8,6 +8,7 @@ import 'package:elena_app/src/features/nutrition/application/meal_plan_factory.d
 import 'package:elena_app/src/features/nutrition/domain/food_catalog.dart';
 import 'package:elena_app/src/features/nutrition/domain/meal_plan.dart';
 import 'package:elena_app/src/features/nutrition/domain/nutrition_intake.dart';
+import 'package:elena_app/src/features/nutrition/domain/recipe_catalog.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -45,7 +46,7 @@ void main() {
     expect(sum, closeTo(79.5, 1.0));
   });
 
-  test('cada comida garantiza proteína + vegetal + grasa', () {
+  test('SPEC-284: cada comida ES una receta con ingredientes', () {
     final plan = factory.build(
       intake: intake(),
       heightCm: 160,
@@ -54,12 +55,12 @@ void main() {
       now: DateTime(2026, 8, 8),
     );
     for (final meal in plan.meals) {
-      final roles = meal.items.map((i) => i.role).toSet();
-      expect(roles, containsAll([
-        PlanItemRole.protein,
-        PlanItemRole.veg,
-        PlanItemRole.fat,
-      ]));
+      expect(meal.recipeId, isNotNull,
+          reason: 'la comida ${meal.slot} debería tener receta');
+      expect(RecipeCatalog.byId(meal.recipeId!), isNotNull,
+          reason: 'recipeId ${meal.recipeId} debe existir en el recetario');
+      expect(meal.items, isNotEmpty,
+          reason: 'la receta debería aportar ingredientes centrales');
     }
   });
 }

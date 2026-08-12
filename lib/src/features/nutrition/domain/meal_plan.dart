@@ -201,6 +201,11 @@ class MealPlanEntry {
   /// Proteína objetivo de ESTA comida (parte del targetProteinG del día).
   final double targetProteinG;
 
+  /// SPEC-284: la comida ES una receta del recetario (`RecipeCatalog`). Guarda
+  /// su id para mostrar nombre + ingredientes + preparación. `null` solo en el
+  /// fallback (ninguna receta encajó) o en planes viejos.
+  final String? recipeId;
+
   final List<PlanItem> items;
 
   /// foodIds del intake que el motor reemplazó para armar esta comida
@@ -216,6 +221,7 @@ class MealPlanEntry {
   const MealPlanEntry({
     required this.slot,
     this.targetProteinG = 0,
+    this.recipeId,
     this.items = const [],
     this.swappedFrom = const [],
     this.rationale = '',
@@ -226,6 +232,7 @@ class MealPlanEntry {
     return MealPlanEntry(
       slot: slot,
       targetProteinG: targetProteinG,
+      recipeId: recipeId,
       items: items,
       swappedFrom: swappedFrom,
       rationale: rationale,
@@ -236,6 +243,7 @@ class MealPlanEntry {
   Map<String, dynamic> toJson() => {
         'slot': slot.wire,
         'targetProteinG': targetProteinG,
+        if (recipeId != null) 'recipeId': recipeId,
         'items': items.map((i) => i.toJson()).toList(growable: false),
         'swappedFrom': swappedFrom,
         'rationale': rationale,
@@ -245,6 +253,7 @@ class MealPlanEntry {
   factory MealPlanEntry.fromJson(Map<String, dynamic> j) => MealPlanEntry(
         slot: MealSlot.fromWire(j['slot'] as String?),
         targetProteinG: (j['targetProteinG'] as num?)?.toDouble() ?? 0,
+        recipeId: (j['recipeId'] as String?)?.trim(),
         items: _parseList(j['items'], PlanItem.fromJson),
         swappedFrom:
             (j['swappedFrom'] as List<dynamic>?)?.cast<String>() ?? const [],
@@ -331,7 +340,58 @@ class MealPlan {
       return MealPlanEntry(
         slot: m.slot,
         targetProteinG: m.targetProteinG,
+        recipeId: m.recipeId,
         items: items,
+        swappedFrom: m.swappedFrom,
+        rationale: m.rationale,
+        adherence: m.adherence,
+      );
+    }).toList(growable: false);
+    if (!changed) return this;
+    return copyWith(meals: updated);
+  }
+
+  /// SPEC-284: cambia el PLATO completo de una comida por otra receta que el
+  /// usuario elige. Reemplaza `recipeId` + `items` y limpia la adherencia
+  /// (es un plato distinto). Inmutable; si no existe la comida, mismo plan.
+  MealPlan setMealRecipe(
+    MealSlot slot,
+    String recipeId,
+    List<PlanItem> items, {
+    String rationale = '',
+  }) {
+    var found = false;
+    final updated = meals.map((m) {
+      if (m.slot != slot) return m;
+      found = true;
+      return MealPlanEntry(
+        slot: m.slot,
+        targetProteinG: m.targetProteinG,
+        recipeId: recipeId,
+        items: items,
+        swappedFrom: m.swappedFrom,
+        rationale: rationale.isEmpty ? m.rationale : rationale,
+        adherence: null,
+      );
+    }).toList(growable: false);
+    if (!found) return this;
+    return copyWith(meals: updated);
+  }
+
+  /// SPEC-287: agrega un alimento que no estaba en la comida (extra del
+  /// usuario). Inmutable; evita duplicar por foodId. Si no existe la comida
+  /// o el alimento ya está, devuelve el mismo plan.
+  MealPlan addItem(MealSlot slot, PlanItem item) {
+    var changed = false;
+    final updated = meals.map((m) {
+      if (m.slot != slot) return m;
+      if (m.items.any((it) => it.foodId == item.foodId)) return m;
+      changed = true;
+      return MealPlanEntry(
+        slot: m.slot,
+        targetProteinG: m.targetProteinG,
+        recipeId: m.recipeId,
+        items: [...m.items, item],
         swappedFrom: m.swappedFrom,
         rationale: m.rationale,
         adherence: m.adherence,

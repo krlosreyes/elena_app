@@ -1,8 +1,9 @@
-// SPEC-275 + SPEC-276 — Variedad/rotación: el motor evita repetir la
-// proteína de ayer cuando el usuario tiene alternativas, sin sacrificar la
-// coherencia del plato.
+// SPEC-284 — Variedad de la Minuta con el contrato receta-primero.
+//
+// La variedad ya no rota "la proteína de ayer": ahora el motor rota, de forma
+// DETERMINÍSTICA por día, entre las mejores recetas compatibles. Mismo día →
+// misma receta (reproducible); días distintos → puede variar.
 
-import 'package:elena_app/src/features/nutrition/domain/food_catalog.dart';
 import 'package:elena_app/src/features/nutrition/domain/meal_plan.dart';
 import 'package:elena_app/src/features/nutrition/domain/meal_plan_generator.dart';
 import 'package:elena_app/src/features/nutrition/domain/nutrition_intake.dart';
@@ -11,51 +12,42 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   const gen = MealPlanGenerator();
 
-  final proteins = FoodCatalog.byCategory(FoodCategory.protein).toList()
-    ..sort((a, b) => b.qualityScore.compareTo(a.qualityScore));
-
-  // El usuario come DOS proteínas fuertes: hay con qué rotar.
-  final p1 = proteins[0];
-  final p2 = proteins[1];
-
   NutritionIntake intake() => NutritionIntake(
-        updatedAt: DateTime(2026, 8, 8),
+        updatedAt: DateTime(2026, 8, 12),
         meals: [
           IntakeMeal(
             slot: MealSlot.lunch,
-            items: [IntakeItem(foodId: p1.id), IntakeItem(foodId: p2.id)],
+            items: [
+              IntakeItem(foodId: 'pollo'),
+              IntakeItem(foodId: 'brocoli'),
+              IntakeItem(foodId: 'aguacate'),
+            ],
           ),
         ],
       );
 
-  String proteinIdOf(MealPlan plan) => plan.meals.single.items
-      .firstWhere((i) => i.role == PlanItemRole.protein)
-      .foodId;
-
-  MealPlan run({Set<String> avoid = const {}}) => gen.generate(
+  MealPlan run(String dateId) => gen.generate(
         intake: intake(),
         targetProteinG: 60,
-        dateId: '2026-08-08',
+        dateId: dateId,
         phase: 1,
-        avoidFoodIds: avoid,
       );
 
-  test('evitar la proteína de ayer produce otra distinta hoy', () {
-    final today = proteinIdOf(run());
-    final tomorrow = proteinIdOf(run(avoid: {today}));
-    expect(tomorrow, isNot(today));
-    expect([p1.id, p2.id], contains(tomorrow));
+  String? recipeOf(String dateId) => run(dateId).meals.single.recipeId;
+
+  test('determinismo: el mismo día produce la misma receta', () {
+    expect(recipeOf('2026-08-12'), recipeOf('2026-08-12'));
   });
 
-  test('sin avoid, el resultado es el mismo (determinismo intacto)', () {
-    expect(proteinIdOf(run()), proteinIdOf(run()));
+  test('variedad: a lo largo de varios días la receta cambia', () {
+    final ids = <String?>{};
+    for (var d = 10; d <= 24; d++) {
+      ids.add(recipeOf('2026-08-${d.toString().padLeft(2, '0')}'));
+    }
+    expect(ids.length, greaterThan(1));
   });
 
-  test('si todo está evitado, igual entrega un plato con proteína', () {
-    final plan = run(avoid: {p1.id, p2.id});
-    expect(
-      plan.meals.single.items.any((i) => i.role == PlanItemRole.protein),
-      true,
-    );
+  test('siempre hay receta (recipeId no nulo) para el almuerzo', () {
+    expect(recipeOf('2026-08-12'), isNotNull);
   });
 }

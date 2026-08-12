@@ -14,8 +14,10 @@ import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/features/nutrition/application/meal_plan_factory.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_intake_notifier.dart';
 import 'package:elena_app/src/features/nutrition/data/meal_plan_repository_impl.dart';
+import 'package:elena_app/src/features/nutrition/domain/food_catalog.dart';
 import 'package:elena_app/src/features/nutrition/domain/meal_plan.dart';
 import 'package:elena_app/src/features/nutrition/domain/nutrition_intake.dart';
+import 'package:elena_app/src/features/nutrition/domain/recipe_catalog.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 
@@ -226,6 +228,95 @@ class MealPlanNotifier extends StateNotifier<MealPlanState> {
       AppLogger.warning('meal_plan: chooseAlternative save falló: $e');
     }));
   }
+
+  /// SPEC-284: el usuario cambia el PLATO completo de una comida por otra
+  /// receta del recetario. Reemplaza receta + ingredientes y limpia la marca
+  /// de adherencia (es un plato distinto). Offline-first.
+  Future<void> chooseRecipe(MealSlot slot, String recipeId) async {
+    final current = state.plan;
+    final user = _user;
+    if (current == null || user == null) return;
+    final recipe = RecipeCatalog.byId(recipeId);
+    if (recipe == null) return;
+
+    final updated = current.setMealRecipe(
+      slot,
+      recipe.id,
+      _itemsFromRecipe(recipe),
+      rationale: 'Receta sugerida: ${recipe.name}.',
+    );
+    if (identical(updated, current)) return;
+    if (mounted) state = state.copyWith(plan: updated);
+
+    final repo = _ref.read(mealPlanRepositoryProvider);
+    unawaited(repo.savePlan(user.id, updated).catchError((Object e) {
+      AppLogger.warning('meal_plan: chooseRecipe save falló: $e');
+    }));
+  }
+
+  /// SPEC-287: agrega a una comida un alimento que no estaba en la minuta.
+  /// Offline-first.
+  Future<void> addExtraFood(MealSlot slot, String foodId) async {
+    final current = state.plan;
+    final user = _user;
+    if (current == null || user == null) return;
+    final f = FoodCatalog.byId(foodId);
+    if (f == null) return;
+
+    final updated = current.addItem(
+      slot,
+      PlanItem(
+        foodId: f.id,
+        role: _roleForFood(f),
+        portion: HandPortion.fist,
+        origin: PlanItemOrigin.fromUser,
+      ),
+    );
+    if (identical(updated, current)) return;
+    if (mounted) state = state.copyWith(plan: updated);
+
+    final repo = _ref.read(mealPlanRepositoryProvider);
+    unawaited(repo.savePlan(user.id, updated).catchError((Object e) {
+      AppLogger.warning('meal_plan: addExtraFood save falló: $e');
+    }));
+  }
+
+  /// Alimentos centrales de la receta (los que existen en el catálogo) como
+  /// `PlanItem` editables. Los ingredientes de texto libre viven en la receta.
+  List<PlanItem> _itemsFromRecipe(Recipe recipe) {
+    final seen = <String>{};
+    final items = <PlanItem>[];
+    for (final ing in recipe.ingredients) {
+      final id = ing.foodId;
+      if (id == null || id.isEmpty) continue;
+      if (!seen.add(id)) continue;
+      final f = FoodCatalog.byId(id);
+      if (f == null) continue;
+      items.add(PlanItem(
+        foodId: id,
+        role: _roleForFood(f),
+        portion: _portionForRole(_roleForFood(f)),
+        origin: PlanItemOrigin.fromUser,
+      ));
+    }
+    return items;
+  }
+
+  PlanItemRole _roleForFood(Food f) {
+    if (f.category == FoodCategory.protein) return PlanItemRole.protein;
+    if (f.category == FoodCategory.carb && f.qualityScore >= 70) {
+      return PlanItemRole.veg;
+    }
+    if (f.category == FoodCategory.fat) return PlanItemRole.fat;
+    return PlanItemRole.other;
+  }
+
+  HandPortion _portionForRole(PlanItemRole role) => switch (role) {
+        PlanItemRole.protein => HandPortion.palm,
+        PlanItemRole.veg => HandPortion.fist,
+        PlanItemRole.fat => HandPortion.thumb,
+        PlanItemRole.other => HandPortion.cupped,
+      };
 
   /// Rehace la minuta del día desde el intake actual (botón "Regenerar").
   Future<void> regenerate() async {

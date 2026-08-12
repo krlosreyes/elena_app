@@ -29,15 +29,23 @@
 import 'package:elena_app/src/features/nutrition/domain/food_catalog.dart';
 import 'package:elena_app/src/features/nutrition/domain/meal_plan.dart';
 import 'package:elena_app/src/features/nutrition/domain/nutrition_intake.dart';
+import 'package:elena_app/src/features/nutrition/domain/recipe_catalog.dart';
+import 'package:elena_app/src/features/nutrition/domain/recipe_match_service.dart';
 
 class MealPlanGenerator {
   const MealPlanGenerator();
+
+  static const RecipeMatchService _recipes = RecipeMatchService();
 
   /// Salto mínimo de calidad para justificar una mejora suave sugerida.
   static const int _kUpgradeDelta = 15;
 
   /// Máximo de vegetales distintos en un plato.
   static const int _kMaxVeg = 2;
+
+  /// Cuántas de las mejores recetas se consideran para la variedad diaria
+  /// (SPEC-284): entre esas rota el día, sin sacrificar demasiado el encaje.
+  static const int _kRecipePool = 3;
 
   /// Genera la minuta del día a partir del intake + la proteína objetivo
   /// (que el llamador deriva del UserModel vía ProteinTargetService) + la
@@ -70,7 +78,24 @@ class MealPlanGenerator {
       final meal = sourceMeals[mi];
       final perMealProtein =
           weightSum == 0 ? 0.0 : targetProteinG * (weights[mi] / weightSum);
-      entries.add(_buildEntry(meal, perMealProtein, phase, banned, avoidFoodIds));
+
+      // SPEC-284: la comida ES una receta del recetario. El motor elige la que
+      // mejor encaja con lo que el usuario ya come (matcher SPEC-278),
+      // respetando dieta + vetos. Con variedad diaria (rota entre las mejores).
+      // Si NINGUNA receta encaja (caso raro: vetos extremos), cae al plato
+      // armado de SPEC-276 (_buildEntry, sin recipeId).
+      final matches = _recipes.match(
+        intake: intake,
+        slot: meal.slot,
+        limit: _kRecipePool,
+      );
+      if (matches.isNotEmpty) {
+        final recipe = _pickRecipe(matches, dateId, meal.slot);
+        entries.add(_entryFromRecipe(meal.slot, perMealProtein, recipe));
+      } else {
+        entries
+            .add(_buildEntry(meal, perMealProtein, phase, banned, avoidFoodIds));
+      }
     }
 
     return MealPlan(
@@ -85,7 +110,67 @@ class MealPlanGenerator {
     );
   }
 
-  // ─── Construcción de UN plato coherente ─────────────────────────────────────
+  // ─── Comida = receta (SPEC-284) ─────────────────────────────────────────────
+
+  /// Elige una receta entre las mejores, rotando de forma DETERMINÍSTICA por
+  /// día + comida (variedad sin perder reproducibilidad). Mismo día → misma
+  /// receta; días distintos → varía.
+  Recipe _pickRecipe(List<RecipeMatch> matches, String dateId, MealSlot slot) {
+    final k = matches.length < _kRecipePool ? matches.length : _kRecipePool;
+    if (k <= 1) return matches.first.recipe;
+    final seed = '$dateId|${slot.index}'.hashCode & 0x7fffffff;
+    return matches[seed % k].recipe;
+  }
+
+  /// Materializa una comida a partir de una receta: `recipeId` + los alimentos
+  /// centrales de la receta como `PlanItem` editables (para cambiar/agregar,
+  /// SPEC-280/287). Los ingredientes de texto libre (sal, especias) viven en la
+  /// receta y se muestran desde ahí, no como ítems.
+  MealPlanEntry _entryFromRecipe(
+    MealSlot slot,
+    double perMealProtein,
+    Recipe recipe,
+  ) {
+    final seen = <String>{};
+    final items = <PlanItem>[];
+    for (final ing in recipe.ingredients) {
+      final id = ing.foodId;
+      if (id == null || id.isEmpty) continue;
+      if (!seen.add(id)) continue;
+      final f = FoodCatalog.byId(id);
+      if (f == null) continue;
+      final role = _roleFor(f);
+      items.add(PlanItem(
+        foodId: id,
+        role: role,
+        portion: _portionFor(role),
+        origin: PlanItemOrigin.fromUser,
+      ));
+    }
+    return MealPlanEntry(
+      slot: slot,
+      targetProteinG: _round1(perMealProtein),
+      recipeId: recipe.id,
+      items: items,
+      rationale: 'Receta sugerida: ${recipe.name}.',
+    );
+  }
+
+  PlanItemRole _roleFor(Food f) {
+    if (f.category == FoodCategory.protein) return PlanItemRole.protein;
+    if (_isVegetable(f)) return PlanItemRole.veg;
+    if (f.category == FoodCategory.fat) return PlanItemRole.fat;
+    return PlanItemRole.other;
+  }
+
+  HandPortion _portionFor(PlanItemRole role) => switch (role) {
+        PlanItemRole.protein => HandPortion.palm,
+        PlanItemRole.veg => HandPortion.fist,
+        PlanItemRole.fat => HandPortion.thumb,
+        PlanItemRole.other => HandPortion.cupped,
+      };
+
+  // ─── Construcción de UN plato coherente (fallback) ──────────────────────────
 
   MealPlanEntry _buildEntry(
     IntakeMeal meal,
