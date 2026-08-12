@@ -17,7 +17,6 @@ import 'package:elena_app/src/features/nutrition/domain/nutrition_log.dart';
 import 'package:elena_app/src/features/nutrition/presentation/meal_history_sheet.dart';
 import 'package:elena_app/src/features/nutrition/application/meal_plan_notifier.dart';
 import 'package:elena_app/src/features/nutrition/domain/minuta_adherence_score.dart';
-import 'package:elena_app/src/features/nutrition/presentation/plate_ratio_sheet.dart';
 import 'package:elena_app/src/features/streak/application/streak_notifier.dart';
 
 class ComidasPillarCard extends ConsumerWidget {
@@ -123,41 +122,6 @@ class ComidasPillarCard extends ConsumerWidget {
                     ? null
                     : () => context.push('/nutrition/minuta'),
               ),
-              // ── Editar / Eliminar último plato ──────────────────────
-              if (lastLog != null) ...[
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: PillarCardUi.secondaryButton(
-                        label: 'Editar plato',
-                        icon: Icons.edit_outlined,
-                        onPressed: isFastingActive
-                            ? null
-                            : () => PlateRatioSheet.show(
-                                  context,
-                                  label: lastLog.label,
-                                  initialMealTime: lastLog.timestamp,
-                                  logToReplaceId: lastLog.id,
-                                  initialPlateItemIds: lastLog.plateItemIds,
-                                ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: PillarCardUi.secondaryButton(
-                        label: 'Eliminar',
-                        icon: Icons.delete_outline_rounded,
-                        onPressed: isFastingActive
-                            ? null
-                            : () => ref
-                                .read(nutritionProvider.notifier)
-                                .removeLastMeal(),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
               // ── Ver historial completo (SPEC-240) ────────────────────
               if (state.todayLogs.isNotEmpty) ...[
                 const SizedBox(height: 10),

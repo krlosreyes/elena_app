@@ -10,10 +10,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/nutrition/application/next_meal_provider.dart';
-import 'package:elena_app/src/features/nutrition/presentation/plate_ratio_sheet.dart';
 
 class NextMealBanner extends ConsumerWidget {
   const NextMealBanner({super.key});
@@ -33,7 +33,7 @@ class NextMealBanner extends ConsumerWidget {
         color: AppColors.accent.withValues(alpha: 0.14),
         borderRadius: BorderRadius.circular(14),
         child: InkWell(
-          onTap: () => PlateRatioSheet.show(context),
+          onTap: () => context.push('/nutrition/minuta'),
           borderRadius: BorderRadius.circular(14),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),

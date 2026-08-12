@@ -12,6 +12,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import 'package:elena_app/src/core/theme/app_theme.dart';
@@ -19,7 +20,6 @@ import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.
 import 'package:elena_app/src/features/nutrition/domain/food_catalog.dart';
 import 'package:elena_app/src/features/nutrition/domain/meal_ratio.dart';
 import 'package:elena_app/src/features/nutrition/domain/nutrition_log.dart';
-import 'package:elena_app/src/features/nutrition/presentation/plate_ratio_sheet.dart';
 
 class MealHistoryTile extends ConsumerStatefulWidget {
   const MealHistoryTile({
@@ -62,13 +62,9 @@ class _MealHistoryTileState extends ConsumerState<MealHistoryTile> {
   // ── acciones ───────────────────────────────────────────────────────────
 
   void _onEdit() {
-    PlateRatioSheet.show(
-      context,
-      label: widget.log.label,
-      initialMealTime: widget.log.timestamp,
-      logToReplaceId: widget.log.id,
-      initialPlateItemIds: widget.log.plateItemIds,
-    );
+    // SPEC-277: el registrador se retiró; la comida ahora se gestiona desde
+    // la Minuta Diaria.
+    context.push('/nutrition/minuta');
   }
 
   void _onDeleteConfirmed() {
