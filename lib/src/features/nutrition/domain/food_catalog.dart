@@ -223,6 +223,43 @@ extension ServingUnitExt on ServingUnit {
       };
 }
 
+/// SPEC-281: cautelas de un alimento (medicina funcional). Sirven para
+/// evitarlo cuando el usuario declara inflamación/alergias en su intake.
+enum FoodCaution {
+  /// Alto en histamina (evitar en alergias crónicas / intolerancia).
+  histamine,
+
+  /// Potencial proinflamatorio para personas sensibles.
+  inflammation;
+
+  String get label => switch (this) {
+        FoodCaution.histamine => 'Alto en histamina',
+        FoodCaution.inflammation => 'Puede inflamar',
+      };
+}
+
+/// SPEC-281: subgrupo funcional de un vegetal (para variedad y educación).
+enum VegGroup {
+  /// Crucíferas (brócoli, coliflor, repollo, kale): glucosinolatos.
+  cruciferous,
+
+  /// Hojas verdes oscuras (espinaca, acelga, arúgula): magnesio/hierro.
+  leafyGreen,
+
+  /// Ricos en inulina (cebolla, ajo): prebióticos para la microbiota.
+  prebiotic,
+
+  /// Otros vegetales.
+  other;
+
+  String get label => switch (this) {
+        VegGroup.cruciferous => 'Crucífera',
+        VegGroup.leafyGreen => 'Hoja verde',
+        VegGroup.prebiotic => 'Prebiótico',
+        VegGroup.other => 'Vegetal',
+      };
+}
+
 /// Un alimento del catálogo.
 class Food {
   /// Slug estable para persistencia. NUNCA cambia.
@@ -256,6 +293,26 @@ class Food {
   /// del CupertinoPicker y cuántas copias se agregan al PlateBuilder.
   final ServingUnit servingUnit;
 
+  /// SPEC-281 (El Atlas Nutricional): fracción de proteína efectiva por gramo
+  /// de alimento (g proteína / g). Regla del Atlas: ~0.25 en carnes blancas,
+  /// ~0.30 en rojas; valores por tabla donde se conocen. Null si no aplica.
+  final double? proteinFraction;
+
+  /// SPEC-281: micronutrientes/beneficios destacados (para educación).
+  final List<String> micros;
+
+  /// SPEC-281: nota de calidad (ej. "Prioriza grass-fed", "De campo/orgánico").
+  final String? qualityNote;
+
+  /// SPEC-281: uso ideal (ej. "Crudo (ensaladas)", "Tolera el calor").
+  final String? idealUse;
+
+  /// SPEC-281: cautelas de medicina funcional (histamina/inflamación).
+  final List<FoodCaution> cautions;
+
+  /// SPEC-281: subgrupo funcional del vegetal (crucífera/hoja verde/prebiótico).
+  final VegGroup? vegGroup;
+
   /// Tipo A (metabolicamente activo, qualityScore ≥ 70) o Tipo E.
   /// Derivado del qualityScore — no se almacena por separado.
   bool get isTipoA => qualityScore >= 70;
@@ -269,6 +326,12 @@ class Food {
     this.searchAliases = const [],
     this.portionLabel = '1 porción',
     this.servingUnit = ServingUnit.unit,
+    this.proteinFraction,
+    this.micros = const [],
+    this.qualityNote,
+    this.idealUse,
+    this.cautions = const [],
+    this.vegGroup,
   });
 
   /// Conveniencia: ¿el alimento es de alta calidad (score ≥ 70)?
@@ -344,6 +407,9 @@ class FoodCatalog {
       qualityScore: 95,
       portionLabel: '1 porción (~120 g)',
       servingUnit: ServingUnit.portion100g,
+      proteinFraction: 0.22,
+      micros: ['Aminoácidos esenciales'],
+      qualityNote: 'De campo / orgánico',
     ),
     Food(
       id: 'pechuga_pavo',
@@ -360,6 +426,8 @@ class FoodCatalog {
       qualityScore: 90,
       portionLabel: '1 muslo (~120g)',
       servingUnit: ServingUnit.unit,
+      proteinFraction: 0.20,
+      qualityNote: 'De campo / orgánico',
     ),
     Food(
       id: 'huevo',
@@ -368,6 +436,9 @@ class FoodCatalog {
       qualityScore: 95,
       portionLabel: '1 huevo mediano (~50g)',
       servingUnit: ServingUnit.unit,
+      proteinFraction: 0.13,
+      micros: ['Colina', 'Grasas monoinsaturadas'],
+      qualityNote: 'De gallinas libres',
     ),
     Food(
       id: 'clara_huevo',
@@ -377,6 +448,8 @@ class FoodCatalog {
       portionLabel: '3 claras (~90g)',
       servingUnit: ServingUnit.unit,
       searchAliases: ['claras', 'albumina', 'clara'],
+      proteinFraction: 0.11,
+      micros: ['Proteína magra'],
     ),
 
     // Carnes rojas — alta calidad
@@ -387,6 +460,9 @@ class FoodCatalog {
       qualityScore: 90,
       portionLabel: '1 porción (~120 g)',
       servingUnit: ServingUnit.portion100g,
+      proteinFraction: 0.30,
+      micros: ['Zinc', 'Selenio', 'Hierro', 'Magnesio'],
+      qualityNote: 'Prioriza grass-fed (alimentada con pasto)',
     ),
     Food(
       id: 'cerdo',
@@ -395,6 +471,8 @@ class FoodCatalog {
       qualityScore: 88,
       portionLabel: '1 porción (~120 g)',
       servingUnit: ServingUnit.portion100g,
+      proteinFraction: 0.29,
+      cautions: [FoodCaution.histamine, FoodCaution.inflammation],
     ),
 
     // Pescados y mariscos — alta calidad
@@ -405,6 +483,8 @@ class FoodCatalog {
       qualityScore: 95,
       portionLabel: '1 porción (~120 g)',
       servingUnit: ServingUnit.portion100g,
+      proteinFraction: 0.20,
+      micros: ['Proteína magra', 'Omega-3'],
     ),
     Food(
       id: 'atun',
@@ -413,6 +493,8 @@ class FoodCatalog {
       qualityScore: 95,
       portionLabel: '½ lata (~80g)',
       servingUnit: ServingUnit.portion100g,
+      proteinFraction: 0.26,
+      micros: ['Proteína magra', 'Omega-3'],
     ),
     Food(
       id: 'sardinas',
@@ -421,6 +503,8 @@ class FoodCatalog {
       qualityScore: 95,
       portionLabel: '½ lata (~85g)',
       servingUnit: ServingUnit.portion100g,
+      proteinFraction: 0.25,
+      micros: ['Omega-3', 'Calcio'],
     ),
     Food(
       id: 'salmon',
@@ -429,6 +513,9 @@ class FoodCatalog {
       qualityScore: 95,
       portionLabel: '1 porción (~120 g)',
       servingUnit: ServingUnit.portion100g,
+      proteinFraction: 0.20,
+      micros: ['Omega-3', 'Vitamina D', 'B12'],
+      qualityNote: 'Protege longevidad cerebral y cardiovascular',
     ),
     Food(
       id: 'trucha',
@@ -438,6 +525,8 @@ class FoodCatalog {
       portionLabel: '1 porción (~120 g)',
       servingUnit: ServingUnit.portion100g,
       searchAliases: ['trucha arcoiris', 'trucha arcoíris'],
+      proteinFraction: 0.20,
+      micros: ['Omega-3'],
     ),
     Food(
       id: 'tilapia',
@@ -447,6 +536,8 @@ class FoodCatalog {
       portionLabel: '1 porción (~120 g)',
       servingUnit: ServingUnit.portion100g,
       searchAliases: ['mojarra', 'tilapia roja'],
+      proteinFraction: 0.20,
+      micros: ['Proteína magra'],
     ),
     Food(
       id: 'mariscos',
@@ -734,6 +825,8 @@ class FoodCatalog {
       portionLabel: '½ aguacate mediano (~100g)',
       servingUnit: ServingUnit.portion100g,
       searchAliases: ['palta'],
+      micros: ['Potasio', 'Vitamina E', 'Fibra'],
+      idealUse: 'Crudo o cocinar (tolera el calor)',
     ),
     Food(
       id: 'aceite_oliva',
@@ -742,6 +835,8 @@ class FoodCatalog {
       qualityScore: 100,
       portionLabel: '1 cucharada (~15ml)',
       servingUnit: ServingUnit.tablespoon,
+      micros: ['Polifenoles', 'Antioxidantes'],
+      idealUse: 'Crudo (ensaladas, terminación)',
     ),
     Food(
       id: 'aceite_coco',
@@ -750,6 +845,8 @@ class FoodCatalog {
       qualityScore: 95,
       portionLabel: '1 cucharada (~14g)',
       servingUnit: ServingUnit.tablespoon,
+      micros: ['MCT'],
+      idealUse: 'Ideal para cocinar',
     ),
     Food(
       id: 'aceite_aguacate',
@@ -779,6 +876,7 @@ class FoodCatalog {
       qualityScore: 95,
       portionLabel: '2 cucharadas (~28 g)',
       servingUnit: ServingUnit.handful,
+      micros: ['Magnesio', 'Vitamina E'],
     ),
     Food(
       id: 'nueces',
@@ -787,6 +885,7 @@ class FoodCatalog {
       qualityScore: 95,
       portionLabel: '2 cucharadas (~30 g)',
       servingUnit: ServingUnit.handful,
+      micros: ['Omega-3', 'Antioxidantes'],
     ),
     Food(
       id: 'macadamia',
@@ -847,6 +946,8 @@ class FoodCatalog {
       qualityScore: 85,
       portionLabel: '¼ taza rallado (~25g)',
       servingUnit: ServingUnit.cup,
+      micros: ['MCT', 'Fibra'],
+      idealUse: 'Cocinar',
     ),
 
     // Pastas y cremas de frutos secos
@@ -913,6 +1014,8 @@ class FoodCatalog {
       portionLabel: '1 cucharada (~14g)',
       servingUnit: ServingUnit.tablespoon,
       searchAliases: ['mantequilla clarificada', 'manteca clarificada'],
+      qualityNote: 'Sin lactosa ni caseína',
+      idealUse: 'Cocinar (alternativa a la mantequilla)',
     ),
     Food(
       id: 'leche_coco',
@@ -1058,6 +1161,9 @@ class FoodCatalog {
       qualityScore: 100,
       portionLabel: '1 taza (~91g)',
       servingUnit: ServingUnit.cup,
+      vegGroup: VegGroup.cruciferous,
+      micros: ['Glucosinolatos', 'Fibra'],
+      qualityNote: 'Protege tus hormonas',
     ),
     Food(
       id: 'espinaca',
@@ -1066,6 +1172,8 @@ class FoodCatalog {
       qualityScore: 100,
       portionLabel: '1 taza cruda (~30g)',
       servingUnit: ServingUnit.cup,
+      vegGroup: VegGroup.leafyGreen,
+      micros: ['Magnesio', 'Hierro'],
     ),
     Food(
       id: 'lechuga',
@@ -1074,6 +1182,7 @@ class FoodCatalog {
       qualityScore: 100,
       portionLabel: '2 tazas (~85g)',
       servingUnit: ServingUnit.cup,
+      vegGroup: VegGroup.leafyGreen,
     ),
     Food(
       id: 'tomate',
@@ -1107,6 +1216,8 @@ class FoodCatalog {
       qualityScore: 100,
       portionLabel: '1 taza en floretes (~100g)',
       servingUnit: ServingUnit.cup,
+      vegGroup: VegGroup.cruciferous,
+      micros: ['Glucosinolatos'],
     ),
     Food(
       id: 'pimiento',
@@ -1132,6 +1243,8 @@ class FoodCatalog {
       qualityScore: 90,
       portionLabel: '½ cebolla mediana (~55g)',
       servingUnit: ServingUnit.unit,
+      vegGroup: VegGroup.prebiotic,
+      micros: ['Inulina (prebiótico)'],
     ),
     Food(
       id: 'apio',
@@ -1167,6 +1280,8 @@ class FoodCatalog {
       portionLabel: '1 taza (~67g)',
       servingUnit: ServingUnit.cup,
       searchAliases: ['col rizada', 'berza'],
+      vegGroup: VegGroup.leafyGreen,
+      micros: ['Vitamina K', 'Fibra'],
     ),
     Food(
       id: 'acelga',
@@ -1176,6 +1291,8 @@ class FoodCatalog {
       portionLabel: '1 taza (~36g)',
       servingUnit: ServingUnit.cup,
       searchAliases: ['chard'],
+      vegGroup: VegGroup.leafyGreen,
+      micros: ['Magnesio', 'Hierro'],
     ),
     Food(
       id: 'cilantro',
@@ -1194,6 +1311,8 @@ class FoodCatalog {
       portionLabel: '1 diente (~3g)',
       servingUnit: ServingUnit.unit,
       searchAliases: ['garlic'],
+      vegGroup: VegGroup.prebiotic,
+      micros: ['Inulina (prebiótico)', 'Alicina'],
     ),
     Food(
       id: 'jengibre',
