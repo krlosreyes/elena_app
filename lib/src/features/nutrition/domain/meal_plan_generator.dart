@@ -276,12 +276,17 @@ class MealPlanGenerator {
   }
 
   /// Mejor alimento del catálogo para completar un rol faltante: no baneado,
-  /// no repetido en el plato, preferentemente no-evitado.
+  /// no repetido en el plato, SIN cautelas (SPEC-282: no introducimos como
+  /// sugerencia nueva un alimento con histamina/inflamación), preferentemente
+  /// no-evitado.
   Food? _pickNew(List<Food> catalog, Set<String> banned, Set<String> avoid,
       List<_Picked> plate) {
     final inPlate = plate.map((p) => p.food.id).toSet();
     final cands = catalog
-        .where((f) => !_isBanned(f, banned) && !inPlate.contains(f.id))
+        .where((f) =>
+            !_isBanned(f, banned) &&
+            !inPlate.contains(f.id) &&
+            f.cautions.isEmpty)
         .toList()
       ..sort(_byQualityThenId);
     return _pick(cands, avoid);
@@ -295,13 +300,15 @@ class MealPlanGenerator {
     ..sort(_byQualityThenId);
 
   /// Mejor versión más sana de [from] dentro de su misma categoría, para la
-  /// mejora suave. No baneada ni ya presente en el plato.
+  /// mejora suave. No baneada, no presente en el plato y SIN cautelas
+  /// (SPEC-282: la mejora nunca propone un alimento con histamina/inflamación).
   Food? _bestUpgrade(Food from, Set<String> banned, Set<String> idsInPlate) {
     final cands = FoodCatalog.byCategory(from.category)
         .where((f) =>
             f.id != from.id &&
             !idsInPlate.contains(f.id) &&
-            !_isBanned(f, banned))
+            !_isBanned(f, banned) &&
+            f.cautions.isEmpty)
         .toList()
       ..sort(_byQualityThenId);
     return cands.isEmpty ? null : cands.first;
