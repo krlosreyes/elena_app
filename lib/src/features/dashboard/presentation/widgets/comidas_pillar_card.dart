@@ -9,14 +9,16 @@ import 'package:go_router/go_router.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/meals_locked_dialog.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/pillar_card_ui.dart';
-import 'package:elena_app/src/features/nutrition/application/cociente_a_service.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
-import 'package:elena_app/src/features/nutrition/domain/meal_interval_rules.dart';
+import 'package:elena_app/src/features/nutrition/domain/food_catalog.dart';
 import 'package:elena_app/src/features/nutrition/domain/meal_ratio.dart';
 import 'package:elena_app/src/features/nutrition/domain/nutrition_log.dart';
 import 'package:elena_app/src/features/nutrition/presentation/meal_history_sheet.dart';
 import 'package:elena_app/src/features/nutrition/application/meal_plan_notifier.dart';
+import 'package:elena_app/src/features/nutrition/domain/meal_plan.dart';
 import 'package:elena_app/src/features/nutrition/domain/minuta_adherence_score.dart';
+import 'package:elena_app/src/features/nutrition/domain/nutrition_intake.dart';
+import 'package:elena_app/src/features/nutrition/domain/recipe_catalog.dart';
 import 'package:elena_app/src/features/streak/application/streak_notifier.dart';
 
 class ComidasPillarCard extends ConsumerWidget {
@@ -54,9 +56,6 @@ class ComidasPillarCard extends ConsumerWidget {
       plan: ref.watch(mealPlanNotifierProvider).plan,
     );
     final pct = (progress * 100).round();
-    const cocienteService = CocienteAService();
-    final cocienteA = cocienteService.calculate(state.todayLogs);
-    final cocientePct = (cocienteA * 100).round();
     final lastLog = state.todayLogs.isNotEmpty ? state.todayLogs.last : null;
     // "Racha de Calidad" (25-jul-2026, diferenciador de mercado — ver
     // diagnóstico "Pilar Nutrición: dos métricas paralelas" §3.3): días
@@ -90,18 +89,16 @@ class ComidasPillarCard extends ConsumerWidget {
               const SizedBox(height: 6),
               PillarCardUi.completionLabel(pct),
               const SizedBox(height: 14),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  PillarCardUi.miniStat('Próxima', state.nextMealLabel, accent,
-                      big: true),
-                  PillarCardUi.miniStat(
-                      'En', _estimateNextMealIn(state), accent,
-                      big: true),
-                  PillarCardUi.miniStat(
-                      'Cociente A', '$cocientePct%', _cocienteAColor(cocienteA),
-                      big: true),
-                ],
+              // SPEC-286: "Tu próxima comida" — el plato que sigue en la
+              // minuta, con ingredientes + preparación desplegables. Reemplaza
+              // los mini-stats de conteo (Próxima/En/Cociente A) y el botón
+              // genérico "Ver mi minuta de hoy".
+              _NextMealCard(
+                plan: mealPlan,
+                accent: accent,
+                onOpenMinuta: isFastingActive
+                    ? null
+                    : () => context.push('/nutrition/minuta'),
               ),
               // ── Racha de Calidad ─────────────────────────────────────
               if (qualityStreak > 0) ...[
@@ -113,11 +110,10 @@ class ComidasPillarCard extends ConsumerWidget {
                 const SizedBox(height: 14),
                 _LastPlateCard(log: lastLog, accent: accent),
               ],
-              const SizedBox(height: 18),
-              PillarCardUi.primaryButton(
-                label: 'Ver mi minuta de hoy',
+              const SizedBox(height: 16),
+              PillarCardUi.secondaryButton(
+                label: 'Ver mi minuta completa',
                 icon: Icons.checklist_rounded,
-                color: accent,
                 onPressed: isFastingActive
                     ? null
                     : () => context.push('/nutrition/minuta'),
@@ -190,27 +186,222 @@ class ComidasPillarCard extends ConsumerWidget {
     );
   }
 
-  /// SPEC-137: color del Cociente A para el mini-stat de Hoy.
-  Color _cocienteAColor(double cociente) {
-    if (cociente >= 0.75) return AppColors.statusGood;
-    if (cociente >= 0.50) return AppColors.accent;
-    if (cociente >= 0.25) return AppColors.statusWarn;
-    return AppColors.statusBad;
+}
+
+/// SPEC-286 — "Tu próxima comida": el plato que sigue en la minuta (primera
+/// comida sin marcar), con su nombre, proteína e ingredientes + preparación
+/// desplegables. Los ajustes (cambiar/editar/agregar) viven en la Minuta a un
+/// tap (SPEC-285), por lo que el card lleva ahí.
+class _NextMealCard extends StatelessWidget {
+  const _NextMealCard({
+    required this.plan,
+    required this.accent,
+    required this.onOpenMinuta,
+  });
+
+  final MealPlan? plan;
+  final Color accent;
+  final VoidCallback? onOpenMinuta;
+
+  static String _slotLabel(MealSlot s) => switch (s) {
+        MealSlot.breakfast => 'Desayuno',
+        MealSlot.lunch => 'Almuerzo',
+        MealSlot.dinner => 'Cena',
+        MealSlot.other => 'Otra comida',
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    final meals = plan?.meals ?? const <MealPlanEntry>[];
+    if (meals.isEmpty) {
+      return _shell(
+        context,
+        title: 'TU MINUTA DE HOY',
+        child: Text(
+          'Configura tu minuta para ver qué comer hoy.',
+          style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.7), fontSize: 13),
+        ),
+      );
+    }
+
+    MealPlanEntry? next;
+    for (final m in meals) {
+      if (m.adherence == null) {
+        next = m;
+        break;
+      }
+    }
+
+    if (next == null) {
+      return _shell(
+        context,
+        title: 'TU MINUTA DE HOY',
+        child: Row(
+          children: [
+            Icon(Icons.check_circle, color: AppColors.statusGood, size: 18),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                '¡Completaste tu minuta de hoy! Bien ahí.',
+                style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.85),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final entry = next;
+    final recipe =
+        entry.recipeId == null ? null : RecipeCatalog.byId(entry.recipeId!);
+    final dishName = recipe?.name ??
+        'Tu plato de ${_slotLabel(entry.slot).toLowerCase()}';
+    final meta = <String>[
+      _slotLabel(entry.slot),
+      if (recipe != null) '${recipe.prepMinutes} min',
+      if (entry.targetProteinG > 0) '~${entry.targetProteinG.round()} g proteína',
+    ].join(' · ');
+
+    final seasonings = recipe == null
+        ? const <RecipeIngredient>[]
+        : recipe.ingredients
+            .where((i) => i.foodId == null || i.foodId!.isEmpty)
+            .toList();
+
+    return _shell(
+      context,
+      title: 'TU PRÓXIMA COMIDA',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            dishName,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              height: 1.25,
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            meta,
+            style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.55), fontSize: 12),
+          ),
+          const SizedBox(height: 8),
+          Theme(
+            data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+            child: ExpansionTile(
+              tilePadding: EdgeInsets.zero,
+              childrenPadding: const EdgeInsets.only(bottom: 4),
+              iconColor: accent,
+              collapsedIconColor: Colors.white.withValues(alpha: 0.6),
+              title: Text(
+                'Ver ingredientes y preparación',
+                style: TextStyle(
+                  color: accent,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              children: [
+                _label('Ingredientes', accent),
+                for (final it in entry.items)
+                  _bullet(_foodLine(it)),
+                for (final ing in seasonings) _bullet(ing.text),
+                if (recipe != null && recipe.steps.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  _label('Preparación', accent),
+                  for (var i = 0; i < recipe.steps.length; i++)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 3),
+                      child: Text('${i + 1}. ${recipe.steps[i]}',
+                          style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.75),
+                              fontSize: 12.5,
+                              height: 1.4)),
+                    ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 6),
+          PillarCardUi.primaryButton(
+            label: 'Ver plato y ajustar',
+            icon: Icons.restaurant_menu_rounded,
+            color: accent,
+            onPressed: onOpenMinuta,
+          ),
+        ],
+      ),
+    );
   }
 
-  /// SPEC-137 E.5: tiempo hasta la próxima comida sugerida (lastMeal + 3h).
-  String _estimateNextMealIn(NutritionState state) {
-    if (state.mealsLoggedToday >= state.targetMeals) return '—';
-    final lastMealAt = MealIntervalRules.lastMealOf(state.todayLogs);
-    final nextAt = MealIntervalRules.nextSuggestedAt(lastMealAt);
-    if (nextAt == null) return '—';
-    final diff = nextAt.difference(DateTime.now());
-    if (diff.isNegative) return 'Ahora';
-    if (diff.inHours >= 1) {
-      return '${diff.inHours}h ${diff.inMinutes.remainder(60)}m';
-    }
-    return '${diff.inMinutes}m';
+  static String _foodLine(PlanItem it) {
+    final f = FoodCatalog.byId(it.foodId);
+    final name = f?.name ?? it.foodId;
+    final portion = f?.portionLabel;
+    return portion == null || portion.isEmpty ? name : '$name — $portion';
   }
+
+  Widget _shell(BuildContext context,
+      {required String title, required Widget child}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: accent.withValues(alpha: 0.28)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              color: accent,
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.6,
+            ),
+          ),
+          const SizedBox(height: 8),
+          child,
+        ],
+      ),
+    );
+  }
+
+  Widget _label(String text, Color accent) => Padding(
+        padding: const EdgeInsets.only(bottom: 5, top: 2),
+        child: Text(
+          text.toUpperCase(),
+          style: TextStyle(
+            color: accent.withValues(alpha: 0.9),
+            fontSize: 10.5,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.5,
+          ),
+        ),
+      );
+
+  Widget _bullet(String text) => Padding(
+        padding: const EdgeInsets.only(bottom: 3),
+        child: Text(
+          '• $text',
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.75),
+            fontSize: 12.5,
+            height: 1.35,
+          ),
+        ),
+      );
 }
 
 /// Widget compacto que muestra la composición del último plato registrado.
