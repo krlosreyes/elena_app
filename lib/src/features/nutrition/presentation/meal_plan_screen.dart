@@ -460,13 +460,32 @@ class _PlanItemRow extends StatelessWidget {
         PlanItemRole.other => AppColors.textMuted,
       };
 
+  /// SPEC-283: micro-tip por alimento desde los metadatos del Atlas
+  /// (nota de calidad > uso ideal > subgrupo de vegetal > micros).
+  static String? _foodTip(Food? f) {
+    if (f == null) return null;
+    if (f.qualityNote != null && f.qualityNote!.trim().isNotEmpty) {
+      return f.qualityNote;
+    }
+    if (f.idealUse != null && f.idealUse!.trim().isNotEmpty) {
+      return f.idealUse;
+    }
+    if (f.vegGroup != null && f.vegGroup != VegGroup.other) {
+      return f.vegGroup!.label;
+    }
+    if (f.micros.isNotEmpty) return f.micros.take(2).join(' · ');
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     final food = FoodCatalog.byId(item.foodId);
     final name = food?.name ?? item.foodId;
+    final tip = _foodTip(food);
     final row = Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
             width: 8,
@@ -478,19 +497,36 @@ class _PlanItemRow extends StatelessWidget {
           ),
           const SizedBox(width: 10),
           Expanded(
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Flexible(
-                  child: Text(
-                    name,
-                    style: const TextStyle(
-                        color: AppColors.textPrimary, fontSize: 14),
-                  ),
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        name,
+                        style: const TextStyle(
+                            color: AppColors.textPrimary, fontSize: 14),
+                      ),
+                    ),
+                    if (item.origin != PlanItemOrigin.fromUser) ...[
+                      const SizedBox(width: 6),
+                      _OriginTag(origin: item.origin),
+                    ],
+                  ],
                 ),
-                if (item.origin != PlanItemOrigin.fromUser) ...[
-                  const SizedBox(width: 6),
-                  _OriginTag(origin: item.origin),
-                ],
+                if (tip != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text(
+                      tip,
+                      style: TextStyle(
+                        color: _amber.withValues(alpha: 0.85),
+                        fontSize: 11,
+                        height: 1.2,
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
