@@ -70,11 +70,6 @@ class MealPlanNotifier extends StateNotifier<MealPlanState> {
   bool _generating = false;
   StreamSubscription<MealPlan?>? _sub;
 
-  /// SPEC-280.1: marca de tiempo del intake con el que estamos alineados.
-  /// Si llega un intake con otra marca (el usuario editó sus preferencias),
-  /// re-generamos la minuta para que se adapte.
-  DateTime? _seenIntakeStamp;
-
   void _init() {
     _ref.listen<AsyncValue<UserModel?>>(
       currentUserStreamProvider,
@@ -103,21 +98,26 @@ class MealPlanNotifier extends StateNotifier<MealPlanState> {
     );
   }
 
-  /// Reacciona a cambios del intake: genera si aún no hay plan, o re-genera
-  /// si el usuario EDITÓ sus preferencias (marca de tiempo distinta).
+  /// SPEC-295: reacciona a cambios del intake o del plan cargado. Genera si
+  /// aún no hay plan; y si el plan existente se generó con un intake ANTERIOR
+  /// (el usuario editó sus preferencias), lo REGENERA de inmediato. Comparar
+  /// la marca sellada en el plan (`intakeStampMs`) contra el `updatedAt` del
+  /// intake actual es robusto: funciona aunque el notifier se recree o el
+  /// cambio se haya guardado con la app cerrada.
   void _handleIntakeChange() {
     final intake = _intake;
     final user = _user;
-    if (intake == null || !_intakeReady) return;
-    final stamp = intake.updatedAt;
-    final userEdited = _seenIntakeStamp != null && stamp != _seenIntakeStamp;
-    _seenIntakeStamp = stamp;
-    if (user == null || !intake.isComplete) return;
-    if (!state.hasPlan) {
+    if (intake == null || !_intakeReady || user == null || !intake.isComplete) {
+      return;
+    }
+    final plan = state.plan;
+    if (plan == null) {
       _maybeGenerate();
       return;
     }
-    if (userEdited) _regenerateFrom(user, intake);
+    if (plan.intakeStampMs != intake.updatedAt.millisecondsSinceEpoch) {
+      _regenerateFrom(user, intake);
+    }
   }
 
   /// Rehace y persiste la minuta a partir del intake dado (adaptación tras
@@ -152,7 +152,10 @@ class MealPlanNotifier extends StateNotifier<MealPlanState> {
           isLoading: false,
           clearPlan: plan == null,
         );
-        if (plan == null) _maybeGenerate();
+        // SPEC-295: genera si no hay plan, o lo regenera si el que se cargó
+        // quedó obsoleto respecto al intake actual (editaste tus preferencias
+        // con la app cerrada, u otra sesión).
+        _handleIntakeChange();
       },
       onError: (Object e) {
         AppLogger.warning('meal_plan: stream error (transitorio): $e');
@@ -277,6 +280,23 @@ class MealPlanNotifier extends StateNotifier<MealPlanState> {
     final repo = _ref.read(mealPlanRepositoryProvider);
     unawaited(repo.savePlan(user.id, updated).catchError((Object e) {
       AppLogger.warning('meal_plan: addExtraFood save falló: $e');
+    }));
+  }
+
+  /// SPEC-293: fija la cantidad (porciones) de un alimento de una comida
+  /// (ej. huevo ×3). Offline-first.
+  Future<void> setQuantity(MealSlot slot, String foodId, int quantity) async {
+    final current = state.plan;
+    final user = _user;
+    if (current == null || user == null) return;
+
+    final updated = current.setItemQuantity(slot, foodId, quantity);
+    if (identical(updated, current)) return;
+    if (mounted) state = state.copyWith(plan: updated);
+
+    final repo = _ref.read(mealPlanRepositoryProvider);
+    unawaited(repo.savePlan(user.id, updated).catchError((Object e) {
+      AppLogger.warning('meal_plan: setQuantity save falló: $e');
     }));
   }
 

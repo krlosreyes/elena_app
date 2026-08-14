@@ -159,12 +159,26 @@ class PlanItem {
   /// SPEC-276: de dónde salió (tuyo / mejora / sugerencia nueva).
   final PlanItemOrigin origin;
 
+  /// SPEC-293: cuántas porciones de referencia comió/comerá el usuario
+  /// (p. ej. huevo ×3). Default 1. `portionLabel` es UNA porción; esto la
+  /// multiplica.
+  final int quantity;
+
   const PlanItem({
     required this.foodId,
     this.role = PlanItemRole.other,
     this.portion = HandPortion.fist,
     this.origin = PlanItemOrigin.fromUser,
+    this.quantity = 1,
   });
+
+  PlanItem copyWith({int? quantity}) => PlanItem(
+        foodId: foodId,
+        role: role,
+        portion: portion,
+        origin: origin,
+        quantity: quantity ?? this.quantity,
+      );
 
   Map<String, dynamic> toJson() => {
         'foodId': foodId,
@@ -172,6 +186,7 @@ class PlanItem {
         'portion': portion.wire,
         // Se omite cuando es lo normal (tuyo) para no ensuciar el doc.
         if (origin != PlanItemOrigin.fromUser) 'origin': origin.wire,
+        if (quantity != 1) 'quantity': quantity,
       };
 
   factory PlanItem.fromJson(Map<String, dynamic> j) => PlanItem(
@@ -179,6 +194,7 @@ class PlanItem {
         role: PlanItemRole.fromWire(j['role'] as String?),
         portion: HandPortion.fromWire(j['portion'] as String?),
         origin: PlanItemOrigin.fromWire(j['origin'] as String?),
+        quantity: (j['quantity'] as num?)?.toInt() ?? 1,
       );
 
   @override
@@ -187,10 +203,11 @@ class PlanItem {
       other.foodId == foodId &&
       other.role == role &&
       other.portion == portion &&
-      other.origin == origin;
+      other.origin == origin &&
+      other.quantity == quantity;
 
   @override
-  int get hashCode => Object.hash(foodId, role, portion, origin);
+  int get hashCode => Object.hash(foodId, role, portion, origin, quantity);
 }
 
 // ─── Comida del plan ────────────────────────────────────────────────────────
@@ -277,6 +294,11 @@ class MealPlan {
   /// Versión del intake con que se generó (para regenerar si cambia).
   final int intakeVersion;
 
+  /// SPEC-295: marca de tiempo (ms) del intake con el que se generó este plan.
+  /// Si el intake actual es más nuevo (el usuario editó sus preferencias), el
+  /// plan está OBSOLETO y hay que recalcularlo. 0 = desconocido (planes viejos).
+  final int intakeStampMs;
+
   /// Fase de transición del reemplazo suave (1-4, ver SPEC-272 §7.1).
   final int phase;
 
@@ -292,6 +314,7 @@ class MealPlan {
     required this.date,
     this.version = kMealPlanSchemaVersion,
     this.intakeVersion = 1,
+    this.intakeStampMs = 0,
     this.phase = 1,
     this.windowFirst = '',
     this.windowLast = '',
@@ -379,6 +402,32 @@ class MealPlan {
     return copyWith(meals: updated);
   }
 
+  /// SPEC-293: fija la cantidad (porciones) de un alimento de una comida
+  /// (ej. huevo ×3). Se acota a >= 1. Inmutable; no-op si no cambia.
+  MealPlan setItemQuantity(MealSlot slot, String foodId, int quantity) {
+    final q = quantity < 1 ? 1 : quantity;
+    var changed = false;
+    final updated = meals.map((m) {
+      if (m.slot != slot) return m;
+      final items = m.items.map((it) {
+        if (it.foodId != foodId || it.quantity == q) return it;
+        changed = true;
+        return it.copyWith(quantity: q);
+      }).toList(growable: false);
+      return MealPlanEntry(
+        slot: m.slot,
+        targetProteinG: m.targetProteinG,
+        recipeId: m.recipeId,
+        items: items,
+        swappedFrom: m.swappedFrom,
+        rationale: m.rationale,
+        adherence: m.adherence,
+      );
+    }).toList(growable: false);
+    if (!changed) return this;
+    return copyWith(meals: updated);
+  }
+
   /// SPEC-292: quita un alimento de una comida (Delete del CRUD por
   /// ingrediente). Inmutable; si no existe la comida o el alimento, devuelve
   /// el mismo plan.
@@ -431,6 +480,7 @@ class MealPlan {
     String? date,
     int? version,
     int? intakeVersion,
+    int? intakeStampMs,
     int? phase,
     String? windowFirst,
     String? windowLast,
@@ -442,6 +492,7 @@ class MealPlan {
       date: date ?? this.date,
       version: version ?? this.version,
       intakeVersion: intakeVersion ?? this.intakeVersion,
+      intakeStampMs: intakeStampMs ?? this.intakeStampMs,
       phase: phase ?? this.phase,
       windowFirst: windowFirst ?? this.windowFirst,
       windowLast: windowLast ?? this.windowLast,
@@ -454,7 +505,11 @@ class MealPlan {
   Map<String, dynamic> toJson() => {
         'date': date,
         'version': version,
-        'generatedFrom': {'intakeVersion': intakeVersion, 'phase': phase},
+        'generatedFrom': {
+          'intakeVersion': intakeVersion,
+          'intakeStampMs': intakeStampMs,
+          'phase': phase,
+        },
         'window': {'first': windowFirst, 'last': windowLast},
         'meals': meals.map((m) => m.toJson()).toList(growable: false),
         'status': status.wire,
@@ -472,6 +527,7 @@ class MealPlan {
       date: (j['date'] as String?)?.trim() ?? '',
       version: (j['version'] as num?)?.toInt() ?? kMealPlanSchemaVersion,
       intakeVersion: (gf['intakeVersion'] as num?)?.toInt() ?? 1,
+      intakeStampMs: (gf['intakeStampMs'] as num?)?.toInt() ?? 0,
       phase: (gf['phase'] as num?)?.toInt() ?? 1,
       windowFirst: (win['first'] as String?)?.trim() ?? '',
       windowLast: (win['last'] as String?)?.trim() ?? '',

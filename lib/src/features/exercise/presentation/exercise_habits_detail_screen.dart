@@ -20,6 +20,7 @@ import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
 import 'package:elena_app/src/features/exercise/application/exercise_profile_providers.dart';
 import 'package:elena_app/src/features/exercise/data/exercise_profile_repository_impl.dart';
 import 'package:elena_app/src/features/exercise/domain/exercise_profile.dart';
+import 'package:elena_app/src/features/exercise/presentation/widgets/imported_activities_section.dart';
 
 class ExerciseHabitsDetailScreen extends ConsumerWidget {
   const ExerciseHabitsDetailScreen({super.key});
@@ -154,6 +155,10 @@ class _BodyState extends ConsumerState<_Body> {
             ),
           ),
           const SizedBox(height: 24),
+          // SPEC-296: actividades importadas de Apple Health / Health Connect
+          // con sus datos reales (calorías, inicio, duración, distancia) y el
+          // beneficio por tipo. Se autooculta si no hubo actividad hoy.
+          const ImportedActivitiesSection(),
           _sectionTitle('NIVEL ACTUAL'),
           _chipGroup<ExerciseFrequencyLevel>(
             options: ExerciseFrequencyLevel.values,

@@ -551,9 +551,14 @@ class HealthSyncService {
       final minutes = p.dateTo.difference(p.dateFrom).inMinutes.toDouble();
       if (minutes <= 0) return null;
       String? activity;
+      double? kcal;
+      double? distanceM;
       final v = p.value;
       if (v is hp.WorkoutHealthValue) {
         activity = v.workoutActivityType.name;
+        // SPEC-296: el plugin expone energía y distancia del workout.
+        kcal = v.totalEnergyBurned?.toDouble();
+        distanceM = v.totalDistance?.toDouble();
       }
       return HealthSample(
         metric: metric,
@@ -563,6 +568,8 @@ class HealthSyncService {
         sourceName: p.sourceName,
         uuid: p.uuid,
         workoutActivityType: activity,
+        caloriesKcal: kcal,
+        distanceMeters: distanceM,
       );
     }
 

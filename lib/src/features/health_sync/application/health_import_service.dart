@@ -467,9 +467,22 @@ class HealthImportService {
       'HealthImport[workout]: ${samples.length} samples recibidas',
     );
 
+    // SPEC-296: una misma sesión registrada por VARIAS fuentes (Apple Watch +
+    // app de gym + iPhone) llega como workouts separados con uuids distintos —
+    // `removeDuplicates` no los colapsa porque la fuente difiere. Deduplicamos
+    // por solapamiento de tiempo + tipo, conservando el más completo (mayor
+    // duración). Esto elimina las sesiones duplicadas en el pilar.
+    final deduped = dedupWorkoutSamples(samples);
+    if (deduped.length != samples.length) {
+      AppLogger.info(
+        'HealthImport[workout]: dedup ${samples.length} → ${deduped.length} '
+        '(sesiones de múltiples fuentes colapsadas)',
+      );
+    }
+
     int imported = 0;
     int skippedShort = 0;
-    for (final s in samples) {
+    for (final s in deduped) {
       final minutes = s.value.round();
       // Ignorar sesiones absurdamente cortas (ruido / toques accidentales).
       if (minutes < 5) {
@@ -492,6 +505,11 @@ class HealthImportService {
           timestamp: s.start,
           type: type,
           intensity: _intensityForType(type),
+          // SPEC-296: datos reales de la actividad para mostrarlos en el pilar.
+          caloriesKcal: s.caloriesKcal,
+          distanceKm:
+              s.distanceMeters == null ? null : s.distanceMeters! / 1000.0,
+          sourceName: s.sourceName,
         );
         await _exerciseRepo.save(userId, log);
         imported++;
@@ -505,6 +523,28 @@ class HealthImportService {
       'saltados $skippedShort cortos (<5min)',
     );
     return imported;
+  }
+
+  /// SPEC-296: colapsa workouts que representan la MISMA sesión vista por
+  /// varias fuentes (se solapan en el tiempo y son del mismo tipo). Conserva
+  /// el más completo (mayor duración). Sesiones distintas o de tipo distinto
+  /// que no se solapan se conservan todas.
+  static List<HealthSample> dedupWorkoutSamples(List<HealthSample> samples) {
+    if (samples.length <= 1) return samples;
+    final sorted = [...samples]..sort((a, b) => a.start.compareTo(b.start));
+    final kept = <HealthSample>[];
+    for (final s in sorted) {
+      final idx = kept.indexWhere((k) =>
+          k.workoutActivityType == s.workoutActivityType &&
+          s.start.isBefore(k.end) &&
+          s.end.isAfter(k.start));
+      if (idx == -1) {
+        kept.add(s);
+      } else if (s.value > kept[idx].value) {
+        kept[idx] = s; // el más largo = el más completo
+      }
+    }
+    return kept;
   }
 
   /// SPEC-203: mapeo del tipo de actividad nativo (HKWorkoutActivityType) a

@@ -14,6 +14,7 @@ import 'package:elena_app/src/features/fasting/application/fasting_notifier.dart
 import 'package:elena_app/src/features/nutrition/application/meal_plan_notifier.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_intake_notifier.dart';
 import 'package:elena_app/src/features/nutrition/domain/food_catalog.dart';
+import 'package:elena_app/src/features/nutrition/domain/food_protein.dart';
 import 'package:elena_app/src/features/nutrition/domain/food_quality.dart';
 import 'package:elena_app/src/features/nutrition/domain/intake_resurvey_policy.dart';
 import 'package:elena_app/src/features/nutrition/domain/meal_plan.dart';
@@ -137,6 +138,11 @@ class _PlanHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final total = plan.meals.fold<double>(0, (a, m) => a + m.targetProteinG);
+    // SPEC-294: proteína ya cumplida = la de las comidas que marcaste comidas,
+    // escalada por cantidad (huevo ×3 = 3× la de un huevo).
+    final consumed = plan.meals
+        .where((m) => m.adherence?.isAdherent ?? false)
+        .fold<double>(0, (a, m) => a + platedProteinG(m.items));
     final window = (plan.windowFirst.isNotEmpty && plan.windowLast.isNotEmpty)
         ? '${plan.windowFirst}–${plan.windowLast}'
         : 'Tu ventana de comidas';
@@ -169,7 +175,7 @@ class _PlanHeader extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Proteína objetivo del día: ~${total.round()} g  ·  '
+            'Proteína del día: ${consumed.round()} g de ~${total.round()} g  ·  '
             '$done/$totalMeals cumplidas',
             style: const TextStyle(
                 color: AppColors.textSecondary, fontSize: 13, height: 1.4),
@@ -246,9 +252,12 @@ class _MealCard extends StatelessWidget {
                 ),
               ),
               const Spacer(),
-              if (entry.targetProteinG > 0)
+              if (entry.items.isNotEmpty)
                 Text(
-                  '~${entry.targetProteinG.round()} g proteína',
+                  // SPEC-294: proteína REAL de este plato (escala con cantidad)
+                  // frente a la meta de la comida.
+                  '${platedProteinG(entry.items).round()} g'
+                  '${entry.targetProteinG > 0 ? ' / ~${entry.targetProteinG.round()} g' : ''} proteína',
                   style:
                       const TextStyle(color: AppColors.textMuted, fontSize: 12),
                 ),
@@ -1016,9 +1025,10 @@ class _PlanItemRow extends StatelessWidget {
             ),
           ),
           Text(
-            // SPEC-279: medida concreta y entendible por alimento (taza,
-            // ½ taza, unidad, gramos, scoop) en vez de palma/puño/pulgar.
-            food?.portionLabel ?? _portionLabel(item.portion),
+            // SPEC-279/293: medida concreta por alimento (taza, ½ taza, unidad,
+            // gramos, scoop) con la cantidad del usuario (ej. "3× 1 huevo").
+            '${item.quantity > 1 ? '${item.quantity}× ' : ''}'
+            '${food?.portionLabel ?? _portionLabel(item.portion)}',
             style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
           ),
           if (onTap != null) ...[
@@ -1116,9 +1126,13 @@ void _showAlternatives(
                 role: item.role,
                 portion: item.portion,
                 origin: PlanItemOrigin.fromUser,
+                quantity: item.quantity, // SPEC-293: conserva la cantidad.
               ),
             );
       },
+      onSetQuantity: (q) => ref
+          .read(mealPlanNotifierProvider.notifier)
+          .setQuantity(slot, item.foodId, q),
       onRemove: () => ref
           .read(mealPlanNotifierProvider.notifier)
           .removeFood(slot, item.foodId),
@@ -1126,27 +1140,44 @@ void _showAlternatives(
   );
 }
 
-class _AlternativesSheet extends StatelessWidget {
+class _AlternativesSheet extends StatefulWidget {
   final PlanItem current;
   final List<Food> options;
   final Set<String> userIds;
   final ValueChanged<Food> onPick;
+  final ValueChanged<int> onSetQuantity;
   final VoidCallback onRemove;
   const _AlternativesSheet({
     required this.current,
     required this.options,
     required this.userIds,
     required this.onPick,
+    required this.onSetQuantity,
     required this.onRemove,
   });
 
   @override
+  State<_AlternativesSheet> createState() => _AlternativesSheetState();
+}
+
+class _AlternativesSheetState extends State<_AlternativesSheet> {
+  late int _qty = widget.current.quantity;
+
+  void _setQty(int q) {
+    final v = q < 1 ? 1 : (q > 20 ? 20 : q);
+    if (v == _qty) return;
+    setState(() => _qty = v);
+    widget.onSetQuantity(v);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final currentFood = FoodCatalog.byId(current.foodId);
+    final currentFood = FoodCatalog.byId(widget.current.foodId);
     // SPEC-292: si el alimento actual es poco ideal, explicamos por qué.
     final why =
         currentFood == null ? null : FoodQuality.explanation(currentFood);
     final poor = currentFood != null && FoodQuality.isPoor(currentFood);
+    final unit = currentFood?.portionLabel ?? 'porción';
     final maxH = MediaQuery.of(context).size.height * 0.72;
     return ConstrainedBox(
       constraints: BoxConstraints(maxHeight: maxH),
@@ -1168,12 +1199,44 @@ class _AlternativesSheet extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 14, 20, 4),
             child: Text(
-              'Cambiar ${currentFood?.name ?? current.foodId}',
+              'Editar ${currentFood?.name ?? widget.current.foodId}',
               style: const TextStyle(
                 color: AppColors.textPrimary,
                 fontSize: 17,
                 fontWeight: FontWeight.w800,
               ),
+            ),
+          ),
+          // SPEC-293: cantidad (porciones) del alimento — ej. huevo ×3.
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 6),
+            child: Row(
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Cantidad',
+                        style: TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600)),
+                    Text('cada una: $unit',
+                        style: const TextStyle(
+                            color: AppColors.textMuted, fontSize: 11.5)),
+                  ],
+                ),
+                const Spacer(),
+                _StepButton(icon: Icons.remove, onTap: () => _setQty(_qty - 1)),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  child: Text('$_qty',
+                      style: const TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800)),
+                ),
+                _StepButton(icon: Icons.add, onTap: () => _setQty(_qty + 1)),
+              ],
             ),
           ),
           if (poor && why != null)
@@ -1218,7 +1281,7 @@ class _AlternativesSheet extends StatelessWidget {
             child: InkWell(
               borderRadius: BorderRadius.circular(10),
               onTap: () {
-                onRemove();
+                widget.onRemove();
                 Navigator.of(context).pop();
               },
               child: Padding(
@@ -1249,11 +1312,11 @@ class _AlternativesSheet extends StatelessWidget {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(12, 4, 12, 24),
               children: [
-                for (final f in options)
+                for (final f in widget.options)
                   ListTile(
                     dense: true,
                     onTap: () {
-                      onPick(f);
+                      widget.onPick(f);
                       Navigator.of(context).pop();
                     },
                     title: Text(
@@ -1266,7 +1329,7 @@ class _AlternativesSheet extends StatelessWidget {
                       style: const TextStyle(
                           color: AppColors.textMuted, fontSize: 12),
                     ),
-                    trailing: userIds.contains(f.id)
+                    trailing: widget.userIds.contains(f.id)
                         ? const Text('Ya lo comes',
                             style: TextStyle(color: _amber, fontSize: 11))
                         : null,
@@ -1275,6 +1338,31 @@ class _AlternativesSheet extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// SPEC-293: botón circular +/− del stepper de cantidad.
+class _StepButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  const _StepButton({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(20),
+      onTap: onTap,
+      child: Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          color: _amber.withValues(alpha: 0.14),
+          shape: BoxShape.circle,
+          border: Border.all(color: _amber.withValues(alpha: 0.4)),
+        ),
+        child: Icon(icon, size: 18, color: _amber),
       ),
     );
   }

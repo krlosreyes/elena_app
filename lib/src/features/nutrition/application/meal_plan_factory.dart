@@ -38,14 +38,18 @@ class MealPlanFactory {
       gender: gender,
       pal: pal,
     );
-    return _generator.generate(
-      intake: intake,
-      targetProteinG: target,
-      dateId: MealPlan.dateId(when),
-      windowFirst: windowFirst,
-      windowLast: windowLast,
-      phase: phase,
-      now: when,
-    );
+    return _generator
+        .generate(
+          intake: intake,
+          targetProteinG: target,
+          dateId: MealPlan.dateId(when),
+          windowFirst: windowFirst,
+          windowLast: windowLast,
+          phase: phase,
+          now: when,
+        )
+        // SPEC-295: sella el plan con la marca del intake con que se generó,
+        // para detectar que quedó obsoleto si el usuario edita sus preferencias.
+        .copyWith(intakeStampMs: intake.updatedAt.millisecondsSinceEpoch);
   }
 }

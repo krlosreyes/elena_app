@@ -46,6 +46,13 @@ class HealthSample {
   /// `ExerciseType` en el import. `null` para las demás métricas.
   final String? workoutActivityType;
 
+  /// SPEC-296: solo workout — energía activa quemada (kcal), si el proveedor
+  /// la reporta. `null` si no viene.
+  final double? caloriesKcal;
+
+  /// SPEC-296: solo workout — distancia recorrida (metros), si viene.
+  final double? distanceMeters;
+
   const HealthSample({
     required this.metric,
     required this.value,
@@ -54,6 +61,8 @@ class HealthSample {
     required this.sourceName,
     this.uuid,
     this.workoutActivityType,
+    this.caloriesKcal,
+    this.distanceMeters,
   });
 
   /// Duración del rango (útil sobre todo para sueño).

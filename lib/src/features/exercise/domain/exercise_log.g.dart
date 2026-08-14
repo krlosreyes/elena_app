@@ -20,6 +20,9 @@ _$ExerciseLogImpl _$$ExerciseLogImplFromJson(Map<String, dynamic> json) =>
           $enumDecodeNullable(_$ExerciseIntensityEnumMap, json['intensity']),
       rpe: (json['rpe'] as num?)?.toInt(),
       heartRateAvg: (json['heartRateAvg'] as num?)?.toInt(),
+      caloriesKcal: (json['caloriesKcal'] as num?)?.toDouble(),
+      distanceKm: (json['distanceKm'] as num?)?.toDouble(),
+      sourceName: json['sourceName'] as String?,
     );
 
 Map<String, dynamic> _$$ExerciseLogImplToJson(_$ExerciseLogImpl instance) =>
@@ -34,6 +37,9 @@ Map<String, dynamic> _$$ExerciseLogImplToJson(_$ExerciseLogImpl instance) =>
       'intensity': _$ExerciseIntensityEnumMap[instance.intensity],
       'rpe': instance.rpe,
       'heartRateAvg': instance.heartRateAvg,
+      'caloriesKcal': instance.caloriesKcal,
+      'distanceKm': instance.distanceKm,
+      'sourceName': instance.sourceName,
     };
 
 const _$ExerciseTypeEnumMap = {

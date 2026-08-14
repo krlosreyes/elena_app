@@ -58,6 +58,18 @@ class ExerciseLog with _$ExerciseLog {
     /// Frecuencia cardíaca promedio durante la sesión, en bpm.
     /// `null` si no se midió. Debe ser >= 30 si presente.
     int? heartRateAvg,
+
+    // ── SPEC-296: datos de la actividad importada (Apple Health / HC) ──
+
+    /// Energía activa quemada (kcal), si el proveedor la reporta.
+    double? caloriesKcal,
+
+    /// Distancia recorrida (km), para actividades de desplazamiento.
+    double? distanceKm,
+
+    /// Paquete que originó la sesión (ej. 'com.apple.health'). Sirve para el
+    /// badge "Importado desde Apple Health". `null` en logs manuales.
+    String? sourceName,
   }) = _ExerciseLog;
 
   factory ExerciseLog.fromJson(Map<String, dynamic> json) =>

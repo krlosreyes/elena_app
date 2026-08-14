@@ -44,7 +44,17 @@ mixin _$ExerciseLog {
 
   /// Frecuencia cardíaca promedio durante la sesión, en bpm.
   /// `null` si no se midió. Debe ser >= 30 si presente.
-  int? get heartRateAvg => throw _privateConstructorUsedError;
+  int? get heartRateAvg =>
+      throw _privateConstructorUsedError; // ── SPEC-296: datos de la actividad importada (Apple Health / HC) ──
+  /// Energía activa quemada (kcal), si el proveedor la reporta.
+  double? get caloriesKcal => throw _privateConstructorUsedError;
+
+  /// Distancia recorrida (km), para actividades de desplazamiento.
+  double? get distanceKm => throw _privateConstructorUsedError;
+
+  /// Paquete que originó la sesión (ej. 'com.apple.health'). Sirve para el
+  /// badge "Importado desde Apple Health". `null` en logs manuales.
+  String? get sourceName => throw _privateConstructorUsedError;
 
   /// Serializes this ExerciseLog to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -72,7 +82,10 @@ abstract class $ExerciseLogCopyWith<$Res> {
       ExerciseType? type,
       ExerciseIntensity? intensity,
       int? rpe,
-      int? heartRateAvg});
+      int? heartRateAvg,
+      double? caloriesKcal,
+      double? distanceKm,
+      String? sourceName});
 }
 
 /// @nodoc
@@ -100,6 +113,9 @@ class _$ExerciseLogCopyWithImpl<$Res, $Val extends ExerciseLog>
     Object? intensity = freezed,
     Object? rpe = freezed,
     Object? heartRateAvg = freezed,
+    Object? caloriesKcal = freezed,
+    Object? distanceKm = freezed,
+    Object? sourceName = freezed,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -142,6 +158,18 @@ class _$ExerciseLogCopyWithImpl<$Res, $Val extends ExerciseLog>
           ? _value.heartRateAvg
           : heartRateAvg // ignore: cast_nullable_to_non_nullable
               as int?,
+      caloriesKcal: freezed == caloriesKcal
+          ? _value.caloriesKcal
+          : caloriesKcal // ignore: cast_nullable_to_non_nullable
+              as double?,
+      distanceKm: freezed == distanceKm
+          ? _value.distanceKm
+          : distanceKm // ignore: cast_nullable_to_non_nullable
+              as double?,
+      sourceName: freezed == sourceName
+          ? _value.sourceName
+          : sourceName // ignore: cast_nullable_to_non_nullable
+              as String?,
     ) as $Val);
   }
 }
@@ -164,7 +192,10 @@ abstract class _$$ExerciseLogImplCopyWith<$Res>
       ExerciseType? type,
       ExerciseIntensity? intensity,
       int? rpe,
-      int? heartRateAvg});
+      int? heartRateAvg,
+      double? caloriesKcal,
+      double? distanceKm,
+      String? sourceName});
 }
 
 /// @nodoc
@@ -190,6 +221,9 @@ class __$$ExerciseLogImplCopyWithImpl<$Res>
     Object? intensity = freezed,
     Object? rpe = freezed,
     Object? heartRateAvg = freezed,
+    Object? caloriesKcal = freezed,
+    Object? distanceKm = freezed,
+    Object? sourceName = freezed,
   }) {
     return _then(_$ExerciseLogImpl(
       id: null == id
@@ -232,6 +266,18 @@ class __$$ExerciseLogImplCopyWithImpl<$Res>
           ? _value.heartRateAvg
           : heartRateAvg // ignore: cast_nullable_to_non_nullable
               as int?,
+      caloriesKcal: freezed == caloriesKcal
+          ? _value.caloriesKcal
+          : caloriesKcal // ignore: cast_nullable_to_non_nullable
+              as double?,
+      distanceKm: freezed == distanceKm
+          ? _value.distanceKm
+          : distanceKm // ignore: cast_nullable_to_non_nullable
+              as double?,
+      sourceName: freezed == sourceName
+          ? _value.sourceName
+          : sourceName // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -249,7 +295,10 @@ class _$ExerciseLogImpl implements _ExerciseLog {
       this.type,
       this.intensity,
       this.rpe,
-      this.heartRateAvg});
+      this.heartRateAvg,
+      this.caloriesKcal,
+      this.distanceKm,
+      this.sourceName});
 
   factory _$ExerciseLogImpl.fromJson(Map<String, dynamic> json) =>
       _$$ExerciseLogImplFromJson(json);
@@ -290,10 +339,23 @@ class _$ExerciseLogImpl implements _ExerciseLog {
   /// `null` si no se midió. Debe ser >= 30 si presente.
   @override
   final int? heartRateAvg;
+// ── SPEC-296: datos de la actividad importada (Apple Health / HC) ──
+  /// Energía activa quemada (kcal), si el proveedor la reporta.
+  @override
+  final double? caloriesKcal;
+
+  /// Distancia recorrida (km), para actividades de desplazamiento.
+  @override
+  final double? distanceKm;
+
+  /// Paquete que originó la sesión (ej. 'com.apple.health'). Sirve para el
+  /// badge "Importado desde Apple Health". `null` en logs manuales.
+  @override
+  final String? sourceName;
 
   @override
   String toString() {
-    return 'ExerciseLog(id: $id, userId: $userId, durationMinutes: $durationMinutes, activityType: $activityType, timestamp: $timestamp, intensityMultiplier: $intensityMultiplier, type: $type, intensity: $intensity, rpe: $rpe, heartRateAvg: $heartRateAvg)';
+    return 'ExerciseLog(id: $id, userId: $userId, durationMinutes: $durationMinutes, activityType: $activityType, timestamp: $timestamp, intensityMultiplier: $intensityMultiplier, type: $type, intensity: $intensity, rpe: $rpe, heartRateAvg: $heartRateAvg, caloriesKcal: $caloriesKcal, distanceKm: $distanceKm, sourceName: $sourceName)';
   }
 
   @override
@@ -316,7 +378,13 @@ class _$ExerciseLogImpl implements _ExerciseLog {
                 other.intensity == intensity) &&
             (identical(other.rpe, rpe) || other.rpe == rpe) &&
             (identical(other.heartRateAvg, heartRateAvg) ||
-                other.heartRateAvg == heartRateAvg));
+                other.heartRateAvg == heartRateAvg) &&
+            (identical(other.caloriesKcal, caloriesKcal) ||
+                other.caloriesKcal == caloriesKcal) &&
+            (identical(other.distanceKm, distanceKm) ||
+                other.distanceKm == distanceKm) &&
+            (identical(other.sourceName, sourceName) ||
+                other.sourceName == sourceName));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -332,7 +400,10 @@ class _$ExerciseLogImpl implements _ExerciseLog {
       type,
       intensity,
       rpe,
-      heartRateAvg);
+      heartRateAvg,
+      caloriesKcal,
+      distanceKm,
+      sourceName);
 
   /// Create a copy of ExerciseLog
   /// with the given fields replaced by the non-null parameter values.
@@ -361,7 +432,10 @@ abstract class _ExerciseLog implements ExerciseLog {
       final ExerciseType? type,
       final ExerciseIntensity? intensity,
       final int? rpe,
-      final int? heartRateAvg}) = _$ExerciseLogImpl;
+      final int? heartRateAvg,
+      final double? caloriesKcal,
+      final double? distanceKm,
+      final String? sourceName}) = _$ExerciseLogImpl;
 
   factory _ExerciseLog.fromJson(Map<String, dynamic> json) =
       _$ExerciseLogImpl.fromJson;
@@ -400,7 +474,20 @@ abstract class _ExerciseLog implements ExerciseLog {
   /// Frecuencia cardíaca promedio durante la sesión, en bpm.
   /// `null` si no se midió. Debe ser >= 30 si presente.
   @override
-  int? get heartRateAvg;
+  int?
+      get heartRateAvg; // ── SPEC-296: datos de la actividad importada (Apple Health / HC) ──
+  /// Energía activa quemada (kcal), si el proveedor la reporta.
+  @override
+  double? get caloriesKcal;
+
+  /// Distancia recorrida (km), para actividades de desplazamiento.
+  @override
+  double? get distanceKm;
+
+  /// Paquete que originó la sesión (ej. 'com.apple.health'). Sirve para el
+  /// badge "Importado desde Apple Health". `null` en logs manuales.
+  @override
+  String? get sourceName;
 
   /// Create a copy of ExerciseLog
   /// with the given fields replaced by the non-null parameter values.
