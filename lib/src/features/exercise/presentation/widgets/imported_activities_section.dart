@@ -49,19 +49,35 @@ class _ActivityCard extends StatelessWidget {
   final ExerciseLog log;
   const _ActivityCard({required this.log});
 
-  static String _timeLabel(DateTime t) {
-    final h = t.hour.toString().padLeft(2, '0');
-    final m = t.minute.toString().padLeft(2, '0');
-    return 'Hoy, $h:$m h';
-  }
-
   bool get _fromApple => (log.sourceName ?? '').toLowerCase().contains('apple');
+
+  /// "Hoy, 11:17 · 30 min" — hora de inicio + duración en una sola línea.
+  String get _metaLine {
+    final h = log.timestamp.hour.toString().padLeft(2, '0');
+    final m = log.timestamp.minute.toString().padLeft(2, '0');
+    return 'Hoy, $h:$m · ${log.durationMinutes} min';
+  }
 
   @override
   Widget build(BuildContext context) {
+    // Chips de datos duros: solo se pintan si el dato existe (evita la card
+    // vacía de una entrada manual sin calorías/distancia).
+    final metrics = <Widget>[
+      if (_fromApple)
+        _MetricChip(
+          icon: Icons.favorite,
+          iconColor: AppColors.statusBad,
+          label: 'Apple Health',
+        ),
+      if (log.caloriesKcal != null)
+        _MetricChip(label: '🔥 ${log.caloriesKcal!.round()} kcal'),
+      if (log.distanceKm != null)
+        _MetricChip(label: '📍 ${log.distanceKm!.toStringAsFixed(2)} km'),
+    ];
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppColors.bgSurface,
         borderRadius: BorderRadius.circular(14),
@@ -73,15 +89,15 @@ class _ActivityCard extends StatelessWidget {
           Row(
             children: [
               Container(
-                width: 46,
-                height: 46,
+                width: 42,
+                height: 42,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: _accent.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(11),
                 ),
                 child: Text(ExerciseBenefit.emojiFor(log.type),
-                    style: const TextStyle(fontSize: 22)),
+                    style: const TextStyle(fontSize: 20)),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -91,106 +107,74 @@ class _ActivityCard extends StatelessWidget {
                     Text(log.activityType,
                         style: const TextStyle(
                             color: AppColors.textPrimary,
-                            fontSize: 16,
+                            fontSize: 15,
                             fontWeight: FontWeight.w800)),
-                    const Text('Hoy',
-                        style: TextStyle(
-                            color: AppColors.textSecondary, fontSize: 13)),
+                    const SizedBox(height: 2),
+                    Text(_metaLine,
+                        style: const TextStyle(
+                            color: AppColors.textSecondary, fontSize: 12.5)),
                   ],
                 ),
               ),
             ],
           ),
-          if (_fromApple) ...[
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                const Icon(Icons.favorite,
-                    size: 14, color: AppColors.statusBad),
-                const SizedBox(width: 6),
-                Text('Importado desde Apple Health',
-                    style: TextStyle(
-                        color: AppColors.textSecondary.withValues(alpha: 0.9),
-                        fontSize: 12.5)),
-              ],
-            ),
+          if (metrics.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Wrap(spacing: 8, runSpacing: 8, children: metrics),
           ],
           const SizedBox(height: 12),
-          Divider(
-              height: 1, color: AppColors.borderDefault.withValues(alpha: 0.6)),
+          // Beneficio: una línea educativa + el sello de que cuenta al pilar.
+          Text(ExerciseBenefit.forType(log.type),
+              style: const TextStyle(
+                  color: AppColors.textSecondary, fontSize: 12.5, height: 1.4)),
           const SizedBox(height: 8),
-          if (log.caloriesKcal != null)
-            _row(
-              'Calorías de actividad',
-              '🔥 ${log.caloriesKcal!.round()} kcal',
-              highlight: true,
-            ),
-          _row('Inicio', _timeLabel(log.timestamp)),
-          _row('Duración', '${log.durationMinutes} minutos'),
-          if (log.distanceKm != null)
-            _row('Distancia', '${log.distanceKm!.toStringAsFixed(2)} km'),
-          const SizedBox(height: 10),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(11),
-            decoration: BoxDecoration(
-              color: _accent.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(ExerciseBenefit.forType(log.type),
-                    style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 12.5,
-                        height: 1.4)),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    const Icon(Icons.check_circle, size: 14, color: _accent),
-                    const SizedBox(width: 6),
-                    const Text('Cuenta para tu pilar de Ejercicio de hoy',
-                        style: TextStyle(
-                            color: _accent,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700)),
-                  ],
-                ),
-              ],
-            ),
+          Row(
+            children: [
+              const Icon(Icons.check_circle, size: 15, color: _accent),
+              const SizedBox(width: 6),
+              const Text('Cuenta para tu pilar de Ejercicio de hoy',
+                  style: TextStyle(
+                      color: _accent,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700)),
+            ],
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _row(String label, String value, {bool highlight = false}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 7),
+/// Chip compacto para un dato duro (fuente, calorías, distancia).
+class _MetricChip extends StatelessWidget {
+  const _MetricChip({required this.label, this.icon, this.iconColor});
+
+  final String label;
+  final IconData? icon;
+  final Color? iconColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
+      decoration: BoxDecoration(
+        color: AppColors.bgElevated,
+        borderRadius: BorderRadius.circular(9),
+        border:
+            Border.all(color: AppColors.borderDefault.withValues(alpha: 0.6)),
+      ),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Expanded(
-            child: Text(label,
-                style: const TextStyle(
-                    color: AppColors.textPrimary, fontSize: 14)),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: highlight
-                  ? AppColors.statusBad.withValues(alpha: 0.10)
-                  : AppColors.bgElevated,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Text(value,
-                style: TextStyle(
-                    color: highlight
-                        ? AppColors.statusBad
-                        : AppColors.textSecondary,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600)),
-          ),
+          if (icon != null) ...[
+            Icon(icon, size: 13, color: iconColor ?? AppColors.textSecondary),
+            const SizedBox(width: 5),
+          ],
+          Text(label,
+              style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600)),
         ],
       ),
     );

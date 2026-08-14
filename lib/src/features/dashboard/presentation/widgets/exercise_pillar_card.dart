@@ -88,8 +88,10 @@ class ExercisePillarCard extends ConsumerWidget {
             ),
           ],
         ),
-        // Última sesión: tipo + duración
-        if (lastSession != null) ...[
+        // Última sesión: solo como resumen cuando NO hubo actividad hoy.
+        // Si la hubo, el feed "Actividades" de abajo ya la muestra en detalle
+        // (evita la redundancia "Última: X" + tarjeta con lo mismo).
+        if (!hasActivityToday && lastSession != null) ...[
           const SizedBox(height: 6),
           _LastSessionRow(session: lastSession, accent: accent),
         ],
