@@ -99,6 +99,14 @@ class ExercisePillarCard extends ConsumerWidget {
         PillarCardUi.progressBar(progress, accent),
         const SizedBox(height: 6),
         PillarCardUi.completionLabel(pct),
+        // SPEC-296: feed de actividades de HOY con datos reales (calorías,
+        // distancia, beneficio por tipo). Va aquí, junto al progreso, para que
+        // los botones queden siempre al final de la card. Se autooculta si no
+        // hubo actividad hoy.
+        if (hasActivityToday) ...[
+          const SizedBox(height: 16),
+          const ImportedActivitiesSection(),
+        ],
         const SizedBox(height: 16),
         PillarCardUi.benefitChip(
           accent: accent,
@@ -128,12 +136,6 @@ class ExercisePillarCard extends ConsumerWidget {
               ? null
               : () => ref.read(exerciseProvider.notifier).removeLastSession(),
         ),
-        // SPEC-296: feed de actividades de HOY con datos reales (calorías,
-        // distancia, beneficio por tipo). Se autooculta si no hay actividad.
-        if (hasActivityToday) ...[
-          const SizedBox(height: 18),
-          const ImportedActivitiesSection(),
-        ],
       ],
     );
   }
