@@ -10,6 +10,10 @@ import 'package:elena_app/src/features/exercise/application/exercise_notifier.da
 import 'package:elena_app/src/features/exercise/application/exercise_state.dart';
 import 'package:elena_app/src/features/exercise/domain/exercise_log.dart';
 import 'package:elena_app/src/features/exercise/presentation/exercise_input_sheet.dart';
+// SPEC-296 (Dashboard): feed de "Actividades" de hoy con datos reales de
+// Apple Health (calorías, distancia, beneficio por tipo). Aditivo — se
+// autooculta si no hubo actividad hoy.
+import 'package:elena_app/src/features/exercise/presentation/widgets/imported_activities_section.dart';
 // Propuesta módulo Ejercicio (2026-07-21): banner "hoy toca X" cuando
 // el usuario tiene un WeeklyExercisePlan generado. Aditivo — si no hay
 // plan, `_PlanOfTheDayBanner` no pinta nada y la card se ve exactamente
@@ -38,6 +42,13 @@ class ExercisePillarCard extends ConsumerWidget {
     final pct = (progress * 100).round();
     final achieved = minutes >= goal;
     final lastSession = state.history.isNotEmpty ? state.history.first : null;
+    // SPEC-296: ¿hubo actividad HOY? Define si pintamos el feed de
+    // "Actividades" (y su separación) al final de la card.
+    final now = DateTime.now();
+    final hasActivityToday = state.history.any((l) =>
+        l.timestamp.year == now.year &&
+        l.timestamp.month == now.month &&
+        l.timestamp.day == now.day);
     // Propuesta módulo Ejercicio (2026-07-21): plan del día, si existe.
     final plan = ref.watch(weeklyExercisePlanProvider);
 
@@ -115,6 +126,12 @@ class ExercisePillarCard extends ConsumerWidget {
               ? null
               : () => ref.read(exerciseProvider.notifier).removeLastSession(),
         ),
+        // SPEC-296: feed de actividades de HOY con datos reales (calorías,
+        // distancia, beneficio por tipo). Se autooculta si no hay actividad.
+        if (hasActivityToday) ...[
+          const SizedBox(height: 18),
+          const ImportedActivitiesSection(),
+        ],
       ],
     );
   }

@@ -1,6 +1,6 @@
 # SPEC-296 — Pilar Ejercicio: datos reales de la actividad + fix duplicación
 
-**Estado:** 296.1 IMPLEMENTED (fix dup + test). 296.2/.3 PENDIENTES (requieren decisión + build_runner).
+**Estado:** 296.1/.2/.3/.4 IMPLEMENTED. Falta verificación en simulador (Carlos).
 **Fecha:** 2026-08-14
 **Rama:** `feat/pilar-alimentacion-minuta`
 
@@ -24,8 +24,11 @@ Mostrar en el pilar la info de la actividad (como las imágenes: tipo, fuente, c
 - `health_sync_service._toSample`: leer `v.totalEnergyBurned` / `v.totalDistance` del `WorkoutHealthValue`.
 - `ExerciseLog` (Freezed → `dart run build_runner build`): nuevos `caloriesKcal`, `distanceKm`, `sourceName`. Capturar en `_importWorkouts`.
 
-### 296.3 — UI "Actividades" + beneficios (pendiente, necesita decisión)
-Lista de tarjetas por sesión: ícono por tipo, badge "Importado desde Apple Health", Calorías, Inicio, Duración, Distancia; y un bloque de **beneficios** por tipo de actividad.
+### 296.3 — UI "Actividades" + beneficios (IMPLEMENTED)
+Lista de tarjetas por sesión: ícono por tipo, badge "Importado desde Apple Health", Calorías, Inicio, Duración, Distancia; y un bloque de **beneficios** por tipo de actividad. Widget compartido `ImportedActivitiesSection` (`exercise/presentation/widgets/`), lee `exerciseProvider.history`, filtra a HOY, se autooculta si no hay actividad.
+
+### 296.4 — Ubicación en el Dashboard (IMPLEMENTED)
+Decisión de Carlos (2026-08-14): las tarjetas van en la **card del pilar Ejercicio del Dashboard** (`exercise_pillar_card.dart`), al final, después de los botones. Se pinta solo si `hasActivityToday` (evita separación colgante). También sigue disponible en Perfil → Hábitos de ejercicio.
 
 ## 4. Verificación 296.1 (Carlos)
 
