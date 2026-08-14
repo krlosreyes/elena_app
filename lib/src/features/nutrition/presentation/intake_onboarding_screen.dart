@@ -18,6 +18,7 @@ import 'package:elena_app/src/features/nutrition/application/intake_draft.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_intake_notifier.dart';
 import 'package:elena_app/src/features/nutrition/domain/food_catalog.dart';
 import 'package:elena_app/src/features/nutrition/domain/food_emoji.dart';
+import 'package:elena_app/src/features/nutrition/domain/food_quality.dart';
 import 'package:elena_app/src/features/nutrition/domain/nutrition_intake.dart';
 
 const Color _amber = AppColors.pillarNutricion;
@@ -454,6 +455,7 @@ class _StepFoodGroupState extends State<_StepFoodGroup> {
                           _SelectChip(
                             label: f.name,
                             emoji: foodEmoji(f),
+                            warn: FoodQuality.isPoor(f),
                             selected: widget.draft.has(f.id),
                             onTap: () {
                               widget.draft.toggle(f.id);
@@ -496,6 +498,7 @@ class _StepSnacks extends StatelessWidget {
               _SelectChip(
                 label: f.name,
                 emoji: foodEmoji(f),
+                warn: FoodQuality.isPoor(f),
                 selected: draft.hasSnack(f.id),
                 onTap: () {
                   draft.toggleSnack(f.id);
@@ -554,10 +557,15 @@ class _SelectChip extends StatelessWidget {
   final String label;
   final String emoji;
   final bool selected;
+
+  /// SPEC-292: marca visual de "alimento poco ideal" (ultraprocesado / alto
+  /// impacto). No bloquea — el usuario decide; en la minuta le damos opciones.
+  final bool warn;
   final VoidCallback onTap;
   const _SelectChip({
     required this.label,
     this.emoji = '',
+    this.warn = false,
     required this.selected,
     required this.onTap,
   });
@@ -597,6 +605,11 @@ class _SelectChip extends StatelessWidget {
                 fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
               ),
             ),
+            if (warn) ...[
+              const SizedBox(width: 5),
+              const Icon(Icons.warning_amber_rounded,
+                  size: 13, color: AppColors.statusWarn),
+            ],
           ],
         ),
       ),

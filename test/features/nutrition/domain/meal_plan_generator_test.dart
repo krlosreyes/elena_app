@@ -46,12 +46,15 @@ void main() {
   MealPlanEntry only(MealPlan p) => p.meals.single;
 
   test('cada comida ES una receta: recipeId no nulo', () {
+    // SPEC-291: la materia prima principal debe estar en el repertorio, así
+    // que damos proteínas que sirven en todos los slots (huevo, pollo).
     for (final slot in [
       MealSlot.breakfast,
       MealSlot.lunch,
       MealSlot.dinner,
     ]) {
-      final e = only(gen1(intakeWith(['huevo', 'aguacate'], slot: slot)));
+      final e =
+          only(gen1(intakeWith(['huevo', 'pollo', 'aguacate'], slot: slot)));
       expect(e.recipeId, isNotNull,
           reason: 'la comida $slot debería tener receta');
       expect(RecipeCatalog.byId(e.recipeId!), isNotNull,
@@ -102,7 +105,10 @@ void main() {
 
   test('variedad: a lo largo de la semana la receta no es siempre la misma',
       () {
-    final i = intakeWith(['huevo', 'aguacate', 'espinaca', 'tomate']);
+    // SPEC-291: con dos proteínas del repertorio hay ≥2 recetas elegibles,
+    // así que la rotación diaria produce variedad.
+    final i = intakeWith(
+        ['pollo', 'salmon', 'arroz', 'brocoli', 'aguacate', 'huevo']);
     final ids = <String?>{};
     for (var d = 10; d <= 20; d++) {
       final dateId = '2026-08-${d.toString().padLeft(2, '0')}';

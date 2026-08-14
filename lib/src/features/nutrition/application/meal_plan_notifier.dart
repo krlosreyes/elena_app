@@ -280,6 +280,22 @@ class MealPlanNotifier extends StateNotifier<MealPlanState> {
     }));
   }
 
+  /// SPEC-292: quita un alimento de una comida (Delete del CRUD). Offline-first.
+  Future<void> removeFood(MealSlot slot, String foodId) async {
+    final current = state.plan;
+    final user = _user;
+    if (current == null || user == null) return;
+
+    final updated = current.removeItem(slot, foodId);
+    if (identical(updated, current)) return;
+    if (mounted) state = state.copyWith(plan: updated);
+
+    final repo = _ref.read(mealPlanRepositoryProvider);
+    unawaited(repo.savePlan(user.id, updated).catchError((Object e) {
+      AppLogger.warning('meal_plan: removeFood save falló: $e');
+    }));
+  }
+
   /// Alimentos centrales de la receta (los que existen en el catálogo) como
   /// `PlanItem` editables. Los ingredientes de texto libre viven en la receta.
   List<PlanItem> _itemsFromRecipe(Recipe recipe) {

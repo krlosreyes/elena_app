@@ -14,6 +14,7 @@ import 'package:elena_app/src/features/fasting/application/fasting_notifier.dart
 import 'package:elena_app/src/features/nutrition/application/meal_plan_notifier.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_intake_notifier.dart';
 import 'package:elena_app/src/features/nutrition/domain/food_catalog.dart';
+import 'package:elena_app/src/features/nutrition/domain/food_quality.dart';
 import 'package:elena_app/src/features/nutrition/domain/intake_resurvey_policy.dart';
 import 'package:elena_app/src/features/nutrition/domain/meal_plan.dart';
 import 'package:elena_app/src/features/nutrition/domain/nutrition_intake.dart';
@@ -717,8 +718,8 @@ void _showChangeDish(
   NutritionIntake? intake,
 ) {
   if (intake == null) return;
-  final matches =
-      const RecipeMatchService().match(intake: intake, slot: slot, limit: 10);
+  final matches = const RecipeMatchService()
+      .match(intake: intake, slot: slot, limit: 10, requirePrincipal: true);
   String? current;
   final plan0 = ref.read(mealPlanNotifierProvider).plan;
   if (plan0 != null) {
@@ -940,7 +941,11 @@ class _PlanItemRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final food = FoodCatalog.byId(item.foodId);
     final name = food?.name ?? item.foodId;
-    final tip = _foodTip(food);
+    // SPEC-292: si el alimento es poco ideal, avisamos (en vez del tip normal)
+    // y el ícono de cambio se pone en tono de alerta.
+    final poor = food != null && FoodQuality.isPoor(food);
+    final warn = poor ? FoodQuality.shortReason(food) : null;
+    final tip = poor ? null : _foodTip(food);
     final row = Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
@@ -974,7 +979,28 @@ class _PlanItemRow extends StatelessWidget {
                     ],
                   ],
                 ),
-                if (tip != null)
+                if (warn != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.warning_amber_rounded,
+                            size: 12, color: AppColors.statusWarn),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            '$warn · toca para cambiarlo',
+                            style: const TextStyle(
+                              color: AppColors.statusWarn,
+                              fontSize: 11,
+                              height: 1.2,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else if (tip != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 2),
                     child: Text(
@@ -997,7 +1023,8 @@ class _PlanItemRow extends StatelessWidget {
           ),
           if (onTap != null) ...[
             const SizedBox(width: 8),
-            const Icon(Icons.swap_horiz, size: 18, color: _amber),
+            Icon(Icons.swap_horiz,
+                size: 18, color: poor ? AppColors.statusWarn : _amber),
           ],
         ],
       ),
@@ -1092,6 +1119,9 @@ void _showAlternatives(
               ),
             );
       },
+      onRemove: () => ref
+          .read(mealPlanNotifierProvider.notifier)
+          .removeFood(slot, item.foodId),
     ),
   );
 }
@@ -1101,16 +1131,22 @@ class _AlternativesSheet extends StatelessWidget {
   final List<Food> options;
   final Set<String> userIds;
   final ValueChanged<Food> onPick;
+  final VoidCallback onRemove;
   const _AlternativesSheet({
     required this.current,
     required this.options,
     required this.userIds,
     required this.onPick,
+    required this.onRemove,
   });
 
   @override
   Widget build(BuildContext context) {
     final currentFood = FoodCatalog.byId(current.foodId);
+    // SPEC-292: si el alimento actual es poco ideal, explicamos por qué.
+    final why =
+        currentFood == null ? null : FoodQuality.explanation(currentFood);
+    final poor = currentFood != null && FoodQuality.isPoor(currentFood);
     final maxH = MediaQuery.of(context).size.height * 0.72;
     return ConstrainedBox(
       constraints: BoxConstraints(maxHeight: maxH),
@@ -1140,12 +1176,74 @@ class _AlternativesSheet extends StatelessWidget {
               ),
             ),
           ),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(20, 0, 20, 8),
-            child: Text(
-              'Elige otra opción para esta comida. Se guarda en tu minuta.',
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+          if (poor && why != null)
+            Container(
+              margin: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.statusWarn.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                    color: AppColors.statusWarn.withValues(alpha: 0.4)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.warning_amber_rounded,
+                      size: 18, color: AppColors.statusWarn),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      why,
+                      style: const TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 12.5,
+                          height: 1.4),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            const Padding(
+              padding: EdgeInsets.fromLTRB(20, 0, 20, 8),
+              child: Text(
+                'Elige otra opción para esta comida. Se guarda en tu minuta.',
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+              ),
             ),
+          // SPEC-292: quitar el alimento del plato (Delete del CRUD).
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(10),
+              onTap: () {
+                onRemove();
+                Navigator.of(context).pop();
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                child: Row(
+                  children: [
+                    const Icon(Icons.delete_outline,
+                        size: 18, color: AppColors.statusBad),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Quitar ${currentFood?.name ?? 'este alimento'} de la comida',
+                      style: const TextStyle(
+                          color: AppColors.statusBad,
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(20, 4, 20, 4),
+            child: Text('O cámbialo por:',
+                style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
           ),
           Flexible(
             child: ListView(

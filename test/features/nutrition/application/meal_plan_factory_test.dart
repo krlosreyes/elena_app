@@ -5,7 +5,6 @@
 // y el plan sale con la fecha correcta.
 
 import 'package:elena_app/src/features/nutrition/application/meal_plan_factory.dart';
-import 'package:elena_app/src/features/nutrition/domain/food_catalog.dart';
 import 'package:elena_app/src/features/nutrition/domain/meal_plan.dart';
 import 'package:elena_app/src/features/nutrition/domain/nutrition_intake.dart';
 import 'package:elena_app/src/features/nutrition/domain/recipe_catalog.dart';
@@ -14,18 +13,16 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   const factory = MealPlanFactory();
 
-  // Un alimento real cualquiera para poblar el intake.
-  final anyFat = FoodCatalog.byCategory(FoodCategory.fat).first;
-
+  // SPEC-291: para que el motor elija RECETA, la proteína principal debe
+  // estar en el repertorio. Poblamos con proteínas + acompañamiento reales.
   NutritionIntake intake() => NutritionIntake(
         updatedAt: DateTime(2026, 8, 8),
-        meals: [
-          IntakeMeal(
-              slot: MealSlot.breakfast, items: [IntakeItem(foodId: anyFat.id)]),
-          IntakeMeal(
-              slot: MealSlot.lunch, items: [IntakeItem(foodId: anyFat.id)]),
-          IntakeMeal(
-              slot: MealSlot.dinner, items: [IntakeItem(foodId: anyFat.id)]),
+        repertoire: const [
+          IntakeItem(foodId: 'huevo'),
+          IntakeItem(foodId: 'pollo'),
+          IntakeItem(foodId: 'aguacate'),
+          IntakeItem(foodId: 'brocoli'),
+          IntakeItem(foodId: 'arroz'),
         ],
       );
 

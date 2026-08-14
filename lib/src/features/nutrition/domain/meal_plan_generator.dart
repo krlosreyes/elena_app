@@ -88,6 +88,10 @@ class MealPlanGenerator {
         intake: intake,
         slot: meal.slot,
         limit: _kRecipePool,
+        // SPEC-291: solo recetas cuya materia prima principal está en el
+        // repertorio del usuario. Si ninguna califica, cae al plato armado
+        // (que se construye 100% con lo que él escogió).
+        requirePrincipal: true,
       );
       if (matches.isNotEmpty) {
         final recipe = _pickRecipe(matches, dateId, meal.slot);

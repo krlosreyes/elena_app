@@ -30,9 +30,11 @@ void main() {
     }
   });
 
-  test('la minuta generada nunca incluye un alimento con cautela', () {
+  test('la minuta no INTRODUCE cautelas cuando el usuario no las eligió', () {
+    // SPEC-291: si el usuario SÍ eligiera cerdo (cautela), el motor lo respeta
+    // (su elección manda). Aquí probamos repertorios SIN cautelas: no debe
+    // aparecer ninguna por cuenta del motor.
     for (final foods in [
-      ['cerdo'],
       ['pollo', 'aguacate'],
       ['huevo'],
       ['salmon', 'brocoli'],

@@ -5,6 +5,7 @@
 // restricciones (dieta + alimentos vetados). También arma la lista de
 // mercado sumando ingredientes sin duplicar. Dart PURO → testeable.
 
+import 'package:elena_app/src/features/nutrition/domain/food_catalog.dart';
 import 'package:elena_app/src/features/nutrition/domain/nutrition_intake.dart';
 import 'package:elena_app/src/features/nutrition/domain/recipe_catalog.dart';
 
@@ -39,6 +40,7 @@ class RecipeMatchService {
     MealSlot? slot,
     int limit = 5,
     List<Recipe> catalog = RecipeCatalog.all,
+    bool requirePrincipal = false,
   }) {
     final banned = _bannedSet(intake.restrictions.allBanned);
     final diet = intake.restrictions.diet;
@@ -49,6 +51,11 @@ class RecipeMatchService {
       if (slot != null && !r.fitsSlot(slot)) continue;
       if (!r.fitsDiet(diet)) continue;
       if (_usesBanned(r, banned)) continue;
+      // SPEC-291: la materia prima principal (proteína, o el ingrediente
+      // central si no hay proteína) debe estar en el repertorio del usuario.
+      // Así el plato se construye alrededor de lo que ÉL escogió, no de un
+      // alimento que nunca marcó.
+      if (requirePrincipal && !_principalInRepertoire(r, userFoods)) continue;
 
       final ids = r.foodIds;
       final overlap = ids.where(userFoods.contains).length;
@@ -86,6 +93,29 @@ class RecipeMatchService {
   }
 
   // ─── Internos ───────────────────────────────────────────────────────────
+
+  /// SPEC-291: ¿la materia prima principal de la receta está en el repertorio?
+  /// Principal = TODAS sus proteínas deben estar seleccionadas; si la receta
+  /// no tiene proteína, su ingrediente central (el primero de catálogo) debe
+  /// estar. Los acompañamientos (vegetales, grasas, condimentos) pueden variar.
+  bool _principalInRepertoire(Recipe r, Set<String> userFoods) {
+    final proteins = <String>[];
+    for (final ing in r.ingredients) {
+      final id = ing.foodId;
+      if (id == null || id.isEmpty) continue;
+      final f = FoodCatalog.byId(id);
+      if (f != null && f.category == FoodCategory.protein) proteins.add(id);
+    }
+    if (proteins.isNotEmpty) {
+      return proteins.every(userFoods.contains);
+    }
+    // Sin proteína: exige el primer ingrediente de catálogo (el central).
+    for (final ing in r.ingredients) {
+      final id = ing.foodId;
+      if (id != null && id.isNotEmpty) return userFoods.contains(id);
+    }
+    return false;
+  }
 
   Set<String> _userFoods(NutritionIntake intake) {
     final s = <String>{};

@@ -379,6 +379,31 @@ class MealPlan {
     return copyWith(meals: updated);
   }
 
+  /// SPEC-292: quita un alimento de una comida (Delete del CRUD por
+  /// ingrediente). Inmutable; si no existe la comida o el alimento, devuelve
+  /// el mismo plan.
+  MealPlan removeItem(MealSlot slot, String foodId) {
+    var changed = false;
+    final updated = meals.map((m) {
+      if (m.slot != slot) return m;
+      final items =
+          m.items.where((it) => it.foodId != foodId).toList(growable: false);
+      if (items.length == m.items.length) return m;
+      changed = true;
+      return MealPlanEntry(
+        slot: m.slot,
+        targetProteinG: m.targetProteinG,
+        recipeId: m.recipeId,
+        items: items,
+        swappedFrom: m.swappedFrom,
+        rationale: m.rationale,
+        adherence: m.adherence,
+      );
+    }).toList(growable: false);
+    if (!changed) return this;
+    return copyWith(meals: updated);
+  }
+
   /// SPEC-287: agrega un alimento que no estaba en la comida (extra del
   /// usuario). Inmutable; evita duplicar por foodId. Si no existe la comida
   /// o el alimento ya está, devuelve el mismo plan.
