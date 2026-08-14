@@ -29,9 +29,20 @@ class AlimentacionMinutaEntryCard extends ConsumerWidget {
     final intake = state.intake;
     final configured = intake != null && intake.isComplete;
 
+    // SPEC-289: contar alimentos del repertorio (modelo nuevo); si es un
+    // intake viejo, contar los items de sus comidas.
+    final foodCount = intake == null
+        ? 0
+        : (intake.repertoireFoodIds.isNotEmpty
+            ? intake.repertoireFoodIds.length
+            : intake.meals
+                .expand((m) => m.items)
+                .where((i) => i.isMeaningful)
+                .length);
+
     final subtitle = !configured
         ? 'Sin configurar'
-        : '${_dietLabel(intake.restrictions.diet)} · ${intake.meals.length} comidas';
+        : '${_dietLabel(intake.restrictions.diet)} · $foodCount alimentos';
 
     return ProfileRow(
       icon: Icons.tune_rounded,

@@ -7,8 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:elena_app/src/core/theme/app_theme.dart';
-import 'package:elena_app/src/features/dashboard/presentation/widgets/meals_locked_dialog.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/pillar_card_ui.dart';
+import 'package:elena_app/src/features/fasting/application/fasting_notifier.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
 import 'package:elena_app/src/features/nutrition/domain/food_catalog.dart';
 import 'package:elena_app/src/features/nutrition/domain/meal_ratio.dart';
@@ -70,87 +70,100 @@ class ComidasPillarCard extends ConsumerWidget {
     final int minutaDone = mealPlan?.adherentCount ?? 0;
     final int minutaTotal = mealPlan?.meals.length ?? state.targetMeals;
 
-    final card = PillarCardUi.shell(
+    // SPEC-290: en ayuno YA NO se bloquea el pilar. El usuario puede ver y
+    // ALISTAR lo que comerá al abrir su ventana; solo se gatea el "marcar/
+    // comer" (en la Minuta). Mostramos cuánto falta para la ventana.
+    final windowIn = isFastingActive
+        ? ref.watch(fastingProvider).timeUntilWindowOpens
+        : null;
+
+    return PillarCardUi.shell(
       // Título vacío: la card se identifica por el badge de comidas.
       title: '',
       badge: '$minutaDone/$minutaTotal de tu minuta',
       accent: accent,
       children: [
         if (isFastingActive) ...[
-          _mealsLockedBanner(),
+          _PrepDuringFastBanner(
+            remaining: windowIn,
+            onGoToFasting: onGoToFasting,
+          ),
           const SizedBox(height: 14),
         ],
-        Opacity(
-          opacity: isFastingActive ? 0.45 : 1.0,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              PillarCardUi.progressBar(progress, accent),
-              const SizedBox(height: 6),
-              PillarCardUi.completionLabel(pct),
-              const SizedBox(height: 14),
-              // SPEC-286: "Tu próxima comida" — el plato que sigue en la
-              // minuta, con ingredientes + preparación desplegables. Reemplaza
-              // los mini-stats de conteo (Próxima/En/Cociente A) y el botón
-              // genérico "Ver mi minuta de hoy".
-              _NextMealCard(
-                plan: mealPlan,
-                accent: accent,
-                onOpenMinuta: isFastingActive
-                    ? null
-                    : () => context.push('/nutrition/minuta'),
-              ),
-              // ── Racha de Calidad ─────────────────────────────────────
-              if (qualityStreak > 0) ...[
-                const SizedBox(height: 12),
-                _QualityStreakChip(days: qualityStreak),
-              ],
-              // ── Composición del último plato ────────────────────────
-              if (lastLog != null) ...[
-                const SizedBox(height: 14),
-                _LastPlateCard(log: lastLog, accent: accent),
-              ],
-              const SizedBox(height: 16),
-              PillarCardUi.secondaryButton(
-                label: 'Ver mi minuta completa',
-                icon: Icons.checklist_rounded,
-                onPressed: isFastingActive
-                    ? null
-                    : () => context.push('/nutrition/minuta'),
-              ),
-              // ── Ver historial completo (SPEC-240) ────────────────────
-              if (state.todayLogs.isNotEmpty) ...[
-                const SizedBox(height: 10),
-                PillarCardUi.secondaryButton(
-                  label: 'Ver historial (${state.mealsLoggedToday})',
-                  icon: Icons.history_rounded,
-                  onPressed: isFastingActive
-                      ? null
-                      : () => MealHistorySheet.show(context),
-                ),
-              ],
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            PillarCardUi.progressBar(progress, accent),
+            const SizedBox(height: 6),
+            PillarCardUi.completionLabel(pct),
+            const SizedBox(height: 14),
+            // SPEC-286/290: "Tu próxima comida" — o, en ayuno, "Al abrir tu
+            // ventana": el plato que sigue, con ingredientes + preparación,
+            // siempre visible y editable para poder alistarlo.
+            _NextMealCard(
+              plan: mealPlan,
+              accent: accent,
+              fastingWindowIn: windowIn,
+              onOpenMinuta: () => context.push('/nutrition/minuta'),
+            ),
+            if (qualityStreak > 0) ...[
+              const SizedBox(height: 12),
+              _QualityStreakChip(days: qualityStreak),
             ],
-          ),
+            if (lastLog != null) ...[
+              const SizedBox(height: 14),
+              _LastPlateCard(log: lastLog, accent: accent),
+            ],
+            const SizedBox(height: 16),
+            PillarCardUi.secondaryButton(
+              label: 'Ver mi minuta completa',
+              icon: Icons.checklist_rounded,
+              onPressed: () => context.push('/nutrition/minuta'),
+            ),
+            if (state.todayLogs.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              PillarCardUi.secondaryButton(
+                label: 'Ver historial (${state.mealsLoggedToday})',
+                icon: Icons.history_rounded,
+                onPressed: () => MealHistorySheet.show(context),
+              ),
+            ],
+          ],
         ),
       ],
     );
-
-    if (!isFastingActive) return card;
-
-    // Con ayuno activo: el tap (los botones están disabled y no consumen
-    // el evento) abre el diálogo educativo; si confirma, sube al padre.
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () async {
-        final goToFasting = await MealsLockedDuringFastingDialog.show(context);
-        if (goToFasting == true) onGoToFasting();
-      },
-      child: card,
-    );
   }
 
-  /// SPEC-105: banner siempre opaco encima de la card cuando hay ayuno activo.
-  Widget _mealsLockedBanner() {
+  /// Formatea una duración corta ("2h 15m", "45 min", "ya casi").
+  static String fmtDur(Duration? d) {
+    if (d == null) return '';
+    if (d.inMinutes <= 1) return 'ya casi';
+    if (d.inHours >= 1) {
+      return '${d.inHours}h ${d.inMinutes.remainder(60)}m';
+    }
+    return '${d.inMinutes} min';
+  }
+}
+
+/// SPEC-290: banner durante el ayuno. NO bloquea — invita a alistar la comida
+/// de después y muestra cuánto falta para que abra la ventana. Ofrece saltar
+/// a la tarjeta de Ayuno.
+class _PrepDuringFastBanner extends StatelessWidget {
+  const _PrepDuringFastBanner({
+    required this.remaining,
+    required this.onGoToFasting,
+  });
+
+  final Duration? remaining;
+  final VoidCallback onGoToFasting;
+
+  @override
+  Widget build(BuildContext context) {
+    final left = ComidasPillarCard.fmtDur(remaining);
+    final msg = (remaining == null || remaining == Duration.zero)
+        ? 'En ayuno. Tu ventana está por abrir — deja lista tu próxima comida.'
+        : 'En ayuno. Tu ventana abre en $left. Aprovecha para alistar lo que '
+            'comerás.';
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -163,21 +176,29 @@ class ComidasPillarCard extends ConsumerWidget {
       ),
       child: Row(
         children: [
-          const Icon(
-            Icons.lock_clock_rounded,
-            color: AppColors.metabolicGreen,
-            size: 18,
-          ),
+          const Icon(Icons.restaurant_menu_rounded,
+              color: AppColors.metabolicGreen, size: 18),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'Pausado durante ayuno activo — termina tu ayuno '
-              'para registrar comidas.',
+              msg,
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.85),
+                color: Colors.white.withValues(alpha: 0.9),
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
                 height: 1.4,
+              ),
+            ),
+          ),
+          const SizedBox(width: 6),
+          GestureDetector(
+            onTap: onGoToFasting,
+            child: const Text(
+              'Ver ayuno',
+              style: TextStyle(
+                color: AppColors.metabolicGreen,
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
               ),
             ),
           ),
@@ -196,11 +217,16 @@ class _NextMealCard extends StatelessWidget {
     required this.plan,
     required this.accent,
     required this.onOpenMinuta,
+    this.fastingWindowIn,
   });
 
   final MealPlan? plan;
   final Color accent;
   final VoidCallback? onOpenMinuta;
+
+  /// SPEC-290: si hay ayuno activo, cuánto falta para que abra la ventana.
+  /// Reencuadra la tarjeta como "al abrir tu ventana" (alistar, no comer aún).
+  final Duration? fastingWindowIn;
 
   static String _slotLabel(MealSlot s) => switch (s) {
         MealSlot.breakfast => 'Desayuno',
@@ -259,7 +285,10 @@ class _NextMealCard extends StatelessWidget {
         entry.recipeId == null ? null : RecipeCatalog.byId(entry.recipeId!);
     final dishName =
         recipe?.name ?? 'Tu plato de ${_slotLabel(entry.slot).toLowerCase()}';
+    final fasting = fastingWindowIn != null;
+    final windowLeft = ComidasPillarCard.fmtDur(fastingWindowIn);
     final meta = <String>[
+      if (fasting && windowLeft.isNotEmpty) 'en $windowLeft',
       _slotLabel(entry.slot),
       if (recipe != null) '${recipe.prepMinutes} min',
       if (entry.targetProteinG > 0)
@@ -274,7 +303,7 @@ class _NextMealCard extends StatelessWidget {
 
     return _shell(
       context,
-      title: 'TU PRÓXIMA COMIDA',
+      title: fasting ? 'AL ABRIR TU VENTANA' : 'TU PRÓXIMA COMIDA',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -331,7 +360,7 @@ class _NextMealCard extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           PillarCardUi.primaryButton(
-            label: 'Ver plato y ajustar',
+            label: fasting ? 'Alistar mi comida' : 'Ver plato y ajustar',
             icon: Icons.restaurant_menu_rounded,
             color: accent,
             onPressed: onOpenMinuta,

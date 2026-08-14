@@ -65,10 +65,10 @@ class MealPlanGenerator {
   }) {
     final banned = _bannedSet(intake.restrictions.allBanned);
 
-    // Comidas con contenido (una comida vacía no aporta base). Orden
-    // estable: el del intake.
-    final sourceMeals =
-        intake.meals.where((m) => m.items.any((i) => i.isMeaningful)).toList();
+    // Comidas fuente. SPEC-289: si el usuario usó el modelo nuevo (repertorio
+    // plano, sin asignar a comidas), generamos desayuno/almuerzo/cena desde
+    // ese repertorio; si es un intake viejo con `meals`, se respeta.
+    final sourceMeals = _sourceMeals(intake);
 
     final weights = _proteinWeights(sourceMeals.map((m) => m.slot).toList());
     final weightSum = weights.fold<double>(0, (a, b) => a + b);
@@ -108,6 +108,24 @@ class MealPlanGenerator {
       status: PlanStatus.proposed,
       generatedAt: now,
     );
+  }
+
+  /// SPEC-289: de dónde salen las comidas a generar.
+  /// - Intake viejo (con `meals`): se respetan sus comidas con contenido.
+  /// - Intake nuevo (repertorio plano): desayuno/almuerzo/cena, cada uno con
+  ///   el repertorio completo (el matcher elige la receta; el fallback usa el
+  ///   repertorio como base del plato).
+  List<IntakeMeal> _sourceMeals(NutritionIntake intake) {
+    final legacy =
+        intake.meals.where((m) => m.items.any((i) => i.isMeaningful)).toList();
+    if (legacy.isNotEmpty) return legacy;
+
+    final rep =
+        intake.repertoire.where((i) => i.isMeaningful).toList(growable: false);
+    if (rep.isEmpty) return const [];
+    return const [MealSlot.breakfast, MealSlot.lunch, MealSlot.dinner]
+        .map((s) => IntakeMeal(slot: s, items: rep))
+        .toList();
   }
 
   // ─── Comida = receta (SPEC-284) ─────────────────────────────────────────────

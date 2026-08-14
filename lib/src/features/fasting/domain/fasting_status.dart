@@ -236,6 +236,20 @@ class FastingState {
     return int.tryParse(cleanProtocol) ?? 16;
   }
 
+  /// SPEC-290: cuándo abre la ventana de alimentación = fin del ayuno activo
+  /// (inicio + horas objetivo). Null si no hay ayuno activo o sin startTime.
+  DateTime? get eatingWindowOpensAt => (isActive && startTime != null)
+      ? startTime!.add(Duration(hours: targetHours))
+      : null;
+
+  /// SPEC-290: tiempo restante hasta que abra la ventana (0 si ya alcanzó el
+  /// objetivo). Null si no hay ayuno activo.
+  Duration? get timeUntilWindowOpens {
+    if (!isActive) return null;
+    final remaining = Duration(hours: targetHours) - duration;
+    return remaining.isNegative ? Duration.zero : remaining;
+  }
+
   double get progressPercentage {
     // Blindaje (2026-06-11): un ayuno ACTIVO siempre refleja su progreso EN
     // VIVO. `completedToday`/`closedProgressToday` pertenecen al ayuno ANTERIOR

@@ -260,6 +260,27 @@ enum VegGroup {
       };
 }
 
+/// SPEC-289: grupo con el que el usuario ve y selecciona los alimentos en el
+/// onboarding (checklists por macronutriente + una categoría para las comidas
+/// compuestas del día a día). Independiente de [FoodCategory] (que sigue
+/// sirviendo al motor para el macro dominante).
+enum UserFoodGroup {
+  protein,
+  carb,
+  fat,
+
+  /// Comidas y antojos: platos compuestos / comida rápida (perro caliente,
+  /// sándwich, empanada, pizza, hamburguesa…). No son un solo macro.
+  combo;
+
+  String get label => switch (this) {
+        UserFoodGroup.protein => 'Proteínas',
+        UserFoodGroup.carb => 'Carbohidratos',
+        UserFoodGroup.fat => 'Grasas',
+        UserFoodGroup.combo => 'Comidas y antojos',
+      };
+}
+
 /// Un alimento del catálogo.
 class Food {
   /// Slug estable para persistencia. NUNCA cambia.
@@ -1985,12 +2006,175 @@ class FoodCatalog {
     ),
   ];
 
-  /// Lista completa unificada (orden: proteínas, grasas, carbos).
+  // ── COMIDAS Y ANTOJOS (SPEC-289) ──────────────────────────────────────
+  // Everyday del día a día que faltaban en el catálogo. La categoría es el
+  // macro dominante (para el motor); el usuario los ve en "Comidas y antojos".
+  static const List<Food> combos = [
+    Food(
+      id: 'perro_caliente',
+      name: 'Perro caliente',
+      category: FoodCategory.carb,
+      qualityScore: 8,
+      nova: NovaGroup.ultraProcessed,
+      servingUnit: ServingUnit.unit,
+      portionLabel: '1 perro caliente',
+      searchAliases: ['hot dog', 'perro'],
+    ),
+    Food(
+      id: 'taco',
+      name: 'Tacos',
+      category: FoodCategory.carb,
+      qualityScore: 25,
+      nova: NovaGroup.processed,
+      servingUnit: ServingUnit.unit,
+      portionLabel: '2 tacos',
+      searchAliases: ['taco'],
+    ),
+    Food(
+      id: 'tamal',
+      name: 'Tamal',
+      category: FoodCategory.carb,
+      qualityScore: 22,
+      nova: NovaGroup.processed,
+      servingUnit: ServingUnit.unit,
+      portionLabel: '1 tamal',
+    ),
+    Food(
+      id: 'wrap',
+      name: 'Wrap',
+      category: FoodCategory.carb,
+      qualityScore: 28,
+      nova: NovaGroup.processed,
+      servingUnit: ServingUnit.unit,
+      portionLabel: '1 wrap',
+      searchAliases: ['durum', 'shawarma'],
+    ),
+    Food(
+      id: 'nuggets',
+      name: 'Nuggets de pollo',
+      category: FoodCategory.protein,
+      qualityScore: 12,
+      nova: NovaGroup.ultraProcessed,
+      servingUnit: ServingUnit.unit,
+      portionLabel: '6 nuggets',
+      searchAliases: ['nuggets'],
+    ),
+    Food(
+      id: 'pollo_frito',
+      name: 'Pollo frito',
+      category: FoodCategory.protein,
+      qualityScore: 15,
+      nova: NovaGroup.ultraProcessed,
+      servingUnit: ServingUnit.portion100g,
+      portionLabel: '1 presa (~120 g)',
+      searchAliases: ['pollo apanado', 'pollo broaster'],
+    ),
+    Food(
+      id: 'papas_fritas',
+      name: 'Papas fritas',
+      category: FoodCategory.carb,
+      qualityScore: 6,
+      nova: NovaGroup.ultraProcessed,
+      servingUnit: ServingUnit.portion100g,
+      portionLabel: '1 porción (~100 g)',
+      searchAliases: ['papas a la francesa', 'french fries', 'papitas'],
+    ),
+    Food(
+      id: 'mortadela',
+      name: 'Mortadela',
+      category: FoodCategory.fat,
+      qualityScore: 8,
+      nova: NovaGroup.ultraProcessed,
+      servingUnit: ServingUnit.slice,
+      portionLabel: '2 lonchas',
+    ),
+    Food(
+      id: 'salchichon',
+      name: 'Salchichón',
+      category: FoodCategory.fat,
+      qualityScore: 8,
+      nova: NovaGroup.ultraProcessed,
+      servingUnit: ServingUnit.slice,
+      portionLabel: '2 lonchas',
+    ),
+    Food(
+      id: 'helado',
+      name: 'Helado',
+      category: FoodCategory.carb,
+      qualityScore: 10,
+      nova: NovaGroup.ultraProcessed,
+      servingUnit: ServingUnit.cup,
+      portionLabel: '1 bola / ½ taza',
+      searchAliases: ['ice cream'],
+    ),
+    Food(
+      id: 'chocolatina',
+      name: 'Chocolatina',
+      category: FoodCategory.carb,
+      qualityScore: 12,
+      nova: NovaGroup.ultraProcessed,
+      servingUnit: ServingUnit.unit,
+      portionLabel: '1 barra',
+      searchAliases: ['chocolate', 'barra de chocolate'],
+    ),
+  ];
+
+  /// Lista completa unificada (orden: proteínas, grasas, carbos, combos).
   static const List<Food> all = [
     ...proteins,
     ...fats,
     ...carbs,
+    ...combos,
   ];
+
+  /// SPEC-289: ids que el usuario ve bajo "Comidas y antojos" (platos
+  /// compuestos / comida rápida). Incluye los everyday que ya existían en el
+  /// catálogo — así no aparecen duplicados en su macro.
+  static const Set<String> comboIds = {
+    'hamburguesa',
+    'sandwich',
+    'empanada',
+    'pizza',
+    'salchipapa',
+    'patacon',
+    'bunuelo',
+    'pandebono',
+    'arepa',
+    'salchicha',
+    'chorizo',
+    'perro_caliente',
+    'taco',
+    'tamal',
+    'wrap',
+    'nuggets',
+    'pollo_frito',
+    'papas_fritas',
+    'mortadela',
+    'salchichon',
+    'helado',
+    'chocolatina',
+  };
+
+  /// SPEC-289: grupo con el que el usuario ve un alimento (checklist).
+  static UserFoodGroup groupOf(Food f) {
+    if (comboIds.contains(f.id)) return UserFoodGroup.combo;
+    return switch (f.category) {
+      FoodCategory.protein => UserFoodGroup.protein,
+      FoodCategory.fat => UserFoodGroup.fat,
+      FoodCategory.carb => UserFoodGroup.carb,
+    };
+  }
+
+  /// SPEC-289: alimentos de un grupo del usuario, ordenados por calidad
+  /// (primero los más saludables) y luego alfabético.
+  static List<Food> byUserGroup(UserFoodGroup group) {
+    final list = all.where((f) => groupOf(f) == group).toList();
+    list.sort((a, b) {
+      final byScore = b.qualityScore.compareTo(a.qualityScore);
+      return byScore != 0 ? byScore : a.name.compareTo(b.name);
+    });
+    return list;
+  }
 
   /// Devuelve los alimentos de una categoría.
   static List<Food> byCategory(FoodCategory category) =>

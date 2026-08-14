@@ -89,6 +89,12 @@ class RecipeMatchService {
 
   Set<String> _userFoods(NutritionIntake intake) {
     final s = <String>{};
+    // SPEC-289: el repertorio plano (modelo nuevo) es la fuente principal.
+    for (final it in intake.repertoire) {
+      final id = it.foodId;
+      if (id != null && id.isNotEmpty) s.add(id);
+    }
+    // Modelo viejo (por comida) — compatibilidad.
     for (final m in intake.meals) {
       for (final it in m.items) {
         final id = it.foodId;

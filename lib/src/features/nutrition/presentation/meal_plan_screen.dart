@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:elena_app/src/core/theme/app_theme.dart';
+import 'package:elena_app/src/features/fasting/application/fasting_notifier.dart';
 import 'package:elena_app/src/features/nutrition/application/meal_plan_notifier.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_intake_notifier.dart';
 import 'package:elena_app/src/features/nutrition/domain/food_catalog.dart';
@@ -104,6 +105,7 @@ class MealPlanScreen extends ConsumerWidget {
         for (final entry in plan.meals)
           _MealCard(
             entry: entry,
+            fastingActive: ref.watch(fastingProvider).isActive,
             onMark: (mark) => ref
                 .read(mealPlanNotifierProvider.notifier)
                 .markAdherence(entry.slot, mark),
@@ -185,12 +187,14 @@ class _MealCard extends StatelessWidget {
   final void Function(PlanItem item)? onPickAlternative;
   final VoidCallback? onChangeDish;
   final VoidCallback? onAddFood;
+  final bool fastingActive;
   const _MealCard({
     required this.entry,
     required this.onMark,
     this.onPickAlternative,
     this.onChangeDish,
     this.onAddFood,
+    this.fastingActive = false,
   });
 
   static String _slotLabel(MealSlot s) => switch (s) {
@@ -307,7 +311,45 @@ class _MealCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          _AdherenceRow(current: entry.adherence, onMark: onMark),
+          // SPEC-290: durante el ayuno se puede ver/cambiar/agregar (alistar),
+          // pero NO marcar que comiste — eso abre con tu ventana.
+          if (fastingActive)
+            const _FastingMealHint()
+          else
+            _AdherenceRow(current: entry.adherence, onMark: onMark),
+        ],
+      ),
+    );
+  }
+}
+
+/// SPEC-290: aviso en la comida cuando hay ayuno activo — en vez del ciclo
+/// Comí/Cambié/Me salté (que abre con la ventana de alimentación).
+class _FastingMealHint extends StatelessWidget {
+  const _FastingMealHint();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.statusGood.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.statusGood.withValues(alpha: 0.30)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.lock_clock_rounded,
+              size: 16, color: AppColors.statusGood),
+          const SizedBox(width: 8),
+          const Expanded(
+            child: Text(
+              'En ayuno. Déjala lista; podrás marcarla cuando abra tu ventana.',
+              style: TextStyle(
+                  color: AppColors.textSecondary, fontSize: 12.5, height: 1.35),
+            ),
+          ),
         ],
       ),
     );

@@ -377,7 +377,14 @@ class NutritionIntake {
   /// de este campo. Se guarda igual como parte del retrato.
   final int mealsPerDay;
 
-  final List<IntakeMeal> meals; // Bloque 1-3
+  final List<IntakeMeal> meals; // Bloque 1-3 (modelo viejo, por-comida)
+
+  /// SPEC-289: repertorio PLANO — los alimentos que el usuario marca que
+  /// come, sin asignarlos a una comida (el motor decide cuándo). Reemplaza la
+  /// captura por comida. Los `meals` viejos se mantienen para compatibilidad
+  /// con intakes ya guardados.
+  final List<IntakeItem> repertoire;
+
   final List<IntakeSnack> snacks; // Bloque 4
   final DrinksProfile drinks; // Bloque 5
   final IntakeRestrictions restrictions; // Bloque 6
@@ -389,6 +396,7 @@ class NutritionIntake {
     required this.updatedAt,
     this.mealsPerDay = 3,
     this.meals = const [],
+    this.repertoire = const [],
     this.snacks = const [],
     this.drinks = const DrinksProfile(),
     this.restrictions = const IntakeRestrictions(),
@@ -397,14 +405,28 @@ class NutritionIntake {
   });
 
   /// True si el retrato tiene contenido mínimo para generar una minuta:
-  /// al menos una comida con al menos un item con sentido.
-  bool get isComplete => meals.any((m) => m.items.any((i) => i.isMeaningful));
+  /// SPEC-289 → al menos 3 alimentos marcados en el repertorio; o (legacy) al
+  /// menos una comida con un item con sentido.
+  bool get isComplete =>
+      repertoire.where((i) => i.isMeaningful).length >= 3 ||
+      meals.any((m) => m.items.any((i) => i.isMeaningful));
+
+  /// SPEC-289: ids del repertorio (foodIds del catálogo marcados).
+  Set<String> get repertoireFoodIds {
+    final s = <String>{};
+    for (final i in repertoire) {
+      final id = i.foodId;
+      if (id != null && id.isNotEmpty) s.add(id);
+    }
+    return s;
+  }
 
   NutritionIntake copyWith({
     int? version,
     DateTime? updatedAt,
     int? mealsPerDay,
     List<IntakeMeal>? meals,
+    List<IntakeItem>? repertoire,
     List<IntakeSnack>? snacks,
     DrinksProfile? drinks,
     IntakeRestrictions? restrictions,
@@ -416,6 +438,7 @@ class NutritionIntake {
       updatedAt: updatedAt ?? this.updatedAt,
       mealsPerDay: mealsPerDay ?? this.mealsPerDay,
       meals: meals ?? this.meals,
+      repertoire: repertoire ?? this.repertoire,
       snacks: snacks ?? this.snacks,
       drinks: drinks ?? this.drinks,
       restrictions: restrictions ?? this.restrictions,
@@ -429,6 +452,7 @@ class NutritionIntake {
         'updatedAt': updatedAt.toIso8601String(),
         'mealsPerDay': mealsPerDay,
         'meals': meals.map((m) => m.toJson()).toList(growable: false),
+        'repertoire': repertoire.map((i) => i.toJson()).toList(growable: false),
         'snacks': snacks.map((s) => s.toJson()).toList(growable: false),
         'drinks': drinks.toJson(),
         'restrictions': restrictions.toJson(),
@@ -443,6 +467,7 @@ class NutritionIntake {
             DateTime.tryParse(j['updatedAt'] as String? ?? '') ?? _epoch(),
         mealsPerDay: (j['mealsPerDay'] as num?)?.toInt() ?? 3,
         meals: _parseList(j['meals'], IntakeMeal.fromJson),
+        repertoire: _parseList(j['repertoire'], IntakeItem.fromJson),
         snacks: _parseList(j['snacks'], IntakeSnack.fromJson),
         drinks: _parseMap(
             j['drinks'], DrinksProfile.fromJson, const DrinksProfile()),
