@@ -73,6 +73,17 @@ class MealPlanGenerator {
     final weights = _proteinWeights(sourceMeals.map((m) => m.slot).toList());
     final weightSum = weights.fold<double>(0, (a, b) => a + b);
 
+    // SPEC-291/297: alimentos que el usuario realmente come, para (a) marcar
+    // honestamente qué es suyo y qué es sugerencia en el plato, y (b) no
+    // hace falta recalcularlo por comida.
+    final userFoods = _userFoodIds(intake);
+
+    // SPEC-297: memoria del día para NO repetir la misma receta entre comidas
+    // (bug: muchas recetas encajan en almuerzo Y cena, y se elegían por
+    // separado) y para preferir una proteína principal distinta cuando se pueda.
+    final usedRecipeIds = <String>{};
+    final usedProteinIds = <String>{};
+
     final entries = <MealPlanEntry>[];
     for (var mi = 0; mi < sourceMeals.length; mi++) {
       final meal = sourceMeals[mi];
@@ -87,15 +98,23 @@ class MealPlanGenerator {
       final matches = _recipes.match(
         intake: intake,
         slot: meal.slot,
-        limit: _kRecipePool,
+        // SPEC-297: pedimos TODAS las candidatas (no solo el top) para que el
+        // dedup del día tenga de dónde elegir; la ventana de variedad se aplica
+        // después, dentro de _pickRecipe.
+        limit: RecipeCatalog.all.length,
         // SPEC-291: solo recetas cuya materia prima principal está en el
         // repertorio del usuario. Si ninguna califica, cae al plato armado
         // (que se construye 100% con lo que él escogió).
         requirePrincipal: true,
       );
       if (matches.isNotEmpty) {
-        final recipe = _pickRecipe(matches, dateId, meal.slot);
-        entries.add(_entryFromRecipe(meal.slot, perMealProtein, recipe));
+        final recipe = _pickRecipe(
+            matches, dateId, meal.slot, usedRecipeIds, usedProteinIds);
+        usedRecipeIds.add(recipe.id);
+        final prot = _principalProteinId(recipe);
+        if (prot != null) usedProteinIds.add(prot);
+        entries.add(
+            _entryFromRecipe(meal.slot, perMealProtein, recipe, userFoods));
       } else {
         entries.add(
             _buildEntry(meal, perMealProtein, phase, banned, avoidFoodIds));
@@ -137,11 +156,71 @@ class MealPlanGenerator {
   /// Elige una receta entre las mejores, rotando de forma DETERMINÍSTICA por
   /// día + comida (variedad sin perder reproducibilidad). Mismo día → misma
   /// receta; días distintos → varía.
-  Recipe _pickRecipe(List<RecipeMatch> matches, String dateId, MealSlot slot) {
-    final k = matches.length < _kRecipePool ? matches.length : _kRecipePool;
-    if (k <= 1) return matches.first.recipe;
+  ///
+  /// SPEC-297: dos capas de variedad DENTRO del día:
+  ///   1) [usedRecipeIds]: nunca repite una receta ya usada hoy (a menos que
+  ///      no quede ninguna otra compatible).
+  ///   2) [usedProteinIds]: preferencia SUAVE por una proteína principal
+  ///      distinta a las ya servidas hoy (si el usuario solo tiene una, se
+  ///      relaja y repite proteína, pero con otra receta).
+  Recipe _pickRecipe(
+    List<RecipeMatch> matches,
+    String dateId,
+    MealSlot slot,
+    Set<String> usedRecipeIds,
+    Set<String> usedProteinIds,
+  ) {
+    // 1) Fuera las recetas ya usadas hoy. Si todas están usadas (caso raro:
+    //    repertorio mínimo), se permite repetir para no dejar la comida vacía.
+    var pool =
+        matches.where((m) => !usedRecipeIds.contains(m.recipe.id)).toList();
+    if (pool.isEmpty) pool = matches;
+
+    // 2) Preferencia suave: proteína principal distinta a las de hoy.
+    final freshProtein = pool.where((m) {
+      final p = _principalProteinId(m.recipe);
+      return p == null || !usedProteinIds.contains(p);
+    }).toList();
+    if (freshProtein.isNotEmpty) pool = freshProtein;
+
+    // 3) Variedad diaria determinística entre las mejores del pool.
+    final k = pool.length < _kRecipePool ? pool.length : _kRecipePool;
+    if (k <= 1) return pool.first.recipe;
     final seed = '$dateId|${slot.index}'.hashCode & 0x7fffffff;
-    return matches[seed % k].recipe;
+    return pool[seed % k].recipe;
+  }
+
+  /// Id de la primera proteína (materia prima principal) de la receta, o null
+  /// si la receta no tiene proteína de catálogo.
+  String? _principalProteinId(Recipe r) {
+    for (final ing in r.ingredients) {
+      final id = ing.foodId;
+      if (id == null || id.isEmpty) continue;
+      final f = FoodCatalog.byId(id);
+      if (f != null && f.category == FoodCategory.protein) return id;
+    }
+    return null;
+  }
+
+  /// Ids de todo lo que el usuario ya come (repertorio plano nuevo + modelo
+  /// viejo por comidas + snacks). Fuente de verdad de "esto es suyo".
+  Set<String> _userFoodIds(NutritionIntake intake) {
+    final s = <String>{};
+    for (final it in intake.repertoire) {
+      final id = it.foodId;
+      if (id != null && id.isNotEmpty) s.add(id);
+    }
+    for (final m in intake.meals) {
+      for (final it in m.items) {
+        final id = it.foodId;
+        if (id != null && id.isNotEmpty) s.add(id);
+      }
+    }
+    for (final sn in intake.snacks) {
+      final id = sn.foodId;
+      if (id != null && id.isNotEmpty) s.add(id);
+    }
+    return s;
   }
 
   /// Materializa una comida a partir de una receta: `recipeId` + los alimentos
@@ -152,6 +231,7 @@ class MealPlanGenerator {
     MealSlot slot,
     double perMealProtein,
     Recipe recipe,
+    Set<String> userFoods,
   ) {
     final seen = <String>{};
     final items = <PlanItem>[];
@@ -166,7 +246,12 @@ class MealPlanGenerator {
         foodId: id,
         role: role,
         portion: _portionFor(role),
-        origin: PlanItemOrigin.fromUser,
+        // SPEC-297: honestidad. Solo lo que el usuario YA come es "suyo"; los
+        // acompañamientos de la receta que él no eligió se muestran como
+        // sugerencia ("Nuevo"), no como si los hubiera escogido.
+        origin: userFoods.contains(id)
+            ? PlanItemOrigin.fromUser
+            : PlanItemOrigin.newSuggestion,
       ));
     }
     return MealPlanEntry(
