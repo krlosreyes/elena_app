@@ -318,7 +318,11 @@ class MealPlanNotifier extends StateNotifier<MealPlanState> {
 
   /// Alimentos centrales de la receta (los que existen en el catálogo) como
   /// `PlanItem` editables. Los ingredientes de texto libre viven en la receta.
+  ///
+  /// SPEC-297: mismo criterio de honestidad que el generador — solo lo que el
+  /// usuario ya come se marca `fromUser`; el resto es sugerencia ("Nuevo").
   List<PlanItem> _itemsFromRecipe(Recipe recipe) {
+    final userFoods = _userFoodIds();
     final seen = <String>{};
     final items = <PlanItem>[];
     for (final ing in recipe.ingredients) {
@@ -331,10 +335,34 @@ class MealPlanNotifier extends StateNotifier<MealPlanState> {
         foodId: id,
         role: _roleForFood(f),
         portion: _portionForRole(_roleForFood(f)),
-        origin: PlanItemOrigin.fromUser,
+        origin: userFoods.contains(id)
+            ? PlanItemOrigin.fromUser
+            : PlanItemOrigin.newSuggestion,
       ));
     }
     return items;
+  }
+
+  /// Ids de todo lo que el usuario ya come (repertorio + modelo viejo + snacks).
+  Set<String> _userFoodIds() {
+    final intake = _intake;
+    final s = <String>{};
+    if (intake == null) return s;
+    for (final it in intake.repertoire) {
+      final id = it.foodId;
+      if (id != null && id.isNotEmpty) s.add(id);
+    }
+    for (final m in intake.meals) {
+      for (final it in m.items) {
+        final id = it.foodId;
+        if (id != null && id.isNotEmpty) s.add(id);
+      }
+    }
+    for (final sn in intake.snacks) {
+      final id = sn.foodId;
+      if (id != null && id.isNotEmpty) s.add(id);
+    }
+    return s;
   }
 
   PlanItemRole _roleForFood(Food f) {
