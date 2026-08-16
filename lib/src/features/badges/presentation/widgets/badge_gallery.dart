@@ -68,7 +68,7 @@ class _CategoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final meta = kBadgeCategoryMeta[category]!;
+    final meta = badgeCategoryMetaFor(category);
     final defs = BadgeCatalog.forCategory(category);
     final earnedInCategory =
         defs.where((d) => earnedIds.contains(d.badgeId)).toList();
@@ -155,7 +155,7 @@ class _CategoryDetailSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final meta = kBadgeCategoryMeta[category]!;
+    final meta = badgeCategoryMetaFor(category);
     final defs = BadgeCatalog.forCategory(category);
 
     return DraggableScrollableSheet(

@@ -37,4 +37,19 @@ const Map<String, BadgeCategoryMeta> kBadgeCategoryMeta = {
       BadgeCategoryMeta('Resiliencia', Icons.spa_rounded, Color(0xFF14B8A6)),
   BadgeCategory.bienvenida: BadgeCategoryMeta(
       'Bienvenida', Icons.emoji_events_rounded, Color(0xFFFBBF24)),
+  // SPEC-264 agregó la categoría `retos` a BadgeCategory.all y al catálogo,
+  // pero nunca aquí — la galería hacía `kBadgeCategoryMeta[retos]!` y reventaba
+  // esa celda (Null check operator used on a null value). Se añade su metadata.
+  BadgeCategory.retos: BadgeCategoryMeta(
+      'Retos', Icons.military_tech_rounded, Color(0xFF2DD4BF)),
 };
+
+/// Metadata visual segura por categoría: si una categoría no está en el mapa
+/// (p. ej. una nueva que se agregó a `BadgeCategory.all` sin metadata), devuelve
+/// un default genérico en vez de reventar. Así la galería nunca vuelve a caerse
+/// por una categoría sin registrar.
+const BadgeCategoryMeta kBadgeCategoryMetaFallback =
+    BadgeCategoryMeta('Logros', Icons.emoji_events_rounded, Color(0xFF94A3B8));
+
+BadgeCategoryMeta badgeCategoryMetaFor(String category) =>
+    kBadgeCategoryMeta[category] ?? kBadgeCategoryMetaFallback;
