@@ -11,6 +11,7 @@ import 'package:elena_app/src/features/sleep/domain/sleep_source.dart';
 import 'package:elena_app/src/features/dashboard/presentation/sleep_input_sheet.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/pillar_card_ui.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/sleep_existing_log_dialog.dart';
+import 'package:elena_app/src/features/goals/application/pillar_goal_providers.dart';
 import 'package:elena_app/src/features/health_sync/application/health_sync_providers.dart';
 import 'package:elena_app/src/features/health_sync/domain/health_permission_status.dart';
 import 'package:elena_app/src/features/sleep/presentation/widgets/sleep_stages_view.dart';
@@ -68,7 +69,13 @@ class SleepPillarCard extends ConsumerWidget {
               isManual: isManual,
             )
           : _waitingChildren(
-              context: context, accent: accent, isManual: isManual),
+              context: context,
+              accent: accent,
+              isManual: isManual,
+              // SPEC-303: estimado del perfil (goal de sueño activo o default),
+              // como fuente cuando no hay ni Health ni registro.
+              estimateHours: ref.watch(effectiveSleepGoalProvider),
+            ),
     );
   }
 
@@ -160,7 +167,9 @@ class SleepPillarCard extends ConsumerWidget {
     required BuildContext context,
     required Color accent,
     required bool isManual,
+    required double estimateHours,
   }) {
+    final est = estimateHours.round();
     return [
       Row(
         children: [
@@ -196,6 +205,23 @@ class SleepPillarCard extends ConsumerWidget {
                   ),
                 ),
               ],
+            ),
+          ),
+        ],
+      ),
+      const SizedBox(height: 14),
+      // SPEC-303: mientras no llega dato real (Health o registro), mostramos el
+      // estimado de su perfil, etiquetado como tal.
+      Row(
+        children: [
+          _SleepSourceChip(source: SleepSource.estimated),
+          const SizedBox(width: 8),
+          Text(
+            '~${est}h según tu perfil',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.7),
+              fontSize: 12.5,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],

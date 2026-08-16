@@ -70,10 +70,14 @@ Ejercicio ya está etiquetado sin campo nuevo: `ImportedActivitiesSection` muest
 "Importado desde Apple Health" y el pilar tiene su chip de entrada manual —
 `ExerciseLog.sourceName` (SPEC-296) ya distingue la fuente.
 
-## Pendiente (siguiente iteración)
-- SPEC-303: onboarding pregunta "horas típicas de sueño" → estimado del pilar
-  (`SleepSource.estimated`) cuando no hay Health ni registro. Necesita
-  `build_runner` (UserModel es Freezed) + tocar el onboarding.
+## SPEC-303 — Estimado del perfil como fuente cuando no hay dato
+
+Carlos: la pregunta de horas de sueño ya existe. En efecto, el valor vive en el
+sistema de goals: `effectiveSleepGoalProvider` (goal activo o default 8h). Así
+que NO hubo que tocar el onboarding ni UserModel (Freezed): el pilar de sueño, en
+su estado "sin registro aún" (`_waitingChildren`), ahora muestra
+`~Xh según tu perfil` con el chip `SleepSource.estimated`. Jerarquía completa:
+dispositivo → manual → estimado del perfil.
 
 ## Verificación (Carlos)
 
