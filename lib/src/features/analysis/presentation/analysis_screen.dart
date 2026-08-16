@@ -22,8 +22,12 @@ import 'package:go_router/go_router.dart';
 
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/badges/presentation/widgets/badges_entry_card.dart';
-import 'package:elena_app/src/features/analysis/presentation/widgets/habitos_entry_card.dart';
-import 'package:elena_app/src/features/analysis/presentation/widgets/results_entry_card.dart';
+// SPEC-300: Progreso pasó de 3 filas-menú idénticas a una pantalla de
+// TENDENCIA (lo que Hoy no es): línea del Score + boletín semanal. Resultados
+// y Hábitos ya no son filas — su navegación la absorben la card del Score y la
+// del boletín respectivamente (ambas son InkWell a su detalle).
+import 'package:elena_app/src/features/analysis/presentation/widgets/score_trend_card.dart';
+import 'package:elena_app/src/features/analysis/presentation/widgets/weekly_report_card.dart';
 // 23-jul: módulo "Tu Glucosa" (propuesta Protocolo de Seguimiento de
 // Glucosa) — mismo patrón autocontenido que WeeklyCoachingCard más
 // abajo: se oculta sola (SizedBox.shrink) si el usuario no tiene el
@@ -38,7 +42,6 @@ import 'package:elena_app/src/features/glucose/presentation/widgets/glucose_entr
 // vez de dejarlo vacío. Autocontenida (ConsumerWidget con su propio
 // loading/empty state) — no requiere que AnalysisScreen deje de ser
 // StatelessWidget.
-import 'package:elena_app/src/features/analysis/presentation/widgets/weekly_coaching_card.dart';
 import 'package:elena_app/src/core/widgets/page_hero.dart';
 
 class AnalysisScreen extends StatelessWidget {
@@ -62,25 +65,20 @@ class AnalysisScreen extends StatelessWidget {
               // Header in-page estilo Apple.
               _buildPageHeader(context),
               const SizedBox(height: 20),
-              // 17-jul: las cards de entrada, en el orden que Carlos
-              // pidió — Insignias primero (venía del 15-jul), luego
-              // Resultados y Hábitos. Racha se quitó (ver comentario
-              // arriba, 3ra vuelta) — vive solo en el header ahora.
+              // SPEC-300: la TENDENCIA es el héroe (lo que Hoy no muestra).
+              // Línea del Score del Día → detalle de Resultados.
+              const ScoreTrendCard(),
+              const SizedBox(height: 12),
+              // Boletín de la semana: nota + pilares (con delta vs semana
+              // pasada) + foco → detalle de Hábitos.
+              const WeeklyReportCard(),
+              const SizedBox(height: 12),
+              // Insignias + racha (navegación a la colección completa).
               const BadgesEntryCard(),
-              const SizedBox(height: 12),
-              const ResultsEntryCard(),
-              const SizedBox(height: 12),
-              const HabitosEntryCard(),
-              // 23-jul: "Tu Glucosa" — se autooculta si el usuario no
-              // tiene el Protocolo de Seguimiento de Glucosa activo (ver
-              // GlucoseEntryCard). Sin SizedBox extra: la card ya trae
-              // su propio Padding(top:12) cuando SÍ se muestra.
+              // 23-jul: "Tu Glucosa" — se autooculta si el usuario no tiene el
+              // Protocolo de Seguimiento de Glucosa activo. Trae su propio
+              // Padding(top:12) cuando SÍ se muestra.
               const GlucoseEntryCard(),
-              // 17-jul (2da vuelta): contenido real debajo de las cards
-              // para que la pantalla no se sienta vacía — ver comentario
-              // en el import de WeeklyCoachingCard arriba.
-              const SizedBox(height: 28),
-              const WeeklyCoachingCard(),
             ],
           ),
         ),
