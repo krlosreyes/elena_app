@@ -61,6 +61,9 @@ List<hp.HealthDataType> _typesFor(HealthMetric metric) {
           hp.HealthDataType.SLEEP_DEEP,
           hp.HealthDataType.SLEEP_LIGHT,
           hp.HealthDataType.SLEEP_REM,
+          // SPEC-301: despierto DENTRO de la ventana (fragmentación). Comparte
+          // el permiso READ_SLEEP, así que no agrega prompts.
+          hp.HealthDataType.SLEEP_AWAKE,
         ];
       }
       // Android / Health Connect: SLEEP_SESSION cubre la sesión consolidada.
@@ -74,6 +77,8 @@ List<hp.HealthDataType> _typesFor(HealthMetric metric) {
         hp.HealthDataType.SLEEP_DEEP,
         hp.HealthDataType.SLEEP_LIGHT,
         hp.HealthDataType.SLEEP_REM,
+        // SPEC-301: despierto dentro de la ventana (fragmentación).
+        hp.HealthDataType.SLEEP_AWAKE,
       ];
     case HealthMetric.steps:
       return [hp.HealthDataType.STEPS];
@@ -528,6 +533,17 @@ class HealthSyncService {
       final latest = group.map((s) => s.end).reduce(
             (a, b) => a.isAfter(b) ? a : b,
           );
+      // SPEC-301: en vez de tirar las etapas, sumamos minutos por etapa
+      // (deep/light/rem/awake). Los genéricos ('asleep') no cuentan al
+      // desglose. Si el dispositivo no reporta etapas, el mapa queda vacío.
+      final stageMinutes = <String, int>{};
+      for (final s in group) {
+        final stage = s.sleepStage;
+        if (stage == null || stage == 'asleep') continue;
+        final mins = s.end.difference(s.start).inMinutes;
+        if (mins <= 0) continue;
+        stageMinutes[stage] = (stageMinutes[stage] ?? 0) + mins;
+      }
       return HealthSample(
         metric: HealthMetric.sleepSession,
         value: latest.difference(earliest).inMinutes.toDouble(),
@@ -537,6 +553,7 @@ class HealthSyncService {
         // El uuid del primer sample del grupo sirve como id estable —
         // mientras el grupo no cambie de composición, este id no cambia.
         uuid: group.first.uuid,
+        sleepStages: stageMinutes.isEmpty ? null : stageMinutes,
       );
     }).toList();
   }
@@ -615,6 +632,27 @@ class HealthSyncService {
       end: p.dateTo,
       sourceName: p.sourceName,
       uuid: p.uuid,
+      // SPEC-301: etapa de esta muestra de sueño (deep/light/rem/awake/asleep).
+      sleepStage:
+          metric == HealthMetric.sleepSession ? _sleepStageOf(p.type) : null,
     );
+  }
+
+  /// SPEC-301: mapea el tipo nativo de una muestra de sueño a nuestra etapa
+  /// neutral. Los genéricos (ASLEEP/SESSION/IN_BED) no son una etapa: cuentan
+  /// para la duración total pero no para el desglose.
+  String _sleepStageOf(hp.HealthDataType type) {
+    switch (type) {
+      case hp.HealthDataType.SLEEP_DEEP:
+        return 'deep';
+      case hp.HealthDataType.SLEEP_REM:
+        return 'rem';
+      case hp.HealthDataType.SLEEP_LIGHT:
+        return 'light';
+      case hp.HealthDataType.SLEEP_AWAKE:
+        return 'awake';
+      default:
+        return 'asleep';
+    }
   }
 }

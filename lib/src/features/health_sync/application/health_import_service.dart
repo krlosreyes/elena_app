@@ -16,6 +16,7 @@
 import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/core/services/day_boundary_resolver.dart';
 import 'package:elena_app/src/features/sleep/domain/sleep_log.dart';
+import 'package:elena_app/src/features/sleep/domain/sleep_stages.dart';
 import 'package:elena_app/src/features/health_sync/application/samsung_health_service.dart'
     as samsung_health;
 import 'package:elena_app/src/features/sleep/domain/sleep_repository.dart';
@@ -306,6 +307,8 @@ class HealthImportService {
           fellAsleep: s.start,
           wokeUp: s.end,
           lastMealTime: assumedLastMeal,
+          // SPEC-301: etapas medidas por el dispositivo (si las hay).
+          stages: SleepStages.fromHealthMap(s.sleepStages),
         );
         await _sleepRepo.save(userId, log);
         imported++;

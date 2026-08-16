@@ -12,6 +12,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:elena_app/src/core/errors/validation_error.dart';
 import 'package:elena_app/src/features/sleep/data/mappers/sleep_log_mapper.dart';
 import 'package:elena_app/src/features/sleep/domain/sleep_log.dart';
+import 'package:elena_app/src/features/sleep/domain/sleep_stages.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -36,6 +37,27 @@ void main() {
       subjectiveQuality: subjectiveQuality,
     );
   }
+
+  test('SPEC-301: round-trip preserva las etapas del sueño', () {
+    final log = SleepLog(
+      id: 'sleep-stages',
+      fellAsleep: DateTime(2026, 5, 1, 23, 0),
+      wokeUp: DateTime(2026, 5, 2, 7, 0),
+      lastMealTime: DateTime(2026, 5, 1, 19, 0),
+      stages: const SleepStages(
+          deepMinutes: 90, lightMinutes: 240, remMinutes: 90, awakeMinutes: 20),
+    );
+    final map = mapper.toMap(log);
+    expect(map['stages'], isA<Map<String, dynamic>>());
+    final back = mapper.fromMap(map, docId: 'sleep-stages');
+    expect(back.stages, log.stages);
+  });
+
+  test('SPEC-301: sin etapas no escribe la clave stages', () {
+    final map = mapper.toMap(log0());
+    expect(map.containsKey('stages'), isFalse);
+    expect(mapper.fromMap(map, docId: 'sleep-001').stages, isNull);
+  });
 
   group('toMap — campos requeridos', () {
     test('Persiste fellAsleep, wokeUp, lastMealTime como Timestamp', () {

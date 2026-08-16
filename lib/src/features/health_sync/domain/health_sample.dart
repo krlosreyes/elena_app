@@ -53,6 +53,17 @@ class HealthSample {
   /// SPEC-296: solo workout — distancia recorrida (metros), si viene.
   final double? distanceMeters;
 
+  /// SPEC-301: solo sueño, muestra INDIVIDUAL (antes de consolidar) — la etapa
+  /// de esta muestra derivada del tipo nativo: 'deep' | 'light' | 'rem' |
+  /// 'awake' | 'asleep' (genérico, sin etapa) | null. El Apple Watch / relojes
+  /// con sensor escriben una muestra por etapa; el iPhone solo 'asleep'.
+  final String? sleepStage;
+
+  /// SPEC-301: solo sueño, muestra CONSOLIDADA de la noche — minutos por etapa
+  /// sumados del grupo: {'deep': m, 'light': m, 'rem': m, 'awake': m}. Vacío/
+  /// null si el dispositivo no reporta etapas (solo hubo 'asleep' genérico).
+  final Map<String, int>? sleepStages;
+
   const HealthSample({
     required this.metric,
     required this.value,
@@ -63,6 +74,8 @@ class HealthSample {
     this.workoutActivityType,
     this.caloriesKcal,
     this.distanceMeters,
+    this.sleepStage,
+    this.sleepStages,
   });
 
   /// Duración del rango (útil sobre todo para sueño).

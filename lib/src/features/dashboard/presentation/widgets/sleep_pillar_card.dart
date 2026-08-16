@@ -12,6 +12,7 @@ import 'package:elena_app/src/features/dashboard/presentation/widgets/pillar_car
 import 'package:elena_app/src/features/dashboard/presentation/widgets/sleep_existing_log_dialog.dart';
 import 'package:elena_app/src/features/health_sync/application/health_sync_providers.dart';
 import 'package:elena_app/src/features/health_sync/domain/health_permission_status.dart';
+import 'package:elena_app/src/features/sleep/presentation/widgets/sleep_stages_view.dart';
 
 class SleepPillarCard extends ConsumerWidget {
   const SleepPillarCard({super.key, required this.state});
@@ -119,6 +120,13 @@ class SleepPillarCard extends ConsumerWidget {
             ? '✓ Sueño reparador — GH pulsátil activa durante ciclos REM'
             : 'Buscas sueño reparador: 7-9h activan la GH pulsátil que repara músculo y reduce inflamación.',
       ),
+      // SPEC-304: si el dispositivo midió etapas, mostramos el desglose +
+      // impacto metabólico. Se autooculta cuando no hay etapas (iPhone solo,
+      // registro manual, estimado).
+      if (log.stages != null && log.stages!.hasData) ...[
+        const SizedBox(height: 12),
+        SleepStagesView(stages: log.stages!),
+      ],
       const SizedBox(height: 18),
       // SPEC-231: chip "entrada manual" cuando HealthKit no está activo.
       if (isManual) PillarCardUi.manualDataChip(),

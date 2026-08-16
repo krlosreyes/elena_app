@@ -17,6 +17,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:elena_app/src/core/errors/validation_error.dart';
 import 'package:elena_app/src/features/sleep/domain/sleep_log.dart';
+import 'package:elena_app/src/features/sleep/domain/sleep_stages.dart';
 
 class SleepLogMapper {
   const SleepLogMapper();
@@ -48,6 +49,12 @@ class SleepLogMapper {
     if (log.subjectiveQuality != null) {
       map['subjectiveQuality'] = log.subjectiveQuality;
     }
+    // SPEC-301: etapas del sueño (si el dispositivo las midió). Se omite el
+    // subdocumento cuando no hay etapas — logs manuales/estimados quedan igual.
+    final stagesMap = log.stages?.toMap();
+    if (stagesMap != null && stagesMap.isNotEmpty) {
+      map['stages'] = stagesMap;
+    }
     return map;
   }
 
@@ -67,6 +74,9 @@ class SleepLogMapper {
       sleepLatencyMinutes: _toInt(map['sleepLatencyMinutes']),
       nightAwakenings: _toInt(map['nightAwakenings']),
       subjectiveQuality: _toInt(map['subjectiveQuality']),
+      stages: SleepStages.fromMap(
+        (map['stages'] as Map?)?.cast<String, dynamic>(),
+      ),
     );
     // No llamamos _validate aquí: el constructor de SleepLog ya valida
     // las invariantes SPEC-69 (rangos, no negativos) — duplicarlo aquí

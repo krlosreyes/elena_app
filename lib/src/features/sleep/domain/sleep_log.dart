@@ -1,4 +1,5 @@
 import 'package:elena_app/src/core/errors/validation_error.dart';
+import 'package:elena_app/src/features/sleep/domain/sleep_stages.dart';
 
 /// Registro de un ciclo de sueño individual.
 ///
@@ -26,6 +27,11 @@ class SleepLog {
   /// `null` si el usuario no la registró.
   final int? subjectiveQuality;
 
+  /// SPEC-301: etapas del sueño (profundo/ligero/REM/despierto) cuando un
+  /// dispositivo las mide (Apple Watch, Galaxy Watch, anillo). `null` si la
+  /// fuente no reporta etapas (iPhone solo, registro manual, estimado).
+  final SleepStages? stages;
+
   SleepLog({
     required this.id,
     required this.fellAsleep,
@@ -34,6 +40,7 @@ class SleepLog {
     this.sleepLatencyMinutes,
     this.nightAwakenings,
     this.subjectiveQuality,
+    this.stages,
   }) {
     // SPEC-62: errores tipados. Caller puede pattern-match sobre
     // ValidationError sin parsear strings de mensaje.
