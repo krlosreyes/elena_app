@@ -235,6 +235,12 @@ class MealPlanEntry {
   /// Marca de adherencia del usuario. `null` = aún sin responder.
   final AdherenceMark? adherence;
 
+  /// SPEC-298: hora REAL en que el usuario consumió esta comida (se sella al
+  /// marcar "Comí"/"Cambié"; editable). `null` si aún no la marca o si se la
+  /// saltó. Es la fuente que ancla la ventana de alimentación (pilar) y
+  /// habilita la recomendación de timing circadiano.
+  final DateTime? consumedAt;
+
   const MealPlanEntry({
     required this.slot,
     this.targetProteinG = 0,
@@ -243,10 +249,15 @@ class MealPlanEntry {
     this.swappedFrom = const [],
     this.rationale = '',
     this.adherence,
+    this.consumedAt,
   });
 
-  MealPlanEntry copyWith(
-      {AdherenceMark? adherence, bool clearAdherence = false}) {
+  MealPlanEntry copyWith({
+    AdherenceMark? adherence,
+    bool clearAdherence = false,
+    DateTime? consumedAt,
+    bool clearConsumedAt = false,
+  }) {
     return MealPlanEntry(
       slot: slot,
       targetProteinG: targetProteinG,
@@ -255,6 +266,7 @@ class MealPlanEntry {
       swappedFrom: swappedFrom,
       rationale: rationale,
       adherence: clearAdherence ? null : (adherence ?? this.adherence),
+      consumedAt: clearConsumedAt ? null : (consumedAt ?? this.consumedAt),
     );
   }
 
@@ -266,6 +278,7 @@ class MealPlanEntry {
         'swappedFrom': swappedFrom,
         'rationale': rationale,
         if (adherence != null) 'adherence': adherence!.wire,
+        if (consumedAt != null) 'consumedAt': consumedAt!.toIso8601String(),
       };
 
   factory MealPlanEntry.fromJson(Map<String, dynamic> j) => MealPlanEntry(
@@ -277,6 +290,7 @@ class MealPlanEntry {
             (j['swappedFrom'] as List<dynamic>?)?.cast<String>() ?? const [],
         rationale: (j['rationale'] as String?) ?? '',
         adherence: AdherenceMark.fromWire(j['adherence'] as String?),
+        consumedAt: DateTime.tryParse(j['consumedAt'] as String? ?? ''),
       );
 }
 
@@ -331,20 +345,63 @@ class MealPlan {
 
   /// Marca la adherencia de una comida y devuelve un nuevo MealPlan
   /// (inmutable). Si no existe esa comida, retorna el mismo plan.
-  MealPlan markAdherence(MealSlot slot, AdherenceMark mark) {
+  MealPlan markAdherence(MealSlot slot, AdherenceMark mark, {DateTime? at}) {
     var found = false;
     final updated = meals.map((m) {
-      if (m.slot == slot) {
-        found = true;
-        return m.copyWith(adherence: mark);
+      if (m.slot != slot) return m;
+      found = true;
+      // SPEC-298: al comer/cambiar se sella la hora real (o la que pase el
+      // caller); al saltarse, se limpia.
+      if (mark.isAdherent) {
+        return m.copyWith(
+          adherence: mark,
+          consumedAt: at ?? m.consumedAt ?? DateTime.now(),
+        );
       }
-      return m;
+      return m.copyWith(adherence: mark, clearConsumedAt: true);
     }).toList(growable: false);
     if (!found) return this;
     return copyWith(
       meals: updated,
       status: PlanStatus.logged,
     );
+  }
+
+  /// SPEC-298: corrige la hora de consumo de una comida (el lápiz de la UI).
+  /// Inmutable; no-op si no existe la comida.
+  MealPlan setConsumedAt(MealSlot slot, DateTime when) {
+    var found = false;
+    final updated = meals.map((m) {
+      if (m.slot != slot) return m;
+      found = true;
+      return m.copyWith(consumedAt: when);
+    }).toList(growable: false);
+    if (!found) return this;
+    return copyWith(meals: updated);
+  }
+
+  /// SPEC-298: primera comida REALMENTE consumida hoy (la más temprana con
+  /// `consumedAt`). Es el ancla de la ventana de alimentación. `null` si aún
+  /// no se ha marcado ninguna.
+  DateTime? get firstConsumedAt {
+    DateTime? earliest;
+    for (final m in meals) {
+      final t = m.consumedAt;
+      if (t == null) continue;
+      if (earliest == null || t.isBefore(earliest)) earliest = t;
+    }
+    return earliest;
+  }
+
+  /// SPEC-298: última comida consumida hoy (para el aviso de cierre circadiano).
+  DateTime? get lastConsumedAt {
+    DateTime? latest;
+    for (final m in meals) {
+      final t = m.consumedAt;
+      if (t == null) continue;
+      if (latest == null || t.isAfter(latest)) latest = t;
+    }
+    return latest;
   }
 
   /// SPEC-280: reemplaza un alimento del plato por otro que elige el usuario
@@ -369,6 +426,7 @@ class MealPlan {
         swappedFrom: m.swappedFrom,
         rationale: m.rationale,
         adherence: m.adherence,
+        consumedAt: m.consumedAt,
       );
     }).toList(growable: false);
     if (!changed) return this;
@@ -422,6 +480,7 @@ class MealPlan {
         swappedFrom: m.swappedFrom,
         rationale: m.rationale,
         adherence: m.adherence,
+        consumedAt: m.consumedAt,
       );
     }).toList(growable: false);
     if (!changed) return this;
@@ -447,6 +506,7 @@ class MealPlan {
         swappedFrom: m.swappedFrom,
         rationale: m.rationale,
         adherence: m.adherence,
+        consumedAt: m.consumedAt,
       );
     }).toList(growable: false);
     if (!changed) return this;
@@ -470,6 +530,7 @@ class MealPlan {
         swappedFrom: m.swappedFrom,
         rationale: m.rationale,
         adherence: m.adherence,
+        consumedAt: m.consumedAt,
       );
     }).toList(growable: false);
     if (!changed) return this;

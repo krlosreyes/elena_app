@@ -199,17 +199,36 @@ class MealPlanNotifier extends StateNotifier<MealPlanState> {
   }
 
   /// Marca la adherencia de una comida (Comí / Cambié / Me salté).
+  /// SPEC-298: al comer/cambiar sella la hora real (`DateTime.now()`), que
+  /// ancla la ventana de alimentación y habilita la recomendación de timing.
   Future<void> markAdherence(MealSlot slot, AdherenceMark mark) async {
     final current = state.plan;
     final user = _user;
     if (current == null || user == null) return;
 
-    final updated = current.markAdherence(slot, mark);
+    final updated = current.markAdherence(slot, mark, at: DateTime.now());
     if (mounted) state = state.copyWith(plan: updated);
 
     final repo = _ref.read(mealPlanRepositoryProvider);
     unawaited(repo.savePlan(user.id, updated).catchError((Object e) {
       AppLogger.warning('meal_plan: markAdherence save falló: $e');
+    }));
+  }
+
+  /// SPEC-298: corrige la hora de consumo de una comida ya marcada (el lápiz
+  /// de la UI). Offline-first.
+  Future<void> editMealTime(MealSlot slot, DateTime when) async {
+    final current = state.plan;
+    final user = _user;
+    if (current == null || user == null) return;
+
+    final updated = current.setConsumedAt(slot, when);
+    if (identical(updated, current)) return;
+    if (mounted) state = state.copyWith(plan: updated);
+
+    final repo = _ref.read(mealPlanRepositoryProvider);
+    unawaited(repo.savePlan(user.id, updated).catchError((Object e) {
+      AppLogger.warning('meal_plan: editMealTime save falló: $e');
     }));
   }
 

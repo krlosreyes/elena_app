@@ -111,6 +111,9 @@ class MealPlanScreen extends ConsumerWidget {
             onMark: (mark) => ref
                 .read(mealPlanNotifierProvider.notifier)
                 .markAdherence(entry.slot, mark),
+            onEditTime: (when) => ref
+                .read(mealPlanNotifierProvider.notifier)
+                .editMealTime(entry.slot, when),
             onPickAlternative: (item) => _showAlternatives(
                 context, ref, entry.slot, item, intakeState.intake),
             onChangeDish: () =>
@@ -148,6 +151,10 @@ class _PlanHeader extends StatelessWidget {
         : 'Tu ventana de comidas';
     final done = plan.adherentCount;
     final totalMeals = plan.meals.length;
+    // SPEC-298: recomendación de timing. Si la última comida marcada supera el
+    // cierre de la ventana (o 21:30 por defecto, cierre circadiano canónico),
+    // un aviso suave. Solo aparece con dato real (lastConsumedAt).
+    final timingNote = _lateMealNote(plan);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -180,9 +187,43 @@ class _PlanHeader extends StatelessWidget {
             style: const TextStyle(
                 color: AppColors.textSecondary, fontSize: 13, height: 1.4),
           ),
+          if (timingNote != null) ...[
+            const SizedBox(height: 8),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.nightlight_round, size: 15, color: _amber),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    timingNote,
+                    style: const TextStyle(
+                        color: _amber, fontSize: 12.5, height: 1.35),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );
+  }
+
+  /// SPEC-298: aviso de timing. Devuelve el texto si la ÚLTIMA comida marcada
+  /// pasó el cierre de la ventana (o 21:30 por defecto). `null` si no aplica.
+  static String? _lateMealNote(MealPlan plan) {
+    final last = plan.lastConsumedAt;
+    if (last == null) return null;
+    final closeStr = plan.windowLast.isNotEmpty ? plan.windowLast : '21:30';
+    final parts = closeStr.split(':');
+    final ch = int.tryParse(parts.isNotEmpty ? parts[0] : '') ?? 21;
+    final cm = int.tryParse(parts.length > 1 ? parts[1] : '') ??
+        (parts.length > 1 ? 0 : 30);
+    if (last.hour * 60 + last.minute <= ch * 60 + cm) return null;
+    final hh = last.hour.toString().padLeft(2, '0');
+    final mm = last.minute.toString().padLeft(2, '0');
+    return 'Tu última comida fue $hh:$mm. Cerrar antes de $closeStr le da a tu '
+        'cuerpo la noche para reparar (ritmo circadiano).';
   }
 }
 
@@ -191,6 +232,7 @@ class _PlanHeader extends StatelessWidget {
 class _MealCard extends StatelessWidget {
   final MealPlanEntry entry;
   final ValueChanged<AdherenceMark> onMark;
+  final ValueChanged<DateTime>? onEditTime;
   final void Function(PlanItem item)? onPickAlternative;
   final VoidCallback? onChangeDish;
   final VoidCallback? onAddFood;
@@ -198,6 +240,7 @@ class _MealCard extends StatelessWidget {
   const _MealCard({
     required this.entry,
     required this.onMark,
+    this.onEditTime,
     this.onPickAlternative,
     this.onChangeDish,
     this.onAddFood,
@@ -325,10 +368,70 @@ class _MealCard extends StatelessWidget {
           // pero NO marcar que comiste — eso abre con tu ventana.
           if (fastingActive)
             const _FastingMealHint()
-          else
+          else ...[
             _AdherenceRow(current: entry.adherence, onMark: onMark),
+            // SPEC-298: cuando la comida está marcada como consumida, mostramos
+            // la hora real (ancla de la ventana) con lápiz para corregirla.
+            if ((entry.adherence?.isAdherent ?? false) &&
+                entry.consumedAt != null) ...[
+              const SizedBox(height: 10),
+              _ConsumedTimeRow(
+                consumedAt: entry.consumedAt!,
+                onEdit: onEditTime,
+              ),
+            ],
+          ],
         ],
       ),
+    );
+  }
+}
+
+/// SPEC-298: fila "Comido a las HH:mm" con lápiz para corregir la hora.
+/// Esa hora ancla la ventana de alimentación, así que dejamos ajustarla si el
+/// usuario marcó tarde.
+class _ConsumedTimeRow extends StatelessWidget {
+  final DateTime consumedAt;
+  final ValueChanged<DateTime>? onEdit;
+  const _ConsumedTimeRow({required this.consumedAt, this.onEdit});
+
+  static String _hhmm(DateTime t) =>
+      '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+
+  Future<void> _edit(BuildContext context) async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(hour: consumedAt.hour, minute: consumedAt.minute),
+      helpText: 'Hora en que comiste',
+    );
+    if (picked == null || onEdit == null) return;
+    onEdit!(DateTime(consumedAt.year, consumedAt.month, consumedAt.day,
+        picked.hour, picked.minute));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        const Icon(Icons.schedule, size: 15, color: AppColors.textMuted),
+        const SizedBox(width: 6),
+        Text('Comido a las ${_hhmm(consumedAt)}',
+            style: const TextStyle(
+                color: AppColors.textSecondary, fontSize: 12.5)),
+        if (onEdit != null)
+          TextButton.icon(
+            onPressed: () => _edit(context),
+            icon: const Icon(Icons.edit, size: 14, color: _amber),
+            label: const Text('Editar hora',
+                style: TextStyle(
+                    color: _amber, fontSize: 12, fontWeight: FontWeight.w600)),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              minimumSize: const Size(0, 0),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+          ),
+      ],
     );
   }
 }

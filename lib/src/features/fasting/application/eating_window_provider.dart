@@ -12,6 +12,8 @@ import 'package:elena_app/src/core/providers/ticker_providers.dart';
 import 'package:elena_app/src/features/fasting/application/fasting_notifier.dart'
     show lastFastingIntervalProvider;
 import 'package:elena_app/src/features/fasting/domain/eating_window_state.dart';
+import 'package:elena_app/src/features/nutrition/application/meal_plan_notifier.dart'
+    show mealPlanNotifierProvider;
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart'
     show nutritionProvider;
 import 'package:elena_app/src/features/nutrition/domain/meal_interval_rules.dart';
@@ -32,8 +34,15 @@ final eatingWindowProvider = Provider<EatingWindowState?>((ref) {
   // teórico. `nutritionProvider.todayLogs` ya es cycle-aware (Día
   // Metabólico) — reusamos esa misma ventana en vez de recalcularla acá.
   // Ver doc completa en `EatingWindowState.compute`.
+  // SPEC-298: la fuente principal del "primer registro real" es ahora la
+  // MINUTA — la comida marcada como consumida más temprana de hoy. El
+  // registrador viejo (`nutritionProvider.todayLogs`) queda solo como
+  // fallback para datos legacy; el flujo actual ya no lo alimenta.
+  final firstConsumedFromPlan =
+      ref.watch(mealPlanNotifierProvider).plan?.firstConsumedAt;
   final todayLogs = ref.watch(nutritionProvider).todayLogs;
-  final firstMealLoggedToday = MealIntervalRules.firstMealOf(todayLogs);
+  final firstMealLoggedToday =
+      firstConsumedFromPlan ?? MealIntervalRules.firstMealOf(todayLogs);
 
   // Watcheamos el pulse para refrescar el cómputo cada 10s sin tener
   // que recalcular en cada frame.
