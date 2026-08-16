@@ -594,14 +594,6 @@ class _MiniRow extends StatelessWidget {
   final ChallengeScore score;
   final bool isMe;
 
-  static const _ringOrder = [
-    Icons.timer_rounded,
-    Icons.fitness_center_rounded,
-    Icons.restaurant_rounded,
-    Icons.bedtime_rounded,
-    Icons.water_drop_rounded,
-  ];
-
   @override
   Widget build(BuildContext context) {
     final medal = switch (rank) {
