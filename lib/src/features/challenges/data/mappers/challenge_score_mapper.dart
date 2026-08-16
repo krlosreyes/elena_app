@@ -7,9 +7,11 @@ class ChallengeScoreMapper {
   const ChallengeScoreMapper();
 
   ChallengeScore fromMap(Map<String, dynamic> data) {
+    final photo = (data['photoUrl'] as String?)?.trim();
     return ChallengeScore(
       uid: (data['uid'] as String?) ?? '',
       displayName: (data['displayName'] as String?) ?? 'Usuario',
+      photoUrl: (photo == null || photo.isEmpty) ? null : photo,
       points: (data['points'] as num?)?.toInt() ?? 0,
       todayRings: ChallengeRings.fromMap(
         (data['todayRings'] as Map?)?.cast<String, dynamic>(),
@@ -22,6 +24,8 @@ class ChallengeScoreMapper {
     return {
       'uid': s.uid,
       'displayName': s.displayName,
+      // SPEC-299: se omite cuando no hay foto (doc limpio; cae a inicial).
+      if (s.photoUrl != null && s.photoUrl!.isNotEmpty) 'photoUrl': s.photoUrl,
       'points': s.points,
       'todayRings': s.todayRings.toMap(),
       'qualifiedToday': s.qualifiedToday,

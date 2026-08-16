@@ -51,4 +51,19 @@ void main() {
     expect(back.displayName, 'Usuario');
     expect(back.points, 0);
   });
+
+  test('ChallengeScore: photoUrl round-trip y se omite cuando es null', () {
+    const withPhoto = ChallengeScore(
+        uid: 'u1',
+        displayName: 'Carlos',
+        points: 5,
+        photoUrl: 'https://x/pic.jpg');
+    final m1 = scoreMapper.toMap(withPhoto);
+    expect(m1['photoUrl'], 'https://x/pic.jpg');
+    expect(scoreMapper.fromMap(m1).photoUrl, 'https://x/pic.jpg');
+
+    const noPhoto = ChallengeScore(uid: 'u1', displayName: 'Carlos', points: 5);
+    expect(scoreMapper.toMap(noPhoto).containsKey('photoUrl'), false);
+    expect(scoreMapper.fromMap(scoreMapper.toMap(noPhoto)).photoUrl, isNull);
+  });
 }

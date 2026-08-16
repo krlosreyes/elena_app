@@ -6,6 +6,11 @@ class ChallengeScore {
   final String uid;
   final String displayName;
 
+  /// SPEC-299: foto de perfil del proveedor (hoy Google), para personalizar el
+  /// tablero. Se publica junto al puntaje porque cada quien solo puede leer su
+  /// propia sesión de auth; `null` si el usuario no tiene foto (cae a inicial).
+  final String? photoUrl;
+
   /// SPEC-264: puntos por pilar acumulados en el período (cada anillo cerrado
   /// suma 1; máx 5/día).
   final int points;
@@ -19,6 +24,7 @@ class ChallengeScore {
   const ChallengeScore({
     required this.uid,
     required this.displayName,
+    this.photoUrl,
     required this.points,
     this.todayRings = ChallengeRings.empty,
     this.qualifiedToday = false,

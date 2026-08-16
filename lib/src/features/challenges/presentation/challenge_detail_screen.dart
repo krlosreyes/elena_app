@@ -20,6 +20,7 @@ import 'package:elena_app/src/features/challenges/domain/challenge_score.dart';
 import 'package:elena_app/src/features/challenges/domain/challenge_scoring.dart';
 import 'package:elena_app/src/features/challenges/domain/nudge.dart';
 import 'package:elena_app/src/features/challenges/presentation/nudge_buzz.dart';
+import 'package:elena_app/src/features/challenges/presentation/widgets/challenge_avatar.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 
 const Color _accent = AppColors.accent;
@@ -549,7 +550,7 @@ class _LeaderRow extends StatelessWidget {
           Row(
             children: [
               SizedBox(
-                width: 24,
+                width: 20,
                 child: Text('$rank',
                     style: TextStyle(
                         color: medal,
@@ -557,6 +558,14 @@ class _LeaderRow extends StatelessWidget {
                         fontWeight: FontWeight.w800)),
               ),
               const SizedBox(width: 8),
+              // SPEC-299: avatar (foto de perfil o inicial) para personalizar.
+              ChallengeAvatar(
+                name: score.displayName,
+                photoUrl: score.photoUrl,
+                size: 36,
+                highlight: isMe,
+              ),
+              const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   isMe ? '${score.displayName} (tú)' : score.displayName,

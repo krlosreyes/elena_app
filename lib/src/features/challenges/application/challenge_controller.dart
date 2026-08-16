@@ -29,6 +29,7 @@ import 'package:elena_app/src/features/challenges/domain/challenge_score.dart';
 import 'package:elena_app/src/features/challenges/domain/challenge_scoring.dart';
 import 'package:elena_app/src/features/challenges/domain/nudge.dart';
 import 'package:elena_app/src/features/challenges/domain/reto_badges.dart';
+import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
 import 'package:elena_app/src/features/gamification/application/gamification_notifier.dart';
 import 'package:elena_app/src/features/streak/domain/streak_entry.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
@@ -76,9 +77,21 @@ class ChallengeController {
         break;
       }
     }
+    // SPEC-299: la foto sale de la sesión de auth (AppAccount), no del
+    // UserModel; se publica en el score para que los rivales la vean. Lectura
+    // blindada: si la sesión aún no cargó (o en tests sin Firebase), va sin
+    // foto y el tablero cae a la inicial — nunca rompe la publicación.
+    String? photoUrl;
+    try {
+      final p = _ref.read(authStateProvider).valueOrNull?.photoUrl;
+      photoUrl = (p != null && p.isNotEmpty) ? p : null;
+    } catch (_) {
+      photoUrl = null;
+    }
     return ChallengeScore(
       uid: user.id,
       displayName: user.name,
+      photoUrl: (photoUrl != null && photoUrl.isNotEmpty) ? photoUrl : null,
       points: points,
       todayRings: todayEntry == null
           ? ChallengeRings.empty
