@@ -12,6 +12,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:elena_app/src/core/errors/validation_error.dart';
 import 'package:elena_app/src/features/sleep/data/mappers/sleep_log_mapper.dart';
 import 'package:elena_app/src/features/sleep/domain/sleep_log.dart';
+import 'package:elena_app/src/features/sleep/domain/sleep_source.dart';
 import 'package:elena_app/src/features/sleep/domain/sleep_stages.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -57,6 +58,25 @@ void main() {
     final map = mapper.toMap(log0());
     expect(map.containsKey('stages'), isFalse);
     expect(mapper.fromMap(map, docId: 'sleep-001').stages, isNull);
+  });
+
+  test('SPEC-302: source round-trip; manual (default) se omite', () {
+    // Manual (default) no escribe la clave y se lee como manual.
+    final m = mapper.toMap(log0());
+    expect(m.containsKey('source'), isFalse);
+    expect(mapper.fromMap(m, docId: 'sleep-001').source, SleepSource.manual);
+
+    // Device sí se persiste y round-trip.
+    final device = SleepLog(
+      id: 'sleep-dev',
+      fellAsleep: DateTime(2026, 5, 1, 23, 0),
+      wokeUp: DateTime(2026, 5, 2, 7, 0),
+      lastMealTime: DateTime(2026, 5, 1, 19, 0),
+      source: SleepSource.device,
+    );
+    final md = mapper.toMap(device);
+    expect(md['source'], 'device');
+    expect(mapper.fromMap(md, docId: 'sleep-dev').source, SleepSource.device);
   });
 
   group('toMap — campos requeridos', () {

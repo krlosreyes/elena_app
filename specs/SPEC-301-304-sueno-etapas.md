@@ -52,12 +52,28 @@ El auto-sync al despertar ya funciona: `resume` → `runNow`; y en arranque en
 frío `lastRunAt` es null, así que `runIfDue` ya sincroniza de inmediato. No hace
 falta cambio.
 
+## SPEC-302 — Procedencia (fuente) del registro de sueño
+
+Aclaración que quitó riesgo: la regla de Carlos ("Health gana salvo edición
+manual") ya se cumple sola — un `SleepLog` manual solo existe si el usuario lo
+ingresó (= una edición), así que el guard "manual gana sobre auto" del import ya
+respeta la edición manual y deja que el dispositivo mande en el resto. NO se
+invierte el guard (lógica de persistencia auditada).
+
+Lo que faltaba era ETIQUETAR la fuente: `SleepSource {device, manual, estimated}`
+(`sleep_source.dart`), `SleepLog.source` (default `manual`), mapper (omit-if-
+manual), el import de HealthKit/HC/Samsung marca `device`, y un chip
+`_SleepSourceChip` en el pilar ("Sincronizado desde tu dispositivo" / "Registro
+manual" / "Estimado de tu perfil"). Test de round-trip en el mapper.
+
+Ejercicio ya está etiquetado sin campo nuevo: `ImportedActivitiesSection` muestra
+"Importado desde Apple Health" y el pilar tiene su chip de entrada manual —
+`ExerciseLog.sourceName` (SPEC-296) ya distingue la fuente.
+
 ## Pendiente (siguiente iteración)
-- SPEC-302: jerarquía de fuente (Health > manual editado > estimado) para sueño
-  y ejercicio; invertir el guard "manual gana"; badge de fuente. (Ejercicio toca
-  `ExerciseLog` Freezed → build_runner.)
 - SPEC-303: onboarding pregunta "horas típicas de sueño" → estimado del pilar
-  cuando no hay Health ni registro.
+  (`SleepSource.estimated`) cuando no hay Health ni registro. Necesita
+  `build_runner` (UserModel es Freezed) + tocar el onboarding.
 
 ## Verificación (Carlos)
 

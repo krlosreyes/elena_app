@@ -17,6 +17,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:elena_app/src/core/errors/validation_error.dart';
 import 'package:elena_app/src/features/sleep/domain/sleep_log.dart';
+import 'package:elena_app/src/features/sleep/domain/sleep_source.dart';
 import 'package:elena_app/src/features/sleep/domain/sleep_stages.dart';
 
 class SleepLogMapper {
@@ -55,6 +56,11 @@ class SleepLogMapper {
     if (stagesMap != null && stagesMap.isNotEmpty) {
       map['stages'] = stagesMap;
     }
+    // SPEC-302: procedencia. Se omite cuando es 'manual' (el default) para no
+    // inflar los docs viejos; ausente se lee como manual.
+    if (log.source != SleepSource.manual) {
+      map['source'] = log.source.wire;
+    }
     return map;
   }
 
@@ -77,6 +83,7 @@ class SleepLogMapper {
       stages: SleepStages.fromMap(
         (map['stages'] as Map?)?.cast<String, dynamic>(),
       ),
+      source: SleepSource.fromWire(map['source'] as String?),
     );
     // No llamamos _validate aquí: el constructor de SleepLog ya valida
     // las invariantes SPEC-69 (rangos, no negativos) — duplicarlo aquí

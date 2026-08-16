@@ -1,4 +1,5 @@
 import 'package:elena_app/src/core/errors/validation_error.dart';
+import 'package:elena_app/src/features/sleep/domain/sleep_source.dart';
 import 'package:elena_app/src/features/sleep/domain/sleep_stages.dart';
 
 /// Registro de un ciclo de sueño individual.
@@ -32,6 +33,11 @@ class SleepLog {
   /// fuente no reporta etapas (iPhone solo, registro manual, estimado).
   final SleepStages? stages;
 
+  /// SPEC-302: procedencia del registro (dispositivo / manual / estimado).
+  /// Default `manual`: los registros del sheet son manuales; el import de
+  /// HealthKit/HC lo marca `device`.
+  final SleepSource source;
+
   SleepLog({
     required this.id,
     required this.fellAsleep,
@@ -41,6 +47,7 @@ class SleepLog {
     this.nightAwakenings,
     this.subjectiveQuality,
     this.stages,
+    this.source = SleepSource.manual,
   }) {
     // SPEC-62: errores tipados. Caller puede pattern-match sobre
     // ValidationError sin parsear strings de mensaje.

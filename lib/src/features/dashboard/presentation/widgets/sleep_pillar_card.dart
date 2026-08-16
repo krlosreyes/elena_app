@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elena_app/src/features/sleep/application/sleep_notifier.dart';
 import 'package:elena_app/src/features/sleep/domain/sleep_log.dart';
+import 'package:elena_app/src/features/sleep/domain/sleep_source.dart';
 import 'package:elena_app/src/features/dashboard/presentation/sleep_input_sheet.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/pillar_card_ui.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/sleep_existing_log_dialog.dart';
@@ -94,7 +95,10 @@ class SleepPillarCard extends ConsumerWidget {
           PillarCardUi.miniStat('Despertaste', fmt(log.wokeUp), Colors.white),
         ],
       ),
-      const SizedBox(height: 14),
+      const SizedBox(height: 12),
+      // SPEC-302: de dónde viene este registro (dispositivo / manual / estimado).
+      _SleepSourceChip(source: log.source),
+      const SizedBox(height: 12),
       Row(
         children: [
           const Text('🚩', style: TextStyle(fontSize: 14)),
@@ -345,5 +349,45 @@ class SleepPillarCard extends ConsumerWidget {
         ),
       );
     }
+  }
+}
+
+/// SPEC-302: chip que muestra la procedencia del registro de sueño.
+class _SleepSourceChip extends StatelessWidget {
+  const _SleepSourceChip({required this.source});
+  final SleepSource source;
+
+  @override
+  Widget build(BuildContext context) {
+    final (icon, color) = switch (source) {
+      SleepSource.device => (Icons.watch_rounded, const Color(0xFF34D399)),
+      SleepSource.manual => (Icons.edit_rounded, const Color(0xFF94A3B8)),
+      SleepSource.estimated => (
+          Icons.auto_awesome_rounded,
+          const Color(0xFFFBBF24)
+        ),
+    };
+    final label = switch (source) {
+      SleepSource.device => 'Sincronizado desde tu dispositivo',
+      SleepSource.manual => 'Registro manual',
+      SleepSource.estimated => 'Estimado de tu perfil',
+    };
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: color),
+          const SizedBox(width: 6),
+          Text(label,
+              style: TextStyle(
+                  color: color, fontSize: 11.5, fontWeight: FontWeight.w700)),
+        ],
+      ),
+    );
   }
 }
