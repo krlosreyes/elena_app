@@ -207,6 +207,7 @@ class _WeeklyFuerzaStrip extends StatelessWidget {
   final WeeklyExercisePlan plan;
 
   static const _fuerzaColor = Color(0xFF14B8A6);
+  static const _cardioColor = Color(0xFF38BDF8);
   static const _labels = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 
   @override
@@ -217,7 +218,9 @@ class _WeeklyFuerzaStrip extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'TU SEMANA DE FUERZA',
+          // Antes 'TU SEMANA DE FUERZA': daba a entender que todo era fuerza y
+          // chocaba con un día de cardio/HIIT. El plan es fuerza + cardio.
+          'TU SEMANA DE ENTRENAMIENTO',
           style: TextStyle(
             color: Colors.white.withValues(alpha: 0.40),
             fontSize: 10,
@@ -234,43 +237,76 @@ class _WeeklyFuerzaStrip extends StatelessWidget {
               (d) => d.weekday == weekday,
               orElse: () => plan.days.first,
             );
-            final isFuerza = entry.type == PlanSessionType.fuerza;
             final isToday = weekday == todayWeekday;
-
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 26,
-                  height: 26,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: isFuerza
-                        ? _fuerzaColor
-                        : Colors.white.withValues(alpha: 0.05),
-                    border: Border.all(
-                      color: isToday
-                          ? Colors.white.withValues(alpha: 0.85)
-                          : Colors.white.withValues(alpha: 0.12),
-                      width: isToday ? 1.6 : 1,
-                    ),
-                  ),
-                  child: Text(
-                    _labels[i],
-                    style: TextStyle(
-                      color: isFuerza
-                          ? Colors.black
-                          : Colors.white.withValues(alpha: 0.45),
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
+            // SPEC: la franja refleja el PLAN COMPLETO — fuerza, cardio y
+            // descanso — no solo fuerza, para que el "hoy toca X" del banner
+            // siempre coincida con el color del día de hoy.
+            final (fill, fg) = switch (entry.type) {
+              PlanSessionType.fuerza => (_fuerzaColor, Colors.black),
+              PlanSessionType.cardio => (
+                  _cardioColor.withValues(alpha: 0.28),
+                  _cardioColor,
                 ),
-              ],
+              PlanSessionType.descanso => (
+                  Colors.white.withValues(alpha: 0.05),
+                  Colors.white.withValues(alpha: 0.45),
+                ),
+            };
+
+            return Container(
+              width: 26,
+              height: 26,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: fill,
+                border: Border.all(
+                  color: isToday
+                      ? Colors.white.withValues(alpha: 0.85)
+                      : Colors.white.withValues(alpha: 0.12),
+                  width: isToday ? 1.6 : 1,
+                ),
+              ),
+              child: Text(
+                _labels[i],
+                style: TextStyle(
+                  color: fg,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
             );
           }),
         ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            _legendItem(_fuerzaColor, 'Fuerza'),
+            const SizedBox(width: 14),
+            _legendItem(_cardioColor, 'Cardio'),
+            const SizedBox(width: 14),
+            _legendItem(Colors.white.withValues(alpha: 0.25), 'Descanso'),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _legendItem(Color color, String label) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 9,
+          height: 9,
+          decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+        ),
+        const SizedBox(width: 5),
+        Text(label,
+            style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.55),
+                fontSize: 10.5,
+                fontWeight: FontWeight.w600)),
       ],
     );
   }
