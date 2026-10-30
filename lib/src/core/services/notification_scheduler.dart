@@ -567,7 +567,27 @@ class NotificationScheduler {
   /// exactamente al despertar — damos 30 min de gracia.
   static const Duration kHydrationFirstSlotOffset = Duration(minutes: 30);
 
-  /// SPEC-150 §RF-150-04: agenda los slots diarios de hidratación.
+  /// Fix notificaciones (2026-10-30): hora del ÚNICO recordatorio de agua —
+  /// el punto medio entre (despertar + 30 min) y el cutoff
+  /// (min(hora de dormir, 21:00)). Null si no hay ventana útil.
+  /// Pura, para testear sin el plugin.
+  static DateTime? hydrationReminderTime({
+    required int wakeHour,
+    required int wakeMinute,
+    required int sleepHour,
+  }) {
+    final cutoffHour =
+        sleepHour < kHydrationCutoffHour ? sleepHour : kHydrationCutoffHour;
+    final firstSlot = DateTime(2000, 1, 1, wakeHour, wakeMinute)
+        .add(kHydrationFirstSlotOffset);
+    final endTime = DateTime(2000, 1, 1, cutoffHour, 0);
+    if (!firstSlot.isBefore(endTime)) return null;
+    return firstSlot.add(
+      Duration(minutes: endTime.difference(firstSlot).inMinutes ~/ 2),
+    );
+  }
+
+  /// SPEC-150 §RF-150-04: agenda el recordatorio diario de hidratación.
   /// Se llama desde NotificationProvider cuando cambia el perfil
   /// circadiano del usuario.
   static Future<void> scheduleHydrationReminders(UserModel user) async {
@@ -578,56 +598,32 @@ class NotificationScheduler {
       final wakeUp = profile.wakeUpTime;
       final sleepTime = profile.sleepTime;
 
-      // Cutoff = min(sleepTime.hour, 21). Si el usuario duerme antes de
-      // las 21, respetamos su sleep; si duerme después, paramos a 21
-      // para respetar SPEC-70.5 (bloqueo intestinal).
-      final cutoffHour = sleepTime.hour < kHydrationCutoffHour
-          ? sleepTime.hour
-          : kHydrationCutoffHour;
-
-      // Slot inicial: wakeUp + 30 min.
-      DateTime current = DateTime(
-        2000,
-        1,
-        1,
-        wakeUp.hour,
-        wakeUp.minute,
-      ).add(kHydrationFirstSlotOffset);
-
-      // Fin: cutoffHour:00 del mismo día base.
-      final endTime = DateTime(2000, 1, 1, cutoffHour, 0);
-
-      final maxSlots =
-          NotificationIds.hydrationEnd - NotificationIds.hydrationStart + 1;
-      int slotIndex = 0;
-      while (!current.isAfter(endTime) && slotIndex < maxSlots) {
-        final id = NotificationIds.hydrationStart + slotIndex;
-        final message = HydrationMessagePool.selectFor(
-          scheduledTime: current,
-          slotIndex: slotIndex,
-        );
-        await _scheduleCircadian(
-          id: id,
-          hour: current.hour,
-          minute: current.minute,
-          title: message.title,
-          // Retro tester (1-ago): el recordatorio no invitaba a REGISTRAR.
-          // Se añade el llamado a la acción al cuerpo (los botones ya existen)
-          // en un solo lugar, sin tocar los 12 mensajes curados del pool.
-          body: '${message.body} ¿Ya lo tomaste? Regístralo con un toque.',
-          // SPEC-199 Fase A: cada recordatorio de hidratación es accionable
-          // (botones "Sí, lo registro" / "Aún no").
-          actionableHydration: true,
-          payload: NotificationRouter.hydrationPayload(),
-        );
-        current = current.add(kHydrationCadence);
-        slotIndex++;
-      }
-
+      // Fix notificaciones (2026-10-30): UN solo recordatorio de agua al
+      // día, a mitad de la jornada, y solo si el usuario activó el tipo
+      // "agua" (apagado por defecto). Antes eran ~20 diarios, uno cada 45 min.
+      // El filtro final lo hace NotificationPolicy dentro de scheduleAt().
+      final midday = hydrationReminderTime(
+        wakeHour: wakeUp.hour,
+        wakeMinute: wakeUp.minute,
+        sleepHour: sleepTime.hour,
+      );
+      if (midday == null) return;
+      final message = HydrationMessagePool.selectFor(
+        scheduledTime: midday,
+        slotIndex: 0,
+      );
+      await _scheduleCircadian(
+        id: NotificationIds.hydrationStart,
+        hour: midday.hour,
+        minute: midday.minute,
+        title: message.title,
+        body: '${message.body} ¿Ya lo tomaste? Regístralo con un toque.',
+        actionableHydration: true,
+        payload: NotificationRouter.hydrationPayload(),
+      );
       AppLogger.info(
-        '[NotificationScheduler] Hidratación: $slotIndex slots programados '
-        '(wake ${wakeUp.hour}:${wakeUp.minute.toString().padLeft(2, '0')}, '
-        'cutoff $cutoffHour:00, cadencia ${kHydrationCadence.inMinutes}min).',
+        '[NotificationScheduler] Hidratación: 1 recordatorio a las '
+        '${midday.hour}:${midday.minute.toString().padLeft(2, '0')}.',
       );
     } catch (e, st) {
       AppLogger.error(

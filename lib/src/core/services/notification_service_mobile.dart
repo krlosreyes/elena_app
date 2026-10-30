@@ -7,6 +7,7 @@ import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
 import 'app_logger.dart';
+import 'notification_policy.dart';
 import 'notification_router.dart';
 import 'pending_action_queue.dart'
     show
@@ -698,6 +699,11 @@ class NotificationService {
     String? payload,
   }) async {
     if (kIsWeb || !_initialized) return;
+    // Fix notificaciones (2026-10-30): todo aviso pasa por la política.
+    if (!NotificationPolicy.allows(id)) {
+      AppLogger.debug('[NotificationService] Bloqueada por política: $id');
+      return;
+    }
 
     try {
       await _plugin.show(
@@ -734,6 +740,14 @@ class NotificationService {
     String? payload,
   }) async {
     if (kIsWeb || !_initialized) return;
+    // Fix notificaciones (2026-10-30): todo aviso pasa por la política
+    // (máximo 3 al día). Si el ID no está permitido, además se cancela por
+    // si quedó agendado como repetitivo por una versión anterior.
+    if (!NotificationPolicy.allows(id)) {
+      await _plugin.cancel(id: id);
+      AppLogger.debug('[NotificationService] Bloqueada por política: $id');
+      return;
+    }
 
     try {
       final tz.TZDateTime tzScheduled = tz.TZDateTime.from(
@@ -783,6 +797,25 @@ class NotificationService {
     } catch (e) {
       AppLogger.error('[NotificationService] Error scheduleAt()', e);
     }
+  }
+
+  /// Fix notificaciones (2026-10-30): cancela en el sistema operativo todos
+  /// los avisos que ya no están permitidos por [NotificationPolicy] — incluye
+  /// los repetitivos que dejaron agendados versiones anteriores (p. ej. los
+  /// ~20 de hidratación diarios). No toca el progreso en vivo del ayuno (700).
+  static Future<void> purgeDisallowed() async {
+    if (kIsWeb || !_initialized) return;
+    final allowed = NotificationPolicy.allowedIdsFor(
+      NotificationPolicy.enabled,
+      NotificationPolicy.maxPerDay,
+    );
+    for (final id in NotificationPolicy.purgeTargets(allowed)) {
+      await _plugin.cancel(id: id);
+    }
+    AppLogger.info(
+      '[NotificationService] Purga de avisos no permitidos '
+      '(permitidos: ${allowed.toList()..sort()}).',
+    );
   }
 
   static Future<void> cancel(int id) async {

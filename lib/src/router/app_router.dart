@@ -49,6 +49,7 @@ import 'package:elena_app/src/features/content/presentation/aprende_detail_scree
 // colapsadas de "Configuración" en Perfil — ver comentario en
 // biometricos_detail_screen.dart.
 import 'package:elena_app/src/features/auth/presentation/biometricos_detail_screen.dart';
+import 'package:elena_app/src/features/auth/presentation/notification_settings_screen.dart';
 import 'package:elena_app/src/features/auth/presentation/ritmos_circadianos_detail_screen.dart';
 import 'package:elena_app/src/features/auth/presentation/protocolo_detail_screen.dart';
 import 'package:elena_app/src/features/auth/presentation/objetivos_detail_screen.dart';
@@ -295,6 +296,12 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/profile/biometricos',
         name: 'profile-biometricos',
         builder: (context, state) => const BiometricosDetailScreen(),
+      ),
+      // Fix notificaciones (2026-10-30): tipos de aviso + límite diario.
+      GoRoute(
+        path: '/profile/notificaciones',
+        name: 'profile-notificaciones',
+        builder: (context, state) => const NotificationSettingsScreen(),
       ),
       GoRoute(
         path: '/profile/ritmos',

@@ -107,6 +107,9 @@ class NotificationService {
     // No-op en Web
   }
 
+  /// Paridad de API con mobile (Fix notificaciones 2026-10-30). No-op en web.
+  static Future<void> purgeDisallowed() async {}
+
   static Future<void> cancel(int id) async {
     // No-op en Web
   }

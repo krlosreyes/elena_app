@@ -14,6 +14,7 @@ import 'package:elena_app/src/core/config/build_info.dart';
 import 'package:elena_app/src/core/config/feature_flags.dart';
 import 'package:elena_app/src/core/engine/imr_persistence_provider.dart';
 import 'package:elena_app/src/core/engine/longitudinal_imr_provider.dart';
+import 'package:elena_app/src/core/services/notification_policy.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/auth/presentation/widgets/achievement_showcase_card.dart';
 import 'package:elena_app/src/features/auth/presentation/widgets/alcohol_protocol_entry_card.dart';
@@ -125,6 +126,21 @@ class _ProfileBody extends ConsumerWidget {
             AlimentacionMinutaEntryCard(),
             ExerciseHabitsEntryCard(),
             AlcoholProtocolEntryCard(),
+          ],
+        ),
+        const SizedBox(height: 26),
+
+        // ── Notificaciones (Fix 2026-10-30: máximo 3 al día) ────────
+        _sectionTitle('Notificaciones'),
+        const SizedBox(height: 10),
+        ProfileSettingsGroup(
+          children: [
+            ProfileRow(
+              icon: Icons.notifications_none_rounded,
+              title: 'Avisos',
+              value: 'Máx. $kHardMaxPerDay al día',
+              onTap: () => context.push('/profile/notificaciones'),
+            ),
           ],
         ),
         const SizedBox(height: 26),

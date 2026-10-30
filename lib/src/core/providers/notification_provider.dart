@@ -1,7 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
+import 'package:elena_app/src/core/services/notification_policy.dart';
 import 'package:elena_app/src/core/services/notification_scheduler.dart';
+import 'package:elena_app/src/core/services/notification_service.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/features/fasting/application/fasting_notifier.dart';
 import 'package:elena_app/src/features/glucose/application/glucose_providers.dart';
@@ -29,6 +31,7 @@ class NotificationSchedulerNotifier extends StateNotifier<void> {
   final Ref _ref;
   CircadianProfile? _lastProfile;
   String? _lastCycleId;
+  bool _policyLoaded = false;
 
   NotificationSchedulerNotifier(this._ref) : super(null) {
     _ref.listen<AsyncValue<UserModel?>>(
@@ -131,6 +134,15 @@ class NotificationSchedulerNotifier extends StateNotifier<void> {
     // de ciclo). Evita re-schedules en cada tick del stream del usuario.
     if (!force && _lastProfile == user.profile) return;
     _lastProfile = user.profile;
+    // Fix notificaciones (2026-10-30): cargar la configuración del usuario
+    // (tipos activos, límite diario) y limpiar del sistema operativo los
+    // avisos que ya no están permitidos — incluidos los que dejaron
+    // agendados versiones anteriores (hidratación cada 45 min, etc.).
+    if (!_policyLoaded) {
+      await NotificationPolicy.load();
+      _policyLoaded = true;
+    }
+    await NotificationService.purgeDisallowed();
     final openCycle = _ref.read(currentMetabolicCycleProvider).valueOrNull;
     AppLogger.info(
       '[NotificationProvider] Reprogramando agenda '
@@ -149,10 +161,25 @@ class NotificationSchedulerNotifier extends StateNotifier<void> {
       goalsSummaryBody: _buildGoalsSummary(user),
       glucoseProtocolActive: glucoseProtocolActive,
     );
-    // SPEC-150: hidratación reprograma junto con la agenda circadiana.
-    // Default 90 min entre slots durante la ventana de despertar,
-    // cutoff 21:00 (respeta bloqueo intestinal).
+    // Fix notificaciones (2026-10-30): un solo recordatorio de agua al día,
+    // y solo si el usuario lo activó (NotificationPolicy).
     await NotificationScheduler.scheduleHydrationReminders(user);
+  }
+
+  /// Fix notificaciones (2026-10-30): la pantalla de ajustes llama esto al
+  /// cambiar un interruptor o el límite diario. Guarda, purga y reprograma.
+  Future<void> applyPolicy({
+    required Set<NotificationKind> enabled,
+    required int maxPerDay,
+  }) async {
+    await NotificationPolicy.save(enabled: enabled, maxPerDay: maxPerDay);
+    _policyLoaded = true;
+    final user = _ref.read(currentUserStreamProvider).valueOrNull;
+    if (user == null) {
+      await NotificationService.purgeDisallowed();
+      return;
+    }
+    await _maybeReschedule(user, force: true);
   }
 }
 
