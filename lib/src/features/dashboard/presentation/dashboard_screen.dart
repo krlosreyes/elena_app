@@ -3,53 +3,37 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:elena_app/src/core/engine/imr_persistence_provider.dart';
 import 'package:elena_app/src/core/engine/metabolic_state_provider.dart';
-import 'package:elena_app/src/core/widgets/elena_header.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
-import 'package:elena_app/src/features/fasting/application/eating_window_provider.dart';
 import 'package:elena_app/src/features/fasting/application/fasting_notifier.dart';
 import 'package:elena_app/src/features/sleep/application/sleep_notifier.dart';
 import 'package:elena_app/src/features/hydration/application/hydration_notifier.dart';
 import 'package:elena_app/src/features/dashboard/domain/selected_pillar.dart';
-import 'package:elena_app/src/features/dashboard/presentation/widgets/circadian_clock.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/dashboard_bottom_nav.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/dashboard_fasting_overlays.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/dashboard_pillars_row.dart';
+import 'package:elena_app/src/features/dashboard/presentation/widgets/fasting_consciousness_card.dart';
+import 'package:elena_app/src/features/dashboard/presentation/widgets/hoy_header.dart';
+import 'package:elena_app/src/features/dashboard/presentation/widgets/today_focus_card.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/dashboard_selected_pillar_card.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/metabolic_alert_banner.dart';
-import 'package:elena_app/src/features/engagement/presentation/widgets/engagement_banner.dart';
-import 'package:elena_app/src/features/adaptive/presentation/widgets/adaptive_suggestion_card.dart';
-import 'package:elena_app/src/features/billing/presentation/paywall_auto_trigger.dart';
-import 'package:elena_app/src/features/billing/presentation/trial_banner.dart';
 // 17-jul: "Para ti" se colapsó en una card de entrada renombrada
 // "Aprende con Elena" — ver comentario junto a su uso más abajo.
-import 'package:elena_app/src/features/content/presentation/widgets/aprende_entry_card.dart';
-import 'package:elena_app/src/features/coaching/presentation/widgets/cycle_coaching_feedback_card.dart';
-import 'package:elena_app/src/features/dashboard/presentation/widgets/interactive_coaching_card.dart';
-import 'package:elena_app/src/features/coaching/presentation/widgets/check_in_card.dart';
 import 'package:elena_app/src/features/coaching/presentation/widgets/wake_up_quality_overlay.dart';
-import 'package:elena_app/src/features/dashboard/presentation/widgets/new_cycle_meals_warning_dialog.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/celebration_overlay.dart';
-import 'package:elena_app/src/features/dashboard/presentation/widgets/clock_explainer_sheet.dart';
-import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
 import 'package:elena_app/src/features/progress/application/biometric_backfill_provider.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_bootstrap_provider.dart';
-import 'package:elena_app/src/features/metabolic_cycle/presentation/widgets/cycle_closure_card.dart';
 import 'package:elena_app/src/features/metabolic_cycle/presentation/widgets/cycle_detail_sheet.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart';
 import 'package:elena_app/src/features/metabolic_cycle/domain/metabolic_cycle.dart';
 // SPEC-137 E.5: banner countdown 30 min antes de la próxima comida.
-import 'package:elena_app/src/features/nutrition/presentation/widgets/next_meal_banner.dart';
 import 'package:elena_app/src/features/onboarding/application/app_tour_notifier.dart';
 import 'package:elena_app/src/features/onboarding/application/tour_targets_provider.dart';
-import 'package:elena_app/src/features/progress/presentation/widgets/biometric_reminder_banner.dart';
 import 'package:elena_app/src/features/badges/application/badge_notifier.dart';
-import 'package:elena_app/src/features/streak/presentation/widgets/streak_at_risk_banner.dart';
 // Módulo "Tu Glucosa" (23-jul): tarjeta de registro matutino + gancho
 // de consentimiento automático (ver ref.listen más abajo).
 import 'package:elena_app/src/features/dashboard/application/ui_interaction_notifier.dart';
 import 'package:elena_app/src/features/glucose/application/glucose_providers.dart';
 import 'package:elena_app/src/features/glucose/presentation/widgets/glucose_consent_sheet.dart';
-import 'package:elena_app/src/features/glucose/presentation/widgets/glucose_morning_reminder_card.dart';
 // SPEC-261: card de entrada al Protocolo de Consumo Consciente (alcohol).
 
 // SPEC-88 fix: BodyCompositionCard y GoalsDashboardWidget se retiraron
@@ -65,7 +49,25 @@ class DashboardScreen extends ConsumerStatefulWidget {
 }
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
-  SelectedPillar _selectedPillar = SelectedPillar.ayuno;
+  // Rediseño Hoy (2026-10-30): ningún pilar abierto por defecto. El ayuno
+  // ya es la acción principal de arriba; los demás se abren al tocarlos.
+  SelectedPillar? _selectedPillar;
+
+  void _onSelectPillar(SelectedPillar p) {
+    if (!mounted) return;
+    if (p == SelectedPillar.ayuno) {
+      // El ayuno es la card principal: subir hasta ella.
+      setState(() => _selectedPillar = null);
+      final c = ref.read(dashboardScrollControllerProvider);
+      if (c.hasClients) {
+        c.animateTo(0,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut);
+      }
+      return;
+    }
+    setState(() => _selectedPillar = _selectedPillar == p ? null : p);
+  }
 
   // SPEC-243 BUILD-2 FIX: el tour solo se llamaba desde _finalSubmit() en
   // onboarding. Usuarios con perfil ya creado llegan al dashboard sin pasar
@@ -273,272 +275,82 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Column(
                     children: [
+                      // Rediseño Hoy (2026-10-30): la pantalla responde una
+                      // sola pregunta — qué hago ahora. Orden:
+                      //   1. Saludo + racha
+                      //   2. Acción principal (ayuno: iniciar / en curso)
+                      //   3. Tu foco de hoy (una recomendación)
+                      //   4. Tu día (puntaje + 5 pilares; tocar abre detalle)
+                      // Se quitaron del feed: reloj circadiano (vive en
+                      // Progreso), banners de racha/glucosa/engagement/
+                      // prueba/muro de pago, cierre de ciclo, coach,
+                      // sugerencias, check-in, recordatorio de peso y
+                      // "Aprende". Su código sigue en el repo.
                       const SizedBox(height: 10),
-                      const ElenaHeader(),
-                      const SizedBox(height: 10),
-
-                      // Propuesta "racha protagonista" (2026-07-15, P1): la
-                      // racha vive en el Dashboard, no solo en Análisis —
-                      // mismo lugar donde Duolingo muestra su llama en cada
-                      // apertura de la app.
-                      //
-                      // 17-jul: StreakTodayWidget (card "X días de racha" que
-                      // iba acá) se quitó — duplicaba el badge de ElenaHeader
-                      // (mismo dato, mismo tap-target hacia el sheet de
-                      // reglas). El badge del header absorbió su texto y ahora
-                      // es el único punto de entrada, con tap directo al
-                      // detalle (/analysis/racha) en vez del sheet de reglas.
-                      // Archivo streak_today_widget.dart queda sin uso, no se
-                      // borra por si se retoma.
-
-                      // P4: aviso de racha en riesgo — solo aparece en horario
-                      // de tarde/noche si hoy todavía no calificó y hay una
-                      // racha activa en juego. Se oculta sola el resto del día.
-                      const StreakAtRiskBanner(),
-
-                      // Módulo "Tu Glucosa" (23-jul): tarjeta de registro
-                      // matutino — se autooculta si la ventana no está
-                      // abierta (GlucoseWindowState.isOpen == false), mismo
-                      // criterio "widget autocontenido" que StreakAtRiskBanner.
-                      const GlucoseMorningReminderCard(),
-
-                      // SPEC-261: Protocolo de Consumo Consciente — SUSPENDIDO
-                      // (2026-08-01). La tarjeta de acceso se retiró del feed
-                      // mientras la funcionalidad está en pausa. El resto del
-                      // código del protocolo queda intacto para retomarlo.
-                      // const AlcoholProtocolCard(),
-
-                      // BANNER DE ENGAGEMENT (SPEC-07 + SPEC-72.2 dismiss por sesión)
-                      const EngagementBanner(),
-                      const SizedBox(height: 16),
-
-                      // SPEC-240: banner de periodo de prueba. Visible días 1–14
-                      // para usuarios no-premium. Se oculta solo al vencer o suscribir.
-                      const TrialBanner(),
-
-                      // SPEC-198: orquestador invisible del paywall proactivo +
-                      // nudges día 5/12. No dibuja nada.
-                      const PaywallAutoTrigger(),
-
-                      // SPEC-149: card de cierre del Día Metabólico. Aparece
-                      // cuando hay un ciclo cerrado reciente que el usuario
-                      // aún no descartó. Es el "coaching moment" — score del
-                      // ciclo + lo que logró + faltó + insight científico +
-                      // CTA para iniciar el siguiente ayuno. Se oculta sola
-                      // cuando no aplica.
-                      CycleClosureCard(
-                        // SPEC-149.1 Bug 1c: si el ayuno ya está activo
-                        // (caso típico cuando la card aparece tras un trigger
-                        // manualNextFasting), el botón "Empezar mi siguiente
-                        // ayuno" sobra. Solo lo renderizamos cuando el ayuno
-                        // no está activo (cierre por fallback sleep/3h/etc).
-                        onStartNextFasting: fastingState.isActive
-                            ? null
-                            : () async {
-                                // SPEC-254: avisar si iniciar el ayuno va a
-                                // sacar de la vista comidas ya registradas
-                                // en el ciclo actual (ver
-                                // new_cycle_meals_warning_dialog.dart).
-                                final mealsCount = ref
-                                    .read(nutritionProvider)
-                                    .todayLogs
-                                    .length;
-                                if (mealsCount > 0) {
-                                  final confirm =
-                                      await NewCycleMealsWarningDialog.show(
-                                    context,
-                                    mealsCount: mealsCount,
-                                  );
-                                  if (confirm != true) return;
-                                }
-                                await ref
-                                    .read(fastingProvider.notifier)
-                                    .startFasting();
-                              },
-                      ),
-
-                      // SPEC-194 RF-05: feedback del coach sobre el ciclo que
-                      // cerró ("ayer priorizaste X…"). Se oculta solo si no hay
-                      // cierre sin leer o no había recomendación activa.
-                      const CycleCoachingFeedbackCard(),
-
-                      // SPEC-137 E.5: banner "próxima comida en X min" cuando
-                      // estamos dentro de los 30 min previos al horario
-                      // sugerido (última comida + 3h). Se auto-oculta si no
-                      // aplica o si hay día de permitidos activo.
-                      const NextMealBanner(),
-
-                      // MOTOR ADAPTATIVO (SPEC-08)
-                      const AdaptiveSuggestionCard(),
-
-                      // SPEC-199 Fase A: coach INTERACTIVO de hidratación. Pregunta
-                      // accionable (registrar vaso de un toque) decidida por el
-                      // motor predictivo según contexto. Se oculta sola si no aplica.
-                      const InteractiveCoachingCard(),
-
-                      // SPEC-232: check-in emocional durante el ayuno. Aparece
-                      // en hitos 4/8/12/16h con 6 opciones de sentimiento. Se
-                      // oculta sola si no hay hito activo o si ya respondió.
-                      const CheckInCard(),
-
-                      // Carlos (2026-07-13): recordatorio de actualizar peso/
-                      // medidas — 7 días desde el último check-in biométrico.
-                      // Se oculta sola si no aplica o si ya se descartó hoy.
-                      const BiometricReminderBanner(),
-                      const SizedBox(height: 16),
-
-                      Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          Center(
-                            child: SizedBox(
-                              width: MediaQuery.of(context).size.width * 0.78,
-                              child: AspectRatio(
-                                aspectRatio: 1.0,
-                                // SPEC-202: tocar el reloj abre el explainer con la
-                                // leyenda de cada elemento (qué es el punto azul,
-                                // el arco, el anillo de fase, los hitos).
-                                child: GestureDetector(
-                                  behavior: HitTestBehavior.opaque,
-                                  onTap: () => showClockExplainerSheet(context),
-                                  child: CircadianClock(
-                                    user: user,
-                                    fastingState: fastingState,
-                                    // SPEC-115: ya no pasamos `score` (IMR).
-                                    // El centro lo ocupa FastingHeroDisplay con
-                                    // estado del ayuno + próximo hito. El IMR
-                                    // sigue en Análisis.
-                                    eatingWindow:
-                                        ref.watch(eatingWindowProvider),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          if (sleepState.isWaitingForWakeUp)
-                            const WakeUpQualityOverlay(),
-                          if (fastingState.isWaitingForFastingEnd)
-                            FastingEndOverlay(state: fastingState),
-                          if (fastingState.isWaitingForFeedingEnd)
-                            FeedingEndOverlay(state: fastingState),
-                        ],
-                      ),
-
-                      // SPEC-202: separación amplia para que el "12" del borde
-                      // inferior del reloj no quede pegado a la pista de abajo.
-                      const SizedBox(height: 28),
-
-                      // SPEC-202: pista de descubrimiento — invita a tocar el reloj
-                      // para entenderlo. Centrada y discreta, fuera del círculo
-                      // (no se solapa con ningún elemento del reloj).
-                      Center(
-                        child: TextButton.icon(
-                          onPressed: () => showClockExplainerSheet(context),
-                          style: TextButton.styleFrom(
-                            foregroundColor:
-                                Colors.white.withValues(alpha: 0.55),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 4),
-                            minimumSize: Size.zero,
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          ),
-                          icon:
-                              const Icon(Icons.help_outline_rounded, size: 15),
-                          label: const Text(
-                            '¿Qué significan los anillos?',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 10),
-
+                      const HoyHeader(),
+                      const SizedBox(height: 18),
                       if (fastingState.metabolicAlert != null) ...[
                         MetabolicAlertBanner(
                             message: fastingState.metabolicAlert!),
                         const SizedBox(height: 12),
                       ],
-
-                      // SPEC-104: card de FASE / BLOQUEO INTESTINAL / ALINEACIÓN
-                      // eliminada. Razones:
-                      //   - FASE ya se comunica en el anillo del reloj.
-                      //   - BLOQUEO INTESTINAL pasivo no es accionable —
-                      //     futura SPEC convertirlo en alerta condicional <3h.
-                      //   - ALINEACIÓN al 100% sin desglose contradecía un
-                      //     IMR bajo (confuso para el usuario).
-                      // El reloj central ya cumple el rol comunicativo
-                      // primario del dashboard.
-
-                      // SPEC-140 + SPEC-140.1: Score del Día integrado al
-                      // header de PILARES HOY como agregado del módulo.
-                      // El % por pilar y el score van en _buildPillarsRow.
-                      // El card separado anterior se eliminó por redundancia
-                      // visual con los anillos de cada pilar.
+                      // Confirmaciones que el flujo necesita (despertar,
+                      // fin de ayuno, fin de ventana). Antes flotaban sobre
+                      // el reloj; ahora van en línea, arriba de la acción.
+                      if (sleepState.isWaitingForWakeUp) ...[
+                        const WakeUpQualityOverlay(),
+                        const SizedBox(height: 14),
+                      ],
+                      if (fastingState.isWaitingForFastingEnd) ...[
+                        FastingEndOverlay(state: fastingState),
+                        const SizedBox(height: 14),
+                      ],
+                      if (fastingState.isWaitingForFeedingEnd) ...[
+                        FeedingEndOverlay(state: fastingState),
+                        const SizedBox(height: 14),
+                      ],
+                      FastingConsciousnessCard(state: fastingState),
+                      const SizedBox(height: 14),
+                      const TodayFocusCard(),
+                      const SizedBox(height: 22),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Tu día',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 17,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          Text(
+                            'Toca un pilar para ver más',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.5),
+                              fontSize: 11.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
                       DashboardPillarsRow(
                         selectedPillar: _selectedPillar,
-                        onSelectPillar: (p) =>
-                            setState(() => _selectedPillar = p),
+                        onSelectPillar: _onSelectPillar,
                       ),
-                      // SPEC-140.3: gap reducido de 24 → 14 para que la card
-                      // del pilar seleccionado se sienta como continuación
-                      // visual del card de "Tu Día", no como otra sección.
-                      const SizedBox(height: 14),
-
-                      // Tarjeta de soporte del pilar seleccionado.
-                      // Cambia dinámicamente al tocar un anillo de la fila "PILARES HOY".
-                      DashboardSelectedPillarCard(
-                        selectedPillar: _selectedPillar,
-                        onSelectPillar: (p) {
-                          if (mounted) {
-                            setState(() => _selectedPillar = p);
-                          }
-                        },
-                      ),
-                      const SizedBox(height: 14),
-
-                      // GAP-2 → retirado (22-jul, a pedido del líder de
-                      // proyecto: "esta card no aporta nada"). El widget
-                      // `ImrLongitudinalCard` (widgets/imr_longitudinal_card.dart)
-                      // queda sin consumidores tras este cambio — no se borra el
-                      // archivo (restricción del sandbox), pero si en el futuro
-                      // se quiere recuperar la métrica en algún lado, este era
-                      // el único punto de montaje.
-
-                      // SPEC-88 fix: BodyCompositionCard, GoalsDashboardWidget
-                      // y _buildProgressCTA se removieron del Dashboard a
-                      // pedido del líder de proyecto. La composición
-                      // corporal vive ahora en Profile (SPEC-88). Objetivos
-                      // y Road Map quedan accesibles desde sus pantallas
-                      // dedicadas (/goals/setup y /progress) — el atajo en
-                      // Dashboard se considera ruido visual.
-                      const SizedBox(height: 10),
-
-                      // SPEC-114-app (2026-07-12, hallazgo A2 del informe de
-                      // producto): el feed "Para ti" (SPEC-205) es el
-                      // diferencial científico más defendible frente a la
-                      // competencia, pero vivía únicamente enterrado dentro
-                      // de la pantalla de Análisis — invisible para un
-                      // usuario en su primera semana. Se promueve al
-                      // Dashboard, después del IMR, como cierre natural del
-                      // scroll (no compite por atención con el ayuno/pilares
-                      // que van arriba).
-                      //
-                      // 17-jul: Carlos pidió colapsarlo en una card de entrada
-                      // (mismo patrón que Progreso) y renombrarlo — "Para ti"
-                      // no comunicaba qué había adentro. "Aprende con Elena"
-                      // ata el contenido educativo a la voz de la app. El
-                      // detalle completo (línea de contexto + artículos) vive
-                      // ahora en AprendeDetailScreen (/aprende).
-                      const AprendeEntryCard(),
-                      const SizedBox(height: 10),
+                      if (_selectedPillar != null &&
+                          _selectedPillar != SelectedPillar.ayuno) ...[
+                        const SizedBox(height: 14),
+                        DashboardSelectedPillarCard(
+                          selectedPillar: _selectedPillar!,
+                          onSelectPillar: _onSelectPillar,
+                        ),
+                      ],
+                      const SizedBox(height: 24),
                     ],
                   ),
                 ),
               ),
-              // SPEC-220: overlay de celebración 3/5 pilares.
               const CelebrationOverlay(),
             ],
           ),

@@ -100,6 +100,14 @@ class BodyCompositionCalc {
   }
 }
 
+/// Rediseño Perfil (2026-10-30): en la tarjeta del Perfil las zonas de
+/// riesgo se muestran con una etiqueta neutra. El cálculo no cambia y la
+/// pantalla de detalle conserva la clasificación completa.
+String _neutralLabel(String label) {
+  if (label == 'Alto' || label.startsWith('Riesgo')) return 'Por mejorar';
+  return label;
+}
+
 // ─── Widget principal ─────────────────────────────────────────────────────────
 
 class BodyCompositionCard extends ConsumerWidget {
@@ -200,7 +208,7 @@ class _CardContent extends StatelessWidget {
                   child: _MetricTile(
                     label: '% GRASA',
                     value: '${fat.toStringAsFixed(1)}%',
-                    sub: BodyCompositionCalc.fatZoneLabel(fat, isMale),
+                    sub: _neutralLabel(BodyCompositionCalc.fatZoneLabel(fat, isMale)),
                     color: fatColor,
                     icon: Icons.whatshot_rounded,
                   ),
@@ -222,7 +230,7 @@ class _CardContent extends StatelessWidget {
                   child: _MetricTile(
                     label: 'WHTR',
                     value: w.toStringAsFixed(2),
-                    sub: BodyCompositionCalc.whtrLabel(w),
+                    sub: _neutralLabel(BodyCompositionCalc.whtrLabel(w)),
                     color: whtrColor,
                     icon: Icons.straighten_rounded,
                   ),
@@ -314,9 +322,8 @@ class _WhtrBar extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Muy bajo', style: _barLabel),
             Text('Óptimo', style: _barLabel),
-            Text('Alto riesgo', style: _barLabel),
+            Text('Por mejorar', style: _barLabel),
           ],
         ),
       ],

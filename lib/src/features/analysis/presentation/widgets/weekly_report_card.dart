@@ -93,13 +93,8 @@ class WeeklyReportCard extends ConsumerWidget {
             const Color(0xFF14B8A6)),
         _row(PillarConstants.trackingLabelNutricion, days.nutrition,
             const Color(0xFFFB923C)),
-        const SizedBox(height: 6),
-        if (i.weakest != null)
-          _focus(i.weakest!)
-        else if (i.isFullySustained)
-          _sustained()
-        else
-          _neutral(),
+        // Rediseño Progreso (2026-10-30): el foco salió de esta card; ahora
+        // es la card "Tu foco de hoy" (TodayFocusCard), la misma de Hoy.
       ],
     );
   }
@@ -159,100 +154,6 @@ class WeeklyReportCard extends ConsumerWidget {
       }),
     );
   }
-
-  // ── Foco / sostenido / neutro ──────────────────────────────────────────
-  Widget _focus(WeakPillar weak) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.metabolicGreen.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(14),
-        border:
-            Border.all(color: AppColors.metabolicGreen.withValues(alpha: 0.20)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Icon(Icons.flag_rounded,
-                  color: AppColors.metabolicGreen, size: 18),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text('Tu foco: ${weak.insightHeadline}',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.88),
-                      fontSize: 13,
-                      height: 1.45,
-                      fontWeight: FontWeight.w500,
-                    )),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.only(left: 28),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('→ ${weak.suggestedAction}',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.80),
-                      fontSize: 12,
-                      height: 1.4,
-                      fontWeight: FontWeight.w600,
-                    )),
-                const SizedBox(height: 6),
-                Text(weak.citation,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.45),
-                      fontSize: 11,
-                      fontStyle: FontStyle.italic,
-                      fontWeight: FontWeight.w600,
-                    )),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _sustained() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.metabolicGreen.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(14),
-        border:
-            Border.all(color: AppColors.metabolicGreen.withValues(alpha: 0.25)),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.bolt_rounded,
-              color: AppColors.metabolicGreen, size: 18),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              'Semana sólida: sostienes los 5 pilares. Mantén el ritmo.',
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.88),
-                fontSize: 13,
-                height: 1.5,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _neutral() =>
-      _msg('Registra unos días más para darte un foco afinado de la semana.');
 
   Widget _msg(String text) => Container(
         width: double.infinity,

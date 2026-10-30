@@ -18,6 +18,7 @@
 // punto de entrada a la racha en toda la app.
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:elena_app/src/core/theme/app_theme.dart';
@@ -33,7 +34,6 @@ import 'package:elena_app/src/features/analysis/presentation/widgets/weekly_repo
 // abajo: se oculta sola (SizedBox.shrink) si el usuario no tiene el
 // protocolo activo, así que AnalysisScreen no necesita dejar de ser
 // StatelessWidget ni saber nada de elegibilidad.
-import 'package:elena_app/src/features/glucose/presentation/widgets/glucose_entry_card.dart';
 // 17-jul (2da vuelta): WeeklyCoachingCard existía desde SPEC-153 pero
 // quedó huérfana cuando SPEC-168.4 reemplazó el diseño de tabs viejo —
 // nadie la volvió a enlazar. Se rescata acá para llenar el espacio
@@ -43,18 +43,21 @@ import 'package:elena_app/src/features/glucose/presentation/widgets/glucose_entr
 // loading/empty state) — no requiere que AnalysisScreen deje de ser
 // StatelessWidget.
 import 'package:elena_app/src/core/widgets/page_hero.dart';
+import 'package:elena_app/src/features/analysis/application/analysis_range_provider.dart';
+import 'package:elena_app/src/features/analysis/domain/analysis_range.dart';
+import 'package:elena_app/src/features/dashboard/presentation/widgets/dashboard_bottom_nav.dart';
+import 'package:elena_app/src/features/dashboard/presentation/widgets/today_focus_card.dart';
 
 class AnalysisScreen extends StatelessWidget {
   const AnalysisScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // SPEC-197: overview libre para todos los usuarios. El gate vive
-    // en las pantallas de detalle de cada pilar (AnalysisPillarDetailScreen
-    // y DailyScoreDetailScreen).
+    // Rediseño Progreso (2026-10-30): Semana/Mes → tendencia del puntaje →
+    // "Tu semana" (X de 7 días por pilar) → Tu foco de hoy (mismo texto que
+    // en Hoy) → accesos a Insignias, Retos y el reloj circadiano (que salió
+    // de Hoy). Se quitó la card de glucosa.
     return Scaffold(
-      // SPEC-168.4.6 (2026-06-04): mismo fondo que Hoy y Perfil para
-      // unidad visual en la app (las cards mantienen su #0C0C0E).
       backgroundColor: AppColors.backgroundDark,
       body: SafeArea(
         child: SingleChildScrollView(
@@ -62,75 +65,154 @@ class AnalysisScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Header in-page estilo Apple.
-              _buildPageHeader(context),
-              const SizedBox(height: 20),
-              // SPEC-300: la TENDENCIA es el héroe (lo que Hoy no muestra).
-              // Línea del Score del Día → detalle de Resultados.
+              const PageHero(title: 'Progreso'),
+              const SizedBox(height: 14),
+              const _WeekMonthSwitch(),
+              const SizedBox(height: 14),
               const ScoreTrendCard(),
               const SizedBox(height: 12),
-              // Boletín de la semana: nota + pilares (con delta vs semana
-              // pasada) + foco → detalle de Hábitos.
               const WeeklyReportCard(),
               const SizedBox(height: 12),
-              // Insignias + racha (navegación a la colección completa).
+              const TodayFocusCard(),
+              const SizedBox(height: 12),
               const BadgesEntryCard(),
-              // 23-jul: "Tu Glucosa" — se autooculta si el usuario no tiene el
-              // Protocolo de Seguimiento de Glucosa activo. Trae su propio
-              // Padding(top:12) cuando SÍ se muestra.
-              const GlucoseEntryCard(),
+              const SizedBox(height: 12),
+              _EntryRow(
+                icon: Icons.emoji_events_outlined,
+                color: const Color(0xFFFBBF24),
+                title: 'Retos',
+                subtitle: 'Constancia con otras personas',
+                onTap: () => context.push('/retos'),
+              ),
+              const SizedBox(height: 12),
+              _EntryRow(
+                icon: Icons.schedule_rounded,
+                color: const Color(0xFF818CF8),
+                title: 'Ver tu reloj circadiano',
+                subtitle: 'Tu ritmo de vigilia y descanso',
+                onTap: () => context.push('/analysis/reloj'),
+              ),
             ],
           ),
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: AppColors.backgroundDark,
-        selectedItemColor: AppColors.metabolicGreen,
-        unselectedItemColor: Colors.grey.withValues(alpha: 0.5),
-        currentIndex: 1,
-        type: BottomNavigationBarType.fixed,
-        onTap: (index) {
-          if (index == 0) context.go('/dashboard');
-          if (index == 1) context.go('/analysis');
-          if (index == 2) context.go('/retos');
-          if (index == 3) context.go('/profile');
-        },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.grid_view_rounded),
-            label: 'Hoy',
+      bottomNavigationBar: const DashboardBottomNav(),
+    );
+  }
+}
+
+/// Selector Semana / Mes (los dos rangos que pide el diseño).
+class _WeekMonthSwitch extends ConsumerWidget {
+  const _WeekMonthSwitch();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final range = ref.watch(analysisRangeProvider);
+    Widget option(String label, AnalysisRange value) {
+      final selected = range == value;
+      return Expanded(
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => ref.read(analysisRangeProvider.notifier).state = value,
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 9),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: selected ? AppColors.metabolicGreen : Colors.transparent,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              label,
+              style: TextStyle(
+                color: selected
+                    ? const Color(0xFF0B1020)
+                    : Colors.white.withValues(alpha: 0.7),
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.insights_rounded),
-            label: 'Progreso',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.emoji_events_rounded),
-            label: 'Retos',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Perfil',
-          ),
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceDark,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          option('Semana', AnalysisRange.w1),
+          option('Mes', AnalysisRange.m1),
         ],
       ),
     );
   }
+}
 
-  Widget _buildPageHeader(BuildContext context) {
-    // 15-jul: se quitó el botón de calendario (esquina superior derecha)
-    // — Carlos: "no aporta nada". Abría MonthlyCalendarScreen, que no
-    // estaba enlazada desde ningún otro lugar de la app; queda el
-    // archivo sin uso por si se retoma más adelante, pero sin entry
-    // point visible.
-    //
-    // 29-jul: el estilo del título y las listas de días/meses vivían
-    // acá. Al llevar el mismo hero a Perfil y al Dashboard habrían
-    // hecho falta tres copias, así que se movieron a `PageHero` y
-    // `heroTodayLabel`.
-    return PageHero(
-      title: 'Progreso',
-      subtitle: heroTodayLabel(),
+class _EntryRow extends StatelessWidget {
+  const _EntryRow({
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(18),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceDark,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: AppColors.borderDefault),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: color, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 2),
+                  Text(subtitle,
+                      style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.5),
+                          fontSize: 12)),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right_rounded,
+                color: Colors.white.withValues(alpha: 0.3)),
+          ],
+        ),
+      ),
     );
   }
 }

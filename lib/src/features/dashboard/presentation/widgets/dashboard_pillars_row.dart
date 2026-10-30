@@ -1,20 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:elena_app/src/core/providers/ticker_providers.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/fasting/application/fasting_notifier.dart';
 import 'package:elena_app/src/features/hydration/application/hydration_notifier.dart';
 import 'package:elena_app/src/features/sleep/application/sleep_notifier.dart';
 import 'package:elena_app/src/features/dashboard/domain/selected_pillar.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/daily_score_explainer_sheet.dart';
-import 'package:elena_app/src/features/dashboard/presentation/widgets/daily_score_hero.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/pillar_ring.dart';
 import 'package:elena_app/src/features/exercise/application/exercise_notifier.dart';
 import 'package:elena_app/src/features/goals/application/goal_notifier.dart';
 import 'package:elena_app/src/features/goals/application/pillar_goal_providers.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
 import 'package:elena_app/src/features/onboarding/application/tour_targets_provider.dart';
-import 'package:elena_app/src/features/streak/application/daily_score_provider.dart';
 // SPEC-261.1: Score del Día de presentación con el costo del alcohol
 // descontado (equivale al display cuando no hay consumo).
 import 'package:elena_app/src/features/alcohol/application/alcohol_score_provider.dart';
@@ -23,7 +20,6 @@ import 'package:elena_app/src/features/nutrition/application/meal_plan_notifier.
 import 'package:elena_app/src/features/nutrition/domain/minuta_adherence_score.dart';
 import 'package:elena_app/src/features/streak/domain/fasting_schedule.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
-import 'package:elena_app/src/core/constants/pillar_constants.dart';
 
 /// Fila horizontal de 5 anillos circulares — uno por pilar.
 /// Cada anillo es interactivo y abre su sheet de input correspondiente.
@@ -57,7 +53,8 @@ class DashboardPillarsRow extends ConsumerWidget {
   // solo los campos que este widget efectivamente pinta — mismo patrón
   // ya usado en este archivo para `streakProvider` (ver también
   // `.select()` sobre `fastingProvider`/`hydrationProvider`/etc. más abajo).
-  final SelectedPillar selectedPillar;
+  /// Rediseño Hoy (2026-10-30): null = ningún pilar abierto.
+  final SelectedPillar? selectedPillar;
   final ValueChanged<SelectedPillar> onSelectPillar;
 
   @override
@@ -76,7 +73,6 @@ class DashboardPillarsRow extends ConsumerWidget {
     // SPEC-261.1: el Score del Día mostrado descuenta el costo del alcohol
     // de la sesión activa (0 cuando no hay consumo → idéntico al display).
     final dailyScore = ref.watch(dailyScoreWithConsumptionProvider);
-    final delta = ref.watch(displayDailyScoreDeltaProvider);
 
     // STATE-01: solo los campos que este widget pinta, no los objetos
     // completos — un cambio en otro campo de FastingState/HydrationState/
@@ -151,10 +147,6 @@ class DashboardPillarsRow extends ConsumerWidget {
     // v3 (mismo día): ring con semáforo — se agrega streakRisk desde
     // streakRiskLevelProvider (gradación verde/amarillo/rojo de señales
     // que ya existían de forma binaria en streakAtRiskProvider).
-    final (streakDays, streakProtected) = ref.watch(
-      streakProvider.select((s) => (s.currentStreak, s.streakHasProtectedDay)),
-    );
-    final streakRisk = ref.watch(streakRiskLevelProvider);
 
     // SPEC-257 §3.1: re-deriva el mismo cálculo que `StreakNotifier` usa
     // para decidir si hoy es un día de descanso PROGRAMADO (nivel Novato,
@@ -175,111 +167,81 @@ class DashboardPillarsRow extends ConsumerWidget {
     // de pilares. El label "PILARES HOY" se elimina (los 5 rings con
     // sus iconos son autodescriptivos). El divider separa visualmente
     // el agregado (TU DÍA) del desglose (5 pilares).
+    // Rediseño Hoy (2026-10-30): card compacta "Tu día" — puntaje del día
+    // a la izquierda y los 5 pilares en fila, cada uno con nombre corto y %.
+    // La racha pasó al encabezado (HoyHeader); el delta y la frase
+    // motivacional se quitaron para bajar ruido.
     return Container(
-      padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+      padding: const EdgeInsets.fromLTRB(14, 14, 10, 14),
       decoration: BoxDecoration(
         color: const Color(0xFF1E293B),
         borderRadius: BorderRadius.circular(20),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Fila 1: label TU DÍA + ⓘ alineados a los extremos.
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                // SPEC-230: renombrado a "PROGRESO HOY" para distinguir
-                // claramente el Score del Día (cambio diario) del IMR
-                // (Índice Metabólico Real, cambio semanal/mensual).
-                'PROGRESO HOY',
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.45),
-                  fontSize: 10,
-                  letterSpacing: 1.5,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              GestureDetector(
-                key: const Key('daily_score_info_button'),
-                behavior: HitTestBehavior.opaque,
-                onTap: () => showDailyScoreExplainerSheet(context),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 4,
-                    vertical: 2,
-                  ),
-                  child: Icon(
-                    Icons.info_outline,
-                    color: Colors.white.withValues(alpha: 0.50),
-                    size: 16,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          // Decisión de producto (22-jul): el IMR longitudinal se saca del
-          // Dashboard (vive en Perfil + gráfica de Resultados de Progreso).
-          // `DailyScoreHero` reemplaza a `DualScoreRing` (SPEC-170) — ring
-          // único de HOY, agrandado, con la racha como puente visual (ver
-          // daily_score_hero.dart — v2 del mismo día, reemplazó a un
-          // primer intento con íconos de pilares que Carlos marcó como
-          // redundante con la fila de abajo).
-          // SPEC-243 fix: key compartida con AppTourOverlay para calcular
-          // posición real del spotlight "Progreso Hoy" (scoreCard).
-          // I-03 / I-04 (auditoría 2026-07-27): el hero recibe además la
-          // fracción del día transcurrida —para no comparar un día de 17
-          // minutos contra uno completo— y el récord de racha, para no
-          // tratar al usuario que se le rompió la racha como si acabara de
-          // registrarse. Ver la doc de ambos campos en daily_score_hero.dart.
-          DailyScoreHero(
+          GestureDetector(
             key: ref.read(dualScoreRingKeyProvider),
-            dailyScore: dailyScore,
-            dailyDelta: delta,
+            behavior: HitTestBehavior.opaque,
             onTap: () => showDailyScoreExplainerSheet(context),
-            streakDays: streakDays,
-            streakRisk: streakRisk,
-            streakProtected: streakProtected,
-            dayElapsedFraction: _fraccionDelDiaTranscurrida(
-              ref.watch(metabolicPulseProvider).valueOrNull ?? DateTime.now(),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: 58,
+                  height: 58,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      SizedBox(
+                        width: 58,
+                        height: 58,
+                        child: CircularProgressIndicator(
+                          value: (dailyScore / 100).clamp(0.0, 1.0),
+                          strokeWidth: 4,
+                          strokeCap: StrokeCap.round,
+                          backgroundColor:
+                              Colors.white.withValues(alpha: 0.08),
+                          valueColor: const AlwaysStoppedAnimation<Color>(
+                              AppColors.metabolicGreen),
+                        ),
+                      ),
+                      Text(
+                        '$dailyScore',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Puntaje',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.6),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ),
-            longestStreak:
-                ref.watch(streakProvider.select((s) => s.longestStreak)),
           ),
-          const SizedBox(height: 12),
-          // Frase motivacional centrada bajo los rings (SPEC-140.3).
-          // SPEC-114-app (2026-07-12, P1-B/C del informe de producto):
-          // el copy de score bajo ahora es condicional a la antigüedad
-          // de la cuenta — ver `_dailyScoreMotivation`.
-          Center(
-            child: Text(
-              _dailyScoreMotivation(
-                dailyScore,
-                ref.watch(streakProvider.select((s) => s.history.length)),
-              ),
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.70),
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                height: 1.0,
-              ),
-            ),
-          ),
-          const SizedBox(height: 14),
-          // Divider sutil entre headline y rings.
           Container(
-            height: 1,
+            width: 1,
+            height: 54,
+            margin: const EdgeInsets.symmetric(horizontal: 10),
             color: Colors.white.withValues(alpha: 0.08),
           ),
-          const SizedBox(height: 14),
-          // Fila de los 5 pilares con % bajo cada label.
-          // SPEC-243 fix: key compartida con AppTourOverlay para calcular
-          // posición real del spotlight de cada pilar (localToGlobal).
-          Row(
+          Expanded(
+            child: Row(
             key: ref.read(pillarRowKeyProvider),
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
+              // Cada pilar ocupa el mismo ancho y se escala si no cabe
+              // (pantallas angostas): nunca se montan los nombres.
+              for (final w in <Widget>[
               PillarRing(
                 icon: Icons.timer_rounded,
                 color: AppColors.metabolicGreen,
@@ -290,7 +252,8 @@ class DashboardPillarsRow extends ConsumerWidget {
                 // la insignia de "descanso" (isRestDay) toma precedencia
                 // visual sobre el check verde dentro de `PillarRing`.
                 progress: isFastingRestDay ? 1.0 : fastingProgress,
-                label: PillarConstants.trackingLabelAyuno,
+                label: 'Ayuno',
+                compact: true,
                 isSelected: selectedPillar == SelectedPillar.ayuno,
                 completed: !isFastingRestDay && fastingProgress >= 1.0,
                 showPercent: !isFastingRestDay,
@@ -302,7 +265,8 @@ class DashboardPillarsRow extends ConsumerWidget {
                 icon: Icons.nightlight_round,
                 color: const Color(0xFF818CF8),
                 progress: sleepProgress,
-                label: PillarConstants.trackingLabelSueno,
+                label: 'Sueño',
+                compact: true,
                 isSelected: selectedPillar == SelectedPillar.sueno,
                 completed: sleepCompleted,
                 showPercent: true,
@@ -313,7 +277,8 @@ class DashboardPillarsRow extends ConsumerWidget {
                 icon: Icons.water_drop_rounded,
                 color: Colors.blueAccent,
                 progress: hydrationProgress,
-                label: PillarConstants.trackingLabelHidratacion,
+                label: 'Agua',
+                compact: true,
                 isSelected: selectedPillar == SelectedPillar.hidratacion,
                 completed: hydrationGoalReached,
                 showPercent: true,
@@ -335,7 +300,8 @@ class DashboardPillarsRow extends ConsumerWidget {
                   icon: Icons.fitness_center_rounded,
                   color: Colors.tealAccent,
                   progress: progress,
-                  label: PillarConstants.trackingLabelEjercicio,
+                  label: 'Ejercicio',
+                  compact: true,
                   isSelected: selectedPillar == SelectedPillar.ejercicio,
                   completed: exerciseTodayMinutes >= goal,
                   showPercent: true,
@@ -352,62 +318,23 @@ class DashboardPillarsRow extends ConsumerWidget {
                   icon: Icons.restaurant_rounded,
                   color: Colors.orangeAccent,
                   progress: nutritionProgress,
-                  label: PillarConstants.trackingLabelNutricion,
+                  label: 'Comida',
+                  compact: true,
                   isSelected: selectedPillar == SelectedPillar.comidas,
                   completed: nutritionMealsLogged >= nutritionTargetMeals,
                   showPercent: true,
                   onTap: () => onSelectPillar(SelectedPillar.comidas),
                 ),
               ),
+              ])
+                Expanded(
+                  child: FittedBox(fit: BoxFit.scaleDown, child: w),
+                ),
             ],
+          ),
           ),
         ],
       ),
     );
-  }
-
-  /// SPEC-140.3: frase motivacional adaptativa según el Score del Día.
-  /// 6 rangos calibrados para tono ElenaApp (encouraging, no
-  /// infantilizing, brand voice metabólica). El usuario ve un mensaje
-  /// que ancla el número en sentido emocional.
-  ///
-  /// SPEC-114-app (2026-07-12): el informe de producto (C2, causa
-  /// crítica de activación) identificó que el rango score<30 mostraba
-  /// siempre "Vas empezando" — un copy neutro que un usuario en su
-  /// primer día lee como "estoy fallando", cuando en realidad un score
-  /// bajo a las 2h de su primer ayuno es matemáticamente esperado (el
-  /// score promedia 5 pilares que aún no puede completar). El fix es
-  /// una capa de presentación: no toca el cálculo del score, solo hace
-  /// el copy condicional a cuántos días de historial de streak tiene
-  /// la cuenta (`historyDays` = `streakProvider.history.length`).
-  ///   - historyDays == 0 (día 0, sin ningún registro previo): mensaje
-  ///     directivo que apunta a la primera acción (arrancar el ayuno).
-  ///   - historyDays 1-3 (pocos datos): mensaje que dirige a sumar los
-  ///     pilares de menor fricción (sueño, hidratación) hoy.
-  ///   - historyDays >= 4 (patrón visible, score sigue bajo): se
-  ///     mantiene el copy original — ahí sí es una señal real de baja
-  ///     adherencia, no un artefacto de cold-start.
-  String _dailyScoreMotivation(int score, int historyDays) {
-    if (score >= 100) return 'Día perfecto';
-    if (score >= 85) return 'Casi al tope';
-    if (score >= 70) return 'Excelente día';
-    if (score >= 50) return 'Buen avance';
-    if (score >= 30) return 'Sumando';
-    if (historyDays == 0) return 'Tu primer día: arranca el ayuno';
-    if (historyDays < 4) return 'En camino: suma sueño e hidratación';
-    return 'Vas empezando';
-  }
-
-  /// Fracción [0..1] del día natural ya transcurrida.
-  ///
-  /// I-03 (auditoría 2026-07-27): la usa `DailyScoreHero` para decidir si
-  /// el delta contra ayer es una comparación justa. Se calcula sobre el
-  /// reloj de pared y no sobre el ancla del ciclo metabólico a propósito:
-  /// la pregunta que responde no es "¿en qué punto de tu ciclo estás?"
-  /// sino "¿te queda día por delante para acumular?", y para eso la hora
-  /// local es la referencia correcta y la más barata de calcular.
-  static double _fraccionDelDiaTranscurrida(DateTime ahora) {
-    const minutosPorDia = 24 * 60;
-    return ((ahora.hour * 60 + ahora.minute) / minutosPorDia).clamp(0.0, 1.0);
   }
 }

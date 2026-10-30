@@ -50,6 +50,7 @@ import 'package:elena_app/src/features/content/presentation/aprende_detail_scree
 // biometricos_detail_screen.dart.
 import 'package:elena_app/src/features/auth/presentation/biometricos_detail_screen.dart';
 import 'package:elena_app/src/features/auth/presentation/notification_settings_screen.dart';
+import 'package:elena_app/src/features/dashboard/presentation/circadian_clock_screen.dart';
 import 'package:elena_app/src/features/auth/presentation/ritmos_circadianos_detail_screen.dart';
 import 'package:elena_app/src/features/auth/presentation/protocolo_detail_screen.dart';
 import 'package:elena_app/src/features/auth/presentation/objetivos_detail_screen.dart';
@@ -202,6 +203,12 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/analysis/racha',
         name: 'analysis-racha',
         builder: (context, state) => const RachaDetailScreen(),
+      ),
+      // Rediseño (2026-10-30): el reloj circadiano salió de Hoy.
+      GoRoute(
+        path: '/analysis/reloj',
+        name: 'analysis-reloj',
+        builder: (context, state) => const CircadianClockScreen(),
       ),
       // 23-jul: módulo "Tu Glucosa" (Protocolo de Seguimiento de
       // Glucosa) — mismo patrón que las 3 rutas de detalle de arriba.

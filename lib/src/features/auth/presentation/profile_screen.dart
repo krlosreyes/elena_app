@@ -16,8 +16,6 @@ import 'package:elena_app/src/core/engine/imr_persistence_provider.dart';
 import 'package:elena_app/src/core/engine/longitudinal_imr_provider.dart';
 import 'package:elena_app/src/core/services/notification_policy.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
-import 'package:elena_app/src/features/auth/presentation/widgets/achievement_showcase_card.dart';
-import 'package:elena_app/src/features/auth/presentation/widgets/alcohol_protocol_entry_card.dart';
 import 'package:elena_app/src/features/auth/presentation/widgets/biometricos_entry_card.dart';
 import 'package:elena_app/src/features/auth/presentation/widgets/exercise_habits_entry_card.dart';
 import 'package:elena_app/src/features/auth/presentation/widgets/glucose_protocol_entry_card.dart';
@@ -109,8 +107,7 @@ class _ProfileBody extends ConsumerWidget {
           const ProfileLongitudinalDisclaimer(),
         ],
         const SizedBox(height: 16),
-        const AchievementShowcaseCard(),
-        const SizedBox(height: 16),
+        // Rediseño Perfil (2026-10-30): las insignias viven en Progreso.
         const BodyCompositionCard(),
         const SizedBox(height: 30),
 
@@ -125,7 +122,8 @@ class _ProfileBody extends ConsumerWidget {
             ObjetivosEntryCard(),
             AlimentacionMinutaEntryCard(),
             ExerciseHabitsEntryCard(),
-            AlcoholProtocolEntryCard(),
+            // Rediseño (2026-10-30): "Consumo consciente" está suspendido
+            // (SPEC-261); se quita la fila mientras siga en pausa.
           ],
         ),
         const SizedBox(height: 26),

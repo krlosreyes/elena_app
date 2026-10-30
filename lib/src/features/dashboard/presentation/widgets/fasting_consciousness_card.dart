@@ -16,92 +16,15 @@ import 'package:elena_app/src/features/auth/application/profile_controller.dart'
 import 'package:elena_app/src/features/fasting/application/fasting_history_provider.dart';
 import 'package:elena_app/src/features/fasting/application/fasting_notifier.dart';
 import 'package:elena_app/src/features/fasting/domain/eating_window_advisory.dart';
-import 'package:elena_app/src/features/fasting/domain/fasting_benefits.dart';
 import 'package:elena_app/src/features/fasting/domain/fasting_status.dart';
-import 'package:elena_app/src/features/dashboard/domain/relative_day_label.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/early_fasting_end_dialog.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/new_cycle_meals_warning_dialog.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/protocol_selector_sheet.dart';
-import 'package:elena_app/src/features/metabolic_cycle/domain/metabolic_day_copy.dart';
-import 'package:elena_app/src/features/metabolic_cycle/presentation/widgets/metabolic_day_explainer_sheet.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
 import 'package:elena_app/src/features/nutrition/domain/nervous_system.dart';
 import 'package:elena_app/src/features/streak/domain/fasting_eligibility.dart';
 import 'package:elena_app/src/features/streak/domain/fasting_symptom_log.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
-
-/// Línea que nombra el Día Metabólico en el Dashboard y abre su
-/// explicación (28-jul).
-///
-/// El texto cambia con el estado porque la regla que enseña es distinta
-/// en cada uno, y enseñarla cuando es verdad se recuerda mejor que
-/// leerla en abstracto:
-///
-/// - Con ayuno activo, el ciclo YA está corriendo → se dice que empezó
-///   con ese ayuno.
-/// - Sin ayuno, el ciclo no ha empezado (constitución §1: "si no hay
-///   ciclo abierto, el día metabólico no ha empezado todavía") → se dice
-///   qué lo va a abrir.
-///
-/// Con protocolo 'Ninguno' no se promete nada de eso: ese usuario está
-/// en modo calendárico y su día sí cierra a medianoche. Decirle que su
-/// día lo marca su ayuno sería falso.
-class _MetabolicDayLabel extends StatelessWidget {
-  final bool isActive;
-  final String fastingProtocol;
-
-  const _MetabolicDayLabel({
-    required this.isActive,
-    required this.fastingProtocol,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final String texto;
-    if (usaDiaCalendario(fastingProtocol)) {
-      texto = 'Tu día metabólico va con el calendario';
-    } else if (isActive) {
-      texto = 'Tu día metabólico empezó con este ayuno';
-    } else {
-      texto = 'Tu día metabólico empieza al iniciar el ayuno';
-    }
-
-    return Semantics(
-      button: true,
-      label: '$texto. Toca para saber qué es tu día metabólico.',
-      child: InkWell(
-        onTap: () => showMetabolicDayExplainerSheet(
-          context,
-          fastingProtocol: fastingProtocol,
-        ),
-        borderRadius: BorderRadius.circular(8),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Row(
-            children: [
-              Flexible(
-                child: Text(
-                  texto,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.5),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 6),
-              Icon(
-                Icons.info_outline_rounded,
-                size: 13,
-                color: Colors.white.withValues(alpha: 0.4),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 class FastingConsciousnessCard extends ConsumerWidget {
   const FastingConsciousnessCard({super.key, required this.state});
@@ -110,54 +33,15 @@ class FastingConsciousnessCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Rediseño Hoy (2026-10-30): esta card es la ACCIÓN PRINCIPAL de la
+    // pantalla Hoy. Dos estados:
+    //   - Sin ayuno: "Tu ayuno empieza a las …" + Iniciar ayuno.
+    //   - Con ayuno: anillo con el tiempo transcurrido + cuánto falta.
+    // Se quitaron los "beneficios" (eran promesas médicas), el hito
+    // siguiente y la línea de tiempo. Toda la lógica de botones, diálogos
+    // y pickers se mantiene igual.
     final isActive = state.isActive;
     const accent = AppColors.metabolicGreen;
-    final pct = (state.progressPercentage.clamp(0.0, 1.0) * 100).round();
-
-    // SPEC-113.feat: cuando NO hay ayuno activo, calculamos el próximo
-    // momento de cierre de ventana de alimentación basado en el
-    // `lastMealGoal` del usuario. Si esa hora ya pasó hoy → mañana.
-    // `lastMealGoal` es nullable: si el perfil aún no lo definió, el
-    // countdown no aplica y el clock cae al placeholder.
-    final user = ref.watch(currentUserStreamProvider).value;
-    DateTime? nextFastingTime;
-    if (!isActive && user != null) {
-      final lastMeal = user.profile.lastMealGoal;
-      if (lastMeal != null) {
-        final now = DateTime.now();
-        var candidate = DateTime(
-          now.year,
-          now.month,
-          now.day,
-          lastMeal.hour,
-          lastMeal.minute,
-        );
-        if (!candidate.isAfter(now)) {
-          candidate = candidate.add(const Duration(days: 1));
-        }
-        nextFastingTime = candidate;
-      }
-    }
-
-    final stateLabel = isActive
-        ? 'En curso'
-        : (nextFastingTime != null ? 'Próximo ayuno' : 'En espera');
-
-    // Auditoría 2026-07-27 (C-01): esta lista era estática y afirmaba, a
-    // cualquier usuario con un ayuno activo, que ya estaba "reduciendo
-    // glucosa y mejorando sensibilidad a la insulina" y que "a partir de
-    // 16h se activa la cetosis y la autofagia inicial" — dos umbrales que
-    // no coinciden con el enum canónico (cetosis a las 18h, autofagia a
-    // las 24h) y que se mostraban idénticos a los 17 minutos de ayuno que
-    // a las 20 horas. Ahora los beneficios se derivan de la fase real vía
-    // `FastingBenefits`, que ya existía en el dominio, está alineado con
-    // CIRCADIAN_BIBLIOGRAPHY.md §2 y tiene tests propios.
-    final benefits = isActive
-        ? FastingBenefits.benefitsFor(state.phase, state.duration)
-        : const [
-            'Reduce resistencia a la insulina desde la 1ª hora',
-            'Regula glucosa en ayunas y mejora sensibilidad metabólica',
-          ];
 
     return Container(
       width: double.infinity,
@@ -166,320 +50,271 @@ class FastingConsciousnessCard extends ConsumerWidget {
         color: const Color(0xFF1E293B),
         borderRadius: BorderRadius.circular(24),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Cabecera: título + estado
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Ayuno Consciente',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: accent.withValues(alpha: 0.6)),
-                ),
-                child: Text(
-                  stateLabel,
-                  style: const TextStyle(
-                    color: accent,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          // 28-jul: el Día Metabólico no se nombraba en NINGÚN sitio del
-          // estado normal del Dashboard. Solo aparecía al cerrarse un
-          // ciclo, en el diálogo de comidas y en un estado concreto del
-          // pilar sueño — es decir, el usuario se enteraba de que existe
-          // la primera vez que uno se le cerraba, cuando ya había pasado
-          // algo que no entendía. Mismo defecto que teníamos con las
-          // reservas de racha.
-          //
-          // Va aquí porque esta tarjeta ES el día metabólico dibujado:
-          // arranca con el ciclo y lo acompaña entero. Nombrarlo donde ya
-          // se está mirando cuesta una línea.
-          _MetabolicDayLabel(
-            isActive: isActive,
-            fastingProtocol: state.fastingProtocol,
-          ),
-          const SizedBox(height: 14),
-          // SPEC-119: fila de metadatos del protocolo. El cronómetro
-          // vivo HH:MM:SS ya está en el hero (FastingHeroDisplay del
-          // CircadianClock), no duplicamos aquí. La tarjeta se
-          // identifica como "panel de control y contexto": qué
-          // protocolo está activo y qué hito viene a continuación.
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Columna izquierda: PROTOCOLO (chip clickable).
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'PROTOCOLO',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.45),
-                        fontSize: 10,
-                        letterSpacing: 1.2,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: _buildProtocolChip(
-                        context: context,
-                        ref: ref,
-                        protocol: state.fastingProtocol,
-                        isActive: isActive,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 16),
-              // Columna derecha: HITO SIGUIENTE (solo visible si activo).
-              if (isActive)
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'HITO SIGUIENTE',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.45),
-                          fontSize: 10,
-                          letterSpacing: 1.2,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        _formatNextMilestone(state),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          height: 1.2,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          // Barra de progreso fina
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: state.progressPercentage.clamp(0.0, 1.0),
-              minHeight: 4,
-              backgroundColor: Colors.white.withValues(alpha: 0.08),
-              valueColor: const AlwaysStoppedAnimation<Color>(accent),
-            ),
-          ),
-          // SPEC-102: etiquetas sutiles en los extremos de la barra
-          // con la hora de inicio y la hora estimada de fin del
-          // ayuno. Patrón Apple Health / Oura — informa de un vistazo
-          // el rango temporal sin invadir la jerarquía visual.
-          if (isActive && state.startTime != null) ...[
-            const SizedBox(height: 4),
-            _buildFastingTimeline(
-              start: state.startTime!,
-              targetHours: state.targetHours,
-            ),
-          ],
-          const SizedBox(height: 6),
-          Text(
-            // SPEC-113.feat: el texto debajo se adapta al estado.
-            // SPEC-119: cuando hay ayuno activo, agregamos el residual
-            // temporal "faltan Xh Ym" — alto valor accionable: el usuario
-            // sabe cuánto le queda sin tener que hacer la resta mental.
-            isActive
-                ? '$pct% completado${_formatTargetRemaining(state)}'
-                : (nextFastingTime != null
-                    ? 'Inicia ${nextFastingTime.hour.toString().padLeft(2, '0')}:${nextFastingTime.minute.toString().padLeft(2, '0')}'
-                    : 'Listo para iniciar tu ayuno'),
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.5),
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          // I-06 (auditoría 2026-07-27): aviso cuando la ventana de
-          // alimentación abriría después del cierre circadiano. Se observó
-          // en ejecución un ayuno 07:05 → 23:05, es decir, la app guiando a
-          // comer a las once de la noche mientras su propio IMR penaliza al
-          // 50% comer después de las 21:30. Es una recomendación, no un
-          // bloqueo: el usuario sigue mandando sobre su ayuno.
-          if (isActive && state.startTime != null)
-            _buildEatingWindowAdvisory(state),
-          const SizedBox(height: 18),
-          // Beneficios
-          Text(
-            isActive ? 'BENEFICIOS ACTUALES' : 'BENEFICIOS AL INICIAR',
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.4),
-              fontSize: 10,
-              letterSpacing: 1.2,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 10),
-          ...benefits.map(
-            (b) => Padding(
-              padding: const EdgeInsets.only(bottom: 6),
-              child: Row(
+      child: isActive
+          ? _buildActive(context, ref, accent)
+          : _buildIdle(context, ref, accent),
+    );
+  }
+
+  /// Hora en formato "5:30 p. m.".
+  static String _hora12(DateTime t) {
+    final h = t.hour % 12 == 0 ? 12 : t.hour % 12;
+    final m = t.minute.toString().padLeft(2, '0');
+    final suf = t.hour < 12 ? 'a. m.' : 'p. m.';
+    return '$h:$m $suf';
+  }
+
+  /// Próximo inicio de ayuno según la última comida del perfil.
+  DateTime? _nextFastingTime(WidgetRef ref) {
+    final user = ref.watch(currentUserStreamProvider).value;
+    final lastMeal = user?.profile.lastMealGoal;
+    if (lastMeal == null) return null;
+    final now = DateTime.now();
+    var candidate =
+        DateTime(now.year, now.month, now.day, lastMeal.hour, lastMeal.minute);
+    if (!candidate.isAfter(now)) {
+      candidate = candidate.add(const Duration(days: 1));
+    }
+    return candidate;
+  }
+
+  Widget _buildIdle(BuildContext context, WidgetRef ref, Color accent) {
+    final next = _nextFastingTime(ref);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.check_rounded, color: accent, size: 16),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      b,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
-                        height: 1.35,
-                      ),
+                  Text(
+                    'VENTANA DE COMIDA',
+                    style: TextStyle(
+                      color: accent,
+                      fontSize: 10,
+                      letterSpacing: 1.2,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    next != null
+                        ? 'Tu ayuno empieza a las ${_hora12(next)}'
+                        : 'Listo para iniciar tu ayuno',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      height: 1.25,
                     ),
                   ),
                 ],
               ),
             ),
-          ),
-          const SizedBox(height: 18),
-          // Botón principal: iniciar / finalizar.
-          //
-          // SPEC-101:
-          // - Si el usuario ya completó ayuno hoy y NO hay uno activo,
-          //   el botón "Iniciar Ayuno" queda deshabilitado.
-          // - Si está activo y progress < 100%, "Finalizar Ayuno" abre
-          //   un diálogo de confirmación con beneficios obtenidos.
-          // - Si está activo y progress >= 100%, flow actual (picker).
-          _buildFastingPrimaryButton(
-            context: context,
-            ref: ref,
-            state: state,
-            isActive: isActive,
-            accent: accent,
-          ),
-          // SPEC-97: el botón "Corregir hora de inicio" SOLO aparece
-          // cuando hay ayuno activo. Antes aparecía siempre y al
-          // tocarlo en estado "En espera" iniciaba ventana de comida
-          // por error (confirmManualFastingEnd con isFeeding=false).
-          //
-          // Auditoría F3 (2026-06-08) → reabierto (2026-06-09): visible para
-          // todos, pero `_showCorrectStartTimePicker` CLAMPEA la corrección
-          // para que nunca deje el ayuno ≥100% (evita el "100% al iniciar").
-          if (isActive) ...[
-            const SizedBox(height: 10),
-            SizedBox(
-              width: double.infinity,
-              height: 44,
-              child: OutlinedButton.icon(
-                onPressed: state.isSaving
-                    ? null
-                    : () => _showCorrectStartTimePicker(context, ref, state),
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-                icon: Icon(
-                  Icons.access_time_rounded,
-                  color: Colors.white.withValues(alpha: 0.7),
-                  size: 18,
-                ),
-                label: Text(
-                  'Corregir hora de inicio del ayuno',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.8),
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                  ),
+            const SizedBox(width: 12),
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: accent.withValues(alpha: 0.12),
+              ),
+              child: Icon(Icons.nightlight_outlined, color: accent, size: 20),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            _buildProtocolChip(
+              context: context,
+              ref: ref,
+              protocol: state.fastingProtocol,
+              isActive: false,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'cierras la cocina y descansas',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.55),
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ),
           ],
-          // SPEC-260 (2026-07-30): registro de ayuno olvidado. Cuando NO
-          // hay ayuno activo, el usuario que empezó a ayunar pero olvidó
-          // registrarlo puede darlo de alta con su hora real de inicio.
-          // A diferencia de "Iniciar Ayuno" (día nuevo, resetea pilares),
-          // esta vía ancla el Día Metabólico a la hora pasada SIN resetear
-          // hidratación/nutrición/ejercicio/sueño (registerOngoingFast).
-          if (!isActive) ...[
-            const SizedBox(height: 10),
-            SizedBox(
-              width: double.infinity,
-              height: 44,
-              child: TextButton.icon(
-                onPressed: state.isSaving
-                    ? null
-                    : () => _showOngoingFastPicker(context, ref, state),
-                icon: Icon(
-                  Icons.history_rounded,
-                  color: Colors.white.withValues(alpha: 0.7),
-                  size: 18,
-                ),
-                label: Text(
-                  '¿Ya venías ayunando? Registra la hora',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.8),
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                  ),
-                ),
+        ),
+        const SizedBox(height: 18),
+        _buildFastingPrimaryButton(
+          context: context,
+          ref: ref,
+          state: state,
+          isActive: false,
+          accent: accent,
+        ),
+        const SizedBox(height: 6),
+        Center(
+          child: TextButton(
+            onPressed: state.isSaving
+                ? null
+                : () => _showOngoingFastPicker(context, ref, state),
+            child: Text(
+              '¿Ya venías ayunando? Registra la hora',
+              style: TextStyle(
+                color: accent,
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+                decoration: TextDecoration.underline,
+                decorationColor: accent,
               ),
             ),
-          ],
-        ],
-      ),
+          ),
+        ),
+      ],
     );
   }
 
-  String _formatNextMilestone(FastingState state) {
-    final remaining = state.timeRemainingForNextMilestone;
-    if (remaining == Duration.zero) {
-      // Estamos en autofagia o fase final — no hay próximo hito.
-      return state.metabolicMilestone;
+  Widget _buildActive(BuildContext context, WidgetRef ref, Color accent) {
+    final elapsed = state.duration;
+    final hh = elapsed.inHours.toString();
+    final mm = elapsed.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final start = state.startTime;
+    final end = start?.add(Duration(hours: state.targetHours));
+    final remaining = end?.difference(DateTime.now());
+
+    final String remainingText;
+    if (remaining == null) {
+      remainingText = '';
+    } else if (remaining.inSeconds <= 0) {
+      remainingText = '¡Cumpliste tu meta de ${state.targetHours} h!';
+    } else {
+      final rh = remaining.inHours;
+      final rm = remaining.inMinutes.remainder(60);
+      final rt = rh == 0 ? '$rm min' : '$rh h $rm min';
+      remainingText = 'Te faltan $rt · terminas a las ${_hora12(end!)}';
     }
-    final hours = remaining.inHours;
-    final minutes = remaining.inMinutes.remainder(60);
-    final timeText = hours == 0 ? '${minutes}m' : '${hours}h ${minutes}m';
-    // Auditoría 2026-07-27 (C-01): este método tenía sus propios umbrales
-    // hardcodeados (12/18/24h) y su propia tabla de nombres, ambos
-    // divergentes del enum canónico y del anillo del Dashboard. El
-    // resultado era que la misma pantalla anunciaba dos hitos distintos
-    // para el mismo instante. Ahora el nombre viene del dominio y no hay
-    // ningún umbral fisiológico en esta capa.
-    final milestone = state.nextPhase?.milestoneName;
-    if (milestone == null) return state.metabolicMilestone;
-    return '$milestone en $timeText';
+
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+          decoration: BoxDecoration(
+            color: accent.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 6,
+                height: 6,
+                decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'Ventana de ayuno activa',
+                style: TextStyle(
+                  color: accent,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 18),
+        SizedBox(
+          width: 170,
+          height: 170,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              SizedBox(
+                width: 170,
+                height: 170,
+                child: CircularProgressIndicator(
+                  value: state.progressPercentage.clamp(0.0, 1.0),
+                  strokeWidth: 10,
+                  strokeCap: StrokeCap.round,
+                  backgroundColor: Colors.white.withValues(alpha: 0.06),
+                  valueColor: AlwaysStoppedAnimation<Color>(accent),
+                ),
+              ),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '$hh:$mm',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 38,
+                      fontWeight: FontWeight.w800,
+                      fontFeatures: [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                  Text(
+                    'horas de ayuno',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.6),
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 18),
+        if (remainingText.isNotEmpty)
+          Text(
+            remainingText,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              height: 1.35,
+            ),
+          ),
+        const SizedBox(height: 4),
+        Text(
+          'Vas muy bien. Si te da hambre, toma agua.',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.6),
+            fontSize: 12.5,
+          ),
+        ),
+        if (start != null) _buildEatingWindowAdvisory(state),
+        const SizedBox(height: 18),
+        _buildFastingPrimaryButton(
+          context: context,
+          ref: ref,
+          state: state,
+          isActive: true,
+          accent: accent,
+        ),
+        TextButton(
+          onPressed: state.isSaving
+              ? null
+              : () => _showCorrectStartTimePicker(context, ref, state),
+          child: Text(
+            'Corregir hora de inicio',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.55),
+              fontSize: 12.5,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
-  /// I-06 (auditoría 2026-07-27): franja de aviso cuando el objetivo de
-  /// ayuno actual dejaría la ventana de alimentación abriendo después del
-  /// bloqueo intestinal. La lógica vive en `EatingWindowAdvisory` (dominio
-  /// puro, testeable); aquí solo se pinta. Devuelve `SizedBox.shrink()`
-  /// —coste cero— cuando la ventana sí respeta el cierre, que es el caso
-  /// normal de un ayuno bien planteado.
   Widget _buildEatingWindowAdvisory(FastingState state) {
     final advisory = EatingWindowAdvisory.evaluate(
       start: state.startTime!,
@@ -526,80 +361,6 @@ class FastingConsciousnessCard extends ConsumerWidget {
   /// SPEC-119: residual hasta cerrar el target (`targetHours`).
   /// Devuelve `' · faltan Xh Ym'` o `' · objetivo cumplido'`.
   /// El prefijo con ` · ` permite concatenar tras `$pct% completado`.
-  String _formatTargetRemaining(FastingState state) {
-    if (state.startTime == null) return '';
-    final targetSeconds = state.targetHours * 3600;
-    final elapsedSeconds = state.duration.inSeconds;
-    final remainingSeconds = targetSeconds - elapsedSeconds;
-    if (remainingSeconds <= 0) return ' · objetivo cumplido';
-    final remaining = Duration(seconds: remainingSeconds);
-    final h = remaining.inHours;
-    final m = remaining.inMinutes.remainder(60);
-    final t = h == 0 ? '${m}m' : '${h}h ${m}m';
-    return ' · faltan $t';
-  }
-
-  Widget _buildFastingTimeline({
-    required DateTime start,
-    required int targetHours,
-  }) {
-    final DateTime now = DateTime.now();
-    final DateTime estimatedEnd = start.add(Duration(hours: targetHours));
-
-    final mutedStyle = TextStyle(
-      color: Colors.white.withValues(alpha: 0.45),
-      fontSize: 10,
-      fontWeight: FontWeight.w600,
-      letterSpacing: 0.4,
-    );
-    final dimmerStyle = mutedStyle.copyWith(
-      color: Colors.white.withValues(alpha: 0.30),
-    );
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        _timelineEndpoint(
-          dateTime: start,
-          now: now,
-          baseStyle: mutedStyle,
-          qualifierStyle: dimmerStyle,
-        ),
-        _timelineEndpoint(
-          dateTime: estimatedEnd,
-          now: now,
-          baseStyle: mutedStyle,
-          qualifierStyle: dimmerStyle,
-        ),
-      ],
-    );
-  }
-
-  Widget _timelineEndpoint({
-    required DateTime dateTime,
-    required DateTime now,
-    required TextStyle baseStyle,
-    required TextStyle qualifierStyle,
-  }) {
-    final qualifier = RelativeDayLabel.qualifier(dateTime, now);
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(_formatHHmm(dateTime), style: baseStyle),
-        if (qualifier.isNotEmpty) ...[
-          const SizedBox(width: 4),
-          Text('·$qualifier', style: qualifierStyle),
-        ],
-      ],
-    );
-  }
-
-  static String _formatHHmm(DateTime t) {
-    final h = t.hour.toString().padLeft(2, '0');
-    final m = t.minute.toString().padLeft(2, '0');
-    return '$h:$m';
-  }
-
   /// SPEC-101: botón principal del card de Ayuno.
   ///
   /// - Estado "activo": label rojo "Finalizar Ayuno". Si progress<100%
@@ -625,12 +386,11 @@ class FastingConsciousnessCard extends ConsumerWidget {
         !isActive && ref.watch(hasCompletedFastingTodayProvider);
     final bool disabled = state.isSaving;
 
-    final Color bgColor;
-    if (isActive) {
-      bgColor = Colors.redAccent;
-    } else {
-      bgColor = accent;
-    }
+    // Rediseño Hoy (2026-10-30): con el ayuno en curso el botón es
+    // secundario (fondo tenue, texto verde); sin ayuno, verde sólido.
+    final Color bgColor =
+        isActive ? Colors.white.withValues(alpha: 0.06) : accent;
+    final Color fgColor = isActive ? accent : const Color(0xFF0B1020);
 
     return SizedBox(
       width: double.infinity,
@@ -647,27 +407,27 @@ class FastingConsciousnessCard extends ConsumerWidget {
           elevation: 0,
         ),
         icon: state.isSaving
-            ? const SizedBox(
+            ? SizedBox(
                 width: 18,
                 height: 18,
                 child: CircularProgressIndicator(
-                  color: Colors.white,
+                  color: fgColor,
                   strokeWidth: 2,
                 ),
               )
             : Icon(
                 isActive
                     ? Icons.stop_circle_outlined
-                    : Icons.play_circle_outline,
-                color: Colors.white,
+                    : Icons.play_arrow_rounded,
+                color: fgColor,
                 size: 22,
               ),
         label: Text(
           isActive
-              ? 'Finalizar Ayuno'
+              ? 'Terminar ayuno'
               : (completedToday ? 'Iniciar nuevo ayuno' : 'Iniciar ayuno'),
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: fgColor,
             fontWeight: FontWeight.w800,
             fontSize: 14,
           ),

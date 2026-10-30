@@ -30,7 +30,12 @@ class PillarRing extends StatelessWidget {
     this.showPercent = false,
     this.isStreakAnchor = false,
     this.isRestDay = false,
+    this.compact = false,
   });
+
+  /// Rediseño Hoy (2026-10-30): anillo de 42 px (en vez de 56) para la
+  /// fila compacta "Tu día".
+  final bool compact;
 
   final IconData icon;
   final Color color;
@@ -62,6 +67,7 @@ class PillarRing extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final double d = compact ? 42 : 56;
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -69,15 +75,15 @@ class PillarRing extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           SizedBox(
-            width: 56,
-            height: 56,
+            width: d,
+            height: d,
             child: Stack(
               alignment: Alignment.center,
               children: [
                 if (isSelected)
                   Container(
-                    width: 56,
-                    height: 56,
+                    width: d,
+                    height: d,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       boxShadow: [
@@ -90,8 +96,8 @@ class PillarRing extends StatelessWidget {
                     ),
                   ),
                 SizedBox(
-                  width: 56,
-                  height: 56,
+                  width: d,
+                  height: d,
                   child: CircularProgressIndicator(
                     value: progress.clamp(0.0, 1.0),
                     strokeWidth: 3,
@@ -99,7 +105,7 @@ class PillarRing extends StatelessWidget {
                     valueColor: AlwaysStoppedAnimation<Color>(color),
                   ),
                 ),
-                Icon(icon, color: color, size: 22),
+                Icon(icon, color: color, size: compact ? 18 : 22),
                 // SPEC-255 RF-07: pista de pilar-ancla — solo mientras no
                 // esté completado (una vez el check verde aparece, la
                 // pista ya no aporta nada).

@@ -9,11 +9,16 @@ class DashboardBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Rediseño (2026-10-30): 3 pestañas — Hoy, Progreso, Perfil. "Retos"
+    // salió de la barra y se abre desde Progreso, por eso /retos marca
+    // Progreso como activa. Es la ÚNICA barra de la app: Progreso y Perfil
+    // también la usan.
     final String location = GoRouterState.of(context).matchedLocation;
     int currentIndex = 0;
-    if (location.startsWith('/analysis')) currentIndex = 1;
-    if (location.startsWith('/retos')) currentIndex = 2;
-    if (location.startsWith('/profile')) currentIndex = 3;
+    if (location.startsWith('/analysis') || location.startsWith('/retos')) {
+      currentIndex = 1;
+    }
+    if (location.startsWith('/profile')) currentIndex = 2;
     return BottomNavigationBar(
         backgroundColor: const Color(0xFF0F172A),
         selectedItemColor: AppColors.metabolicGreen,
@@ -22,20 +27,16 @@ class DashboardBottomNav extends StatelessWidget {
         type: BottomNavigationBarType.fixed,
         onTap: (index) {
           if (index == 0) context.go('/dashboard');
-          // SPEC-197: gate vive dentro de AnalysisScreen (blur overlay).
-          // Todos los usuarios navegan; free users ven el soft gate allí.
           if (index == 1) context.go('/analysis');
-          if (index == 2) context.go('/retos');
-          if (index == 3) context.go('/profile');
+          if (index == 2) context.go('/profile');
         },
         items: const [
           BottomNavigationBarItem(
-              icon: Icon(Icons.grid_view_rounded), label: "Hoy"),
+              icon: Icon(Icons.wb_sunny_outlined), label: "Hoy"),
           BottomNavigationBarItem(
               icon: Icon(Icons.insights_rounded), label: "Progreso"),
           BottomNavigationBarItem(
-              icon: Icon(Icons.emoji_events_rounded), label: "Retos"),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: "Perfil")
+              icon: Icon(Icons.person_outline_rounded), label: "Perfil"),
         ]);
   }
 }
