@@ -12,6 +12,7 @@ import 'package:go_router/go_router.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/analysis/application/analysis_series_providers.dart';
 import 'package:elena_app/src/features/analysis/domain/metric_series.dart';
+import 'package:elena_app/src/features/alcohol/application/alcohol_score_provider.dart';
 
 class ScoreTrendCard extends ConsumerWidget {
   const ScoreTrendCard({super.key});
@@ -21,6 +22,11 @@ class ScoreTrendCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final series = ref.watch(resolvedDailyScoreSeriesProvider);
+    // Fix números (2026-10-30): el número grande "hoy" sale de la MISMA
+    // fuente que el puntaje del Dashboard (Hoy). Antes usaba el último punto
+    // de la serie histórica — que puede ser el score de un ciclo cerrado días
+    // atrás — y mostraba "52 hoy" en Progreso mientras Hoy decía 25.
+    final today = ref.watch(dailyScoreWithConsumptionProvider);
 
     return InkWell(
       borderRadius: BorderRadius.circular(20),
@@ -32,13 +38,12 @@ class ScoreTrendCard extends ConsumerWidget {
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: AppColors.borderDefault),
         ),
-        child: series.isEmpty ? _empty() : _content(series),
+        child: series.isEmpty ? _empty() : _content(series, today),
       ),
     );
   }
 
-  Widget _content(MetricSeries series) {
-    final current = series.currentValue!.round();
+  Widget _content(MetricSeries series, int current) {
     final values = series.points.map((p) => p.value).toList();
     final avg = (values.reduce((a, b) => a + b) / values.length).round();
     final delta = series.delta; // last - first

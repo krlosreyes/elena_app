@@ -13,9 +13,8 @@ import 'package:go_router/go_router.dart';
 import 'package:elena_app/src/core/constants/pillar_constants.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/analysis/application/weekly_coaching_provider.dart';
+import 'package:elena_app/src/features/analysis/application/weekly_window.dart';
 import 'package:elena_app/src/features/analysis/domain/weekly_coaching_insight.dart';
-
-const double _kSignificantDelta = 0.05;
 
 class WeeklyReportCard extends ConsumerWidget {
   const WeeklyReportCard({super.key});
@@ -23,6 +22,10 @@ class WeeklyReportCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(weeklyCoachingProvider);
+    // Fix números (2026-10-30): cada pilar se muestra como "X de 7 días".
+    // Mientras carga, se usa `empty` (0 días) en vez de bloquear la card.
+    final days = ref.watch(weeklyPillarDaysProvider).valueOrNull ??
+        WeeklyPillarDays.empty;
     return InkWell(
       borderRadius: BorderRadius.circular(20),
       onTap: () => context.push('/analysis/habitos'),
@@ -46,84 +49,49 @@ class WeeklyReportCard extends ConsumerWidget {
             ),
           ),
           error: (_, __) => _msg('No pudimos cargar tu semana.'),
-          data: (i) => i.isEmpty ? _empty() : _content(i),
+          data: (i) => i.isEmpty ? _empty() : _content(i, days),
         ),
       ),
     );
   }
 
-  Widget _content(WeeklyCoachingInsight i) {
-    final avgs = [
-      i.fastingAvg,
-      i.sleepAvg,
-      i.hydrationAvg,
-      i.exerciseAvg,
-      i.mealsAvg,
-    ];
-    final overall = avgs.reduce((a, b) => a + b) / avgs.length;
-    final (grade, gradeColor) = _grade(overall);
-
+  Widget _content(WeeklyCoachingInsight i, WeeklyPillarDays days) {
+    // Fix números (2026-10-30): se quitó la nota en letra (A/B/C…). Se
+    // calculaba con una fórmula distinta al puntaje del día y podía decir
+    // "A" con hidratación al 21% y ejercicio al 29%. El rango del encabezado
+    // es ahora la ventana real de 7 días, no el de los ciclos encontrados.
+    final now = DateTime.now();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'TU SEMANA · ${_formatRange(i.rangeStart, i.rangeEnd)}',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.55),
-                      fontSize: 10,
-                      letterSpacing: 1.2,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'Tu boletín',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Container(
-              width: 52,
-              height: 52,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: gradeColor.withValues(alpha: 0.14),
-                border: Border.all(color: gradeColor.withValues(alpha: 0.5)),
-              ),
-              child: Text(
-                grade,
-                style: TextStyle(
-                  color: gradeColor,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ),
-          ],
+        Text(
+          'TU SEMANA · ${_formatRange(weeklyWindowStart(now), weeklyWindowEnd(now))}',
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.55),
+            fontSize: 10,
+            letterSpacing: 1.2,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        const SizedBox(height: 4),
+        const Text(
+          'Tu boletín',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+          ),
         ),
         const SizedBox(height: 16),
-        _row(PillarConstants.trackingLabelAyuno, i.fastingAvg, i.fastingDelta,
+        _row(PillarConstants.trackingLabelAyuno, days.fasting,
             const Color(0xFF22D3A8)),
-        _row(PillarConstants.trackingLabelSueno, i.sleepAvg, i.sleepDelta,
+        _row(PillarConstants.trackingLabelSueno, days.sleep,
             const Color(0xFF818CF8)),
-        _row(PillarConstants.trackingLabelHidratacion, i.hydrationAvg,
-            i.hydrationDelta, const Color(0xFF38BDF8)),
-        _row(PillarConstants.trackingLabelEjercicio, i.exerciseAvg,
-            i.exerciseDelta, const Color(0xFF14B8A6)),
-        _row(PillarConstants.trackingLabelNutricion, i.mealsAvg, i.mealsDelta,
+        _row(PillarConstants.trackingLabelHidratacion, days.hydration,
+            const Color(0xFF38BDF8)),
+        _row(PillarConstants.trackingLabelEjercicio, days.exercise,
+            const Color(0xFF14B8A6)),
+        _row(PillarConstants.trackingLabelNutricion, days.nutrition,
             const Color(0xFFFB923C)),
         const SizedBox(height: 6),
         if (i.weakest != null)
@@ -137,8 +105,10 @@ class WeeklyReportCard extends ConsumerWidget {
   }
 
   // ── Fila de pilar ──────────────────────────────────────────────────────
-  Widget _row(String label, double avg, double? delta, Color accent) {
-    final pct = (avg.clamp(0.0, 1.0) * 100).round();
+  Widget _row(String label, int daysMet, Color accent) {
+    // Fix números (2026-10-30): antes mostraba "% + flecha con % de cambio"
+    // ("100% ↑269%"), un porcentaje de un porcentaje que nadie entendía.
+    // Ahora: barra de 7 segmentos (uno por día) y "X de 7 días".
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(
@@ -153,21 +123,19 @@ class WeeklyReportCard extends ConsumerWidget {
                 )),
           ),
           const SizedBox(width: 8),
-          Expanded(child: _bar(avg, accent)),
+          Expanded(child: _bar(daysMet / kWeeklyWindowDays, accent)),
           const SizedBox(width: 10),
           SizedBox(
-            width: 34,
-            child: Text('$pct%',
+            width: 74,
+            child: Text('$daysMet de $kWeeklyWindowDays días',
                 textAlign: TextAlign.right,
                 style: TextStyle(
                   color: accent,
                   fontSize: 12,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w800,
                   fontFeatures: const [FontFeature.tabularFigures()],
                 )),
           ),
-          const SizedBox(width: 8),
-          SizedBox(width: 44, child: _delta(delta)),
         ],
       ),
     );
@@ -189,35 +157,6 @@ class WeeklyReportCard extends ConsumerWidget {
           ),
         );
       }),
-    );
-  }
-
-  Widget _delta(double? delta) {
-    if (delta == null) {
-      return Text('—',
-          style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.25),
-              fontSize: 11,
-              fontWeight: FontWeight.w700));
-    }
-    if (delta.abs() < _kSignificantDelta) {
-      return Text('=',
-          style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.35),
-              fontSize: 11,
-              fontWeight: FontWeight.w900));
-    }
-    final down = delta < 0;
-    final color = down ? const Color(0xFFEF4444) : AppColors.metabolicGreen;
-    return Row(
-      children: [
-        Icon(down ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded,
-            color: color, size: 12),
-        const SizedBox(width: 2),
-        Text('${(delta * 100).abs().round()}%',
-            style: TextStyle(
-                color: color, fontSize: 11, fontWeight: FontWeight.w800)),
-      ],
     );
   }
 
@@ -358,16 +297,6 @@ class WeeklyReportCard extends ConsumerWidget {
       );
 
   // ── Helpers ────────────────────────────────────────────────────────────
-  (String, Color) _grade(double v) {
-    if (v >= 0.90) return ('A', AppColors.metabolicGreen);
-    if (v >= 0.80) return ('A-', AppColors.metabolicGreen);
-    if (v >= 0.70) return ('B+', const Color(0xFF22D3A8));
-    if (v >= 0.60) return ('B', const Color(0xFF84CC16));
-    if (v >= 0.50) return ('C', const Color(0xFFFBBF24));
-    if (v >= 0.35) return ('D', const Color(0xFFFB923C));
-    return ('E', const Color(0xFFEF4444));
-  }
-
   static const _monthsShort = [
     'ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', //
     'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'
