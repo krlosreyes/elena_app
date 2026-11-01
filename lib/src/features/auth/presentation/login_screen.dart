@@ -79,7 +79,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   Text(
                     "Bienvenid@",
                     textAlign: TextAlign.center,
+                    // Fix (2026-11-01): el tema no le daba color y salía
+                    // negro sobre fondo oscuro (casi invisible).
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          color: Colors.white,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 4,
                         ),

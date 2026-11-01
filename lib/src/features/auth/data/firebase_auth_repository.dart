@@ -17,6 +17,7 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
@@ -275,8 +276,43 @@ class FirebaseAuthRepository implements AuthRepository {
     }
   }
 
+  /// Web: google_sign_in 7 no soporta `authenticate()` en navegador (en web
+  /// el login debe salir de un botón renderizado por Google). Firebase Auth
+  /// sí ofrece su propia ventana emergente, así que en web se usa esa.
+  /// `null` si el usuario cierra la ventana.
+  Future<AppAccount?> _signInWithGooglePopup() async {
+    try {
+      final resultado = await _auth.signInWithPopup(GoogleAuthProvider());
+      return _buildAccount(resultado.user!);
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'popup-closed-by-user' ||
+          e.code == 'cancelled-popup-request') {
+        return null;
+      }
+      if (e.code == 'popup-blocked') {
+        throw Exception(
+          'El navegador bloqueó la ventana de Google. Permite ventanas '
+          'emergentes para este sitio e inténtalo de nuevo.',
+        );
+      }
+      if (e.code == 'account-exists-with-different-credential') {
+        throw Exception(
+          'Ya existe una cuenta con ese correo. Entra con tu contraseña.',
+        );
+      }
+      if (e.code == 'operation-not-allowed') {
+        throw Exception(
+          'El ingreso con Google no está disponible ahora mismo. Entra '
+          'con tu correo y contraseña.',
+        );
+      }
+      throw _handleAuthException(e);
+    }
+  }
+
   @override
   Future<AppAccount?> signInWithGoogle() async {
+    if (kIsWeb) return _signInWithGooglePopup();
     final credencial = await _obtenerCredencialGoogle();
     if (credencial == null) return null;
 
@@ -386,6 +422,26 @@ class FirebaseAuthRepository implements AuthRepository {
     final user = _auth.currentUser;
     if (user == null) {
       throw Exception('No hay sesión activa. Vuelve a iniciar sesión.');
+    }
+
+    if (kIsWeb) {
+      // Web: misma razón que en signInWithGoogle — ventana de Firebase.
+      try {
+        await user.reauthenticateWithPopup(GoogleAuthProvider());
+        return true;
+      } on FirebaseAuthException catch (e) {
+        if (e.code == 'popup-closed-by-user' ||
+            e.code == 'cancelled-popup-request') {
+          return false;
+        }
+        if (e.code == 'user-mismatch') {
+          throw Exception(
+            'Esa cuenta de Google no es la de esta sesión. Elige la misma '
+            'con la que entraste.',
+          );
+        }
+        throw _handleAuthException(e);
+      }
     }
 
     final credencial = await _obtenerCredencialGoogle();
