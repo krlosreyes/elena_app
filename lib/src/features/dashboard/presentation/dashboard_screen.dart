@@ -338,8 +338,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         selectedPillar: _selectedPillar,
                         onSelectPillar: _onSelectPillar,
                       ),
+                      // En ayuno, el detalle de Comida no se muestra (no se
+                      // pueden registrar comidas hasta terminar).
                       if (_selectedPillar != null &&
-                          _selectedPillar != SelectedPillar.ayuno) ...[
+                          _selectedPillar != SelectedPillar.ayuno &&
+                          !(fastingState.isActive &&
+                              _selectedPillar == SelectedPillar.comidas)) ...[
                         const SizedBox(height: 14),
                         DashboardSelectedPillarCard(
                           selectedPillar: _selectedPillar!,

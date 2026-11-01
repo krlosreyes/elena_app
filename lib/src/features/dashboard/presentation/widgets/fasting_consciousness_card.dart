@@ -18,6 +18,7 @@ import 'package:elena_app/src/features/fasting/application/fasting_notifier.dart
 import 'package:elena_app/src/features/fasting/domain/eating_window_advisory.dart';
 import 'package:elena_app/src/features/fasting/domain/fasting_status.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/early_fasting_end_dialog.dart';
+import 'package:elena_app/src/features/dashboard/presentation/widgets/fasting_countdown_panel.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/new_cycle_meals_warning_dialog.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/protocol_selector_sheet.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
@@ -179,116 +180,16 @@ class FastingConsciousnessCard extends ConsumerWidget {
   }
 
   Widget _buildActive(BuildContext context, WidgetRef ref, Color accent) {
-    final elapsed = state.duration;
-    final hh = elapsed.inHours.toString();
-    final mm = elapsed.inMinutes.remainder(60).toString().padLeft(2, '0');
+    // Rediseño ayuno (2026-11-01): cuenta regresiva HH:MM:SS + barra por
+    // etapas que avanza de ámbar a verde (FastingCountdownPanel).
     final start = state.startTime;
-    final end = start?.add(Duration(hours: state.targetHours));
-    final remaining = end?.difference(DateTime.now());
-
-    final String remainingText;
-    if (remaining == null) {
-      remainingText = '';
-    } else if (remaining.inSeconds <= 0) {
-      remainingText = '¡Cumpliste tu meta de ${state.targetHours} h!';
-    } else {
-      final rh = remaining.inHours;
-      final rm = remaining.inMinutes.remainder(60);
-      final rt = rh == 0 ? '$rm min' : '$rh h $rm min';
-      remainingText = 'Te faltan $rt · terminas a las ${_hora12(end!)}';
-    }
-
     return Column(
       children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-          decoration: BoxDecoration(
-            color: accent.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(20),
+        if (start != null)
+          FastingCountdownPanel(
+            startTime: start,
+            targetHours: state.targetHours,
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 6,
-                height: 6,
-                decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                'Ventana de ayuno activa',
-                style: TextStyle(
-                  color: accent,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 18),
-        SizedBox(
-          width: 170,
-          height: 170,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              SizedBox(
-                width: 170,
-                height: 170,
-                child: CircularProgressIndicator(
-                  value: state.progressPercentage.clamp(0.0, 1.0),
-                  strokeWidth: 10,
-                  strokeCap: StrokeCap.round,
-                  backgroundColor: Colors.white.withValues(alpha: 0.06),
-                  valueColor: AlwaysStoppedAnimation<Color>(accent),
-                ),
-              ),
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    '$hh:$mm',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 38,
-                      fontWeight: FontWeight.w800,
-                      fontFeatures: [FontFeature.tabularFigures()],
-                    ),
-                  ),
-                  Text(
-                    'horas de ayuno',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.6),
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 18),
-        if (remainingText.isNotEmpty)
-          Text(
-            remainingText,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              height: 1.35,
-            ),
-          ),
-        const SizedBox(height: 4),
-        Text(
-          'Vas muy bien. Si te da hambre, toma agua.',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.6),
-            fontSize: 12.5,
-          ),
-        ),
         if (start != null) _buildEatingWindowAdvisory(state),
         const SizedBox(height: 18),
         _buildFastingPrimaryButton(

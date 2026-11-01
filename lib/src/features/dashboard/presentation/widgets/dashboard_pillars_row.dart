@@ -313,7 +313,7 @@ class DashboardPillarsRow extends ConsumerWidget {
               // con el bloqueo. Sigue tappable — el usuario puede entrar
               // a la card y ver el banner explicativo.
               Opacity(
-                opacity: fastingIsActive ? 0.5 : 1.0,
+                opacity: fastingIsActive ? 0.35 : 1.0,
                 child: PillarRing(
                   icon: Icons.restaurant_rounded,
                   color: Colors.orangeAccent,
@@ -323,7 +323,20 @@ class DashboardPillarsRow extends ConsumerWidget {
                   isSelected: selectedPillar == SelectedPillar.comidas,
                   completed: nutritionMealsLogged >= nutritionTargetMeals,
                   showPercent: true,
-                  onTap: () => onSelectPillar(SelectedPillar.comidas),
+                  // Rediseño (2026-11-01): en ayuno no se registran comidas.
+                  // El pilar queda atenuado y tocarlo solo lo explica.
+                  onTap: fastingIsActive
+                      ? () => ScaffoldMessenger.of(context)
+                        ..hideCurrentSnackBar()
+                        ..showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Estás en ayuno. Podrás registrar comidas '
+                              'cuando termines.',
+                            ),
+                          ),
+                        )
+                      : () => onSelectPillar(SelectedPillar.comidas),
                 ),
               ),
               ])
