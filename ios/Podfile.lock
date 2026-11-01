@@ -1532,21 +1532,21 @@ PODS:
   - PromisesObjC (2.4.0)
   - PromisesSwift (2.4.0):
     - PromisesObjC (= 2.4.0)
-  - purchases_flutter (10.2.2):
+  - purchases_flutter (10.19.0):
     - Flutter
-    - PurchasesHybridCommon (= 18.10.0)
-  - purchases_ui_flutter (10.2.2):
+    - PurchasesHybridCommon (= 19.17.0)
+  - purchases_ui_flutter (10.19.0):
     - Flutter
-    - PurchasesHybridCommonUI (= 18.10.0)
-  - PurchasesHybridCommon (18.10.0):
-    - RevenueCat (= 5.76.0)
-  - PurchasesHybridCommonUI (18.10.0):
-    - PurchasesHybridCommon (= 18.10.0)
-    - RevenueCatUI (= 5.76.0)
+    - PurchasesHybridCommonUI (= 19.17.0)
+  - PurchasesHybridCommon (19.17.0):
+    - RevenueCat (= 5.99.0)
+  - PurchasesHybridCommonUI (19.17.0):
+    - PurchasesHybridCommon (= 19.17.0)
+    - RevenueCatUI (= 5.99.0)
   - RecaptchaInterop (101.0.0)
-  - RevenueCat (5.76.0)
-  - RevenueCatUI (5.76.0):
-    - RevenueCat (= 5.76.0)
+  - RevenueCat (5.99.0)
+  - RevenueCatUI (5.99.0):
+    - RevenueCat (= 5.99.0)
   - shared_preferences_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
@@ -1706,13 +1706,13 @@ SPEC CHECKSUMS:
   permission_handler_apple: 4ed2196e43d0651e8ff7ca3483a069d469701f2d
   PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
   PromisesSwift: 9d77319bbe72ebf6d872900551f7eeba9bce2851
-  purchases_flutter: dea68d45394f0ea152a781b86b6e86283a11b571
-  purchases_ui_flutter: 966932dc725227c59edb0f19e699e9add9d112c6
-  PurchasesHybridCommon: 3e650c7f56ebcd63b37a708685fbf98515305d14
-  PurchasesHybridCommonUI: 7f0ca509eff47ee76f69726221cb5699fd4308ec
+  purchases_flutter: 8816e152bcf4d8e6222decc5c2234235d630f0cf
+  purchases_ui_flutter: 4f37eb34009669072571ce0e8817e2298e616ec1
+  PurchasesHybridCommon: 46a92170257b674766b5ed5366be53c9d1603bbd
+  PurchasesHybridCommonUI: 0e047864cbcb7adfa90d736a7815d4e5ea5c316d
   RecaptchaInterop: 11e0b637842dfb48308d242afc3f448062325aba
-  RevenueCat: 792388288b4207a5056550fbf8f673090f1fbe22
-  RevenueCatUI: c20f148f7f81f26bed4103f538d64c09c494f793
+  RevenueCat: 8e91d216b71708bb2c97be0aa86f47bfdb450655
+  RevenueCatUI: dc55e7560ba885ba9f8dd703f911b7ff65b677d5
   shared_preferences_foundation: 7036424c3d8ec98dfe75ff1667cb0cd531ec82bb
   url_launcher_ios: 7a95fa5b60cc718a708b8f2966718e93db0cef1b
 
