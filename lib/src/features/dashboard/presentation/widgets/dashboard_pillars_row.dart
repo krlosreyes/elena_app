@@ -200,8 +200,7 @@ class DashboardPillarsRow extends ConsumerWidget {
                           value: (dailyScore / 100).clamp(0.0, 1.0),
                           strokeWidth: 4,
                           strokeCap: StrokeCap.round,
-                          backgroundColor:
-                              Colors.white.withValues(alpha: 0.08),
+                          backgroundColor: Colors.white.withValues(alpha: 0.08),
                           valueColor: const AlwaysStoppedAnimation<Color>(
                               AppColors.metabolicGreen),
                         ),
@@ -237,114 +236,114 @@ class DashboardPillarsRow extends ConsumerWidget {
           ),
           Expanded(
             child: Row(
-            key: ref.read(pillarRowKeyProvider),
-            children: [
-              // Cada pilar ocupa el mismo ancho y se escala si no cabe
-              // (pantallas angostas): nunca se montan los nombres.
-              for (final w in <Widget>[
-              PillarRing(
-                icon: Icons.timer_rounded,
-                color: AppColors.metabolicGreen,
-                // SPEC-257 §3.1: en día de descanso programado el anillo
-                // se muestra cubierto (100%) — no hay ventana de ayuno
-                // que cumplir hoy, así que el 0% real confundiría más
-                // que ayudaría. `completed` se deja en false a propósito:
-                // la insignia de "descanso" (isRestDay) toma precedencia
-                // visual sobre el check verde dentro de `PillarRing`.
-                progress: isFastingRestDay ? 1.0 : fastingProgress,
-                label: 'Ayuno',
-                compact: true,
-                isSelected: selectedPillar == SelectedPillar.ayuno,
-                completed: !isFastingRestDay && fastingProgress >= 1.0,
-                showPercent: !isFastingRestDay,
-                isStreakAnchor: showAnchorHint && !isFastingRestDay,
-                isRestDay: isFastingRestDay,
-                onTap: () => onSelectPillar(SelectedPillar.ayuno),
-              ),
-              PillarRing(
-                icon: Icons.nightlight_round,
-                color: const Color(0xFF818CF8),
-                progress: sleepProgress,
-                label: 'Sueño',
-                compact: true,
-                isSelected: selectedPillar == SelectedPillar.sueno,
-                completed: sleepCompleted,
-                showPercent: true,
-                isStreakAnchor: showAnchorHint,
-                onTap: () => onSelectPillar(SelectedPillar.sueno),
-              ),
-              PillarRing(
-                icon: Icons.water_drop_rounded,
-                color: Colors.blueAccent,
-                progress: hydrationProgress,
-                label: 'Agua',
-                compact: true,
-                isSelected: selectedPillar == SelectedPillar.hidratacion,
-                completed: hydrationGoalReached,
-                showPercent: true,
-                onTap: () => onSelectPillar(SelectedPillar.hidratacion),
-              ),
-              Builder(builder: (_) {
-                // SPEC-113.bugfix: usar `user.exerciseGoalMinutes`
-                // (default 20) como meta diaria. Antes el progress se
-                // dividía por 60 y el "completed" se gatillaba en 30
-                // — ambos hardcoded y desalineados con el objetivo
-                // real sugerido al usuario.
-                // BUGFIX objetivos: meta desde "Mis objetivos" (SoT) con
-                // fallback a UserModel/default.
-                final goal =
-                    ref.watch(effectiveExerciseGoalProvider).clamp(1, 240);
-                final progress =
-                    (exerciseTodayMinutes / goal.toDouble()).clamp(0.0, 1.0);
-                return PillarRing(
-                  icon: Icons.fitness_center_rounded,
-                  color: Colors.tealAccent,
-                  progress: progress,
-                  label: 'Ejercicio',
-                  compact: true,
-                  isSelected: selectedPillar == SelectedPillar.ejercicio,
-                  completed: exerciseTodayMinutes >= goal,
-                  showPercent: true,
-                  onTap: () => onSelectPillar(SelectedPillar.ejercicio),
-                );
-              }),
-              // SPEC-105: si hay ayuno activo, el PillarRing de Comidas
-              // se ve tenue (opacity 0.5) para señal visual consistente
-              // con el bloqueo. Sigue tappable — el usuario puede entrar
-              // a la card y ver el banner explicativo.
-              Opacity(
-                opacity: fastingIsActive ? 0.35 : 1.0,
-                child: PillarRing(
-                  icon: Icons.restaurant_rounded,
-                  color: Colors.orangeAccent,
-                  progress: nutritionProgress,
-                  label: 'Comida',
-                  compact: true,
-                  isSelected: selectedPillar == SelectedPillar.comidas,
-                  completed: nutritionMealsLogged >= nutritionTargetMeals,
-                  showPercent: true,
-                  // Rediseño (2026-11-01): en ayuno no se registran comidas.
-                  // El pilar queda atenuado y tocarlo solo lo explica.
-                  onTap: fastingIsActive
-                      ? () => ScaffoldMessenger.of(context)
-                        ..hideCurrentSnackBar()
-                        ..showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Estás en ayuno. Podrás registrar comidas '
-                              'cuando termines.',
-                            ),
-                          ),
-                        )
-                      : () => onSelectPillar(SelectedPillar.comidas),
-                ),
-              ),
-              ])
-                Expanded(
-                  child: FittedBox(fit: BoxFit.scaleDown, child: w),
-                ),
-            ],
-          ),
+              key: ref.read(pillarRowKeyProvider),
+              children: [
+                // Cada pilar ocupa el mismo ancho y se escala si no cabe
+                // (pantallas angostas): nunca se montan los nombres.
+                for (final w in <Widget>[
+                  PillarRing(
+                    icon: Icons.timer_rounded,
+                    color: AppColors.metabolicGreen,
+                    // SPEC-257 §3.1: en día de descanso programado el anillo
+                    // se muestra cubierto (100%) — no hay ventana de ayuno
+                    // que cumplir hoy, así que el 0% real confundiría más
+                    // que ayudaría. `completed` se deja en false a propósito:
+                    // la insignia de "descanso" (isRestDay) toma precedencia
+                    // visual sobre el check verde dentro de `PillarRing`.
+                    progress: isFastingRestDay ? 1.0 : fastingProgress,
+                    label: 'Ayuno',
+                    compact: true,
+                    isSelected: selectedPillar == SelectedPillar.ayuno,
+                    completed: !isFastingRestDay && fastingProgress >= 1.0,
+                    showPercent: !isFastingRestDay,
+                    isStreakAnchor: showAnchorHint && !isFastingRestDay,
+                    isRestDay: isFastingRestDay,
+                    onTap: () => onSelectPillar(SelectedPillar.ayuno),
+                  ),
+                  PillarRing(
+                    icon: Icons.nightlight_round,
+                    color: const Color(0xFF818CF8),
+                    progress: sleepProgress,
+                    label: 'Sueño',
+                    compact: true,
+                    isSelected: selectedPillar == SelectedPillar.sueno,
+                    completed: sleepCompleted,
+                    showPercent: true,
+                    isStreakAnchor: showAnchorHint,
+                    onTap: () => onSelectPillar(SelectedPillar.sueno),
+                  ),
+                  PillarRing(
+                    icon: Icons.water_drop_rounded,
+                    color: Colors.blueAccent,
+                    progress: hydrationProgress,
+                    label: 'Agua',
+                    compact: true,
+                    isSelected: selectedPillar == SelectedPillar.hidratacion,
+                    completed: hydrationGoalReached,
+                    showPercent: true,
+                    onTap: () => onSelectPillar(SelectedPillar.hidratacion),
+                  ),
+                  Builder(builder: (_) {
+                    // SPEC-113.bugfix: usar `user.exerciseGoalMinutes`
+                    // (default 20) como meta diaria. Antes el progress se
+                    // dividía por 60 y el "completed" se gatillaba en 30
+                    // — ambos hardcoded y desalineados con el objetivo
+                    // real sugerido al usuario.
+                    // BUGFIX objetivos: meta desde "Mis objetivos" (SoT) con
+                    // fallback a UserModel/default.
+                    final goal =
+                        ref.watch(effectiveExerciseGoalProvider).clamp(1, 240);
+                    final progress = (exerciseTodayMinutes / goal.toDouble())
+                        .clamp(0.0, 1.0);
+                    return PillarRing(
+                      icon: Icons.fitness_center_rounded,
+                      color: Colors.tealAccent,
+                      progress: progress,
+                      label: 'Ejercicio',
+                      compact: true,
+                      isSelected: selectedPillar == SelectedPillar.ejercicio,
+                      completed: exerciseTodayMinutes >= goal,
+                      showPercent: true,
+                      onTap: () => onSelectPillar(SelectedPillar.ejercicio),
+                    );
+                  }),
+                  // SPEC-105: si hay ayuno activo, el PillarRing de Comidas
+                  // se ve tenue (opacity 0.5) para señal visual consistente
+                  // con el bloqueo. Sigue tappable — el usuario puede entrar
+                  // a la card y ver el banner explicativo.
+                  Opacity(
+                    opacity: fastingIsActive ? 0.35 : 1.0,
+                    child: PillarRing(
+                      icon: Icons.restaurant_rounded,
+                      color: Colors.orangeAccent,
+                      progress: nutritionProgress,
+                      label: 'Comida',
+                      compact: true,
+                      isSelected: selectedPillar == SelectedPillar.comidas,
+                      completed: nutritionMealsLogged >= nutritionTargetMeals,
+                      showPercent: true,
+                      // Rediseño (2026-11-01): en ayuno no se registran comidas.
+                      // El pilar queda atenuado y tocarlo solo lo explica.
+                      onTap: fastingIsActive
+                          ? () => ScaffoldMessenger.of(context)
+                            ..hideCurrentSnackBar()
+                            ..showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Estás en ayuno. Podrás registrar comidas '
+                                  'cuando termines.',
+                                ),
+                              ),
+                            )
+                          : () => onSelectPillar(SelectedPillar.comidas),
+                    ),
+                  ),
+                ])
+                  Expanded(
+                    child: FittedBox(fit: BoxFit.scaleDown, child: w),
+                  ),
+              ],
+            ),
           ),
         ],
       ),

@@ -61,8 +61,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       final c = ref.read(dashboardScrollControllerProvider);
       if (c.hasClients) {
         c.animateTo(0,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOut);
+            duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
       }
       return;
     }

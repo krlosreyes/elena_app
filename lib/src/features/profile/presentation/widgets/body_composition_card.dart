@@ -208,7 +208,8 @@ class _CardContent extends StatelessWidget {
                   child: _MetricTile(
                     label: '% GRASA',
                     value: '${fat.toStringAsFixed(1)}%',
-                    sub: _neutralLabel(BodyCompositionCalc.fatZoneLabel(fat, isMale)),
+                    sub: _neutralLabel(
+                        BodyCompositionCalc.fatZoneLabel(fat, isMale)),
                     color: fatColor,
                     icon: Icons.whatshot_rounded,
                   ),

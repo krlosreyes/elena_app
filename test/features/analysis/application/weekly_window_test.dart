@@ -54,8 +54,7 @@ void main() {
         _cycle('abierto', null),
       ];
       final split = splitCyclesByWeeklyWindow(cycles, now);
-      expect(split.current.map((c) => c.cycleId),
-          ['hoy', 'limite-actual']);
+      expect(split.current.map((c) => c.cycleId), ['hoy', 'limite-actual']);
       expect(split.previous.map((c) => c.cycleId),
           ['anterior', 'limite-anterior']);
     });

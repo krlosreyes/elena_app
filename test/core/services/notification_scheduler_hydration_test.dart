@@ -7,8 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('Recordatorio único de agua', () {
-    test('wake 7:00, sleep 23:00 → punto medio entre 7:30 y 21:00 (14:15)',
-        () {
+    test('wake 7:00, sleep 23:00 → punto medio entre 7:30 y 21:00 (14:15)', () {
       final t = NotificationScheduler.hydrationReminderTime(
         wakeHour: 7,
         wakeMinute: 0,

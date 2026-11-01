@@ -114,7 +114,8 @@ class NotificationPolicy {
       effectiveKinds(enabled, maxPerDay).map((k) => idByKind[k]!).toSet();
 
   /// ¿Se puede agendar este ID con la configuración actual?
-  static bool allows(int id) => allowedIdsFor(_enabled, _maxPerDay).contains(id);
+  static bool allows(int id) =>
+      allowedIdsFor(_enabled, _maxPerDay).contains(id);
 
   /// IDs conocidos que hay que cancelar del sistema operativo porque ya no
   /// están permitidos.

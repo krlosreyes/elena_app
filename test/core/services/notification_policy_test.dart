@@ -69,8 +69,7 @@ void main() {
       expect(targets, containsAll([100, 101, 200, 400, 439, 500, 600, 610]));
     });
 
-    test('guarda y carga la configuración, recortando el límite a 3',
-        () async {
+    test('guarda y carga la configuración, recortando el límite a 3', () async {
       SharedPreferences.setMockInitialValues({});
       await NotificationPolicy.save(
         enabled: {NotificationKind.manana, NotificationKind.agua},
