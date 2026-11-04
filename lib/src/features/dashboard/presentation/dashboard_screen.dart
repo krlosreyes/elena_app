@@ -13,6 +13,7 @@ import 'package:elena_app/src/features/dashboard/presentation/widgets/dashboard_
 import 'package:elena_app/src/features/dashboard/presentation/widgets/dashboard_pillars_row.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/fasting_consciousness_card.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/hoy_header.dart';
+import 'package:elena_app/src/features/dashboard/presentation/widgets/metabolic_day_widgets.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/today_focus_card.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/dashboard_selected_pillar_card.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/metabolic_alert_banner.dart';
@@ -25,6 +26,7 @@ import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cyc
 import 'package:elena_app/src/features/metabolic_cycle/presentation/widgets/cycle_detail_sheet.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart';
 import 'package:elena_app/src/features/metabolic_cycle/domain/metabolic_cycle.dart';
+import 'package:elena_app/src/features/metabolic_cycle/domain/closure_reason.dart';
 // SPEC-137 E.5: banner countdown 30 min antes de la próxima comida.
 import 'package:elena_app/src/features/onboarding/application/app_tour_notifier.dart';
 import 'package:elena_app/src/features/onboarding/application/tour_targets_provider.dart';
@@ -172,11 +174,25 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     // ayuno y eso cierra el ciclo anterior, presentamos su feedback de
     // inmediato como sheet (ligado al gesto), y descartamos el cierre para
     // que la tarjeta pasiva no lo repita después.
+    // Mantiene vivo el historial reciente para el "Cerraste tú X de 7".
+    ref.watch(last7ClosedCyclesProvider);
     ref.listen<MetabolicCycle?>(cycleClosureMomentProvider, (prev, next) {
       if (next == null) return;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        CycleDetailSheet.show(context, next);
+        // Recompensa del gesto: cuántos de tus últimos 7 días cerraste tú.
+        final recent =
+            ref.read(last7ClosedCyclesProvider).valueOrNull ?? const [];
+        final ids = {for (final c in recent) c.cycleId};
+        final pool = [
+          if (!ids.contains(next.cycleId)) next,
+          ...recent,
+        ].take(7).toList();
+        final byYou = pool
+            .where((c) => c.closureReason == ClosureReason.manualNextFasting)
+            .length;
+        CycleDetailSheet.show(context, next,
+            closedByYou: byYou, closedOutOf: pool.length);
         ref.read(cycleClosureMomentProvider.notifier).state = null;
         ref.read(cycleClosureDismissalProvider.notifier).dismiss(next.cycleId);
       });
@@ -287,7 +303,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       // "Aprende". Su código sigue en el repo.
                       const SizedBox(height: 10),
                       const HoyHeader(),
-                      const SizedBox(height: 18),
+                      const SizedBox(height: 14),
+                      // Día metabólico (2026-11-04): siempre visible.
+                      const MetabolicDayStrip(),
+                      const SizedBox(height: 14),
                       if (fastingState.metabolicAlert != null) ...[
                         MetabolicAlertBanner(
                             message: fastingState.metabolicAlert!),
@@ -308,6 +327,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         FeedingEndOverlay(state: fastingState),
                         const SizedBox(height: 14),
                       ],
+                      // Día metabólico: si la ventana terminó y no
+                      // iniciaste el ayuno, "¿a qué hora fue tu última
+                      // comida?" — repara el olvido sin perder el día.
+                      const CloseDayPrompt(),
                       FastingConsciousnessCard(state: fastingState),
                       const SizedBox(height: 14),
                       const TodayFocusCard(),
@@ -316,7 +339,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           const Text(
-                            'Tu día',
+                            'Tu día metabólico',
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 17,

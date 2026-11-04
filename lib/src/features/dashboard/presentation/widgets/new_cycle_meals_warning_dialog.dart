@@ -54,7 +54,7 @@ class NewCycleMealsWarningDialog extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
       ),
       title: const Text(
-        '¿Iniciar tu próximo ayuno?',
+        '¿Cerrar tu día metabólico?',
         style: TextStyle(
           color: Colors.white,
           fontWeight: FontWeight.w900,
@@ -94,9 +94,9 @@ class NewCycleMealsWarningDialog extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           const Text(
-            'Al iniciar el ayuno arrancas un nuevo Día Metabólico. Esas '
-            'comidas van a quedar fuera de la vista de "Hoy" — se '
-            'conservan en tu historial, no se borran.',
+            'Al iniciar el ayuno cierras este día y empieza el siguiente. '
+            'Esas comidas quedan en el día que cierras — se conservan en '
+            'tu historial, no se borran.',
             style: TextStyle(
               color: Color(0xFF94A3B8),
               fontSize: 13,
@@ -130,7 +130,7 @@ class NewCycleMealsWarningDialog extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           ),
           child: const Text(
-            'Sí, iniciar ayuno',
+            'Sí, cerrar mi día',
             style: TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.w800,

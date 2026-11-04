@@ -19,6 +19,8 @@ import 'package:elena_app/src/features/fasting/domain/eating_window_advisory.dar
 import 'package:elena_app/src/features/fasting/domain/fasting_status.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/early_fasting_end_dialog.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/fasting_countdown_panel.dart';
+import 'package:elena_app/src/features/dashboard/presentation/widgets/metabolic_day_widgets.dart';
+import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/new_cycle_meals_warning_dialog.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/protocol_selector_sheet.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
@@ -158,6 +160,15 @@ class FastingConsciousnessCard extends ConsumerWidget {
           accent: accent,
         ),
         const SizedBox(height: 6),
+        // Si el aviso de cierre está visible, la hora se indica ahí (cierra
+        // el día). Este enlace re-ancla el día sin cerrarlo — no mostrar
+        // los dos caminos a la vez.
+        if (!CloseDayPrompt.shouldShow(
+          ref.watch(metabolicDayViewProvider),
+          ref.watch(closeDayPromptSnoozeProvider),
+          state.isActive,
+          DateTime.now(),
+        ))
         Center(
           child: TextButton(
             onPressed: state.isSaving
@@ -285,6 +296,10 @@ class FastingConsciousnessCard extends ConsumerWidget {
     // sigue vivo para resumen diario / paywall; aquí solo informa el label.
     final bool completedToday =
         !isActive && ref.watch(hasCompletedFastingTodayProvider);
+    // Día metabólico (2026-11-04): con un día abierto, el toque cierra ese
+    // día y abre el siguiente — el botón lo dice.
+    final bool hasOpenDay =
+        ref.watch(currentMetabolicCycleProvider).valueOrNull != null;
     final bool disabled = state.isSaving;
 
     // Rediseño Hoy (2026-10-30): con el ayuno en curso el botón es
@@ -326,7 +341,9 @@ class FastingConsciousnessCard extends ConsumerWidget {
         label: Text(
           isActive
               ? 'Terminar ayuno'
-              : (completedToday ? 'Iniciar nuevo ayuno' : 'Iniciar ayuno'),
+              : (hasOpenDay
+                  ? 'Cerrar día e iniciar ayuno'
+                  : (completedToday ? 'Iniciar nuevo ayuno' : 'Iniciar ayuno')),
           style: TextStyle(
             color: fgColor,
             fontWeight: FontWeight.w800,
