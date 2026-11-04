@@ -124,6 +124,12 @@ class NotificationIds {
   // ID 301 para no colisionar con autoCycleClosure (300).
   static const int nextMealReady = 301;
 
+  // Día metabólico (2026-11-04): avisos anclados al ciclo del usuario. Ver
+  // core/services/metabolic_day_reminders.dart. Rango 310-319.
+  static const int cycleWindowOpens = 310;
+  static const int cycleCloseDay = 311;
+  static const int cycleRescue = 312;
+
   // SPEC-150: hidratación. Rango 400-419 reservado (hasta 20 slots/día).
   // cancelHydration() cancela todo el rango.
   // Cadencia 30 min (audit notif 2026-06-10): la ventana activa (~14h) cabe
@@ -868,6 +874,16 @@ class NotificationService {
     AppLogger.debug(
       '[NotificationService] Notificaciones de alimentación canceladas.',
     );
+  }
+
+  /// Día metabólico (2026-11-04): cancela los 3 avisos del ciclo (310-312).
+  static Future<void> cancelMetabolicDay() async {
+    if (kIsWeb || !_initialized) return;
+    for (int id = NotificationIds.cycleWindowOpens;
+        id <= NotificationIds.cycleRescue;
+        id++) {
+      await _plugin.cancel(id: id);
+    }
   }
 
   /// SPEC-150: cancela las 20 slots reservadas a hidratación (400-419).

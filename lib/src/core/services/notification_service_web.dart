@@ -29,6 +29,12 @@ class NotificationIds {
   // SPEC-137 E.5: 30 min antes de la próxima comida sugerida
   // (lastMealAt + 3h). One-shot, no repeatsDaily.
   static const int nextMealReady = 301;
+
+  // Día metabólico (2026-11-04): avisos anclados al ciclo del usuario. Ver
+  // core/services/metabolic_day_reminders.dart. Rango 310-319.
+  static const int cycleWindowOpens = 310;
+  static const int cycleCloseDay = 311;
+  static const int cycleRescue = 312;
   // SPEC-235: notificación al cierre automático del ciclo metabólico.
   static const int autoCycleClosure = 300;
   // Hidratación. Cadencia 30 min → rango 400-439.
@@ -129,6 +135,9 @@ class NotificationService {
   static Future<void> cancelFeeding() async {
     // No-op en Web
   }
+
+  /// Día metabólico (2026-11-04) — No-op en web.
+  static Future<void> cancelMetabolicDay() async {}
 
   // SPEC-150: hidratación es No-op en web (notificaciones nativas no
   // funcionan igual en web). Las notifs solo aplican a iOS/Android.

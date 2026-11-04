@@ -8,12 +8,12 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('NotificationPolicy', () {
-    test('por defecto: mañana, comidas y buenas noches (3 avisos)', () {
+    test('por defecto: los 3 avisos del día metabólico', () {
       final ids = NotificationPolicy.allowedIdsFor(
         NotificationPolicy.defaultEnabled,
         kHardMaxPerDay,
       );
-      expect(ids, {108, 102, 611});
+      expect(ids, {310, 311, 312});
     });
 
     test('nunca más de 3, aunque se activen los 5 tipos', () {
@@ -22,8 +22,8 @@ void main() {
         99,
       );
       expect(ids.length, 3);
-      // Se quedan los de mayor prioridad.
-      expect(ids, {108, 102, 611});
+      // Se quedan los de mayor prioridad: los del día metabólico.
+      expect(ids, {310, 311, 312});
     });
 
     test('respeta un límite menor elegido por el usuario', () {
@@ -31,7 +31,7 @@ void main() {
         NotificationPolicy.defaultEnabled,
         1,
       );
-      expect(ids, {108});
+      expect(ids, {311}, reason: 'con 1 aviso, queda "Cierra tu día"');
     });
 
     test('agua: solo el ID 400, nunca los 40 slots de antes', () {
@@ -51,7 +51,7 @@ void main() {
         3,
       );
       for (final blocked in [
-        100, 101, 103, 104, 105, 107, 109, // circadianas extra
+        100, 101, 102, 103, 104, 105, 107, 108, 109, 611, // de reloj
         200, 201, 202, 203, // hitos de ayuno (203 solo si se activa)
         300, 301, 450, 500, 501, 600, 601, 602, 603, 610,
       ]) {
@@ -60,13 +60,26 @@ void main() {
     });
 
     test('la purga cancela todo lo conocido salvo lo permitido y el 700', () {
-      final allowed = {108, 102, 611};
+      final allowed = {310, 311, 312};
       final targets = NotificationPolicy.purgeTargets(allowed);
-      expect(targets, isNot(contains(108)));
-      expect(targets, isNot(contains(102)));
-      expect(targets, isNot(contains(611)));
+      expect(targets, isNot(contains(310)));
+      expect(targets, isNot(contains(311)));
+      expect(targets, isNot(contains(312)));
       expect(targets, isNot(contains(700)));
-      expect(targets, containsAll([100, 101, 200, 400, 439, 500, 600, 610]));
+      expect(targets,
+          containsAll([100, 101, 108, 200, 400, 439, 500, 600, 610, 611]));
+    });
+
+    test('migra una configuración v1 guardada a los nuevos defaults',
+        () async {
+      SharedPreferences.setMockInitialValues({
+        'notificationPolicy.enabledKinds': ['manana', 'comidas', 'sueno'],
+        'notificationPolicy.maxPerDay': 3,
+      });
+      await NotificationPolicy.load();
+      expect(NotificationPolicy.enabled, NotificationPolicy.defaultEnabled);
+      expect(NotificationPolicy.allows(311), isTrue);
+      expect(NotificationPolicy.allows(108), isFalse);
     });
 
     test('guarda y carga la configuración, recortando el límite a 3', () async {

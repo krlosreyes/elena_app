@@ -12,6 +12,7 @@ import 'package:elena_app/src/features/goals/application/pillar_goal_resolver.da
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart';
 import 'package:elena_app/src/features/metabolic_cycle/domain/metabolic_cycle.dart';
 import 'package:elena_app/src/features/nutrition/application/nutrition_notifier.dart';
+import 'package:elena_app/src/shared/utils/fasting_protocol.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // NotificationSchedulerNotifier
@@ -67,6 +68,18 @@ class NotificationSchedulerNotifier extends StateNotifier<void> {
         final user = _ref.read(currentUserStreamProvider).valueOrNull;
         if (user != null) _maybeReschedule(user, force: true);
       },
+    );
+
+    // Día metabólico (2026-11-04): los 3 avisos del ciclo se anclan al
+    // inicio/fin del ayuno. Reprogramar cuando cambia cualquiera de los dos
+    // (incluye "Corregir hora de inicio", que no cambia isActive).
+    _ref.listen<(bool, DateTime?)>(
+      fastingProvider.select((s) => (s.isActive, s.startTime)),
+      (previous, next) {
+        if (previous == next) return;
+        _scheduleMetabolicDay();
+      },
+      fireImmediately: true,
     );
 
     // 20-jul: si el usuario edita sus objetivos ("Mis objetivos" en
@@ -164,6 +177,25 @@ class NotificationSchedulerNotifier extends StateNotifier<void> {
     // Fix notificaciones (2026-10-30): un solo recordatorio de agua al día,
     // y solo si el usuario lo activó (NotificationPolicy).
     await NotificationScheduler.scheduleHydrationReminders(user);
+    await _scheduleMetabolicDay();
+  }
+
+  /// Día metabólico (2026-11-04): ventana abre / cierra tu día / rescate.
+  Future<void> _scheduleMetabolicDay() async {
+    final user = _ref.read(currentUserStreamProvider).valueOrNull;
+    if (user == null) return;
+    if (!_policyLoaded) {
+      await NotificationPolicy.load();
+      _policyLoaded = true;
+    }
+    final fasting = _ref.read(fastingProvider);
+    await NotificationScheduler.scheduleMetabolicDayReminders(
+      isFasting: fasting.isActive,
+      anchor: fasting.startTime,
+      targetHours: fastingHoursForProtocol(user.fastingProtocol) ?? 0,
+      wakeHour: user.profile.wakeUpTime.hour,
+      wakeMinute: user.profile.wakeUpTime.minute,
+    );
   }
 
   /// Fix notificaciones (2026-10-30): la pantalla de ajustes llama esto al

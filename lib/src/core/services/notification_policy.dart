@@ -7,8 +7,11 @@
 // consultan antes de agendar. Si el ID no está permitido, no se agenda.
 //
 // Reglas:
-//   - Solo existen 5 tipos de aviso, uno por tipo (ver [NotificationKind]).
-//   - Por defecto están activos 3: mañana, comidas y buenas noches.
+//   - Solo existen 8 tipos de aviso, uno por tipo (ver [NotificationKind]).
+//   - Por defecto están activos los 3 del día metabólico (2026-11-04): ventana
+//     abre, cierra tu día y rescate. Antes eran mañana, comidas y buenas
+//     noches — avisos de reloj que hicieron perder el concepto de día
+//     metabólico (feedback de Carlos tras 2 días de uso de la build 74).
 //   - Nunca se permiten más de [kHardMaxPerDay] tipos a la vez, aunque el
 //     usuario active más o algún código futuro agende otros IDs.
 //   - Cualquier ID que no sea uno de estos 5 queda bloqueado (hitos de
@@ -21,6 +24,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 /// Los únicos tipos de aviso que la app puede mandar.
 enum NotificationKind {
+  /// Día metabólico: "Tu ventana abrió" al cumplir la meta de ayuno (ID 310).
+  cicloVentana,
+
+  /// Día metabólico: "Cierra tu día" al fin estimado de la ventana (ID 311).
+  cicloCierre,
+
+  /// Día metabólico: rescate a la mañana si el día quedó sin cerrar (ID 312).
+  cicloRescate,
+
   /// "🎯 Tus objetivos de hoy", 15 min después de despertar (ID 108).
   manana,
 
@@ -45,6 +57,9 @@ class NotificationPolicy {
 
   // IDs — deben coincidir con `NotificationIds` (mobile y web). Se repiten
   // como literales para que este archivo sea puro y testeable sin el plugin.
+  static const int _idCicloVentana = 310; // NotificationIds.cycleWindowOpens
+  static const int _idCicloCierre = 311; // NotificationIds.cycleCloseDay
+  static const int _idCicloRescate = 312; // NotificationIds.cycleRescue
   static const int _idManana = 108; // NotificationIds.dailyGoalsSummary
   static const int _idComidas = 102; // NotificationIds.lastMealWarning
   static const int _idSueno = 611; // NotificationIds.goodNight
@@ -52,6 +67,9 @@ class NotificationPolicy {
   static const int _idAgua = 400; // NotificationIds.hydrationStart
 
   static const Map<NotificationKind, int> idByKind = {
+    NotificationKind.cicloVentana: _idCicloVentana,
+    NotificationKind.cicloCierre: _idCicloCierre,
+    NotificationKind.cicloRescate: _idCicloRescate,
     NotificationKind.manana: _idManana,
     NotificationKind.comidas: _idComidas,
     NotificationKind.sueno: _idSueno,
@@ -61,6 +79,9 @@ class NotificationPolicy {
 
   /// Orden de prioridad si por algún motivo hay más tipos activos que el tope.
   static const List<NotificationKind> priority = [
+    NotificationKind.cicloCierre,
+    NotificationKind.cicloRescate,
+    NotificationKind.cicloVentana,
     NotificationKind.manana,
     NotificationKind.comidas,
     NotificationKind.sueno,
@@ -69,9 +90,9 @@ class NotificationPolicy {
   ];
 
   static const Set<NotificationKind> defaultEnabled = {
-    NotificationKind.manana,
-    NotificationKind.comidas,
-    NotificationKind.sueno,
+    NotificationKind.cicloVentana,
+    NotificationKind.cicloCierre,
+    NotificationKind.cicloRescate,
   };
 
   /// Todos los IDs que la app ha usado alguna vez para avisos programados.
@@ -82,6 +103,7 @@ class NotificationPolicy {
     (100, 109), // circadianas
     (200, 209), // hitos de ayuno
     (300, 301), // cierre automático / próxima comida
+    (310, 312), // día metabólico: ventana abre, cierra tu día, rescate
     (400, 450), // hidratación + snooze
     (500, 501), // muro de pago
     (600, 619), // check-ins + sueño
@@ -90,6 +112,12 @@ class NotificationPolicy {
   // ── Estado (cargado de SharedPreferences) ──────────────────────────────
   static const String _kPrefsEnabled = 'notificationPolicy.enabledKinds';
   static const String _kPrefsMax = 'notificationPolicy.maxPerDay';
+  static const String _kPrefsVersion = 'notificationPolicy.version';
+
+  /// v2 (2026-11-04): defaults pasan a los avisos del día metabólico. Una
+  /// configuración guardada con v1 se descarta una sola vez — si no, quien
+  /// ya instaló la build 74 seguiría sin los avisos de inicio/cierre.
+  static const int _kCurrentVersion = 2;
 
   static Set<NotificationKind> _enabled = {...defaultEnabled};
   static int _maxPerDay = kHardMaxPerDay;
@@ -130,6 +158,15 @@ class NotificationPolicy {
   static Future<void> load() async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      if ((prefs.getInt(_kPrefsVersion) ?? 1) < _kCurrentVersion) {
+        _enabled = {...defaultEnabled};
+        _maxPerDay = kHardMaxPerDay;
+        await prefs.setStringList(
+            _kPrefsEnabled, _enabled.map((k) => k.name).toList());
+        await prefs.setInt(_kPrefsMax, _maxPerDay);
+        await prefs.setInt(_kPrefsVersion, _kCurrentVersion);
+        return;
+      }
       final names = prefs.getStringList(_kPrefsEnabled);
       if (names != null) {
         _enabled = {
@@ -157,6 +194,7 @@ class NotificationPolicy {
       await prefs.setStringList(
           _kPrefsEnabled, _enabled.map((k) => k.name).toList());
       await prefs.setInt(_kPrefsMax, _maxPerDay);
+      await prefs.setInt(_kPrefsVersion, _kCurrentVersion);
     } catch (_) {
       // Si no se pudo guardar, la configuración vale para esta sesión.
     }

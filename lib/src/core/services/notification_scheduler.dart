@@ -4,6 +4,7 @@ import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/core/services/notification_service.dart';
 import 'package:elena_app/src/core/services/notification_router.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
+import 'package:elena_app/src/core/services/metabolic_day_reminders.dart';
 import 'package:elena_app/src/features/hydration/domain/hydration_message_pool.dart';
 import 'package:elena_app/src/features/metabolic_cycle/domain/metabolic_cycle.dart';
 // SPEC-215: fuente canónica única para protocolo → horas.
@@ -296,6 +297,75 @@ class NotificationScheduler {
   ///
   /// Estas son one-shot: se disparan una vez por sesión de ayuno.
   /// Llama a esta función desde FastingNotifier cuando se inicia el ayuno.
+  /// Día metabólico (2026-11-04): programa los 3 avisos del ciclo según el
+  /// estado actual del ayuno. Idempotente: cancela 310-312 y reprograma.
+  ///
+  /// [anchor] = inicio del ayuno si [isFasting]; si no, el momento en que
+  /// terminó el ayuno (abrió la ventana de comida). [targetHours] <= 0
+  /// (protocolo "Ninguno") → no programa nada.
+  static Future<void> scheduleMetabolicDayReminders({
+    required bool isFasting,
+    required DateTime? anchor,
+    required int targetHours,
+    required int wakeHour,
+    required int wakeMinute,
+  }) async {
+    try {
+      await NotificationService.cancelMetabolicDay();
+      final plan = MetabolicDayReminders.plan(
+        isFasting: isFasting,
+        anchor: anchor,
+        targetHours: targetHours,
+        wakeHour: wakeHour,
+        wakeMinute: wakeMinute,
+        now: DateTime.now(),
+      );
+
+      if (plan.windowOpensAt != null) {
+        await NotificationService.scheduleAt(
+          id: NotificationIds.cycleWindowOpens,
+          title: '🍽️ Tu ventana abrió',
+          body: 'Cumpliste tu ayuno de $targetHours h. Cuando termines tu '
+              'última comida, inicia el ayuno para cerrar tu día.',
+          scheduledTime: plan.windowOpensAt!,
+          repeatsDaily: false,
+          payload: NotificationRouter.fastingPayload(),
+        );
+      }
+      if (plan.closeDayAt != null) {
+        await NotificationService.scheduleAt(
+          id: NotificationIds.cycleCloseDay,
+          title: '🌙 Cierra tu día metabólico',
+          body: '¿Ya terminaste de comer? Inicia el ayuno: cierras hoy y '
+              'empieza tu nuevo día.',
+          scheduledTime: plan.closeDayAt!,
+          repeatsDaily: false,
+          payload: NotificationRouter.fastingPayload(),
+        );
+      }
+      if (plan.rescueAt != null) {
+        await NotificationService.scheduleAt(
+          id: NotificationIds.cycleRescue,
+          title: 'Tu día de ayer sigue abierto',
+          body: '¿A qué hora fue tu última comida? Ciérralo en un toque y '
+              'no pierdes tu día.',
+          scheduledTime: plan.rescueAt!,
+          repeatsDaily: false,
+          payload: NotificationRouter.fastingPayload(),
+        );
+      }
+      AppLogger.info(
+        '[NotificationScheduler] Día metabólico: ventana=${plan.windowOpensAt} '
+        'cierre=${plan.closeDayAt} rescate=${plan.rescueAt}',
+      );
+    } catch (e, st) {
+      AppLogger.error(
+          '[NotificationScheduler] Error scheduleMetabolicDayReminders()',
+          e,
+          st);
+    }
+  }
+
   static Future<void> scheduleFastingMilestones(DateTime fastingStart) async {
     try {
       await NotificationService.cancelFasting();
