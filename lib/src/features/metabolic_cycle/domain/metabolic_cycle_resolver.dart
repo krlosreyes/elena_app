@@ -140,20 +140,36 @@ class MetabolicCycleResolver {
       return ClosureReason.manualNextFasting;
     }
 
-    // 3. fallbackSleepDetected: sueño + ≥2h desde lastMealTime.
-    if (sleepDetectedAfterLastMeal &&
-        lastMealTime != null &&
-        now.difference(lastMealTime) >= kSleepFallbackMinSinceMeal) {
-      return ClosureReason.fallbackSleepDetected;
+    // 2026-11-04 — Día metabólico 100% del usuario (decisión de Carlos):
+    // el día solo se cierra cuando el usuario inicia el próximo ayuno.
+    // Los cierres pasivos por sueño y por "3h tras la ventana" cerraban el
+    // día a espaldas del usuario y le quitaban la acción que forma el
+    // hábito. Si olvida tocar, la app lo avisa (notificación de cierre,
+    // rescate a la mañana y aviso en Hoy) y le deja indicar la hora real
+    // de su última comida — ver `cycleCloseReminder*`.
+    //
+    // Excepción: protocolo "Ninguno" (incluye a quien el cribado médico le
+    // bloqueó el ayuno). Ese usuario NO puede iniciar un ayuno, así que sin
+    // estos fallbacks su día jamás cerraría.
+    if (useCalendarFallback(openCycle.fastingProtocol)) {
+      // fallbackSleepDetected: sueño + ≥2h desde lastMealTime.
+      if (sleepDetectedAfterLastMeal &&
+          lastMealTime != null &&
+          now.difference(lastMealTime) >= kSleepFallbackMinSinceMeal) {
+        return ClosureReason.fallbackSleepDetected;
+      }
+
+      // fallback3hAfterWindow: 3h pasadas desde expectedWindowCloseTime.
+      if (expectedWindowCloseTime != null &&
+          now.difference(expectedWindowCloseTime) >=
+              kFallbackAfterWindowGrace) {
+        return ClosureReason.fallback3hAfterWindow;
+      }
     }
 
-    // 4. fallback3hAfterWindow: 3h pasadas desde expectedWindowCloseTime.
-    if (expectedWindowCloseTime != null &&
-        now.difference(expectedWindowCloseTime) >= kFallbackAfterWindowGrace) {
-      return ClosureReason.fallback3hAfterWindow;
-    }
-
-    // 5. fallbackAbsolute: 28h desde startedAt sin nada.
+    // fallbackAbsolute: red de seguridad (50h) contra ciclos huérfanos.
+    // Aplica a todos los protocolos; el día queda marcado con esta razón
+    // (no lo cerró el usuario).
     if (now.difference(openCycle.startedAt) >= kAbsoluteCycleLimit) {
       return ClosureReason.fallbackAbsolute;
     }

@@ -260,13 +260,13 @@ void main() {
       expect(result.opened!.startedAt, nextFasting);
     });
 
-    test('Cierre por fallback3hAfterWindow', () async {
+    test('Cierre por fallback3hAfterWindow (solo protocolo Ninguno)', () async {
       final originalStart = DateTime(2026, 6, 1, 21, 0);
       await repo.save(
         'u1',
         MetabolicCycle.open(
           startedAt: originalStart,
-          fastingProtocol: '16:8',
+          fastingProtocol: 'Ninguno',
           tzOffsetMinutes: 0,
         ),
       );

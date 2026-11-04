@@ -208,11 +208,11 @@ void main() {
     });
 
     test('fallbackSleepDetected dispara con sueño + >=2h desde lastMeal', () {
-      final cycle = _openCycle(startedAt: DateTime(2026, 6, 1, 21, 0));
+      final cycle = _openCycle(startedAt: DateTime(2026, 6, 1, 21, 0), protocol: kNoProtocol);
       final result = MetabolicCycleResolver.shouldClose(
         openCycle: cycle,
         now: DateTime(2026, 6, 2, 23, 0),
-        currentProtocol: '16:8',
+        currentProtocol: kNoProtocol,
         expectedWindowCloseTime: null,
         lastMealTime: DateTime(2026, 6, 2, 20, 0),
         sleepDetectedAfterLastMeal: true,
@@ -238,11 +238,11 @@ void main() {
     });
 
     test('fallback3hAfterWindow dispara cuando pasaron 3h desde ventana', () {
-      final cycle = _openCycle(startedAt: DateTime(2026, 6, 1, 21, 0));
+      final cycle = _openCycle(startedAt: DateTime(2026, 6, 1, 21, 0), protocol: kNoProtocol);
       final result = MetabolicCycleResolver.shouldClose(
         openCycle: cycle,
         now: DateTime(2026, 6, 2, 22, 0),
-        currentProtocol: '16:8',
+        currentProtocol: kNoProtocol,
         expectedWindowCloseTime: DateTime(2026, 6, 2, 19, 0),
         lastMealTime: DateTime(2026, 6, 2, 18, 30),
         sleepDetectedAfterLastMeal: false,
@@ -385,11 +385,11 @@ void main() {
     });
 
     test('fallbackSleepDetected en EXACTAMENTE 2h desde lastMeal → cierra', () {
-      final cycle = _openCycle(startedAt: DateTime(2026, 6, 1, 21, 0));
+      final cycle = _openCycle(startedAt: DateTime(2026, 6, 1, 21, 0), protocol: kNoProtocol);
       final result = MetabolicCycleResolver.shouldClose(
         openCycle: cycle,
         now: DateTime(2026, 6, 2, 22, 0),
-        currentProtocol: '16:8',
+        currentProtocol: kNoProtocol,
         expectedWindowCloseTime: null,
         lastMealTime: DateTime(2026, 6, 2, 20, 0),
         sleepDetectedAfterLastMeal: true,
@@ -432,11 +432,11 @@ void main() {
     // ── Precedencias faltantes ───────────────────────────────────────────────
     test('Prioridad: fallbackSleepDetected gana sobre fallback3hAfterWindow',
         () {
-      final cycle = _openCycle(startedAt: DateTime(2026, 6, 1, 21, 0));
+      final cycle = _openCycle(startedAt: DateTime(2026, 6, 1, 21, 0), protocol: kNoProtocol);
       final result = MetabolicCycleResolver.shouldClose(
         openCycle: cycle,
         now: DateTime(2026, 6, 2, 23, 0),
-        currentProtocol: '16:8',
+        currentProtocol: kNoProtocol,
         expectedWindowCloseTime: DateTime(2026, 6, 2, 19, 0), // >3h pasados
         lastMealTime: DateTime(2026, 6, 2, 20, 0), // >2h
         sleepDetectedAfterLastMeal: true,
@@ -451,11 +451,11 @@ void main() {
       // probando la precedencia real (orden 4<5) ambos triggers deben poder
       // dispararse a la vez. Ciclo de >50h Y >3h post-ventana: gana el de
       // la ventana.
-      final cycle = _openCycle(startedAt: DateTime(2026, 6, 1, 21, 0));
+      final cycle = _openCycle(startedAt: DateTime(2026, 6, 1, 21, 0), protocol: kNoProtocol);
       final result = MetabolicCycleResolver.shouldClose(
         openCycle: cycle,
         now: DateTime(2026, 6, 4, 0, 0), // 51h desde start
-        currentProtocol: '16:8',
+        currentProtocol: kNoProtocol,
         expectedWindowCloseTime: DateTime(2026, 6, 2, 19, 0), // >3h pasados
         lastMealTime: null,
         sleepDetectedAfterLastMeal: false,
@@ -504,12 +504,12 @@ void main() {
     test(
         'ventana TRE cerró 21:00; a las 00:30 (3.5h, cruzó medianoche) → cierra',
         () {
-      final cycle = _openCycle(startedAt: DateTime(2026, 6, 1, 12, 0));
+      final cycle = _openCycle(startedAt: DateTime(2026, 6, 1, 12, 0), protocol: kNoProtocol);
       final result = MetabolicCycleResolver.shouldClose(
         openCycle: cycle,
         now: DateTime(
             2026, 6, 2, 0, 30), // 3.5h tras ventana, ya cruzó medianoche
-        currentProtocol: '16:8',
+        currentProtocol: kNoProtocol,
         expectedWindowCloseTime: DateTime(2026, 6, 1, 21, 0),
         lastMealTime: DateTime(2026, 6, 1, 20, 30),
         sleepDetectedAfterLastMeal: false,
@@ -532,6 +532,54 @@ void main() {
         newFastingStartedAt: null,
       );
       expect(result, isNull);
+    });
+  });
+
+  group('2026-11-04 — el día metabólico solo lo cierra el usuario', () {
+    test('16:8: sueño tras la última comida NO cierra el día', () {
+      final cycle = _openCycle(startedAt: DateTime(2026, 6, 1, 21, 0));
+      final result = MetabolicCycleResolver.shouldClose(
+        openCycle: cycle,
+        now: DateTime(2026, 6, 2, 23, 0),
+        currentProtocol: '16:8',
+        expectedWindowCloseTime: null,
+        lastMealTime: DateTime(2026, 6, 2, 20, 0),
+        sleepDetectedAfterLastMeal: true,
+        newFastingStartedExplicitly: false,
+        newFastingStartedAt: null,
+      );
+      expect(result, isNull);
+    });
+
+    test('16:8: 3h+ después de la ventana NO cierra el día', () {
+      final cycle = _openCycle(startedAt: DateTime(2026, 6, 1, 21, 0));
+      final result = MetabolicCycleResolver.shouldClose(
+        openCycle: cycle,
+        now: DateTime(2026, 6, 2, 23, 0),
+        currentProtocol: '16:8',
+        expectedWindowCloseTime: DateTime(2026, 6, 2, 19, 0),
+        lastMealTime: DateTime(2026, 6, 2, 18, 30),
+        sleepDetectedAfterLastMeal: false,
+        newFastingStartedExplicitly: false,
+        newFastingStartedAt: null,
+      );
+      expect(result, isNull);
+    });
+
+    test('16:8: iniciar ayuno con hora anterior (olvido) cierra en esa hora',
+        () {
+      final cycle = _openCycle(startedAt: DateTime(2026, 6, 1, 21, 0));
+      final result = MetabolicCycleResolver.shouldClose(
+        openCycle: cycle,
+        now: DateTime(2026, 6, 3, 7, 0), // abrió la app a la mañana
+        currentProtocol: '16:8',
+        expectedWindowCloseTime: null,
+        lastMealTime: DateTime(2026, 6, 2, 20, 10),
+        sleepDetectedAfterLastMeal: true,
+        newFastingStartedExplicitly: true,
+        newFastingStartedAt: DateTime(2026, 6, 2, 20, 10),
+      );
+      expect(result, ClosureReason.manualNextFasting);
     });
   });
 }

@@ -53,14 +53,24 @@ Lista expansiva — todos estos son anti-patrones documentados:
 
 ## §3 — Eventos que CIERRAN ciclo
 
-El ciclo se cierra por **uno** de estos triggers (orden de precedencia):
+**Regla (2026-11-04, decisión de Carlos): el día metabólico lo cierra solo el usuario.** El cierre ocurre en el mismo toque que abre el día siguiente: "Cerrar día e iniciar ayuno". Si el usuario lo hizo tarde, puede indicar la hora real de su última comida y el día cierra en esa hora (`startFastingManual(hora)` → `manualNextFasting`).
 
-1. **Cierre manual de ventana** — usuario tap "Cerrar ventana de comida" en UI.
-2. **Inicio explícito de nuevo ayuno** — `newFastingStartedExplicitly = true` Y el ciclo actual tiene duración ≥ duración mínima del protocolo.
-3. **`fallback3hAfterWindow`** — pasaron 3h desde la última comida sin nuevo evento.
-4. **`fallbackSleepDetected`** — se detectó sueño tras la última comida.
-5. **`fallbackAbsolute`** — el ciclo lleva más de `kAbsoluteCycleLimit` (~28h) abierto.
-6. **`fallbackCalendar`** — solo para protocolos con `useCalendarFallback`, si pasaron a día calendárico nuevo.
+Triggers vigentes (orden de precedencia):
+
+1. **`manualNextFasting`** — inicio explícito de nuevo ayuno (`userInitiated`), con ≥30 min de ciclo. Incluye el inicio con hora corregida desde el aviso "¿A qué hora fue tu última comida?".
+2. **`fallbackSleepDetected` / `fallback3hAfterWindow`** — **solo protocolo "Ninguno"** (incluye a quien el cribado médico le bloqueó el ayuno: no puede iniciar uno, así que sin esto su día no cerraría nunca). Para cualquier protocolo con ayuno quedan desactivados.
+3. **`fallbackAbsolute`** — red de seguridad: el ciclo lleva más de `kAbsoluteCycleLimit` (50h) abierto. El día queda marcado como "no lo cerraste tú".
+
+`fallbackCalendar` y `protocolChanged` ya no se emiten (SPEC-189 y 20-jul).
+
+### §3.0 — Cómo se evita que el olvido rompa el día
+
+La app no cierra por el usuario; lo acompaña (`core/services/metabolic_day_reminders.dart`, IDs 310–312, son los 3 avisos por defecto de `NotificationPolicy`):
+
+- **Ventana abre (310)** — inicio del ayuno + meta.
+- **Cierra tu día (311)** — fin estimado de la ventana + 30 min, si no inició el ayuno.
+- **Rescate (312)** — la mañana siguiente (despertar + 30 min) si el día sigue abierto; máx. 36 h después.
+- **En Hoy**: franja "Día metabólico" (ayuno → ventana → cierre) y aviso "¿A qué hora fue tu última comida?" cuando la ventana estimada terminó.
 
 Cada cierre genera un `CycleFeedback` con magnitudes consolidadas (SPEC-149 §RF-149-08).
 
@@ -148,6 +158,7 @@ Si los pilares no muestran datos del día y los logs crudos SÍ existen en Fires
 | 2026-06-05 | SPEC-190 | Tier 2 — Analítica semanal de pilares (`lastWeekMealsRatioProvider`, `lastWeekHydration/Exercise`) usa "últimos 7 ciclos cerrados" en vez de "7 días". `last7ClosedCyclesProvider` + `last14ClosedCyclesProvider` reusables. `weekly_coaching_provider` y `period_comparison_provider` quedan parciales (TODO SPEC-192 por requerir refactor de `DailySummaryDoc`). |
 | 2026-06-05 | SPEC-191 | Tier 3 — `sleepTime`/`wakeUpTime` aislados a rol "metadato informativo del usuario". Auditoría confirmó que ninguno define el día metabólico actualmente. Documentado con 5 comentarios inline + nueva §9 con test ácido para PRs futuros. |
 | 2026-06-05 | SPEC-192.1 + SPEC-192.3 (light) | Cierre del TODO de SPEC-190 §3.4. `CycleSummaryDoc` + `CycleSummaryComputer` (in-memory, derivados de `cycle.feedback.magnitudes`). `CycleComparison` + `cycleComparisonProvider` (7+7 ciclos cerrados). `weekly_coaching_provider` ahora cycle-aware via `WeeklyCoachingComputer.fromCycleComparison`. `period_comparison_provider` queda calendárico como **EXCEPCIÓN CONSCIENTE** para charts retrospectivos (heatmap/strip/trend chart) — coexistencia documentada. SPEC-192.2/.4/.5 (refactor del schema completo + widgets analytics + cleanup) diferidos a post-MVP. |
+| 2026-11-04 | Día metabólico del usuario | Cierres pasivos (sueño, 3h tras ventana) solo para protocolo "Ninguno". Avisos 310–312 (ventana abre, cierra tu día, rescate) como defaults de la política. Aviso en Hoy con hora real de la última comida. Franja "Día metabólico" y botón "Cerrar día e iniciar ayuno". |
 
 ---
 

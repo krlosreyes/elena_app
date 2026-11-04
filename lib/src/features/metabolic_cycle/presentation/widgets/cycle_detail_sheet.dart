@@ -11,17 +11,36 @@ import 'package:elena_app/src/features/metabolic_cycle/domain/closure_reason.dar
 import 'package:elena_app/src/features/metabolic_cycle/domain/metabolic_cycle.dart';
 
 class CycleDetailSheet extends StatelessWidget {
-  const CycleDetailSheet({super.key, required this.cycle});
+  const CycleDetailSheet({
+    super.key,
+    required this.cycle,
+    this.closedByYou,
+    this.closedOutOf,
+  });
 
   final MetabolicCycle cycle;
 
+  /// Día metabólico (2026-11-04): de los últimos [closedOutOf] días, cuántos
+  /// cerró el usuario iniciando su ayuno. Null = no se muestra.
+  final int? closedByYou;
+  final int? closedOutOf;
+
   /// Helper para abrir el sheet con el patrón habitual del proyecto.
-  static Future<void> show(BuildContext context, MetabolicCycle cycle) {
+  static Future<void> show(
+    BuildContext context,
+    MetabolicCycle cycle, {
+    int? closedByYou,
+    int? closedOutOf,
+  }) {
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => CycleDetailSheet(cycle: cycle),
+      builder: (_) => CycleDetailSheet(
+        cycle: cycle,
+        closedByYou: closedByYou,
+        closedOutOf: closedOutOf,
+      ),
     );
   }
 
@@ -47,6 +66,12 @@ class CycleDetailSheet extends StatelessWidget {
               _buildHeader(),
               const SizedBox(height: 14),
               _buildScore(),
+              if (closedByYou != null &&
+                  closedOutOf != null &&
+                  closedOutOf! > 0) ...[
+                const SizedBox(height: 12),
+                _buildClosedByYou(),
+              ],
               if (cycle.feedback != null) ...[
                 if (cycle.feedback!.achievements.isNotEmpty) ...[
                   const SizedBox(height: 18),
@@ -81,6 +106,34 @@ class CycleDetailSheet extends StatelessWidget {
   }
 
   // ─── Componentes ────────────────────────────────────────────────────
+
+  Widget _buildClosedByYou() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.metabolicGreen.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.check_circle_outline_rounded,
+              color: AppColors.metabolicGreen, size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Cerraste tú $closedByYou de tus últimos $closedOutOf '
+              '${closedOutOf == 1 ? 'día' : 'días'}',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildDragHandle() {
     return Center(
@@ -315,7 +368,7 @@ class CycleDetailSheet extends StatelessWidget {
       case ClosureReason.fallbackSleepDetected:
         return 'detección de sueño';
       case ClosureReason.fallbackAbsolute:
-        return 'cierre automático a las 28h';
+        return 'cierre automático (no lo cerraste tú)';
       case ClosureReason.fallbackCalendar:
         return 'cierre calendárico';
       case ClosureReason.protocolChanged:
