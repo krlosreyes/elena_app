@@ -19,15 +19,24 @@ import 'package:elena_app/src/core/utils/error_presentation.dart';
 /// account intacta, solo cambió de vivir en `_ProfileBodyState` a un
 /// `ConsumerWidget` propio.
 class ProfileDangerZoneActions extends ConsumerWidget {
-  const ProfileDangerZoneActions({super.key});
+  const ProfileDangerZoneActions({
+    super.key,
+    this.showLogout = true,
+    this.showDelete = true,
+  });
+
+  /// Rediseño Perfil (2026-11-04): "Cerrar sesión" queda en Perfil y
+  /// "Eliminar cuenta" pasa a Cuenta y datos personales.
+  final bool showLogout;
+  final bool showDelete;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Column(
       children: [
-        _buildLogoutTextButton(context, ref),
-        const SizedBox(height: 4),
-        _buildDeleteAccountTextButton(context, ref),
+        if (showLogout) _buildLogoutTextButton(context, ref),
+        if (showLogout && showDelete) const SizedBox(height: 4),
+        if (showDelete) _buildDeleteAccountTextButton(context, ref),
       ],
     );
   }

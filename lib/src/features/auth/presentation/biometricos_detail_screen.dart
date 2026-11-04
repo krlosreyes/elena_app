@@ -15,10 +15,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/auth/application/profile_controller.dart';
 import 'package:elena_app/src/features/auth/presentation/widgets/data_group_card.dart';
-import 'package:elena_app/src/features/auth/presentation/widgets/edit_biometry_value_sheet.dart';
 import 'package:elena_app/src/features/profile/application/biometric_lock_provider.dart';
 import 'package:elena_app/src/features/profile/domain/biometric_lock_service.dart';
-import 'package:elena_app/src/features/profile/domain/biometry_recalc.dart';
+import 'package:elena_app/src/features/progress/presentation/biometric_checkin_sheet.dart';
+import 'package:go_router/go_router.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 
@@ -118,73 +118,90 @@ class _Body extends ConsumerWidget {
       child: ListView(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
         children: [
-          if (biometryLock.isLocked)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 14),
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF334155).withValues(alpha: 0.60),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.10),
-                  ),
+          // 2026-11-04: una medición por semana — peso, cintura y cuello
+          // se registran juntos en el mismo formulario.
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: ElevatedButton.icon(
+              onPressed: biometryLock.isLocked
+                  ? null
+                  : () => showBiometricCheckInSheet(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.metabolicGreen,
+                disabledBackgroundColor: Colors.white.withValues(alpha: 0.06),
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.lock_outline_rounded,
-                        size: 15, color: Color(0xFF94A3B8)),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        '${biometryLock.unlockLabel}. El IMR Base se '
-                        'estabiliza 6 días para reflejar cambios reales. '
-                        'Tu Día de Permitidos también cierra el ciclo.',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.60),
-                          fontSize: 11,
-                          height: 1.4,
-                        ),
-                      ),
-                    ),
-                  ],
+              ),
+              icon: Icon(
+                biometryLock.isLocked
+                    ? Icons.lock_outline_rounded
+                    : Icons.straighten_rounded,
+                size: 18,
+                color: biometryLock.isLocked
+                    ? Colors.white.withValues(alpha: 0.5)
+                    : const Color(0xFF032A22),
+              ),
+              label: Text(
+                biometryLock.isLocked
+                    ? biometryLock.unlockLabel
+                    : 'Actualizar medidas',
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 15,
+                  color: biometryLock.isLocked
+                      ? Colors.white.withValues(alpha: 0.6)
+                      : const Color(0xFF032A22),
                 ),
               ),
             ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 8, 4, 16),
+            child: Text(
+              'Peso, cintura y cuello se registran juntos una vez por semana, '
+              'para que tu IMR refleje cambios reales y no variaciones del día.',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.5),
+                fontSize: 12,
+                height: 1.4,
+              ),
+            ),
+          ),
           ProfileDataGroupCard(
             rows: [
-              ProfileDataRow.readonly('Nombre', user.name),
-              ProfileDataRow.readonly('Edad', '${user.age} años'),
-              ProfileDataRow.readonly(
-                  'Género', user.gender == 'M' ? 'Masculino' : 'Femenino'),
-              ProfileDataRow.readonly('Estatura', '${user.height.toInt()} cm'),
+              ProfileDataRow.editable(
+                label: 'Nombre',
+                value: user.name,
+                onTap: () => context.push('/profile/cuenta'),
+              ),
+              ProfileDataRow.editable(
+                label: 'Edad',
+                value: '${user.age} años',
+                onTap: () => context.push('/profile/cuenta'),
+              ),
+              ProfileDataRow.editable(
+                label: 'Sexo',
+                value: user.gender == 'M' ? 'Masculino' : 'Femenino',
+                onTap: () => context.push('/profile/cuenta'),
+              ),
+              ProfileDataRow.editable(
+                label: 'Estatura',
+                value: '${user.height.toInt()} cm',
+                onTap: () => context.push('/profile/cuenta'),
+              ),
               // 17-jul (P0, propuesta "un Perfil que da orgullo abrir"):
               // las condiciones médicas viven acá, no en el subtítulo de
               // identidad — ver profile_identity_card.dart.
               ProfileDataRow.readonly(
                   'Condiciones', user.pathologies.join(' · ')),
-              ProfileDataRow.editable(
-                label: 'Peso',
-                value: '${user.weight.toInt()} kg',
-                onTap: biometryLock.isLocked
-                    ? () => _showBiometryLockedSnackbar(context, biometryLock)
-                    : () => _editWeight(context, ref, user, biometryLock),
-              ),
-              ProfileDataRow.editable(
-                label: 'Cintura',
-                value: '${user.waistCircumference?.toInt() ?? 0} cm',
-                onTap: biometryLock.isLocked
-                    ? () => _showBiometryLockedSnackbar(context, biometryLock)
-                    : () => _editWaist(context, ref, user, biometryLock),
-              ),
-              ProfileDataRow.editable(
-                label: 'Cuello',
-                value: '${user.neckCircumference?.toInt() ?? 0} cm',
-                onTap: biometryLock.isLocked
-                    ? () => _showBiometryLockedSnackbar(context, biometryLock)
-                    : () => _editNeck(context, ref, user, biometryLock),
-              ),
+              ProfileDataRow.readonly('Peso', '${user.weight.toStringAsFixed(1)} kg'),
+              ProfileDataRow.readonly(
+                  'Cintura', '${user.waistCircumference?.toInt() ?? 0} cm'),
+              ProfileDataRow.readonly(
+                  'Cuello', '${user.neckCircumference?.toInt() ?? 0} cm'),
               ProfileDataRow.info(
                 label: '% Grasa est.',
                 value: _formatBodyFat(user.bodyFatPercentage),
@@ -195,134 +212,6 @@ class _Body extends ConsumerWidget {
             ],
           ),
         ],
-      ),
-    );
-  }
-
-  // ── Edición biométrica ──────────────────────────────────────────────
-  // SPEC-92: cada edit de peso/cintura/cuello recalcula bodyFat con
-  // `BiometryRecalc.recompute` antes de persistir.
-
-  Future<void> _applyBiometryEdit(
-    BuildContext context,
-    WidgetRef ref,
-    UserModel user,
-    BiometricLockState lock, {
-    double? newWeight,
-    double? newWaist,
-    double? newNeck,
-  }) async {
-    if (lock.isLocked) {
-      _showBiometryLockedSnackbar(context, lock);
-      return;
-    }
-    final effectiveWeight = newWeight ?? user.weight;
-    final effectiveWaist = newWaist ?? user.waistCircumference;
-    final effectiveNeck = newNeck ?? user.neckCircumference;
-
-    final recalc = BiometryRecalc.recompute(
-      weightKg: effectiveWeight,
-      heightCm: user.height,
-      waistCm: effectiveWaist,
-      neckCm: effectiveNeck,
-      gender: user.gender,
-    );
-
-    if (recalc.isCoherent && recalc.bodyFatPercentage != null) {
-      await ref.read(profileControllerProvider.notifier).updateBiometry(
-            currentUser: user,
-            weight: newWeight,
-            waistCircumference: newWaist,
-            neckCircumference: newNeck,
-            bodyFatPercentage: recalc.bodyFatPercentage,
-          );
-      return;
-    }
-
-    await ref.read(profileControllerProvider.notifier).updateBiometry(
-          currentUser: user,
-          weight: newWeight,
-          waistCircumference: newWaist,
-          neckCircumference: newNeck,
-        );
-    if (context.mounted) _showIncoherenceNotice(context);
-  }
-
-  Future<void> _editWeight(BuildContext context, WidgetRef ref, UserModel user,
-      BiometricLockState lock) async {
-    final value = await EditBiometryValueSheet.show(
-      context,
-      title: 'Editar peso',
-      fieldLabel: 'Peso corporal actual',
-      unit: 'kg',
-      initialValue: user.weight,
-      minValue: 30,
-      maxValue: 250,
-    );
-    if (value != null && context.mounted) {
-      await _applyBiometryEdit(context, ref, user, lock, newWeight: value);
-    }
-  }
-
-  Future<void> _editWaist(BuildContext context, WidgetRef ref, UserModel user,
-      BiometricLockState lock) async {
-    final value = await EditBiometryValueSheet.show(
-      context,
-      title: 'Editar cintura',
-      fieldLabel: 'Circunferencia de cintura (medida a la altura del ombligo)',
-      unit: 'cm',
-      initialValue: user.waistCircumference ?? 80,
-      minValue: 50,
-      maxValue: 200,
-    );
-    if (value != null && context.mounted) {
-      await _applyBiometryEdit(context, ref, user, lock, newWaist: value);
-    }
-  }
-
-  Future<void> _editNeck(BuildContext context, WidgetRef ref, UserModel user,
-      BiometricLockState lock) async {
-    final value = await EditBiometryValueSheet.show(
-      context,
-      title: 'Editar cuello',
-      fieldLabel: 'Circunferencia del cuello',
-      unit: 'cm',
-      initialValue: user.neckCircumference ?? 38,
-      minValue: 25,
-      maxValue: 70,
-    );
-    if (value != null && context.mounted) {
-      await _applyBiometryEdit(context, ref, user, lock, newNeck: value);
-    }
-  }
-
-  void _showIncoherenceNotice(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Las medidas no son coherentes. El % grasa no se actualizó '
-          '— revisa cintura, cuello y altura.',
-        ),
-        backgroundColor: Colors.orange,
-        duration: Duration(seconds: 4),
-      ),
-    );
-  }
-
-  void _showBiometryLockedSnackbar(
-      BuildContext context, BiometricLockState lock) {
-    final msg = lock.unlocksAt != null
-        ? 'Datos biométricos bloqueados — ${lock.unlockLabel}. '
-            'Tu IMR Base se estabiliza durante 6 días para reflejar '
-            'cambios reales, no fluctuaciones diarias.'
-        : 'Datos biométricos bloqueados. Vuelve en 6 días o cierra tu '
-            'semana con un Día de Permitidos.';
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        backgroundColor: const Color(0xFF334155),
-        duration: const Duration(seconds: 5),
-        behavior: SnackBarBehavior.floating,
       ),
     );
   }

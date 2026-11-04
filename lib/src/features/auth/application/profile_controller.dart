@@ -7,7 +7,9 @@ import 'package:elena_app/src/features/auth/domain/auth_repository.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
 import 'package:elena_app/src/features/progress/application/biometric_history_service.dart';
 import 'package:elena_app/src/features/progress/domain/biometric_delta.dart';
+import 'package:elena_app/src/features/profile/application/biometric_lock_provider.dart';
 import 'package:elena_app/src/features/profile/domain/biometric_lock_service.dart';
+import 'package:elena_app/src/features/profile/domain/biometry_recalc.dart';
 import 'package:elena_app/src/shared/data/user_profile_repository_impl.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 
@@ -82,6 +84,77 @@ class ProfileController extends StateNotifier<ProfileEditState> {
     }
   }
 
+  /// Rediseño Perfil (2026-11-04): edita los datos básicos desde "Cuenta y
+  /// datos personales". Estatura y sexo alimentan la fórmula del % de grasa
+  /// (US Navy), así que si cambian se recalcula con las medidas actuales —
+  /// el IMR se actualiza solo porque se deriva del perfil.
+  ///
+  /// No toca peso ni medidas: esos tienen su bloqueo semanal propio.
+  Future<bool> updateBasicData({
+    required UserModel currentUser,
+    required String name,
+    required int age,
+    required double height,
+    required String gender,
+  }) async {
+    state = state.copyWith(
+        isSaving: true, errorMessage: null, savedSuccessfully: false);
+    final cleanName = name.trim().replaceAll(RegExp(r'\s+'), ' ');
+    if (cleanName.isEmpty || cleanName.length > 60) {
+      state = state.copyWith(
+          isSaving: false, errorMessage: 'Escribe un nombre válido.');
+      return false;
+    }
+    if (age < 18 || age > 100) {
+      state = state.copyWith(
+          isSaving: false, errorMessage: 'La edad debe estar entre 18 y 100.');
+      return false;
+    }
+    if (height < 120 || height > 230) {
+      state = state.copyWith(
+          isSaving: false,
+          errorMessage: 'La estatura debe estar entre 120 y 230 cm.');
+      return false;
+    }
+
+    var updated = currentUser.copyWith(
+      name: cleanName,
+      age: age,
+      height: height,
+      gender: gender,
+    );
+    final bodyChanged =
+        height != currentUser.height || gender != currentUser.gender;
+    if (bodyChanged) {
+      final recalc = BiometryRecalc.recompute(
+        weightKg: currentUser.weight,
+        heightCm: height,
+        waistCm: currentUser.waistCircumference,
+        neckCm: currentUser.neckCircumference,
+        gender: gender,
+      );
+      if (recalc.isCoherent && recalc.bodyFatPercentage != null) {
+        updated = updated.copyWith(
+          bodyFatPercentage: recalc.bodyFatPercentage,
+          confidenceLevel: recalc.confidenceLevel,
+        );
+      }
+    }
+
+    try {
+      await ref.read(userProfileRepositoryProvider).saveProfile(updated);
+      state = state.copyWith(isSaving: false, savedSuccessfully: true);
+      return true;
+    } catch (e) {
+      AppLogger.error('[ProfileController] updateBasicData falló', e);
+      state = state.copyWith(
+        isSaving: false,
+        errorMessage: 'No se pudieron guardar tus datos. Intenta de nuevo.',
+      );
+      return false;
+    }
+  }
+
   /// SPEC-88: actualiza uno o más campos biométricos (peso, cintura,
   /// cuello, %grasa) y los persiste. Sigue el patrón de
   /// `updateCircadianProfile` — orquestación pura, sin lógica de
@@ -135,9 +208,10 @@ class ProfileController extends StateNotifier<ProfileEditState> {
         // SPEC-BUG7: persiste la fecha del edit para el lock semanal.
         // Se guarda DESPUÉS de la escritura exitosa — si el write falla,
         // el lock no se activa y el usuario puede reintentar.
+        final now = DateTime.now();
+        ref.read(biometricLocalEditProvider.notifier).state = now;
         return ref.read(sharedPreferencesProvider).setString(
-            BiometricLockService.kLastEditKey,
-            DateTime.now().toIso8601String());
+            BiometricLockService.kLastEditKey, now.toIso8601String());
       }).catchError((Object e) {
         // flutter analyze (2026-07-11, primera corrida real): el `.then`
         // previo retorna `Future<bool>` (de `setString`), así que

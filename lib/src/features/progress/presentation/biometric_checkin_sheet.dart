@@ -17,6 +17,9 @@ import 'package:elena_app/src/core/engine/weekly_imr_snapshot_service.dart';
 import 'package:elena_app/src/features/progress/application/biometric_history_service.dart';
 import 'package:elena_app/src/features/progress/domain/biometric_checkin.dart';
 import 'package:elena_app/src/features/profile/domain/body_fat_calculator.dart';
+import 'package:elena_app/src/core/providers/shared_preferences_provider.dart';
+import 'package:elena_app/src/features/profile/application/biometric_lock_provider.dart';
+import 'package:elena_app/src/features/profile/domain/biometric_lock_service.dart';
 
 // ─── Entry point ─────────────────────────────────────────────────────────────
 
@@ -43,6 +46,7 @@ class _BiometricCheckInSheetState extends ConsumerState<BiometricCheckInSheet> {
   final _weightCtrl = TextEditingController();
   final _bfCtrl = TextEditingController();
   final _waistCtrl = TextEditingController();
+  final _neckCtrl = TextEditingController();
   final _noteCtrl = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
@@ -64,6 +68,9 @@ class _BiometricCheckInSheetState extends ConsumerState<BiometricCheckInSheet> {
       if (user.waistCircumference != null) {
         _waistCtrl.text = user.waistCircumference!.toStringAsFixed(0);
       }
+      if (user.neckCircumference != null) {
+        _neckCtrl.text = user.neckCircumference!.toStringAsFixed(0);
+      }
     }
   }
 
@@ -72,12 +79,16 @@ class _BiometricCheckInSheetState extends ConsumerState<BiometricCheckInSheet> {
     _weightCtrl.dispose();
     _bfCtrl.dispose();
     _waistCtrl.dispose();
+    _neckCtrl.dispose();
     _noteCtrl.dispose();
     super.dispose();
   }
 
   Future<void> _save() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
+    // 2026-11-04: una medición por semana — guardia por si el bloqueo se
+    // activó con el sheet abierto (p. ej. otro dispositivo).
+    if (ref.read(biometricLockProvider).isLocked) return;
     setState(() => _isSaving = true);
 
     final user = ref.read(currentUserStreamProvider).valueOrNull;
@@ -106,7 +117,10 @@ class _BiometricCheckInSheetState extends ConsumerState<BiometricCheckInSheet> {
     // documentado es "el usuario NUNCA ingresa % grasa, siempre se calcula"
     // (BodyFatCalculator §1). Fallback al valor manual si no hay cuello/altura.
     double? bodyFat = manualBodyFat;
-    final double? neck = user.neckCircumference;
+    final double? enteredNeck = _neckCtrl.text.isNotEmpty
+        ? double.tryParse(_neckCtrl.text.replaceAll(',', '.'))
+        : null;
+    final double? neck = enteredNeck ?? user.neckCircumference;
     if (enteredWaist != null &&
         enteredWaist > 0 &&
         neck != null &&
@@ -150,6 +164,13 @@ class _BiometricCheckInSheetState extends ConsumerState<BiometricCheckInSheet> {
     // llama a `batch.commit()`, sin esperar el ack del servidor — por
     // eso es seguro no bloquear la UI en ese ack: el listener de
     // biometric_history (ProgressNotifier) refleja el cambio al toque.
+    // Bloqueo semanal: respaldo local inmediato (el historial en Firestore
+    // es la fuente principal, ver biometric_lock_provider.dart).
+    ref.read(biometricLocalEditProvider.notifier).state = today;
+    unawaited(ref
+        .read(sharedPreferencesProvider)
+        .setString(BiometricLockService.kLastEditKey, today.toIso8601String()));
+
     final longitudinal = ref.read(longitudinalImrProvider);
     final historyService = ref.read(biometricHistoryServiceProvider);
     final snapshotService = ref.read(weeklyImrSnapshotServiceProvider);
@@ -185,6 +206,8 @@ class _BiometricCheckInSheetState extends ConsumerState<BiometricCheckInSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final lock = ref.watch(biometricLockProvider);
+    if (lock.isLocked && !_isSaving) return _LockedSheet(lock: lock);
     return DraggableScrollableSheet(
       initialChildSize: 0.72,
       minChildSize: 0.5,
@@ -240,7 +263,7 @@ class _BiometricCheckInSheetState extends ConsumerState<BiometricCheckInSheet> {
                           ),
                         ),
                         Text(
-                          'Snapshot de hoy para tu road map',
+                          'Una vez por semana · peso y medidas juntos',
                           style: TextStyle(
                             fontSize: 11,
                             color: Colors.white.withValues(alpha: 0.4),
@@ -308,6 +331,23 @@ class _BiometricCheckInSheetState extends ConsumerState<BiometricCheckInSheet> {
                           if (v == null || v.isEmpty) return null;
                           final n = double.tryParse(v.replaceAll(',', '.'));
                           if (n == null || n < 40 || n > 200) {
+                            return 'Valor fuera de rango';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 18),
+
+                      // Cuello — para el % de grasa (US Navy)
+                      _FieldLabel('Cuello (cm)', required: false),
+                      const SizedBox(height: 6),
+                      _NumericField(
+                        controller: _neckCtrl,
+                        hint: 'Ej: 38  (opcional)',
+                        validator: (v) {
+                          if (v == null || v.isEmpty) return null;
+                          final n = double.tryParse(v.replaceAll(',', '.'));
+                          if (n == null || n < 20 || n > 70) {
                             return 'Valor fuera de rango';
                           }
                           return null;
@@ -460,3 +500,91 @@ InputDecoration _inputDecoration(String hint) => InputDecoration(
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     );
+
+
+/// 2026-11-04: medidas ya registradas esta semana.
+class _LockedSheet extends StatelessWidget {
+  const _LockedSheet({required this.lock});
+
+  final BiometricLockState lock;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(24, 14, 24, 32),
+      decoration: const BoxDecoration(
+        color: Color(0xFF0C1422),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 22),
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.06),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.lock_outline_rounded,
+                  color: Color(0xFF94A3B8), size: 26),
+            ),
+            const SizedBox(height: 14),
+            const Text(
+              'Ya registraste tus medidas esta semana',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              '${lock.unlockLabel}. Medir una vez por semana hace que tu '
+              'IMR refleje cambios reales y no variaciones del día.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.6),
+                fontSize: 13.5,
+                height: 1.45,
+              ),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: OutlinedButton(
+                onPressed: () => Navigator.of(context).pop(),
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: Colors.white.withValues(alpha: 0.16)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                child: const Text(
+                  'Entendido',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

@@ -1,34 +1,30 @@
-// SPEC-BUG7: Bloqueo semanal de datos biométricos.
+// Bloqueo semanal de peso y medidas corporales.
 //
-// El IMR Base (bloque Estructura, 50% del IMR) depende de peso, cintura y
-// %grasa. Para que tenga validez longitudinal, estos datos solo deben
-// actualizarse una vez por "semana metabólica". Si se pudieran editar
-// libremente, un usuario podría manipular el IMR registrando medidas
-// favorables el día de medición.
+// El IMR Base depende de peso, cintura, cuello y %grasa. Para que tenga
+// validez longitudinal, estas medidas se registran UNA vez por semana:
 //
-// Regla (Opción A — aprobada 2026-06-13):
-//   isLocked = true  si, desde el último edit:
-//     - No han pasado 6 días, Y
-//     - No ha ocurrido un Día de Permitidos (cheat day) DESPUÉS del edit.
+//   - Una medición = una sesión: peso + cintura + cuello juntos (el sheet de
+//     "Actualizar medidas"). Guardar un solo campo ya consume la semana, por
+//     eso la UI siempre pide las tres a la vez.
+//   - Tras medir, la opción queda bloqueada hasta el MISMO día de la semana
+//     siguiente, a cualquier hora (inicio del día + 7). Medir el lunes en la
+//     mañana permite volver a medir el lunes siguiente en la tarde.
 //
-// La segunda condición hace que el cheat day actúe como cierre natural
-// de la semana metabólica — el usuario señala conscientemente que el
-// ciclo cerró y puede volver a medirse.
-//
-// El lockout semanal del cheat day (uno por semana ISO, implementado en
-// cheat_day_notifier.dart) garantiza que este "shortcut" no sea trivial:
-// el mínimo lock real vía cheat day es varios días.
+// 2026-11-04 (decisión de Carlos: "solo 1 vez por semana, el resto del
+// tiempo bloqueado"): se quita el atajo del Día de Permitidos — antes un
+// cheat day desbloqueaba antes de tiempo. La fecha sale del historial en
+// Firestore (sobrevive a reinstalar la app); SharedPreferences queda solo
+// como respaldo inmediato mientras el historial sincroniza.
 
 /// Estado calculado del bloqueo biométrico.
 class BiometricLockState {
   /// True si la edición biométrica está bloqueada.
   final bool isLocked;
 
-  /// Cuándo se realizó el último edit. Null si nunca se editó.
+  /// Cuándo se registró la última medición. Null si nunca se midió.
   final DateTime? lastEditAt;
 
-  /// Cuándo el lock expira por tiempo (lastEditAt + 6 días).
-  /// Null si nunca se editó.
+  /// Cuándo vuelve a estar disponible (inicio del día, +7 días).
   final DateTime? unlocksAt;
 
   const BiometricLockState({
@@ -37,72 +33,71 @@ class BiometricLockState {
     this.unlocksAt,
   });
 
-  /// Estado inicial: sin historial de edición → no bloqueado.
+  /// Sin mediciones previas → no bloqueado.
   const BiometricLockState.unlocked()
       : isLocked = false,
         lastEditAt = null,
         unlocksAt = null;
 
-  /// Label para mostrar en UI: "Disponible el 19/6".
+  static const _dias = ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom'];
+  static const _meses = [
+    'ene', 'feb', 'mar', 'abr', 'may', 'jun',
+    'jul', 'ago', 'sep', 'oct', 'nov', 'dic',
+  ];
+
+  /// "Disponible el lun 10 nov". Vacío si no está bloqueado.
   String get unlockLabel {
     if (!isLocked || unlocksAt == null) return '';
     final d = unlocksAt!;
-    return 'Disponible el ${d.day}/${d.month}';
+    return 'Disponible el ${_dias[d.weekday - 1]} ${d.day} ${_meses[d.month - 1]}';
   }
 }
 
 /// Lógica pura del bloqueo biométrico. Sin deps de Flutter ni Riverpod.
 class BiometricLockService {
-  /// Días que dura el lock por tiempo (fallback si no hay cheat day).
-  static const int lockDays = 6;
+  /// Una medición por semana.
+  static const int lockDays = 7;
 
-  /// Clave de SharedPreferences donde se persiste el timestamp del
-  /// último edit de biometría.
+  /// Respaldo local del timestamp de la última medición.
   static const String kLastEditKey = 'biometry_last_edit_at';
 
-  /// Calcula el estado del lock dado el último edit y el último cheat day.
-  ///
-  /// [lastEditIso]  — valor de SP (ISO-8601 string) o null si nunca editó.
-  /// [lastCheatDate] — último cheat day registrado (puede ser null).
+  /// Fuentes del historial que cuentan como medición del usuario. La línea
+  /// base del registro y los procesos automáticos no consumen la semana:
+  /// quien acaba de registrarse puede corregir sus medidas.
+  static const Set<String> manualSources = {
+    'profile_edit',
+    'checkin_sheet',
+  };
+
+  /// True si una entrada del historial con [source] cuenta como medición.
+  /// Entradas legacy (sin source) son check-ins manuales anteriores a
+  /// SPEC-143.
+  static bool countsAsMeasurement(String? source) =>
+      source == null || manualSources.contains(source);
+
+  /// Último momento de medición: el más reciente entre el historial y el
+  /// respaldo local.
+  static DateTime? latest(DateTime? a, DateTime? b) {
+    if (a == null) return b;
+    if (b == null) return a;
+    return a.isAfter(b) ? a : b;
+  }
+
+  /// Calcula el estado del bloqueo.
   static BiometricLockState compute({
-    required String? lastEditIso,
-    required DateTime? lastCheatDate,
+    required DateTime? lastMeasuredAt,
+    DateTime? now,
   }) {
-    if (lastEditIso == null) return const BiometricLockState.unlocked();
-
-    final lastEditAt = DateTime.tryParse(lastEditIso);
-    if (lastEditAt == null) return const BiometricLockState.unlocked();
-
-    final unlocksAt = lastEditAt.add(Duration(days: lockDays));
-
-    // Condición 1: 6 días ya transcurrieron → desbloqueado.
-    if (DateTime.now().isAfter(unlocksAt)) {
-      return BiometricLockState(
-        isLocked: false,
-        lastEditAt: lastEditAt,
-        unlocksAt: unlocksAt,
-      );
-    }
-
-    // Condición 2: cheat day ocurrió DESPUÉS del edit → desbloqueado.
-    if (lastCheatDate != null) {
-      final editDay =
-          DateTime(lastEditAt.year, lastEditAt.month, lastEditAt.day);
-      final cheatDay =
-          DateTime(lastCheatDate.year, lastCheatDate.month, lastCheatDate.day);
-      if (cheatDay.isAfter(editDay)) {
-        return BiometricLockState(
-          isLocked: false,
-          lastEditAt: lastEditAt,
-          unlocksAt: unlocksAt,
-        );
-      }
-    }
-
-    // Ninguna condición de desbloqueo → bloqueado.
+    if (lastMeasuredAt == null) return const BiometricLockState.unlocked();
+    final n = now ?? DateTime.now();
+    final unlocksAt = DateTime(
+      lastMeasuredAt.year,
+      lastMeasuredAt.month,
+      lastMeasuredAt.day + lockDays,
+    );
     return BiometricLockState(
-      isLocked: true,
-      lastEditAt: lastEditAt,
+      isLocked: n.isBefore(unlocksAt),
+      lastEditAt: lastMeasuredAt,
       unlocksAt: unlocksAt,
     );
   }

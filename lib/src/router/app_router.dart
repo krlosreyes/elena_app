@@ -49,6 +49,8 @@ import 'package:elena_app/src/features/content/presentation/aprende_detail_scree
 // colapsadas de "Configuración" en Perfil — ver comentario en
 // biometricos_detail_screen.dart.
 import 'package:elena_app/src/features/auth/presentation/biometricos_detail_screen.dart';
+import 'package:elena_app/src/features/auth/presentation/account_screen.dart';
+import 'package:elena_app/src/features/auth/presentation/profile_sections_screens.dart';
 import 'package:elena_app/src/features/auth/presentation/notification_settings_screen.dart';
 import 'package:elena_app/src/features/dashboard/presentation/circadian_clock_screen.dart';
 import 'package:elena_app/src/features/auth/presentation/ritmos_circadianos_detail_screen.dart';
@@ -303,6 +305,22 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/profile/biometricos',
         name: 'profile-biometricos',
         builder: (context, state) => const BiometricosDetailScreen(),
+      ),
+      // Rediseño Perfil (2026-11-04): cuenta y datos personales + secciones.
+      GoRoute(
+        path: '/profile/cuenta',
+        name: 'profile-cuenta',
+        builder: (context, state) => const AccountScreen(),
+      ),
+      GoRoute(
+        path: '/profile/salud',
+        name: 'profile-salud',
+        builder: (context, state) => const ProfileHealthScreen(),
+      ),
+      GoRoute(
+        path: '/profile/ayuda',
+        name: 'profile-ayuda',
+        builder: (context, state) => const ProfileHelpScreen(),
       ),
       // Fix notificaciones (2026-10-30): tipos de aviso + límite diario.
       GoRoute(
