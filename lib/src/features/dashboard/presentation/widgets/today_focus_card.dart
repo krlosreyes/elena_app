@@ -25,7 +25,10 @@ final todayFocusTextProvider = Provider.autoDispose<String?>((ref) {
 });
 
 class TodayFocusCard extends ConsumerStatefulWidget {
-  const TodayFocusCard({super.key});
+  const TodayFocusCard({super.key, this.title = 'Tu foco de hoy'});
+
+  /// Rediseño Hoy (2026-11-04): en Hoy se titula "Lo que sigue".
+  final String title;
 
   @override
   ConsumerState<TodayFocusCard> createState() => _TodayFocusCardState();
@@ -69,8 +72,8 @@ class _TodayFocusCardState extends ConsumerState<TodayFocusCard> {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
-        borderRadius: BorderRadius.circular(20),
+        color: const Color(0xFF1A2332),
+        borderRadius: BorderRadius.circular(22),
       ),
       child: Row(
         children: [
@@ -93,7 +96,7 @@ class _TodayFocusCardState extends ConsumerState<TodayFocusCard> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Tu foco de hoy',
+                  widget.title,
                   style: TextStyle(
                     color: _done ? green : amber,
                     fontSize: 11,

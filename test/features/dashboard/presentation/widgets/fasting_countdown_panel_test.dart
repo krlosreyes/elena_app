@@ -33,7 +33,7 @@ void main() {
         ),
       ),
     ));
-    expect(find.text('Te falta'), findsOneWidget);
+    expect(find.text('Tu ventana abre en'), findsOneWidget);
     expect(find.textContaining(RegExp(r'^1[45]:\d\d:\d\d$')), findsOneWidget);
     expect(find.text('Bajando insulina'), findsOneWidget);
     await tester.pumpWidget(const SizedBox());

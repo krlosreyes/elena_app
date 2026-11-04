@@ -269,99 +269,202 @@ class CloseDayPrompt extends ConsumerWidget {
     final since = now.difference(view.windowEnd!);
     final sameDay = view.windowEnd!.day == now.day &&
         view.windowEnd!.month == now.month;
-    final String title = (sameDay || since.inHours < 6)
-        ? (since.inMinutes < 60
-            ? 'Tu ventana de comida terminó'
-            : 'Tu ventana terminó hace ${since.inHours} h')
-        : 'Tu día de ayer sigue abierto';
+    final String ago = since.inMinutes < 60
+        ? 'hace ${since.inMinutes} min'
+        : 'hace ${since.inHours} h ${since.inMinutes.remainder(60)} m';
+    final String subtitle = (sameDay || since.inHours < 6)
+        ? 'Tu ventana terminó $ago'
+        : 'Tu ventana de ayer terminó ${relativeDayLabel(view.windowEnd!, now)}';
+    final bool fromMeal = lastMeal != null &&
+        suggested.difference(lastMeal).inMinutes.abs() < 1;
+    final DateTime alt = view.windowEnd!.isAfter(now) ? now : view.windowEnd!;
+    final bool showAlt = alt.difference(suggested).inMinutes.abs() >= 5;
 
     const amber = Color(0xFFEF9F27);
+    const sand = Color(0xFFCBB892);
+    final busy = fasting.isSaving;
+
+    Widget outline(String label, VoidCallback? onTap) => Expanded(
+          child: SizedBox(
+            height: 48,
+            child: OutlinedButton(
+              onPressed: onTap,
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: Colors.white.withValues(alpha: 0.16)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              child: Text(
+                label,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+        );
+
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
       decoration: BoxDecoration(
-        color: amber.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: amber.withValues(alpha: 0.45)),
+        color: const Color(0xFF1C1608),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: amber.withValues(alpha: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '¿A qué hora fue tu última comida? Con esa hora cerramos tu día '
-            'e inicia tu ayuno.',
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.75),
-              fontSize: 13,
-              height: 1.35,
-            ),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            height: 44,
-            child: ElevatedButton(
-              onPressed: fasting.isSaving
-                  ? null
-                  : () => _close(context, ref, suggested, lastMeal),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.metabolicGreen,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: amber.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(Icons.nightlight_outlined,
+                    color: amber, size: 22),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'TU DÍA SIGUE ABIERTO',
+                      style: TextStyle(
+                        color: amber,
+                        fontSize: 11.5,
+                        letterSpacing: 1.2,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(subtitle,
+                        style: const TextStyle(color: sand, fontSize: 13)),
+                  ],
                 ),
               ),
-              child: Text(
-                'Fue a las ${_hora12(suggested)} · cerrar mi día',
-                style: const TextStyle(
-                  color: Color(0xFF0B1020),
-                  fontWeight: FontWeight.w800,
+            ],
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            '¿A qué hora fue tu última comida?',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 24,
+              fontWeight: FontWeight.w800,
+              height: 1.2,
+            ),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Con esa hora cerramos tu día y tu ayuno cuenta desde ahí. '
+            'No pierdes nada.',
+            style: TextStyle(color: sand, fontSize: 14, height: 1.4),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            height: 60,
+            child: ElevatedButton(
+              onPressed:
+                  busy ? null : () => _close(context, ref, suggested, lastMeal),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: amber,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Fue a las ${_hora12(suggested)}',
+                          style: const TextStyle(
+                            color: Color(0xFF2A1A02),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        Text(
+                          fromMeal
+                              ? 'Tu última comida registrada · cerrar mi día'
+                              : 'Fin estimado de tu ventana · cerrar mi día',
+                          style: const TextStyle(
+                            color: Color(0xFF5A3A08),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.check_rounded,
+                      color: Color(0xFF2A1A02), size: 24),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              if (showAlt) ...[
+                outline(
+                  _hora12(alt),
+                  busy ? null : () => _close(context, ref, alt, lastMeal),
+                ),
+                const SizedBox(width: 8),
+              ],
+              outline(
+                'Otra hora',
+                busy
+                    ? null
+                    : () => _pickOther(context, ref, suggested, lastMeal),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Center(
+            child: TextButton(
+              onPressed: () => ref
+                  .read(closeDayPromptSnoozeProvider.notifier)
+                  .state = DateTime.now().add(const Duration(hours: 1)),
+              child: const Text(
+                'Todavía estoy comiendo',
+                style: TextStyle(
+                  color: sand,
+                  fontWeight: FontWeight.w600,
                   fontSize: 14,
                 ),
               ),
             ),
           ),
-          const SizedBox(height: 4),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              TextButton(
-                onPressed: fasting.isSaving
-                    ? null
-                    : () => _pickOther(context, ref, suggested, lastMeal),
-                child: const Text(
-                  'Fue a otra hora',
-                  style: TextStyle(
-                    color: amber,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 13,
-                  ),
-                ),
-              ),
-              TextButton(
-                onPressed: () => ref
-                    .read(closeDayPromptSnoozeProvider.notifier)
-                    .state = DateTime.now().add(const Duration(hours: 1)),
-                child: Text(
-                  'Todavía estoy comiendo',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.6),
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                  ),
-                ),
-              ),
-            ],
+          Container(
+            width: double.infinity,
+            margin: const EdgeInsets.only(top: 4, bottom: 8),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.04),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: const Text(
+              'Tu racha está a salvo: mientras indiques la hora, el día '
+              'cuenta como cerrado por ti.',
+              style: TextStyle(color: sand, fontSize: 12.5, height: 1.4),
+            ),
           ),
         ],
       ),

@@ -30,9 +30,17 @@ import 'package:elena_app/src/features/streak/domain/fasting_symptom_log.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 
 class FastingConsciousnessCard extends ConsumerWidget {
-  const FastingConsciousnessCard({super.key, required this.state});
+  const FastingConsciousnessCard({
+    super.key,
+    required this.state,
+    this.onRegisterMeal,
+  });
 
   final FastingState state;
+
+  /// Rediseño Hoy (2026-11-04): abre el registro de comidas desde el botón
+  /// principal de la ventana abierta. Null = sin botón.
+  final VoidCallback? onRegisterMeal;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -48,10 +56,11 @@ class FastingConsciousnessCard extends ConsumerWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(18, 20, 18, 16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
-        borderRadius: BorderRadius.circular(24),
+        color: const Color(0xFF0C1422),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
       child: isActive
           ? _buildActive(context, ref, accent)
@@ -82,6 +91,12 @@ class FastingConsciousnessCard extends ConsumerWidget {
   }
 
   Widget _buildIdle(BuildContext context, WidgetRef ref, Color accent) {
+    // Rediseño Hoy (2026-11-04): con la ventana abierta, el anillo muestra
+    // el día completo y cuánto falta para cerrar la ventana.
+    final view = ref.watch(metabolicDayViewProvider);
+    if (view.phase == MetabolicDayPhase.ventana && view.windowStart != null) {
+      return _buildWindowOpen(context, ref, accent, view.windowStart!);
+    }
     final next = _nextFastingTime(ref);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -190,6 +205,68 @@ class FastingConsciousnessCard extends ConsumerWidget {
     );
   }
 
+  Widget _buildWindowOpen(
+    BuildContext context,
+    WidgetRef ref,
+    Color accent,
+    DateTime windowStart,
+  ) {
+    final logs = ref.watch(nutritionProvider.select((s) => s.todayLogs));
+    DateTime? last;
+    for (final l in logs) {
+      if (l.timestamp.isBefore(windowStart)) continue;
+      if (last == null || l.timestamp.isAfter(last)) last = l.timestamp;
+    }
+    final mealsInWindow =
+        logs.where((l) => !l.timestamp.isBefore(windowStart)).length;
+    return Column(
+      children: [
+        EatingWindowPanel(
+          windowStart: windowStart,
+          targetHours: state.targetHours,
+          mealsCount: mealsInWindow,
+          lastMealAt: last,
+        ),
+        const SizedBox(height: 16),
+        if (onRegisterMeal != null) ...[
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: ElevatedButton.icon(
+              onPressed: onRegisterMeal,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: accent,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              icon: const Icon(Icons.restaurant_rounded,
+                  color: Color(0xFF032A22), size: 20),
+              label: const Text(
+                'Registrar comida',
+                style: TextStyle(
+                  color: Color(0xFF032A22),
+                  fontWeight: FontWeight.w800,
+                  fontSize: 15,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
+        _buildFastingPrimaryButton(
+          context: context,
+          ref: ref,
+          state: state,
+          isActive: false,
+          accent: accent,
+          secondary: onRegisterMeal != null,
+        ),
+      ],
+    );
+  }
+
   Widget _buildActive(BuildContext context, WidgetRef ref, Color accent) {
     // Rediseño ayuno (2026-11-01): cuenta regresiva HH:MM:SS + barra por
     // etapas que avanza de ámbar a verde (FastingCountdownPanel).
@@ -200,6 +277,7 @@ class FastingConsciousnessCard extends ConsumerWidget {
           FastingCountdownPanel(
             startTime: start,
             targetHours: state.targetHours,
+            protocolLabel: state.fastingProtocol,
           ),
         if (start != null) _buildEatingWindowAdvisory(state),
         const SizedBox(height: 18),
@@ -287,6 +365,7 @@ class FastingConsciousnessCard extends ConsumerWidget {
     required FastingState state,
     required bool isActive,
     required Color accent,
+    bool secondary = false,
   }) {
     // Bugfix 2026-06-11: completar un ayuno YA NO bloquea iniciar el siguiente.
     // El producto se ancla al usuario, no al reloj: en ayuno intermitente real
@@ -304,9 +383,12 @@ class FastingConsciousnessCard extends ConsumerWidget {
 
     // Rediseño Hoy (2026-10-30): con el ayuno en curso el botón es
     // secundario (fondo tenue, texto verde); sin ayuno, verde sólido.
+    final bool quiet = isActive || secondary;
     final Color bgColor =
-        isActive ? Colors.white.withValues(alpha: 0.06) : accent;
-    final Color fgColor = isActive ? accent : const Color(0xFF0B1020);
+        quiet ? Colors.white.withValues(alpha: 0.06) : accent;
+    final Color fgColor = isActive
+        ? accent
+        : (secondary ? Colors.white : const Color(0xFF0B1020));
 
     return SizedBox(
       width: double.infinity,

@@ -12,6 +12,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import 'package:elena_app/src/core/services/metabolic_day_reminders.dart';
+import 'package:elena_app/src/features/dashboard/presentation/widgets/metabolic_day_ring.dart';
 import 'package:elena_app/src/features/fasting/domain/fasting_status.dart';
 
 /// Ámbar → lima → verde según avance [p] (0..1).
@@ -52,10 +54,14 @@ class FastingCountdownPanel extends StatefulWidget {
     super.key,
     required this.startTime,
     required this.targetHours,
+    this.protocolLabel,
   });
 
   final DateTime startTime;
   final int targetHours;
+
+  /// "16:8", "OMAD"… para el encabezado del anillo.
+  final String? protocolLabel;
 
   @override
   State<FastingCountdownPanel> createState() => _FastingCountdownPanelState();
@@ -124,92 +130,121 @@ class _FastingCountdownPanelState extends State<FastingCountdownPanel> {
       }
     }
 
+    final windowH =
+        MetabolicDayReminders.windowFor(target).inMinutes / 60.0;
+    final muted = Colors.white.withValues(alpha: 0.55);
+
+    // Rediseño Hoy (2026-11-04): el anillo del día metabólico es el
+    // protagonista. La barra de etapas queda debajo como "mapa".
     return Column(
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                stageText,
-                style: TextStyle(
-                  color: color,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                ),
+            Text(
+              'AYUNANDO${widget.protocolLabel != null ? ' · ${widget.protocolLabel}' : ''}',
+              style: TextStyle(
+                color: color,
+                fontSize: 11.5,
+                letterSpacing: 1.2,
+                fontWeight: FontWeight.w800,
               ),
             ),
             Text(
-              'Meta $target h',
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.55),
-                fontSize: 12,
-              ),
+              'Empezó ${relativeStartLabel(widget.startTime, _now)}',
+              style: TextStyle(color: muted, fontSize: 12),
             ),
           ],
         ),
         const SizedBox(height: 14),
-        Text(
-          done ? 'Superaste tu meta por' : 'Te falta',
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.6),
-            fontSize: 12.5,
+        MetabolicDayRing(
+          fastHours: target.toDouble(),
+          windowHours: windowH,
+          elapsedHours: elapsedH,
+          fastColor: color,
+          windowColor: const Color(0xFF00C49A),
+          semanticLabel: done
+              ? 'Meta de ayuno cumplida'
+              : 'Ayuno: ${elapsed.inHours} h de $target h',
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                done ? 'Superaste tu meta por' : 'Tu ventana abre en',
+                style: TextStyle(color: muted, fontSize: 13),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                done ? '+${_hms(-remaining)}' : _hms(remaining),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 40,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.5,
+                  fontFeatures: [FontFeature.tabularFigures()],
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                stageText,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                done
+                    ? 'Rompe el ayuno cuando quieras'
+                    : '${(p * 100).round()} % · terminas ${_hora12(end)}',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.45),
+                  fontSize: 12,
+                ),
+              ),
+            ],
           ),
         ),
-        Text(
-          done ? '+${_hms(-remaining)}' : _hms(remaining),
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 40,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 1,
-            fontFeatures: [FontFeature.tabularFigures()],
-          ),
-        ),
-        Text(
-          done
-              ? 'Puedes romper el ayuno cuando quieras.'
-              : 'Terminas a las ${_hora12(end)}',
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.6),
-            fontSize: 13,
-          ),
-        ),
-        const SizedBox(height: 18),
+        const SizedBox(height: 16),
         _StageBar(
           stages: stages,
           target: target,
           elapsedHours: elapsedH,
           color: color,
         ),
-        const SizedBox(height: 12),
         if (!done && nextText != null) ...[
+          const SizedBox(height: 10),
           Text(
             nextText,
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.75),
+              color: Colors.white.withValues(alpha: 0.7),
               fontSize: 12.5,
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 4),
         ],
-        Text(
-          'Llevas ${elapsed.inHours} h ${elapsed.inMinutes.remainder(60)} min',
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.45),
-            fontSize: 12,
-          ),
-        ),
       ],
     );
   }
+}
+
+/// "hoy 7:10 a. m." · "ayer 8:10 p. m." · "2 nov, 7:10 p. m.".
+String relativeStartLabel(DateTime t, DateTime now) {
+  String two(int n) => n.toString().padLeft(2, '0');
+  final h = t.hour % 12 == 0 ? 12 : t.hour % 12;
+  final hora = '$h:${two(t.minute)} ${t.hour < 12 ? 'a. m.' : 'p. m.'}';
+  final days = DateTime(now.year, now.month, now.day)
+      .difference(DateTime(t.year, t.month, t.day))
+      .inDays;
+  if (days <= 0) return 'hoy $hora';
+  if (days == 1) return 'ayer $hora';
+  const meses = [
+    'ene', 'feb', 'mar', 'abr', 'may', 'jun',
+    'jul', 'ago', 'sep', 'oct', 'nov', 'dic',
+  ];
+  return '${t.day} ${meses[t.month - 1]}, $hora';
 }
 
 class _StageBar extends StatelessWidget {
@@ -317,6 +352,215 @@ class _StageBar extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+}
+
+/// Rediseño Hoy (2026-11-04): anillo en fase "ventana abierta".
+///
+/// [windowStart] = momento en que terminó el ayuno. El anillo muestra el
+/// ayuno completo y cuánto de la ventana ya pasó; al centro, cuánto falta
+/// para que cierre.
+class EatingWindowPanel extends StatefulWidget {
+  const EatingWindowPanel({
+    super.key,
+    required this.windowStart,
+    required this.targetHours,
+    this.mealsCount = 0,
+    this.lastMealAt,
+  });
+
+  final DateTime windowStart;
+  final int targetHours;
+  final int mealsCount;
+  final DateTime? lastMealAt;
+
+  @override
+  State<EatingWindowPanel> createState() => _EatingWindowPanelState();
+}
+
+class _EatingWindowPanelState extends State<EatingWindowPanel> {
+  Timer? _timer;
+  DateTime _now = DateTime.now();
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() => _now = DateTime.now());
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  static String _two(int n) => n.toString().padLeft(2, '0');
+
+  static String _hora12(DateTime t) {
+    final h = t.hour % 12 == 0 ? 12 : t.hour % 12;
+    return '$h:${_two(t.minute)} ${t.hour < 12 ? 'a. m.' : 'p. m.'}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const teal = Color(0xFF00C49A);
+    final target = widget.targetHours <= 0 ? 16 : widget.targetHours;
+    final windowDur = MetabolicDayReminders.windowFor(target);
+    final windowEnd = widget.windowStart.add(windowDur);
+    var inWindow = _now.difference(widget.windowStart);
+    if (inWindow.isNegative) inWindow = Duration.zero;
+    var left = windowEnd.difference(_now);
+    if (left.isNegative) left = Duration.zero;
+    final muted = Colors.white.withValues(alpha: 0.55);
+
+    String hms(Duration d) => '${_two(d.inHours)}:'
+        '${_two(d.inMinutes.remainder(60))}:${_two(d.inSeconds.remainder(60))}';
+
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'VENTANA ABIERTA',
+              style: TextStyle(
+                color: teal,
+                fontSize: 11.5,
+                letterSpacing: 1.2,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            Text(
+              'Abrió ${relativeStartLabel(widget.windowStart, _now)}',
+              style: TextStyle(color: muted, fontSize: 12),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+        MetabolicDayRing(
+          fastHours: target.toDouble(),
+          windowHours: windowDur.inMinutes / 60.0,
+          elapsedHours: target + inWindow.inSeconds / 3600,
+          fastColor: const Color(0xFF1D9E75),
+          windowColor: teal,
+          semanticLabel:
+              'Ventana de comida: faltan ${left.inHours} h ${left.inMinutes.remainder(60)} min',
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Tu ventana cierra en',
+                  style: TextStyle(color: muted, fontSize: 13)),
+              const SizedBox(height: 2),
+              Text(
+                hms(left),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 40,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.5,
+                  fontFeatures: [FontFeature.tabularFigures()],
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'Comiendo · ${inWindow.inHours} h ${inWindow.inMinutes.remainder(60)} m',
+                style: const TextStyle(
+                  color: teal,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'Cierra cerca de las ${_hora12(windowEnd)}',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.45),
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: _MealChip(
+                title: widget.mealsCount == 0
+                    ? 'Sin comidas aún'
+                    : '${widget.mealsCount} '
+                        '${widget.mealsCount == 1 ? 'comida' : 'comidas'}',
+                subtitle: widget.lastMealAt == null
+                    ? 'Registra la primera'
+                    : 'Última ${_hora12(widget.lastMealAt!)}',
+                filled: widget.mealsCount > 0,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _MealChip(
+                title: 'Ventana de ${windowDur.inHours} h',
+                subtitle: 'Protocolo $target:${24 - target > 0 ? 24 - target : 1}',
+                filled: false,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _MealChip extends StatelessWidget {
+  const _MealChip({
+    required this.title,
+    required this.subtitle,
+    required this.filled,
+  });
+
+  final String title;
+  final String subtitle;
+  final bool filled;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: filled ? const Color(0xFF1A2332) : Colors.transparent,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: filled ? 0.0 : 0.14),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            subtitle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.55),
+              fontSize: 11,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

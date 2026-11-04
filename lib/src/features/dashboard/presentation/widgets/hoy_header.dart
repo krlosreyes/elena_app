@@ -22,27 +22,31 @@ class HoyHeader extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Expanded(
-          child: PageHero(title: title, subtitle: heroTodayLabel()),
+          child: PageHero(
+            title: title,
+            subtitle: '${heroTodayLabel()} · Día metabólico',
+          ),
         ),
         if (streak > 0) ...[
           const SizedBox(width: 8),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: const Color(0xFFF59E0B).withValues(alpha: 0.14),
-              borderRadius: BorderRadius.circular(20),
+              color: const Color(0xFF1A2332),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Icon(Icons.local_fire_department_rounded,
-                    size: 14, color: Color(0xFFF59E0B)),
-                const SizedBox(width: 4),
+                    size: 16, color: Color(0xFFEF9F27)),
+                const SizedBox(width: 6),
                 Text(
-                  'Racha $streak ${streak == 1 ? 'día' : 'días'}',
+                  '$streak ${streak == 1 ? 'día' : 'días'}',
                   style: const TextStyle(
-                    color: Color(0xFFF59E0B),
-                    fontSize: 12,
+                    color: Colors.white,
+                    fontSize: 14,
                     fontWeight: FontWeight.w700,
                   ),
                 ),

@@ -13,6 +13,7 @@ import 'package:elena_app/src/features/dashboard/presentation/widgets/dashboard_
 import 'package:elena_app/src/features/dashboard/presentation/widgets/dashboard_pillars_row.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/fasting_consciousness_card.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/hoy_header.dart';
+import 'package:elena_app/src/features/dashboard/presentation/widgets/hoy_cards.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/metabolic_day_widgets.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/today_focus_card.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/dashboard_selected_pillar_card.dart';
@@ -54,6 +55,24 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   // Rediseño Hoy (2026-10-30): ningún pilar abierto por defecto. El ayuno
   // ya es la acción principal de arriba; los demás se abren al tocarlos.
   SelectedPillar? _selectedPillar;
+
+  /// Rediseño Hoy (2026-11-04): ancla para bajar hasta la tarjeta del pilar
+  /// abierto (p. ej. "Registrar comida" desde el anillo).
+  final GlobalKey _pillarCardKey = GlobalKey();
+
+  void _openMeals() {
+    if (!mounted) return;
+    setState(() => _selectedPillar = SelectedPillar.comidas);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final ctx = _pillarCardKey.currentContext;
+      if (ctx != null) {
+        Scrollable.ensureVisible(ctx,
+            duration: const Duration(milliseconds: 350),
+            curve: Curves.easeOut,
+            alignment: 0.05);
+      }
+    });
+  }
 
   void _onSelectPillar(SelectedPillar p) {
     if (!mounted) return;
@@ -191,8 +210,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         final byYou = pool
             .where((c) => c.closureReason == ClosureReason.manualNextFasting)
             .length;
+        final prev = recent
+            .where((c) => c.cycleId != next.cycleId && c.dailyScore != null)
+            .fold<MetabolicCycle?>(
+              null,
+              (best, c) => best == null || c.startedAt.isAfter(best.startedAt)
+                  ? c
+                  : best,
+            );
         CycleDetailSheet.show(context, next,
-            closedByYou: byYou, closedOutOf: pool.length);
+            closedByYou: byYou,
+            closedOutOf: pool.length,
+            previousScore: prev?.dailyScore);
         ref.read(cycleClosureMomentProvider.notifier).state = null;
         ref.read(cycleClosureDismissalProvider.notifier).dismiss(next.cycleId);
       });
@@ -303,10 +332,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       // "Aprende". Su código sigue en el repo.
                       const SizedBox(height: 10),
                       const HoyHeader(),
-                      const SizedBox(height: 14),
-                      // Día metabólico (2026-11-04): siempre visible.
-                      const MetabolicDayStrip(),
-                      const SizedBox(height: 14),
+                      const SizedBox(height: 18),
                       if (fastingState.metabolicAlert != null) ...[
                         MetabolicAlertBanner(
                             message: fastingState.metabolicAlert!),
@@ -330,10 +356,24 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       // Día metabólico: si la ventana terminó y no
                       // iniciaste el ayuno, "¿a qué hora fue tu última
                       // comida?" — repara el olvido sin perder el día.
+                      // Rediseño Hoy (2026-11-04): el protagonista cambia
+                      // según el momento del día metabólico — anillo de
+                      // ayuno, anillo de ventana o "tu día sigue abierto".
                       const CloseDayPrompt(),
-                      FastingConsciousnessCard(state: fastingState),
+                      if (!CloseDayPrompt.shouldShow(
+                        ref.watch(metabolicDayViewProvider),
+                        ref.watch(closeDayPromptSnoozeProvider),
+                        fastingState.isActive,
+                        DateTime.now(),
+                      ))
+                        FastingConsciousnessCard(
+                          state: fastingState,
+                          onRegisterMeal: _openMeals,
+                        ),
                       const SizedBox(height: 14),
-                      const TodayFocusCard(),
+                      const BodyNowCard(),
+                      const SizedBox(height: 14),
+                      const TodayFocusCard(title: 'Lo que sigue'),
                       const SizedBox(height: 22),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -368,10 +408,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               _selectedPillar == SelectedPillar.comidas)) ...[
                         const SizedBox(height: 14),
                         DashboardSelectedPillarCard(
+                          key: _pillarCardKey,
                           selectedPillar: _selectedPillar!,
                           onSelectPillar: _onSelectPillar,
                         ),
                       ],
+                      const SizedBox(height: 14),
+                      const WeekClosedCard(),
                       const SizedBox(height: 24),
                     ],
                   ),

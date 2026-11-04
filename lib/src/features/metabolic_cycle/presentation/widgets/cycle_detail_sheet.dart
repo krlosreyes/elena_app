@@ -16,9 +16,14 @@ class CycleDetailSheet extends StatelessWidget {
     required this.cycle,
     this.closedByYou,
     this.closedOutOf,
+    this.previousScore,
   });
 
   final MetabolicCycle cycle;
+
+  /// Rediseño Hoy (2026-11-04): puntaje del día anterior para el
+  /// "+X vs. ayer". Null = no se muestra.
+  final int? previousScore;
 
   /// Día metabólico (2026-11-04): de los últimos [closedOutOf] días, cuántos
   /// cerró el usuario iniciando su ayuno. Null = no se muestra.
@@ -31,6 +36,7 @@ class CycleDetailSheet extends StatelessWidget {
     MetabolicCycle cycle, {
     int? closedByYou,
     int? closedOutOf,
+    int? previousScore,
   }) {
     return showModalBottomSheet<void>(
       context: context,
@@ -40,6 +46,7 @@ class CycleDetailSheet extends StatelessWidget {
         cycle: cycle,
         closedByYou: closedByYou,
         closedOutOf: closedOutOf,
+        previousScore: previousScore,
       ),
     );
   }
@@ -149,23 +156,37 @@ class CycleDetailSheet extends StatelessWidget {
   }
 
   Widget _buildHeader() {
+    // Rediseño Hoy (2026-11-04): el cierre es la recompensa del gesto.
+    final byYou = cycle.closureReason == ClosureReason.manualNextFasting;
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'CIERRE DE TU DÍA METABÓLICO',
+        const Text(
+          'DÍA METABÓLICO CERRADO',
+          textAlign: TextAlign.center,
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.45),
-            fontSize: 10,
+            color: AppColors.metabolicGreen,
+            fontSize: 11.5,
             letterSpacing: 1.4,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          byYou ? 'Lo cerraste tú.' : 'Tu día se cerró solo.',
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 26,
+            fontWeight: FontWeight.w800,
+            height: 1.15,
           ),
         ),
         const SizedBox(height: 6),
         Text(
           _formatDateLong(cycle.closedAt ?? cycle.startedAt),
+          textAlign: TextAlign.center,
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.85),
+            color: Colors.white.withValues(alpha: 0.55),
             fontSize: 13,
             fontWeight: FontWeight.w600,
           ),
@@ -176,33 +197,58 @@ class CycleDetailSheet extends StatelessWidget {
 
   Widget _buildScore() {
     final score = cycle.dailyScore ?? 0;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        Text(
-          '$score',
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 48,
-            fontWeight: FontWeight.w900,
-            fontFamily: 'monospace',
-            height: 1.0,
-          ),
-        ),
-        const SizedBox(width: 4),
-        Padding(
-          padding: const EdgeInsets.only(bottom: 6),
-          child: Text(
-            '/100',
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.35),
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              fontFamily: 'monospace',
+    final delta = previousScore == null ? null : score - previousScore!;
+    return Center(
+      child: SizedBox(
+        width: 160,
+        height: 160,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            SizedBox(
+              width: 160,
+              height: 160,
+              child: CircularProgressIndicator(
+                value: (score / 100).clamp(0.0, 1.0),
+                strokeWidth: 12,
+                strokeCap: StrokeCap.round,
+                backgroundColor: Colors.white.withValues(alpha: 0.07),
+                valueColor: const AlwaysStoppedAnimation<Color>(
+                    AppColors.metabolicGreen),
+              ),
             ),
-          ),
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '$score',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 46,
+                    fontWeight: FontWeight.w800,
+                    height: 1.0,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  delta == null
+                      ? 'de 100'
+                      : (delta == 0
+                          ? 'igual que ayer'
+                          : '${delta > 0 ? '+' : ''}$delta vs. ayer'),
+                  style: TextStyle(
+                    color: delta != null && delta > 0
+                        ? AppColors.metabolicGreen
+                        : Colors.white.withValues(alpha: 0.55),
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
