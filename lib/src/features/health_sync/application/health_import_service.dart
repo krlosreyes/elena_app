@@ -12,6 +12,17 @@
 //      aborta las otras dos.
 //   4. Conteo por métrica — retorna `HealthImportSummary` para que la
 //      UI pueda mostrar "Importados: 3 pesos, 2 sesiones de sueño".
+//
+// 2026-11-04 (auditoría Apple Salud):
+//   - Peso: ya NO se escribe un check-in por día. Las medidas son una vez
+//     por semana (bloqueo semanal); un peso diario de la báscula llenaba
+//     el historial, apagaba el recordatorio y — sin `source` — contaba
+//     como medición manual. Ahora solo se reporta el último peso leído
+//     (`latestWeight`) para prellenar el formulario semanal.
+//   - Sueño: la "última comida" sale del inicio real del ayuno (ciclo
+//     metabólico) cuando existe; `inicio - 3h` queda solo como respaldo.
+//   - Movimiento: con Apple Watch cuentan los minutos de ejercicio (anillo
+//     verde); sin Watch, solo los pasos por encima de una base diaria.
 
 import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/core/services/day_boundary_resolver.dart';
@@ -30,7 +41,6 @@ import 'package:elena_app/src/features/health_sync/domain/health_sync_result.dar
 // (contrato), no el provider Firestore, así que apunta a domain/ en vez de
 // data/ — inversión de dependencia entre features (health_sync → progress).
 import 'package:elena_app/src/features/progress/domain/biometric_repository.dart';
-import 'package:elena_app/src/features/progress/domain/biometric_checkin.dart';
 
 /// Resumen de cuántos samples se persistieron efectivamente.
 class HealthImportSummary {
@@ -40,6 +50,12 @@ class HealthImportSummary {
 
   /// SPEC-203: entrenamientos reales importados (HKWorkout → ExerciseLog).
   final int workoutsImported;
+
+  /// 2026-11-04: días con minutos de ejercicio del Apple Watch importados.
+  final int activeMinutesImported;
+
+  /// 2026-11-04: el peso más reciente leído (no se persiste como check-in).
+  final HealthSample? latestWeight;
   final List<String> errors;
 
   const HealthImportSummary({
@@ -47,6 +63,8 @@ class HealthImportSummary {
     this.sleepSessionsImported = 0,
     this.stepsActivitiesImported = 0,
     this.workoutsImported = 0,
+    this.activeMinutesImported = 0,
+    this.latestWeight,
     this.errors = const [],
   });
 
@@ -54,7 +72,8 @@ class HealthImportSummary {
       weightsImported +
       sleepSessionsImported +
       stepsActivitiesImported +
-      workoutsImported;
+      workoutsImported +
+      activeMinutesImported;
 
   bool get isEmpty => totalImported == 0;
   bool get hasErrors => errors.isNotEmpty;
@@ -63,24 +82,30 @@ class HealthImportSummary {
   String toString() => 'HealthImportSummary(weights=$weightsImported, '
       'sleep=$sleepSessionsImported, '
       'steps=$stepsActivitiesImported, '
-      'workouts=$workoutsImported, errors=${errors.length})';
+      'workouts=$workoutsImported, active=$activeMinutesImported, '
+      'latestWeight=${latestWeight?.value}, errors=${errors.length})';
 }
 
-/// Umbral mínimo de pasos diarios para convertir en un `ExerciseLog`
-/// implícito tipo LISS. Decisión de producto (28-may-2026, Carlos):
-/// bajamos de 5000 (estándar ACSM "actividad iniciada") a 2000 porque
-/// la audiencia ElenaApp es usuario metabólico sedentario que rara vez
-/// supera 5000 pasos en el día — el threshold científico estaba
-/// dejando todo en cero. 2000 pasos ≈ 20 min de caminata ligera, suma
-/// real pero filtra días puramente de oficina (<2000).
-///
-/// SPEC-173 (2026-06-04): bajado de 2000 a 500. Carlos al usar la app
-/// en iPhone reportó que ejercicio nunca llegaba, ni en días que
-/// caminó. La causa principal fue el bug del fetch de tipos (corregido
-/// en health_sync_service `_fetchMetric`), pero también el threshold
-/// 2000 filtraba días de oficina sin caminata. 500 da margen para
-/// ruido del sensor y siempre deja una señal sobre la que comentar.
-const int _minStepsForExerciseLog = 500;
+/// 2026-11-04 (auditoría Apple Salud): base diaria de pasos que NO cuenta
+/// como ejercicio. Antes, 500 pasos ya daban 10 min de "caminata" y 8.000
+/// pasos de un día normal sumaban 80 min — casi todos los días aparecían
+/// como activos. Ahora solo cuenta lo que supera la base (aprox. lo que
+/// alguien sedentario camina sin proponérselo). Valor a validar con los
+/// médicos del piloto.
+const int kDailyStepsBaseline = 4000;
+
+/// Minutos mínimos para registrar actividad derivada de pasos.
+const int _minStepMinutes = 10;
+
+/// Tope de minutos derivados de pasos en un día.
+const int _maxStepMinutes = 90;
+
+/// Minutos mínimos de ejercicio (Apple Watch) para registrar el día.
+const int _minActiveMinutes = 5;
+
+/// Carga los inicios de ayuno recientes del usuario (= última comida
+/// declarada). Inyectable para tests.
+typedef FastStartsLoader = Future<List<DateTime>> Function(String userId);
 
 /// Servicio de importación. Stateless — recibe las dependencias por
 /// constructor para que el AutoSyncController las inyecte.
@@ -89,13 +114,26 @@ class HealthImportService {
   final SleepRepository _sleepRepo;
   final ExerciseRepository _exerciseRepo;
 
+  final FastStartsLoader? _fastStartsLoader;
+
+  /// "Ahora" inyectable (timestamps de actividad de hoy).
+  final DateTime Function() _now;
+
   HealthImportService({
     required BiometricRepository biometricRepository,
     required SleepRepository sleepRepository,
     required ExerciseRepository exerciseRepository,
+    FastStartsLoader? fastStartsLoader,
+    DateTime Function()? now,
   })  : _biometricRepo = biometricRepository,
         _sleepRepo = sleepRepository,
-        _exerciseRepo = exerciseRepository;
+        _exerciseRepo = exerciseRepository,
+        _fastStartsLoader = fastStartsLoader,
+        _now = now ?? DateTime.now;
+
+  /// Biometría: hoy solo se usa para compatibilidad (el peso ya no se
+  /// escribe). Se conserva para no romper el contrato del constructor.
+  BiometricRepository get biometricRepository => _biometricRepo;
 
   /// Persiste los samples del resultado para el usuario dado.
   /// Devuelve un resumen con conteos y errores.
@@ -107,10 +145,10 @@ class HealthImportService {
       return const HealthImportSummary();
     }
 
-    int weights = 0;
     int sleepSessions = 0;
     int stepsActivities = 0;
     int workouts = 0;
+    int activeDays = 0;
     final errors = <String>[];
 
     // SPEC-203: días con entrenamiento real → los pasos de esos días NO
@@ -118,16 +156,9 @@ class HealthImportService {
     final workoutSamples = result.samplesFor(HealthMetric.workout);
     final workoutDays = workoutSamples.map((s) => _dateKey(s.start)).toSet();
 
-    // ── Peso ────────────────────────────────────────────────────────
-    final weightSamples = result.samplesFor(HealthMetric.weight);
-    if (weightSamples.isNotEmpty) {
-      try {
-        weights = await _importWeights(userId, weightSamples);
-      } catch (e, st) {
-        AppLogger.error('HealthImport: weights falló', e, st);
-        errors.add('Peso: $e');
-      }
-    }
+    // ── Peso: solo el más reciente, sin escribir ────────────────────
+    final HealthSample? latestWeight =
+        latestWeightOf(result.samplesFor(HealthMetric.weight));
 
     // ── Sueño ───────────────────────────────────────────────────────
     final sleepSamples = result.samplesFor(HealthMetric.sleepSession);
@@ -150,12 +181,33 @@ class HealthImportService {
       }
     }
 
-    // ── Pasos → ejercicio implícito (solo días SIN workout) ─────────
+    // ── Minutos de ejercicio (Apple Watch) ──────────────────────────
+    final activeSamples = result.samplesFor(HealthMetric.activeMinutes);
+    final activeByDay = maxPerSourceByDay(activeSamples);
+    final daysWithWatchActivity =
+        activeByDay.entries.where((e) => e.value > 0).map((e) => e.key).toSet();
+    if (activeByDay.isNotEmpty) {
+      try {
+        activeDays = await _importActiveMinutes(
+          userId,
+          activeByDay,
+          workoutMinutesByDay(dedupWorkoutSamples(workoutSamples)),
+        );
+      } catch (e, st) {
+        AppLogger.error('HealthImport: activeMinutes falló', e, st);
+        errors.add('Minutos de ejercicio: $e');
+      }
+    }
+
+    // ── Pasos → actividad (solo días SIN workout ni datos del Watch) ─
     final stepsSamples = result.samplesFor(HealthMetric.steps);
     if (stepsSamples.isNotEmpty) {
       try {
-        stepsActivities =
-            await _importSteps(userId, stepsSamples, skipDays: workoutDays);
+        stepsActivities = await _importSteps(
+          userId,
+          stepsSamples,
+          skipDays: {...workoutDays, ...daysWithWatchActivity},
+        );
       } catch (e, st) {
         AppLogger.error('HealthImport: steps falló', e, st);
         errors.add('Pasos: $e');
@@ -163,69 +215,25 @@ class HealthImportService {
     }
 
     return HealthImportSummary(
-      weightsImported: weights,
       sleepSessionsImported: sleepSessions,
       stepsActivitiesImported: stepsActivities,
       workoutsImported: workouts,
+      activeMinutesImported: activeDays,
+      latestWeight: latestWeight,
       errors: errors,
     );
   }
 
   // ─── Peso ────────────────────────────────────────────────────────
 
-  /// Por cada día con sample de peso, escribe el check-in si no existe
-  /// ya un doc manual. Si hay múltiples samples el mismo día, usa el
-  /// más reciente (compara por `start`).
-  Future<int> _importWeights(
-    String userId,
-    List<HealthSample> samples,
-  ) async {
-    AppLogger.info(
-      'HealthImport[weight]: ${samples.length} samples recibidas',
-    );
-
-    // Agrupar por día.
-    final byDay = <String, HealthSample>{};
+  /// El peso más reciente de la ventana (o null).
+  static HealthSample? latestWeightOf(List<HealthSample> samples) {
+    HealthSample? best;
     for (final s in samples) {
-      final key = _dateKey(s.start);
-      final existing = byDay[key];
-      if (existing == null || s.start.isAfter(existing.start)) {
-        byDay[key] = s;
-      }
+      if (s.value <= 0) continue;
+      if (best == null || s.start.isAfter(best.start)) best = s;
     }
-    AppLogger.info(
-      'HealthImport[weight]: agrupado en ${byDay.length} día(s)',
-    );
-
-    int imported = 0;
-    int skippedExisting = 0;
-    for (final entry in byDay.entries) {
-      final dateKey = entry.key;
-      final sample = entry.value;
-
-      // Anti-duplicado: si ya hay un check-in para ese día (manual o
-      // importado previamente), lo respetamos. Cubre HOY y días históricos.
-      final dayDoc = await _fetchByDate(userId, dateKey);
-      if (dayDoc != null) {
-        skippedExisting++;
-        continue;
-      }
-
-      final checkIn = BiometricCheckIn(
-        date: dateKey,
-        userId: userId,
-        weight: double.parse(sample.value.toStringAsFixed(2)),
-        notes: 'Importado de ${sample.sourceName}',
-        createdAt: sample.start,
-      );
-      await _biometricRepo.saveCheckIn(checkIn);
-      imported++;
-    }
-    AppLogger.info(
-      'HealthImport[weight]: importados $imported, saltados '
-      '$skippedExisting (ya existían check-ins manuales)',
-    );
-    return imported;
+    return best;
   }
 
   // ─── Sueño ───────────────────────────────────────────────────────
@@ -242,6 +250,16 @@ class HealthImportService {
     AppLogger.info(
       'HealthImport[sleep]: ${samples.length} samples recibidas',
     );
+
+    // Inicios de ayuno reales (= última comida declarada por el usuario).
+    List<DateTime> fastStarts = const [];
+    if (_fastStartsLoader != null) {
+      try {
+        fastStarts = await _fastStartsLoader(userId);
+      } catch (e) {
+        AppLogger.warning('HealthImport[sleep]: no pudo leer ayunos: $e');
+      }
+    }
 
     int imported = 0;
     int skippedShort = 0;
@@ -300,7 +318,8 @@ class HealthImportService {
       }
 
       final id = _sleepIdFor(s);
-      final assumedLastMeal = s.start.subtract(const Duration(hours: 3));
+      final assumedLastMeal = lastMealBefore(s.start, fastStarts) ??
+          s.start.subtract(const Duration(hours: 3));
 
       try {
         final log = SleepLog(
@@ -340,124 +359,162 @@ class HealthImportService {
         end: wokeUp,
       )}';
 
-  // ─── Pasos → ExerciseLog implícito ───────────────────────────────
+  // ─── Pasos → actividad ───────────────────────────────────────────
 
-  /// Convierte agregado diario de pasos en un `ExerciseLog` tipo LISS
-  /// solo si supera el umbral (>5000). Asume 100 pasos ≈ 1 min de
-  /// caminata moderada (literatura ACSM).
+  /// 2026-11-04: los pasos solo cuentan como actividad por encima de
+  /// [kDailyStepsBaseline] (100 pasos ≈ 1 min de caminata, ACSM), y solo
+  /// en días sin entrenamiento ni minutos de ejercicio del Watch (esos ya
+  /// son la verdad del día). Los docs de días que dejan de calificar se
+  /// borran — si no, quedaban los "80 min de caminata" de syncs anteriores.
   Future<int> _importSteps(
     String userId,
     List<HealthSample> samples, {
     Set<String> skipDays = const {},
   }) async {
+    final byDay = maxPerSourceByDay(samples);
     AppLogger.info(
-      'HealthImport[steps]: ${samples.length} samples recibidas',
-    );
-
-    // SPEC-178.bugfix1 (2026-06-04): Apple Watch + iPhone reportan los
-    // mismos pasos como sources distintos. El dedup del plugin compara
-    // por uuid → no los unifica (uuids distintos). Antes acumulábamos
-    // todos los samples con `+= s.value` y eso DUPLICABA los pasos en
-    // usuarios con Apple Watch.
-    //
-    // Fix: agrupar por (día, source) sumando dentro de cada source,
-    // después tomar el MÁXIMO entre sources del mismo día. HealthKit
-    // internamente prefiere Apple Watch sobre iPhone — replicamos esa
-    // decisión tomando el mayor (en práctica el Apple Watch siempre
-    // reporta más o igual que el iPhone porque está más cerca del
-    // movimiento).
-    final byDayBySource = <String, Map<String, double>>{};
-    final dayStart = <String, DateTime>{};
-    for (final s in samples) {
-      final key = _dateKey(s.start);
-      final source = s.sourceName.isNotEmpty ? s.sourceName : 'unknown';
-      byDayBySource.putIfAbsent(key, () => <String, double>{});
-      byDayBySource[key]![source] =
-          (byDayBySource[key]![source] ?? 0) + s.value;
-      final existing = dayStart[key];
-      if (existing == null || s.start.isBefore(existing)) {
-        dayStart[key] = s.start;
-      }
-    }
-
-    final byDay = <String, double>{};
-    byDayBySource.forEach((day, perSource) {
-      double best = 0;
-      for (final v in perSource.values) {
-        if (v > best) best = v;
-      }
-      byDay[day] = best;
-    });
-
-    // Loguear el breakdown por día para diagnóstico — incluye sources
-    // por día para que Carlos pueda ver iPhone vs Apple Watch.
-    final breakdown = byDay.entries.map((e) {
-      final sources = byDayBySource[e.key]!
-          .entries
-          .map((s) => '${s.key.split('.').last}=${s.value.round()}')
-          .join('|');
-      return '${e.key}=${e.value.round()}($sources)';
-    }).join(', ');
-    AppLogger.info(
-      'HealthImport[steps]: max por día → $breakdown '
-      '(threshold = $_minStepsForExerciseLog)',
+      'HealthImport[steps]: ${byDay.entries.map((e) => '${e.key}=${e.value.round()}').join(', ')} '
+      '(base $kDailyStepsBaseline)',
     );
 
     int imported = 0;
-    int skippedThreshold = 0;
-    int skippedWorkoutDay = 0;
     for (final entry in byDay.entries) {
       final dayKey = entry.key;
-      // SPEC-203: si ese día hubo un entrenamiento real, los pasos NO
-      // cuentan como ejercicio (el workout ya es la verdad del día).
-      // BUG-FIX: antes solo saltábamos la escritura, pero si un sync
-      // anterior ya había guardado `hk_steps_{dayKey}` (antes de que
-      // el workout fuera detectado), ese doc seguía en Firestore y se
-      // sumaba a los minutos del ciclo junto al workout → doble-conteo.
-      // Ahora también borramos el doc de pasos si existe.
-      if (skipDays.contains(dayKey)) {
-        skippedWorkoutDay++;
-        try {
-          await _exerciseRepo.deleteById(userId, 'hk_steps_$dayKey');
-        } catch (e) {
-          AppLogger.warning(
-            'HealthImport[steps]: no pudo borrar hk_steps_$dayKey: $e',
-          );
-        }
-        continue;
-      }
-      final stepsCount = entry.value.round();
-      if (stepsCount < _minStepsForExerciseLog) {
-        skippedThreshold++;
-        continue;
-      }
-
-      final minutes = (stepsCount / 100).round().clamp(10, 120);
       final id = 'hk_steps_$dayKey';
-
+      final minutes = stepMinutesFor(entry.value.round());
+      if (skipDays.contains(dayKey) || minutes == 0) {
+        await _deleteQuietly(userId, id);
+        continue;
+      }
       try {
-        final log = ExerciseLog(
-          id: id,
-          userId: userId,
-          durationMinutes: minutes,
-          activityType: 'Caminata (Health)',
-          timestamp: dayStart[dayKey] ?? DateTime.parse('${dayKey}T12:00:00'),
-          type: ExerciseType.liss,
-          intensity: ExerciseIntensity.low,
+        await _exerciseRepo.save(
+          userId,
+          ExerciseLog(
+            id: id,
+            userId: userId,
+            durationMinutes: minutes,
+            activityType: 'Caminata (Apple Salud)',
+            timestamp: activityTimestampFor(dayKey, _now()),
+            type: ExerciseType.liss,
+            intensity: ExerciseIntensity.low,
+          ),
         );
-        await _exerciseRepo.save(userId, log);
         imported++;
       } catch (e, st) {
         AppLogger.warning('ExerciseLog de pasos inválido: $e');
-        AppLogger.debug('Day=$dayKey steps=$stepsCount', e, st);
+        AppLogger.debug('Day=$dayKey', e, st);
       }
     }
-    AppLogger.info(
-      'HealthImport[steps]: importados $imported, '
-      'saltados $skippedThreshold bajo threshold, '
-      '$skippedWorkoutDay día(s) con workout (SPEC-203)',
-    );
     return imported;
+  }
+
+  /// Minutos de actividad que aportan [steps] pasos en un día (0 = nada).
+  static int stepMinutesFor(int steps) {
+    final extra = steps - kDailyStepsBaseline;
+    if (extra <= 0) return 0;
+    final minutes = (extra / 100).round();
+    if (minutes < _minStepMinutes) return 0;
+    return minutes > _maxStepMinutes ? _maxStepMinutes : minutes;
+  }
+
+  // ─── Minutos de ejercicio (Apple Watch) ─────────────────────────
+
+  /// Un `ExerciseLog` por día con los minutos de ejercicio del Watch que NO
+  /// estén ya cubiertos por un entrenamiento registrado (el anillo verde
+  /// incluye los entrenamientos: sin restarlos se contarían dos veces).
+  Future<int> _importActiveMinutes(
+    String userId,
+    Map<String, double> activeByDay,
+    Map<String, int> workoutMinutes,
+  ) async {
+    int imported = 0;
+    for (final entry in activeByDay.entries) {
+      final dayKey = entry.key;
+      final id = 'hk_active_$dayKey';
+      final extra = entry.value.round() - (workoutMinutes[dayKey] ?? 0);
+      if (extra < _minActiveMinutes) {
+        await _deleteQuietly(userId, id);
+        continue;
+      }
+      try {
+        await _exerciseRepo.save(
+          userId,
+          ExerciseLog(
+            id: id,
+            userId: userId,
+            durationMinutes: extra.clamp(_minActiveMinutes, 240),
+            activityType: 'Minutos activos (Apple Watch)',
+            timestamp: activityTimestampFor(dayKey, _now()),
+            type: ExerciseType.liss,
+            intensity: ExerciseIntensity.moderate,
+            sourceName: 'Apple Watch',
+          ),
+        );
+        imported++;
+      } catch (e, st) {
+        AppLogger.warning('ExerciseLog de minutos activos inválido: $e');
+        AppLogger.debug('Day=$dayKey', e, st);
+      }
+    }
+    AppLogger.info('HealthImport[active]: $imported día(s) importados');
+    return imported;
+  }
+
+  Future<void> _deleteQuietly(String userId, String id) async {
+    try {
+      await _exerciseRepo.deleteById(userId, id);
+    } catch (e) {
+      AppLogger.debug('HealthImport: no pudo borrar $id: $e');
+    }
+  }
+
+  // ─── Helpers puros (testeables) ─────────────────────────────────
+
+  /// Suma por (día, fuente) y toma el máximo entre fuentes del día:
+  /// iPhone y Apple Watch reportan lo mismo con uuids distintos (SPEC-178).
+  static Map<String, double> maxPerSourceByDay(List<HealthSample> samples) {
+    final byDaySource = <String, Map<String, double>>{};
+    for (final s in samples) {
+      final day = _dateKey(s.start);
+      final src = s.sourceName.isNotEmpty ? s.sourceName : 'unknown';
+      final m = byDaySource.putIfAbsent(day, () => <String, double>{});
+      m[src] = (m[src] ?? 0) + s.value;
+    }
+    return {
+      for (final e in byDaySource.entries)
+        e.key: e.value.values.fold<double>(0, (a, b) => a > b ? a : b),
+    };
+  }
+
+  /// Minutos de entrenamiento por día (ya deduplicados).
+  static Map<String, int> workoutMinutesByDay(List<HealthSample> workouts) {
+    final out = <String, int>{};
+    for (final w in workouts) {
+      final day = _dateKey(w.start);
+      out[day] = (out[day] ?? 0) + w.value.round();
+    }
+    return out;
+  }
+
+  /// Hora a la que se atribuye la actividad de un día: el mediodía, que cae
+  /// dentro del día metabólico que cubre las horas de vigilia de esa fecha
+  /// (antes se usaba la primera muestra, ~00:10, y los pasos caían en el
+  /// día metabólico anterior). Si hoy aún no es mediodía, "ahora".
+  static DateTime activityTimestampFor(String dayKey, DateTime now) {
+    final noon = DateTime.parse('${dayKey}T12:00:00');
+    return noon.isAfter(now) ? now : noon;
+  }
+
+  /// La última comida antes de dormir: el inicio de ayuno más reciente
+  /// entre 14 h antes y el momento de dormirse. Null si no hay.
+  static DateTime? lastMealBefore(DateTime fellAsleep, List<DateTime> fastStarts) {
+    DateTime? best;
+    final earliest = fellAsleep.subtract(const Duration(hours: 14));
+    for (final t in fastStarts) {
+      if (t.isAfter(fellAsleep) || t.isBefore(earliest)) continue;
+      if (best == null || t.isAfter(best)) best = t;
+    }
+    return best;
   }
 
   // ─── Entrenamientos reales (SPEC-203) ────────────────────────────
@@ -682,18 +739,6 @@ class HealthImportService {
       return 'hk_sleep_${s.uuid}';
     }
     return 'hk_sleep_${s.start.toIso8601String()}';
-  }
-
-  /// Fetch directo por fecha (yyyy-MM-dd).
-  /// Usa `fetchByDate` del repositorio para cubrir tanto HOY como días
-  /// históricos, respetando datos manuales en cualquier fecha.
-  /// (Hallazgo-3 auditoría 2026-07-04: antes solo chequeaba HOY.)
-  Future<BiometricCheckIn?> _fetchByDate(String userId, String date) async {
-    try {
-      return await _biometricRepo.fetchByDate(userId, date);
-    } catch (_) {
-      return null;
-    }
   }
 
   static String _dateKey(DateTime dt) =>

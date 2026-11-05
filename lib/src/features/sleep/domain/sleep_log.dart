@@ -75,13 +75,24 @@ class SleepLog {
     }
   }
 
-  /// Duración real: Maneja correctamente el cruce de medianoche
+  /// Tiempo DORMIDO. Maneja el cruce de medianoche.
+  ///
+  /// 2026-11-04 (auditoría Apple Salud): cuando el dispositivo midió
+  /// etapas, se descuentan los minutos despierto DENTRO de la ventana —
+  /// igual que "Tiempo dormido" en la app Salud. Antes se reportaba el
+  /// rango completo y un sueño fragmentado sumaba horas que no se durmieron.
+  /// Registros manuales (sin etapas) no cambian.
   Duration get duration {
     DateTime end = wokeUp;
     if (end.isBefore(fellAsleep)) {
       end = end.add(const Duration(days: 1));
     }
-    return end.difference(fellAsleep);
+    final span = end.difference(fellAsleep);
+    final awake = stages?.awakeMinutes ?? 0;
+    if (awake > 0 && awake < span.inMinutes) {
+      return span - Duration(minutes: awake);
+    }
+    return span;
   }
 
   /// Brecha metabólica: Tiempo entre la última comida y el sueño

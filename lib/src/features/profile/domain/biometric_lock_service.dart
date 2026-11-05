@@ -72,8 +72,14 @@ class BiometricLockService {
   /// True si una entrada del historial con [source] cuenta como medición.
   /// Entradas legacy (sin source) son check-ins manuales anteriores a
   /// SPEC-143.
-  static bool countsAsMeasurement(String? source) =>
-      source == null || manualSources.contains(source);
+  ///
+  /// 2026-11-04: los pesos que Apple Salud escribía antes como check-in
+  /// diario no traían `source`, solo la nota "Importado de …". Esos NO son
+  /// una medición del usuario.
+  static bool countsAsMeasurement(String? source, {String? notes}) {
+    if (source != null) return manualSources.contains(source);
+    return !(notes?.startsWith('Importado de') ?? false);
+  }
 
   /// Último momento de medición: el más reciente entre el historial y el
   /// respaldo local.

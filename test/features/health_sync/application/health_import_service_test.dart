@@ -177,46 +177,21 @@ void main() {
     );
   });
 
-  group('peso', () {
-    test('un sample por día se persiste como BiometricCheckIn', () async {
+  group('peso (2026-11-04: ya no se escribe check-in diario)', () {
+    test('no persiste check-ins y reporta el peso más reciente', () async {
       final summary = await service.importResult(
         userId,
         _resultWith({
           HealthMetric.weight: [
+            _weightSample(at: DateTime(2026, 5, 24, 8), kg: 80),
             _weightSample(at: DateTime(2026, 5, 26, 8), kg: 79.5),
+            _weightSample(at: DateTime(2026, 5, 25, 8), kg: 79.8),
           ],
         }),
       );
-      expect(summary.weightsImported, 1);
-      expect(summary.sleepSessionsImported, 0);
-      expect(summary.totalImported, 1);
-    });
-
-    test('múltiples samples mismo día → 1 doc, el más reciente', () async {
-      final summary = await service.importResult(
-        userId,
-        _resultWith({
-          HealthMetric.weight: [
-            _weightSample(at: DateTime(2026, 5, 26, 8), kg: 79.5),
-            _weightSample(at: DateTime(2026, 5, 26, 18), kg: 79.2),
-          ],
-        }),
-      );
-      expect(summary.weightsImported, 1);
-    });
-
-    test('samples de días distintos generan docs separados', () async {
-      final summary = await service.importResult(
-        userId,
-        _resultWith({
-          HealthMetric.weight: [
-            _weightSample(at: DateTime(2026, 5, 25, 8), kg: 80.0),
-            _weightSample(at: DateTime(2026, 5, 26, 8), kg: 79.5),
-            _weightSample(at: DateTime(2026, 5, 27, 8), kg: 79.0),
-          ],
-        }),
-      );
-      expect(summary.weightsImported, 3);
+      expect(summary.weightsImported, 0);
+      expect(summary.latestWeight?.value, 79.5);
+      expect(await biometricRepo.fetchLatest(userId), isNull);
     });
   });
 
@@ -315,6 +290,31 @@ void main() {
       );
     });
 
+    test('lastMealTime = inicio real del ayuno cuando existe', () async {
+      final withCycles = HealthImportService(
+        biometricRepository: biometricRepo,
+        sleepRepository: sleepRepo,
+        exerciseRepository: exerciseRepo,
+        fastStartsLoader: (_) async => [
+          DateTime(2026, 5, 25, 19, 30), // ayuno de la noche anterior
+          DateTime(2026, 5, 26, 19, 45), // ayuno de esta noche
+        ],
+      );
+      await withCycles.importResult(
+        userId,
+        _resultWith({
+          HealthMetric.sleepSession: [
+            _sleepSample(
+              fellAsleep: DateTime(2026, 5, 26, 23),
+              wokeUp: DateTime(2026, 5, 27, 7),
+              uuid: 'y',
+            ),
+          ],
+        }),
+      );
+      expect(sleepRepo.saved.first.lastMealTime, DateTime(2026, 5, 26, 19, 45));
+    });
+
     // 17-jul: "manual gana sobre auto" (Carlos reportó "sueño sigue sin
     // actualizar" — un sync automático posterior desplazaba en el
     // Dashboard lo que el usuario acababa de registrar a mano, porque
@@ -409,15 +409,13 @@ void main() {
     });
   });
 
-  group('pasos', () {
-    // SPEC-173 (2026-06-04): umbral bajado de 2000 a 500 pasos. 1500 ahora
-    // SÍ genera log; un día por debajo de 500 (oficina pura) no.
-    test('día con < 500 pasos NO genera ExerciseLog', () async {
+  group('pasos (2026-11-04: solo lo que supera la base diaria)', () {
+    test('un día por debajo de la base no genera actividad', () async {
       final summary = await service.importResult(
         userId,
         _resultWith({
           HealthMetric.steps: [
-            _stepsSample(at: DateTime(2026, 5, 26, 12), count: 300),
+            _stepsSample(at: DateTime(2026, 5, 26, 12), count: 3500),
           ],
         }),
       );
@@ -425,58 +423,97 @@ void main() {
       expect(exerciseRepo.saved, isEmpty);
     });
 
-    test('día con ≥ 2000 pasos genera ExerciseLog tipo LISS', () async {
+    test('8.000 pasos → 40 min de caminata (lo que supera 4.000)', () async {
       final summary = await service.importResult(
         userId,
         _resultWith({
           HealthMetric.steps: [
-            _stepsSample(at: DateTime(2026, 5, 26, 12), count: 8000),
+            _stepsSample(at: DateTime(2026, 5, 26, 9), count: 3000),
+            _stepsSample(at: DateTime(2026, 5, 26, 15), count: 5000),
           ],
         }),
       );
       expect(summary.stepsActivitiesImported, 1);
-      expect(exerciseRepo.saved.length, 1);
-      expect(exerciseRepo.saved.first.type, ExerciseType.liss);
-      expect(exerciseRepo.saved.first.intensity, ExerciseIntensity.low);
+      final log = exerciseRepo.saved.single;
+      expect(log.durationMinutes, 40);
+      expect(log.type, ExerciseType.liss);
+      expect(log.intensity, ExerciseIntensity.low);
+      expect(log.id, 'hk_steps_2026-05-26');
+      // Atribuido al mediodía: cae en el día metabólico de esa fecha.
+      expect(log.timestamp, DateTime(2026, 5, 26, 12));
     });
 
-    test('agrega pasos del mismo día antes de validar threshold', () async {
+    test('tope de 90 min', () {
+      expect(HealthImportService.stepMinutesFor(30000), 90);
+      expect(HealthImportService.stepMinutesFor(4500), 0); // < 10 min
+      expect(HealthImportService.stepMinutesFor(5000), 10);
+    });
+
+    test('iPhone + Watch el mismo día no se suman (máximo por fuente)', () {
+      final byDay = HealthImportService.maxPerSourceByDay([
+        _stepsSample(at: DateTime(2026, 5, 26, 9), count: 6000),
+        HealthSample(
+          metric: HealthMetric.steps,
+          value: 7000,
+          start: DateTime(2026, 5, 26, 10),
+          end: DateTime(2026, 5, 26, 10),
+          sourceName: 'Apple Watch',
+        ),
+      ]);
+      expect(byDay['2026-05-26'], 7000);
+    });
+  });
+
+  group('minutos de ejercicio (Apple Watch)', () {
+    HealthSample active(DateTime at, double minutes) => HealthSample(
+          metric: HealthMetric.activeMinutes,
+          value: minutes,
+          start: at,
+          end: at.add(const Duration(minutes: 1)),
+          sourceName: 'Apple Watch',
+        );
+
+    test('se importan y desplazan a los pasos de ese día', () async {
       final summary = await service.importResult(
         userId,
         _resultWith({
+          HealthMetric.activeMinutes: [
+            active(DateTime(2026, 5, 26, 8), 15),
+            active(DateTime(2026, 5, 26, 18), 20),
+          ],
           HealthMetric.steps: [
-            _stepsSample(at: DateTime(2026, 5, 26, 9), count: 800),
-            _stepsSample(at: DateTime(2026, 5, 26, 15), count: 1400),
+            _stepsSample(at: DateTime(2026, 5, 26, 12), count: 9000),
           ],
         }),
       );
-      // 800 + 1400 = 2200 ≥ 2000 threshold → 1 ExerciseLog
-      expect(summary.stepsActivitiesImported, 1);
+      expect(summary.activeMinutesImported, 1);
+      expect(summary.stepsActivitiesImported, 0);
+      final log = exerciseRepo.saved.single;
+      expect(log.id, 'hk_active_2026-05-26');
+      expect(log.durationMinutes, 35);
+      expect(log.intensity, ExerciseIntensity.moderate);
     });
 
-    test('id determinístico por día', () async {
+    test('se descuentan los minutos ya cubiertos por un entrenamiento',
+        () async {
       await service.importResult(
         userId,
         _resultWith({
-          HealthMetric.steps: [
-            _stepsSample(at: DateTime(2026, 5, 26, 12), count: 8000),
+          HealthMetric.workout: [
+            _workoutSample(
+              start: DateTime(2026, 5, 26, 18),
+              minutes: 30,
+              activityType: 'RUNNING',
+              uuid: 'run1',
+            ),
+          ],
+          HealthMetric.activeMinutes: [
+            active(DateTime(2026, 5, 26, 18), 32),
           ],
         }),
       );
-      expect(exerciseRepo.saved.first.id, 'hk_steps_2026-05-26');
-    });
-
-    test('duración clamp 10-120 min', () async {
-      await service.importResult(
-        userId,
-        _resultWith({
-          HealthMetric.steps: [
-            _stepsSample(at: DateTime(2026, 5, 26, 12), count: 30000),
-          ],
-        }),
-      );
-      // 30000/100 = 300 → clamp a 120
-      expect(exerciseRepo.saved.first.durationMinutes, 120);
+      // 32 - 30 = 2 < 5 → solo queda el entrenamiento.
+      expect(exerciseRepo.saved.map((e) => e.id), ['hk_workout_run1']);
     });
   });
 
@@ -592,58 +629,6 @@ void main() {
       expect(summary.totalImported, 0);
       expect(sleepRepo.saved, isEmpty);
       expect(exerciseRepo.saved, isEmpty);
-    });
-  });
-
-  group('BiometricCheckIn mapeado', () {
-    test('notas incluyen sourceName del sample', () async {
-      await service.importResult(
-        userId,
-        _resultWith({
-          HealthMetric.weight: [
-            _weightSample(at: DateTime(2026, 5, 26, 8), kg: 79.5),
-          ],
-        }),
-      );
-      final saved = await biometricRepo.fetchToday(userId);
-      // fetchToday usa la fecha del sistema — solo verificamos shape si
-      // el sample es de hoy. Como el sample es 2026-05-26, solo
-      // chequeamos via fetchLatest:
-      final latest = await biometricRepo.fetchLatest(userId);
-      expect(latest, isNotNull);
-      expect(latest!.notes, contains('Apple Watch'));
-      expect(saved?.userId ?? latest.userId, userId);
-    });
-
-    test('peso se redondea a 2 decimales', () async {
-      await service.importResult(
-        userId,
-        _resultWith({
-          HealthMetric.weight: [
-            _weightSample(
-              at: DateTime(2026, 5, 26, 8),
-              kg: 79.456789,
-            ),
-          ],
-        }),
-      );
-      final latest = await biometricRepo.fetchLatest(userId);
-      expect(latest, isNotNull);
-      expect(latest!.weight, closeTo(79.46, 0.001));
-    });
-
-    test('BiometricCheckIn.fromJson round-trip funciona', () {
-      final c = BiometricCheckIn(
-        date: '2026-05-26',
-        userId: 'u',
-        weight: 79.5,
-        notes: 'Importado de Apple Watch',
-        createdAt: DateTime(2026, 5, 26, 8),
-      );
-      final json = c.toJson();
-      final back = BiometricCheckIn.fromJson(json);
-      expect(back.weight, 79.5);
-      expect(back.notes, 'Importado de Apple Watch');
     });
   });
 }

@@ -85,6 +85,10 @@ List<hp.HealthDataType> _typesFor(HealthMetric metric) {
     case HealthMetric.workout:
       // SPEC-203: entrenamientos reales (HKWorkout / ExerciseSessionRecord).
       return [hp.HealthDataType.WORKOUT];
+    case HealthMetric.activeMinutes:
+      // 2026-11-04: minutos de ejercicio del Apple Watch. Solo HealthKit.
+      if (!kIsWeb && Platform.isIOS) return [hp.HealthDataType.EXERCISE_TIME];
+      return const [];
   }
 }
 
@@ -103,6 +107,8 @@ hp.HealthDataType _primaryTypeFor(HealthMetric metric) {
       return hp.HealthDataType.STEPS;
     case HealthMetric.workout:
       return hp.HealthDataType.WORKOUT;
+    case HealthMetric.activeMinutes:
+      return hp.HealthDataType.EXERCISE_TIME;
   }
 }
 
@@ -126,6 +132,8 @@ class HealthSyncService {
     HealthMetric.steps,
     // SPEC-203: entrenamientos reales (workouts).
     HealthMetric.workout,
+    // 2026-11-04: minutos de ejercicio (solo iOS; en Android no pide nada).
+    HealthMetric.activeMinutes,
   };
 
   bool _configured = false;
@@ -303,6 +311,9 @@ class HealthSyncService {
     final denied = <HealthMetric>[];
 
     for (final metric in supportedMetrics) {
+      // Métricas sin tipo en Health Connect (minutos de ejercicio) no
+      // cuentan: si no, Android siempre quedaría como "parcial".
+      if (_typesFor(metric).isEmpty) continue;
       try {
         final has = await _plugin.hasPermissions(
           [_primaryTypeFor(metric)],
@@ -487,7 +498,7 @@ class HealthSyncService {
     // por noche (una por cada etapa: IN_BED, ASLEEP, DEEP, LIGHT, REM,
     // a veces 20+ por sesión). Las consolidamos en 1 sample por noche
     // antes de devolverlas — el SleepLog ya espera 1 sesión por noche.
-    if (metric == HealthMetric.sleepSession && samples.length > 1) {
+    if (metric == HealthMetric.sleepSession && samples.isNotEmpty) {
       final consolidated = _consolidateSleepByNight(samples);
       consolidated.sort((a, b) => a.start.compareTo(b.start));
       return consolidated;
@@ -499,64 +510,10 @@ class HealthSyncService {
     return samples;
   }
 
-  /// Agrupa samples de sueño en "noches" — muestras separadas por
-  /// gaps de menos de 2h se consideran parte de la misma sesión.
-  /// Por cada grupo emitimos 1 HealthSample con start = mínimo y
-  /// end = máximo del grupo. El valor (minutos) se recalcula del
-  /// rango total.
-  List<HealthSample> _consolidateSleepByNight(List<HealthSample> raw) {
-    if (raw.isEmpty) return raw;
-    final sorted = [...raw]..sort((a, b) => a.start.compareTo(b.start));
-
-    const maxGap = Duration(hours: 2);
-    final groups = <List<HealthSample>>[];
-    var current = <HealthSample>[sorted.first];
-
-    for (var i = 1; i < sorted.length; i++) {
-      final prev = current.last;
-      final curr = sorted[i];
-      // Si la próxima muestra arranca dentro de 2h del fin de la
-      // anterior, sigue siendo la misma sesión.
-      if (curr.start.difference(prev.end) <= maxGap) {
-        current.add(curr);
-      } else {
-        groups.add(current);
-        current = [curr];
-      }
-    }
-    groups.add(current);
-
-    return groups.map((group) {
-      final earliest = group.map((s) => s.start).reduce(
-            (a, b) => a.isBefore(b) ? a : b,
-          );
-      final latest = group.map((s) => s.end).reduce(
-            (a, b) => a.isAfter(b) ? a : b,
-          );
-      // SPEC-301: en vez de tirar las etapas, sumamos minutos por etapa
-      // (deep/light/rem/awake). Los genéricos ('asleep') no cuentan al
-      // desglose. Si el dispositivo no reporta etapas, el mapa queda vacío.
-      final stageMinutes = <String, int>{};
-      for (final s in group) {
-        final stage = s.sleepStage;
-        if (stage == null || stage == 'asleep') continue;
-        final mins = s.end.difference(s.start).inMinutes;
-        if (mins <= 0) continue;
-        stageMinutes[stage] = (stageMinutes[stage] ?? 0) + mins;
-      }
-      return HealthSample(
-        metric: HealthMetric.sleepSession,
-        value: latest.difference(earliest).inMinutes.toDouble(),
-        start: earliest,
-        end: latest,
-        sourceName: group.first.sourceName,
-        // El uuid del primer sample del grupo sirve como id estable —
-        // mientras el grupo no cambie de composición, este id no cambia.
-        uuid: group.first.uuid,
-        sleepStages: stageMinutes.isEmpty ? null : stageMinutes,
-      );
-    }).toList();
-  }
+  /// Consolida las muestras de sueño en una sesión por noche. Ver
+  /// [consolidateSleepByNight].
+  List<HealthSample> _consolidateSleepByNight(List<HealthSample> raw) =>
+      consolidateSleepByNight(raw);
 
   /// Traduce un `HealthDataPoint` del plugin a `HealthSample` neutral.
   /// Retorna null si el dato es inválido (valor no numérico, etc.).
@@ -623,6 +580,12 @@ class HealthSyncService {
       case HealthMetric.workout:
         // Inalcanzable: workout retorna temprano arriba.
         break;
+      case HealthMetric.activeMinutes:
+        // HealthKit reporta minutos; si viniera otra unidad, usar el rango.
+        if (p.unit != hp.HealthDataUnit.MINUTE) {
+          numeric = p.dateTo.difference(p.dateFrom).inMinutes.toDouble();
+        }
+        break;
     }
 
     return HealthSample(
@@ -655,4 +618,105 @@ class HealthSyncService {
         return 'asleep';
     }
   }
+}
+
+
+/// Consolida muestras de sueño en una sesión por noche.
+///
+/// 2026-11-04 (auditoría Apple Salud). Antes la noche iba de la primera a
+/// la última muestra de CUALQUIER tipo — incluidas las de "despierto"
+/// (SPEC-301), que el reloj escribe al despertarte y al final de la noche.
+/// Eso estiraba los bordes y repetía el bug de SPEC-173 (7 h reportadas
+/// con 5 h reales). Ahora:
+///   - Los bordes de la noche salen SOLO de muestras dormidas (asleep /
+///     core / deep / REM). Despierto antes de dormirte o después de
+///     levantarte no cuenta.
+///   - Las muestras dormidas se agrupan si las separa ≤ 2 h.
+///   - El despierto DENTRO de la noche se suma a `awake` (fragmentación);
+///     `SleepLog.duration` lo descuenta del tiempo dormido.
+///   - Cada etapa se mide como unión de intervalos: iPhone + Watch
+///     reportando lo mismo no se cuenta dos veces.
+List<HealthSample> consolidateSleepByNight(List<HealthSample> raw) {
+  if (raw.isEmpty) return raw;
+  final asleep = raw.where((s) => s.sleepStage != 'awake').toList()
+    ..sort((a, b) => a.start.compareTo(b.start));
+  final awake = raw.where((s) => s.sleepStage == 'awake').toList();
+  if (asleep.isEmpty) return const [];
+
+  const maxGap = Duration(hours: 2);
+  final groups = <List<HealthSample>>[];
+  var current = <HealthSample>[asleep.first];
+  var currentEnd = asleep.first.end;
+  for (var i = 1; i < asleep.length; i++) {
+    final s = asleep[i];
+    if (s.start.difference(currentEnd) <= maxGap) {
+      current.add(s);
+      if (s.end.isAfter(currentEnd)) currentEnd = s.end;
+    } else {
+      groups.add(current);
+      current = [s];
+      currentEnd = s.end;
+    }
+  }
+  groups.add(current);
+
+  return groups.map((group) {
+    final start = group.first.start;
+    final end =
+        group.map((s) => s.end).reduce((a, b) => a.isAfter(b) ? a : b);
+
+    final byStage = <String, List<(DateTime, DateTime)>>{};
+    for (final s in group) {
+      final st = s.sleepStage;
+      if (st == null || st == 'asleep') continue;
+      byStage.putIfAbsent(st, () => []).add((s.start, s.end));
+    }
+    final awakeInside = <(DateTime, DateTime)>[];
+    for (final a in awake) {
+      final from = a.start.isBefore(start) ? start : a.start;
+      final to = a.end.isAfter(end) ? end : a.end;
+      if (to.isAfter(from)) awakeInside.add((from, to));
+    }
+    final stageMinutes = <String, int>{
+      for (final e in byStage.entries) e.key: unionMinutes(e.value),
+    };
+    final awakeMins = unionMinutes(awakeInside);
+    if (awakeMins > 0) stageMinutes['awake'] = awakeMins;
+    stageMinutes.removeWhere((_, v) => v <= 0);
+
+    final spanMins = end.difference(start).inMinutes;
+    final asleepMins =
+        (awakeMins < spanMins ? spanMins - awakeMins : spanMins).toDouble();
+
+    return HealthSample(
+      metric: HealthMetric.sleepSession,
+      value: asleepMins,
+      start: start,
+      end: end,
+      sourceName: group.first.sourceName,
+      // Id estable: la primera muestra dormida de la noche.
+      uuid: group.first.uuid,
+      sleepStages: stageMinutes.isEmpty ? null : stageMinutes,
+    );
+  }).toList();
+}
+
+/// Minutos cubiertos por la unión de [intervals] (sin contar solapes).
+int unionMinutes(List<(DateTime, DateTime)> intervals) {
+  if (intervals.isEmpty) return 0;
+  final sorted = [...intervals]..sort((a, b) => a.$1.compareTo(b.$1));
+  var total = 0;
+  var curStart = sorted.first.$1;
+  var curEnd = sorted.first.$2;
+  for (final (s, e) in sorted.skip(1)) {
+    if (!s.isAfter(curEnd)) {
+      if (e.isAfter(curEnd)) curEnd = e;
+    } else {
+      total += curEnd.difference(curStart).inMinutes;
+      curStart = s;
+      curEnd = e;
+    }
+  }
+  total += curEnd.difference(curStart).inMinutes;
+  return total;
 }

@@ -364,7 +364,7 @@ class _BodyBlock extends ConsumerWidget {
     final lock = ref.watch(biometricLockProvider);
     final history = ref.watch(progressProvider.select((s) => s.biometricHistory));
     final manual = history
-        .where((e) => BiometricLockService.countsAsMeasurement(e.source))
+        .where((e) => BiometricLockService.countsAsMeasurement(e.source, notes: e.notes))
         .toList()
       ..sort((a, b) =>
           (a.recordedAt ?? a.createdAt).compareTo(b.recordedAt ?? b.createdAt));

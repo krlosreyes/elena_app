@@ -23,6 +23,12 @@ enum HealthMetric {
   /// HIIT, movilidad. Mapea a `ExerciseLog` tipado con su duración real.
   /// `value` = minutos. Tiene prioridad sobre `steps` el mismo día.
   workout,
+
+  /// 2026-11-04: minutos de ejercicio del Apple Watch (anillo verde,
+  /// HKQuantityTypeIdentifierAppleExerciseTime). Mide movimiento a
+  /// intensidad de caminata rápida o más — mucho mejor señal de "me moví"
+  /// que los pasos crudos. Solo iOS. `value` = minutos.
+  activeMinutes,
 }
 
 extension HealthMetricX on HealthMetric {
@@ -38,6 +44,8 @@ extension HealthMetricX on HealthMetric {
         return 'count';
       case HealthMetric.workout:
         return 'minutes';
+      case HealthMetric.activeMinutes:
+        return 'minutes';
     }
   }
 
@@ -52,6 +60,8 @@ extension HealthMetricX on HealthMetric {
         return 'Pasos';
       case HealthMetric.workout:
         return 'Entrenamiento';
+      case HealthMetric.activeMinutes:
+        return 'Minutos de ejercicio';
     }
   }
 }
