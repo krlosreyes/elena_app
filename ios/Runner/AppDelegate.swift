@@ -38,27 +38,18 @@ import flutter_local_notifications
     let result = super.application(
       application, didFinishLaunchingWithOptions: launchOptions)
 
-    // SPEC-132.next: MethodChannel para arrancar/parar los observers de
-    // HealthKit desde Dart y recibir los eventos de cambio.
-    if let controller = window?.rootViewController as? FlutterViewController {
-      let channel = FlutterMethodChannel(
-        name: "com.metamorfosis.elena/healthkit_observer",
-        binaryMessenger: controller.binaryMessenger
-      )
-      let observer = HealthKitObserver(channel: channel)
-      self.healthObserver = observer
-      channel.setMethodCallHandler { call, resultCb in
-        switch call.method {
-        case "startObserving":
-          observer.startObserving()
-          resultCb(nil)
-        case "stopObserving":
-          observer.stopObserving()
-          resultCb(nil)
-        default:
-          resultCb(FlutterMethodNotImplemented)
-        }
-      }
+    // SPEC-132.next / 2026-11-04: los observers de HealthKit se registran
+    // aquí — sin esperar a Flutter — si el usuario ya los activó. Así un
+    // arranque en segundo plano por background delivery encuentra las
+    // queries vivas. El canal con Dart se conecta en
+    // `didInitializeImplicitFlutterEngine` (con escenas, `window` es nil
+    // en este punto).
+    // El motor implícito puede inicializarse dentro de super.application y
+    // haber creado ya el observer: reutilizarlo para no perder el canal.
+    let observer = healthObserver ?? HealthKitObserver()
+    self.healthObserver = observer
+    if UserDefaults.standard.bool(forKey: HealthKitObserver.enabledKey) {
+      observer.startObserving(fromDart: false)
     }
 
     return result
@@ -81,5 +72,32 @@ import flutter_local_notifications
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+
+    // 2026-11-04: canal de los observers de HealthKit. Antes se creaba con
+    // `window?.rootViewController`, que es nil con FlutterSceneDelegate →
+    // el canal nunca existía y los observers jamás arrancaban.
+    guard
+      let registrar = engineBridge.pluginRegistry.registrar(
+        forPlugin: "ElenaHealthKitObserver")
+    else { return }
+    let channel = FlutterMethodChannel(
+      name: "com.metamorfosis.elena/healthkit_observer",
+      binaryMessenger: registrar.messenger()
+    )
+    let observer = healthObserver ?? HealthKitObserver()
+    healthObserver = observer
+    observer.attach(channel: channel)
+    channel.setMethodCallHandler { call, resultCb in
+      switch call.method {
+      case "startObserving":
+        observer.startObserving(fromDart: true)
+        resultCb(nil)
+      case "stopObserving":
+        observer.stopObserving()
+        resultCb(nil)
+      default:
+        resultCb(FlutterMethodNotImplemented)
+      }
+    }
   }
 }

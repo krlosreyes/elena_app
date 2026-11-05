@@ -13,7 +13,12 @@ import 'package:flutter/services.dart';
 /// Evento de cambio en Apple Health. `type` ∈ {weight, steps, sleep}.
 class HealthObserverEvent {
   final String type;
-  const HealthObserverEvent(this.type);
+
+  /// 2026-11-04: quien procese el evento lo completa al terminar el sync.
+  /// iOS retiene la app despierta hasta entonces (máx. ~25 s del lado nativo).
+  final Completer<void>? done;
+
+  const HealthObserverEvent(this.type, {this.done});
 }
 
 class HealthObserverService {
@@ -50,9 +55,12 @@ class HealthObserverService {
     if (call.method == 'healthDataChanged') {
       final args = call.arguments;
       final type = (args is Map ? args['type'] : null) as String? ?? 'unknown';
-      if (!_controller.isClosed) {
-        _controller.add(HealthObserverEvent(type));
-      }
+      if (_controller.isClosed || !_controller.hasListener) return null;
+      final done = Completer<void>();
+      _controller.add(HealthObserverEvent(type, done: done));
+      // Responder a iOS solo cuando el sync terminó (o a los 24 s).
+      await done.future
+          .timeout(const Duration(seconds: 24), onTimeout: () {});
     }
     return null;
   }

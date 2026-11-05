@@ -47,17 +47,24 @@ void main() {
     final service = HealthObserverService();
     final firstEvent = service.events.first;
 
-    // Simular llamada nativo → Dart.
-    await messenger.handlePlatformMessage(
+    // Simular llamada nativo → Dart. 2026-11-04: la respuesta a iOS llega
+    // solo cuando quien procesa el evento completa `done`.
+    var replied = false;
+    final reply = messenger.handlePlatformMessage(
       channel.name,
       const StandardMethodCodec().encodeMethodCall(
         const MethodCall('healthDataChanged', {'type': 'weight'}),
       ),
-      (_) {},
+      (_) => replied = true,
     );
 
     final event = await firstEvent;
     expect(event.type, 'weight');
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    expect(replied, isFalse, reason: 'iOS espera a que termine el sync');
+    event.done!.complete();
+    await reply;
+    expect(replied, isTrue);
     service.dispose();
   });
 
