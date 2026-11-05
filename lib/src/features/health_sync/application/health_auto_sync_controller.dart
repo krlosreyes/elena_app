@@ -24,7 +24,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/features/sleep/data/sleep_repository_impl.dart';
 import 'package:elena_app/src/features/exercise/data/exercise_repository_impl.dart';
+import 'package:elena_app/src/core/providers/shared_preferences_provider.dart';
+import 'package:elena_app/src/features/health_sync/application/health_data_status.dart';
 import 'package:elena_app/src/features/health_sync/application/health_import_service.dart';
+import 'package:elena_app/src/features/metabolic_cycle/data/metabolic_cycle_repository_impl.dart';
 import 'package:elena_app/src/features/health_sync/application/samsung_health_service.dart';
 import 'package:elena_app/src/features/health_sync/application/health_sync_providers.dart';
 import 'package:elena_app/src/features/health_sync/application/health_sync_service.dart';
@@ -209,6 +212,16 @@ class HealthAutoSyncController extends StateNotifier<HealthAutoSyncState> {
       final result = await _syncService.sync(window: _kDefaultSyncWindow);
       state = state.copyWith(lastResult: result);
       _ref.read(lastHealthSyncResultProvider.notifier).state = result;
+
+      // Fase 3 (2026-11-04): registrar qué llegó y cuándo (diagnóstico de
+      // permisos + último peso para el formulario semanal).
+      try {
+        final merged = _ref.read(healthDataStatusProvider).merge(result);
+        _ref.read(healthDataStatusProvider.notifier).state = merged;
+        await merged.save(_ref.read(sharedPreferencesProvider));
+      } catch (e) {
+        AppLogger.warning('HealthAutoSync: no pudo guardar el estado: $e');
+      }
       AppLogger.info('HealthAutoSync: sync ok — $result');
 
       // 3. Import (solo si hubo datos).
@@ -257,6 +270,9 @@ class HealthAutoSyncController extends StateNotifier<HealthAutoSyncState> {
                   stepsActivitiesImported:
                       importSummary?.stepsActivitiesImported ?? 0,
                   workoutsImported: importSummary?.workoutsImported ?? 0,
+                  activeMinutesImported:
+                      importSummary?.activeMinutesImported ?? 0,
+                  latestWeight: importSummary?.latestWeight,
                 );
                 state = state.copyWith(lastImport: updated);
                 AppLogger.debug(
@@ -310,10 +326,21 @@ class HealthAutoSyncController extends StateNotifier<HealthAutoSyncState> {
 
 /// Singleton del ImportService.
 final healthImportServiceProvider = Provider<HealthImportService>((ref) {
+  final cycles = ref.read(metabolicCycleRepositoryProvider);
   return HealthImportService(
     biometricRepository: ref.read(biometricRepositoryProvider),
     sleepRepository: ref.read(sleepRepositoryProvider),
     exerciseRepository: ref.read(exerciseRepositoryProvider),
+    // 2026-11-04: la "última comida" del sueño importado sale del inicio
+    // real de cada ayuno (ciclo abierto + últimos cerrados).
+    fastStartsLoader: (userId) async {
+      final open = await cycles.fetchOpenCycle(userId);
+      final closed = await cycles.fetchRecentClosed(userId, limit: 14);
+      return [
+        if (open != null) open.startedAt,
+        for (final c in closed) c.startedAt,
+      ];
+    },
   );
 });
 

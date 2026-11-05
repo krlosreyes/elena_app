@@ -21,6 +21,7 @@ import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/billing/application/billing_providers.dart';
 import 'package:elena_app/src/features/billing/presentation/paywall_launcher.dart';
 import 'package:elena_app/src/features/health_sync/application/health_auto_sync_controller.dart';
+import 'package:elena_app/src/features/health_sync/application/health_data_status.dart';
 import 'package:elena_app/src/features/health_sync/application/health_import_service.dart';
 import 'package:elena_app/src/features/health_sync/application/health_sync_providers.dart';
 import 'package:elena_app/src/features/health_sync/domain/health_metric.dart';
@@ -332,6 +333,9 @@ class _HealthSyncCardState extends ConsumerState<HealthSyncCard>
             style: const TextStyle(fontSize: 12, color: Color(0xFFFB923C)),
           ),
         ],
+        // Fase 3 (2026-11-04): qué llegó de verdad y cuándo.
+        const SizedBox(height: 10),
+        HealthFreshnessPanel(hasSynced: lastRun != null && !isRunning),
         // SPEC-238: guía Samsung simplificada — 1 botón, sync al volver.
         if (state.needsSamsungHealthGuide) ...[
           const SizedBox(height: 12),
@@ -619,7 +623,13 @@ class _HealthSyncCardState extends ConsumerState<HealthSyncCard>
       parts.add('${s.workoutsImported} entrenamiento(s)');
     }
     if (s.stepsActivitiesImported > 0) {
-      parts.add('${s.stepsActivitiesImported} actividad(es)');
+      parts.add('${s.stepsActivitiesImported} día(s) de caminata');
+    }
+    if (s.activeMinutesImported > 0) {
+      parts.add('${s.activeMinutesImported} día(s) con minutos activos');
+    }
+    if (s.latestWeight != null) {
+      parts.add('peso de tu báscula');
     }
     if (parts.isEmpty) return '';
     return 'Importado: ${parts.join(' · ')}';
@@ -628,5 +638,110 @@ class _HealthSyncCardState extends ConsumerState<HealthSyncCard>
   String _formatErrors(HealthSyncResult result) {
     final names = result.errors.keys.map((m) => m.label).join(', ');
     return 'No se pudo leer: $names';
+  }
+}
+
+
+/// Fase 3 (2026-11-04): último dato recibido por métrica + aviso de permisos.
+///
+/// iOS no informa si un permiso fue negado — la app solo ve "cero datos".
+/// Si pasos o sueño no traen nada en [kHealthStaleDays] días, lo más
+/// probable es un permiso apagado: se dice con la ruta exacta para
+/// arreglarlo.
+class HealthFreshnessPanel extends ConsumerWidget {
+  const HealthFreshnessPanel({super.key, this.hasSynced = true});
+
+  /// El aviso de permisos solo tiene sentido después de un sync completo.
+  final bool hasSynced;
+
+  static String _when(DateTime t, DateTime now) {
+    final days = DateTime(now.year, now.month, now.day)
+        .difference(DateTime(t.year, t.month, t.day))
+        .inDays;
+    final h = t.hour % 12 == 0 ? 12 : t.hour % 12;
+    final hora =
+        '$h:${t.minute.toString().padLeft(2, '0')} ${t.hour < 12 ? 'a. m.' : 'p. m.'}';
+    if (days <= 0) return 'hoy $hora';
+    if (days == 1) return 'ayer $hora';
+    return 'hace $days días';
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final status = ref.watch(healthDataStatusProvider);
+    final now = DateTime.now();
+    const order = [
+      HealthMetric.sleepSession,
+      HealthMetric.steps,
+      HealthMetric.activeMinutes,
+      HealthMetric.workout,
+      HealthMetric.weight,
+    ];
+    final rows = [
+      for (final m in order)
+        if (status.lastSeen[m] != null)
+          (m == HealthMetric.weight && status.latestWeight != null)
+              ? ('Peso', '${status.latestWeight!.kg.toStringAsFixed(1)} kg · '
+                  '${_when(status.lastSeen[m]!, now)}')
+              : (m.label, _when(status.lastSeen[m]!, now)),
+    ];
+    final stale = hasSynced ? status.staleMetrics(now) : const <HealthMetric>[];
+    final isIos = !kIsWeb && Platform.isIOS;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (rows.isNotEmpty) ...[
+          const Text(
+            'Último dato recibido',
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 6),
+          for (final (label, value) in rows)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 3),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(label,
+                        style: const TextStyle(
+                            fontSize: 12, color: Colors.white60)),
+                  ),
+                  Text(value,
+                      style: const TextStyle(
+                          fontSize: 12, color: Colors.white70)),
+                ],
+              ),
+            ),
+        ],
+        if (stale.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFEF9F27).withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                  color: const Color(0xFFEF9F27).withValues(alpha: 0.4)),
+            ),
+            child: Text(
+              'Sin datos de ${stale.map((m) => m.label.toLowerCase()).join(' ni ')} '
+              'en $kHealthStaleDays días. '
+              '${isIos ? 'Revisa Ajustes › Salud › Acceso a datos y dispositivos › Elena y activa todo.' : 'Revisa los permisos de Elena en Health Connect.'}',
+              style: const TextStyle(
+                fontSize: 12,
+                color: Color(0xFFFAC775),
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
   }
 }

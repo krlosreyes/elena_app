@@ -19,6 +19,7 @@ import 'package:elena_app/src/features/progress/domain/biometric_checkin.dart';
 import 'package:elena_app/src/features/profile/domain/body_fat_calculator.dart';
 import 'package:elena_app/src/core/providers/shared_preferences_provider.dart';
 import 'package:elena_app/src/features/profile/application/biometric_lock_provider.dart';
+import 'package:elena_app/src/features/health_sync/application/health_data_status.dart';
 import 'package:elena_app/src/features/profile/domain/biometric_lock_service.dart';
 
 // ─── Entry point ─────────────────────────────────────────────────────────────
@@ -52,6 +53,10 @@ class _BiometricCheckInSheetState extends ConsumerState<BiometricCheckInSheet> {
 
   bool _isSaving = false;
 
+  /// 2026-11-04: peso que marcó la báscula (Apple Salud) y se usó para
+  /// prellenar. Null = el prellenado vino del perfil.
+  HealthLatestWeight? _scaleWeight;
+
   @override
   void initState() {
     super.initState();
@@ -71,6 +76,17 @@ class _BiometricCheckInSheetState extends ConsumerState<BiometricCheckInSheet> {
       if (user.neckCircumference != null) {
         _neckCtrl.text = user.neckCircumference!.toStringAsFixed(0);
       }
+    }
+    // Si la báscula registró un peso en Apple Salud después de la última
+    // medición (y en los últimos 3 días), se usa ese: es más fresco que el
+    // del perfil y evita teclear.
+    final scale = ref.read(healthDataStatusProvider).latestWeight;
+    final lastMeasured = ref.read(biometricLockProvider).lastEditAt;
+    if (scale != null &&
+        DateTime.now().difference(scale.at).inDays < 3 &&
+        (lastMeasured == null || scale.at.isAfter(lastMeasured))) {
+      _weightCtrl.text = scale.kg.toStringAsFixed(1);
+      _scaleWeight = scale;
     }
   }
 
@@ -287,6 +303,17 @@ class _BiometricCheckInSheetState extends ConsumerState<BiometricCheckInSheet> {
                     children: [
                       // Peso — obligatorio
                       _FieldLabel('Peso (kg)', required: true),
+                      if (_scaleWeight != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          'De tu báscula (${_scaleWeight!.source}). '
+                          'Corrígelo si no es de hoy.',
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            color: Colors.white.withValues(alpha: 0.5),
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 6),
                       _NumericField(
                         controller: _weightCtrl,
