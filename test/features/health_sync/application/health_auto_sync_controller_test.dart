@@ -16,6 +16,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:elena_app/src/features/health_sync/application/health_auto_sync_controller.dart';
 import 'package:elena_app/src/features/health_sync/application/health_import_service.dart';
+import 'package:elena_app/src/features/progress/data/biometric_repository.dart';
 import 'package:elena_app/src/features/health_sync/application/health_sync_service.dart';
 import 'package:elena_app/src/features/health_sync/application/samsung_health_service.dart'
     as samsung_health;
@@ -72,6 +73,10 @@ class _FakeHealthSyncService implements HealthSyncService {
 
 class _FakeHealthImportService implements HealthImportService {
   int importCalls = 0;
+
+  @override
+  BiometricRepository get biometricRepository =>
+      throw UnimplementedError('no usado en este test');
 
   @override
   Future<HealthImportSummary> importResult(

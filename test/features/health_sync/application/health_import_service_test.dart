@@ -21,7 +21,6 @@ import 'package:elena_app/src/features/health_sync/domain/health_metric.dart';
 import 'package:elena_app/src/features/health_sync/domain/health_sample.dart';
 import 'package:elena_app/src/features/health_sync/domain/health_sync_result.dart';
 import 'package:elena_app/src/features/progress/data/biometric_repository.dart';
-import 'package:elena_app/src/features/progress/domain/biometric_checkin.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 
