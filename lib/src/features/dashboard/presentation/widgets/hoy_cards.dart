@@ -124,36 +124,101 @@ class BodyNowCard extends ConsumerWidget {
   }
 }
 
-/// Un punto de "Tu semana".
+/// Estado de un día en "Tu semana".
+enum WeekDayState {
+  /// El usuario cerró ese día metabólico (inició un nuevo ayuno).
+  closedByYou,
+
+  /// El día se cerró solo (respaldo del sistema).
+  closedAuto,
+
+  /// No hubo día metabólico ese día.
+  none,
+}
+
+/// Un día del calendario en "Tu semana".
 class WeekDot {
   const WeekDot({
-    required this.label,
-    required this.closedByYou,
+    required this.date,
+    required this.state,
     required this.isToday,
   });
 
-  final String label;
-  final bool closedByYou;
+  /// Fecha local (medianoche).
+  final DateTime date;
+  final WeekDayState state;
   final bool isToday;
+
+  bool get closedByYou => state == WeekDayState.closedByYou;
+
+  /// "L", "M", … o "Hoy".
+  String get label => isToday ? 'Hoy' : _letras[date.weekday - 1];
+
+  /// Día del mes ("6").
+  String get dayNumber => '${date.day}';
 }
 
 const _letras = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
+const _meses = [
+  'ene', 'feb', 'mar', 'abr', 'may', 'jun',
+  'jul', 'ago', 'sep', 'oct', 'nov', 'dic',
+];
 
-/// Últimos días cerrados (hasta 6, del más viejo al más nuevo) + hoy.
-List<WeekDot> buildWeekDots(List<MetabolicCycle> recentClosed) {
-  final sorted = [...recentClosed]
-    ..sort((a, b) => a.startedAt.compareTo(b.startedAt));
-  final last6 =
-      sorted.length > 6 ? sorted.sublist(sorted.length - 6) : sorted;
+DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
+
+/// Fecha del calendario a la que pertenece un día metabólico cerrado: la
+/// del punto medio entre inicio y cierre. Un día que va de las 20:00 del
+/// lunes a las 20:00 del martes se vive casi todo el martes, así que cuenta
+/// como martes (si se usara el inicio, aparecería un hueco falso).
+DateTime cycleCalendarDate(MetabolicCycle c) {
+  final start = c.startedAt.toLocal();
+  final end = (c.closedAt ?? c.startedAt).toLocal();
+  return _dateOnly(start.add(end.difference(start) ~/ 2));
+}
+
+/// Los 7 días del calendario que terminan hoy, del más viejo al más nuevo.
+/// Si dos días metabólicos caen en la misma fecha, basta con que uno lo
+/// hayas cerrado tú.
+List<WeekDot> buildWeekDots(List<MetabolicCycle> recentClosed, DateTime now) {
+  final today = _dateOnly(now);
+  final byDate = <DateTime, WeekDayState>{};
+  for (final c in recentClosed) {
+    final d = cycleCalendarDate(c);
+    final st = c.closureReason == ClosureReason.manualNextFasting
+        ? WeekDayState.closedByYou
+        : WeekDayState.closedAuto;
+    if (byDate[d] != WeekDayState.closedByYou) byDate[d] = st;
+  }
   return [
-    for (final c in last6)
-      WeekDot(
-        label: _letras[c.startedAt.weekday - 1],
-        closedByYou: c.closureReason == ClosureReason.manualNextFasting,
-        isToday: false,
-      ),
-    const WeekDot(label: 'Hoy', closedByYou: false, isToday: true),
+    for (var i = 6; i >= 0; i--)
+      () {
+        final d = DateTime(today.year, today.month, today.day - i);
+        return WeekDot(
+          date: d,
+          state: byDate[d] ?? WeekDayState.none,
+          isToday: i == 0,
+        );
+      }(),
   ];
+}
+
+/// "31 oct – 6 nov" / "1 – 7 nov".
+String weekRangeLabel(List<WeekDot> dots) {
+  final a = dots.first.date;
+  final b = dots.last.date;
+  if (a.month == b.month) return '${a.day} – ${b.day} ${_meses[b.month - 1]}';
+  return '${a.day} ${_meses[a.month - 1]} – ${b.day} ${_meses[b.month - 1]}';
+}
+
+/// (cerrados por ti, días contados). Cuenta los días pasados desde el
+/// primero con registro: un usuario nuevo no ve "1 de 6" por días en los
+/// que todavía no usaba la app.
+(int, int) weekClosedCount(List<WeekDot> dots) {
+  final past = dots.where((d) => !d.isToday).toList();
+  final first = past.indexWhere((d) => d.state != WeekDayState.none);
+  if (first < 0) return (0, 0);
+  final counted = past.sublist(first);
+  return (counted.where((d) => d.closedByYou).length, counted.length);
 }
 
 class WeekClosedCard extends ConsumerWidget {
@@ -163,9 +228,8 @@ class WeekClosedCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final recent = ref.watch(last7ClosedCyclesProvider).valueOrNull;
     if (recent == null || recent.isEmpty) return const SizedBox.shrink();
-    final dots = buildWeekDots(recent);
-    final closedDays = dots.where((d) => !d.isToday).toList();
-    final byYou = closedDays.where((d) => d.closedByYou).length;
+    final dots = buildWeekDots(recent, DateTime.now());
+    final (byYou, total) = weekClosedCount(dots);
 
     return Container(
       width: double.infinity,
@@ -176,75 +240,128 @@ class WeekClosedCard extends ConsumerWidget {
         border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Tu semana',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Tu semana',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      weekRangeLabel(dots),
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.45),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const Spacer(),
-              Text(
-                'Cerraste tú $byYou de ${closedDays.length} '
-                '${closedDays.length == 1 ? 'día' : 'días'}',
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.6),
-                  fontSize: 13,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              for (final d in dots)
-                Expanded(
-                  child: Column(
-                    children: [
-                      Container(
-                        width: 28,
-                        height: 28,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: d.closedByYou
-                              ? AppColors.metabolicGreen
-                              : Colors.transparent,
-                          border: d.closedByYou
-                              ? null
-                              : Border.all(
-                                  width: 2,
-                                  color: d.isToday
-                                      ? const Color(0xFF97C459)
-                                      : Colors.white.withValues(alpha: 0.14),
-                                ),
-                        ),
-                        child: d.closedByYou
-                            ? const Icon(Icons.check_rounded,
-                                size: 16, color: Color(0xFF032A22))
-                            : null,
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        d.label,
-                        style: TextStyle(
-                          color: d.isToday
-                              ? Colors.white
-                              : Colors.white.withValues(alpha: 0.4),
-                          fontSize: 11,
-                          fontWeight:
-                              d.isToday ? FontWeight.w700 : FontWeight.w500,
-                        ),
-                      ),
-                    ],
+              if (total > 0)
+                Text(
+                  'Cerraste tú $byYou de $total '
+                  '${total == 1 ? 'día' : 'días'}',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.6),
+                    fontSize: 13,
                   ),
                 ),
             ],
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              for (final d in dots) Expanded(child: _WeekDayCell(dot: d)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WeekDayCell extends StatelessWidget {
+  const _WeekDayCell({required this.dot});
+
+  final WeekDot dot;
+
+  @override
+  Widget build(BuildContext context) {
+    final d = dot;
+    final Color fill;
+    final Border? border;
+    Widget? icon;
+    switch (d.state) {
+      case WeekDayState.closedByYou:
+        fill = AppColors.metabolicGreen;
+        border = null;
+        icon = const Icon(Icons.check_rounded,
+            size: 16, color: Color(0xFF032A22));
+      case WeekDayState.closedAuto:
+        fill = Colors.white.withValues(alpha: 0.10);
+        border = null;
+        icon = Icon(Icons.remove_rounded,
+            size: 14, color: Colors.white.withValues(alpha: 0.45));
+      case WeekDayState.none:
+        fill = Colors.transparent;
+        border = Border.all(
+          width: d.isToday ? 2 : 1.5,
+          color: d.isToday
+              ? const Color(0xFF97C459)
+              : Colors.white.withValues(alpha: 0.14),
+        );
+    }
+    final labelColor =
+        d.isToday ? Colors.white : Colors.white.withValues(alpha: 0.4);
+
+    return Semantics(
+      label: '${d.isToday ? 'Hoy' : _letras[d.date.weekday - 1]} '
+          '${d.date.day}: ${switch (d.state) {
+        WeekDayState.closedByYou => 'lo cerraste tú',
+        WeekDayState.closedAuto => 'se cerró solo',
+        WeekDayState.none => d.isToday ? 'en curso' : 'sin registro',
+      }}',
+      excludeSemantics: true,
+      child: Column(
+        children: [
+          Text(
+            d.label,
+            style: TextStyle(
+              color: labelColor,
+              fontSize: 11,
+              fontWeight: d.isToday ? FontWeight.w700 : FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: fill,
+              border: border,
+            ),
+            child: icon,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            d.dayNumber,
+            style: TextStyle(
+              color: labelColor,
+              fontSize: 11,
+              fontWeight: d.isToday ? FontWeight.w700 : FontWeight.w400,
+            ),
           ),
         ],
       ),
