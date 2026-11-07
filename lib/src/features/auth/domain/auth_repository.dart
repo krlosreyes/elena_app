@@ -41,7 +41,8 @@ class ReauthRequiredException implements Exception {
 /// poder borrar su cuenta.
 enum AuthProviderKind {
   password,
-  google;
+  google,
+  apple;
 
   /// Traduce el `providerId` de Firebase. Devuelve `null` para
   /// proveedores que Elena no ofrece (Apple, Facebook…): quien reciba
@@ -51,6 +52,7 @@ enum AuthProviderKind {
       switch (providerId) {
         'password' => AuthProviderKind.password,
         'google.com' => AuthProviderKind.google,
+        'apple.com' => AuthProviderKind.apple,
         _ => null,
       };
 }

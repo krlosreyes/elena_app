@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:elena_app/src/features/auth/presentation/widgets/apple_sign_in_button.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/core/utils/error_presentation.dart';
 import 'package:elena_app/src/features/auth/application/auth_controller.dart';
@@ -179,6 +180,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 const SizedBox(height: 20),
                 const AuthDividerOr(),
                 const SizedBox(height: 16),
+                const AppleSignInButton(),
                 const GoogleSignInButton(),
 
                 // SPEC-77: footer legal antes de continuar.

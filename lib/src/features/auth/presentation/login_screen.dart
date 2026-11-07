@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:elena_app/src/features/auth/presentation/widgets/apple_sign_in_button.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/core/utils/error_presentation.dart';
 import 'package:elena_app/src/features/auth/application/auth_controller.dart';
@@ -174,14 +175,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                   const SizedBox(height: 20),
 
-                  // 29-jul: ingreso con Google. Va DESPUÉS del formulario
-                  // de email a propósito — el sistema propio sigue siendo
-                  // el camino principal, y eso es además lo que hace que
-                  // no nos aplique la obligación de Sign in with Apple
-                  // (App Store 4.8 se activa solo si el login social es
-                  // EXCLUSIVO).
+                  // Logins externos DESPUÉS del formulario de email. Con
+                  // Google presente, App Store 4.8 exige una opción
+                  // equivalente con privacidad (Sign in with Apple), que
+                  // va primero.
                   const AuthDividerOr(),
                   const SizedBox(height: 16),
+                  const AppleSignInButton(),
                   const GoogleSignInButton(),
                   const SizedBox(height: 24),
 

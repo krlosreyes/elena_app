@@ -157,6 +157,7 @@ class _AccountBodyState extends ConsumerState<_AccountBody> {
     final providers = ref.read(authRepositoryProvider).currentUserProviders();
     final hasPassword = providers.contains(AuthProviderKind.password);
     final hasGoogle = providers.contains(AuthProviderKind.google);
+    final hasApple = providers.contains(AuthProviderKind.apple);
     final saving = ref.watch(profileControllerProvider.select((s) => s.isSaving));
 
     return ListView(
@@ -327,7 +328,9 @@ class _AccountBodyState extends ConsumerState<_AccountBody> {
               _AccessRow(
                 icon: Icons.lock_outline_rounded,
                 title: 'Contraseña',
-                subtitle: hasPassword ? null : 'Entras con Google',
+                subtitle: hasPassword
+                    ? null
+                    : (hasApple ? 'Entras con Apple' : 'Entras con Google'),
                 action: hasPassword ? 'Cambiar' : null,
                 onTap: hasPassword && email.isNotEmpty
                     ? () => _resetPassword(context, email)
@@ -339,6 +342,14 @@ class _AccountBodyState extends ConsumerState<_AccountBody> {
                 title: 'Cuenta de Google',
                 trailing: hasGoogle ? 'Vinculada' : 'No vinculada',
               ),
+              if (hasApple) ...[
+                const _Divider(),
+                const _AccessRow(
+                  icon: Icons.apple,
+                  title: 'Apple ID',
+                  trailing: 'Vinculada',
+                ),
+              ],
             ],
           ),
         ),
@@ -609,6 +620,12 @@ class _ChangeEmailSheetState extends ConsumerState<ChangeEmailSheet> {
     try {
       if (method == AuthProviderKind.password) {
         await controller.reauthenticate(_password.text);
+      } else if (method == AuthProviderKind.apple) {
+        final ok = await controller.reauthenticateWithApple();
+        if (!ok) {
+          if (mounted) setState(() => _busy = false);
+          return;
+        }
       } else {
         final ok = await controller.reauthenticateWithGoogle();
         if (!ok) {

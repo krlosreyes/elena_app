@@ -174,6 +174,12 @@ class ProfileDangerZoneActions extends ConsumerWidget {
                   if (password == null) return; // canceló: no se borra nada
                   await controller.reauthenticate(password);
 
+                case AuthProviderKind.apple:
+                  // Reautenticar con Apple da el código para revocar el
+                  // token antes de borrar (lo exige Apple).
+                  final ok = await controller.reauthenticateWithApple();
+                  if (!ok) return;
+
                 case AuthProviderKind.google:
                   // Reabre el selector de Google. Cancelar ahí tampoco
                   // borra nada.

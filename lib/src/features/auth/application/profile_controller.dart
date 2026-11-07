@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/core/providers/shared_preferences_provider.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
+import 'package:elena_app/src/features/auth/data/apple_auth_service.dart';
 import 'package:elena_app/src/features/auth/domain/auth_repository.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
 import 'package:elena_app/src/features/progress/application/biometric_history_service.dart';
@@ -296,6 +297,14 @@ class ProfileController extends StateNotifier<ProfileEditState> {
   }) async {
     state = state.copyWith(isSaving: true, errorMessage: null);
     try {
+      // App Store: una cuenta con Apple se revoca antes de borrarse. Lanza
+      // ReauthRequiredException si falta un código fresco de Apple.
+      if (ref
+          .read(authRepositoryProvider)
+          .currentUserProviders()
+          .contains(AuthProviderKind.apple)) {
+        await ref.read(appleAuthServiceProvider).revokeBeforeDelete();
+      }
       await ref.read(authRepositoryProvider).deleteAccount().timeout(timeout);
       ref.invalidate(authStateProvider);
       state = state.copyWith(isSaving: false);
@@ -349,6 +358,11 @@ class ProfileController extends StateNotifier<ProfileEditState> {
   /// ya está probado y no abre una pantalla externa.
   AuthProviderKind? reauthMethod() {
     final providers = ref.read(authRepositoryProvider).currentUserProviders();
+    // Apple primero: borrar una cuenta con Apple exige revocar su token, y
+    // para eso hace falta el código que da reautenticar CON Apple.
+    if (providers.contains(AuthProviderKind.apple)) {
+      return AuthProviderKind.apple;
+    }
     if (providers.contains(AuthProviderKind.password)) {
       return AuthProviderKind.password;
     }
@@ -358,6 +372,19 @@ class ProfileController extends StateNotifier<ProfileEditState> {
     // Ni contraseña ni Google: no sabemos reautenticar. La pantalla debe
     // decirlo en vez de pedir algo que no existe.
     return null;
+  }
+
+  /// Reautentica con Apple. `false` si cancela.
+  Future<bool> reauthenticateWithApple() async {
+    state = state.copyWith(isSaving: true, errorMessage: null);
+    try {
+      final ok = await ref.read(appleAuthServiceProvider).reauthenticate();
+      state = state.copyWith(isSaving: false);
+      return ok;
+    } catch (e) {
+      state = state.copyWith(isSaving: false, errorMessage: e.toString());
+      rethrow;
+    }
   }
 
   /// Reautentica reabriendo el flujo de Google. `false` si cancela.
