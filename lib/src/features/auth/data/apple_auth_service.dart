@@ -11,8 +11,17 @@
 //      `authorizationCode` fresco que devuelve Apple.
 //   3. Antes de borrar la cuenta, revocar el token de Apple con ese código.
 //      Apple exige la revocación para cuentas creadas con Sign in with
-//      Apple; sin un código fresco no se puede, así que se fuerza la
+//      Apple; sin un código fresco no se puede, así que se fuerza UNA
 //      reautenticación (ReauthRequiredException).
+//
+//      2026-11-07 (bug: "con Apple no se elimina la cuenta"): la
+//      revocación era bloqueante. Si fallaba (Firebase sin la clave de
+//      Apple configurada, código caducado o nulo), se volvía a pedir
+//      reautenticar y el borrado nunca ocurría. Ahora es best-effort: tras
+//      reautenticar, la revocación se intenta y, falle o no, la cuenta se
+//      borra. Nunca impedir borrar la cuenta (App Store 5.1.1(v)) pesa más
+//      que la revocación, que Apple también hace sola cuando el usuario
+//      quita la app en Ajustes → Apple ID.
 
 import 'dart:async';
 
@@ -20,6 +29,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/features/auth/domain/auth_repository.dart';
 
 /// `providerId` de Apple en Firebase.
@@ -49,6 +59,10 @@ class AppleAuthService {
 
   /// Código de autorización de la última reautenticación con Apple.
   String? _freshAuthorizationCode;
+
+  /// Si ya se pidió reautenticar con Apple en esta sesión. Evita el bucle
+  /// "reautentica → falla la revocación → reautentica…".
+  bool _reauthenticated = false;
 
   /// Solo se ofrece en iOS (en Android pediría una web de Apple).
   static bool get isAvailable =>
@@ -97,6 +111,13 @@ class AppleAuthService {
       final cred =
           await user.reauthenticateWithProvider(_provider()).timeout(_timeout);
       _freshAuthorizationCode = cred.additionalUserInfo?.authorizationCode;
+      _reauthenticated = true;
+      if (_freshAuthorizationCode == null) {
+        AppLogger.warning(
+          '[AppleAuth] reautenticación sin authorizationCode: no se podrá '
+          'revocar el token; la cuenta se borra igual.',
+        );
+      }
       return true;
     } on TimeoutException {
       throw Exception(
@@ -105,38 +126,44 @@ class AppleAuthService {
       );
     } on FirebaseAuthException catch (e) {
       if (isAppleCancel(e)) return false;
+      AppLogger.warning('[AppleAuth] reauth falló: ${e.code}', e);
       if (e.code == 'user-mismatch') {
         throw Exception(
           'Ese Apple ID no es el de esta sesión. Usa el mismo con el que '
           'entraste.',
         );
       }
-      throw Exception('No pudimos confirmar tu identidad con Apple.');
+      throw Exception(
+        'No pudimos confirmar tu identidad con Apple (${e.code}).',
+      );
     }
   }
 
   /// Paso previo al borrado de una cuenta con Apple: revoca el token.
   ///
-  /// Sin un código fresco lanza [ReauthRequiredException] para que la UI
-  /// reautentique con Apple y reintente. No hace nada si el usuario no
-  /// usa Apple.
+  /// Sin código y sin haber reautenticado aún, lanza
+  /// [ReauthRequiredException] para que la UI reautentique con Apple y
+  /// reintente. Después de eso nunca bloquea: si la revocación no se puede
+  /// hacer o falla, lo registra y deja seguir el borrado. No hace nada si
+  /// el usuario no usa Apple.
   Future<void> revokeBeforeDelete() async {
     final user = _auth.currentUser;
     if (!userHasApple(user)) return;
     final code = _freshAuthorizationCode;
-    if (code == null) throw ReauthRequiredException(email: user?.email);
+    if (code == null) {
+      if (!_reauthenticated) throw ReauthRequiredException(email: user?.email);
+      return; // ya se intentó: se borra sin revocar
+    }
     try {
       await _auth.revokeTokenWithAuthorizationCode(code).timeout(_timeout);
-    } on TimeoutException {
-      throw Exception(
-        'La eliminación está tardando más de lo esperado. Verifica tu '
-        'conexión e inténtalo de nuevo. No se borró nada.',
+      AppLogger.info('[AppleAuth] token de Apple revocado.');
+    } catch (e) {
+      AppLogger.warning(
+        '[AppleAuth] no se pudo revocar el token de Apple; la cuenta se '
+        'borra igual. Revisa en Firebase → Authentication → Apple la '
+        'configuración del flujo de código (Team ID, Key ID y clave).',
+        e,
       );
-    } on FirebaseAuthException {
-      // El código caduca a los 5 minutos y es de un solo uso: pedimos
-      // reautenticar de nuevo en vez de borrar sin revocar.
-      _freshAuthorizationCode = null;
-      throw ReauthRequiredException(email: user?.email);
     } finally {
       _freshAuthorizationCode = null;
     }
