@@ -67,7 +67,20 @@ void main() {
       expect(s, closeTo((2 - 0.15) / 2, 1e-9));
     });
 
-    test('snack permitido: el primer extra Aceptable no resta', () {
+    test('el orden no importa: el snack puede ir antes de la cena', () {
+      final a = MealQuality.dayScore(
+          [_m(12, 1), _m(15, 0.4), _m(18, 1)], targetMeals: 2);
+      final b = MealQuality.dayScore(
+          [_m(12, 1), _m(15, 1), _m(18, 0.4)], targetMeals: 2);
+      expect(a, b);
+    });
+
+    test('una extra chatarra resta el doble que una saludable', () {
+      expect(MealQuality.extraPenaltyFor(1), closeTo(0.15, 1e-9));
+      expect(MealQuality.extraPenaltyFor(0), closeTo(0.30, 1e-9));
+    });
+
+    test('snack permitido: el mejor extra Aceptable no resta', () {
       expect(
         MealQuality.dayScore(
           [_m(12, 1), _m(15, 0.5), _m(18, 1)],
@@ -83,7 +96,7 @@ void main() {
           targetMeals: 2,
           allowsSnack: true,
         ),
-        closeTo((2 - 0.15) / 2, 1e-9),
+        closeTo((2 - (0.15 + 0.15 * 0.9)) / 2, 1e-9),
       );
     });
 

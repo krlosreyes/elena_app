@@ -9,16 +9,19 @@
 //   Cada comida aporta su calidad. Tu protocolo define cuántas comidas
 //   caben en tu ventana (MealTargetService: 16:8 → 2, OMAD → 1, …).
 //
-//   puntaje = (Σ calidad de las primeras N comidas − 0,15 × extras) / N
+//   puntaje = (Σ calidad de las N mejores comidas − Σ penalización extras) / N
 //
 //   - N = comidas del protocolo. Si comes menos de N, los huecos valen 0:
 //     el puntaje sube a medida que registras, como el agua. Comer lo que
 //     pide el protocolo protege la proteína del día y la masa magra.
-//   - Extras = comidas por encima de N. Si el protocolo permite snack, el
-//     primer extra no resta si fue al menos "Aceptable". Cada pico de
-//     insulina extra frena el objetivo metabólico.
-//   - Se ordenan por hora: las N primeras son "las comidas", el resto son
-//     extras (sin importar cuál fue mejor).
+//   - Extras = comidas por encima de N. Cada una resta 0,15 más hasta
+//     0,15 según lo mala que fue (chatarra resta el doble que saludable):
+//     cada pico de insulina extra frena el objetivo metabólico.
+//   - Si el protocolo permite snack, el mejor extra no resta si fue al
+//     menos "Aceptable".
+//   - No depende del orden: las N de mejor calidad cuentan como "las
+//     comidas" y el resto como extras. Así, un snack a las 15:00 y la cena
+//     a las 18:00 dan lo mismo que al revés.
 
 import 'package:elena_app/src/features/nutrition/domain/meal_ratio.dart';
 import 'package:elena_app/src/features/nutrition/domain/nutrition_log.dart';
@@ -31,8 +34,13 @@ class MealQuality {
   /// Valor inicial de la barra: centro (Aceptable).
   static const double initial = 0.5;
 
-  /// Resta por cada comida extra fuera de lo que pide el protocolo.
+  /// Resta base por cada comida extra fuera de lo que pide el protocolo.
   static const double extraPenalty = 0.15;
+
+  /// Resta de una comida extra según su calidad: 0,15 (saludable) a 0,30
+  /// (chatarra).
+  static double extraPenaltyFor(double q) =>
+      extraPenalty + extraPenalty * (1 - q.clamp(0.0, 1.0));
 
   static MealQualityZone zoneOf(double q) {
     if (q < 1 / 3) return MealQualityZone.chatarra;
@@ -75,18 +83,21 @@ class MealQuality {
     required int targetMeals,
     bool allowsSnack = false,
   }) {
-    final rated = logs.where((l) => l.quality != null).toList()
-      ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
-    if (rated.isEmpty) return null;
+    final qs = logs
+        .where((l) => l.quality != null)
+        .map((l) => l.quality!)
+        .toList()
+      ..sort((a, b) => b.compareTo(a)); // mejor primero
+    if (qs.isEmpty) return null;
     final n = targetMeals.clamp(1, 6);
-    final main = rated.take(n);
-    final extras = rated.skip(n).toList();
-    var sum = main.fold<double>(0, (s, l) => s + l.quality!);
-    var penalized = extras.length;
-    if (allowsSnack && extras.isNotEmpty && extras.first.quality! >= 1 / 3) {
-      penalized -= 1;
+    var sum = qs.take(n).fold<double>(0, (s, q) => s + q);
+    var extras = qs.skip(n).toList(); // también de mejor a peor
+    if (allowsSnack && extras.isNotEmpty && extras.first >= 1 / 3) {
+      extras = extras.skip(1).toList();
     }
-    sum -= extraPenalty * penalized;
+    for (final q in extras) {
+      sum -= extraPenaltyFor(q);
+    }
     return (sum / n).clamp(0.0, 1.0);
   }
 }
