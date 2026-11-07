@@ -54,6 +54,7 @@ class ComidasPillarCard extends ConsumerWidget {
     final progress = MinutaAdherenceScore.effective(
       fallbackScore: state.nutritionScore,
       plan: ref.watch(mealPlanNotifierProvider).plan,
+      ratedMeals: state.hasRatedMeals,
     );
     final pct = (progress * 100).round();
     final lastLog = state.todayLogs.isNotEmpty ? state.todayLogs.last : null;

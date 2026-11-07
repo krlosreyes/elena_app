@@ -151,9 +151,13 @@ class MetabolicStateBuilder {
     // comida se gana marcando la minuta. Ver minuta_adherence_score.dart.
     final double legacyNutrition =
         (0.70 * cocienteA) + (0.30 * nutrition.windowAdherence);
+    // 2026-11-07: con comidas calificadas en la barra de Hoy, el pilar es
+    // la calidad de esas comidas contra el protocolo (nutritionScore).
     final double nutritionScoreRaw = MinutaAdherenceScore.effective(
-      fallbackScore: legacyNutrition,
+      fallbackScore:
+          nutrition.hasRatedMeals ? nutrition.nutritionScore : legacyNutrition,
       plan: mealPlan,
+      ratedMeals: nutrition.hasRatedMeals,
     );
 
     // ── hydrationLevel ───────────────────────────────────────────────────

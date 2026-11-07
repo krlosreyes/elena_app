@@ -17,6 +17,8 @@ import 'package:uuid/uuid.dart';
 // fallback exclusivo para el caso "sin ciclo abierto". Con ciclo, sigue
 // cycle-aware (Constitución §1). Sin ciclo, ventana startOfDay para
 // que los logs del día sean visibles en el ring.
+import 'package:elena_app/src/features/nutrition/application/meal_target_service.dart';
+import 'package:elena_app/src/features/nutrition/domain/meal_quality.dart';
 import 'package:elena_app/src/core/analytics/analytics_events.dart';
 import 'package:elena_app/src/core/offline_first_stream_mixin.dart';
 import 'package:elena_app/src/core/orchestrator/biological_phases.dart';
@@ -72,6 +74,11 @@ class NutritionState {
   });
 
   int get mealsLoggedToday => todayLogs.length;
+
+  /// True si hoy hay comidas calificadas con la barra (2026-11-07). En ese
+  /// caso [nutritionScore] ya es MealQuality.dayScore y manda sobre la
+  /// Minuta.
+  bool get hasRatedMeals => todayLogs.any((l) => l.quality != null);
 
   double get progressPercentage =>
       (mealsLoggedToday / targetMeals.clamp(1, 10)).clamp(0.0, 1.0);
@@ -151,6 +158,9 @@ class NutritionNotifier extends StateNotifier<NutritionState>
   // resuscripción con el MISMO `since` (reconexión, blip de red) hereda
   // el baseline existente — la guardia sigue protegiendo.
   DateTime? _baselineSince;
+
+  /// Si el protocolo tolera un snack sin penalizar (MealTargetService).
+  bool _allowsSnack = true;
   List<NutritionLog> _baseline = const [];
 
   void _init() {
@@ -172,9 +182,13 @@ class NutritionNotifier extends StateNotifier<NutritionState>
             // aunque `since` coincida por casualidad con el de otro usuario.
             _subscribeFor(_currentCycleStartedAt, forceFreshBaseline: true);
           }
-          // Recalcula con los nuevos parámetros del usuario.
-          final updated = _recalculate(state.todayLogs, user.mealsPerDay);
-          state = updated.copyWith(targetMeals: user.mealsPerDay);
+          // 2026-11-07: las comidas del día salen del protocolo de ayuno
+          // (16:8 → 2, OMAD → 1…), no de un número aparte del perfil.
+          final target =
+              const MealTargetService().targetForProtocol(user.fastingProtocol);
+          _allowsSnack = target.allowsSnack;
+          final updated = _recalculate(state.todayLogs, target.meals);
+          state = updated.copyWith(targetMeals: target.meals);
         });
       },
       fireImmediately: true,
@@ -368,6 +382,9 @@ class NutritionNotifier extends StateNotifier<NutritionState>
     // llamar aquí. Resultado: editar una comida la eliminaba sin guardar
     // la nueva versión. Ver SPEC-252.
     String? replacingLogId,
+    // 2026-11-07: calidad percibida de la barra de Hoy (0–1). Si viene,
+    // define también el ratio A:E equivalente.
+    double? quality,
   }) async {
     final userId = _activeUserId;
     if (userId == null) return;
@@ -426,8 +443,9 @@ class NutritionNotifier extends StateNotifier<NutritionState>
       fiber: fiber,
       glycemicIndex: glycemicIndex,
       source: source,
-      ratio: ratio,
+      ratio: quality != null ? MealQuality.ratioFor(quality) : ratio,
       isCheatDay: isCheatDay,
+      quality: quality,
       // SPEC-138: solo persistir si ambos vienen y son coherentes.
       // La validación dura está en el constructor de NutritionLog.
       upfSlots: upfSlots,
@@ -462,7 +480,7 @@ class NutritionNotifier extends StateNotifier<NutritionState>
     // SPEC-193/194: analytics (se auto-encola sin red) + coaching.
     AnalyticsService.logEvent(
       AnalyticsEvents.mealLogged,
-      params: {AnalyticsParams.qualityBucket: ratio.name},
+      params: {AnalyticsParams.qualityBucket: log.ratio.name},
     );
     _ref.read(coachingCompletionProvider).onPillarActivity(Pillar.nutrition);
 
@@ -756,11 +774,19 @@ class NutritionNotifier extends StateNotifier<NutritionState>
         NutritionScoreCalculator.windowAdherence(logs);
     final double plateQualityScore =
         NutritionScoreCalculator.plateQualityScore(logs);
-    final double score = NutritionScoreCalculator.score(
-      mealCountScore: mealCountScore,
-      windowAdherence: windowAdherence,
-      plateQualityScore: plateQualityScore,
-    );
+    // 2026-11-07: si el día tiene comidas calificadas con la barra, el
+    // puntaje es la calidad de esas comidas contra lo que pide el
+    // protocolo (MealQuality.dayScore). Días viejos: cálculo anterior.
+    final double score = MealQuality.dayScore(
+          logs,
+          targetMeals: target,
+          allowsSnack: _allowsSnack,
+        ) ??
+        NutritionScoreCalculator.score(
+          mealCountScore: mealCountScore,
+          windowAdherence: windowAdherence,
+          plateQualityScore: plateQualityScore,
+        );
     return state.copyWith(
       todayLogs: logs,
       nutritionScore: score,

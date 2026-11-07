@@ -32,8 +32,15 @@ class MinutaAdherenceScore {
   /// - Con minuta marcada (`markedCount > 0`) → adherencia a la minuta.
   /// - Sin minuta o sin marcar → [fallbackScore] (el score actual por
   ///   calidad de plato), clamped. Cero cambio para no adoptantes.
-  static double effective({required double fallbackScore, MealPlan? plan}) {
-    if (plan == null || plan.markedCount == 0) {
+  ///
+  /// [ratedMeals] (2026-11-07): si el día tiene comidas calificadas con la
+  /// barra de calidad, ese puntaje (fallbackScore) es la fuente de verdad.
+  static double effective({
+    required double fallbackScore,
+    MealPlan? plan,
+    bool ratedMeals = false,
+  }) {
+    if (ratedMeals || plan == null || plan.markedCount == 0) {
       return fallbackScore.clamp(0.0, 1.0);
     }
     return adherence(plan);

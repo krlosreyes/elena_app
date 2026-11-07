@@ -82,6 +82,7 @@ class TodaysProgressSection extends ConsumerWidget {
     final nutritionProgress = MinutaAdherenceScore.effective(
       fallbackScore: nutrition.nutritionScore,
       plan: mealPlan.plan,
+      ratedMeals: nutrition.hasRatedMeals,
     );
 
     final rows = <_PillarProgress>[

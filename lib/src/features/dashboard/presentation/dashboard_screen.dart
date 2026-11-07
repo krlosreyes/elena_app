@@ -15,7 +15,7 @@ import 'package:elena_app/src/features/dashboard/presentation/widgets/fasting_co
 import 'package:elena_app/src/features/dashboard/presentation/widgets/hoy_header.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/hoy_cards.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/metabolic_day_widgets.dart';
-import 'package:elena_app/src/features/dashboard/presentation/widgets/today_focus_card.dart';
+import 'package:elena_app/src/features/nutrition/presentation/widgets/meal_quality_card.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/dashboard_selected_pillar_card.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/metabolic_alert_banner.dart';
 // 17-jul: "Para ti" se colapsó en una card de entrada renombrada
@@ -59,11 +59,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   /// abierto (p. ej. "Registrar comida" desde el anillo).
   final GlobalKey _pillarCardKey = GlobalKey();
 
+  /// Ancla de la barra de calidad de comida (2026-11-07).
+  final GlobalKey _mealCardKey = GlobalKey();
+
+  /// "Registrar comida" (anillo) o tocar el pilar Comida: baja hasta la
+  /// barra de calidad. Ya no abre el detalle del pilar.
   void _openMeals() {
     if (!mounted) return;
-    setState(() => _selectedPillar = SelectedPillar.comidas);
+    setState(() => _selectedPillar = null);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final ctx = _pillarCardKey.currentContext;
+      final ctx = _mealCardKey.currentContext;
       if (ctx != null) {
         Scrollable.ensureVisible(ctx,
             duration: const Duration(milliseconds: 350),
@@ -83,6 +88,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         c.animateTo(0,
             duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
       }
+      return;
+    }
+    if (p == SelectedPillar.comidas) {
+      _openMeals();
       return;
     }
     setState(() => _selectedPillar = _selectedPillar == p ? null : p);
@@ -369,10 +378,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           state: fastingState,
                           onRegisterMeal: _openMeals,
                         ),
-                      const SizedBox(height: 14),
-                      const BodyNowCard(),
-                      const SizedBox(height: 14),
-                      const TodayFocusCard(title: 'Lo que sigue'),
+                      // 2026-11-07: "Cómo comer ahora" y "Lo que sigue"
+                      // se reemplazan por la barra de calidad de comida.
+                      // En ayuno no se registran comidas: no se muestra.
+                      if (!fastingState.isActive) ...[
+                        const SizedBox(height: 14),
+                        MealQualityCard(key: _mealCardKey),
+                      ],
                       const SizedBox(height: 22),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,

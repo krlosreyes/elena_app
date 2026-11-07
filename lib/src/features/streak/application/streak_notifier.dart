@@ -504,6 +504,7 @@ class StreakNotifier extends StateNotifier<StreakState> {
     final double nutritionMagnitude = MinutaAdherenceScore.effective(
       fallbackScore: nutrition.nutritionScore,
       plan: _ref.read(mealPlanNotifierProvider).plan,
+      ratedMeals: nutrition.hasRatedMeals,
     ).clamp(0.0, 1.0);
 
     // Evaluación cruda desde el estado actual de los providers.

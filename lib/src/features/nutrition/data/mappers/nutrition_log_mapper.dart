@@ -63,6 +63,8 @@ class NutritionLogMapper {
     if (log.totalSlots != null) map['totalSlots'] = log.totalSlots;
     // SPEC-BUG6: persiste solo si el log trae ids de alimentos.
     if (log.plateItemIds.isNotEmpty) map['plateItemIds'] = log.plateItemIds;
+    // 2026-11-07: calidad percibida (barra de Hoy).
+    if (log.quality != null) map['quality'] = log.quality;
     return map;
   }
 
@@ -133,6 +135,10 @@ class NutritionLogMapper {
       upfSlots: upfSlots,
       totalSlots: totalSlots,
       plateItemIds: plateItemIds,
+      quality: () {
+        final q = _toDouble(map['quality']);
+        return (q != null && q >= 0 && q <= 1) ? q : null;
+      }(),
     );
     _validate(log);
     return log;

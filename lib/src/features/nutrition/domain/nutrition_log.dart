@@ -110,6 +110,10 @@ class NutritionLog {
   /// los macros, que solo reflejan el agregado.
   final List<String> plateItemIds;
 
+  /// Calidad percibida de la comida (0 = chatarra, 1 = saludable), de la
+  /// barra de Hoy (2026-11-07). Null en registros anteriores.
+  final double? quality;
+
   NutritionLog({
     required this.id,
     required this.timestamp,
@@ -127,7 +131,16 @@ class NutritionLog {
     this.upfSlots,
     this.totalSlots,
     this.plateItemIds = const [],
+    this.quality,
   }) {
+    if (quality != null && (quality! < 0 || quality! > 1)) {
+      throw OutOfRange(
+        field: 'NutritionLog.quality',
+        value: quality!,
+        min: 0,
+        max: 1,
+      );
+    }
     _validateNonNegative('calories', calories);
     _validateNonNegative('protein', protein);
     _validateNonNegative('carbs', carbs);
@@ -174,6 +187,7 @@ class NutritionLog {
     int? upfSlots,
     int? totalSlots,
     List<String>? plateItemIds,
+    double? quality,
   }) {
     return NutritionLog(
       id: id ?? this.id,
@@ -193,6 +207,7 @@ class NutritionLog {
       upfSlots: upfSlots ?? this.upfSlots,
       totalSlots: totalSlots ?? this.totalSlots,
       plateItemIds: plateItemIds ?? this.plateItemIds,
+      quality: quality ?? this.quality,
     );
   }
 

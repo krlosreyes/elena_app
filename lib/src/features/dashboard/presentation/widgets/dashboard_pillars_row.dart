@@ -104,6 +104,7 @@ class DashboardPillarsRow extends ConsumerWidget {
     final nutritionProgress = MinutaAdherenceScore.effective(
       fallbackScore: nutritionScore,
       plan: ref.watch(mealPlanNotifierProvider).plan,
+      ratedMeals: ref.watch(nutritionProvider.select((s) => s.hasRatedMeals)),
     );
 
     // SPEC-175 (2026-06-04): la regla "el sleep pertenece al ciclo"
