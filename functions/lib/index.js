@@ -87,6 +87,15 @@ const USER_SUBCOLLECTIONS = [
     "exercise_meta", // perfil de hábitos de ejercicio
     "glucose_meta", // estado del protocolo de glucosa (incl. consentimiento)
     "streak_meta", // 28-jul: política de descanso planificado
+    // 2026-11-06 (auditoría App Store 5.1.1(v)): faltaban y quedaban
+    // huérfanas al eliminar la cuenta. glucose_readings es dato de salud
+    // sensible; alcohol_* son del módulo retirado (docs de usuarios previos).
+    "glucose_readings",
+    "meal_presets",
+    "gamification",
+    "fcm_tokens",
+    "alcohol_session",
+    "alcohol_history",
 ];
 // ─── Helpers ────────────────────────────────────────────────────────────────
 /**
