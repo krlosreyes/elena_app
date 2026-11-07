@@ -180,6 +180,12 @@ class _FakeAuthRepository implements AuthRepository {
   @override
   Future<void> deleteAccount() async => vecesBorrado++;
 
+  // Sign in with Apple (2026-11-06): el controller consulta los
+  // proveedores antes de borrar (Apple exige revocar su token).
+  @override
+  List<AuthProviderKind> currentUserProviders() =>
+      const [AuthProviderKind.password];
+
   @override
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError(
         '${invocation.memberName} no debería usarse en este test',
