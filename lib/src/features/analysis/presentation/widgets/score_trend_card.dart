@@ -12,7 +12,7 @@ import 'package:go_router/go_router.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/analysis/application/analysis_series_providers.dart';
 import 'package:elena_app/src/features/analysis/domain/metric_series.dart';
-import 'package:elena_app/src/features/alcohol/application/alcohol_score_provider.dart';
+import 'package:elena_app/src/features/streak/application/daily_score_provider.dart';
 
 class ScoreTrendCard extends ConsumerWidget {
   const ScoreTrendCard({super.key});
@@ -26,7 +26,7 @@ class ScoreTrendCard extends ConsumerWidget {
     // fuente que el puntaje del Dashboard (Hoy). Antes usaba el último punto
     // de la serie histórica — que puede ser el score de un ciclo cerrado días
     // atrás — y mostraba "52 hoy" en Progreso mientras Hoy decía 25.
-    final today = ref.watch(dailyScoreWithConsumptionProvider);
+    final today = ref.watch(displayDailyScoreProvider);
 
     return InkWell(
       borderRadius: BorderRadius.circular(20),

@@ -17,8 +17,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elena_app/src/core/theme/app_theme.dart';
-// SPEC-261.1: nota transparente del descuento por consumo de alcohol.
-import 'package:elena_app/src/features/alcohol/application/alcohol_score_provider.dart';
 import 'package:elena_app/src/features/metabolic_cycle/presentation/widgets/metabolic_day_explainer_sheet.dart';
 
 void showDailyScoreExplainerSheet(BuildContext context) {
@@ -35,8 +33,6 @@ class _DailyScoreExplainerSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // SPEC-261.1: puntos que el consumo de alcohol descuenta hoy (>= 0).
-    final alcoholPenalty = ref.watch(dailyAlcoholPenaltyProvider);
     return DraggableScrollableSheet(
       initialChildSize: 0.55,
       minChildSize: 0.35,
@@ -141,43 +137,6 @@ class _DailyScoreExplainerSheet extends ConsumerWidget {
                 ],
               ),
             ),
-            // SPEC-261.1: si el Protocolo de Consumo Consciente está
-            // descontando puntos hoy, lo decimos sin rodeos ni juicio.
-            if (alcoholPenalty > 0) ...[
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFB4654A).withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: const Color(0xFFB4654A).withValues(alpha: 0.30),
-                  ),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(Icons.wine_bar,
-                        color: Color(0xFFB4654A), size: 18),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        'Hoy tu consumo consciente descuenta $alcoholPenalty '
-                        'pts. Ya está mitigado por lo que hiciste bien '
-                        '(hidratarte, comer, espaciar). El alcohol siempre '
-                        'deja algo de huella — beber con plan cuesta menos '
-                        'que beber sin él.',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.85),
-                          fontSize: 13,
-                          height: 1.5,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
             const SizedBox(height: 12),
             // 28-jul: esto decía "Fuentes: IMR_BIBLIOGRAPHY §6 (Score del
             // Día) + §13 (Día Metabólico)". Le estábamos mostrando al

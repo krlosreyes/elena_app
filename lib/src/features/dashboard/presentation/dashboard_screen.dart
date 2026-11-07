@@ -37,7 +37,6 @@ import 'package:elena_app/src/features/badges/application/badge_notifier.dart';
 import 'package:elena_app/src/features/dashboard/application/ui_interaction_notifier.dart';
 import 'package:elena_app/src/features/glucose/application/glucose_providers.dart';
 import 'package:elena_app/src/features/glucose/presentation/widgets/glucose_consent_sheet.dart';
-// SPEC-261: card de entrada al Protocolo de Consumo Consciente (alcohol).
 
 // SPEC-88 fix: BodyCompositionCard y GoalsDashboardWidget se retiraron
 // del Dashboard. La primera vive ahora en Profile; la segunda queda
