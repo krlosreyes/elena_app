@@ -50,7 +50,7 @@
 	<key>NSHealthShareUsageDescription</key>
 	<string>ElenaApp lee tu sueño, pasos, minutos de ejercicio, entrenamientos y peso de Apple Health para completar tus pilares del día sin que tengas que registrarlos a mano.</string>
 	<key>NSHealthUpdateUsageDescription</key>
-	<string>Por ahora ElenaApp solo lee datos de Apple Health y no guarda nada en ella. Si en el futuro lo hace, te pedirá permiso antes.</string>
+	<string>ElenaApp no escribe datos en la app Salud: solo lee tu sueño, pasos, minutos de ejercicio, entrenamientos y peso.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

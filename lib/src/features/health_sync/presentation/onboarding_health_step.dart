@@ -12,6 +12,8 @@
 // el sheet nativo, el flujo igual avanza (no bloqueamos).
 
 import 'package:flutter/material.dart';
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elena_app/src/core/theme/app_theme.dart';
@@ -60,14 +62,20 @@ class OnboardingHealthStep extends ConsumerWidget {
         ),
         const SizedBox(height: 20),
         _paragraph(
-          'Si usás Apple Health o Health Connect (Samsung Health, Mi '
-          'Band, Garmin), ElenaApp puede leer tu peso, sueño y pasos '
-          'automáticamente — sin que tengas que ingresarlos a mano.',
+          (!kIsWeb && Platform.isIOS)
+              ? 'Si usas la app Salud de tu iPhone (o un Apple Watch), '
+                  'ElenaApp puede leer tu sueño, tus pasos y tus minutos '
+                  'de ejercicio automáticamente — sin que tengas que '
+                  'registrarlos a mano.'
+              : 'Si usas Health Connect (Samsung Health, Mi Band, Garmin), '
+                  'ElenaApp puede leer tu sueño, tus pasos y tus minutos '
+                  'de ejercicio automáticamente — sin que tengas que '
+                  'registrarlos a mano.',
           isDark,
         ),
         const SizedBox(height: 12),
         _paragraph(
-          'Solo lectura. No escribimos en tu Apple Health ni '
+          'Solo lectura. No escribimos en la app Salud ni '
           'compartimos los datos con nadie.',
           isDark,
         ),

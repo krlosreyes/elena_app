@@ -96,7 +96,7 @@ class MealsRatioInsight {
         return const MealsRatioInsight(
           headline: 'Excelente semana A-dominante.',
           action:
-              'Sostener este nivel desactiva resistencia a la insulina y libera grasa visceral.',
+              'Sostener este patrón se asocia con mejor sensibilidad a la insulina y menos grasa abdominal.',
           citation: 'Frank Suárez (Tipo A/E) + Jenkins 2002',
         );
       case MealsRatioInsightTier.good:

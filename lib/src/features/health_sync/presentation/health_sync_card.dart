@@ -29,6 +29,12 @@ import 'package:elena_app/src/features/health_sync/domain/health_permission_stat
 import 'package:elena_app/src/features/health_sync/domain/health_sync_result.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 
+
+/// Nombre de la fuente de salud de ESTA plataforma. En iOS nunca se nombra
+/// el ecosistema Android (App Store 2.3.10).
+String healthSourceName() =>
+    (!kIsWeb && Platform.isIOS) ? 'la app Salud' : 'Health Connect';
+
 class HealthSyncCard extends ConsumerStatefulWidget {
   const HealthSyncCard({super.key});
 
@@ -127,8 +133,8 @@ class _HealthSyncCardState extends ConsumerState<HealthSyncCard>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Apple Health · Health Connect',
+              Text(
+                (!kIsWeb && Platform.isIOS) ? 'App Salud' : 'Health Connect',
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
@@ -605,7 +611,7 @@ class _HealthSyncCardState extends ConsumerState<HealthSyncCard>
   ) {
     final total = result.totalSamples;
     if (total == 0) {
-      return 'No encontramos datos en Apple Health · Health Connect '
+      return 'No encontramos datos en ${healthSourceName()} '
           'para los últimos 7 días.';
     }
     return 'Leídos $total registros · 0 importados '

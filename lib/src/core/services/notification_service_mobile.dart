@@ -284,7 +284,10 @@ class NotificationService {
       presentBadge: false,
       presentSound: true,
       // SPEC-224: timeSensitive para que no se silencie en Focus/Modo Sueño.
-      interruptionLevel: InterruptionLevel.timeSensitive,
+      // App Store (2026-11-06): time-sensitive solo para avisos del
+      // ayuno y del día metabólico; los recordatorios de hábito no
+      // atraviesan los modos de concentración.
+      interruptionLevel: InterruptionLevel.active,
       categoryIdentifier: kHydrationCategoryId,
     ),
   );
@@ -350,7 +353,10 @@ class NotificationService {
       presentAlert: true,
       presentBadge: false,
       presentSound: true,
-      interruptionLevel: InterruptionLevel.timeSensitive,
+      // App Store (2026-11-06): time-sensitive solo para avisos del
+      // ayuno y del día metabólico; los recordatorios de hábito no
+      // atraviesan los modos de concentración.
+      interruptionLevel: InterruptionLevel.active,
       categoryIdentifier: kExerciseCategoryId,
     ),
   );
@@ -383,7 +389,10 @@ class NotificationService {
       presentAlert: true,
       presentBadge: false,
       presentSound: true,
-      interruptionLevel: InterruptionLevel.timeSensitive,
+      // App Store (2026-11-06): time-sensitive solo para avisos del
+      // ayuno y del día metabólico; los recordatorios de hábito no
+      // atraviesan los modos de concentración.
+      interruptionLevel: InterruptionLevel.active,
       categoryIdentifier: kNutritionCategoryId,
     ),
   );
@@ -427,7 +436,10 @@ class NotificationService {
       presentAlert: true,
       presentBadge: false,
       presentSound: true,
-      interruptionLevel: InterruptionLevel.timeSensitive,
+      // App Store (2026-11-06): time-sensitive solo para avisos del
+      // ayuno y del día metabólico; los recordatorios de hábito no
+      // atraviesan los modos de concentración.
+      interruptionLevel: InterruptionLevel.active,
       categoryIdentifier: kCheckInCategoryId,
     ),
   );
@@ -460,7 +472,10 @@ class NotificationService {
       presentAlert: true,
       presentBadge: false,
       presentSound: true,
-      interruptionLevel: InterruptionLevel.timeSensitive,
+      // App Store (2026-11-06): time-sensitive solo para avisos del
+      // ayuno y del día metabólico; los recordatorios de hábito no
+      // atraviesan los modos de concentración.
+      interruptionLevel: InterruptionLevel.active,
       categoryIdentifier: kMilestoneCategoryId,
     ),
   );

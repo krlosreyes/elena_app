@@ -10,7 +10,7 @@
 // y `terms_of_service_screen.dart`). Cambios al texto pasan por aquí —
 // nunca hardcoded en widgets.
 
-const int kPrivacyPolicyVersion = 2;
+const int kPrivacyPolicyVersion = 3;
 const int kTermsOfServiceVersion = 1;
 
 class LegalSection {
@@ -28,7 +28,9 @@ const List<LegalSection> kPrivacyPolicySections = [
   LegalSection(
     title: 'Datos que recolectamos',
     body: 'Identidad: correo electrónico y nombre que proporcionas al '
-        'registrarte.\n\n'
+        'registrarte. Si entras con Google o con Apple, recibimos de ese '
+        'servicio tu correo (con Apple puede ser una dirección de reenvío '
+        'privada) y, si lo autorizas, tu nombre.\n\n'
         'Biometría: peso, altura, circunferencias (cintura, cuello), '
         'porcentaje de grasa corporal estimado mediante fórmula US Navy. '
         'Estos datos los proporcionas en el onboarding o los actualizas '
@@ -37,6 +39,13 @@ const List<LegalSection> kPrivacyPolicySections = [
         'macronutrientes si los ingresas), sueño, ejercicio, hidratación '
         'y ayunos. Cada registro queda asociado a tu cuenta con marca '
         'temporal.\n\n'
+        'Condiciones médicas que declares en el onboarding (por ejemplo, '
+        'prediabetes o diabetes tipo 2), solo para adaptar las '
+        'recomendaciones y activar protecciones de seguridad.\n\n'
+        'Datos de la app Salud (opcional): ver la sección "Datos de la '
+        'app Salud".\n\n'
+        'Datos de uso y diagnóstico: qué pantallas y funciones usas y los '
+        'informes de errores de la app, para mejorarla.\n\n'
         'Indicadores derivados: tu Índice Metabólico Real (IMR) y sus '
         'componentes se calculan localmente desde los datos anteriores; '
         'el resultado se persiste para mostrarte tu progreso y para que '
@@ -59,10 +68,15 @@ const List<LegalSection> kPrivacyPolicySections = [
   LegalSection(
     title: 'Con quién compartimos',
     body: 'Google Firebase (Authentication, Firestore, App Check, '
-        'Crashlytics): infraestructura de autenticación y base de datos. '
+        'Crashlytics, Analytics, Cloud Messaging): infraestructura de '
+        'autenticación, base de datos, informes de errores, estadísticas '
+        'de uso de la app y notificaciones. Las estadísticas de uso no se '
+        'usan para publicidad ni para rastrearte en otras apps. '
         'Los datos están encriptados en tránsito y reposo. Firebase actúa '
         'como procesador de datos bajo nuestras instrucciones, sujeto a '
         'sus propios términos.\n\n'
+        'Google y Apple, solo si eliges entrar con ellos, para verificar '
+        'tu identidad.\n\n'
         'Sitio web Metamorfosis Real: comparte el mismo backend Firebase. '
         'Si te registras en uno, podemos crear tu acceso al otro con el '
         'mismo correo.\n\n'
@@ -72,10 +86,12 @@ const List<LegalSection> kPrivacyPolicySections = [
   LegalSection(
     title: 'Retención y eliminación',
     body: 'Tus datos se conservan mientras tu cuenta esté activa. Cuando '
-        'eliminas tu cuenta desde Perfil → ELIMINAR CUENTA, se borra '
-        'inmediatamente tu documento principal en Firestore y tu usuario '
-        'de Firebase Authentication. Las subcolecciones históricas '
-        '(comidas, sueño, ejercicio) se programan para limpieza posterior.\n\n'
+        'eliminas tu cuenta desde Perfil → Cuenta y datos personales → '
+        'Eliminar cuenta, se borra tu usuario de Firebase Authentication y '
+        'se inicia el borrado de todos tus datos en Firestore (perfil, '
+        'comidas, sueño, ejercicio, ayunos, medidas, glucosa y datos '
+        'importados de la app Salud). Si entraste con Apple, también '
+        'revocamos el acceso de Elena a tu Apple ID.\n\n'
         'Datos anonimizados agregados pueden conservarse indefinidamente '
         'para investigación y mejora del IMR. Estos datos NO permiten '
         're-identificarte.',
@@ -84,14 +100,34 @@ const List<LegalSection> kPrivacyPolicySections = [
     title: 'Tus derechos',
     body: 'Acceso: puedes ver todos tus datos desde la app en Perfil y '
         'desde el sitio web.\n\n'
-        'Rectificación: puedes editar tu biometría desde Perfil → '
-        'HARDWARE BIOLÓGICO.\n\n'
-        'Eliminación: usa Perfil → ELIMINAR CUENTA. Acción inmediata e '
-        'irreversible.\n\n'
+        'Rectificación: puedes editar tu nombre, correo y datos básicos '
+        'desde Perfil → Cuenta y datos personales, y tus medidas desde '
+        'Perfil → Tu cuerpo.\n\n'
+        'Eliminación: usa Perfil → Cuenta y datos personales → Eliminar '
+        'cuenta. Acción inmediata e irreversible.\n\n'
         'Portabilidad: contáctanos para exportar tus datos en formato '
         'JSON.\n\n'
         'Para ejercer estos derechos o reportar un problema con tus '
         'datos: contacto@metamorfosisreal.com.',
+  ),
+  LegalSection(
+    title: 'Datos de la app Salud',
+    body: 'Si conectas Elena con la app Salud de tu iPhone (Apple '
+        'HealthKit), y solo después de que lo autorices en la pantalla de '
+        'permisos de Apple, leemos: sueño, pasos, minutos de ejercicio, '
+        'entrenamientos y peso. Elena solo lee: no escribe ni modifica '
+        'nada en la app Salud.\n\n'
+        'Para qué: completar automáticamente tus pilares del día (sueño y '
+        'movimiento) y prellenar tu peso. Los datos leídos se guardan en '
+        'tu cuenta (Firestore) para mostrarte tu historial.\n\n'
+        'Lo que NO hacemos con ellos: no los usamos para publicidad ni '
+        'marketing, no los vendemos, no los compartimos con terceros '
+        'distintos de la infraestructura listada en "Con quién '
+        'compartimos", no los enviamos a herramientas de analítica y no '
+        'los guardamos en iCloud.\n\n'
+        'Puedes retirar el permiso cuando quieras en Ajustes → Salud → '
+        'Acceso a datos y dispositivos → Elena. Los datos ya importados se '
+        'borran al eliminar tu cuenta.',
   ),
   LegalSection(
     title: 'Datos de salud sensibles: Glucosa',
@@ -121,8 +157,8 @@ const List<LegalSection> kPrivacyPolicySections = [
   LegalSection(
     title: 'Disclaimer médico',
     body: 'ElenaApp NO es un dispositivo médico. El IMR es un indicador '
-        'informativo basado en literatura científica revisada (ver '
-        'IMR_BIBLIOGRAPHY.md en el repositorio), no un diagnóstico. Si '
+        'informativo basado en literatura científica revisada, no un '
+        'diagnóstico. Si '
         'tienes alguna condición médica o estás en una de las '
         'poblaciones de riesgo listadas en Perfil → Condiciones médicas, '
         'consulta con tu profesional de salud antes de seguir las '
@@ -133,9 +169,10 @@ const List<LegalSection> kPrivacyPolicySections = [
     body: 'Si modificamos esta política sustancialmente, te lo notificaremos '
         'la próxima vez que abras la app. Tu uso continuado constituye '
         'aceptación de la versión actual.\n\n'
-        'Versión actual: 2. Última actualización: julio 2026 (se agregó '
-        'la sección "Datos de salud sensibles: Glucosa" para el módulo '
-        'opcional de seguimiento de glucosa).',
+        'Versión actual: 3. Última actualización: noviembre 2026 (se '
+        'agregaron la sección "Datos de la app Salud", el ingreso con '
+        'Apple y Google, las estadísticas de uso y la nueva ruta para '
+        'eliminar la cuenta).',
   ),
 ];
 

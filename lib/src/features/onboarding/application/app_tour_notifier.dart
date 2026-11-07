@@ -160,7 +160,7 @@ const List<TourStep> kTourSteps = [
     emoji: '📈',
     title: 'Tu Progreso',
     body:
-        'Aquí ves la evolución de tu IMR, las tendencias de cada pilar y el histórico de ciclos metabólicos. Disponible en detalle con Premium.',
+        'Aquí ves cómo cambia tu cuerpo —grasa, músculo y cintura— y qué hábitos te llevaron ahí.',
     spotlight: TourSpotlightArea.fullScreen,
     navigateTo: '/analysis',
   ),

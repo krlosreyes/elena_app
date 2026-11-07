@@ -16,6 +16,7 @@
 import 'dart:async';
 
 import 'package:elena_app/src/features/auth/application/profile_controller.dart';
+import 'package:elena_app/src/features/auth/data/apple_auth_service.dart';
 import 'package:elena_app/src/features/auth/domain/app_account.dart';
 import 'package:elena_app/src/features/auth/domain/auth_repository.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
@@ -205,6 +206,86 @@ void main() {
               'el recovery de error');
     });
   });
+
+  group('Sign in with Apple: revocar antes de borrar', () {
+    late ProviderContainer container;
+    tearDown(() => container.dispose());
+
+    test('reauthMethod prioriza Apple sobre contraseña', () {
+      final repo = _FakeAuthRepository()
+        ..providersDelUsuario = const [
+          AuthProviderKind.password,
+          AuthProviderKind.apple,
+        ];
+      container = ProviderContainer(overrides: [
+        authRepositoryProvider.overrideWithValue(repo),
+      ]);
+      expect(
+        container.read(profileControllerProvider.notifier).reauthMethod(),
+        AuthProviderKind.apple,
+      );
+    });
+
+    test('sin código de Apple no borra y pide reautenticar', () async {
+      final repo = _FakeAuthRepository()
+        ..providersDelUsuario = const [AuthProviderKind.apple];
+      final apple = _FakeAppleAuthService();
+      container = ProviderContainer(overrides: [
+        authRepositoryProvider.overrideWithValue(repo),
+        appleAuthServiceProvider.overrideWithValue(apple),
+      ]);
+      final controller = container.read(profileControllerProvider.notifier);
+
+      await expectLater(
+        controller.deleteAccount(),
+        throwsA(isA<ReauthRequiredException>()),
+      );
+      expect(repo.deleteCalled, isFalse);
+
+      // Reautentica con Apple → hay código → revoca y borra.
+      expect(await controller.reauthenticateWithApple(), isTrue);
+      await controller.deleteAccount();
+      expect(apple.revoked, isTrue);
+      expect(repo.deleteCalled, isTrue);
+    });
+
+    test('usuario sin Apple no toca el servicio de Apple', () async {
+      final repo = _FakeAuthRepository();
+      final apple = _FakeAppleAuthService();
+      container = ProviderContainer(overrides: [
+        authRepositoryProvider.overrideWithValue(repo),
+        appleAuthServiceProvider.overrideWithValue(apple),
+      ]);
+      await container.read(profileControllerProvider.notifier).deleteAccount();
+      expect(apple.revoked, isFalse);
+      expect(repo.deleteCalled, isTrue);
+    });
+  });
+
+  test('AuthProviderKind reconoce apple.com', () {
+    expect(AuthProviderKind.fromProviderId('apple.com'), AuthProviderKind.apple);
+  });
+}
+
+class _FakeAppleAuthService implements AppleAuthService {
+  bool _hasCode = false;
+  bool revoked = false;
+
+  @override
+  Future<bool> signIn() async => true;
+
+  @override
+  Future<bool> reauthenticate() async {
+    _hasCode = true;
+    return true;
+  }
+
+  @override
+  Future<void> revokeBeforeDelete() async {
+    if (!_hasCode) throw const ReauthRequiredException();
+    revoked = true;
+    _hasCode = false;
+  }
 }
 
 /// Fake mínimo de `AuthRepository` — solo `deleteAccount()` es relevante

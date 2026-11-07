@@ -221,7 +221,17 @@ const USER_SUBCOLLECTIONS = [
   "fasting_checkins",
   "sleep_routines",
   "post_reads",
+  "badges",
   "fasting_history",
+  "exercise_meta",
+  "glucose_meta",
+  "streak_meta",
+  "glucose_readings",
+  "meal_presets",
+  "gamification",
+  "fcm_tokens",
+  "alcohol_session",
+  "alcohol_history",
 ];
 
 describe("onUserDeleted (SPEC-207 borrado en cascada)", () => {
@@ -229,7 +239,7 @@ describe("onUserDeleted (SPEC-207 borrado en cascada)", () => {
     test.cleanup();
   });
 
-  it("borra todos los documentos de las 15 subcolecciones de users/{uid}", async () => {
+  it("borra todos los documentos de las subcolecciones de users/{uid}", async () => {
     // Seed: 2 documentos fake en cada subcolección.
     for (const sub of USER_SUBCOLLECTIONS) {
       const path = `users/${TEST_UID}/${sub}`;
