@@ -49,6 +49,24 @@ List<(FastingPhase, int)> stagesForTarget(int targetHours) {
   ];
 }
 
+/// Fix ayuno olvidado (2026-11-10): con un ayuno abierto por días el reloj
+/// mostraba "+2042:47:09" y desbordaba el anillo. Pasadas 24 h de exceso se
+/// muestra en días y horas ("+85 d 2 h"); por debajo, el HH:MM:SS de siempre.
+String fastingOvertimeLabel(Duration over) {
+  if (over.isNegative) over = Duration.zero;
+  if (over.inHours < 24) {
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '+${two(over.inHours)}:${two(over.inMinutes.remainder(60))}:'
+        '${two(over.inSeconds.remainder(60))}';
+  }
+  final d = over.inDays;
+  final h = over.inHours.remainder(24);
+  return '+$d d${h > 0 ? ' $h h' : ''}';
+}
+
+/// Exceso a partir del cual asumimos que el usuario olvidó cerrar el ayuno.
+const kForgottenFastOvertime = Duration(hours: 24);
+
 class FastingCountdownPanel extends StatefulWidget {
   const FastingCountdownPanel({
     super.key,
@@ -106,6 +124,7 @@ class _FastingCountdownPanelState extends State<FastingCountdownPanel> {
     final end = widget.startTime.add(targetDur);
     final remaining = targetDur - elapsed;
     final done = remaining <= Duration.zero;
+    final forgotten = done && -remaining >= kForgottenFastOvertime;
     final elapsedH = elapsed.inSeconds / 3600;
     final p = (elapsedH / target).clamp(0.0, 1.0);
     final color = fastingProgressColor(p);
@@ -174,14 +193,18 @@ class _FastingCountdownPanelState extends State<FastingCountdownPanel> {
                 style: TextStyle(color: muted, fontSize: 13),
               ),
               const SizedBox(height: 2),
-              Text(
-                done ? '+${_hms(-remaining)}' : _hms(remaining),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 40,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.5,
-                  fontFeatures: [FontFeature.tabularFigures()],
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  done ? fastingOvertimeLabel(-remaining) : _hms(remaining),
+                  maxLines: 1,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 40,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.5,
+                    fontFeatures: [FontFeature.tabularFigures()],
+                  ),
                 ),
               ),
               const SizedBox(height: 2),
@@ -195,9 +218,11 @@ class _FastingCountdownPanelState extends State<FastingCountdownPanel> {
               ),
               const SizedBox(height: 2),
               Text(
-                done
-                    ? 'Rompe el ayuno cuando quieras'
-                    : '${(p * 100).round()} % · terminas ${_hora12(end)}',
+                !done
+                    ? '${(p * 100).round()} % · terminas ${_hora12(end)}'
+                    : forgotten
+                        ? '¿Ya comiste? Termina el ayuno arriba'
+                        : 'Rompe el ayuno cuando quieras',
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.45),
                   fontSize: 12,

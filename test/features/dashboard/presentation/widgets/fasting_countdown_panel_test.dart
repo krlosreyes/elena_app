@@ -38,4 +38,36 @@ void main() {
     expect(find.text('Bajando insulina'), findsOneWidget);
     await tester.pumpWidget(const SizedBox());
   });
+
+  group('ayuno olvidado (fix 2026-11-10)', () {
+    test('menos de 24 h de exceso conserva HH:MM:SS', () {
+      expect(fastingOvertimeLabel(const Duration(hours: 2, minutes: 5, seconds: 9)),
+          '+02:05:09');
+    });
+
+    test('desde 24 h de exceso pasa a días y horas', () {
+      expect(fastingOvertimeLabel(const Duration(hours: 2042, minutes: 47)),
+          '+85 d 2 h');
+      expect(fastingOvertimeLabel(const Duration(hours: 48)), '+2 d');
+    });
+
+    testWidgets('un ayuno abierto hace meses no desborda y pide cerrarlo',
+        (tester) async {
+      await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            width: 360,
+            child: FastingCountdownPanel(
+              startTime: DateTime.now().subtract(const Duration(hours: 2058)),
+              targetHours: 16,
+            ),
+          ),
+        ),
+      ));
+      expect(find.text('+85 d 2 h'), findsOneWidget);
+      expect(find.text('¿Ya comiste? Termina el ayuno arriba'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+    });
+  });
 }

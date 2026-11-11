@@ -210,12 +210,16 @@ class PillarCardUi {
             color: Color(0xFF94A3B8),
           ),
           const SizedBox(width: 5),
-          Text(
-            'Entrada manual · conecta Apple Health para sync automático',
-            style: const TextStyle(
-              color: Color(0xFF94A3B8),
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
+          // Fix 2026-11-10: en iPhone 17 Pro el texto desbordaba 39 px.
+          // Expanded + texto más corto: cabe en una línea y, si no, baja.
+          const Expanded(
+            child: Text(
+              'Entrada manual · conecta Apple Health para sincronizar',
+              style: TextStyle(
+                color: Color(0xFF94A3B8),
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ],
