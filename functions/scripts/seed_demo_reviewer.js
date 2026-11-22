@@ -59,6 +59,9 @@ const SKIP_COLLECTIONS = new Set(['fcm_tokens']);
 // ─── Lógica pura (testeable sin Firestore) ──────────────────────────────
 
 const RE_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
+/// "20261111": formato de los IDs de daily_summary. Solo años 20xx y
+/// mes/día válidos, para no confundirlo con un número cualquiera.
+const RE_COMPACT = /^(20\d{2})(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])$/;
 const RE_DATETIME_PARTS =
   /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2}:\d{2})(\.\d{1,9})?(Z|[+-]\d{2}:?\d{2})?$/;
 const DATE_KEY = /(At|Time|time|Date|date|Day|day|timestamp|Timestamp)$/;
@@ -66,6 +69,12 @@ const EPOCH_MIN = 1.4e12; // 2014
 const EPOCH_MAX = 2.2e12; // 2039
 
 function shiftDateString(s, days) {
+  const c = RE_COMPACT.exec(s);
+  if (c) {
+    const d = new Date(Date.UTC(+c[1], +c[2] - 1, +c[3]));
+    d.setUTCDate(d.getUTCDate() + days);
+    return d.toISOString().slice(0, 10).replace(/-/g, '');
+  }
   const m = RE_DATE.exec(s);
   if (m) {
     const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
@@ -184,12 +193,31 @@ function findAnchor(docs, ts) {
   return null;
 }
 
+/// Lleva al presente cualquier fecha que quedó en el futuro (solo para el
+/// ayuno y el día metabólico abiertos, que no se pueden descartar).
+function clampFuture(v, nowMs, ts) {
+  if (v === null || v === undefined) return v;
+  if (ts.isTimestamp(v)) return ts.toMillis(v) > nowMs ? ts.makeTimestamp(nowMs) : v;
+  if (Array.isArray(v)) return v.map((x) => clampFuture(x, nowMs, ts));
+  if (typeof v === 'object' && v.constructor === Object) {
+    const o = {}; for (const [k, x] of Object.entries(v)) o[k] = clampFuture(x, nowMs, ts); return o;
+  }
+  return v;
+}
+
+function isOpenRecord(d) {
+  return (d.collection === 'fasting_history' && d.data.endTime == null) ||
+    (d.collection === 'metabolic_cycles' && !d.data.closedAt);
+}
+
 /// Fecha más reciente que aparece en un valor (Timestamps y fechas ISO).
 function maxMillis(v, ts) {
   if (v === null || v === undefined) return null;
   if (ts.isTimestamp(v)) return ts.toMillis(v);
   if (typeof v === 'string') {
     if (RE_DATE.test(v)) return Date.parse(`${v}T12:00:00Z`); // mediodía: "hoy" no cuenta como futuro
+    const c = RE_COMPACT.exec(v);
+    if (c) return Date.parse(`${c[1]}-${c[2]}-${c[3]}T12:00:00Z`);
     const m = RE_DATETIME_PARTS.exec(v);
     if (m) { const t = Date.parse(v); return Number.isNaN(t) ? null : t; }
     return null;
@@ -292,9 +320,23 @@ async function main() {
 
   // Registros posteriores al ancla quedarían en el FUTURO tras el desplazamiento.
   const future = docs.filter((d) => {
+    if (isOpenRecord(d)) return false; // el ayuno en curso se conserva siempre
     const t = docMaxMillis(d, ts);
     return t !== null && t + days * DAY_MS > now;
   });
+  const openClamped = docs.filter((d) => isOpenRecord(d) &&
+    (docMaxMillis(d, ts) ?? 0) + days * DAY_MS > now);
+  if (openClamped.length) {
+    console.log(`\nAyuno/día metabólico abiertos con fechas que pasarían el presente ` +
+      `(se llevan a "ahora", no se borran): ${openClamped.map((d) => `${d.collection}/${d.id}`).join(', ')}`);
+  }
+  if (rootSnap.exists) {
+    const rt = maxMillis(rootSnap.data(), ts);
+    if (rt !== null && rt + days * DAY_MS > now) {
+      console.log(`Perfil (users/${uid}): tiene fechas hasta ${new Date(rt).toISOString().slice(0, 16)}; ` +
+        'las que pasen el presente se llevan a "ahora".');
+    }
+  }
   console.log('\nFecha más reciente por colección (antes → después):');
   const lastBy = {};
   for (const d of docs) {
@@ -336,35 +378,39 @@ async function main() {
   }));
   console.log(`\nCopia de seguridad: ${backupFile}`);
 
-  const ops = [];
-  // Hijos antes que padres no importa en Firestore; los IDs nuevos se calculan por documento.
+  // Dos fases: primero TODOS los borrados, después TODAS las escrituras.
+  // Un documento movido puede caer en el ID de otro que se descarta
+  // (el 5-nov +11 días = el 16-nov); si el borrado del viejo 16-nov se
+  // ejecutara después, se llevaría el dato recién movido.
+  const deletes = [];
+  const writes = [];
   const dropFuture = args.includes('--drop-future');
   const futureSet = new Set(future.map((d) => d.ref.path));
+  let dropped = 0;
   for (const d of docs) {
     if (dropFuture && futureSet.has(d.ref.path)) {
-      ops.push((b) => b.delete(d.ref));
+      deletes.push((b) => b.delete(d.ref));
+      dropped++;
       continue;
     }
-    const newData = shiftValue(d.data, days, null, ts);
+    let newData = shiftValue(d.data, days, null, ts);
+    if (isOpenRecord(d)) newData = clampFuture(newData, now, ts);
     const newPath = shiftPath(d.ref.path, days);
-    const newRef = db.doc(newPath);
-    if (newPath !== d.ref.path) {
-      ops.push((b) => b.set(newRef, newData));
-      ops.push((b) => b.delete(d.ref));
-    } else {
-      ops.push((b) => b.set(d.ref, newData));
-    }
+    if (newPath !== d.ref.path) deletes.push((b) => b.delete(d.ref));
+    writes.push((b) => b.set(db.doc(newPath), newData));
   }
   if (rootSnap.exists) {
-    const root = shiftValue(rootSnap.data(), days, null, ts);
-    ops.push((b) => b.set(userRef, root));
+    const root = clampFuture(shiftValue(rootSnap.data(), days, null, ts), now, ts);
+    writes.push((b) => b.set(userRef, root));
   }
-  await commitInChunks(db, ops);
-  console.log(`Listo: ${docs.length} documentos desplazados +${days} días.`);
+  await commitInChunks(db, deletes);
+  await commitInChunks(db, writes);
+  console.log(`Listo: ${docs.length - dropped} documentos desplazados +${days} días` +
+    (dropped ? `, ${dropped} descartados.` : '.'));
   console.log('Abre la app con la cuenta demo y revisa Hoy, Progreso y Glucosa.');
 }
 
-module.exports = { maxMillis, shiftDateString, shiftValue, shiftDocId, shiftPath, computeShiftDays, findAnchor, DAY_MS };
+module.exports = { main, clampFuture, isOpenRecord, maxMillis, shiftDateString, shiftValue, shiftDocId, shiftPath, computeShiftDays, findAnchor, DAY_MS };
 
 if (require.main === module) {
   main().catch((e) => { console.error(e); process.exit(1); });

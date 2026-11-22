@@ -38,4 +38,14 @@ const docs = [
 ];
 assert.deepStrictEqual(m.findAnchor(docs, ts), {kind:'ayuno abierto', ms:30});
 assert.deepStrictEqual(m.findAnchor([docs[0]], ts), {kind:'último día metabólico cerrado', ms:20});
+assert.strictEqual(m.shiftDateString('20261111', 11), '20261122');
+assert.strictEqual(m.shiftDateString('20261231', 1), '20270101');
+assert.strictEqual(m.shiftDateString('20261399', 1), '20261399', 'mes inválido: no es fecha');
+assert.strictEqual(m.shiftDateString('12345678', 1), '12345678');
+assert.strictEqual(m.shiftPath('users/u/metabolic_cycles/2026-11-11T16:29:27.464106Z', 11), 'users/u/metabolic_cycles/2026-11-22T16:29:27.464106Z');
+const cl = m.clampFuture({a: new TS(now + 5), b: new TS(now - 5), c: {d: new TS(now + 9)}}, now, ts);
+assert.strictEqual(cl.a.ms, now); assert.strictEqual(cl.b.ms, now - 5); assert.strictEqual(cl.c.d.ms, now);
+assert.ok(m.isOpenRecord({collection:'metabolic_cycles', data:{}}));
+assert.ok(!m.isOpenRecord({collection:'metabolic_cycles', data:{closedAt: new TS(1)}}));
+assert.ok(m.isOpenRecord({collection:'fasting_history', data:{endTime:null}}));
 console.log('OK — todos los casos pasan; desplazamiento ejemplo:', n, 'días');
