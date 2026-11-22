@@ -269,7 +269,9 @@ void main() {
         )),
       );
       expect(find.textContaining('Cahill'), findsWidgets);
-      expect(find.textContaining('Spiegel'), findsWidgets);
+      // SPEC-305: la cita de la cena tardía era "Spiegel, 2009 — JCEM",
+      // que no existe; el estudio real es Gu et al., 2020 (JCEM).
+      expect(find.textContaining('Gu et al.'), findsWidgets);
     });
 
     testWidgets('tap "Activar notificaciones" dispara onActivate',

@@ -169,9 +169,19 @@ class _FastingCountdownPanelState extends State<FastingCountdownPanel> {
                 fontWeight: FontWeight.w800,
               ),
             ),
-            Text(
-              'Empezó ${relativeStartLabel(widget.startTime, _now)}',
-              style: TextStyle(color: muted, fontSize: 12),
+            // Fix 22-nov: con un ayuno de días atrás la fecha es larga
+            // ("Empezó 28 ago, 11:10 a. m.") y, sumada a "AYUNANDO · 16:8",
+            // desbordaba la fila en pantallas angostas. La fecha cede
+            // espacio y se recorta con "…"; la etiqueta de estado no.
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                'Empezó ${relativeStartLabel(widget.startTime, _now)}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.end,
+                style: TextStyle(color: muted, fontSize: 12),
+              ),
             ),
           ],
         ),
