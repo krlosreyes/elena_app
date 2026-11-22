@@ -60,3 +60,6 @@ android/key.properties
 # Salida de ./scripts/validar.sh — puente para que Claude lea el resultado de
 # analyze/test sin que haya que pegarlo a mano. Es un artefacto local, no código.
 .claude-runs/
+
+# Copias de seguridad de seed_demo_reviewer.js (datos de salud de la cuenta demo)
+functions/scripts/backups/
