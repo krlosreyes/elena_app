@@ -16,6 +16,7 @@ import 'package:elena_app/src/features/analysis/application/cycle_summary_comput
 import 'package:elena_app/src/features/analysis/domain/cycle_summary.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart';
 import 'package:elena_app/src/features/metabolic_cycle/domain/metabolic_cycle.dart';
+import 'package:elena_app/src/core/services/app_logger.dart';
 
 /// Días que abarca la ventana semanal.
 const int kWeeklyWindowDays = 7;
@@ -111,6 +112,13 @@ WeeklyPillarDays computeWeeklyPillarDays(
 final weeklyPillarDaysProvider =
     Provider.autoDispose<AsyncValue<WeeklyPillarDays>>((ref) {
   final cyclesAsync = ref.watch(last14ClosedCyclesProvider);
+  // Fix 22-nov ("Cómo lo lograste" se quedaba cargando): un error del
+  // stream de ciclos dejaba la card en spinner sin rastro. Ahora queda en
+  // el log con su causa (permission-denied, red, etc.).
+  if (cyclesAsync.hasError && !cyclesAsync.hasValue) {
+    AppLogger.error('weeklyPillarDays: no se pudieron leer los ciclos',
+        cyclesAsync.error, cyclesAsync.stackTrace);
+  }
   return cyclesAsync.whenData((all) {
     final now = DateTime.now();
     final current = splitCyclesByWeeklyWindow(all, now).current;

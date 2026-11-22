@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -13,6 +14,7 @@ import 'package:elena_app/src/features/glucose/domain/glucose_insight.dart';
 import 'package:elena_app/src/features/glucose/presentation/widgets/glucose_reading_sheet.dart';
 import 'package:elena_app/src/features/profile/application/biometric_lock_provider.dart';
 import 'package:elena_app/src/features/progress/presentation/biometric_checkin_sheet.dart';
+import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart';
 
 // Progreso v4 (2026-11-05) — el objetivo de Elena es la salud metabólica,
 // que va de la mano con la recomposición corporal. La pantalla cuenta una
@@ -575,30 +577,83 @@ class _BenefitsCard extends StatelessWidget {
 
 // ─── 3 · Cómo lo lograste ──────────────────────────────────────────
 
-class _HabitsCard extends ConsumerWidget {
+class _HabitsCard extends ConsumerStatefulWidget {
   const _HabitsCard({required this.muscleAtRisk});
 
   final bool muscleAtRisk;
 
-  static const _labels = {
+  @override
+  ConsumerState<_HabitsCard> createState() => _HabitsCardState();
+}
+
+/// Fix 22-nov: la card mostraba un spinner mientras `weeklyPillarDays` no
+/// tuviera valor — y eso incluía el caso de ERROR del stream de ciclos,
+/// que nunca se resolvía. Resultado: "siempre se queda cargando".
+/// Ahora hay tres estados explícitos:
+///   - datos  → barras por pilar;
+///   - error, o más de [_kHabitsLoadTimeout] cargando → mensaje y
+///     "Reintentar" (re-suscribe el stream);
+///   - cargando → spinner, nunca indefinido.
+const _kHabitsLoadTimeout = Duration(seconds: 8);
+
+abstract final class _HabitsCardLabels {
+  static const labels = {
     ProgressPillar.ayuno: 'Ayuno',
     ProgressPillar.sueno: 'Sueño',
     ProgressPillar.agua: 'Agua',
     ProgressPillar.movimiento: 'Movimiento',
     ProgressPillar.comida: 'Comida',
   };
-  static const _colors = {
+  static const colors = {
     ProgressPillar.ayuno: Color(0xFF00C49A),
     ProgressPillar.sueno: Color(0xFF818CF8),
     ProgressPillar.agua: Color(0xFF38BDF8),
     ProgressPillar.movimiento: Color(0xFF2DD4BF),
     ProgressPillar.comida: Color(0xFFFB923C),
   };
+}
+
+class _HabitsCardState extends ConsumerState<_HabitsCard> {
+  Timer? _timer;
+  bool _slow = false;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  void initState() {
+    super.initState();
+    _armTimer();
+  }
+
+  void _armTimer() {
+    _timer?.cancel();
+    _slow = false;
+    _timer = Timer(_kHabitsLoadTimeout, () {
+      if (mounted) setState(() => _slow = true);
+    });
+  }
+
+  void _retry() {
+    ref.invalidate(last14ClosedCyclesProvider);
+    setState(_armTimer);
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  bool get muscleAtRisk => widget.muscleAtRisk;
+
+  static const _labels = _HabitsCardLabels.labels;
+  static const _colors = _HabitsCardLabels.colors;
+
+  @override
+  Widget build(BuildContext context) {
     final closed = ref.watch(closedByYou30Provider);
-    final weekly = ref.watch(weeklyPillarDaysProvider).valueOrNull;
+    final weeklyAsync = ref.watch(weeklyPillarDaysProvider);
+    final weekly = weeklyAsync.valueOrNull;
+    if (weekly != null) _timer?.cancel();
+    final failed = weekly == null && (weeklyAsync.hasError || _slow);
     final days = weekly == null
         ? null
         : {
@@ -630,7 +685,31 @@ class _HabitsCard extends ConsumerWidget {
             style: TextStyle(color: _faint, fontSize: 12),
           ),
           const SizedBox(height: 12),
-          if (days == null)
+          if (days == null && failed)
+            Container(
+              key: const ValueKey('habits-card-error'),
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.04),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'No pudimos cargar tus hábitos de esta semana.',
+                      style: TextStyle(color: _muted, fontSize: 13),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: _retry,
+                    child: const Text('Reintentar'),
+                  ),
+                ],
+              ),
+            )
+          else if (days == null)
             const SizedBox(
               height: 40,
               child: Center(
