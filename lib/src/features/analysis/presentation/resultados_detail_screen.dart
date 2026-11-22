@@ -15,6 +15,8 @@ import 'package:elena_app/src/features/analysis/domain/chart_metric.dart';
 import 'package:elena_app/src/features/analysis/domain/hero_aggregation.dart';
 import 'package:elena_app/src/features/analysis/domain/metric_series.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/pillar_overview_tile.dart';
+import 'package:elena_app/src/features/science/domain/scientific_source.dart';
+import 'package:elena_app/src/features/science/presentation/widgets/sources_footer.dart';
 
 class ResultadosDetailScreen extends ConsumerWidget {
   const ResultadosDetailScreen({super.key});
@@ -65,6 +67,17 @@ class ResultadosDetailScreen extends ConsumerWidget {
                   _imrTile(ref, imr.value!),
                   const SizedBox(height: 10),
                   _bodyFatTile(bodyFat.value!),
+                  // SPEC-305 (guía 1.4.1): fuentes de los cálculos que se
+                  // muestran arriba.
+                  const SizedBox(height: 20),
+                  const SourcesFooter(
+                    sources: [
+                      ...ScientificSources.bodyFat,
+                      ...ScientificSources.fivePillars,
+                    ],
+                    intro: 'Tu % de grasa, tu Score del día y tu IMR se '
+                        'apoyan en estas fuentes.',
+                  ),
                 ],
               ),
       ),

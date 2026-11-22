@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 
 import 'package:elena_app/src/features/sleep/domain/sleep_stage_science.dart';
 import 'package:elena_app/src/features/sleep/domain/sleep_stages.dart';
+import 'package:elena_app/src/features/science/presentation/widgets/sources_footer.dart';
 
 class SleepStagesView extends StatefulWidget {
   const SleepStagesView({super.key, required this.stages});
@@ -211,7 +212,7 @@ class _SleepStagesViewState extends State<SleepStagesView> {
           const SizedBox(height: 6),
           Padding(
             padding: const EdgeInsets.only(left: 24),
-            child: Text(citation,
+            child: CitationLink(citation,
                 style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.45),
                     fontSize: 11,
@@ -252,7 +253,7 @@ class _SleepStagesViewState extends State<SleepStagesView> {
                         fontSize: 12,
                         height: 1.4)),
                 const SizedBox(height: 3),
-                Text(sci.citation,
+                CitationLink(sci.citation,
                     style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.4),
                         fontSize: 10.5,

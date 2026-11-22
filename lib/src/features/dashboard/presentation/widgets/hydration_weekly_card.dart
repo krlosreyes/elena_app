@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/hydration/application/last_week_hydration_provider.dart';
 import 'package:elena_app/src/features/hydration/domain/hydration_weekly_insight.dart';
+import 'package:elena_app/src/features/science/presentation/widgets/sources_footer.dart';
 
 const Color _kHydrationAccent = Color(0xFF38BDF8);
 
@@ -263,7 +264,7 @@ class HydrationWeeklyCard extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 6),
-                Text(
+                CitationLink(
                   m.citation,
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.45),

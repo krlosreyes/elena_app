@@ -21,6 +21,8 @@ import 'package:elena_app/src/features/progress/presentation/biometric_checkin_s
 import 'package:go_router/go_router.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
+import 'package:elena_app/src/features/science/domain/scientific_source.dart';
+import 'package:elena_app/src/features/science/presentation/widgets/sources_footer.dart';
 
 class BiometricosDetailScreen extends ConsumerWidget {
   const BiometricosDetailScreen({super.key});
@@ -211,6 +213,14 @@ class _Body extends ConsumerWidget {
               ),
             ],
           ),
+          // SPEC-305 (guía 1.4.1): el % de grasa es un cálculo de salud;
+          // sus fuentes van aquí mismo, con enlace.
+          const SizedBox(height: 16),
+          const SourcesFooter(
+            sources: ScientificSources.bodyFat,
+            intro: 'Tu % de grasa se estima con la fórmula US Navy y se '
+                'interpreta con rangos de referencia por sexo.',
+          ),
         ],
       ),
     );
@@ -263,6 +273,11 @@ class _Body extends ConsumerWidget {
                 fontSize: 14,
                 height: 1.5,
               ),
+            ),
+            const SizedBox(height: 12),
+            const CitationLink(
+              'Fuente: Hodgdon & Beckett, 1984 (US Navy)',
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 20),
             Align(

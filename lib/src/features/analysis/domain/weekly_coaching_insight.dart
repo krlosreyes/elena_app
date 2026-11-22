@@ -76,7 +76,7 @@ enum WeakPillar {
       case WeakPillar.hydration:
         return 'EFSA 2010 + Popkin 2010';
       case WeakPillar.exercise:
-        return 'AHA 2018 + Mattson 2017';
+        return 'Piercy 2018 + Mattson 2017';
       case WeakPillar.meals:
         return 'Lopez-Minguez 2018';
     }

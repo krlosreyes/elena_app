@@ -11,6 +11,7 @@ import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cyc
 import 'package:elena_app/src/features/metabolic_cycle/domain/cycles_history_summary.dart';
 import 'package:elena_app/src/features/metabolic_cycle/domain/metabolic_cycle.dart';
 import 'package:elena_app/src/features/metabolic_cycle/presentation/widgets/cycle_detail_sheet.dart';
+import 'package:elena_app/src/features/science/presentation/widgets/sources_footer.dart';
 
 class CyclesHistoryCard extends ConsumerWidget {
   const CyclesHistoryCard({super.key});
@@ -327,7 +328,7 @@ class CyclesHistoryCard extends ConsumerWidget {
           ),
           if (feedback.citation != null) ...[
             const SizedBox(height: 4),
-            Text(
+            CitationLink(
               feedback.citation!,
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.45),

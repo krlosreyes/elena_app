@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:elena_app/src/features/coaching/domain/coaching_action.dart';
+import 'package:elena_app/src/features/science/presentation/widgets/sources_footer.dart';
 
 class ActionExplainerSheet extends StatelessWidget {
   const ActionExplainerSheet({super.key, required this.action});
@@ -51,7 +52,7 @@ class ActionExplainerSheet extends StatelessWidget {
             const SizedBox(height: 4),
             Text(action.reason, style: theme.textTheme.bodyMedium),
             const SizedBox(height: 16),
-            Text(
+            CitationLink(
               action.citation,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.textTheme.bodySmall?.color?.withAlpha(160),

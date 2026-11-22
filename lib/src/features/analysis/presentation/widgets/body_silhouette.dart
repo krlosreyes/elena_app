@@ -10,6 +10,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:elena_app/src/features/analysis/domain/body_zone.dart';
+import 'package:elena_app/src/features/science/presentation/widgets/sources_footer.dart';
 
 class BodySilhouette extends StatelessWidget {
   const BodySilhouette({
@@ -77,8 +78,8 @@ class BodySilhouette extends StatelessWidget {
         const SizedBox(height: 24),
         _ZoneGauge(bodyFatPct: bodyFatPct, isMale: isMale),
         const SizedBox(height: 10),
-        Text(
-          'Rangos ACSM ${isMale ? '(hombre)' : '(mujer)'} — '
+        CitationLink(
+          'Rangos ACE ${isMale ? '(hombre)' : '(mujer)'} — '
           '${isMale ? 'Atlético <14, Fitness 14-17, Promedio 18-24, Alto >=25' : 'Atlético <21, Fitness 21-24, Promedio 25-31, Alto >=32'}',
           style: TextStyle(
             color: Colors.white.withValues(alpha: 0.40),

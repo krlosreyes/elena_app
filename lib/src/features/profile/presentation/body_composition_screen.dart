@@ -12,6 +12,8 @@ import 'package:elena_app/src/features/billing/presentation/paywall_launcher.dar
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/features/profile/presentation/widgets/body_composition_card.dart';
+import 'package:elena_app/src/features/science/domain/scientific_source.dart';
+import 'package:elena_app/src/features/science/presentation/widgets/sources_footer.dart';
 
 class BodyCompositionScreen extends ConsumerWidget {
   const BodyCompositionScreen({super.key});
@@ -158,6 +160,23 @@ class BodyCompositionScreen extends ConsumerWidget {
                           ),
                         ),
                       ),
+                      // SPEC-305: las fuentes de los cálculos nunca quedan
+                      // detrás del muro de pago (guía 1.4.1: fáciles de
+                      // encontrar para cualquier usuario).
+                      const SizedBox(height: 12),
+                      TextButton.icon(
+                        key: const ValueKey('body-comp-gate-sources'),
+                        onPressed: () => showSourcesSheet(
+                          context,
+                          sources: ScientificSources.bodyComposition,
+                          title: 'Fuentes de estos cálculos',
+                        ),
+                        icon: const Icon(Icons.menu_book_rounded, size: 16),
+                        label: const Text('Ver fuentes científicas'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: AppColors.accent,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -244,7 +263,14 @@ class _BodyCompositionContent extends StatelessWidget {
           const SizedBox(height: 16),
 
           // ── Nota científica ───────────────────────────────────────────────
-          _ScientificNote(),
+          // SPEC-305 (guía 1.4.1): fuentes con enlace, visibles, justo
+          // debajo de los cálculos. Reemplaza la antigua "BASE CIENTÍFICA"
+          // (texto gris al 35%, sin enlaces), que App Review no vio.
+          const SourcesFooter(
+            sources: ScientificSources.bodyComposition,
+            intro: 'Así calculamos tu composición corporal. Toca una fuente '
+                'para leer el estudio.',
+          ),
 
           const SizedBox(height: 32),
         ],
@@ -642,56 +668,6 @@ class _ImrImpactCard extends StatelessWidget {
                   ),
                 ),
               ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─── Nota científica ──────────────────────────────────────────────────────────
-
-class _ScientificNote extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.science_outlined,
-                  size: 14, color: Colors.white.withValues(alpha: 0.4)),
-              const SizedBox(width: 6),
-              Text(
-                'BASE CIENTÍFICA',
-                style: TextStyle(
-                  fontSize: 8.5,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1,
-                  color: Colors.white.withValues(alpha: 0.4),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Los cálculos de composición corporal usan la Fórmula Naval del US Navy '
-            '(Hodgdon & Beckett, 1984), validada en estudios de salud metabólica. '
-            'El WHTR está respaldado por Ashwell et al. (2012) como predictor '
-            'independiente de riesgo cardiovascular. El FFMI fue establecido por '
-            'Kouri et al. (1995) como referencia de masa muscular natural.',
-            style: TextStyle(
-              fontSize: 10,
-              color: Colors.white.withValues(alpha: 0.35),
-              height: 1.6,
             ),
           ),
         ],

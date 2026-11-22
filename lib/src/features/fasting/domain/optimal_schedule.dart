@@ -135,8 +135,8 @@ class OptimalScheduleCalculator {
   }) {
     if (violatesIntestinalBlock(windowEnd)) {
       return 'Cerrar la ventana de comida después de las 21:00 viola el '
-          'bloqueo intestinal natural (Biological Dial §13). Comer en esa '
-          'ventana destruye la calidad del sueño y baja tu IMR de mañana.';
+          'bloqueo intestinal natural (Gu 2020, Lopez-Minguez 2018). Comer '
+          'tan tarde empeora tu glucosa nocturna y baja tu IMR de mañana.';
     }
 
     final optimal = forProtocol(protocol);

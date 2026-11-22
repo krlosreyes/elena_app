@@ -39,6 +39,7 @@ import 'package:elena_app/src/features/fasting/domain/fasting_status.dart'
 // Fuente única del copy del Día Metabólico — compartida con la hoja
 // explicativa. Ver la nota de cabecera sobre el paso 103.
 import 'package:elena_app/src/features/metabolic_cycle/domain/metabolic_day_copy.dart';
+import 'package:elena_app/src/features/science/presentation/widgets/sources_footer.dart';
 
 // ── PASO 100 — Identidad ─────────────────────────────────────────────
 // Principios: Unidad + Autoridad
@@ -450,7 +451,7 @@ class IntroInsightStep extends StatelessWidget {
         hour: 'Primeras horas',
         icon: '🔥',
         text: 'La insulina baja y tu cuerpo empieza a tirar de reservas.',
-        citation: '· Cahill, 1966 — NEJM',
+        citation: '· Cahill, 1966 — J Clin Invest',
       ),
     ];
 
@@ -781,7 +782,7 @@ class IntroNotificationsStep extends StatelessWidget {
           headline: 'Tu ventana se cierra en 1 hora',
           body: 'Cenar después impacta tu sueño y tu score de mañana. '
               'Tu cuerpo agradece el cierre temprano.',
-          citation: '· Spiegel, 2009 — JCEM',
+          citation: '· Gu et al., 2020 — JCEM',
           isDark: isDark,
         ),
         const SizedBox(height: 28),
@@ -1080,7 +1081,7 @@ class _TimelineRow extends StatelessWidget {
                   ),
                   if (citation != null) ...[
                     const SizedBox(height: 3),
-                    Text(
+                    CitationLink(
                       citation!,
                       style: TextStyle(
                         color: textSecondary.withValues(alpha: 0.7),
@@ -1256,7 +1257,7 @@ class _ExamplePill extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 2),
-                Text(
+                CitationLink(
                   citation,
                   style: TextStyle(
                     color: textSecondary.withValues(alpha: 0.75),

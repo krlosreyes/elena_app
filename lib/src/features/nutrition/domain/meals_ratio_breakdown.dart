@@ -97,28 +97,28 @@ class MealsRatioInsight {
           headline: 'Excelente semana A-dominante.',
           action:
               'Sostener este patrón se asocia con mejor sensibilidad a la insulina y menos grasa abdominal.',
-          citation: 'Frank Suárez (Tipo A/E) + Jenkins 2002',
+          citation: 'Jenkins 2002 + Liu 2000',
         );
       case MealsRatioInsightTier.good:
         return const MealsRatioInsight(
           headline: 'Buen nivel A-dominante.',
           action:
               'Mantente arriba del 70% para sostener sensibilidad a la insulina.',
-          citation: 'Frank Suárez (Tipo A/E)',
+          citation: 'Jenkins 2002',
         );
       case MealsRatioInsightTier.insufficient:
         return const MealsRatioInsight(
           headline: 'Tu semana tuvo demasiados platos E.',
           action:
               'Empieza por reemplazar un plato por día con un Todo A — proteína, verduras, grasa saludable.',
-          citation: 'Frank Suárez (Tipo A/E) + Jenkins 2002',
+          citation: 'Jenkins 1981 + Jenkins 2002',
         );
       case MealsRatioInsightTier.poor:
         return const MealsRatioInsight(
           headline: 'Tu semana fue E-dominante.',
           action:
               'Los alimentos refinados están dictando tu metabolismo. Vuelve al 2 a 1 mínimo esta semana.',
-          citation: 'Frank Suárez (Tipo A/E)',
+          citation: 'Liu 2000 + Jenkins 2002',
         );
     }
   }

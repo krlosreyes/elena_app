@@ -14,6 +14,7 @@ import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/nutrition/application/last_week_meals_ratio_provider.dart';
 import 'package:elena_app/src/features/nutrition/domain/meal_ratio.dart';
 import 'package:elena_app/src/features/nutrition/domain/meals_ratio_breakdown.dart';
+import 'package:elena_app/src/features/science/presentation/widgets/sources_footer.dart';
 
 class MealsRatioCard extends ConsumerWidget {
   const MealsRatioCard({super.key});
@@ -309,7 +310,7 @@ class MealsRatioCard extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 6),
-                Text(
+                CitationLink(
                   insight.citation,
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.45),

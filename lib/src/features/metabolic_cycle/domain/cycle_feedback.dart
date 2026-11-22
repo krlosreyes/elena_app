@@ -238,7 +238,7 @@ class CycleFeedbackGenerator {
       out.add((
         text:
             'Buen ayuno, pero hoy tus platos fueron E-dominantes. El ayuno gana cuando la ventana cierra con A.',
-        citation: 'Sutton 2018 + Frank Suárez §3',
+        citation: 'Sutton 2018 + Jenkins 2002',
         id: 'insight-fasting-good-nutrition-e',
       ));
     }

@@ -113,21 +113,21 @@ class ExerciseCoachingMessage {
               'Cerca pero corto. Te faltan minutos para el efecto metabólico.',
           action:
               'Suma 10 min al día. La OMS marca 150 min/semana como mínimo.',
-          citation: 'OMS 2020 + AHA 2018',
+          citation: 'OMS 2020 + Piercy 2018',
         );
       case ExerciseInsightTier.meetsTarget:
         return const ExerciseCoachingMessage(
           headline: 'En target. Sostén el ritmo.',
           action:
               'Varía tipo: LISS + fuerza 2x/semana mejora sensibilidad a la insulina más que solo cardio.',
-          citation: 'AHA 2018 + Mattson 2017',
+          citation: 'Piercy 2018 + Mattson 2017',
         );
       case ExerciseInsightTier.aboveTarget:
         return const ExerciseCoachingMessage(
-          headline: 'Volumen alto. Verificá recuperación.',
+          headline: 'Volumen alto. Cuida tu recuperación.',
           action:
-              'Asegurá ≥1 día de descanso completo y 7+ h de sueño para que el músculo repare.',
-          citation: 'AHA 2018 + Walker 2017',
+              'Asegura ≥1 día de descanso completo y 7+ h de sueño para que el músculo repare.',
+          citation: 'Piercy 2018 + Walker 2017',
         );
     }
   }

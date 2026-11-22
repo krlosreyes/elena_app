@@ -109,7 +109,7 @@ void main() {
       expect(b.aDominantPercent, 80);
       expect(b.tier, MealsRatioInsightTier.excellent);
       final ins = MealsRatioInsight.forTier(b.tier);
-      expect(ins?.citation, contains('Frank Suárez'));
+      expect(ins?.citation, contains('Jenkins'));
     });
 
     test('70-79% → tier good', () {
@@ -145,7 +145,7 @@ void main() {
         expect(ins, isNotNull);
         expect(ins!.headline, isNotEmpty);
         expect(ins.action, isNotEmpty);
-        expect(ins.citation, contains('Frank Suárez'));
+        expect(ins.citation, contains('Jenkins'));
       }
     });
   });

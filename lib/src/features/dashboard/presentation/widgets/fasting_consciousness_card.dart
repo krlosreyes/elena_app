@@ -28,6 +28,7 @@ import 'package:elena_app/src/features/nutrition/domain/nervous_system.dart';
 import 'package:elena_app/src/features/streak/domain/fasting_eligibility.dart';
 import 'package:elena_app/src/features/streak/domain/fasting_symptom_log.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
+import 'package:elena_app/src/features/science/presentation/widgets/sources_footer.dart';
 
 class FastingConsciousnessCard extends ConsumerWidget {
   const FastingConsciousnessCard({
@@ -558,13 +559,26 @@ class FastingConsciousnessCard extends ConsumerWidget {
                 ),
               ],
             ),
-            content: Text(
-              // El motivo lo redacta el propio gate, para que no haya dos
-              // versiones del criterio médico.
-              '${gate.reason}\n\nPuedes cambiar lo que declaraste desde '
-              'Perfil › Datos biométricos si tu situación cambia.',
-              style: const TextStyle(
-                  color: Color(0xFF94A3B8), fontSize: 13, height: 1.45),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  // El motivo lo redacta el propio gate, para que no haya
+                  // dos versiones del criterio médico.
+                  '${gate.reason}\n\nPuedes cambiar lo que declaraste desde '
+                  'Perfil › Datos biométricos si tu situación cambia.',
+                  style: const TextStyle(
+                      color: Color(0xFF94A3B8), fontSize: 13, height: 1.45),
+                ),
+                // SPEC-305 (guía 1.4.1): fuente del criterio médico.
+                const SizedBox(height: 12),
+                const CitationLink(
+                  'Fuentes: OMS 2000 · de Cabo & Mattson 2019',
+                  style:
+                      TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+                ),
+              ],
             ),
             actions: [
               TextButton(

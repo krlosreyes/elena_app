@@ -137,12 +137,14 @@ void main() {
       }
     });
 
-    test('citas mencionan OMS, AHA o Mattson (bibliografía SPEC-153)', () {
+    // SPEC-305: "AHA 2018" se reemplazó por la cita real que respaldaba,
+    // Piercy et al. 2018 (JAMA, Physical Activity Guidelines).
+    test('citas mencionan OMS, Piercy o Mattson (bibliografía SPEC-153)', () {
       for (final t in ExerciseInsightTier.values) {
         if (t == ExerciseInsightTier.empty) continue;
         final m = ExerciseCoachingMessage.forTier(t)!;
         final ok = m.citation.contains('OMS') ||
-            m.citation.contains('AHA') ||
+            m.citation.contains('Piercy') ||
             m.citation.contains('Mattson');
         expect(ok, isTrue, reason: 'tier=$t citation=${m.citation}');
       }

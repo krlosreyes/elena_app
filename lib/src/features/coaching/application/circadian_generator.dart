@@ -62,7 +62,7 @@ class CircadianGenerator {
               'del día.',
           pillar: Pillar.hydration,
           confidence: ConfidenceLevel.low,
-          citation: '· Biological Dial',
+          citation: '· Wright 2013 + Popkin 2010',
           source: ActionSource.circadian,
           urgencyKind: ActionUrgencyKind.phaseOpportunity,
           circadianImpact: kCircNeutral,

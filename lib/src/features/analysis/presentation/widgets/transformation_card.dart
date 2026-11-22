@@ -16,6 +16,7 @@ import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/analysis/application/transformation_narrator.dart';
 import 'package:elena_app/src/features/analysis/application/transformation_provider.dart';
 import 'package:elena_app/src/features/analysis/domain/transformation_snapshot.dart';
+import 'package:elena_app/src/features/science/presentation/widgets/sources_footer.dart';
 
 /// Versión "live" del card que watch el provider del snapshot.
 class TransformationCardLive extends ConsumerWidget {
@@ -256,7 +257,7 @@ class _NarrativeBlock extends StatelessWidget {
         ),
         if (narrative.citation != null) ...[
           const SizedBox(height: 6),
-          Text(
+          CitationLink(
             '· ${narrative.citation}',
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.45),

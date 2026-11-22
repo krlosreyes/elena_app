@@ -71,7 +71,7 @@ class OrchestratorGenerator {
           title: 'Aún no te moviste',
           action: 'Suma 20 min de movimiento — una caminata cuenta.',
           reason: 'El movimiento ayuda a regular tu insulina.',
-          citation: '· AHA 2018',
+          citation: '· Piercy 2018',
           confidence: ConfidenceLevel.medium,
           circadian: 0.65,
         );

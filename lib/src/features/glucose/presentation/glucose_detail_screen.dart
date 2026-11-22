@@ -14,6 +14,8 @@ import 'package:elena_app/src/features/glucose/domain/glucose_variability.dart';
 import 'package:elena_app/src/features/glucose/presentation/widgets/glucose_chart.dart';
 import 'package:elena_app/src/features/glucose/presentation/widgets/glucose_insight_card.dart';
 import 'package:elena_app/src/features/glucose/presentation/widgets/glucose_reading_sheet.dart';
+import 'package:elena_app/src/features/science/domain/scientific_source.dart';
+import 'package:elena_app/src/features/science/presentation/widgets/sources_footer.dart';
 
 class GlucoseDetailScreen extends ConsumerWidget {
   const GlucoseDetailScreen({super.key});
@@ -137,6 +139,9 @@ class GlucoseDetailScreen extends ConsumerWidget {
                   ...insights.map((i) => GlucoseInsightCard(insight: i)),
                 const SizedBox(height: 24),
                 const _EducationSection(),
+                // SPEC-305 (guía 1.4.1): fuente del umbral de variabilidad.
+                const SizedBox(height: 12),
+                const SourcesFooter(sources: ScientificSources.glucose),
                 const SizedBox(height: 20),
                 _DisclaimerFooter(),
               ],

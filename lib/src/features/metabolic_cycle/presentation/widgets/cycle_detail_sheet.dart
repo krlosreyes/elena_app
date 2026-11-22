@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/metabolic_cycle/domain/closure_reason.dart';
 import 'package:elena_app/src/features/metabolic_cycle/domain/metabolic_cycle.dart';
+import 'package:elena_app/src/features/science/presentation/widgets/sources_footer.dart';
 
 class CycleDetailSheet extends StatelessWidget {
   const CycleDetailSheet({
@@ -335,7 +336,7 @@ class CycleDetailSheet extends StatelessWidget {
                 ),
                 if (fb.citation != null) ...[
                   const SizedBox(height: 6),
-                  Text(
+                  CitationLink(
                     fb.citation!,
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.45),

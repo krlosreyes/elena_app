@@ -10,6 +10,7 @@ import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/sleep/application/last_week_sleep_logs_provider.dart';
 import 'package:elena_app/src/features/sleep/domain/sleep_log.dart';
 import 'package:elena_app/src/features/sleep/domain/sleep_weekly_insight.dart';
+import 'package:elena_app/src/features/science/presentation/widgets/sources_footer.dart';
 
 /// Color base del pilar Sueño en la app — coherente con
 /// `WeeklyCoachingCard` y `PillarsHeatmap` legacy (purple-indigo).
@@ -318,7 +319,7 @@ class SleepQualityCard extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 6),
-                Text(
+                CitationLink(
                   m.citation,
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.45),

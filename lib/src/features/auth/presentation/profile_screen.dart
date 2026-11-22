@@ -147,6 +147,14 @@ class _ProfileBody extends ConsumerWidget {
               title: 'Salud y Apple Salud',
               onTap: () => context.push('/profile/salud'),
             ),
+            // SPEC-305 (guía 1.4.1): las fuentes de cada cálculo, a un toque
+            // desde la pantalla principal de Perfil.
+            ProfileRow(
+              key: const ValueKey('profile-row-fuentes'),
+              icon: Icons.menu_book_rounded,
+              title: 'Fuentes científicas',
+              onTap: () => context.push('/profile/fuentes'),
+            ),
             ProfileRow(
               icon: Icons.help_outline_rounded,
               title: 'Ayuda y legal',

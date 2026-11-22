@@ -62,6 +62,7 @@ import 'package:elena_app/src/features/exercise/presentation/exercise_habits_det
 // SPEC-263: Retos de constancia (competencia social sana).
 import 'package:elena_app/src/features/challenges/presentation/challenges_screen.dart';
 import 'package:elena_app/src/features/challenges/presentation/challenge_detail_screen.dart';
+import 'package:elena_app/src/features/science/presentation/scientific_sources_screen.dart';
 
 /// SPEC-222: llave global del navigator raíz para deeplink routing
 /// desde notificaciones (cold start + foreground).
@@ -267,6 +268,13 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/profile/body-composition',
         name: 'body-composition',
         builder: (context, state) => const BodyCompositionScreen(),
+      ),
+      // SPEC-305 (guía 1.4.1 de App Store): todas las fuentes científicas
+      // con enlace. Es la ruta que se le indica a App Review.
+      GoRoute(
+        path: ScientificSourcesScreen.routePath,
+        name: 'scientific-sources',
+        builder: (context, state) => const ScientificSourcesScreen(),
       ),
       // SPEC-76: pantalla read-only del disclaimer médico.
       GoRoute(

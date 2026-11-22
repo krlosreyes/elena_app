@@ -57,7 +57,7 @@ class _SleepRoutineScreenState extends ConsumerState<SleepRoutineScreen> {
       icon: Icons.coffee_rounded,
       title: 'Sin cafeína desde las 14h',
       subtitle:
-          'La cafeína tiene vida media de 5-7h y reduce el sueño profundo (Huberman 2021).',
+          'La cafeína tomada hasta 6 horas antes de dormir todavía recorta tu sueño (Drake 2013).',
       field: 'noCaffeine',
     ),
   ];

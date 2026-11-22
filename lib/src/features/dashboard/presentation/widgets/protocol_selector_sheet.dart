@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/streak/domain/fasting_eligibility.dart';
+import 'package:elena_app/src/features/science/presentation/widgets/sources_footer.dart';
 
 /// Metadata estática por protocolo. Nivel de dificultad + descripción
 /// usada en el sheet. Las descripciones citan el marco bibliográfico
@@ -217,6 +218,14 @@ class ProtocolSelectorSheet extends StatelessWidget {
                   );
                 },
               ),
+            ),
+            // SPEC-305 (guía 1.4.1): el tope de protocolo sale de un
+            // cálculo de salud (IMC + condiciones declaradas); sus fuentes
+            // quedan a un toque.
+            const SizedBox(height: 12),
+            const CitationLink(
+              'Fuentes de seguridad: OMS 2000 · de Cabo & Mattson 2019',
+              style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
             ),
           ],
         ),

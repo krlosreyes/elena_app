@@ -16,6 +16,7 @@ import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/analysis/application/weekly_coaching_provider.dart';
 import 'package:elena_app/src/features/analysis/domain/weekly_coaching_insight.dart';
 import 'package:elena_app/src/core/constants/pillar_constants.dart';
+import 'package:elena_app/src/features/science/presentation/widgets/sources_footer.dart';
 
 /// Umbral para considerar un delta "significativo" en la UI. Coincide
 /// con el patrón del CycleClosureCard (SPEC-149) — ±5% es ruido,
@@ -352,7 +353,7 @@ class WeeklyCoachingCard extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: 6),
-                    Text(
+                    CitationLink(
                       weak.citation,
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.45),

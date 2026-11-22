@@ -80,6 +80,11 @@ class ProfileHelpScreen extends StatelessWidget {
           children: [
             const ProfileHelpGuideCard(),
             ProfileRow(
+              icon: Icons.menu_book_rounded,
+              title: 'Fuentes científicas',
+              onTap: () => context.push('/profile/fuentes'),
+            ),
+            ProfileRow(
               icon: Icons.privacy_tip_outlined,
               title: 'Política de privacidad',
               onTap: () => context.push('/legal/privacy'),

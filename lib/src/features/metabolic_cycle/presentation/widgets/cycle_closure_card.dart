@@ -17,6 +17,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart';
 import 'package:elena_app/src/features/metabolic_cycle/domain/metabolic_cycle.dart';
+import 'package:elena_app/src/features/science/presentation/widgets/sources_footer.dart';
 
 /// Card del Dashboard que muestra el cierre del último ciclo metabólico.
 /// Se oculta cuando no hay cierre no leído.
@@ -282,7 +283,7 @@ class CycleClosureCardView extends StatelessWidget {
                 ),
                 if (citation != null) ...[
                   const SizedBox(height: 6),
-                  Text(
+                  CitationLink(
                     citation,
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.45),

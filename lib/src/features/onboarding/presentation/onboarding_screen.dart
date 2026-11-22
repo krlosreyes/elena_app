@@ -48,6 +48,7 @@ import 'package:elena_app/src/features/glucose/domain/glucose_protocol_eligibili
 // documentacion/propuestas/Propuesta_Modulo_Ejercicio_2026-07-21.docx §4.1.
 import 'package:elena_app/src/features/exercise/data/exercise_profile_repository_impl.dart';
 import 'package:elena_app/src/features/exercise/domain/exercise_profile.dart';
+import 'package:elena_app/src/features/science/presentation/widgets/sources_footer.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -921,6 +922,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             ),
           ),
         ),
+        // SPEC-305 (guía 1.4.1): fuentes del cribado médico del ayuno.
+        const SizedBox(height: 10),
+        const CitationLink(
+          'Fuentes: OMS 2000 · de Cabo & Mattson 2019',
+          style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+        ),
         const SizedBox(height: 24),
 
         // Checkbox de aceptación
@@ -992,6 +999,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 'corporal sin pedirte que adivines tu % de grasa. '
                 'Quedan en tu cuenta privada — no se comparten.',
             isDark: isDark,
+          ),
+          // SPEC-305 (guía 1.4.1): fuente de la fórmula que usamos.
+          const Padding(
+            padding: EdgeInsets.only(bottom: 12),
+            child: CitationLink(
+              'Fórmula US Navy — Hodgdon & Beckett, 1984',
+              style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+            ),
           ),
           _simpleSelector(
               "Nacimiento", DateFormat('dd/MM/yyyy').format(_birthDate),

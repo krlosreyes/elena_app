@@ -13,6 +13,8 @@ import 'package:intl/intl.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/auth/domain/health_disclaimer.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
+import 'package:elena_app/src/features/science/domain/scientific_source.dart';
+import 'package:elena_app/src/features/science/presentation/widgets/sources_footer.dart';
 
 class DisclaimerScreen extends ConsumerWidget {
   const DisclaimerScreen({super.key});
@@ -98,6 +100,13 @@ class DisclaimerScreen extends ConsumerWidget {
                     height: 1.5,
                   ),
                 ),
+              ),
+              // SPEC-305 (guía 1.4.1): de dónde salen estas restricciones.
+              const SizedBox(height: 16),
+              const SourcesFooter(
+                sources: ScientificSources.fastingEligibility,
+                intro: 'Estas restricciones siguen la clasificación de la '
+                    'OMS y la evidencia clínica sobre ayuno intermitente.',
               ),
             ],
           );

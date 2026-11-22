@@ -22,6 +22,8 @@ import 'package:elena_app/src/features/analysis/domain/metric_series.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/bar_chart_card.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/segmented_range_control.dart';
 import 'package:elena_app/src/features/analysis/presentation/widgets/trend_comparison_card.dart';
+import 'package:elena_app/src/features/science/domain/scientific_source.dart';
+import 'package:elena_app/src/features/science/presentation/widgets/sources_footer.dart';
 
 class DailyScoreDetailScreen extends ConsumerStatefulWidget {
   const DailyScoreDetailScreen({super.key});
@@ -186,6 +188,13 @@ class _DailyScoreDetailScreenState
                     height: 1.4,
                   ),
                 ),
+              ),
+              // SPEC-305 (guía 1.4.1): fuentes de los cinco pilares.
+              const SizedBox(height: 20),
+              const SourcesFooter(
+                sources: ScientificSources.fivePillars,
+                intro: 'Cada pilar del puntaje se apoya en evidencia '
+                    'publicada.',
               ),
             ],
           ),

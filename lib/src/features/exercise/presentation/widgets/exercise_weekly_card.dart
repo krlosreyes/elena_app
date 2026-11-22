@@ -10,6 +10,7 @@ import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/exercise/application/exercise_weekly_computer.dart';
 import 'package:elena_app/src/features/exercise/application/last_week_exercise_provider.dart';
 import 'package:elena_app/src/features/exercise/domain/exercise_weekly_insight.dart';
+import 'package:elena_app/src/features/science/presentation/widgets/sources_footer.dart';
 
 const Color _kExerciseAccent = Color(0xFF14B8A6);
 
@@ -263,7 +264,7 @@ class ExerciseWeeklyCard extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 6),
-                Text(
+                CitationLink(
                   m.citation,
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.45),
