@@ -39,6 +39,7 @@
 // USO (desde elena_app/functions)
 //   GOOGLE_APPLICATION_CREDENTIALS=~/elena-admin-key.json node scripts/seed_demo_reviewer.js
 //   GOOGLE_APPLICATION_CREDENTIALS=~/elena-admin-key.json node scripts/seed_demo_reviewer.js --apply
+//   (si avisa de fechas futuras y estás de acuerdo en descartarlas: --apply --drop-future)
 //   GOOGLE_APPLICATION_CREDENTIALS=~/elena-admin-key.json node scripts/seed_demo_reviewer.js --restore scripts/backups/demo-XXXX.json
 //
 // Correrlo de nuevo antes de cada envío a revisión.
@@ -183,6 +184,30 @@ function findAnchor(docs, ts) {
   return null;
 }
 
+/// Fecha más reciente que aparece en un valor (Timestamps y fechas ISO).
+function maxMillis(v, ts) {
+  if (v === null || v === undefined) return null;
+  if (ts.isTimestamp(v)) return ts.toMillis(v);
+  if (typeof v === 'string') {
+    if (RE_DATE.test(v)) return Date.parse(`${v}T12:00:00Z`); // mediodía: "hoy" no cuenta como futuro
+    const m = RE_DATETIME_PARTS.exec(v);
+    if (m) { const t = Date.parse(v); return Number.isNaN(t) ? null : t; }
+    return null;
+  }
+  let best = null;
+  const vals = Array.isArray(v) ? v : (typeof v === 'object' && v.constructor === Object ? Object.values(v) : []);
+  for (const x of vals) { const t = maxMillis(x, ts); if (t !== null && (best === null || t > best)) best = t; }
+  return best;
+}
+
+function docMaxMillis(d, ts) {
+  const a = maxMillis(d.data, ts);
+  const b = maxMillis(d.id, ts);
+  if (a === null) return b;
+  if (b === null) return a;
+  return Math.max(a, b);
+}
+
 function serialize(v, ts) {
   if (v === null || v === undefined) return v;
   if (ts.isTimestamp(v)) return { __ts: ts.toMillis(v) };
@@ -265,6 +290,34 @@ async function main() {
     `(hace ${((now - anchorAfter) / 3600000).toFixed(1)} h)`);
   if (days === 0) { console.log('\nLos datos ya están al día. Nada que hacer.'); return; }
 
+  // Registros posteriores al ancla quedarían en el FUTURO tras el desplazamiento.
+  const future = docs.filter((d) => {
+    const t = docMaxMillis(d, ts);
+    return t !== null && t + days * DAY_MS > now;
+  });
+  console.log('\nFecha más reciente por colección (antes → después):');
+  const lastBy = {};
+  for (const d of docs) {
+    const t = docMaxMillis(d, ts);
+    if (t !== null && (!lastBy[d.collection] || t > lastBy[d.collection])) lastBy[d.collection] = t;
+  }
+  for (const [c, t] of Object.entries(lastBy).sort()) {
+    const after = t + days * DAY_MS;
+    const flag = after > now ? '  ⚠ FUTURO' : '';
+    console.log(`  ${c.padEnd(28)} ${new Date(t).toISOString().slice(0, 16)} → ${new Date(after).toISOString().slice(0, 16)}${flag}`);
+  }
+  if (future.length) {
+    console.log(`\n⚠ ${future.length} documento(s) quedarían con fecha futura:`);
+    for (const d of future.slice(0, 15)) {
+      console.log(`  ${d.collection}/${d.id}  (${new Date(docMaxMillis(d, ts)).toISOString().slice(0, 16)})`);
+    }
+    if (future.length > 15) console.log(`  … y ${future.length - 15} más`);
+    if (apply && !args.includes('--drop-future')) {
+      console.error('\nABORTADO: revisa la lista. Para aplicar descartando esos documentos usa --apply --drop-future.');
+      process.exit(1);
+    }
+  }
+
   const renames = docs.filter((d) => shiftPath(d.ref.path, days) !== d.ref.path).length;
   console.log(`Documentos a actualizar: ${docs.length} (${renames} cambian de ID por ser fechas)`);
 
@@ -285,7 +338,13 @@ async function main() {
 
   const ops = [];
   // Hijos antes que padres no importa en Firestore; los IDs nuevos se calculan por documento.
+  const dropFuture = args.includes('--drop-future');
+  const futureSet = new Set(future.map((d) => d.ref.path));
   for (const d of docs) {
+    if (dropFuture && futureSet.has(d.ref.path)) {
+      ops.push((b) => b.delete(d.ref));
+      continue;
+    }
     const newData = shiftValue(d.data, days, null, ts);
     const newPath = shiftPath(d.ref.path, days);
     const newRef = db.doc(newPath);
@@ -305,7 +364,7 @@ async function main() {
   console.log('Abre la app con la cuenta demo y revisa Hoy, Progreso y Glucosa.');
 }
 
-module.exports = { shiftDateString, shiftValue, shiftDocId, shiftPath, computeShiftDays, findAnchor, DAY_MS };
+module.exports = { maxMillis, shiftDateString, shiftValue, shiftDocId, shiftPath, computeShiftDays, findAnchor, DAY_MS };
 
 if (require.main === module) {
   main().catch((e) => { console.error(e); process.exit(1); });
