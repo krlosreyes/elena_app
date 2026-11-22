@@ -1,0 +1,9 @@
+{
+  "id" : "6ac43703-e2e7-4fe3-8896-ca2ba2fad9e6",
+  "targets" : [
+    {
+      "id" : "AC47F792-088C-46EB-950E-5E9BF90793C8",
+      "name" : "elena_app"
+    }
+  ]
+}
