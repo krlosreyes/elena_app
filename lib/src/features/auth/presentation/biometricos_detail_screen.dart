@@ -276,7 +276,7 @@ class _Body extends ConsumerWidget {
             ),
             const SizedBox(height: 12),
             const CitationLink(
-              'Fuente: Hodgdon & Beckett, 1984 (US Navy)',
+              'Fuente: fórmula US Navy (Hodgdon, 1992)',
               style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 20),

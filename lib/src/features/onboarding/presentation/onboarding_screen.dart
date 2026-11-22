@@ -1004,7 +1004,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           const Padding(
             padding: EdgeInsets.only(bottom: 12),
             child: CitationLink(
-              'Fórmula US Navy — Hodgdon & Beckett, 1984',
+              'Fórmula US Navy — Hodgdon, 1992',
               style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
             ),
           ),

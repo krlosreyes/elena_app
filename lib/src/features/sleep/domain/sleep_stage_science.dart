@@ -66,7 +66,7 @@ class SleepStageScience {
     metabolicImpact:
         'Es normal que sea la fracción más grande. Sirve de puente hacia el '
         'profundo y el REM, donde ocurre la reparación metabólica.',
-    citation: 'Carskadon & Dement, 2011',
+    citation: 'Ohayon et al., 2004',
   );
 
   static const awake = SleepStageScience(

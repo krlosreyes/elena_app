@@ -16,11 +16,12 @@ const _allowedHosts = {
   'pubmed.ncbi.nlm.nih.gov',
   'doi.org',
   'iris.who.int',
-  'apps.dtic.mil',
+  'www.ncbi.nlm.nih.gov',
+  'efsa.onlinelibrary.wiley.com',
+  'www.simonandschuster.com',
   'www.nobelprize.org',
   'www.acefitness.org',
   'www.wolterskluwer.com',
-  'openlibrary.org',
 };
 
 List<String> _ids(List<ScientificSource> list) =>
@@ -67,6 +68,23 @@ void main() {
       final pmid = RegExp(r'^https://pubmed\.ncbi\.nlm\.nih\.gov/\d{6,8}/$');
       for (final s in all.where((s) => s.url.contains('pubmed'))) {
         expect(pmid.hasMatch(s.url), isTrue, reason: '${s.id}: ${s.url}');
+      }
+    });
+
+    // 22-nov: DTIC entró en mantenimiento y Open Library/ScienceDirect/CORE
+    // piden verificación humana. Un enlace que no abre es peor que ninguno.
+    test('ninguna fuente usa hosts que fallaron al abrirlos de verdad', () {
+      const vetados = [
+        'apps.dtic.mil',
+        'openlibrary.org',
+        'sciencedirect.com',
+        'core.ac.uk',
+        'diabesity.ejournals.ca',
+      ];
+      for (final s in all) {
+        for (final v in vetados) {
+          expect(s.url.contains(v), isFalse, reason: '${s.id}: ${s.url}');
+        }
       }
     });
 
@@ -153,8 +171,8 @@ void main() {
     });
 
     test('las citas visibles en pantallas de cálculo resuelven', () {
-      expect(resolve('Fórmula US Navy — Hodgdon & Beckett, 1984'),
-          ['navy_men', 'navy_women']);
+      expect(resolve('Fórmula US Navy — Hodgdon, 1992'),
+          ['navy_hodgdon_1992']);
       expect(
           resolve('Rangos ACE (hombre) — Atlético <14, Fitness 14-17, '
               'Promedio 18-24, Alto >=25'),

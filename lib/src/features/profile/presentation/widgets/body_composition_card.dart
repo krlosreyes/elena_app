@@ -247,7 +247,7 @@ class _CardContent extends StatelessWidget {
             // SPEC-305 (guía 1.4.1): fuentes de los cuatro cálculos.
             const SizedBox(height: 10),
             const CitationLink(
-              'Fuentes: US Navy (Hodgdon & Beckett, 1984) · Ashwell 2012 · '
+              'Fuentes: US Navy (Hodgdon, 1992) · Ashwell 2012 · '
               'Kouri 1995',
               style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600),
             ),

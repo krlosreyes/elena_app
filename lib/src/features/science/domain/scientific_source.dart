@@ -12,7 +12,9 @@
 // Este archivo es la ÚNICA fuente de verdad de las referencias que la app
 // muestra. Cada entrada tiene un enlace estable (PubMed, DOI, OMS, DTIC o
 // la editorial) comprobado el 22-nov-2026 contra la base de PubMed
-// (E-utilities) o la página del editor.
+// (E-utilities) o la página del editor, y de nuevo el 22-nov abriendo cada
+// enlace en un navegador real (se retiraron DTIC, ScienceDirect, Open Library
+// y CORE por mantenimiento o controles anti-bots).
 //
 // Reglas:
 //   1. Toda cita visible en la app debe resolver a una entrada de aquí.
@@ -102,35 +104,41 @@ abstract final class ScientificSources {
     matchTerms: ['oms imc', 'who bmi', 'oms 2000'],
   );
 
-  static const navyMen = ScientificSource(
-    id: 'navy_men',
-    shortLabel: 'Hodgdon & Beckett, 1984 (hombres)',
-    authors: 'Hodgdon JA, Beckett MB',
-    year: 1984,
-    title: 'Prediction of percent body fat for U.S. Navy men from body '
-        'circumferences and height (Report No. 84-11)',
-    venue: 'Naval Health Research Center',
-    url: 'https://apps.dtic.mil/sti/tr/pdf/ADA143890.pdf',
+  // 22-nov: los informes originales de 1984 solo están en DTIC (apps.dtic.mil),
+  // que entra en mantenimiento y no es fiable para un enlace dentro de la app.
+  // Se enlaza el capítulo del propio Hodgdon en NCBI Bookshelf (NIH), que
+  // describe cómo la US Navy desarrolló y usa estas ecuaciones, y una
+  // validación independiente indexada en PubMed.
+  static const navyHodgdon = ScientificSource(
+    id: 'navy_hodgdon_1992',
+    shortLabel: 'Hodgdon, 1992 — fórmula US Navy',
+    authors: 'Hodgdon JA',
+    year: 1992,
+    title: 'Body Composition in the Military Services: Standards and Methods. '
+        'En: Body Composition and Physical Performance',
+    venue: 'National Academies Press (NCBI Bookshelf)',
+    url: 'https://www.ncbi.nlm.nih.gov/books/NBK235939/',
     category: SourceCategory.bodyComposition,
-    supports: 'Fórmula US Navy con la que calculamos tu % de grasa a partir '
-        'de cintura, cuello y estatura (hombres).',
+    supports: 'La fórmula de circunferencias de la US Navy con la que '
+        'estimamos tu % de grasa (cintura, cuello y estatura; en mujeres, '
+        'también cadera).',
     matchTerms: ['hodgdon', 'us navy', 'formula naval'],
   );
 
-  static const navyWomen = ScientificSource(
-    id: 'navy_women',
-    shortLabel: 'Hodgdon & Beckett, 1984 (mujeres)',
-    authors: 'Hodgdon JA, Beckett MB',
-    year: 1984,
-    title: 'Prediction of percent body fat for U.S. Navy women from body '
-        'circumferences and height (Report No. 84-29)',
-    venue: 'Naval Health Research Center',
-    url: 'https://apps.dtic.mil/sti/tr/pdf/ADA146456.pdf',
+  static const navyShake = ScientificSource(
+    id: 'navy_shake_1993',
+    shortLabel: 'Shake et al., 1993',
+    authors: 'Shake CL, Schlichting C, Mooney LW, Callahan AB, Cohen ME',
+    year: 1993,
+    title: 'Predicting percent body fat from circumference measurements',
+    venue: 'Military Medicine',
+    url: 'https://pubmed.ncbi.nlm.nih.gov/8437737/',
     category: SourceCategory.bodyComposition,
-    supports: 'Fórmula US Navy para mujeres: añade la cadera a cintura, '
-        'cuello y estatura.',
-    matchTerms: ['hodgdon', 'us navy', 'formula naval'],
+    supports: 'Validación de la fórmula US Navy contra pesaje hidrostático, '
+        'con su margen de error: es una estimación, no una medición exacta.',
+    matchTerms: ['shake', 'us navy', 'formula naval'],
   );
+
 
   static const ashwell2012 = ScientificSource(
     id: 'ashwell_2012',
@@ -395,19 +403,6 @@ abstract final class ScientificSources {
     matchTerms: ['petersen', 'shulman'],
   );
 
-  static const crofts2015 = ScientificSource(
-    id: 'crofts_2015',
-    shortLabel: 'Crofts et al., 2015',
-    authors: 'Crofts CAP, Zinn C, Wheldon M, Schofield G',
-    year: 2015,
-    title: 'Hyperinsulinemia: a unifying theory of chronic disease?',
-    venue: 'Diabesity',
-    url: 'https://doi.org/10.15562/diabesity.2015.19',
-    category: SourceCategory.nutrition,
-    supports: 'Insulina alta sostenida como factor común de enfermedad '
-        'metabólica.',
-    matchTerms: ['crofts'],
-  );
 
   // ── Sueño ───────────────────────────────────────────────────────────────
   static const watson2015 = ScientificSource(
@@ -468,20 +463,21 @@ abstract final class ScientificSources {
     matchTerms: ['spiegel'],
   );
 
-  static const carskadon2011 = ScientificSource(
-    id: 'carskadon_2011',
-    shortLabel: 'Carskadon & Dement, 2011',
-    authors: 'Carskadon MA, Dement WC',
-    year: 2011,
-    title: 'Normal Human Sleep: An Overview. En: Principles and Practice of '
-        'Sleep Medicine, 5.ª ed.',
-    venue: 'Elsevier',
-    url: 'https://doi.org/10.1016/B978-1-4160-6645-3.00002-5',
+  static const ohayon2004 = ScientificSource(
+    id: 'ohayon_2004',
+    shortLabel: 'Ohayon et al., 2004',
+    authors: 'Ohayon MM, Carskadon MA, Guilleminault C, Vitiello MV',
+    year: 2004,
+    title: 'Meta-analysis of quantitative sleep parameters from childhood to '
+        'old age in healthy individuals',
+    venue: 'Sleep',
+    url: 'https://pubmed.ncbi.nlm.nih.gov/15586779/',
     category: SourceCategory.sleep,
     supports: 'Proporción normal de cada etapa del sueño (ligero, profundo, '
-        'REM).',
-    matchTerms: ['carskadon', 'dement'],
+        'REM) según la edad.',
+    matchTerms: ['ohayon'],
   );
+
 
   static const stamatakis2010 = ScientificSource(
     id: 'stamatakis_2010',
@@ -504,8 +500,9 @@ abstract final class ScientificSources {
     authors: 'Walker M',
     year: 2017,
     title: 'Why We Sleep: Unlocking the Power of Sleep and Dreams',
-    venue: 'Scribner',
-    url: 'https://openlibrary.org/isbn/9781501144318',
+    venue: 'Scribner (Simon & Schuster)',
+    url: 'https://www.simonandschuster.com/books/Why-We-Sleep/'
+        'Matthew-Walker/9781501144325',
     category: SourceCategory.sleep,
     supports: 'Divulgación sobre el papel del sueño en la salud y la '
         'recuperación.',
@@ -563,7 +560,7 @@ abstract final class ScientificSources {
     year: 2010,
     title: 'Scientific Opinion on Dietary Reference Values for water',
     venue: 'EFSA Journal',
-    url: 'https://doi.org/10.2903/j.efsa.2010.1459',
+    url: 'https://efsa.onlinelibrary.wiley.com/doi/10.2903/j.efsa.2010.1459',
     category: SourceCategory.hydration,
     supports: 'Cuánta agua necesita un adulto al día.',
     matchTerms: ['efsa'],
@@ -674,27 +671,30 @@ abstract final class ScientificSources {
   );
 
   // ── Hábitos ─────────────────────────────────────────────────────────────
-  static const lally2010 = ScientificSource(
-    id: 'lally_2010',
-    shortLabel: 'Lally et al., 2010',
-    authors: 'Lally P, van Jaarsveld CHM, Potts HWW, Wardle J',
-    year: 2010,
-    title: 'How are habits formed: Modelling habit formation in the real '
-        'world',
-    venue: 'European Journal of Social Psychology',
-    url: 'https://doi.org/10.1002/ejsp.674',
+  // 22-nov: Lally 2010 (Eur J Soc Psychol) no está en PubMed y sus copias
+  // pasan por controles anti-bots. Se cita el artículo de la misma autora,
+  // indexado en PubMed, que resume ese hallazgo para la práctica clínica.
+  static const gardner2012 = ScientificSource(
+    id: 'gardner_2012',
+    shortLabel: 'Gardner, Lally & Wardle, 2012',
+    authors: 'Gardner B, Lally P, Wardle J',
+    year: 2012,
+    title: "Making health habitual: the psychology of 'habit-formation' and "
+        'general practice',
+    venue: 'British Journal of General Practice',
+    url: 'https://pubmed.ncbi.nlm.nih.gov/23211256/',
     category: SourceCategory.habits,
     supports: 'Un hábito tarda semanas en volverse automático: por eso Elena '
         'premia la constancia.',
-    matchTerms: ['lally'],
+    matchTerms: ['gardner', 'lally'],
   );
 
   /// Todas las fuentes, en el orden en que se muestran dentro de cada
   /// categoría.
   static const List<ScientificSource> all = [
     whoBmi,
-    navyMen,
-    navyWomen,
+    navyHodgdon,
+    navyShake,
     ashwell2012,
     kouri1995,
     aceBodyFat,
@@ -712,12 +712,11 @@ abstract final class ScientificSources {
     hall2019,
     monteiro2019,
     petersen2018,
-    crofts2015,
     watson2015,
     tasali2008,
     spiegel1999,
     spiegel2004,
-    carskadon2011,
+    ohayon2004,
     stamatakis2010,
     walker2017,
     drake2013,
@@ -732,21 +731,21 @@ abstract final class ScientificSources {
     adaDiagnosis2025,
     adaHypoglycemia2025,
     monnier2017,
-    lally2010,
+    gardner2012,
   ];
 
   /// Grupos de fuentes por pantalla de cálculo. Las pantallas piden su
   /// grupo en lugar de repetir listas de ids.
   static const List<ScientificSource> bodyFat = [
-    navyMen,
-    navyWomen,
+    navyHodgdon,
+    navyShake,
     aceBodyFat,
     gallagher2000,
   ];
 
   static const List<ScientificSource> bodyComposition = [
-    navyMen,
-    navyWomen,
+    navyHodgdon,
+    navyShake,
     ashwell2012,
     kouri1995,
     aceBodyFat,
@@ -773,7 +772,7 @@ abstract final class ScientificSources {
   ];
 
   static const List<ScientificSource> sleepStages = [
-    carskadon2011,
+    ohayon2004,
     tasali2008,
     spiegel2004,
     stamatakis2010,

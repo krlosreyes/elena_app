@@ -10,7 +10,9 @@
 // Refs científicas:
 //   Longo VD & Panda S (2016). Fasting, Circadian Rhythms, and TRE. Cell Metab.
 //   Wolfe RR (2006). The underappreciated role of muscle in health. Am J Clin Nutr.
-//   Crofts C et al. (2015). Understanding insulin resistance. J Insulin Resistance.
+//   Petersen MC & Shulman GI (2018). Mechanisms of insulin action and insulin
+//   resistance. Physiol Rev (PMID 30067154). Antes se citaba Crofts 2015, cuyo
+//   enlace no era fiable (22-nov-2026).
 
 import 'package:flutter/material.dart';
 
@@ -104,7 +106,7 @@ abstract class PillarConstants {
             'el hambre, el estrés y la recuperación muscular. La hidratación '
             'adecuada transporta cetonas y optimiza la función metabólica celular.',
     pilarInsulina: 'La insulina es el regulador central del metabolismo de grasa '
-        '(Crofts et al., 2015). Concentrar las comidas en la primera mitad '
+        '(Petersen & Shulman, 2018). Concentrar las comidas en la primera mitad '
         'del día, alineadas con el ritmo circadiano, minimiza los picos '
         'insulínicos y potencia la quema de grasa durante el ayuno nocturno.',
   };

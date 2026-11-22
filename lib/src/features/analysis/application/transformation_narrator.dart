@@ -169,7 +169,7 @@ class TransformationNarrator {
         id: 'progress-fasting-streak-grew',
         headline: '$currentFasting de 7 días de ayuno es disciplina, no fuerza '
             'de voluntad. La automaticidad tarda semanas, y así se construye.',
-        citation: 'Lally 2010, Eur J Soc Psychol',
+        citation: 'Gardner, Lally & Wardle, 2012',
       ));
     }
 

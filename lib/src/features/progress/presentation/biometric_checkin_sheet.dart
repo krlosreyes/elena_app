@@ -399,7 +399,7 @@ class _BiometricCheckInSheetState extends ConsumerState<BiometricCheckInSheet> {
                       // recalcula con esta fórmula.
                       const CitationLink(
                         'Tu % de grasa se calcula con la fórmula US Navy '
-                        '(Hodgdon & Beckett, 1984)',
+                        '(Hodgdon, 1992)',
                         style: TextStyle(
                             fontSize: 12.5, fontWeight: FontWeight.w600),
                       ),
