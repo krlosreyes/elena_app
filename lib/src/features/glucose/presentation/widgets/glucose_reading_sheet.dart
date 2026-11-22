@@ -16,6 +16,7 @@ import 'package:elena_app/src/features/glucose/application/glucose_providers.dar
 import 'package:elena_app/src/features/glucose/data/glucose_repository_impl.dart';
 import 'package:elena_app/src/features/glucose/domain/glucose_classification.dart';
 import 'package:elena_app/src/features/glucose/domain/glucose_reading.dart';
+import 'package:elena_app/src/features/science/presentation/widgets/sources_footer.dart';
 
 /// [initialContext] permite abrir el sheet ya preseleccionado — la
 /// ventana matutina abre siempre en `ayunas` (R3); el acceso opcional
@@ -317,6 +318,12 @@ class _GlucoseReadingSheetState extends ConsumerState<_GlucoseReadingSheet> {
                     height: 1.4,
                   ),
                 ),
+              ),
+              // SPEC-305 (guía 1.4.1): de dónde salen "bajo" y "alto".
+              const SizedBox(height: 8),
+              const CitationLink(
+                'Rangos de referencia: ADA 2025',
+                style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
               ),
             ],
             if (_confirmedOutOfRange) ...[

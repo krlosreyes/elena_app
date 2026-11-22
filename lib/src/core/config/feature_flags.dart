@@ -33,3 +33,21 @@
 /// activos en background (Bloques A-C), solo falta la firma para que
 /// la UI lo muestre.
 const bool kEnableLongitudinalImr = false;
+
+/// 22-nov-2026 (auditoría de riesgos App Store): Retos de constancia
+/// (SPEC-263/264) — retos entre usuarios por código, ranking con nombres,
+/// nombres de reto libres y "zumbidos" por push.
+///
+/// **Default: false** — es interacción entre usuarios y la guía 1.2 de
+/// App Store exige poder REPORTAR contenido, BLOQUEAR usuarios y filtrar
+/// texto ofensivo. Nada de eso existe todavía, así que se oculta para la
+/// 1.0 en vez de arriesgar otro rechazo.
+///
+/// **Activar a true cuando:** exista reportar + bloquear + salir del reto,
+/// filtro de palabras en el nombre del reto, y los términos de uso tengan
+/// la cláusula de tolerancia cero con contenido ofensivo.
+///
+/// Con false: sin acceso en Progreso, /retos redirige a /analysis, no se
+/// registra el push de zumbidos, y ni las insignias de Retos ni el texto
+/// de perlas que lo menciona se muestran.
+const bool kRetosEnabled = false;

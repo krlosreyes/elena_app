@@ -22,6 +22,7 @@ import 'src/core/services/notification_service.dart';
 import 'src/core/services/push_messaging_service.dart';
 import 'src/core/services/pii_scrubber.dart';
 import 'src/core/widgets/bootstrap_error_app.dart';
+import 'package:elena_app/src/core/config/feature_flags.dart';
 
 // SPEC-80: envolvemos main en runZonedGuarded para capturar
 // excepciones async no manejadas y enviarlas a Crashlytics tras
@@ -134,7 +135,8 @@ Future<void> _bootstrap() async {
   // SPEC-264 fase 2: engancha el push remoto de los zumbidos (registro de token
   // FCM por sesión + handler de background). Best-effort: nunca bloquea el
   // arranque (el servicio absorbe sus propios errores).
-  unawaited(PushMessagingService.init());
+  // 22-nov: solo sirve a los zumbidos de Retos, oculto en la 1.0.
+  if (kRetosEnabled) unawaited(PushMessagingService.init());
 
   // SPEC-172 (2026-06-04): solicitar permisos iOS post-init.
   // En flutter_local_notifications ≥ 13 el flag `requestAlertPermission`

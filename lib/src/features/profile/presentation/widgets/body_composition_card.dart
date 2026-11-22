@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
+import 'package:elena_app/src/features/science/presentation/widgets/sources_footer.dart';
 
 // ─── Helpers de cálculo (reutilizados en BodyCompositionScreen) ──────────────
 
@@ -243,6 +244,13 @@ class _CardContent extends StatelessWidget {
 
             // ── Barra de riesgo WHTR ─────────────────────────────────────────
             _WhtrBar(whtr: w),
+            // SPEC-305 (guía 1.4.1): fuentes de los cuatro cálculos.
+            const SizedBox(height: 10),
+            const CitationLink(
+              'Fuentes: US Navy (Hodgdon & Beckett, 1984) · Ashwell 2012 · '
+              'Kouri 1995',
+              style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600),
+            ),
           ],
         ),
       ),

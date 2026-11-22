@@ -19,6 +19,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:elena_app/src/features/glucose/application/glucose_providers.dart';
 import 'package:elena_app/src/features/glucose/domain/glucose_classification.dart';
+import 'package:elena_app/src/features/science/presentation/widgets/sources_footer.dart';
 
 class GlucoseEntryCard extends ConsumerWidget {
   const GlucoseEntryCard({super.key});
@@ -92,6 +93,16 @@ class GlucoseEntryCard extends ConsumerWidget {
                         fontWeight: FontWeight.w500,
                       ),
                     ),
+                    // SPEC-305 (guía 1.4.1): la etiqueta ("Elevado",
+                    // "Alto"…) sale de los cortes de la ADA.
+                    if (subtitle.contains(' · ')) ...[
+                      const SizedBox(height: 2),
+                      const CitationLink(
+                        'Rangos ADA 2025',
+                        style: TextStyle(
+                            fontSize: 11.5, fontWeight: FontWeight.w600),
+                      ),
+                    ],
                   ],
                 ),
               ),

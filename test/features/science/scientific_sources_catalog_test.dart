@@ -147,6 +147,11 @@ void main() {
           ['who_bmi', 'decabo_2019']);
     });
 
+    test('ADA 2025 resuelve a los dos capítulos de la guía', () {
+      expect(resolve('Rangos de referencia: ADA 2025'),
+          ['ada_diagnosis_2025', 'ada_hypoglycemia_2025']);
+    });
+
     test('las citas visibles en pantallas de cálculo resuelven', () {
       expect(resolve('Fórmula US Navy — Hodgdon & Beckett, 1984'),
           ['navy_men', 'navy_women']);

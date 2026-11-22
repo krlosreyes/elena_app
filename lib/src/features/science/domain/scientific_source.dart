@@ -642,6 +642,37 @@ abstract final class ScientificSources {
     matchTerms: ['monnier'],
   );
 
+  static const adaDiagnosis2025 = ScientificSource(
+    id: 'ada_diagnosis_2025',
+    shortLabel: 'ADA, 2025 — Diagnóstico y clasificación',
+    authors: 'American Diabetes Association Professional Practice Committee',
+    year: 2025,
+    title: '2. Diagnosis and Classification of Diabetes: Standards of Care '
+        'in Diabetes—2025',
+    venue: 'Diabetes Care',
+    url: 'https://pubmed.ncbi.nlm.nih.gov/39651986/',
+    category: SourceCategory.glucose,
+    supports: 'Rangos de glucosa: en ayunas menos de 100 mg/dL es normal, de '
+        '100 a 125 elevada y 126 o más alta; 2 h después de comer, menos de '
+        '140 normal, de 140 a 199 elevada y 200 o más alta.',
+    matchTerms: ['ada', 'american diabetes association'],
+  );
+
+  static const adaHypoglycemia2025 = ScientificSource(
+    id: 'ada_hypoglycemia_2025',
+    shortLabel: 'ADA, 2025 — Metas glucémicas e hipoglucemia',
+    authors: 'American Diabetes Association Professional Practice Committee',
+    year: 2025,
+    title: '6. Glycemic Goals and Hypoglycemia: Standards of Care in '
+        'Diabetes—2025',
+    venue: 'Diabetes Care',
+    url: 'https://pubmed.ncbi.nlm.nih.gov/39651981/',
+    category: SourceCategory.glucose,
+    supports: 'Por debajo de 70 mg/dL se considera glucosa baja '
+        '(hipoglucemia nivel 1).',
+    matchTerms: ['ada', 'american diabetes association'],
+  );
+
   // ── Hábitos ─────────────────────────────────────────────────────────────
   static const lally2010 = ScientificSource(
     id: 'lally_2010',
@@ -698,6 +729,8 @@ abstract final class ScientificSources {
     acsm2021,
     wolfe2006,
     facerChilds2018,
+    adaDiagnosis2025,
+    adaHypoglycemia2025,
     monnier2017,
     lally2010,
   ];
@@ -724,7 +757,11 @@ abstract final class ScientificSources {
     deCabo2019,
   ];
 
-  static const List<ScientificSource> glucose = [monnier2017];
+  static const List<ScientificSource> glucose = [
+    adaDiagnosis2025,
+    adaHypoglycemia2025,
+    monnier2017,
+  ];
 
   /// Un respaldo por pilar del Score del día y del IMR.
   static const List<ScientificSource> fivePillars = [

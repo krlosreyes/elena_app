@@ -34,7 +34,7 @@ class AvancesHeader extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final streak = ref.watch(streakProvider);
     final earnedCount = ref.watch(badgeProvider.select((s) => s.earned.length));
-    final totalBadges = BadgeCatalog.all.length;
+    final totalBadges = BadgeCatalog.visible.length;
     final constancyPct = (streak.weeklyAdherence.clamp(0.0, 1.0) * 100).round();
 
     return Row(

@@ -15,6 +15,7 @@ import 'package:elena_app/src/features/glucose/presentation/widgets/glucose_read
 import 'package:elena_app/src/features/profile/application/biometric_lock_provider.dart';
 import 'package:elena_app/src/features/progress/presentation/biometric_checkin_sheet.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart';
+import 'package:elena_app/src/core/config/feature_flags.dart';
 
 // Progreso v4 (2026-11-05) — el objetivo de Elena es la salud metabólica,
 // que va de la mano con la recomposición corporal. La pantalla cuenta una
@@ -106,8 +107,11 @@ class AnalysisScreen extends ConsumerWidget {
                     label: 'Insignias',
                     onTap: () => context.push('/profile/badges')),
                 const SizedBox(width: 8),
-                _Access(label: 'Retos', onTap: () => context.push('/retos')),
-                const SizedBox(width: 8),
+                if (kRetosEnabled) ...[
+                  _Access(
+                      label: 'Retos', onTap: () => context.push('/retos')),
+                  const SizedBox(width: 8),
+                ],
                 _Access(
                     label: 'Tu reloj',
                     onTap: () => context.push('/analysis/reloj')),

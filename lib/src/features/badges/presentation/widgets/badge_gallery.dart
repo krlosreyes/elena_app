@@ -51,9 +51,9 @@ class BadgeGallery extends ConsumerWidget {
         crossAxisSpacing: 12,
         childAspectRatio: 0.82,
       ),
-      itemCount: BadgeCategory.all.length,
+      itemCount: BadgeCatalog.visibleCategories.length,
       itemBuilder: (context, i) {
-        final category = BadgeCategory.all[i];
+        final category = BadgeCatalog.visibleCategories[i];
         return _CategoryCard(category: category, earnedIds: earnedIds);
       },
     );

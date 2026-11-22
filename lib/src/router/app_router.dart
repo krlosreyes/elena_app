@@ -63,6 +63,7 @@ import 'package:elena_app/src/features/exercise/presentation/exercise_habits_det
 import 'package:elena_app/src/features/challenges/presentation/challenges_screen.dart';
 import 'package:elena_app/src/features/challenges/presentation/challenge_detail_screen.dart';
 import 'package:elena_app/src/features/science/presentation/scientific_sources_screen.dart';
+import 'package:elena_app/src/core/config/feature_flags.dart';
 
 /// SPEC-222: llave global del navigator raíz para deeplink routing
 /// desde notificaciones (cold start + foreground).
@@ -240,6 +241,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/retos',
         name: 'retos',
+        // 22-nov: oculto para la 1.0 (ver kRetosEnabled). La redirección
+        // del padre cubre también /retos/:code (enlaces de invitación y
+        // toques en notificaciones de zumbidos viejas).
+        redirect: (context, state) => kRetosEnabled ? null : '/analysis',
         builder: (context, state) => const ChallengesScreen(),
         routes: [
           GoRoute(

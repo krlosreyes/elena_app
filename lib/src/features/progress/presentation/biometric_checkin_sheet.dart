@@ -21,6 +21,7 @@ import 'package:elena_app/src/core/providers/shared_preferences_provider.dart';
 import 'package:elena_app/src/features/profile/application/biometric_lock_provider.dart';
 import 'package:elena_app/src/features/health_sync/application/health_data_status.dart';
 import 'package:elena_app/src/features/profile/domain/biometric_lock_service.dart';
+import 'package:elena_app/src/features/science/presentation/widgets/sources_footer.dart';
 
 // ─── Entry point ─────────────────────────────────────────────────────────────
 
@@ -393,7 +394,16 @@ class _BiometricCheckInSheetState extends ConsumerState<BiometricCheckInSheet> {
                         decoration: _inputDecoration('¿Cómo te sentiste hoy?'),
                       ),
 
-                      const SizedBox(height: 28),
+                      const SizedBox(height: 16),
+                      // SPEC-305 (guía 1.4.1): al guardar, el % de grasa se
+                      // recalcula con esta fórmula.
+                      const CitationLink(
+                        'Tu % de grasa se calcula con la fórmula US Navy '
+                        '(Hodgdon & Beckett, 1984)',
+                        style: TextStyle(
+                            fontSize: 12.5, fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 20),
 
                       // CTA
                       SizedBox(

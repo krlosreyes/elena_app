@@ -53,6 +53,10 @@ const _calculationScreens = <String, String>{
       'variabilidad glucémica',
   'lib/src/features/sleep/presentation/widgets/sleep_stages_view.dart':
       'etapas de sueño',
+  'lib/src/features/glucose/presentation/widgets/glucose_reading_sheet.dart':
+      'clasificación de una lectura (ADA)',
+  'lib/src/features/glucose/presentation/widgets/glucose_entry_card.dart':
+      'última lectura clasificada (ADA)',
 };
 
 /// Palabras que la heurística de "Autor AAAA" confunde con autores porque
@@ -204,6 +208,40 @@ void main() {
     expect(fallos, isEmpty,
         reason: 'Pantallas con cálculos de salud sin fuentes visibles:\n'
             '${fallos.join('\n')}');
+  });
+
+  // 22-nov (2ª vuelta): la lista fija de arriba no vio que la tarjeta y la
+  // hoja de Glucosa clasifican lecturas con los cortes de la ADA sin
+  // mostrar fuente. Esta regla no depende de que alguien se acuerde de
+  // añadir la pantalla: toda pantalla que USE un cálculo de salud tiene
+  // que pintar sus fuentes.
+  test('toda pantalla que usa un cálculo de salud muestra sus fuentes', () {
+    const calculos = [
+      'GlucoseClassifier',
+      'FastingEligibility',
+      'BodyCompositionCalc',
+      'BodyFatCalculator',
+    ];
+    final fallos = <String>[];
+    for (final f in archivos) {
+      final ruta = f.path.replaceAll(r'\', '/');
+      if (!ruta.contains('/presentation/')) continue;
+      final src = _sinComentarios(f.readAsStringSync());
+      final usa = calculos.where((c) => src.contains(c)).toList();
+      if (usa.isEmpty) continue;
+      final muestra = src.contains('SourcesFooter(') ||
+          src.contains('CitationLink(') ||
+          src.contains('showSourcesSheet(');
+      if (!muestra) fallos.add('  $ruta  (usa ${usa.join(', ')})');
+    }
+    expect(fallos, isEmpty,
+        reason: 'Pantallas que calculan algo de salud sin mostrar fuentes '
+            '(guía 1.4.1):\n${fallos.join('\n')}');
+  });
+
+  test('los cortes de glucosa de la ADA están respaldados en el catálogo', () {
+    final ids = ScientificSources.glucose.map((s) => s.id).toList();
+    expect(ids, containsAll(['ada_diagnosis_2025', 'ada_hypoglycemia_2025']));
   });
 
   test('las fuentes se alcanzan desde Perfil y tienen ruta propia', () {

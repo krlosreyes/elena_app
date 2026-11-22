@@ -24,7 +24,7 @@ class BadgesEntryCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final earnedCount = ref.watch(badgeProvider.select((s) => s.earned.length));
-    final totalBadges = BadgeCatalog.all.length;
+    final totalBadges = BadgeCatalog.visible.length;
     final currentStreak =
         ref.watch(streakProvider.select((s) => s.currentStreak));
 

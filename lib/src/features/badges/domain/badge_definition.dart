@@ -18,6 +18,8 @@
 // realmente se completó (`StreakEntry.fastingCompleted`, etc.) es un dato
 // ya validado, booleano, e igual de significativo.
 
+import 'package:elena_app/src/core/config/feature_flags.dart';
+
 class BadgeCategory {
   BadgeCategory._();
 
@@ -437,4 +439,15 @@ class BadgeCatalog {
 
   static List<BadgeDefinition> forCategory(String category) =>
       all.where((d) => d.category == category).toList();
+
+  /// Insignias que el usuario puede ver y ganar en esta versión. Con
+  /// Retos oculto (kRetosEnabled = false) sus insignias no cuentan en los
+  /// totales ni aparecen en la galería: no se puede pedir algo inalcanzable.
+  static List<BadgeDefinition> get visible => kRetosEnabled
+      ? all
+      : all.where((d) => d.category != BadgeCategory.retos).toList();
+
+  static List<String> get visibleCategories => kRetosEnabled
+      ? BadgeCategory.all
+      : BadgeCategory.all.where((c) => c != BadgeCategory.retos).toList();
 }

@@ -15,6 +15,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/features/gamification/application/gamification_notifier.dart';
 import 'package:elena_app/src/features/gamification/domain/gamification_state.dart';
+import 'package:elena_app/src/core/config/feature_flags.dart';
 
 const Color _pearl = Color(0xFFD8B4E2); // perlas (nácar lila)
 const Color _ice = Color(0xFF60A5FA); // congeladores
@@ -277,8 +278,11 @@ Widget _economyHint() => Container(
           _EconomyRow(
             icon: Icons.blur_circular_rounded,
             color: _pearl,
-            text: 'Ganas perlas registrando tus hábitos. Se usan para animar '
-                'a tus rivales en los Retos (zumbidos, porras).',
+            text: kRetosEnabled
+                ? 'Ganas perlas registrando tus hábitos. Se usan para animar '
+                    'a tus rivales en los Retos (zumbidos, porras).'
+                : 'Ganas perlas registrando tus hábitos: cada una nace de '
+                    'algo que hiciste de verdad.',
           ),
           SizedBox(height: 12),
           _EconomyRow(
@@ -322,8 +326,9 @@ void _showInfo(BuildContext context, _InfoTopic topic) {
     _InfoTopic.perlas => (
         'Perlas',
         'Ganas perlas cada vez que registras un hábito saludable: tomar agua, '
-            'una comida, cerrar tu ayuno, y más. Son la moneda social de Elena: '
-            'se usan para animar a tus rivales en los Retos (zumbidos, porras). '
+            'una comida, cerrar tu ayuno, y más. '
+            '${kRetosEnabled ? 'Son la moneda social de Elena: se usan para '
+                'animar a tus rivales en los Retos (zumbidos, porras). ' : ''}'
             'No se compran con dinero ni se pueden farmear — cada perla nace de '
             'algo que hiciste de verdad.'
       ),

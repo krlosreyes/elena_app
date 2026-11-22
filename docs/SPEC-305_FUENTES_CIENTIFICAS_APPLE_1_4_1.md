@@ -29,7 +29,7 @@ Lo que encontramos en el código:
 ## 3. Diseño
 
 ### Catálogo — `lib/src/features/science/domain/scientific_source.dart`
-Única fuente de verdad: 39 referencias con autores, año, título, revista, URL, categoría y qué respaldan en la app. **Cada enlace se comprobó el 22-nov-2026** contra PubMed E-utilities (autor, año, título) o la página del editor. `resolve(cita)` traduce una cita corta a sus fuentes: separa por `+` y `·`, compara por palabra completa y usa el año para desambiguar (Spiegel 1999 ≠ Spiegel 2004).
+Única fuente de verdad: 41 referencias con autores, año, título, revista, URL, categoría y qué respaldan en la app. **Cada enlace se comprobó el 22-nov-2026** contra PubMed E-utilities (autor, año, título) o la página del editor. `resolve(cita)` traduce una cita corta a sus fuentes: separa por `+` y `·`, compara por palabra completa y usa el año para desambiguar (Spiegel 1999 ≠ Spiegel 2004).
 
 ### UI — `lib/src/features/science/presentation/`
 - `SourcesFooter`: bloque "Fuentes científicas" bajo cada cálculo. Texto de 13,5 pt en color de acento y subrayado, un enlace por fuente y "Ver todas las fuentes de Elena".
@@ -69,7 +69,7 @@ Lo que encontramos en el código:
 
 - `test/features/science/scientific_sources_catalog_test.dart`: ids únicos, https, dominios de una lista revisada, PMID concreto, campos no vacíos, términos normalizados, cada categoría con fuentes, y la resolución de citas (año, separadores, etiquetas que no son cita, citas prohibidas).
 - `test/features/science/citation_coverage_test.dart`: barre **todo `lib/`** y falla si (1) un `citation:` tiene una parte sin fuente, (2) un "Autor AAAA" dentro de un texto visible no resuelve, (3) un texto visible usa un respaldo prohibido (Frank Suárez, NaturalSlim, Huberman, Biological Dial, Metabolic Clock), (4) alguna de las 11 pantallas de cálculo deja de mostrar sus fuentes o (5) Perfil pierde la fila "Fuentes científicas".
-- `test/features/science/sources_widgets_test.dart`: tocar una fuente abre **su** URL; la cita corta abre una hoja con sus fuentes; una etiqueta que no es cita no se convierte en enlace; aviso si el enlace no abre; la pantalla completa lista las 39 fuentes.
+- `test/features/science/sources_widgets_test.dart`: tocar una fuente abre **su** URL; la cita corta abre una hoja con sus fuentes; una etiqueta que no es cita no se convierte en enlace; aviso si el enlace no abre; la pantalla completa lista todas las fuentes.
 - Tests existentes actualizados: `meals_ratio_computer_test` (Jenkins en lugar de Frank Suárez) y `exercise_weekly_computer_test` (Piercy en lugar de AHA).
 
 ## 6. Respuesta para App Review
@@ -81,3 +81,9 @@ Lo que encontramos en el código:
 - "Walker 2017" (*Why We Sleep*) sigue como fuente: es divulgación, no un artículo revisado por pares. Conviene sustituirla gradualmente por Watson 2015 / Spiegel 1999 según la afirmación concreta.
 - Las notificaciones push no pueden llevar enlaces; sus afirmaciones quedan cubiertas por la pantalla completa.
 - No se tocaron los documentos internos de bibliografía (`docs/*_BIBLIOGRAPHY.md`).
+
+## 8. Segunda vuelta (22-nov, tras la auditoría de riesgos)
+
+- **Glucosa:** la app clasifica lecturas con los cortes de la ADA (ayunas 100/126, 2 h 140/200, baja <70) sin mostrar fuente — el mismo motivo del rechazo. Se añaden ADA 2025 cap. 2 (PMID 39651986) y cap. 6 (PMID 39651981) al catálogo, al bloque de fuentes de Glucosa, a la tarjeta de entrada y a la hoja de registro.
+- **Blindaje ampliado:** `citation_coverage_test` ahora exige fuentes en TODA pantalla de `presentation/` que use un cálculo de salud (`GlucoseClassifier`, `FastingEligibility`, `BodyCompositionCalc`, `BodyFatCalculator`), no solo en una lista fija.
+- **Retos oculto** (`kRetosEnabled = false`): tiene interacción entre usuarios sin reportar/bloquear (guía 1.2). Se quita el acceso, la ruta redirige a Progreso, no se registra el push de zumbidos y no se muestran sus insignias ni el texto de perlas que lo menciona.

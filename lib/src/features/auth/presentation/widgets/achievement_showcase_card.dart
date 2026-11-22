@@ -29,7 +29,7 @@ class AchievementShowcaseCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final badgeState = ref.watch(badgeProvider);
     final streak = ref.watch(streakProvider);
-    final totalBadges = BadgeCatalog.all.length;
+    final totalBadges = BadgeCatalog.visible.length;
 
     // Más recientes primero — lo último que ganaste es lo más relevante
     // para mostrar de entrada.
