@@ -1,8 +1,4 @@
-// Módulo "Tu Glucosa" — tests funcionales de GlucoseChart. Widget sin
-// dependencia de Riverpod (StatelessWidget puro) — mismo patrón de
-// wrapping que imr_trend_chart_test.dart. Cubre el estado vacío y que
-// el CustomPaint no lance excepciones con 1 o varias lecturas
-// (incluyendo min==max, caso borde del clamp de rango en el painter).
+// Módulo "Tu Glucosa" — tests de GlucoseChart (rediseño 23-nov).
 
 import 'package:elena_app/src/features/glucose/domain/glucose_reading.dart';
 import 'package:elena_app/src/features/glucose/presentation/widgets/glucose_chart.dart';
@@ -13,17 +9,15 @@ Widget _wrap(Widget child) => MaterialApp(
       theme: ThemeData.dark(useMaterial3: true),
       home: Scaffold(
         backgroundColor: const Color(0xFF0F172A),
-        body: Padding(padding: const EdgeInsets.all(20), child: child),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: child,
+        ),
       ),
     );
 
-/// Localiza el `CustomPaint` que pinta el gráfico, ignorando los que el
-/// propio Flutter monta dentro de `Scaffold`/`Material`.
-///
-/// El painter es privado (`_GlucoseChartPainter`), así que no se puede
-/// referenciar por tipo desde el test; se identifica por su nombre en
-/// tiempo de ejecución. Es feo, pero es preferible a afirmar sobre
-/// `CustomPaint` a secas, que acopla el test al árbol interno del framework.
+/// El painter es privado; se identifica por su nombre en tiempo de
+/// ejecución para no afirmar sobre los CustomPaint internos de Flutter.
 final Finder _chartPainter = find.byWidgetPredicate(
   (w) =>
       w is CustomPaint &&
@@ -32,65 +26,137 @@ final Finder _chartPainter = find.byWidgetPredicate(
   description: 'CustomPaint del GlucoseChart',
 );
 
-GlucoseReading _reading(int value, DateTime measuredAt) => GlucoseReading(
-      id: 'r-${measuredAt.millisecondsSinceEpoch}',
-      userId: 'u1',
-      valueMgDl: value,
-      context: GlucoseReadingContext.ayunas,
-      measuredAt: measuredAt,
-      symptomsReported: const [],
-      createdAt: measuredAt,
-      updatedAt: measuredAt,
-    );
+final _now = DateTime(2026, 11, 23, 9);
+
+GlucoseReading _reading(int value, int daysAgo,
+        [GlucoseReadingContext c = GlucoseReadingContext.ayunas]) {
+  final at = _now.subtract(Duration(days: daysAgo));
+  return GlucoseReading(
+    id: 'r-$daysAgo-$value-${c.name}',
+    userId: 'u1',
+    valueMgDl: value,
+    context: c,
+    measuredAt: at,
+    symptomsReported: const [],
+    createdAt: at,
+    updatedAt: at,
+  );
+}
 
 void main() {
   group('GlucoseChart', () {
-    testWidgets('sin lecturas muestra estado vacío, sin CustomPaint',
+    testWidgets('sin lecturas muestra estado vacío, sin gráfica',
         (tester) async {
       await tester.pumpWidget(_wrap(const GlucoseChart(readings: [])));
       expect(
           find.text('Todavía no hay lecturas para graficar.'), findsOneWidget);
-      // 27-jul (auditoría): antes esto era `find.byType(CustomPaint)` con
-      // `findsNothing`, y llevaba fallando desde que Flutter empezó a montar
-      // un `CustomPaint` propio dentro de Scaffold/Material. El test afirmaba
-      // un detalle de implementación del framework, no del widget bajo
-      // prueba. Lo que de verdad importa es que NO se pinte el gráfico:
-      // se busca el painter concreto, no cualquier CustomPaint del árbol.
       expect(_chartPainter, findsNothing);
     });
 
-    testWidgets(
-        'con 1 lectura renderiza sin excepción (xFor divide por 0 '
-        'evitado)', (tester) async {
-      await tester.pumpWidget(_wrap(GlucoseChart(readings: [
-        _reading(95, DateTime(2026, 7, 20)),
-      ])));
+    testWidgets('con 1 lectura pinta, muestra su zona y la fuente',
+        (tester) async {
+      await tester.pumpWidget(_wrap(GlucoseChart(
+        now: _now,
+        readings: [_reading(95, 1)],
+      )));
+      expect(_chartPainter, findsOneWidget);
+      expect(tester.takeException(), isNull);
+      expect(find.text('En rango'), findsWidgets);
+      expect(find.text('1 de 1 lectura en rango (100 %)'), findsOneWidget);
+      expect(find.text('Rangos de referencia: ADA 2025'), findsOneWidget);
+    });
+
+    testWidgets('valores iguales no rompen la escala', (tester) async {
+      await tester.pumpWidget(_wrap(GlucoseChart(
+        now: _now,
+        readings: [_reading(90, 3), _reading(90, 2), _reading(90, 1)],
+      )));
       expect(_chartPainter, findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets(
-        'con varias lecturas de igual valor (range==0, clamp a 1) '
-        'renderiza sin excepción', (tester) async {
-      await tester.pumpWidget(_wrap(GlucoseChart(readings: [
-        _reading(90, DateTime(2026, 7, 18)),
-        _reading(90, DateTime(2026, 7, 19)),
-        _reading(90, DateTime(2026, 7, 20)),
-      ])));
-      expect(_chartPainter, findsOneWidget);
+    testWidgets('resume lecturas en rango, promedio y extremos',
+        (tester) async {
+      await tester.pumpWidget(_wrap(GlucoseChart(
+        now: _now,
+        readings: [_reading(80, 3), _reading(105, 2), _reading(130, 1)],
+      )));
+      expect(find.text('1 de 3 lecturas en rango (33 %)'), findsOneWidget);
+      expect(find.text('Promedio 105 mg/dL · mínimo 80 · máximo 130'),
+          findsOneWidget);
+      expect(find.text('Elevado 1'), findsOneWidget);
+      expect(find.text('Alto 1'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets(
-        'con lecturas variadas dentro y fuera de la banda 100 '
-        'renderiza sin excepción', (tester) async {
-      await tester.pumpWidget(_wrap(GlucoseChart(readings: [
-        _reading(80, DateTime(2026, 7, 18)),
-        _reading(105, DateTime(2026, 7, 19)),
-        _reading(130, DateTime(2026, 7, 20)),
-      ])));
-      expect(_chartPainter, findsOneWidget);
+    testWidgets('pestañas por contexto solo si hay ayunas y 2 h',
+        (tester) async {
+      await tester.pumpWidget(_wrap(GlucoseChart(
+        now: _now,
+        readings: [_reading(90, 1)],
+      )));
+      expect(find.text('2 h después de comer'), findsNothing);
+
+      await tester.pumpWidget(_wrap(GlucoseChart(
+        now: _now,
+        readings: [
+          _reading(90, 1),
+          _reading(150, 1, GlucoseReadingContext.postprandial2h),
+        ],
+      )));
+      expect(find.text('En ayunas'), findsOneWidget);
+      await tester.tap(find.text('2 h después de comer'));
+      await tester.pumpAndSettle();
+      expect(find.text('150 mg/dL'), findsOneWidget);
+      expect(find.textContaining('prueba de tolerancia oral'), findsOneWidget);
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('la ventana de días filtra las lecturas', (tester) async {
+      await tester.pumpWidget(_wrap(GlucoseChart(
+        now: _now,
+        readings: [_reading(90, 20), _reading(110, 2)],
+      )));
+      expect(find.text('1 de 2 lecturas en rango (50 %)'), findsOneWidget);
+      await tester.tap(find.text('14 días'));
+      await tester.pumpAndSettle();
+      expect(find.text('0 de 1 lectura en rango (0 %)'), findsOneWidget);
+    });
+
+    testWidgets('sin lecturas en la ventana lo dice', (tester) async {
+      await tester.pumpWidget(_wrap(GlucoseChart(
+        now: _now,
+        readings: [_reading(90, 60)],
+      )));
+      expect(find.text('Sin lecturas en ayunas en los últimos 30 días.'),
+          findsOneWidget);
+      expect(_chartPainter, findsOneWidget);
+    });
+
+    testWidgets('solo momentos sin rango ADA: explica en vez de graficar',
+        (tester) async {
+      await tester.pumpWidget(_wrap(GlucoseChart(
+        now: _now,
+        readings: [_reading(120, 1, GlucoseReadingContext.antesDeDormir)],
+      )));
+      expect(find.textContaining('sin rango de referencia'), findsOneWidget);
+      expect(_chartPainter, findsNothing);
+    });
+
+    testWidgets('tocar la gráfica selecciona la lectura más cercana',
+        (tester) async {
+      await tester.pumpWidget(_wrap(GlucoseChart(
+        now: _now,
+        readings: [_reading(80, 28), _reading(120, 1)],
+      )));
+      expect(find.text('120 mg/dL'), findsOneWidget);
+      // Misma geometría que el painter: área útil de x = 32 a ancho − 6,
+      // ventana de 30 días. La lectura de hace 28 días cae en 2/30.
+      final rect = tester.getRect(_chartPainter);
+      final x = rect.left + 32 + (2 / 30) * (rect.width - 38);
+      await tester.tapAt(Offset(x, rect.center.dy));
+      await tester.pump();
+      expect(find.text('80 mg/dL'), findsOneWidget);
     });
   });
 }

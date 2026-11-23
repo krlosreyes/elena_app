@@ -10,12 +10,17 @@ import 'package:elena_app/src/features/analysis/application/progress_v4_provider
 import 'package:elena_app/src/features/analysis/application/weekly_window.dart';
 import 'package:elena_app/src/features/analysis/domain/recomposition.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/dashboard_bottom_nav.dart';
+import 'package:elena_app/src/features/glucose/domain/glucose_chart_data.dart';
 import 'package:elena_app/src/features/glucose/domain/glucose_insight.dart';
+import 'package:elena_app/src/features/glucose/domain/glucose_reading.dart';
+import 'package:elena_app/src/features/glucose/presentation/widgets/glucose_chart.dart'
+    show glucoseZoneColor;
 import 'package:elena_app/src/features/glucose/presentation/widgets/glucose_reading_sheet.dart';
 import 'package:elena_app/src/features/profile/application/biometric_lock_provider.dart';
 import 'package:elena_app/src/features/progress/presentation/biometric_checkin_sheet.dart';
 import 'package:elena_app/src/features/metabolic_cycle/application/metabolic_cycle_providers.dart';
 import 'package:elena_app/src/core/config/feature_flags.dart';
+import 'package:elena_app/src/features/science/presentation/widgets/sources_footer.dart';
 
 // Progreso v4 (2026-11-05) — el objetivo de Elena es la salud metabólica,
 // que va de la mano con la recomposición corporal. La pantalla cuenta una
@@ -100,23 +105,17 @@ class AnalysisScreen extends ConsumerWidget {
               const SizedBox(height: 14),
               _GlucoseCard(data: glucose),
             ],
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                _Access(
-                    label: 'Insignias',
-                    onTap: () => context.push('/profile/badges')),
-                const SizedBox(width: 8),
-                if (kRetosEnabled) ...[
+            // 23-nov: Insignias se mudó a Perfil y "Tu reloj" a Hoy. Aquí
+            // solo queda el acceso a Retos, que la 1.0 oculta.
+            if (kRetosEnabled) ...[
+              const SizedBox(height: 14),
+              Row(
+                children: [
                   _Access(
                       label: 'Retos', onTap: () => context.push('/retos')),
-                  const SizedBox(width: 8),
                 ],
-                _Access(
-                    label: 'Tu reloj',
-                    onTap: () => context.push('/analysis/reloj')),
-              ],
-            ),
+              ),
+            ],
           ],
         ),
       ),
@@ -865,11 +864,26 @@ class _GlucoseCard extends StatelessWidget {
                     ),
                   ),
                   if (data.recent.length >= 3)
-                    SizedBox(
-                      width: 110,
-                      height: 44,
-                      child: CustomPaint(
-                          painter: _SparkPainter(data.recent)),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        SizedBox(
+                          width: 110,
+                          height: 44,
+                          child: CustomPaint(
+                              painter: _SparkPainter(data.recent)),
+                        ),
+                        const SizedBox(height: 4),
+                        const Text(
+                          'Verde: en rango (70–99)',
+                          style: TextStyle(color: _faint, fontSize: 10.5),
+                        ),
+                        const CitationLink(
+                          'Rangos ADA 2025',
+                          style: TextStyle(
+                              fontSize: 10.5, fontWeight: FontWeight.w600),
+                        ),
+                      ],
                     ),
                 ],
               ),
@@ -918,22 +932,32 @@ class _GlucoseCard extends StatelessWidget {
   }
 }
 
+// 23-nov: la mini gráfica ya no flota sin contexto — muestra la banda "en
+// rango" en ayunas (70–99 mg/dL, ADA) y el último punto con el color de su
+// zona, los mismos cortes y colores de la gráfica completa (glucose_chart).
 class _SparkPainter extends CustomPainter {
   _SparkPainter(this.values);
 
   final List<int> values;
 
+  static final _bands =
+      GlucoseReferenceBands.forContext(GlucoseReadingContext.ayunas)!;
+
   @override
   void paint(Canvas canvas, Size size) {
     if (values.length < 2) return;
-    final lo = values.reduce(math.min).toDouble();
-    final hi = values.reduce(math.max).toDouble();
-    final span = (hi - lo).abs() < 1 ? 1.0 : hi - lo;
-    final dx = (size.width - 6) / (values.length - 1);
-    Offset at(int i) => Offset(
-          3 + i * dx,
-          4 + (1 - (values[i] - lo) / span) * (size.height - 8),
-        );
+    final lo = math.min(values.reduce(math.min), _bands.lowBelow - 5);
+    final hi = math.max(values.reduce(math.max), _bands.inRangeBelow + 10);
+    final span = (hi - lo).toDouble();
+    final dx = (size.width - 8) / (values.length - 1);
+    double y(num v) => 4 + (1 - (v - lo) / span) * (size.height - 8);
+    Offset at(int i) => Offset(4 + i * dx, y(values[i]));
+
+    canvas.drawRect(
+      Rect.fromLTRB(0, y(_bands.inRangeBelow), size.width, y(_bands.lowBelow)),
+      Paint()..color = AppColors.metabolicGreen.withValues(alpha: 0.14),
+    );
+
     final path = Path()..moveTo(at(0).dx, at(0).dy);
     for (var i = 1; i < values.length; i++) {
       path.lineTo(at(i).dx, at(i).dy);
@@ -943,11 +967,17 @@ class _SparkPainter extends CustomPainter {
       Paint()
         ..color = _glucoseColor
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.5
+        ..strokeWidth = 2.2
         ..strokeCap = StrokeCap.round
         ..strokeJoin = StrokeJoin.round,
     );
-    canvas.drawCircle(at(values.length - 1), 3.5, Paint()..color = _glucoseColor);
+    final last = at(values.length - 1);
+    canvas.drawCircle(last, 5, Paint()..color = _surface);
+    canvas.drawCircle(
+      last,
+      3.6,
+      Paint()..color = glucoseZoneColor(_bands.classify(values.last)),
+    );
   }
 
   @override

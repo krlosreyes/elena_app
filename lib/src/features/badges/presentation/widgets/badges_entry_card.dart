@@ -1,12 +1,8 @@
-// Card de entrada compacta al sistema de insignias (15-jul, segunda
-// vuelta de feedback de Carlos). Primero vivió en Perfil (ver
-// project_badges_dedicated_screen); Carlos pidió sacarla de ahí también y
-// ponerla como primera card del tab "Progreso" (AnalysisScreen,
-// /analysis) — es el lugar donde ya vive la sección "Tu racha", así que
-// insignias queda junto a su pariente conceptual más cercana en vez de
-// en un settings screen. Resume el estado (insignias ganadas + racha
-// actual) y navega a la pantalla completa (badges_screen.dart,
-// /profile/badges — la ruta no cambió, solo quién enlaza a ella).
+// Card de entrada compacta al sistema de insignias. Historia: vivió en
+// Perfil, el 15-jul pasó a Progreso y el 23-nov vuelve a Perfil, debajo de
+// la identidad: las insignias son logros de la persona, y Progreso queda
+// para los resultados del cuerpo. Navega a la pantalla completa
+// (badges_screen.dart, /profile/badges).
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

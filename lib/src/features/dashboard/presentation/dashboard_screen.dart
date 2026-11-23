@@ -8,6 +8,7 @@ import 'package:elena_app/src/features/fasting/application/fasting_notifier.dart
 import 'package:elena_app/src/features/sleep/application/sleep_notifier.dart';
 import 'package:elena_app/src/features/hydration/application/hydration_notifier.dart';
 import 'package:elena_app/src/features/dashboard/domain/selected_pillar.dart';
+import 'package:elena_app/src/features/dashboard/presentation/widgets/circadian_clock_entry_card.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/dashboard_bottom_nav.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/dashboard_fasting_overlays.dart';
 import 'package:elena_app/src/features/dashboard/presentation/widgets/dashboard_pillars_row.dart';
@@ -333,8 +334,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       //   2. Acción principal (ayuno: iniciar / en curso)
                       //   3. Tu foco de hoy (una recomendación)
                       //   4. Tu día (puntaje + 5 pilares; tocar abre detalle)
-                      // Se quitaron del feed: reloj circadiano (vive en
-                      // Progreso), banners de racha/glucosa/engagement/
+                      // Se quitaron del feed: reloj circadiano (23-nov:
+                      // vuelve como acceso compacto bajo los pilares), banners de racha/glucosa/engagement/
                       // prueba/muro de pago, cierre de ciclo, coach,
                       // sugerencias, check-in, recordatorio de peso y
                       // "Aprende". Su código sigue en el repo.
@@ -424,6 +425,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           onSelectPillar: _onSelectPillar,
                         ),
                       ],
+                      // 23-nov: el reloj circadiano vuelve a Hoy como acceso
+                      // compacto — muestra el día de hoy, no un resultado.
+                      const SizedBox(height: 14),
+                      const CircadianClockEntryCard(),
                       const SizedBox(height: 14),
                       const WeekClosedCard(),
                       const SizedBox(height: 24),

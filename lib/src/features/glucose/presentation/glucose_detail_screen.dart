@@ -67,11 +67,6 @@ class GlucoseDetailScreen extends ConsumerWidget {
               );
             }
 
-            final ayunas = readings
-                .where((r) => r.context == GlucoseReadingContext.ayunas)
-                .toList()
-                .reversed // Firestore viene desc; el chart quiere asc.
-                .toList();
             final last = readings.first;
             final avg7 = _average(readings, days: 7);
             final classification =
@@ -88,7 +83,7 @@ class GlucoseDetailScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 20),
                 Text(
-                  'HISTÓRICO (AYUNAS)',
+                  'TU HISTÓRICO',
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.40),
                     fontSize: 10.5,
@@ -98,12 +93,15 @@ class GlucoseDetailScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 10),
                 Container(
-                  padding: const EdgeInsets.all(14),
+                  padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
                   decoration: BoxDecoration(
                     color: const Color(0xFF1E293B),
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: GlucoseChart(readings: ayunas),
+                  // 23-nov: la gráfica recibe todo el historial y separa
+                  // ayunas / 2 h después de comer por dentro (rangos ADA
+                  // distintos). Ver glucose_chart.dart.
+                  child: GlucoseChart(readings: readings),
                 ),
                 const SizedBox(height: 24),
                 Text(

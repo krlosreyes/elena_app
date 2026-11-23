@@ -22,6 +22,8 @@
 // un settings screen. Ver BadgesEntryCard (widgets/badges_entry_card.dart)
 // para el widget de entrada. El contenido interno de esta pantalla (los
 // 3 widgets) no cambió — solo se reubicó quién navega a ella.
+// 23-nov: la entrada vuelve a Perfil (debajo de la identidad) y sale de
+// Progreso.
 
 import 'package:flutter/material.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';

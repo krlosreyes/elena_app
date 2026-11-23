@@ -85,12 +85,17 @@ const List<TourStep> kTourSteps = [
   ),
 
   // 1 — Reloj Circadiano
+  //
+  // 23-nov: el reloj ya no está en la portada de Hoy (desde el 30-oct), así
+  // que el hueco `TourSpotlightArea.clock` iluminaba un área vacía. El paso
+  // ahora explica dónde está el acceso (fila "Tu reloj circadiano", debajo
+  // de los pilares) sin resaltar una posición fija.
   TourStep(
     emoji: '🕐',
-    title: 'El Reloj Circadiano',
+    title: 'Tu reloj circadiano',
     body:
-        'Muestra tu ventana de alimentación, las fases metabólicas del día (cognitiva, física, digestiva) y el punto donde estás ahora. Tócalo para ver la leyenda completa.',
-    spotlight: TourSpotlightArea.clock,
+        'Está en Hoy, debajo de tus pilares. Muestra tu día en 24 horas: tu ventana de alimentación, el ayuno, el descanso y el punto donde estás ahora.',
+    spotlight: TourSpotlightArea.none,
   ),
 
   // 2 — Pilar Ayuno

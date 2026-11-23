@@ -1,5 +1,6 @@
 // Rediseño (2026-10-30): el reloj circadiano salió de la portada de Hoy y
-// vive aquí, como detalle opcional al que se entra desde Progreso.
+// vive aquí, como detalle opcional. 23-nov: se entra desde Hoy
+// (CircadianClockEntryCard, ruta /reloj), ya no desde Progreso.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

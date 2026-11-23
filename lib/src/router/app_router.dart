@@ -205,11 +205,18 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         name: 'analysis-racha',
         builder: (context, state) => const RachaDetailScreen(),
       ),
-      // Rediseño (2026-10-30): el reloj circadiano salió de Hoy.
+      // Reloj circadiano. 30-oct: salió de la portada de Hoy y se entraba
+      // desde Progreso. 23-nov: el acceso vuelve a Hoy
+      // (CircadianClockEntryCard) y la ruta deja de colgar de /analysis.
+      // /analysis/reloj redirige para no romper enlaces viejos.
+      GoRoute(
+        path: '/reloj',
+        name: 'reloj',
+        builder: (context, state) => const CircadianClockScreen(),
+      ),
       GoRoute(
         path: '/analysis/reloj',
-        name: 'analysis-reloj',
-        builder: (context, state) => const CircadianClockScreen(),
+        redirect: (context, state) => '/reloj',
       ),
       // 23-jul: módulo "Tu Glucosa" (Protocolo de Seguimiento de
       // Glucosa) — mismo patrón que las 3 rutas de detalle de arriba.

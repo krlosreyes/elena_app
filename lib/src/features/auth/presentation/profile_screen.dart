@@ -34,6 +34,7 @@ import 'package:elena_app/src/features/auth/presentation/widgets/protocolo_entry
 import 'package:elena_app/src/features/auth/presentation/widgets/ritmos_entry_card.dart';
 import 'package:elena_app/src/features/nutrition/presentation/widgets/alimentacion_minuta_entry_card.dart';
 import 'package:elena_app/src/features/auth/providers/auth_providers.dart';
+import 'package:elena_app/src/features/badges/presentation/widgets/badges_entry_card.dart';
 import 'package:elena_app/src/features/profile/application/biometric_lock_provider.dart';
 import 'package:elena_app/src/features/progress/application/progress_notifier.dart';
 import 'package:elena_app/src/features/progress/presentation/biometric_checkin_sheet.dart';
@@ -112,6 +113,10 @@ class _ProfileBody extends ConsumerWidget {
           const SizedBox(height: 8),
           const ProfileLongitudinalDisclaimer(),
         ],
+        // 23-nov: las insignias vuelven a Perfil (son tuyas, como tu IMR)
+        // y salen de Progreso, que queda para resultados del cuerpo.
+        const SizedBox(height: 12),
+        const BadgesEntryCard(key: ValueKey('profile-badges-entry')),
         const SizedBox(height: 24),
         _BodyBlock(user: user),
         const SizedBox(height: 24),
