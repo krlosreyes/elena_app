@@ -37,8 +37,8 @@ void main() {
 
   group('label', () {
     test('retorna etiquetas LatAm canónicas', () {
-      expect(NervousSystem.passive.label, 'Pasivo');
-      expect(NervousSystem.excited.label, 'Excitado');
+      expect(NervousSystem.passive.label, 'Ritmo tranquilo');
+      expect(NervousSystem.excited.label, 'Ritmo acelerado');
       expect(NervousSystem.unknown.label, 'Por conocer');
     });
   });

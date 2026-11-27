@@ -78,7 +78,7 @@ void main() {
         );
 
         expect(state.metabolicMilestone, 'Regeneración Celular');
-        expect(state.nextMilestoneLabel, 'FASE DE REGENERACIÓN PROFUNDA');
+        expect(state.nextMilestoneLabel, 'AYUNO PROLONGADO');
         expect(state.timeRemainingForNextMilestone, Duration.zero);
         expect(state.progressPercentage, 1.0);
       },

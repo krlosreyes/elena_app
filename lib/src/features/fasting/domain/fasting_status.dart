@@ -318,7 +318,7 @@ class FastingState {
           : "META: INICIAR AYUNO";
     }
     final next = nextPhase;
-    if (next == null) return "FASE DE REGENERACIÓN PROFUNDA";
+    if (next == null) return "AYUNO PROLONGADO";
     return "SIGUIENTE ETAPA: ${next.milestoneName.toUpperCase()} "
         "(${next.startsAt.inHours}H)";
   }

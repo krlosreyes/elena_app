@@ -191,7 +191,7 @@ void main() {
       );
       expect(
         _stateAt(const Duration(hours: 30)).nextMilestoneLabel,
-        'FASE DE REGENERACIÓN PROFUNDA',
+        'AYUNO PROLONGADO',
       );
     });
 
@@ -211,12 +211,14 @@ void main() {
       expect(
         FastingBenefits.benefitsFor(
             FastingPhase.fatBurning, const Duration(hours: 19)),
-        contains(startsWith('Cetosis nutricional activa')),
+        contains(
+            startsWith('Es probable que estés produciendo cuerpos cetónicos')),
       );
       expect(
         FastingBenefits.benefitsFor(
             FastingPhase.autophagy, const Duration(hours: 26)),
-        contains(startsWith('Autofagia activa')),
+        contains(startsWith(
+            'Ayuno prolongado: en estudios se asocia a más autofagia')),
       );
     });
   });
