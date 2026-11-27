@@ -71,7 +71,7 @@ class PillarCardUi {
         Text(
           label,
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.5),
+            color: Colors.white.withValues(alpha: 0.7),
             fontSize: 11,
             fontWeight: FontWeight.w600,
           ),
@@ -105,7 +105,7 @@ class PillarCardUi {
     return Text(
       '$pct% completado',
       style: TextStyle(
-        color: Colors.white.withValues(alpha: 0.5),
+        color: Colors.white.withValues(alpha: 0.7),
         fontSize: 11,
         fontWeight: FontWeight.w600,
       ),

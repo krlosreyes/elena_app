@@ -148,7 +148,7 @@ class _DailyScoreExplainerSheet extends ConsumerWidget {
               'Los pesos del HOY se basan en literatura científica sobre el '
               'impacto metabólico de cada hábito.',
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.45),
+                color: Colors.white.withValues(alpha: 0.7),
                 fontSize: 11,
                 height: 1.5,
               ),

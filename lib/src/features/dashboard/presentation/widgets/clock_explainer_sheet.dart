@@ -93,8 +93,9 @@ class _ClockExplainerSheet extends StatelessWidget {
               marker: const Icon(Icons.local_fire_department_rounded,
                   color: Color(0xFFFB923C), size: 22),
               title: 'Los íconos del aro: hitos del ayuno',
-              body: '12 h descenso de insulina, 18 h quema de grasa, 24 h '
-                  'autofagia. Marcan cuándo tu cuerpo cambia de marcha.',
+              body: '12 h la insulina ya bajó, 18 h usas más grasa como '
+                  'energía, 24 h ayuno prolongado. Son referencias '
+                  'aproximadas: cada cuerpo va a su ritmo.',
             ),
             _LegendRow(
               marker: const Icon(Icons.schedule_rounded,

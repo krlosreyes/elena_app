@@ -73,7 +73,7 @@ class ForYouSection extends ConsumerWidget {
             child: Text(
               'Más para leer',
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.5),
+                color: Colors.white.withValues(alpha: 0.7),
                 fontSize: 12.5,
                 fontWeight: FontWeight.w700,
               ),
@@ -119,7 +119,7 @@ class ForYouSection extends ConsumerWidget {
                 Text(
                   'Esto te puede ayudar 👇',
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.55),
+                    color: Colors.white.withValues(alpha: 0.7),
                     fontSize: 12,
                   ),
                 ),
@@ -136,7 +136,7 @@ class ForYouSection extends ConsumerWidget {
         child: Text(
           text,
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.55),
+            color: Colors.white.withValues(alpha: 0.7),
             fontSize: 13,
             height: 1.5,
             fontWeight: FontWeight.w500,

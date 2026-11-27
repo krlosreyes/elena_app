@@ -94,7 +94,7 @@ class CycleFeedbackGenerator {
         fastingDurationHours != null &&
         fastingDurationHours >= 12) {
       final hours = fastingDurationHours.toStringAsFixed(1);
-      out.add('Ayuno ${hours}h — autofagia activa (Mattson 2017)');
+      out.add('Ayuno ${hours}h — protocolo cumplido (Mattson 2017)');
     }
 
     // Sueño: si magnitud ≥0.80 → 7h+ típicamente.
@@ -137,8 +137,7 @@ class CycleFeedbackGenerator {
       candidates.add((
         pillar: 'fasting',
         gap: kAchievementThreshold - m.fastingMagnitude,
-        copy:
-            'Ayuno corto — mañana apunta al 80% del protocolo para activar autofagia',
+        copy: 'Ayuno corto — mañana apunta al 80% de tu protocolo',
       ));
     }
     if (m.sleepQualityScore < kAchievementThreshold) {
@@ -227,7 +226,7 @@ class CycleFeedbackGenerator {
     if (fasting >= 0.85 && sleep < 0.70) {
       out.add((
         text:
-            'Tu ayuno fue excelente pero el sueño quedó corto. La autofagia que iniciaste no se consolida sin sueño profundo.',
+            'Tu ayuno fue excelente pero el sueño quedó corto. Dormir poco sube el hambre y la glucosa del día siguiente.',
         citation: 'Mattson 2017 + Walker 2017',
         id: 'insight-fasting-high-sleep-low',
       ));
@@ -293,7 +292,7 @@ class CycleFeedbackGenerator {
     if (fasting < 0.50 && fasting > 0.0) {
       out.add((
         text:
-            'Tu ayuno fue corto hoy. Para activar autofagia se necesitan al menos 14h continuas (Mattson 2017). Empieza mañana 30 min antes.',
+            'Tu ayuno fue corto hoy. Empieza mañana 30 min antes para acercarte a tu protocolo.',
         citation: 'Mattson 2017, Ageing Res Rev',
         id: 'insight-short-fasting',
       ));

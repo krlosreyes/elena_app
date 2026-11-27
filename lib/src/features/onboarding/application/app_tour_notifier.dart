@@ -78,7 +78,7 @@ const List<TourStep> kTourSteps = [
   // 0 — Bienvenida
   TourStep(
     emoji: '👋',
-    title: '¡Tu guía de ElenaApp!',
+    title: '¡Tu guía de Elena!',
     body:
         'En los próximos 2 minutos te mostramos cómo funciona cada elemento de la app antes de que empieces a registrar.',
     spotlight: TourSpotlightArea.none,

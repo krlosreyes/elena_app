@@ -70,8 +70,7 @@ void main() {
           containsAll([100, 101, 108, 200, 400, 439, 500, 600, 610, 611]));
     });
 
-    test('migra una configuración v1 guardada a los nuevos defaults',
-        () async {
+    test('migra una configuración v1 guardada a los nuevos defaults', () async {
       SharedPreferences.setMockInitialValues({
         'notificationPolicy.enabledKinds': ['manana', 'comidas', 'sueno'],
         'notificationPolicy.maxPerDay': 3,

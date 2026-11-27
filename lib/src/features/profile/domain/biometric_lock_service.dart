@@ -41,8 +41,18 @@ class BiometricLockState {
 
   static const _dias = ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom'];
   static const _meses = [
-    'ene', 'feb', 'mar', 'abr', 'may', 'jun',
-    'jul', 'ago', 'sep', 'oct', 'nov', 'dic',
+    'ene',
+    'feb',
+    'mar',
+    'abr',
+    'may',
+    'jun',
+    'jul',
+    'ago',
+    'sep',
+    'oct',
+    'nov',
+    'dic',
   ];
 
   /// "Disponible el lun 10 nov". Vacío si no está bloqueado.

@@ -61,6 +61,19 @@ class FastingNotifier extends StateNotifier<FastingState> {
   }
 
   void _init() {
+    // SPEC-308: al cambiar de cuenta (cerrar sesión y entrar con otra en
+    // el mismo teléfono) el estado del ayuno se reinicia. Este provider
+    // no se destruye con el logout, y la cuenta nueva heredaba la hora de
+    // inicio y el progreso de la anterior ("abrió 7:33", ayuno al 100 %).
+    _ref.listen<String?>(
+      authStateProvider.select((a) => a.value?.uid),
+      (previous, next) {
+        if (previous == next) return;
+        state = FastingState.initial()
+            .copyWith(fastingProtocol: state.fastingProtocol);
+        _fastingEndConfirmedToday = false;
+      },
+    );
     // FIRE-06 (cerrado 22-jul): la migración one-shot flat fasting_history
     // → subcolección (SPEC-222) se retiró de acá. La colección plana ya
     // se confirmó vacía y se borró en Firestore — ver
@@ -77,12 +90,16 @@ class FastingNotifier extends StateNotifier<FastingState> {
       next.when(
         data: (interval) {
           if (interval == null) {
+            // SPEC-308: sin ningún ayuno registrado tampoco hay progreso
+            // del día. Antes quedaba el de la cuenta anterior.
             state = state.copyWith(
-              startTime: null,
+              clearStartTime: true,
               isActive: false,
               duration: Duration.zero,
               phase: FastingPhase.none,
               activationSource: FastingActivationSource.none,
+              completedToday: false,
+              closedProgressToday: 0.0,
             );
           } else {
             final now = DateTime.now();
@@ -251,7 +268,7 @@ class FastingNotifier extends StateNotifier<FastingState> {
         if (!mounted) return;
         state = state.copyWith(
           isActive: false,
-          startTime: null,
+          clearStartTime: true,
           duration: Duration.zero,
           phase: FastingPhase.none,
           activationSource: FastingActivationSource.none,
@@ -419,7 +436,7 @@ class FastingNotifier extends StateNotifier<FastingState> {
         if (!mounted) return;
         state = state.copyWith(
           isActive: false,
-          startTime: null,
+          clearStartTime: true,
           duration: Duration.zero,
           phase: FastingPhase.none,
           activationSource: FastingActivationSource.none,

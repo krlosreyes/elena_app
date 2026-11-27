@@ -28,6 +28,9 @@ mixin _$UserModel {
   double get height => throw _privateConstructorUsedError; // --- Biometría ---
   double? get waistCircumference => throw _privateConstructorUsedError;
   double? get neckCircumference =>
+      throw _privateConstructorUsedError; // SPEC-306: cadera en cm. Obligatoria para calcular el % de grasa de
+// mujeres con la fórmula US Navy (igual que la calculadora del sitio).
+  double? get hipCircumference =>
       throw _privateConstructorUsedError; // SPEC-92: `bodyFatPercentage` ahora es nullable. Antes tenía
 // `@Default(20.0)` que era una trampa silenciosa — cualquier ruta
 // de creación que omitiera el campo contaminaba el bloque
@@ -129,6 +132,7 @@ abstract class $UserModelCopyWith<$Res> {
       double height,
       double? waistCircumference,
       double? neckCircumference,
+      double? hipCircumference,
       double? bodyFatPercentage,
       int pantSize,
       String shirtSize,
@@ -176,6 +180,7 @@ class _$UserModelCopyWithImpl<$Res, $Val extends UserModel>
     Object? height = null,
     Object? waistCircumference = freezed,
     Object? neckCircumference = freezed,
+    Object? hipCircumference = freezed,
     Object? bodyFatPercentage = freezed,
     Object? pantSize = null,
     Object? shirtSize = null,
@@ -229,6 +234,10 @@ class _$UserModelCopyWithImpl<$Res, $Val extends UserModel>
       neckCircumference: freezed == neckCircumference
           ? _value.neckCircumference
           : neckCircumference // ignore: cast_nullable_to_non_nullable
+              as double?,
+      hipCircumference: freezed == hipCircumference
+          ? _value.hipCircumference
+          : hipCircumference // ignore: cast_nullable_to_non_nullable
               as double?,
       bodyFatPercentage: freezed == bodyFatPercentage
           ? _value.bodyFatPercentage
@@ -341,6 +350,7 @@ abstract class _$$UserModelImplCopyWith<$Res>
       double height,
       double? waistCircumference,
       double? neckCircumference,
+      double? hipCircumference,
       double? bodyFatPercentage,
       int pantSize,
       String shirtSize,
@@ -387,6 +397,7 @@ class __$$UserModelImplCopyWithImpl<$Res>
     Object? height = null,
     Object? waistCircumference = freezed,
     Object? neckCircumference = freezed,
+    Object? hipCircumference = freezed,
     Object? bodyFatPercentage = freezed,
     Object? pantSize = null,
     Object? shirtSize = null,
@@ -440,6 +451,10 @@ class __$$UserModelImplCopyWithImpl<$Res>
       neckCircumference: freezed == neckCircumference
           ? _value.neckCircumference
           : neckCircumference // ignore: cast_nullable_to_non_nullable
+              as double?,
+      hipCircumference: freezed == hipCircumference
+          ? _value.hipCircumference
+          : hipCircumference // ignore: cast_nullable_to_non_nullable
               as double?,
       bodyFatPercentage: freezed == bodyFatPercentage
           ? _value.bodyFatPercentage
@@ -537,6 +552,7 @@ class _$UserModelImpl implements _UserModel {
       required this.height,
       this.waistCircumference,
       this.neckCircumference,
+      this.hipCircumference,
       this.bodyFatPercentage,
       this.pantSize = 30,
       this.shirtSize = 'M',
@@ -582,6 +598,10 @@ class _$UserModelImpl implements _UserModel {
   final double? waistCircumference;
   @override
   final double? neckCircumference;
+// SPEC-306: cadera en cm. Obligatoria para calcular el % de grasa de
+// mujeres con la fórmula US Navy (igual que la calculadora del sitio).
+  @override
+  final double? hipCircumference;
 // SPEC-92: `bodyFatPercentage` ahora es nullable. Antes tenía
 // `@Default(20.0)` que era una trampa silenciosa — cualquier ruta
 // de creación que omitiera el campo contaminaba el bloque
@@ -714,7 +734,7 @@ class _$UserModelImpl implements _UserModel {
 
   @override
   String toString() {
-    return 'UserModel(id: $id, name: $name, age: $age, gender: $gender, weight: $weight, height: $height, waistCircumference: $waistCircumference, neckCircumference: $neckCircumference, bodyFatPercentage: $bodyFatPercentage, pantSize: $pantSize, shirtSize: $shirtSize, isMeasurementEstimated: $isMeasurementEstimated, imrStdDev: $imrStdDev, confidenceLevel: $confidenceLevel, mealsPerDay: $mealsPerDay, fastingProtocol: $fastingProtocol, pathologies: $pathologies, activityLevel: $activityLevel, weeklyAdherence: $weeklyAdherence, exerciseGoalMinutes: $exerciseGoalMinutes, healthDisclaimerAccepted: $healthDisclaimerAccepted, healthDisclaimerAcceptedAt: $healthDisclaimerAcceptedAt, healthDisclaimerVersion: $healthDisclaimerVersion, nervousSystem: $nervousSystem, nervousSystemDeclared: $nervousSystemDeclared, nervousSystemScore: $nervousSystemScore, protocolWarningAccepted: $protocolWarningAccepted, profile: $profile)';
+    return 'UserModel(id: $id, name: $name, age: $age, gender: $gender, weight: $weight, height: $height, waistCircumference: $waistCircumference, neckCircumference: $neckCircumference, hipCircumference: $hipCircumference, bodyFatPercentage: $bodyFatPercentage, pantSize: $pantSize, shirtSize: $shirtSize, isMeasurementEstimated: $isMeasurementEstimated, imrStdDev: $imrStdDev, confidenceLevel: $confidenceLevel, mealsPerDay: $mealsPerDay, fastingProtocol: $fastingProtocol, pathologies: $pathologies, activityLevel: $activityLevel, weeklyAdherence: $weeklyAdherence, exerciseGoalMinutes: $exerciseGoalMinutes, healthDisclaimerAccepted: $healthDisclaimerAccepted, healthDisclaimerAcceptedAt: $healthDisclaimerAcceptedAt, healthDisclaimerVersion: $healthDisclaimerVersion, nervousSystem: $nervousSystem, nervousSystemDeclared: $nervousSystemDeclared, nervousSystemScore: $nervousSystemScore, protocolWarningAccepted: $protocolWarningAccepted, profile: $profile)';
   }
 
   @override
@@ -732,6 +752,8 @@ class _$UserModelImpl implements _UserModel {
                 other.waistCircumference == waistCircumference) &&
             (identical(other.neckCircumference, neckCircumference) ||
                 other.neckCircumference == neckCircumference) &&
+            (identical(other.hipCircumference, hipCircumference) ||
+                other.hipCircumference == hipCircumference) &&
             (identical(other.bodyFatPercentage, bodyFatPercentage) ||
                 other.bodyFatPercentage == bodyFatPercentage) &&
             (identical(other.pantSize, pantSize) ||
@@ -790,6 +812,7 @@ class _$UserModelImpl implements _UserModel {
         height,
         waistCircumference,
         neckCircumference,
+        hipCircumference,
         bodyFatPercentage,
         pantSize,
         shirtSize,
@@ -838,6 +861,7 @@ abstract class _UserModel implements UserModel {
       required final double height,
       final double? waistCircumference,
       final double? neckCircumference,
+      final double? hipCircumference,
       final double? bodyFatPercentage,
       final int pantSize,
       final String shirtSize,
@@ -878,7 +902,11 @@ abstract class _UserModel implements UserModel {
   double? get waistCircumference;
   @override
   double?
-      get neckCircumference; // SPEC-92: `bodyFatPercentage` ahora es nullable. Antes tenía
+      get neckCircumference; // SPEC-306: cadera en cm. Obligatoria para calcular el % de grasa de
+// mujeres con la fórmula US Navy (igual que la calculadora del sitio).
+  @override
+  double?
+      get hipCircumference; // SPEC-92: `bodyFatPercentage` ahora es nullable. Antes tenía
 // `@Default(20.0)` que era una trampa silenciosa — cualquier ruta
 // de creación que omitiera el campo contaminaba el bloque
 // Estructura del IMR con un 20% poblacional. Hoy el caller debe

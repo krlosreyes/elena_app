@@ -383,7 +383,7 @@ class BadgeCatalog {
         level: 1,
         threshold: 1,
         name: 'Bienvenida',
-        description: 'Completaste tu primer pilar en ElenaApp.'),
+        description: 'Completaste tu primer pilar en Elena.'),
 
     // ── SPEC-264: Retos de constancia (otorgadas por evento al cierre) ────
     BadgeDefinition(

@@ -82,7 +82,7 @@ class TrendComparisonCard extends StatelessWidget {
                 _windowLabel(trend.longWindow, mode),
                 style: TextStyle(
                   fontSize: 11.5,
-                  color: Colors.white.withValues(alpha: 0.45),
+                  color: Colors.white.withValues(alpha: 0.7),
                   fontWeight: FontWeight.w500,
                 ),
               ),

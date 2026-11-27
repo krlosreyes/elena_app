@@ -62,7 +62,7 @@ class _PostQuizViewState extends State<PostQuizView> {
               Text(
                 '$_answered/$total',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.5),
+                  color: Colors.white.withValues(alpha: 0.7),
                   fontSize: 12.5,
                   fontWeight: FontWeight.w700,
                 ),

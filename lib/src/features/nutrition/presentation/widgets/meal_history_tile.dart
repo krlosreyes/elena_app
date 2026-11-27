@@ -107,7 +107,7 @@ class _MealHistoryTileState extends ConsumerState<MealHistoryTile> {
               Text(
                 time,
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.55),
+                  color: Colors.white.withValues(alpha: 0.7),
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                   fontFeatures: const [FontFeature.tabularFigures()],
@@ -161,7 +161,7 @@ class _MealHistoryTileState extends ConsumerState<MealHistoryTile> {
             Text(
               foodNames.join(' · '),
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.42),
+                color: Colors.white.withValues(alpha: 0.7),
                 fontSize: 12,
                 height: 1.4,
               ),

@@ -16,8 +16,8 @@ void main() {
 
     test('text matchea los hex canónicos', () {
       expect(AppColors.textPrimary, const Color(0xFFF1F5F9));
-      expect(AppColors.textSecondary, const Color(0xFF94A3B8));
-      expect(AppColors.textMuted, const Color(0xFF64748B));
+      expect(AppColors.textSecondary, const Color(0xFFB8C4D4));
+      expect(AppColors.textMuted, const Color(0xFF94A3B8));
     });
 
     test('accent matchea los hex canónicos', () {

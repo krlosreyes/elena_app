@@ -20,8 +20,7 @@ HealthSyncResult _result(Map<HealthMetric, List<HealthSample>> m) =>
 
 HealthSample _sample(HealthMetric m, DateTime at, double v,
         [String source = 'iPhone']) =>
-    HealthSample(
-        metric: m, value: v, start: at, end: at, sourceName: source);
+    HealthSample(metric: m, value: v, start: at, end: at, sourceName: source);
 
 void main() {
   test('merge guarda el dato más reciente y el último peso', () {
@@ -31,8 +30,10 @@ void main() {
         _sample(HealthMetric.steps, DateTime(2026, 11, 4, 9), 100),
       ],
       HealthMetric.weight: [
-        _sample(HealthMetric.weight, DateTime(2026, 11, 2, 7), 79.0, 'Withings'),
-        _sample(HealthMetric.weight, DateTime(2026, 11, 4, 7), 78.4, 'Withings'),
+        _sample(
+            HealthMetric.weight, DateTime(2026, 11, 2, 7), 79.0, 'Withings'),
+        _sample(
+            HealthMetric.weight, DateTime(2026, 11, 4, 7), 78.4, 'Withings'),
       ],
     }));
     expect(s.lastSeen[HealthMetric.steps], DateTime(2026, 11, 4, 9));
@@ -45,13 +46,15 @@ void main() {
       HealthMetric.steps: DateTime(2026, 11, 4),
       HealthMetric.sleepSession: DateTime(2026, 10, 20),
     });
-    expect(s.staleMetrics(DateTime(2026, 11, 4, 12)),
-        [HealthMetric.sleepSession]);
+    expect(
+        s.staleMetrics(DateTime(2026, 11, 4, 12)), [HealthMetric.sleepSession]);
     // Peso o entrenamientos ausentes no se reclaman (no todos tienen báscula).
-    expect(HealthDataStatus(lastSeen: {
-      HealthMetric.steps: DateTime(2026, 11, 4),
-      HealthMetric.sleepSession: DateTime(2026, 11, 4),
-    }).staleMetrics(DateTime(2026, 11, 4, 12)), isEmpty);
+    expect(
+        HealthDataStatus(lastSeen: {
+          HealthMetric.steps: DateTime(2026, 11, 4),
+          HealthMetric.sleepSession: DateTime(2026, 11, 4),
+        }).staleMetrics(DateTime(2026, 11, 4, 12)),
+        isEmpty);
   });
 
   test('persiste y recupera', () async {
@@ -64,7 +67,8 @@ void main() {
     );
     await s.save(prefs);
     final back = HealthDataStatus.load(prefs);
-    expect(back.lastSeen[HealthMetric.sleepSession], DateTime(2026, 11, 4, 6, 10));
+    expect(
+        back.lastSeen[HealthMetric.sleepSession], DateTime(2026, 11, 4, 6, 10));
     expect(back.latestWeight?.kg, 78.4);
   });
 

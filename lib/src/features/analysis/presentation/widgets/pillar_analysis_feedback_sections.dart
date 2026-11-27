@@ -385,25 +385,24 @@ class NutricionFeedbackSection extends ConsumerWidget {
     if (avg >= target && pct >= 70) {
       color = const Color(0xFF10B981);
       emoji = '🏆';
-      title = 'Nutrición A-dominante';
-      body = 'Tu alimentación es mayoritariamente de Tipo A: alimentos que '
-          'bajan la glucosa y favorecen la quema de grasa. Esto reduce la '
-          'inflamación sistémica y optimiza el perfil hormonal metabólico.';
+      title = 'Platos equilibrados';
+      body = 'La mayoría de tus platos tienen más verduras y proteína que '
+          'almidones y azúcares. Ese balance ayuda a que la glucosa suba '
+          'menos después de comer.';
     } else if (avg >= target * 0.75) {
       color = const Color(0xFF38BDF8);
       emoji = '📈';
       title = 'En progreso';
-      body = 'Tu promedio de ${avg.round()} % A-dominante está cerca del '
-          'objetivo de 70 %. Reemplazar una comida E por una opción A cada '
-          'día puede marcar una diferencia visible en 2–3 semanas.';
+      body = 'El ${avg.round()} % de tus platos está equilibrado, cerca del '
+          'objetivo de 70 %. Cambiar una comida al día por un plato con más '
+          'verduras y proteína te acerca a la meta.';
     } else {
       color = const Color(0xFFF59E0B);
       emoji = '🎯';
       title = 'Oportunidad de mejora';
-      body = 'Tu promedio de ${avg.round()} % A-dominante indica que los '
-          'alimentos tipo E están predominando. Prioriza proteínas magras, '
-          'vegetales y grasas saludables para activar la termogénesis y '
-          'estabilizar la insulina.';
+      body = 'El ${avg.round()} % de tus platos está equilibrado: predominan '
+          'los almidones y azúcares. Prioriza proteínas magras, verduras y '
+          'grasas saludables para que la glucosa suba menos.';
     }
 
     return PillarFeedbackCard(

@@ -405,9 +405,9 @@ class NotificationScheduler {
 
       await NotificationService.scheduleAt(
         id: NotificationIds.fasting18h,
-        title: '🔥 18 horas — Cabeza clara',
-        body: 'Tu cuerpo encontró otro combustible. Vas a notar la cabeza '
-            'más clara. ¿Cómo te sientes?',
+        title: '🔥 18 horas de ayuno',
+        body: 'A esta altura tu cuerpo usa más grasa como energía. '
+            '¿Cómo te sientes?',
         scheduledTime: m18h,
         repeatsDaily: false,
         actionableMilestone: true,

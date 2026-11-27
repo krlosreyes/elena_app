@@ -60,7 +60,7 @@ class ProfileProtocolCard extends StatelessWidget {
             child: Text(
               '${fastingHours}h ayuno · ${feedingHours}h ventana',
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.38),
+                color: Colors.white.withValues(alpha: 0.7),
                 fontSize: 11,
                 fontWeight: FontWeight.w500,
               ),

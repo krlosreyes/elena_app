@@ -29,7 +29,7 @@ final Finder _chartPainter = find.byWidgetPredicate(
 final _now = DateTime(2026, 11, 23, 9);
 
 GlucoseReading _reading(int value, int daysAgo,
-        [GlucoseReadingContext c = GlucoseReadingContext.ayunas]) {
+    [GlucoseReadingContext c = GlucoseReadingContext.ayunas]) {
   final at = _now.subtract(Duration(days: daysAgo));
   return GlucoseReading(
     id: 'r-$daysAgo-$value-${c.name}',

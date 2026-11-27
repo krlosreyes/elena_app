@@ -204,7 +204,7 @@ class _GoalSetupScreenState extends ConsumerState<GoalSetupScreen> {
                           'trabajar y ajusta si lo prefieres.',
                           style: TextStyle(
                             fontSize: 11.5,
-                            color: Colors.white.withValues(alpha: 0.55),
+                            color: Colors.white.withValues(alpha: 0.7),
                             height: 1.5,
                           ),
                         ),
@@ -435,7 +435,7 @@ class _GoalSuggestionCardState extends State<GoalSuggestionCard> {
                               fontWeight: FontWeight.w800,
                               color: draft.isActive
                                   ? Colors.white
-                                  : Colors.white38,
+                                  : Colors.white70,
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -472,7 +472,7 @@ class _GoalSuggestionCardState extends State<GoalSuggestionCard> {
                             'Actual: ${_fmt(draft.type, draft.current)}',
                             style: TextStyle(
                               fontSize: 10,
-                              color: Colors.white.withValues(alpha: 0.35),
+                              color: Colors.white.withValues(alpha: 0.7),
                             ),
                           ),
                           Padding(
@@ -496,7 +496,7 @@ class _GoalSuggestionCardState extends State<GoalSuggestionCard> {
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w900,
-                              color: draft.isActive ? c : Colors.white24,
+                              color: draft.isActive ? c : Colors.white70,
                             ),
                           ),
                           if (isSuggestionValue) ...[
@@ -593,7 +593,7 @@ class _GoalSuggestionCardState extends State<GoalSuggestionCard> {
                           _fmt(draft.type, _sliderMin(meta)),
                           style: TextStyle(
                             fontSize: 8.5,
-                            color: Colors.white.withValues(alpha: 0.25),
+                            color: Colors.white.withValues(alpha: 0.7),
                           ),
                         ),
                         // Botón de reset a sugerencia de Elena
@@ -618,7 +618,7 @@ class _GoalSuggestionCardState extends State<GoalSuggestionCard> {
                           _fmt(draft.type, _sliderMax(meta)),
                           style: TextStyle(
                             fontSize: 8.5,
-                            color: Colors.white.withValues(alpha: 0.25),
+                            color: Colors.white.withValues(alpha: 0.7),
                           ),
                         ),
                       ],
@@ -674,7 +674,7 @@ class _GoalSuggestionCardState extends State<GoalSuggestionCard> {
                         draft.rationale,
                         style: TextStyle(
                           fontSize: 11.5,
-                          color: Colors.white.withValues(alpha: 0.6),
+                          color: Colors.white.withValues(alpha: 0.7),
                           height: 1.6,
                         ),
                       ),

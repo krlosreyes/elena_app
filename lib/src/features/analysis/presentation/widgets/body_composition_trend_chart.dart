@@ -130,7 +130,7 @@ class _BodyCompositionTrendChartState
     return Text(
       'COMPOSICIÓN CORPORAL',
       style: TextStyle(
-        color: Colors.white.withValues(alpha: 0.55),
+        color: Colors.white.withValues(alpha: 0.7),
         fontSize: 10,
         letterSpacing: 1.4,
         fontWeight: FontWeight.w900,
@@ -168,7 +168,7 @@ class _BodyCompositionTrendChartState
                 child: Text(
                   _tabLabel(m),
                   style: TextStyle(
-                    color: isSelected ? m.accentColor : Colors.white60,
+                    color: isSelected ? m.accentColor : Colors.white70,
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.3,
@@ -201,7 +201,7 @@ class _BodyCompositionTrendChartState
         child: Text(
           'No pudimos cargar la tendencia.',
           style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.55), fontSize: 12),
+              color: Colors.white.withValues(alpha: 0.7), fontSize: 12),
         ),
       );
 
@@ -258,7 +258,7 @@ class _BodyCompositionTrendChartState
             : 'Necesitamos al menos 2 mediciones — regístrate otra vez.',
         textAlign: TextAlign.center,
         style: TextStyle(
-          color: Colors.white.withValues(alpha: 0.55),
+          color: Colors.white.withValues(alpha: 0.7),
           fontSize: 13,
           fontWeight: FontWeight.w500,
           height: 1.4,
@@ -310,7 +310,7 @@ class _BodyCompositionTrendChartState
               child: Text(
                 _metric.unit,
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.4),
+                  color: Colors.white.withValues(alpha: 0.7),
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                 ),
@@ -358,12 +358,12 @@ class _BodyCompositionTrendChartState
       children: [
         Text('$days días atrás',
             style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.40),
+                color: Colors.white.withValues(alpha: 0.7),
                 fontSize: 10,
                 letterSpacing: 0.3)),
         Text('hoy',
             style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.40),
+                color: Colors.white.withValues(alpha: 0.7),
                 fontSize: 10,
                 letterSpacing: 0.3)),
       ],
@@ -384,7 +384,7 @@ class _BodyCompositionTrendChartState
             Text(
               'ESTADO',
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.45),
+                color: Colors.white.withValues(alpha: 0.7),
                 fontSize: 9,
                 letterSpacing: 1.2,
                 fontWeight: FontWeight.w800,

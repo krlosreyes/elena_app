@@ -41,7 +41,9 @@ void main() {
 
   group('ayuno olvidado (fix 2026-11-10)', () {
     test('menos de 24 h de exceso conserva HH:MM:SS', () {
-      expect(fastingOvertimeLabel(const Duration(hours: 2, minutes: 5, seconds: 9)),
+      expect(
+          fastingOvertimeLabel(
+              const Duration(hours: 2, minutes: 5, seconds: 9)),
           '+02:05:09');
     });
 

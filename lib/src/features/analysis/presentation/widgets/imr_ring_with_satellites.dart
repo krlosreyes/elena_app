@@ -81,7 +81,7 @@ class ImrRingWithSatellites extends StatelessWidget {
                         Text(
                           'IMR HOY',
                           style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.50),
+                            color: Colors.white.withValues(alpha: 0.7),
                             fontSize: 11,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 1.4,
@@ -233,7 +233,7 @@ class _PillarSatellite extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.55),
+            color: Colors.white.withValues(alpha: 0.7),
             fontSize: 10,
             height: 1.0,
             fontWeight: FontWeight.w700,

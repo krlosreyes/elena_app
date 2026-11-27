@@ -63,21 +63,32 @@ class OnboardingGoalsController {
   /// sugerencias del engine sobre el `UserModel` actual del
   /// onboarding. Portado 1:1 desde `_ensureGoalDraftsInitialized`
   /// (ver nota de archivo sobre por qué no dispara notifyListeners).
+  ///
+  /// SPEC-307: antes devolvía sin hacer nada si ya se había inicializado,
+  /// y la primera vez ocurría con los valores por defecto del formulario
+  /// (85 kg, 180 cm). Las metas quedaban calculadas con datos que no eran
+  /// del usuario. Ahora se recalculan si cambiaron las medidas, sin pisar
+  /// las metas que el usuario ya ajustó a mano.
   void ensureInitialized(UserModel user) {
-    if (initialized) return;
+    final String key = _inputsKey(user);
+    if (initialized && key == _lastInputsKey) return;
     final suggestions = GoalSuggestionEngine.suggest(user);
+    final Map<GoalType, GoalDraft> previous = initialized ? drafts : {};
+    _lastInputsKey = key;
 
     drafts = {
       for (final type in GoalType.values)
-        type: GoalDraft(
-          type: type,
-          target: suggestions[type]!.suggestedTarget,
-          current: suggestions[type]!.currentValue,
-          rationale: suggestions[type]!.rationale,
-          statusLabel: suggestions[type]!.currentStatusLabel,
-          isActive: suggestions[type]!.shouldActivate,
-          originalSuggestion: suggestions[type]!.suggestedTarget,
-        ),
+        type: _touched.contains(type) && previous[type] != null
+            ? previous[type]!
+            : GoalDraft(
+                type: type,
+                target: suggestions[type]!.suggestedTarget,
+                current: suggestions[type]!.currentValue,
+                rationale: suggestions[type]!.rationale,
+                statusLabel: suggestions[type]!.currentStatusLabel,
+                isActive: suggestions[type]!.shouldActivate,
+                originalSuggestion: suggestions[type]!.suggestedTarget,
+              ),
     };
     initialized = true;
   }
@@ -89,7 +100,25 @@ class OnboardingGoalsController {
   /// dato.
   void updateDraft(GoalType type, GoalDraft updated) {
     drafts[type] = updated;
+    _touched.add(type);
   }
+
+  String? _lastInputsKey;
+  final Set<GoalType> _touched = <GoalType>{};
+
+  static String _inputsKey(UserModel u) => [
+        u.age,
+        u.gender,
+        u.weight,
+        u.height,
+        u.waistCircumference,
+        u.neckCircumference,
+        u.hipCircumference,
+        u.bodyFatPercentage,
+        u.activityLevel,
+        u.fastingProtocol,
+        u.mealsPerDay,
+      ].join('|');
 
   /// SPEC-168.0.A v2 (Opción B, Carlos 2026-06-03): persiste TODOS
   /// los drafts respetando su `isActive` — incluso si el usuario no

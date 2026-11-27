@@ -57,7 +57,7 @@ class ExerciseWeeklyCard extends ConsumerWidget {
       child: Text(
         'No pudimos cargar tu ejercicio.',
         style: TextStyle(
-          color: Colors.white.withValues(alpha: 0.55),
+          color: Colors.white.withValues(alpha: 0.7),
           fontSize: 12,
         ),
       ),
@@ -90,7 +90,7 @@ class ExerciseWeeklyCard extends ConsumerWidget {
         Text(
           'TU EJERCICIO',
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.55),
+            color: Colors.white.withValues(alpha: 0.7),
             fontSize: 10,
             letterSpacing: 1.4,
             fontWeight: FontWeight.w900,
@@ -99,7 +99,7 @@ class ExerciseWeeklyCard extends ConsumerWidget {
         Text(
           '7 DÍAS',
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.45),
+            color: Colors.white.withValues(alpha: 0.7),
             fontSize: 10,
             letterSpacing: 1.0,
             fontWeight: FontWeight.w800,
@@ -134,7 +134,7 @@ class ExerciseWeeklyCard extends ConsumerWidget {
               child: Text(
                 'min · promedio',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.55),
+                  color: Colors.white.withValues(alpha: 0.7),
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                 ),
@@ -193,7 +193,7 @@ class ExerciseWeeklyCard extends ConsumerWidget {
             Text(
               d.predominantType!.shortLabel,
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.50),
+                color: Colors.white.withValues(alpha: 0.7),
                 fontSize: 10,
                 fontWeight: FontWeight.w700,
               ),
@@ -267,7 +267,7 @@ class ExerciseWeeklyCard extends ConsumerWidget {
                 CitationLink(
                   m.citation,
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.45),
+                    color: Colors.white.withValues(alpha: 0.7),
                     fontSize: 11,
                     fontStyle: FontStyle.italic,
                     fontWeight: FontWeight.w600,
@@ -288,7 +288,7 @@ class ExerciseWeeklyCard extends ConsumerWidget {
         'Registra tu ejercicio para ver tu patrón semanal.',
         textAlign: TextAlign.center,
         style: TextStyle(
-          color: Colors.white.withValues(alpha: 0.55),
+          color: Colors.white.withValues(alpha: 0.7),
           fontSize: 13,
           height: 1.5,
           fontWeight: FontWeight.w500,

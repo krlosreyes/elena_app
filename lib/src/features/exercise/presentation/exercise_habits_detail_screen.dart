@@ -148,7 +148,7 @@ class _BodyState extends ConsumerState<_Body> {
                     'disponible o tus objetivos — tu plan se recalcula '
                     'automáticamente.',
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.60),
+              color: Colors.white.withValues(alpha: 0.7),
               fontSize: 13,
               height: 1.5,
               fontWeight: FontWeight.w500,
@@ -213,7 +213,7 @@ class _BodyState extends ConsumerState<_Body> {
           Text(
             'Nunca te vamos a prescribir carga sobre una lesión activa.',
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.45),
+              color: Colors.white.withValues(alpha: 0.7),
               fontSize: 12,
               height: 1.4,
             ),
@@ -235,7 +235,7 @@ class _BodyState extends ConsumerState<_Body> {
             decoration: InputDecoration(
               hintText: 'Detalle opcional (ej: "hernia L4-L5 diagnosticada")',
               hintStyle: TextStyle(
-                color: Colors.white.withValues(alpha: 0.35),
+                color: Colors.white.withValues(alpha: 0.7),
               ),
               filled: true,
               fillColor: const Color(0xFF1E293B),
@@ -280,7 +280,7 @@ class _BodyState extends ConsumerState<_Body> {
         child: Text(
           label,
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.45),
+            color: Colors.white.withValues(alpha: 0.7),
             fontSize: 11,
             fontWeight: FontWeight.w800,
             letterSpacing: 0.6,

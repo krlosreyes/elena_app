@@ -31,6 +31,10 @@ class UserModel with _$UserModel {
     double? waistCircumference,
     double? neckCircumference,
 
+    // SPEC-306: cadera en cm. Obligatoria para calcular el % de grasa de
+    // mujeres con la fórmula US Navy (igual que la calculadora del sitio).
+    double? hipCircumference,
+
     // SPEC-92: `bodyFatPercentage` ahora es nullable. Antes tenía
     // `@Default(20.0)` que era una trampa silenciosa — cualquier ruta
     // de creación que omitiera el campo contaminaba el bloque

@@ -36,6 +36,7 @@ class BiometricCheckIn {
   /// snapshot biométrico que SPEC-92 calcula desde cintura + cuello + altura.
   /// Docs legacy sin este campo se leen como null.
   final double? neckCircumference;
+  final double? hipCircumference;
 
   /// IMR del momento del check-in (snapshot automático del motor).
   final int? imrScore;
@@ -69,6 +70,7 @@ class BiometricCheckIn {
     this.bodyFatPercentage,
     this.waistCircumference,
     this.neckCircumference,
+    this.hipCircumference,
     this.imrScore,
     this.notes,
     required this.createdAt,
@@ -93,6 +95,7 @@ class BiometricCheckIn {
     // SPEC-143: campos opcionales — omitir si null para no escribir basura
     // a Firestore ni romper docs legacy en round-trip.
     if (neckCircumference != null) m['neckCircumference'] = neckCircumference;
+    if (hipCircumference != null) m['hipCircumference'] = hipCircumference;
     if (source != null) m['source'] = source;
     if (previousValues != null && previousValues!.isNotEmpty) {
       m['previousValues'] = previousValues;
@@ -110,6 +113,7 @@ class BiometricCheckIn {
       bodyFatPercentage: (json['bodyFatPercentage'] as num?)?.toDouble(),
       waistCircumference: (json['waistCircumference'] as num?)?.toDouble(),
       neckCircumference: (json['neckCircumference'] as num?)?.toDouble(),
+      hipCircumference: (json['hipCircumference'] as num?)?.toDouble(),
       imrScore: (json['imrScore'] as num?)?.toInt(),
       notes: json['notes'] as String?,
       createdAt: DateTime.parse(json['createdAt'] as String),
@@ -146,6 +150,7 @@ class BiometricCheckIn {
     double? bodyFatPercentage,
     double? waistCircumference,
     double? neckCircumference,
+    double? hipCircumference,
     int? imrScore,
     String? notes,
     DateTime? createdAt,
@@ -160,6 +165,7 @@ class BiometricCheckIn {
       bodyFatPercentage: bodyFatPercentage ?? this.bodyFatPercentage,
       waistCircumference: waistCircumference ?? this.waistCircumference,
       neckCircumference: neckCircumference ?? this.neckCircumference,
+      hipCircumference: hipCircumference ?? this.hipCircumference,
       imrScore: imrScore ?? this.imrScore,
       notes: notes ?? this.notes,
       createdAt: createdAt ?? this.createdAt,

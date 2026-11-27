@@ -507,7 +507,8 @@ class HealthImportService {
 
   /// La última comida antes de dormir: el inicio de ayuno más reciente
   /// entre 14 h antes y el momento de dormirse. Null si no hay.
-  static DateTime? lastMealBefore(DateTime fellAsleep, List<DateTime> fastStarts) {
+  static DateTime? lastMealBefore(
+      DateTime fellAsleep, List<DateTime> fastStarts) {
     DateTime? best;
     final earliest = fellAsleep.subtract(const Duration(hours: 14));
     for (final t in fastStarts) {

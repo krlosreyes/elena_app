@@ -171,8 +171,7 @@ void main() {
     });
 
     test('las citas visibles en pantallas de cálculo resuelven', () {
-      expect(resolve('Fórmula US Navy — Hodgdon, 1992'),
-          ['navy_hodgdon_1992']);
+      expect(resolve('Fórmula US Navy — Hodgdon, 1992'), ['navy_hodgdon_1992']);
       expect(
           resolve('Rangos ACE (hombre) — Atlético <14, Fitness 14-17, '
               'Promedio 18-24, Alto >=25'),
@@ -186,11 +185,10 @@ void main() {
     });
 
     test('una cita desconocida o prohibida queda sin resolver', () {
-      expect(ScientificSources.unresolvedSegments('Fulano 2031'),
-          ['Fulano 2031']);
       expect(
-          ScientificSources.unresolvedSegments(
-              'Sutton 2018 + Frank Suárez §3'),
+          ScientificSources.unresolvedSegments('Fulano 2031'), ['Fulano 2031']);
+      expect(
+          ScientificSources.unresolvedSegments('Sutton 2018 + Frank Suárez §3'),
           ['Frank Suárez §3']);
       expect(ScientificSources.mentionsForbidden('Frank Suárez (Tipo A/E)'),
           isTrue);

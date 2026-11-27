@@ -158,7 +158,7 @@ class TransformationNarrator {
       //     además la cita estaba fuera de tema: esto habla de constancia,
       //     no de autofagia. Poner un paper de biología celular debajo de
       //     una frase sobre hábitos es ruido con aspecto de rigor.
-      //  2. "Acabás de cruzar a hábito" — voseo rioplatense (una de las
+      //  2. "Acabas de cruzar a hábito" — voseo rioplatense (una de las
       //     formas vivas que el test de lista negra no atrapa).
       //  3. La afirmación era falsa. La literatura de formación de hábitos
       //     (Lally 2010, mediana de 66 días hasta la automaticidad) dice

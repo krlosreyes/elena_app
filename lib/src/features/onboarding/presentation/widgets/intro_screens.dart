@@ -26,7 +26,7 @@
 // constantes del resolver.
 //
 // Reglas de copy:
-//   - Español neutro LatAm. CERO voseo (no vos/acá/tenés/empezás/cumplís).
+//   - Español neutro LatAm. CERO voseo (no vos/acá/tienes/empiezas/cumples).
 //   - Solo iconos Material. Sin assets ni dependencias externas.
 //   - Cada claim científico lleva su cita.
 
@@ -118,7 +118,7 @@ class IntroWelcomeStep extends StatelessWidget {
           // Fisiología o Medicina 2016 por el descubrimiento de los
           // mecanismos de la autofagia fue para Yoshinori Ohsumi, no para
           // Beth Levine (que nunca recibió el Nobel) ni en 2017.
-          text: 'Ohsumi 2016 · Autofagia y ayuno  (Nobel de Medicina)',
+          text: 'Ohsumi 2016 · Mecanismos de la autofagia (Nobel de Medicina)',
           isDark: isDark,
         ),
         const SizedBox(height: 8),
@@ -379,15 +379,16 @@ class IntroInsightStep extends StatelessWidget {
     final autofagia = FastingPhase.autophagy.startsAt.inHours;
 
     final notaAutofagia = horas < autofagia
-        ? 'La autofagia empieza alrededor de las $autofagia h: tu protocolo '
-            'no llega ahí, y no hace falta para lo que buscas. '
+        ? 'En personas no hay una hora exacta para la autofagia; los '
+            'estudios hablan de ayunos de $autofagia h o más. Tu protocolo no '
+            'busca eso, y no hace falta para lo que quieres lograr. '
         : '';
 
     switch (protocol) {
       case '14:10':
         return 'Estos eventos son automáticos. $notaAutofagia'
             '14/10 es el protocolo ideal para construir el hábito. '
-            'ElenaApp te avisa en cada hito.';
+            'Elena te avisa en cada hito.';
       case '18:6':
         return 'Estos eventos son automáticos. $notaAutofagia'
             '18/6 requiere que tu sistema digestivo esté adaptado. '
@@ -396,7 +397,7 @@ class IntroInsightStep extends StatelessWidget {
       default:
         return 'Estos eventos son automáticos. $notaAutofagia'
             'Tu trabajo es darle el tiempo necesario. '
-            'ElenaApp te avisa en cada hito.';
+            'Elena te avisa en cada hito.';
     }
   }
 

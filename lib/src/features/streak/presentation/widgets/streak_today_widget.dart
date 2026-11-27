@@ -77,7 +77,7 @@ class StreakTodayWidget extends ConsumerWidget {
                     style: TextStyle(
                       color: todayQualifies
                           ? _qualifiedGreen
-                          : Colors.white.withValues(alpha: 0.60),
+                          : Colors.white.withValues(alpha: 0.7),
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                       height: 1.3,

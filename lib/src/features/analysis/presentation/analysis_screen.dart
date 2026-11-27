@@ -45,8 +45,18 @@ const _fatColor = Color(0xFFEF9F27);
 const _glucoseColor = Color(0xFFE879F9);
 
 const _meses = [
-  'ene', 'feb', 'mar', 'abr', 'may', 'jun',
-  'jul', 'ago', 'sep', 'oct', 'nov', 'dic',
+  'ene',
+  'feb',
+  'mar',
+  'abr',
+  'may',
+  'jun',
+  'jul',
+  'ago',
+  'sep',
+  'oct',
+  'nov',
+  'dic',
 ];
 const _dias = ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom'];
 
@@ -111,8 +121,7 @@ class AnalysisScreen extends ConsumerWidget {
               const SizedBox(height: 14),
               Row(
                 children: [
-                  _Access(
-                      label: 'Retos', onTap: () => context.push('/retos')),
+                  _Access(label: 'Retos', onTap: () => context.push('/retos')),
                 ],
               ),
             ],
@@ -211,8 +220,7 @@ class _BodyChangeCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final lock = ref.watch(biometricLockProvider);
     final positive = rec.verdict != RecompositionVerdict.noImprovement;
-    String good(double? v, String Function(double) f) =>
-        v == null ? '—' : f(v);
+    String good(double? v, String Function(double) f) => v == null ? '—' : f(v);
     Color tone(double? v, {bool lowerIsBetter = true}) {
       if (v == null || v.abs() < 0.25) return Colors.white;
       final better = lowerIsBetter ? v < 0 : v > 0;
@@ -224,7 +232,7 @@ class _BodyChangeCard extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _Kicker('1 · TU CUERPO ESTÁ CAMBIANDO'),
+          const _Kicker('TU CUERPO ESTÁ CAMBIANDO'),
           const SizedBox(height: 10),
           Text(
             rec.headline,
@@ -245,7 +253,8 @@ class _BodyChangeCard extends ConsumerWidget {
               children: [
                 const _Legend(color: _fatColor, label: 'Grasa'),
                 const SizedBox(width: 14),
-                const _Legend(color: AppColors.metabolicGreen, label: 'Masa magra'),
+                const _Legend(
+                    color: AppColors.metabolicGreen, label: 'Masa magra'),
               ],
             ),
           ],
@@ -291,21 +300,23 @@ class _MeasureButton extends StatelessWidget {
   const _MeasureButton();
 
   @override
-  Widget build(BuildContext context) => SizedBox(
-        width: double.infinity,
-        height: 46,
+  Widget build(BuildContext context) => ConstrainedBox(
+        // SPEC-309: alto mínimo, no fijo, para que el texto más grande no
+        // se corte.
+        constraints:
+            const BoxConstraints(minWidth: double.infinity, minHeight: 48),
         child: OutlinedButton.icon(
           onPressed: () => showBiometricCheckInSheet(context),
           style: OutlinedButton.styleFrom(
             side: BorderSide(
                 color: AppColors.metabolicGreen.withValues(alpha: 0.5)),
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           ),
           icon: const Icon(Icons.straighten_rounded,
               size: 18, color: AppColors.metabolicGreen),
           label: const Text(
-            'Registrar mis medidas de esta semana',
+            'Registrar mis medidas',
             style: TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.w700,
@@ -327,8 +338,9 @@ class _CompositionBar extends StatelessWidget {
     final fat = point.fatKg ?? 0;
     final lean = point.leanKg ?? point.weightKg;
     final total = fat + lean;
-    final int fatFlex =
-        total <= 0 ? 1 : math.max(1, math.min(999, (fat / total * 1000).round()));
+    final int fatFlex = total <= 0
+        ? 1
+        : math.max(1, math.min(999, (fat / total * 1000).round()));
     String kg(double v) => v.toStringAsFixed(1).replaceAll('.', ',');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -406,7 +418,8 @@ class _Stat extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: const TextStyle(color: _muted, fontSize: 11.5)),
+              Text(label,
+                  style: const TextStyle(color: _muted, fontSize: 11.5)),
               const SizedBox(height: 2),
               FittedBox(
                 fit: BoxFit.scaleDown,
@@ -501,8 +514,8 @@ class _FirstResultsCard extends ConsumerWidget {
             const Text(
               'Con dos mediciones separadas por una semana te mostramos '
               'cuánta grasa perdiste y cuánto músculo conservaste.',
-              style:
-                  TextStyle(color: Color(0xFFCBD5E1), fontSize: 14, height: 1.45),
+              style: TextStyle(
+                  color: Color(0xFFCBD5E1), fontSize: 14, height: 1.45),
             ),
             const SizedBox(height: 12),
             const _MeasureButton(),
@@ -526,7 +539,7 @@ class _BenefitsCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _Kicker('2 · QUÉ SIGNIFICA PARA TU SALUD'),
+          const _Kicker('QUÉ SIGNIFICA PARA TU SALUD'),
           for (final b in benefits) ...[
             const SizedBox(height: 14),
             Row(
@@ -674,7 +687,7 @@ class _HabitsCardState extends ConsumerState<_HabitsCard> {
         children: [
           Row(
             children: [
-              const Expanded(child: _Kicker('3 · CÓMO LO LOGRASTE')),
+              const Expanded(child: _Kicker('CÓMO LO LOGRASTE')),
               if (closed != null && closed.$2 > 0)
                 Text(
                   '${closed.$1} de ${closed.$2} días cerrados por ti',
@@ -715,8 +728,7 @@ class _HabitsCardState extends ConsumerState<_HabitsCard> {
           else if (days == null)
             const SizedBox(
               height: 40,
-              child: Center(
-                  child: CircularProgressIndicator(strokeWidth: 2)),
+              child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
             )
           else
             for (final p in ProgressPillar.values)
@@ -741,8 +753,7 @@ class _HabitsCardState extends ConsumerState<_HabitsCard> {
                         child: LinearProgressIndicator(
                           value: (days[p]! / 7).clamp(0.0, 1.0),
                           minHeight: 6,
-                          backgroundColor:
-                              Colors.white.withValues(alpha: 0.07),
+                          backgroundColor: Colors.white.withValues(alpha: 0.07),
                           valueColor: AlwaysStoppedAnimation(
                               p == weakest ? _fatColor : _colors[p]!),
                         ),
@@ -870,8 +881,8 @@ class _GlucoseCard extends StatelessWidget {
                         SizedBox(
                           width: 110,
                           height: 44,
-                          child: CustomPaint(
-                              painter: _SparkPainter(data.recent)),
+                          child:
+                              CustomPaint(painter: _SparkPainter(data.recent)),
                         ),
                         const SizedBox(height: 4),
                         const Text(
@@ -910,8 +921,7 @@ class _GlucoseCard extends StatelessWidget {
               child: OutlinedButton(
                 onPressed: () => showGlucoseReadingSheet(context),
                 style: OutlinedButton.styleFrom(
-                  side:
-                      BorderSide(color: _glucoseColor.withValues(alpha: 0.4)),
+                  side: BorderSide(color: _glucoseColor.withValues(alpha: 0.4)),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14)),
                 ),

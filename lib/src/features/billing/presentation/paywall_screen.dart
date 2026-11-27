@@ -335,7 +335,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                   fontSize: 10,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 1.6,
-                  color: Colors.white.withValues(alpha: 0.35),
+                  color: Colors.white.withValues(alpha: 0.7),
                 ),
               ),
               const SizedBox(height: 12),
@@ -359,7 +359,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                   fontSize: 10,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 1.8,
-                  color: Colors.white.withValues(alpha: 0.35),
+                  color: Colors.white.withValues(alpha: 0.7),
                 ),
               ),
               const SizedBox(height: 10),
@@ -381,7 +381,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 13,
-                      color: Colors.white.withValues(alpha: 0.45),
+                      color: Colors.white.withValues(alpha: 0.7),
                     ),
                   ),
                 )
@@ -401,7 +401,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 11,
-                  color: Colors.white.withValues(alpha: 0.38),
+                  color: Colors.white.withValues(alpha: 0.7),
                   height: 1.5,
                 ),
               ),
@@ -415,7 +415,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                   'Restaurar compras',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.white.withValues(alpha: 0.35),
+                    color: Colors.white.withValues(alpha: 0.7),
                   ),
                 ),
               ),
@@ -541,7 +541,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                       fontWeight: FontWeight.w800,
                       color: isSelected
                           ? Colors.white
-                          : Colors.white.withValues(alpha: 0.60),
+                          : Colors.white.withValues(alpha: 0.7),
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -552,7 +552,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                       fontWeight: FontWeight.w600,
                       color: isSelected
                           ? AppColors.metabolicGreen
-                          : Colors.white.withValues(alpha: 0.40),
+                          : Colors.white.withValues(alpha: 0.7),
                     ),
                   ),
                   if (perMonth != null) ...[
@@ -561,7 +561,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                       perMonth,
                       style: TextStyle(
                         fontSize: 11,
-                        color: Colors.white.withValues(alpha: 0.35),
+                        color: Colors.white.withValues(alpha: 0.7),
                       ),
                     ),
                   ],
@@ -657,7 +657,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w900,
-                      color: _packages.isEmpty ? Colors.white38 : Colors.black,
+                      color: _packages.isEmpty ? Colors.white70 : Colors.black,
                       letterSpacing: 0.2,
                     ),
                   ),

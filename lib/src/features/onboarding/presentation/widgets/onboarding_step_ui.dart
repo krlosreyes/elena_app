@@ -31,7 +31,7 @@ class OnboardingStepHeader extends StatelessWidget {
               letterSpacing: -1)),
       Text(sub,
           style: TextStyle(
-              color: isDark ? Colors.white38 : const Color(0xFF64748B),
+              color: isDark ? Colors.white70 : const Color(0xFF64748B),
               fontSize: 15,
               fontWeight: FontWeight.w500)),
       const SizedBox(height: 24)

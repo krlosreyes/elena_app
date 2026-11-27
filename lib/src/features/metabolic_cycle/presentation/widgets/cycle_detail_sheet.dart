@@ -187,7 +187,7 @@ class CycleDetailSheet extends StatelessWidget {
           _formatDateLong(cycle.closedAt ?? cycle.startedAt),
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.55),
+            color: Colors.white.withValues(alpha: 0.7),
             fontSize: 13,
             fontWeight: FontWeight.w600,
           ),
@@ -240,7 +240,7 @@ class CycleDetailSheet extends StatelessWidget {
                   style: TextStyle(
                     color: delta != null && delta > 0
                         ? AppColors.metabolicGreen
-                        : Colors.white.withValues(alpha: 0.55),
+                        : Colors.white.withValues(alpha: 0.7),
                     fontSize: 12.5,
                     fontWeight: FontWeight.w700,
                   ),
@@ -339,7 +339,7 @@ class CycleDetailSheet extends StatelessWidget {
                   CitationLink(
                     fb.citation!,
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.45),
+                      color: Colors.white.withValues(alpha: 0.7),
                       fontSize: 11,
                       fontStyle: FontStyle.italic,
                       fontWeight: FontWeight.w600,
@@ -376,7 +376,7 @@ class CycleDetailSheet extends StatelessWidget {
       child: Text(
         parts.join(' · '),
         style: TextStyle(
-          color: Colors.white.withValues(alpha: 0.55),
+          color: Colors.white.withValues(alpha: 0.7),
           fontSize: 11,
           height: 1.5,
           fontWeight: FontWeight.w500,

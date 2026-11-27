@@ -62,7 +62,7 @@ class MealsRatioCard extends ConsumerWidget {
       child: Text(
         'No pudimos cargar tus platos.',
         style: TextStyle(
-          color: Colors.white.withValues(alpha: 0.55),
+          color: Colors.white.withValues(alpha: 0.7),
           fontSize: 12,
         ),
       ),
@@ -99,7 +99,7 @@ class MealsRatioCard extends ConsumerWidget {
         Text(
           'TUS PLATOS',
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.55),
+            color: Colors.white.withValues(alpha: 0.7),
             fontSize: 10,
             letterSpacing: 1.4,
             fontWeight: FontWeight.w900,
@@ -108,7 +108,7 @@ class MealsRatioCard extends ConsumerWidget {
         Text(
           '7 DÍAS',
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.45),
+            color: Colors.white.withValues(alpha: 0.7),
             fontSize: 10,
             letterSpacing: 1.0,
             fontWeight: FontWeight.w800,
@@ -145,7 +145,7 @@ class MealsRatioCard extends ConsumerWidget {
               child: Text(
                 'A-dominantes',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.55),
+                  color: Colors.white.withValues(alpha: 0.7),
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                 ),
@@ -157,7 +157,7 @@ class MealsRatioCard extends ConsumerWidget {
         Text(
           '${b.aDominantCount} de ${b.total} platos',
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.45),
+            color: Colors.white.withValues(alpha: 0.7),
             fontSize: 11,
             fontWeight: FontWeight.w600,
           ),
@@ -313,7 +313,7 @@ class MealsRatioCard extends ConsumerWidget {
                 CitationLink(
                   insight.citation,
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.45),
+                    color: Colors.white.withValues(alpha: 0.7),
                     fontSize: 11,
                     fontStyle: FontStyle.italic,
                     fontWeight: FontWeight.w600,
@@ -333,10 +333,10 @@ class MealsRatioCard extends ConsumerWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 18),
       child: Text(
-        'Registra tus comidas para ver tu distribución A:E semanal.',
+        'Registra tus comidas para ver el balance semanal de tus platos.',
         textAlign: TextAlign.center,
         style: TextStyle(
-          color: Colors.white.withValues(alpha: 0.55),
+          color: Colors.white.withValues(alpha: 0.7),
           fontSize: 13,
           height: 1.5,
           fontWeight: FontWeight.w500,

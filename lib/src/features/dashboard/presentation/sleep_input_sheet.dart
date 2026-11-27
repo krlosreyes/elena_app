@@ -377,7 +377,7 @@ class _DetailToggle extends StatelessWidget {
               'Mejora tu IMR',
               style: TextStyle(
                 fontSize: 10,
-                color: Colors.white.withValues(alpha: 0.4),
+                color: Colors.white.withValues(alpha: 0.7),
                 fontStyle: FontStyle.italic,
               ),
             ),
@@ -423,7 +423,7 @@ class _DetailHeader extends StatelessWidget {
                 hint,
                 style: TextStyle(
                   fontSize: 11,
-                  color: Colors.white.withValues(alpha: 0.45),
+                  color: Colors.white.withValues(alpha: 0.7),
                 ),
               ),
             ],

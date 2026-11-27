@@ -84,10 +84,10 @@ class SegmentedRangeControl extends ConsumerWidget {
                         r.label,
                         style: TextStyle(
                           color: isLockedOption
-                              ? Colors.white.withValues(alpha: 0.30)
+                              ? Colors.white.withValues(alpha: 0.7)
                               : (isSelected
                                   ? Colors.white
-                                  : Colors.white.withValues(alpha: 0.55)),
+                                  : Colors.white.withValues(alpha: 0.7)),
                           fontSize: 13,
                           fontWeight:
                               isSelected ? FontWeight.w700 : FontWeight.w500,

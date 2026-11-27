@@ -198,7 +198,7 @@ class _MealQualityCardState extends ConsumerState<MealQualityCard> {
             '${target == 1 ? 'comida' : 'comidas'} en tu ventana · '
             'llevas ${logs.length}',
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.5),
+              color: Colors.white.withValues(alpha: 0.7),
               fontSize: 12,
             ),
           ),
@@ -239,8 +239,7 @@ class _MealQualityCardState extends ConsumerState<MealQualityCard> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(Icons.schedule_rounded,
-                          size: 14,
-                          color: Colors.white.withValues(alpha: 0.6)),
+                          size: 14, color: Colors.white.withValues(alpha: 0.6)),
                       const SizedBox(width: 4),
                       Text(
                         _time == null ? 'Ahora' : _hhmm(_time!),
@@ -316,7 +315,7 @@ class _MealQualityCardState extends ConsumerState<MealQualityCard> {
           Text(
             MealQuality.hintOf(_q),
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.55),
+              color: Colors.white.withValues(alpha: 0.7),
               fontSize: 12,
               height: 1.35,
             ),
@@ -349,7 +348,7 @@ class _MealQualityCardState extends ConsumerState<MealQualityCard> {
               child: Text(
                 'Mantén presionada una comida para borrarla',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.35),
+                  color: Colors.white.withValues(alpha: 0.7),
                   fontSize: 11,
                 ),
               ),

@@ -349,9 +349,12 @@ class FastingState {
     bool? completedToday,
     FastingActivationSource? activationSource,
     double? closedProgressToday,
+    // SPEC-308: `startTime: null` no borraba nada (`?? this.startTime`).
+    // Para borrar la hora de inicio hay que pasar `clearStartTime: true`.
+    bool clearStartTime = false,
   }) {
     return FastingState(
-      startTime: startTime ?? this.startTime,
+      startTime: clearStartTime ? null : (startTime ?? this.startTime),
       duration: duration ?? this.duration,
       phase: phase ?? this.phase,
       circadianPhase: circadianPhase ?? this.circadianPhase,

@@ -38,10 +38,12 @@ class AppColors {
   static const Color textPrimary = Color(0xFFF1F5F9);
 
   /// Descripciones, párrafos secundarios, copy de apoyo.
-  static const Color textSecondary = Color(0xFF94A3B8);
+  // SPEC-309: contraste subido para 55+ (10,9:1 sobre bgBase).
+  static const Color textSecondary = Color(0xFFB8C4D4);
 
   /// Labels uppercase tracking-wide, captions, metadata, placeholders.
-  static const Color textMuted = Color(0xFF64748B);
+  // SPEC-309: antes #64748B (4,2:1, no pasaba WCAG AA). Ahora 7,9:1.
+  static const Color textMuted = Color(0xFF94A3B8);
 
   // ─────────────────────── Accent (UNO SOLO) ─────────────────────────────
   /// CTAs primarios, links activos, foco, badges importantes, IMR

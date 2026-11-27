@@ -64,7 +64,7 @@ class StreakBarChart extends StatelessWidget {
           Text(
             'ÚLTIMOS 30 DÍAS',
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.55),
+              color: Colors.white.withValues(alpha: 0.7),
               fontSize: 10,
               fontWeight: FontWeight.w900,
               letterSpacing: 1.0,
@@ -77,7 +77,7 @@ class StreakBarChart extends StatelessWidget {
               child: Text(
                 'Con unos días más empezarás a ver tu patrón acá.',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.45),
+                  color: Colors.white.withValues(alpha: 0.7),
                   fontSize: 12,
                   height: 1.4,
                 ),
@@ -161,7 +161,7 @@ class StreakBarChart extends StatelessWidget {
         Text(
           label,
           style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.40), fontSize: 10),
+              color: Colors.white.withValues(alpha: 0.7), fontSize: 10),
         ),
       ],
     );
@@ -456,7 +456,7 @@ class _DayDetailSheet extends StatelessWidget {
             Text(
               'No hay registro para este día.',
               style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.6), fontSize: 13),
+                  color: Colors.white.withValues(alpha: 0.7), fontSize: 13),
             )
           else ...[
             _pillarRow('Ayuno', entry.fastingCompleted),
@@ -527,7 +527,7 @@ class _DayDetailSheet extends StatelessWidget {
             style: TextStyle(
               color: completed
                   ? Colors.white
-                  : Colors.white.withValues(alpha: 0.45),
+                  : Colors.white.withValues(alpha: 0.7),
               fontSize: 14,
               fontWeight: FontWeight.w600,
             ),

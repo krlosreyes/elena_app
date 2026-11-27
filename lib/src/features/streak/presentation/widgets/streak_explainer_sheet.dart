@@ -173,7 +173,7 @@ class _StreakExplainerSheet extends StatelessWidget {
               'los vectores con más peso sobre el eje hormonal '
               '(grelina/leptina/insulina).',
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.45),
+                color: Colors.white.withValues(alpha: 0.7),
                 fontSize: 11,
                 height: 1.5,
               ),

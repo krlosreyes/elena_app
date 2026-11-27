@@ -175,7 +175,7 @@ class _ProfileBody extends ConsumerWidget {
             BuildInfo.label,
             style: TextStyle(
               fontSize: 11,
-              color: Colors.white.withValues(alpha: 0.30),
+              color: Colors.white.withValues(alpha: 0.7),
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -193,7 +193,7 @@ Widget _sectionTitle(String label) {
       style: TextStyle(
         fontSize: 13,
         fontWeight: FontWeight.w700,
-        color: Colors.white.withValues(alpha: 0.55),
+        color: Colors.white.withValues(alpha: 0.7),
         letterSpacing: 0.4,
       ),
     ),
@@ -201,8 +201,18 @@ Widget _sectionTitle(String label) {
 }
 
 const _meses = [
-  'ene', 'feb', 'mar', 'abr', 'may', 'jun',
-  'jul', 'ago', 'sep', 'oct', 'nov', 'dic',
+  'ene',
+  'feb',
+  'mar',
+  'abr',
+  'may',
+  'jun',
+  'jul',
+  'ago',
+  'sep',
+  'oct',
+  'nov',
+  'dic',
 ];
 
 /// Identidad + acceso al IMR. El número del IMR NO se muestra aquí a
@@ -271,7 +281,7 @@ class _IdentityHero extends ConsumerWidget {
                       Text(
                         subtitle,
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.55),
+                          color: Colors.white.withValues(alpha: 0.7),
                           fontSize: 13,
                         ),
                       ),
@@ -375,9 +385,11 @@ class _BodyBlock extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final lock = ref.watch(biometricLockProvider);
-    final history = ref.watch(progressProvider.select((s) => s.biometricHistory));
+    final history =
+        ref.watch(progressProvider.select((s) => s.biometricHistory));
     final manual = history
-        .where((e) => BiometricLockService.countsAsMeasurement(e.source, notes: e.notes))
+        .where((e) =>
+            BiometricLockService.countsAsMeasurement(e.source, notes: e.notes))
         .toList()
       ..sort((a, b) =>
           (a.recordedAt ?? a.createdAt).compareTo(b.recordedAt ?? b.createdAt));
@@ -413,7 +425,7 @@ class _BodyBlock extends ConsumerWidget {
             Text(
               measured,
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.45),
+                color: Colors.white.withValues(alpha: 0.7),
                 fontSize: 12.5,
               ),
             ),
@@ -466,7 +478,9 @@ class _BodyBlock extends ConsumerWidget {
               ),
             ),
             icon: Icon(
-              lock.isLocked ? Icons.lock_outline_rounded : Icons.straighten_rounded,
+              lock.isLocked
+                  ? Icons.lock_outline_rounded
+                  : Icons.straighten_rounded,
               size: 18,
               color: Colors.white.withValues(alpha: lock.isLocked ? 0.45 : 0.9),
             ),
@@ -528,7 +542,7 @@ class _BodyTile extends StatelessWidget {
             children: [
               Text(label,
                   style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.55),
+                      color: Colors.white.withValues(alpha: 0.7),
                       fontSize: 12)),
               const SizedBox(height: 4),
               FittedBox(

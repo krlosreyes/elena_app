@@ -68,10 +68,10 @@ void main() {
     });
 
     test('el orden no importa: el snack puede ir antes de la cena', () {
-      final a = MealQuality.dayScore(
-          [_m(12, 1), _m(15, 0.4), _m(18, 1)], targetMeals: 2);
-      final b = MealQuality.dayScore(
-          [_m(12, 1), _m(15, 1), _m(18, 0.4)], targetMeals: 2);
+      final a = MealQuality.dayScore([_m(12, 1), _m(15, 0.4), _m(18, 1)],
+          targetMeals: 2);
+      final b = MealQuality.dayScore([_m(12, 1), _m(15, 1), _m(18, 0.4)],
+          targetMeals: 2);
       expect(a, b);
     });
 

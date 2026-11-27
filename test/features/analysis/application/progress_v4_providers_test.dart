@@ -57,8 +57,9 @@ void main() {
       final p = GlucoseProgress.from([
         _g(1, 100),
         _g(5, 110),
-        _g(3, 200, ctx: GlucoseReadingContext.values
-            .firstWhere((c) => c != GlucoseReadingContext.ayunas)),
+        _g(3, 200,
+            ctx: GlucoseReadingContext.values
+                .firstWhere((c) => c != GlucoseReadingContext.ayunas)),
         _g(20, 120),
         _g(25, 130),
         _g(40, 300),

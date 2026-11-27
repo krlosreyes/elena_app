@@ -104,7 +104,7 @@ class _AnalysisTrendTabState extends ConsumerState<AnalysisTrendTab>
       child: Text(
         label,
         style: TextStyle(
-          color: Colors.white.withValues(alpha: 0.55),
+          color: Colors.white.withValues(alpha: 0.7),
           fontSize: 10,
           letterSpacing: 1.4,
           fontWeight: FontWeight.w900,
@@ -142,7 +142,7 @@ class _AnalysisTrendTabState extends ConsumerState<AnalysisTrendTab>
       ),
       child: Text(
         'No pudimos cargar tu tendencia.',
-        style: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
+        style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
       ),
     );
   }

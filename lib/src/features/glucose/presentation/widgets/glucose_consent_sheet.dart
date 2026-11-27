@@ -211,7 +211,7 @@ class _GlucoseConsentSheetState extends ConsumerState<_GlucoseConsentSheet> {
                 child: Text(
                   'Ahora no',
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.55),
+                    color: Colors.white.withValues(alpha: 0.7),
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),

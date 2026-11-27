@@ -96,7 +96,7 @@ class AdaptiveSuggestionCard extends ConsumerWidget {
                   child: Text(
                     'Ahora no',
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.4),
+                      color: Colors.white.withValues(alpha: 0.7),
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                     ),
@@ -177,7 +177,7 @@ class AdaptiveSuggestionCard extends ConsumerWidget {
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text('Cancelar',
-                style: TextStyle(color: Colors.white.withValues(alpha: 0.5))),
+                style: TextStyle(color: Colors.white.withValues(alpha: 0.7))),
           ),
           ElevatedButton(
             onPressed: () async {

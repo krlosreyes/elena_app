@@ -67,7 +67,7 @@ class WeeklyReportCard extends ConsumerWidget {
         Text(
           'TU SEMANA · ${_formatRange(weeklyWindowStart(now), weeklyWindowEnd(now))}',
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.55),
+            color: Colors.white.withValues(alpha: 0.7),
             fontSize: 10,
             letterSpacing: 1.2,
             fontWeight: FontWeight.w900,
@@ -178,7 +178,7 @@ class WeeklyReportCard extends ConsumerWidget {
           children: [
             Text('TU SEMANA',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.55),
+                  color: Colors.white.withValues(alpha: 0.7),
                   fontSize: 10,
                   letterSpacing: 1.4,
                   fontWeight: FontWeight.w900,
@@ -188,7 +188,7 @@ class WeeklyReportCard extends ConsumerWidget {
               'Aún no tienes registros esta semana. Cierra tus pilares y aquí '
               'verás tu boletín.',
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.6),
+                color: Colors.white.withValues(alpha: 0.7),
                 fontSize: 13,
                 height: 1.4,
               ),

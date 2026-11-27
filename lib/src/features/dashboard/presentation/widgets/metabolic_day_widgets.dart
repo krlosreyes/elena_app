@@ -53,9 +53,9 @@ final metabolicDayViewProvider = Provider<MetabolicDayView>((ref) {
   final user = ref.watch(currentUserStreamProvider).valueOrNull;
   // Se recalcula con el pulso del ayuno (el notifier emite cada tick).
   final now = DateTime.now();
-  final target =
-      fastingHoursForProtocol(user?.fastingProtocol ?? fasting.fastingProtocol) ??
-          0;
+  final target = fastingHoursForProtocol(
+          user?.fastingProtocol ?? fasting.fastingProtocol) ??
+      0;
 
   final windowEnd = MetabolicDayReminders.estimatedWindowEnd(
     isFasting: fasting.isActive,
@@ -94,8 +94,18 @@ String _hora12(DateTime t) {
 }
 
 const _meses = [
-  'ene', 'feb', 'mar', 'abr', 'may', 'jun',
-  'jul', 'ago', 'sep', 'oct', 'nov', 'dic',
+  'ene',
+  'feb',
+  'mar',
+  'abr',
+  'may',
+  'jun',
+  'jul',
+  'ago',
+  'sep',
+  'oct',
+  'nov',
+  'dic',
 ];
 
 /// "hoy 7:10 a. m." · "ayer 7:10 p. m." · "2 nov, 7:10 p. m.".
@@ -152,7 +162,7 @@ class MetabolicDayStrip extends ConsumerWidget {
                   subtitle,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.55),
+                    color: Colors.white.withValues(alpha: 0.7),
                     fontSize: 12.5,
                   ),
                 ),
@@ -203,7 +213,7 @@ class MetabolicDayStrip extends ConsumerWidget {
             style: TextStyle(
               color: isCurrent
                   ? Colors.white
-                  : Colors.white.withValues(alpha: 0.45),
+                  : Colors.white.withValues(alpha: 0.7),
               fontSize: 11.5,
               fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w500,
             ),
@@ -267,16 +277,16 @@ class CloseDayPrompt extends ConsumerWidget {
     final suggested = suggestedTime(view, lastMeal, now);
 
     final since = now.difference(view.windowEnd!);
-    final sameDay = view.windowEnd!.day == now.day &&
-        view.windowEnd!.month == now.month;
+    final sameDay =
+        view.windowEnd!.day == now.day && view.windowEnd!.month == now.month;
     final String ago = since.inMinutes < 60
         ? 'hace ${since.inMinutes} min'
         : 'hace ${since.inHours} h ${since.inMinutes.remainder(60)} m';
     final String subtitle = (sameDay || since.inHours < 6)
         ? 'Tu ventana terminó $ago'
         : 'Tu ventana de ayer terminó ${relativeDayLabel(view.windowEnd!, now)}';
-    final bool fromMeal = lastMeal != null &&
-        suggested.difference(lastMeal).inMinutes.abs() < 1;
+    final bool fromMeal =
+        lastMeal != null && suggested.difference(lastMeal).inMinutes.abs() < 1;
     final DateTime alt = view.windowEnd!.isAfter(now) ? now : view.windowEnd!;
     final bool showAlt = alt.difference(suggested).inMinutes.abs() >= 5;
 

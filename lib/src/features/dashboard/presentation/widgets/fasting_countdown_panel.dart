@@ -149,8 +149,7 @@ class _FastingCountdownPanelState extends State<FastingCountdownPanel> {
       }
     }
 
-    final windowH =
-        MetabolicDayReminders.windowFor(target).inMinutes / 60.0;
+    final windowH = MetabolicDayReminders.windowFor(target).inMinutes / 60.0;
     final muted = Colors.white.withValues(alpha: 0.55);
 
     // Rediseño Hoy (2026-11-04): el anillo del día metabólico es el
@@ -234,7 +233,7 @@ class _FastingCountdownPanelState extends State<FastingCountdownPanel> {
                         ? '¿Ya comiste? Termina el ayuno arriba'
                         : 'Rompe el ayuno cuando quieras',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.45),
+                  color: Colors.white.withValues(alpha: 0.7),
                   fontSize: 12,
                 ),
               ),
@@ -276,8 +275,18 @@ String relativeStartLabel(DateTime t, DateTime now) {
   if (days <= 0) return 'hoy $hora';
   if (days == 1) return 'ayer $hora';
   const meses = [
-    'ene', 'feb', 'mar', 'abr', 'may', 'jun',
-    'jul', 'ago', 'sep', 'oct', 'nov', 'dic',
+    'ene',
+    'feb',
+    'mar',
+    'abr',
+    'may',
+    'jun',
+    'jul',
+    'ago',
+    'sep',
+    'oct',
+    'nov',
+    'dic',
   ];
   return '${t.day} ${meses[t.month - 1]}, $hora';
 }
@@ -512,7 +521,7 @@ class _EatingWindowPanelState extends State<EatingWindowPanel> {
               Text(
                 'Cierra cerca de las ${_hora12(windowEnd)}',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.45),
+                  color: Colors.white.withValues(alpha: 0.7),
                   fontSize: 12,
                 ),
               ),
@@ -538,7 +547,8 @@ class _EatingWindowPanelState extends State<EatingWindowPanel> {
             Expanded(
               child: _MealChip(
                 title: 'Ventana de ${windowDur.inHours} h',
-                subtitle: 'Protocolo $target:${24 - target > 0 ? 24 - target : 1}',
+                subtitle:
+                    'Protocolo $target:${24 - target > 0 ? 24 - target : 1}',
                 filled: false,
               ),
             ),
@@ -579,7 +589,7 @@ class _MealChip extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.55),
+              color: Colors.white.withValues(alpha: 0.7),
               fontSize: 11,
             ),
           ),

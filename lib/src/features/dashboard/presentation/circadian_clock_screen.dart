@@ -47,7 +47,7 @@ class CircadianClockScreen extends ConsumerWidget {
                 Text(
                   'Cómo se reparte tu día entre vigilia, comida y descanso.',
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.6),
+                    color: Colors.white.withValues(alpha: 0.7),
                     fontSize: 13,
                     height: 1.5,
                   ),

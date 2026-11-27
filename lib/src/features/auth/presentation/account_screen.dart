@@ -158,7 +158,8 @@ class _AccountBodyState extends ConsumerState<_AccountBody> {
     final hasPassword = providers.contains(AuthProviderKind.password);
     final hasGoogle = providers.contains(AuthProviderKind.google);
     final hasApple = providers.contains(AuthProviderKind.apple);
-    final saving = ref.watch(profileControllerProvider.select((s) => s.isSaving));
+    final saving =
+        ref.watch(profileControllerProvider.select((s) => s.isSaving));
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
@@ -290,7 +291,7 @@ class _AccountBodyState extends ConsumerState<_AccountBody> {
                     style: TextStyle(
                       color: _dirty
                           ? const Color(0xFF032A22)
-                          : Colors.white.withValues(alpha: 0.4),
+                          : Colors.white.withValues(alpha: 0.7),
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
                     ),
@@ -595,8 +596,8 @@ class _ChangeEmailSheetState extends ConsumerState<ChangeEmailSheet> {
 
   Future<void> _submit() async {
     final newEmail = _email.text.trim();
-    final v =
-        AccountEmailService.validate(newEmail, currentEmail: widget.currentEmail);
+    final v = AccountEmailService.validate(newEmail,
+        currentEmail: widget.currentEmail);
     if (v != null) {
       setState(() => _error = v);
       return;
@@ -608,9 +609,9 @@ class _ChangeEmailSheetState extends ConsumerState<ChangeEmailSheet> {
       return;
     }
     if (method == null) {
-      setState(() => _error =
-          'No pudimos confirmar tu identidad. Cierra sesión, vuelve a '
-          'entrar e intenta de nuevo.');
+      setState(() =>
+          _error = 'No pudimos confirmar tu identidad. Cierra sesión, vuelve a '
+              'entrar e intenta de nuevo.');
       return;
     }
     setState(() {
@@ -654,12 +655,12 @@ class _ChangeEmailSheetState extends ConsumerState<ChangeEmailSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final usesPassword = ref
-            .read(profileControllerProvider.notifier)
-            .reauthMethod() ==
-        AuthProviderKind.password;
+    final usesPassword =
+        ref.read(profileControllerProvider.notifier).reauthMethod() ==
+            AuthProviderKind.password;
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding:
+          EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: Container(
         padding: const EdgeInsets.fromLTRB(22, 14, 22, 28),
         decoration: const BoxDecoration(
@@ -717,7 +718,8 @@ class _ChangeEmailSheetState extends ConsumerState<ChangeEmailSheet> {
             obscureText: true,
             onChanged: (_) => setState(() => _error = null),
             style: const TextStyle(color: Colors.white, fontSize: 16),
-            decoration: _decoration('Tu contraseña, para confirmar que eres tú'),
+            decoration:
+                _decoration('Tu contraseña, para confirmar que eres tú'),
           ),
         ] else ...[
           const SizedBox(height: 8),
@@ -741,7 +743,8 @@ class _ChangeEmailSheetState extends ConsumerState<ChangeEmailSheet> {
           child: const Text(
             'Te enviaremos un enlace al correo nuevo. Tu correo cambia cuando '
             'lo abras; hasta entonces sigues entrando con el actual.',
-            style: TextStyle(color: Color(0xFFCFE9E1), fontSize: 13.5, height: 1.45),
+            style: TextStyle(
+                color: Color(0xFFCFE9E1), fontSize: 13.5, height: 1.45),
           ),
         ),
         const SizedBox(height: 18),

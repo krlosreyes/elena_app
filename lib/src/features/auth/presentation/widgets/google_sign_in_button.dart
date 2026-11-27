@@ -107,7 +107,7 @@ class AuthDividerOr extends StatelessWidget {
           child: Text(
             'o',
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.45),
+              color: Colors.white.withValues(alpha: 0.7),
               fontSize: 13,
             ),
           ),

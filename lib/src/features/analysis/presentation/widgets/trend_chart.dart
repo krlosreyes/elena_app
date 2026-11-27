@@ -41,7 +41,7 @@ class _TrendChartState extends State<TrendChart> {
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white.withValues(alpha: 0.3),
+                  color: Colors.white.withValues(alpha: 0.7),
                   letterSpacing: 1.5,
                 ),
               ),

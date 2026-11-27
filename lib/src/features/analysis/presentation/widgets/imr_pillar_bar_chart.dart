@@ -148,7 +148,7 @@ class ImrPillarBarChart extends StatelessWidget {
             Text(
               _chartTitle(mode),
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.45),
+                color: Colors.white.withValues(alpha: 0.7),
                 fontSize: 10,
                 letterSpacing: 1.4,
                 fontWeight: FontWeight.w800,
@@ -173,7 +173,7 @@ class ImrPillarBarChart extends StatelessWidget {
                 Text(
                   'PROMEDIO',
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.45),
+                    color: Colors.white.withValues(alpha: 0.7),
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.5,
@@ -224,7 +224,7 @@ class ImrPillarBarChart extends StatelessWidget {
                         bar.label,
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.40),
+                          color: Colors.white.withValues(alpha: 0.7),
                           fontSize: 9,
                           fontWeight: FontWeight.w600,
                         ),
@@ -251,7 +251,7 @@ class ImrPillarBarChart extends StatelessWidget {
           return Text(
             '$v',
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.30),
+              color: Colors.white.withValues(alpha: 0.7),
               fontSize: 9,
               fontWeight: FontWeight.w600,
             ),
@@ -271,7 +271,7 @@ class ImrPillarBarChart extends StatelessWidget {
         Text(
           bar.imrAvg.round().toString(),
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.55),
+            color: Colors.white.withValues(alpha: 0.7),
             fontSize: 8,
             fontWeight: FontWeight.w700,
           ),
@@ -318,7 +318,7 @@ class ImrPillarBarChart extends StatelessWidget {
             Text(
               p.name,
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.60),
+                color: Colors.white.withValues(alpha: 0.7),
                 fontSize: 11,
                 fontWeight: FontWeight.w500,
               ),
@@ -341,7 +341,7 @@ class ImrPillarBarChart extends StatelessWidget {
         child: Text(
           'Sin datos para este período',
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.45),
+            color: Colors.white.withValues(alpha: 0.7),
             fontSize: 14,
           ),
         ),

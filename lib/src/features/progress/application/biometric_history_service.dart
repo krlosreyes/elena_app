@@ -75,6 +75,7 @@ class BiometricHistoryService {
       weight: checkInData.weight,
       waistCircumference: checkInData.waistCircumference,
       neckCircumference: checkInData.neckCircumference,
+      hipCircumference: checkInData.hipCircumference,
       bodyFatPercentage: checkInData.bodyFatPercentage,
     );
     if (delta.isEmpty) return;
@@ -230,6 +231,7 @@ class BiometricHistoryService {
       bodyFatPercentage: newUser.bodyFatPercentage,
       waistCircumference: newUser.waistCircumference,
       neckCircumference: newUser.neckCircumference,
+      hipCircumference: newUser.hipCircumference,
       imrScore: explicitImrScore,
       notes: explicitNotes,
       createdAt: now,
@@ -245,6 +247,11 @@ class BiometricHistoryService {
     }
     if (delta.neckCircumference != null) {
       userUpdates['neckCircumference'] = delta.neckCircumference;
+    }
+    if (delta.hipCircumference != null) {
+      userUpdates['hipCircumference'] = delta.hipCircumference;
+      // SPEC-306: el shape canónico que lee el sitio usa bio.hipCm.
+      userUpdates['bio.hipCm'] = delta.hipCircumference;
     }
     if (delta.bodyFatPercentage != null) {
       userUpdates['bodyFatPercentage'] = delta.bodyFatPercentage;

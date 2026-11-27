@@ -97,7 +97,7 @@ class _AnalysisSummaryTabState extends ConsumerState<AnalysisSummaryTab>
       ),
       child: Text(
         'No pudimos cargar tu resumen.',
-        style: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
+        style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
       ),
     );
   }

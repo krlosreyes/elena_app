@@ -159,7 +159,7 @@ class FastingConsciousnessCard extends ConsumerWidget {
               child: Text(
                 'cierras la cocina y descansas',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.55),
+                  color: Colors.white.withValues(alpha: 0.7),
                   fontSize: 12.5,
                   fontWeight: FontWeight.w500,
                 ),
@@ -185,23 +185,23 @@ class FastingConsciousnessCard extends ConsumerWidget {
           state.isActive,
           DateTime.now(),
         ))
-        Center(
-          child: TextButton(
-            onPressed: state.isSaving
-                ? null
-                : () => _showOngoingFastPicker(context, ref, state),
-            child: Text(
-              '¿Ya venías ayunando? Registra la hora',
-              style: TextStyle(
-                color: accent,
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
-                decoration: TextDecoration.underline,
-                decorationColor: accent,
+          Center(
+            child: TextButton(
+              onPressed: state.isSaving
+                  ? null
+                  : () => _showOngoingFastPicker(context, ref, state),
+              child: Text(
+                '¿Ya venías ayunando? Registra la hora',
+                style: TextStyle(
+                  color: accent,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                  decoration: TextDecoration.underline,
+                  decorationColor: accent,
+                ),
               ),
             ),
           ),
-        ),
       ],
     );
   }
@@ -296,7 +296,7 @@ class FastingConsciousnessCard extends ConsumerWidget {
           child: Text(
             'Corregir hora de inicio',
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.55),
+              color: Colors.white.withValues(alpha: 0.7),
               fontSize: 12.5,
               fontWeight: FontWeight.w600,
             ),
@@ -385,8 +385,7 @@ class FastingConsciousnessCard extends ConsumerWidget {
     // Rediseño Hoy (2026-10-30): con el ayuno en curso el botón es
     // secundario (fondo tenue, texto verde); sin ayuno, verde sólido.
     final bool quiet = isActive || secondary;
-    final Color bgColor =
-        quiet ? Colors.white.withValues(alpha: 0.06) : accent;
+    final Color bgColor = quiet ? Colors.white.withValues(alpha: 0.06) : accent;
     final Color fgColor = isActive
         ? accent
         : (secondary ? Colors.white : const Color(0xFF0B1020));
@@ -575,8 +574,7 @@ class FastingConsciousnessCard extends ConsumerWidget {
                 const SizedBox(height: 12),
                 const CitationLink(
                   'Fuentes: OMS 2000 · de Cabo & Mattson 2019',
-                  style:
-                      TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+                  style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
                 ),
               ],
             ),
@@ -723,12 +721,10 @@ class FastingConsciousnessCard extends ConsumerWidget {
           backgroundColor: AppColors.surfaceDark,
           title: const Text('🤔 Una sugerencia honesta'),
           content: Text(
-            'Las personas con perfil Excitado (sueño superficial, '
-            'tensión baseline, apetito matutino bajo) suelen tolerar '
-            '$selected mejor después de adaptarse con 16:8 unas semanas.\n\n'
-            'Empezar directo con $selected puede aumentar tu tensión, '
-            'empeorar tu sueño y romper la adherencia. No es '
-            'prohibición — es algo que hemos visto.',
+            'Si duermes de forma ligera o sueles sentir tensión, empezar '
+            'con 16:8 unas semanas antes de pasar a $selected suele ser '
+            'más fácil de sostener.\n\n'
+            'Es una sugerencia, no una prohibición: tú decides.',
             style: const TextStyle(color: Colors.white70),
           ),
           actions: [

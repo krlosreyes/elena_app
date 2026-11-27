@@ -59,8 +59,7 @@ class HealthObserverService {
       final done = Completer<void>();
       _controller.add(HealthObserverEvent(type, done: done));
       // Responder a iOS solo cuando el sync terminó (o a los 24 s).
-      await done.future
-          .timeout(const Duration(seconds: 24), onTimeout: () {});
+      await done.future.timeout(const Duration(seconds: 24), onTimeout: () {});
     }
     return null;
   }

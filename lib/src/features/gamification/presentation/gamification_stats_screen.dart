@@ -99,7 +99,7 @@ class _StatCard extends StatelessWidget {
               Expanded(
                 child: Text(label,
                     style: const TextStyle(
-                        color: Colors.white54,
+                        color: Colors.white70,
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.5)),
@@ -153,7 +153,7 @@ class _FastingCard extends StatelessWidget {
               children: [
                 const Text('AYUNANDO',
                     style: TextStyle(
-                        color: Colors.white54,
+                        color: Colors.white70,
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.5)),
@@ -196,7 +196,7 @@ class _LevelCard extends StatelessWidget {
               const Expanded(
                 child: Text('NIVEL',
                     style: TextStyle(
-                        color: Colors.white54,
+                        color: Colors.white70,
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.5)),
@@ -229,7 +229,7 @@ class _LevelCard extends StatelessWidget {
                         fontWeight: FontWeight.w700)),
               ),
               Text('${info.totalXp} XP',
-                  style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                  style: const TextStyle(color: Colors.white70, fontSize: 12)),
             ],
           ),
           const SizedBox(height: 12),
@@ -248,7 +248,7 @@ class _LevelCard extends StatelessWidget {
             info.xpForNext <= 0
                 ? 'Nivel máximo'
                 : 'Faltan ${info.xpForNext - info.xpIntoLevel} XP para el nivel ${info.level + 1}',
-            style: const TextStyle(color: Colors.white38, fontSize: 11),
+            style: const TextStyle(color: Colors.white70, fontSize: 11),
           ),
         ],
       ),
@@ -259,7 +259,7 @@ class _LevelCard extends StatelessWidget {
 Widget _sectionTitle(String t) => Text(
       t,
       style: const TextStyle(
-          color: Colors.white54,
+          color: Colors.white70,
           fontSize: 12,
           fontWeight: FontWeight.w800,
           letterSpacing: 0.5),

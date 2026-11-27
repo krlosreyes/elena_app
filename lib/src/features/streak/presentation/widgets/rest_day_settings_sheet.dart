@@ -302,7 +302,7 @@ class _MoveThisWeekSection extends ConsumerWidget {
             'Solo puedes moverlo a un día que todavía no llegó: es un plan, '
             'no un comodín de última hora.',
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.45),
+              color: Colors.white.withValues(alpha: 0.7),
               fontSize: 11.5,
               height: 1.4,
             ),
@@ -402,7 +402,7 @@ class _OptionTile extends StatelessWidget {
                     Text(
                       subtitle!,
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.5),
+                        color: Colors.white.withValues(alpha: 0.7),
                         fontSize: 12,
                       ),
                     ),
@@ -471,7 +471,7 @@ class _FloorNotice extends StatelessWidget {
             'Si ese día tampoco duermes ni te hidratas, entra tu reserva '
             'de racha si tienes alguna. Nunca te quedas sin red.',
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.5),
+              color: Colors.white.withValues(alpha: 0.7),
               fontSize: 12,
               height: 1.45,
             ),

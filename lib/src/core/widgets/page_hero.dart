@@ -61,7 +61,7 @@ class PageHero extends StatelessWidget {
           Text(
             subtitle!,
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.55),
+              color: Colors.white.withValues(alpha: 0.7),
               fontSize: 14,
               fontWeight: FontWeight.w500,
             ),

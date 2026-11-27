@@ -58,7 +58,7 @@ class ProfileRow extends StatelessWidget {
                   textAlign: TextAlign.right,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: valueColor ?? Colors.white.withValues(alpha: 0.42),
+                    color: valueColor ?? Colors.white.withValues(alpha: 0.7),
                     fontSize: 13,
                   ),
                 ),

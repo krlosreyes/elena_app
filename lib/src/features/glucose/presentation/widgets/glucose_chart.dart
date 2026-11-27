@@ -67,8 +67,18 @@ String glucoseZoneShortLabel(GlucoseClassification c) {
 }
 
 const _meses = [
-  'ene', 'feb', 'mar', 'abr', 'may', 'jun',
-  'jul', 'ago', 'sep', 'oct', 'nov', 'dic',
+  'ene',
+  'feb',
+  'mar',
+  'abr',
+  'may',
+  'jun',
+  'jul',
+  'ago',
+  'sep',
+  'oct',
+  'nov',
+  'dic',
 ];
 const _dias = ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom'];
 
@@ -156,7 +166,7 @@ class _GlucoseChartState extends State<GlucoseChart> {
         child: Center(
           child: Text(
             'Todavía no hay lecturas para graficar.',
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
+            style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
           ),
         ),
       );
@@ -171,7 +181,7 @@ class _GlucoseChartState extends State<GlucoseChart> {
           'comer, 1 hora después o antes de dormir). Registra una en ayunas '
           'o 2 horas después de comer para verla aquí.',
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.6),
+            color: Colors.white.withValues(alpha: 0.7),
             fontSize: 12.5,
             height: 1.5,
           ),
@@ -185,9 +195,8 @@ class _GlucoseChartState extends State<GlucoseChart> {
       windowDays: _window,
       now: widget.now ?? DateTime.now(),
     )!;
-    final selected = (_selected != null && _selected! < data.count)
-        ? _selected
-        : null;
+    final selected =
+        (_selected != null && _selected! < data.count) ? _selected : null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -227,8 +236,11 @@ class _GlucoseChartState extends State<GlucoseChart> {
           ],
         ),
         const SizedBox(height: 14),
-        _Readout(data: data, index: selected ?? data.count - 1,
-            isSelection: selected != null, windowDays: _window),
+        _Readout(
+            data: data,
+            index: selected ?? data.count - 1,
+            isSelection: selected != null,
+            windowDays: _window),
         const SizedBox(height: 10),
         Semantics(
           label: data.isEmpty
@@ -294,7 +306,8 @@ class _Readout extends StatelessWidget {
     }
     final p = data.points[index];
     final color = glucoseZoneColor(p.classification);
-    final when = '${_dias[p.at.weekday - 1]} ${_dayMonth(p.at)} · ${_hour(p.at)}';
+    final when =
+        '${_dias[p.at.weekday - 1]} ${_dayMonth(p.at)} · ${_hour(p.at)}';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -475,7 +488,7 @@ class _Reference extends StatelessWidget {
         Text(
           '$ranges$note',
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.5),
+            color: Colors.white.withValues(alpha: 0.7),
             fontSize: 11.5,
             height: 1.45,
           ),
@@ -506,7 +519,8 @@ class _Pill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: selected ? Colors.white.withValues(alpha: 0.12) : Colors.transparent,
+      color:
+          selected ? Colors.white.withValues(alpha: 0.12) : Colors.transparent,
       borderRadius: BorderRadius.circular(999),
       child: InkWell(
         borderRadius: BorderRadius.circular(999),
@@ -627,8 +641,8 @@ class _GlucoseChartPainter extends CustomPainter {
     }
 
     // 4. Fechas del eje de tiempo.
-    final mid = data.windowStart.add(
-        data.windowEnd.difference(data.windowStart) ~/ 2);
+    final mid =
+        data.windowStart.add(data.windowEnd.difference(data.windowStart) ~/ 2);
     final labelY = plot.bottom + 5;
     _text(canvas, _dayMonth(data.windowStart), Offset(plot.left, labelY),
         color: _muted, size: 10);
@@ -646,7 +660,9 @@ class _GlucoseChartPainter extends CustomPainter {
         const Color(0xFFE879F9).withValues(alpha: 0.55),
         dash: 3, gap: 3);
     _text(canvas, 'prom. ${mean.round()}', Offset(plot.left + 4, yMean - 2),
-        color: const Color(0xFFE879F9), size: 9.5, weight: FontWeight.w700,
+        color: const Color(0xFFE879F9),
+        size: 9.5,
+        weight: FontWeight.w700,
         bottomY: true);
 
     // 6. Línea entre lecturas.
@@ -671,7 +687,9 @@ class _GlucoseChartPainter extends CustomPainter {
     // 7. Guía vertical de la lectura tocada.
     if (selected != null) {
       final x = pts[selected!].dx;
-      canvas.drawLine(Offset(x, plot.top), Offset(x, plot.bottom),
+      canvas.drawLine(
+          Offset(x, plot.top),
+          Offset(x, plot.bottom),
           Paint()
             ..color = Colors.white.withValues(alpha: 0.25)
             ..strokeWidth = 1);

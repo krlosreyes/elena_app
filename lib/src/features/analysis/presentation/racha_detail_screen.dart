@@ -67,7 +67,7 @@ class RachaDetailScreen extends ConsumerWidget {
             const Text(
               'TUS RECOMPENSAS',
               style: TextStyle(
-                  color: Colors.white54,
+                  color: Colors.white70,
                   fontSize: 12,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0.5),
@@ -151,7 +151,7 @@ class _RestDayEntry extends ConsumerWidget {
                   Text(
                     subtitle,
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.55),
+                      color: Colors.white.withValues(alpha: 0.7),
                       fontSize: 12.5,
                     ),
                   ),

@@ -172,7 +172,7 @@ class _NotificationSettingsScreenState
               color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
       subtitle: Text(subtitle,
           style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.5), fontSize: 12)),
+              color: Colors.white.withValues(alpha: 0.7), fontSize: 12)),
     );
   }
 
@@ -183,7 +183,7 @@ class _NotificationSettingsScreenState
               color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
       subtitle: Text('Evita la sobrecarga',
           style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.5), fontSize: 12)),
+              color: Colors.white.withValues(alpha: 0.7), fontSize: 12)),
       trailing: DropdownButton<int>(
         value: _maxPerDay,
         dropdownColor: AppColors.surfaceDark,

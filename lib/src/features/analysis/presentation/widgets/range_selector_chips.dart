@@ -37,7 +37,7 @@ class RangeSelectorChips extends ConsumerWidget {
                     style: TextStyle(
                       color: isSelected
                           ? AppColors.metabolicGreen
-                          : Colors.white.withValues(alpha: 0.55),
+                          : Colors.white.withValues(alpha: 0.7),
                       fontSize: 13,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 0.2,

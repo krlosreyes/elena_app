@@ -71,7 +71,7 @@ class _MealTimePickerState extends State<MealTimePicker> {
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w700,
-            color: Colors.white.withValues(alpha: 0.6),
+            color: Colors.white.withValues(alpha: 0.7),
             letterSpacing: 0.5,
           ),
         ),

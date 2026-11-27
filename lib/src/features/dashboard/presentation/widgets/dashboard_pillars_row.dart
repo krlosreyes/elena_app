@@ -218,7 +218,7 @@ class DashboardPillarsRow extends ConsumerWidget {
                 Text(
                   'Puntaje',
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.6),
+                    color: Colors.white.withValues(alpha: 0.7),
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
                   ),

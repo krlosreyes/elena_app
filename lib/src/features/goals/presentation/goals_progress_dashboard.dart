@@ -62,7 +62,7 @@ class GoalsProgressDashboard extends ConsumerWidget {
       child: Text(
         'No pudimos cargar tus objetivos.',
         style: TextStyle(
-          color: Colors.white.withValues(alpha: 0.55),
+          color: Colors.white.withValues(alpha: 0.7),
           fontSize: 12,
         ),
       ),
@@ -106,7 +106,7 @@ class GoalsProgressDashboard extends ConsumerWidget {
         Text(
           'TUS OBJETIVOS',
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.55),
+            color: Colors.white.withValues(alpha: 0.7),
             fontSize: 10,
             letterSpacing: 1.4,
             fontWeight: FontWeight.w900,
@@ -190,7 +190,7 @@ class GoalsProgressDashboard extends ConsumerWidget {
           '${_formatValue(s.goal.targetValue, goal.type)} '
           '${goal.unit}',
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.50),
+            color: Colors.white.withValues(alpha: 0.7),
             fontSize: 11,
             fontWeight: FontWeight.w600,
             fontFeatures: const [FontFeature.tabularFigures()],

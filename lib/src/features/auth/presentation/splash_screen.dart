@@ -42,7 +42,7 @@ class SplashScreen extends ConsumerWidget {
               Text(
                 'Elena · Salud metabólica',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.45),
+                  color: Colors.white.withValues(alpha: 0.7),
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0.6,

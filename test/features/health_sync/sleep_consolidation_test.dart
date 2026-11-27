@@ -83,8 +83,7 @@ void main() {
   });
 
   test('unionMinutes', () {
-    expect(unionMinutes([(_t(1, 1), _t(1, 2)), (_t(1, 1, 30), _t(1, 3))]),
-        120);
+    expect(unionMinutes([(_t(1, 1), _t(1, 2)), (_t(1, 1, 30), _t(1, 3))]), 120);
     expect(unionMinutes([(_t(1, 1), _t(1, 2)), (_t(1, 4), _t(1, 5))]), 120);
     expect(unionMinutes(const []), 0);
   });

@@ -19,8 +19,7 @@ final recompositionProvider = Provider<Recomposition?>((ref) {
   return Recomposition.compute(history);
 });
 
-final _last30ClosedCyclesProvider =
-    StreamProvider<List<MetabolicCycle>>((ref) {
+final _last30ClosedCyclesProvider = StreamProvider<List<MetabolicCycle>>((ref) {
   final account = ref.watch(authStateProvider).value;
   if (account == null) return Stream.value(const []);
   return ref
@@ -85,8 +84,8 @@ class GlucoseProgress {
     }
 
     final last = ayunas.where((r) => r.measuredAt.isAfter(c14));
-    final prev = ayunas.where(
-        (r) => r.measuredAt.isAfter(c28) && !r.measuredAt.isAfter(c14));
+    final prev = ayunas
+        .where((r) => r.measuredAt.isAfter(c28) && !r.measuredAt.isAfter(c14));
     final lastList = last.map((r) => r.valueMgDl).toList();
     return GlucoseProgress(
       avg14: avg(last),

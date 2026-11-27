@@ -44,7 +44,8 @@ void openAllScientificSources(BuildContext context) {
 
 /// Una fuente tocable: autor/año en acento, título y revista debajo.
 class SourceTile extends StatelessWidget {
-  const SourceTile({super.key, required this.source, this.showSupports = false});
+  const SourceTile(
+      {super.key, required this.source, this.showSupports = false});
 
   final ScientificSource source;
 

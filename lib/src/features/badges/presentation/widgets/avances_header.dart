@@ -131,7 +131,7 @@ class _StatCard extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.55),
+              color: Colors.white.withValues(alpha: 0.7),
               fontSize: 10.5,
               fontWeight: FontWeight.w600,
             ),

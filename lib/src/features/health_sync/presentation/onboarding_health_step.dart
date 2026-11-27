@@ -51,7 +51,7 @@ class OnboardingHealthStep extends ConsumerWidget {
         ),
         const SizedBox(height: 28),
         Text(
-          'Conectá tu cuerpo, no tu app',
+          'Conecta tu cuerpo, no solo tu app',
           textAlign: TextAlign.center,
           style: TextStyle(
             color: isDark ? AppColors.textPrimary : const Color(0xFF1E293B),
@@ -64,11 +64,11 @@ class OnboardingHealthStep extends ConsumerWidget {
         _paragraph(
           (!kIsWeb && Platform.isIOS)
               ? 'Si usas la app Salud de tu iPhone (o un Apple Watch), '
-                  'ElenaApp puede leer tu sueño, tus pasos y tus minutos '
+                  'Elena puede leer tu sueño, tus pasos y tus minutos '
                   'de ejercicio automáticamente — sin que tengas que '
                   'registrarlos a mano.'
               : 'Si usas Health Connect (Samsung Health, Mi Band, Garmin), '
-                  'ElenaApp puede leer tu sueño, tus pasos y tus minutos '
+                  'Elena puede leer tu sueño, tus pasos y tus minutos '
                   'de ejercicio automáticamente — sin que tengas que '
                   'registrarlos a mano.',
           isDark,

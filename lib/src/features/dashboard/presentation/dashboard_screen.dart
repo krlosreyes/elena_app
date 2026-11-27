@@ -36,6 +36,7 @@ import 'package:elena_app/src/features/badges/application/badge_notifier.dart';
 // Módulo "Tu Glucosa" (23-jul): tarjeta de registro matutino + gancho
 // de consentimiento automático (ver ref.listen más abajo).
 import 'package:elena_app/src/features/dashboard/application/ui_interaction_notifier.dart';
+import 'package:elena_app/src/features/dashboard/presentation/widgets/calc_update_notice.dart';
 import 'package:elena_app/src/features/glucose/application/glucose_providers.dart';
 import 'package:elena_app/src/features/glucose/presentation/widgets/glucose_consent_sheet.dart';
 
@@ -342,6 +343,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       const SizedBox(height: 10),
                       const HoyHeader(),
                       const SizedBox(height: 18),
+                      // SPEC-306: aviso único del cambio de cálculo.
+                      const CalcUpdateNoticeCard(),
                       if (fastingState.metabolicAlert != null) ...[
                         MetabolicAlertBanner(
                             message: fastingState.metabolicAlert!),
@@ -401,7 +404,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           Text(
                             'Toca un pilar para ver más',
                             style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.5),
+                              color: Colors.white.withValues(alpha: 0.7),
                               fontSize: 11.5,
                             ),
                           ),

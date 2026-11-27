@@ -14,7 +14,7 @@ import 'package:flutter_test/flutter_test.dart';
 MetabolicCycle _closedCycle({
   int score = 87,
   List<String> achievements = const [
-    'Ayuno 16.0h — autofagia activa (Mattson 2017)',
+    'Ayuno 16.0h — protocolo cumplido (Mattson 2017)',
     'Sueño reparador — leptina/grelina equilibradas (Walker 2017)',
   ],
   List<String> gaps = const [
@@ -92,7 +92,7 @@ void main() {
       expect(find.text('LOGRASTE'), findsOneWidget);
       expect(find.text('TE FALTÓ'), findsOneWidget);
       expect(
-        find.textContaining('autofagia activa'),
+        find.textContaining('protocolo cumplido'),
         findsOneWidget,
       );
       expect(

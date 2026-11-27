@@ -56,7 +56,7 @@ class StreakSummaryCard extends ConsumerWidget {
                         Text(
                           'RACHA ACTIVA',
                           style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.55),
+                            color: Colors.white.withValues(alpha: 0.7),
                             fontSize: 10,
                             fontWeight: FontWeight.w900,
                             letterSpacing: 1.0,
@@ -96,7 +96,7 @@ class StreakSummaryCard extends ConsumerWidget {
                     Text(
                       'RÉCORD',
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.35),
+                        color: Colors.white.withValues(alpha: 0.7),
                         fontSize: 9,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 0.8,

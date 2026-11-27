@@ -62,8 +62,22 @@ const _calculationScreens = <String, String>{
 /// Palabras que la heurística de "Autor AAAA" confunde con autores porque
 /// son nombres de revista ("Tasali et al., PNAS 2008").
 const _venueWords = {
-  'PNAS', 'Chest', 'Med', 'Care', 'Lancet', 'Rev', 'Metab', 'NEJM', 'JCEM',
-  'Invest', 'Psychol', 'Nutr', 'Sci', 'Medicina', 'Fisiología', 'Physiol',
+  'PNAS',
+  'Chest',
+  'Med',
+  'Care',
+  'Lancet',
+  'Rev',
+  'Metab',
+  'NEJM',
+  'JCEM',
+  'Invest',
+  'Psychol',
+  'Nutr',
+  'Sci',
+  'Medicina',
+  'Fisiología',
+  'Physiol',
   'Open',
 };
 
@@ -74,8 +88,7 @@ final _inlineCitation = RegExp(
   r',?\s\(?((?:19|20)\d{2})\)?',
 );
 
-final _citationField =
-    RegExp(r"citation\s*[:=]\s*\n?\s*'((?:[^'\\]|\\.)*)'");
+final _citationField = RegExp(r"citation\s*[:=]\s*\n?\s*'((?:[^'\\]|\\.)*)'");
 
 String _sinComentarios(String source) {
   final sinBloques = source.replaceAll(RegExp(r'/\*.*?\*/', dotAll: true), '');
@@ -250,8 +263,8 @@ void main() {
             .readAsStringSync());
     expect(perfil, contains("'/profile/fuentes'"),
         reason: 'Perfil debe tener la fila "Fuentes científicas"');
-    final router =
-        _sinComentarios(File('lib/src/router/app_router.dart').readAsStringSync());
+    final router = _sinComentarios(
+        File('lib/src/router/app_router.dart').readAsStringSync());
     expect(router, contains('ScientificSourcesScreen.routePath'));
   });
 }

@@ -199,7 +199,7 @@ class _ImrHero extends StatelessWidget {
                   fontSize: 9,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 1.5,
-                  color: Colors.white.withValues(alpha: 0.35),
+                  color: Colors.white.withValues(alpha: 0.7),
                 ),
               ),
               const SizedBox(height: 4),
@@ -216,7 +216,7 @@ class _ImrHero extends StatelessWidget {
                 '/ 100',
                 style: TextStyle(
                   fontSize: 13,
-                  color: Colors.white.withValues(alpha: 0.3),
+                  color: Colors.white.withValues(alpha: 0.7),
                 ),
               ),
             ],
@@ -284,7 +284,7 @@ class _StatRow extends StatelessWidget {
           style: TextStyle(
             fontSize: 8,
             letterSpacing: 1,
-            color: Colors.white.withValues(alpha: 0.3),
+            color: Colors.white.withValues(alpha: 0.7),
           ),
         ),
         Text(
@@ -395,7 +395,7 @@ class _SectionLabel extends StatelessWidget {
         fontSize: 9,
         fontWeight: FontWeight.w900,
         letterSpacing: 1.5,
-        color: Colors.white.withValues(alpha: 0.3),
+        color: Colors.white.withValues(alpha: 0.7),
       ),
     );
   }
@@ -434,7 +434,7 @@ class _UnlockCard extends StatelessWidget {
                   'Necesitas $required $message',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.white.withValues(alpha: 0.6),
+                    color: Colors.white.withValues(alpha: 0.7),
                   ),
                 ),
               ),
@@ -443,7 +443,7 @@ class _UnlockCard extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w800,
-                  color: Colors.white.withValues(alpha: 0.5),
+                  color: Colors.white.withValues(alpha: 0.7),
                 ),
               ),
             ],

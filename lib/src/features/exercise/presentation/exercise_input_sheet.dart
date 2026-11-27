@@ -325,10 +325,10 @@ class _ExerciseInputSheetState extends ConsumerState<ExerciseInputSheet> {
             style: const TextStyle(color: Colors.white, fontSize: 16),
             decoration: InputDecoration(
               hintText: 'Ej: 142',
-              hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.30)),
+              hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
               suffixText: 'bpm',
               suffixStyle:
-                  TextStyle(color: Colors.white.withValues(alpha: 0.45)),
+                  TextStyle(color: Colors.white.withValues(alpha: 0.7)),
               filled: true,
               fillColor: Colors.white.withValues(alpha: 0.05),
               border: OutlineInputBorder(
@@ -409,7 +409,7 @@ class _DetailToggle extends StatelessWidget {
               'Mejora tu IMR',
               style: TextStyle(
                 fontSize: 10,
-                color: Colors.white.withValues(alpha: 0.4),
+                color: Colors.white.withValues(alpha: 0.7),
                 fontStyle: FontStyle.italic,
               ),
             ),
@@ -455,7 +455,7 @@ class _DetailHeader extends StatelessWidget {
                 hint,
                 style: TextStyle(
                   fontSize: 11,
-                  color: Colors.white.withValues(alpha: 0.45),
+                  color: Colors.white.withValues(alpha: 0.7),
                 ),
               ),
             ],

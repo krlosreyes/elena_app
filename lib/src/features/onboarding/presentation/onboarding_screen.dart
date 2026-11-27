@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:elena_app/src/features/nutrition/application/meal_target_service.dart';
 import 'package:elena_app/src/core/services/app_logger.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
@@ -280,10 +281,18 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   // Bloquea el botón SIGUIENTE del paso Biometría hasta que se confirme
   // el peso real — evita guardar el default 85 kg a Firestore.
   bool _weightTouched = false;
-  double _height = 180.0;
+  double _height = 170.0;
+  // SPEC-307: estatura y fecha de nacimiento también se confirman. Antes
+  // quedaban 180 cm y 1980 como si fueran datos del usuario.
+  bool _heightTouched = false;
+  bool _birthTouched = false;
   String _gender = 'M';
   double _waist = 94.0;
   double _neck = 40.0;
+  // SPEC-306/307: cadera, obligatoria en mujeres para la fórmula US Navy
+  // (misma regla que la calculadora del sitio).
+  double _hip = 100.0;
+  bool _hipTouched = false;
   int _pantSize = 34;
   String _shirtSize = "L";
 
@@ -303,7 +312,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   bool _userTouchedMealTimes = false;
 
   // --- PASO 3: PROTOCOLO ---
-  int _mealsPerDay = 3;
   String _fastingProtocol = "16:8";
   List<String> _pathologies = ["Ninguna"];
 
@@ -420,6 +428,26 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     setState(() {
       double baseWaist = _pantSize * 2.54;
       _waist = _gender == 'M' ? baseWaist + 5.0 : baseWaist + 2.0;
+      if (_gender != 'M') {
+        // SPEC-307: el cuello femenino es ~5 cm menor que el masculino a
+        // igual talla; antes se usaban las cifras de hombre.
+        switch (_shirtSize) {
+          case "XS":
+          case "S":
+            _neck = 31.0;
+            break;
+          case "M":
+            _neck = 33.0;
+            break;
+          case "L":
+            _neck = 35.0;
+            break;
+          default:
+            _neck = 37.0;
+        }
+        if (!_hipTouched) _hip = _waist + 18.0;
+        return;
+      }
       switch (_shirtSize) {
         case "S":
           _neck = 36.0;
@@ -602,7 +630,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           _weightTouched = true;
         }
       }
-      if (prefill.height != null) _height = prefill.height!;
+      if (prefill.height != null) {
+        _height = prefill.height!;
+        _heightTouched = true;
+      }
+      if (prefill.hipCircumference != null) {
+        _hip = prefill.hipCircumference!;
+        _hipTouched = true;
+      }
       if (prefill.gender != null) _gender = prefill.gender!;
       if (prefill.waistCircumference != null) {
         _waist = prefill.waistCircumference!;
@@ -613,6 +648,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       if (prefill.birthYear != null) {
         _birthDate =
             DateTime(prefill.birthYear!, _birthDate.month, _birthDate.day);
+        _birthTouched = true;
       }
 
       // SPEC-84: prellenar fastingProtocol desde habits.fastingHours.
@@ -992,7 +1028,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             PrefillChip(filledCount: _prefill.filledCount),
           OnboardingStepHeader(
               title: "Tu cuerpo hoy",
-              sub: "Para calcular tu edad metabólica (IMR)",
+              sub: "Para calcular tu IMR y tu edad metabólica",
               isDark: isDark),
           OnboardingStepHelperLine(
             text: 'Estas medidas nos sirven para estimar tu composición '
@@ -1009,14 +1045,23 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             ),
           ),
           _simpleSelector(
-              "Nacimiento", DateFormat('dd/MM/yyyy').format(_birthDate),
-              () async {
+              "Nacimiento *",
+              _birthTouched
+                  ? DateFormat('dd/MM/yyyy').format(_birthDate)
+                  : "Toca para ingresar", () async {
             final date = await showDatePicker(
                 context: context,
+                // SPEC-309: calendario en español.
+                locale: const Locale('es'),
                 initialDate: _birthDate,
-                firstDate: DateTime(1940),
+                firstDate: DateTime(1930),
                 lastDate: DateTime.now());
-            if (date != null) setState(() => _birthDate = date);
+            if (date != null) {
+              setState(() {
+                _birthDate = date;
+                _birthTouched = true;
+              });
+            }
           }, isDark),
           _simpleSelector(
               "Sexo",
@@ -1027,8 +1072,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   }, isDark),
               isDark),
           _pickerSelector(
-              label: "Estatura",
-              displayValue: "${_height.toInt()} cm",
+              label: "Estatura *",
+              displayValue: _heightTouched
+                  ? "${_height.toInt()} cm"
+                  : "Toca para ingresar",
               isDark: isDark,
               onTap: () => _showNumericPicker(
                     title: "Estatura",
@@ -1037,7 +1084,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     max: 220,
                     unit: " cm",
                     isDark: isDark,
-                    onChanged: (v) => setState(() => _height = v),
+                    onChanged: (v) => setState(() {
+                      _height = v;
+                      _heightTouched = true;
+                    }),
                   )),
           _pickerSelector(
               label: "Peso *",
@@ -1122,6 +1172,24 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     isDark: isDark,
                     onChanged: (v) => setState(() => _neck = v),
                   )),
+          if (_gender != 'M')
+            _pickerSelector(
+                label: "Cadera *",
+                displayValue:
+                    _hipTouched ? "${_hip.toInt()} cm" : "Toca para ingresar",
+                isDark: isDark,
+                onTap: () => _showNumericPicker(
+                      title: "Cadera (parte más ancha)",
+                      value: _hip,
+                      min: 60,
+                      max: 170,
+                      unit: " cm",
+                      isDark: isDark,
+                      onChanged: (v) => setState(() {
+                        _hip = v;
+                        _hipTouched = true;
+                      }),
+                    )),
         ],
       );
 
@@ -1203,19 +1271,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   (v) => _handleProtocolChange(v),
                   isDark),
               isDark),
-          _pickerSelector(
-              label: "Comidas al día",
-              displayValue: "$_mealsPerDay",
-              isDark: isDark,
-              onTap: () => _showNumericPicker(
-                    title: "Comidas al día",
-                    value: _mealsPerDay.toDouble(),
-                    min: 1,
-                    max: 6,
-                    unit: "",
-                    isDark: isDark,
-                    onChanged: (v) => setState(() => _mealsPerDay = v.toInt()),
-                  )),
+          // SPEC-308: las comidas del día salen del protocolo (igual que en
+          // el Dashboard). Antes se pedía un número aparte (3) y luego la
+          // app mostraba otro (2 con 16:8).
+          _simpleSelector(
+              "Comidas al día",
+              "${const MealTargetService().targetForProtocol(_fastingProtocol).meals} "
+                  "(según tu ayuno)",
+              () {},
+              isDark),
           _simpleSelector("Patologías", _pathologies.join(", "),
               () => _showMultiSelectPathologies(isDark), isDark),
         ],
@@ -1531,12 +1595,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               : Colors.white,
           title: const Text('🤔 Una sugerencia honesta'),
           content: Text(
-            'Las personas con perfil Excitado (sueño superficial, '
-            'tensión baseline, apetito matutino bajo) suelen tolerar '
-            '$newProtocol mejor después de adaptarse con 16:8 unas semanas.\n\n'
-            'Empezar directo con $newProtocol puede aumentar tu tensión, '
-            'empeorar tu sueño y romper la adherencia. No es '
-            'prohibición — es algo que hemos visto.',
+            'Si duermes de forma ligera o sueles sentir tensión, empezar '
+            'con 16:8 unas semanas antes de pasar a $newProtocol suele ser '
+            'más fácil de sostener.\n\n'
+            'Es una sugerencia, no una prohibición: tú decides.',
           ),
           actions: [
             TextButton(
@@ -1723,20 +1785,20 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final (icon, title, lines) = switch (ns) {
       NervousSystem.passive => (
           '🌿',
-          'Tu perfil es Pasivo',
+          'Tu punto de partida: ritmo tranquilo',
           [
             'Protocolo: 16:8 (recomendado) o 18:6',
-            'Plato sugerido: 2 a 1 (2 partes A + 1 parte E)',
+            'Plato sugerido: 2 partes de verduras y proteína por 1 de almidones',
             'Proteínas rojas permitidas',
             'Café matutino: bienvenido',
           ],
         ),
       NervousSystem.excited => (
           '⚡',
-          'Tu perfil es Excitado',
+          'Tu punto de partida: ritmo acelerado',
           [
             'Protocolo: 16:8 (no más estricto al empezar)',
-            'Plato sugerido: 3 a 1 (3 partes A + 1 parte E)',
+            'Plato sugerido: 3 partes de verduras y proteína por 1 de almidones',
             'Proteínas blancas (pollo, pavo, pescado)',
             'Café solo antes del mediodía',
           ],
@@ -1939,6 +2001,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       neckCm: _neck,
       heightCm: _height,
       isMale: isMale,
+      hipCm: isMale ? null : _hip,
     );
     final bool coherent = calculatedBodyFat > 0 &&
         BodyFatCalculator.isCoherent(
@@ -1948,9 +2011,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         );
     // Fallback seguro si el cálculo da resultado incoherente (ej.
     // cintura ≤ cuello). Mejor a usar el viejo default 20.
-    final double bodyFatToPersist =
-        coherent ? calculatedBodyFat : (isMale ? 15.0 : 25.0);
-    final String confidence = coherent ? 'ALTA' : 'MEDIA';
+    // SPEC-306: sin resultado coherente no se guarda un % inventado; el
+    // IMR queda marcado como parcial y la app pide la medida.
+    final double? bodyFatToPersist = coherent ? calculatedBodyFat : null;
+    final String confidence = coherent ? 'ALTA' : 'BAJA';
 
     final rawModel = UserModel(
       id: account?.uid ?? '',
@@ -1961,12 +2025,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       height: _height,
       waistCircumference: _waist,
       neckCircumference: _neck,
+      hipCircumference: isMale ? null : _hip,
       bodyFatPercentage: bodyFatToPersist,
       isMeasurementEstimated: !coherent,
       confidenceLevel: confidence,
       pantSize: _pantSize,
       shirtSize: _shirtSize,
-      mealsPerDay: _mealsPerDay,
+      mealsPerDay:
+          const MealTargetService().targetForProtocol(_fastingProtocol).meals,
       fastingProtocol: _fastingProtocol,
       // El cribado del paso 0 y el selector del paso 3 escriben los dos
       // en `_pathologies`, que es fuente única. Ver `_declaredConditions`.
@@ -2442,7 +2508,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final cribadoRespondido = _declaredNone || _declaredConditions.isNotEmpty;
     final canProceed = (currentOriginalIndex != 0 ||
             (_disclaimerAccepted && cribadoRespondido)) &&
-        (currentOriginalIndex != 1 || _weightTouched);
+        (currentOriginalIndex != 1 ||
+            (_weightTouched &&
+                _heightTouched &&
+                _birthTouched &&
+                (_gender == 'M' || _hipTouched)));
     final isLastStep = _currentStep == _activeSteps.length - 1;
     final disabledColor = isDark ? Colors.white24 : Colors.grey;
     final activeColor =
@@ -2475,7 +2545,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 child: Text(
                   "ATRÁS",
                   style: TextStyle(
-                    color: isDark ? Colors.white38 : Colors.grey,
+                    color: isDark ? Colors.white70 : Colors.grey,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -2655,7 +2725,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
     final title = showMrCopy
         ? 'Hola $_greetingName, completemos tu perfil metabólico'
-        : 'Bienvenid@ a ElenaApp';
+        : 'Te damos la bienvenida a Elena';
     final sub = showMrCopy
         ? 'Tu cuenta de Metamorfosis Real ya está vinculada. Solo necesitamos algunos datos biométricos para personalizar tu IMR.'
         : 'En menos de 2 minutos calibramos el sistema con tus datos para empezar a medir tu IMR.';
@@ -2679,7 +2749,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           Text(
             sub,
             style: TextStyle(
-              color: isDark ? Colors.white60 : const Color(0xFF475569),
+              color: isDark ? Colors.white70 : const Color(0xFF475569),
               fontSize: 13.5,
               fontWeight: FontWeight.w500,
               height: 1.45,

@@ -36,7 +36,7 @@ enum WeakPillar {
   String get insightHeadline {
     switch (this) {
       case WeakPillar.fasting:
-        return 'Tu ayuno está corto. La autofagia profunda requiere ≥16h.';
+        return 'Tu ayuno está corto. Prueba alargarlo una hora más esta semana.';
       case WeakPillar.sleep:
         return 'Tu sueño es el que más arrastra. <7h compromete tu reparación metabólica.';
       case WeakPillar.hydration:

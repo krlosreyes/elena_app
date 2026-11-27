@@ -76,7 +76,7 @@ class NextMealBanner extends ConsumerWidget {
                       const SizedBox(height: 2),
                       Text(
                         minutes <= 0
-                            ? 'Tocá para registrar tu plato.'
+                            ? 'Toca para registrar tu plato.'
                             : 'A las $hh:$mm. Alístate.',
                         style: const TextStyle(
                           color: AppColors.textSecondary,

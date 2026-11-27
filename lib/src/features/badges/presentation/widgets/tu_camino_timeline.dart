@@ -80,7 +80,7 @@ class TuCaminoTimeline extends ConsumerWidget {
           Text(
             _remainingText(nextProgress),
             style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.45), fontSize: 11),
+                color: Colors.white.withValues(alpha: 0.7), fontSize: 11),
           ),
         ],
       ],

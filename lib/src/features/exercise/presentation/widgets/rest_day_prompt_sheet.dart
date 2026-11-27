@@ -3,7 +3,7 @@
 // ejercicio.
 //
 // ORIGEN: Carlos vio en un ejemplo de otra app un date-picker de "¿cuándo
-// querés empezar?" y propuso algo similar al cerrar el tour. Al revisar
+// quieres empezar?" y propuso algo similar al cerrar el tour. Al revisar
 // `WeeklyExercisePlanEngine` (Fase 2, Propuesta módulo Ejercicio
 // 2026-07-21) encontramos que el motor NO tiene concepto de "fecha de
 // inicio" — es una plantilla semanal que se repite indefinidamente, no
@@ -19,7 +19,7 @@
 // DISEÑO: en vez de "elegí tus 6 días disponibles" (multi-select, más
 // fricción y más superficie de error — el motor solo actúa si son
 // EXACTAMENTE 6), se pregunta lo inverso y más simple: "¿qué día
-// preferís descansar?" (single-select entre 7). El default preseleccionado
+// prefieres descansar?" (single-select entre 7). El default preseleccionado
 // es Domingo — el mismo default que ya usa el motor — así que si el
 // usuario solo toca "Guardar" sin cambiar nada, el comportamiento es
 // IDÉNTICO al actual (cero riesgo). "Ahora no" cierra sin escribir nada,
@@ -158,7 +158,7 @@ class _RestDayPromptSheetState extends ConsumerState<_RestDayPromptSheet> {
             ),
             const SizedBox(height: 10),
             Text(
-              '¿Qué día preferís que sea tu descanso? Armamos tu plan de '
+              '¿Qué día prefieres que sea tu descanso? Armamos tu plan de '
               'fuerza + cardio alrededor del resto de tu semana.',
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.75),
@@ -260,7 +260,7 @@ class _RestDayPromptSheetState extends ConsumerState<_RestDayPromptSheet> {
                 child: Text(
                   'Ahora no',
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.55),
+                    color: Colors.white.withValues(alpha: 0.7),
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),

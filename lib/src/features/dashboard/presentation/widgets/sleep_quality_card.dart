@@ -61,7 +61,7 @@ class SleepQualityCard extends ConsumerWidget {
       child: Text(
         'No pudimos cargar tu sueño.',
         style: TextStyle(
-          color: Colors.white.withValues(alpha: 0.55),
+          color: Colors.white.withValues(alpha: 0.7),
           fontSize: 12,
         ),
       ),
@@ -96,7 +96,7 @@ class SleepQualityCard extends ConsumerWidget {
         Text(
           'TU SUEÑO',
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.55),
+            color: Colors.white.withValues(alpha: 0.7),
             fontSize: 10,
             letterSpacing: 1.4,
             fontWeight: FontWeight.w900,
@@ -106,7 +106,7 @@ class SleepQualityCard extends ConsumerWidget {
           Text(
             '${i.logs.length} NOCHES',
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.45),
+              color: Colors.white.withValues(alpha: 0.7),
               fontSize: 10,
               letterSpacing: 1.0,
               fontWeight: FontWeight.w800,
@@ -140,7 +140,7 @@ class SleepQualityCard extends ConsumerWidget {
                 ? 'promedio · ★ ${i.qualityAvg!.toStringAsFixed(1)}'
                 : 'promedio',
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.55),
+              color: Colors.white.withValues(alpha: 0.7),
               fontSize: 12,
               fontWeight: FontWeight.w700,
             ),
@@ -263,7 +263,7 @@ class SleepQualityCard extends ConsumerWidget {
         Text(
           text,
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.60),
+            color: Colors.white.withValues(alpha: 0.7),
             fontSize: 10,
             fontWeight: FontWeight.w700,
             fontFeatures: const [FontFeature.tabularFigures()],
@@ -322,7 +322,7 @@ class SleepQualityCard extends ConsumerWidget {
                 CitationLink(
                   m.citation,
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.45),
+                    color: Colors.white.withValues(alpha: 0.7),
                     fontSize: 11,
                     fontStyle: FontStyle.italic,
                     fontWeight: FontWeight.w600,

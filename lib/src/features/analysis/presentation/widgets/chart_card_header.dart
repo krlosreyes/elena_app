@@ -55,7 +55,7 @@ class ChartCardHeader extends StatelessWidget {
             Text(
               periodLabel,
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.50),
+                color: Colors.white.withValues(alpha: 0.7),
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
               ),
@@ -64,7 +64,7 @@ class ChartCardHeader extends StatelessWidget {
               Text(
                 '  ·  ',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.30),
+                  color: Colors.white.withValues(alpha: 0.7),
                   fontSize: 13,
                 ),
               ),

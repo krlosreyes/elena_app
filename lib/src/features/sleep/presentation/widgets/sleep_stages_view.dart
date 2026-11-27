@@ -58,7 +58,7 @@ class _SleepStagesViewState extends State<SleepStagesView> {
           Text(
             'ETAPAS DE TU SUEÑO',
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.55),
+              color: Colors.white.withValues(alpha: 0.7),
               fontSize: 10,
               letterSpacing: 1.2,
               fontWeight: FontWeight.w900,
@@ -150,7 +150,7 @@ class _SleepStagesViewState extends State<SleepStagesView> {
             child: Text('$pct%',
                 textAlign: TextAlign.right,
                 style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.5), fontSize: 12)),
+                    color: Colors.white.withValues(alpha: 0.7), fontSize: 12)),
           ),
         ],
       ),
@@ -214,7 +214,7 @@ class _SleepStagesViewState extends State<SleepStagesView> {
             padding: const EdgeInsets.only(left: 24),
             child: CitationLink(citation,
                 style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.45),
+                    color: Colors.white.withValues(alpha: 0.7),
                     fontSize: 11,
                     fontStyle: FontStyle.italic)),
           ),
@@ -255,7 +255,7 @@ class _SleepStagesViewState extends State<SleepStagesView> {
                 const SizedBox(height: 3),
                 CitationLink(sci.citation,
                     style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.4),
+                        color: Colors.white.withValues(alpha: 0.7),
                         fontSize: 10.5,
                         fontStyle: FontStyle.italic)),
               ],

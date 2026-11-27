@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:elena_app/src/core/accessibility/min_size_text_scaler.dart';
 import 'package:elena_app/src/router/app_router.dart';
 import 'package:elena_app/src/core/theme/app_theme.dart';
 import 'package:elena_app/src/core/providers/notification_provider.dart';
@@ -261,7 +263,16 @@ class _ElenaAppState extends ConsumerState<ElenaApp>
         // para evitar flash de light durante transiciones del sistema.
         return MaterialApp.router(
           debugShowCheckedModeBanner: false,
-          title: 'ElenaApp',
+          title: 'Elena',
+          // SPEC-309: textos del sistema (calendario, selectores, copiar /
+          // pegar) en español. Antes no había delegados y salían en inglés.
+          locale: const Locale('es'),
+          supportedLocales: const [Locale('es'), Locale('en')],
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
           theme: AppTheme.dark,
           darkTheme: AppTheme.dark,
           themeMode: ThemeMode.dark,
@@ -269,12 +280,21 @@ class _ElenaAppState extends ConsumerState<ElenaApp>
           // SPEC-243: el tour interactivo post-onboarding se monta sobre
           // todo el árbol. AppTourOverlay retorna SizedBox.shrink() cuando
           // appTourProvider.isActive es false → costo cero en operación normal.
-          builder: (ctx, child) => Stack(
-            children: [
-              child ?? const SizedBox.shrink(),
-              const AppTourOverlay(),
-            ],
-          ),
+          // SPEC-309: tamaño mínimo de texto legible para 55+.
+          builder: (ctx, child) {
+            final mq = MediaQuery.of(ctx);
+            return MediaQuery(
+              data: mq.copyWith(
+                textScaler: MinSizeTextScaler(mq.textScaler),
+              ),
+              child: Stack(
+                children: [
+                  child ?? const SizedBox.shrink(),
+                  const AppTourOverlay(),
+                ],
+              ),
+            );
+          },
         );
       },
     );

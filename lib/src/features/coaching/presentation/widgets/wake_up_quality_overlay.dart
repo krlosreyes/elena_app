@@ -200,7 +200,7 @@ class _WakeUpQualityOverlayState extends ConsumerState<WakeUpQualityOverlay> {
             child: Text(
               'Saltar',
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.5),
+                color: Colors.white.withValues(alpha: 0.7),
                 fontSize: 11,
               ),
             ),
@@ -230,7 +230,7 @@ class _QualityChip extends StatelessWidget {
             option.label,
             style: TextStyle(
               fontSize: 9,
-              color: Colors.white.withValues(alpha: 0.6),
+              color: Colors.white.withValues(alpha: 0.7),
             ),
           ),
         ],

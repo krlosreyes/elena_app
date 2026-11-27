@@ -180,7 +180,7 @@ class _GlucoseReadingSheetState extends ConsumerState<_GlucoseReadingSheet> {
               decoration: InputDecoration(
                 suffixText: 'mg/dL',
                 suffixStyle: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.5),
+                  color: Colors.white.withValues(alpha: 0.7),
                   fontSize: 15,
                 ),
                 filled: true,
@@ -200,7 +200,7 @@ class _GlucoseReadingSheetState extends ConsumerState<_GlucoseReadingSheet> {
               'Un glucómetro doméstico tiene un margen de error de hasta '
               '±15-20% — tratá este valor como una referencia.',
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.45),
+                color: Colors.white.withValues(alpha: 0.7),
                 fontSize: 11.5,
                 height: 1.4,
               ),
@@ -209,7 +209,7 @@ class _GlucoseReadingSheetState extends ConsumerState<_GlucoseReadingSheet> {
             Text(
               '¿EN QUÉ MOMENTO?',
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.40),
+                color: Colors.white.withValues(alpha: 0.7),
                 fontSize: 10.5,
                 letterSpacing: 1.2,
                 fontWeight: FontWeight.bold,
@@ -240,7 +240,7 @@ class _GlucoseReadingSheetState extends ConsumerState<_GlucoseReadingSheet> {
             Text(
               '¿SENTISTE ALGO? (OPCIONAL)',
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.40),
+                color: Colors.white.withValues(alpha: 0.7),
                 fontSize: 10.5,
                 letterSpacing: 1.2,
                 fontWeight: FontWeight.bold,
@@ -286,7 +286,7 @@ class _GlucoseReadingSheetState extends ConsumerState<_GlucoseReadingSheet> {
               decoration: InputDecoration(
                 hintText: 'Nota opcional (ej. "dormí mal", "mucho estrés")',
                 hintStyle: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.35),
+                  color: Colors.white.withValues(alpha: 0.7),
                   fontSize: 13,
                 ),
                 filled: true,
@@ -335,7 +335,7 @@ class _GlucoseReadingSheetState extends ConsumerState<_GlucoseReadingSheet> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  'Este valor está fuera de lo habitual. ¿Confirmás que tu '
+                  'Este valor está fuera de lo habitual. ¿Confirmas que tu '
                   'glucosa fue $value mg/dL?',
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.85),

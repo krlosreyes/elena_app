@@ -115,7 +115,7 @@ class _AnalysisPillarsTabState extends ConsumerState<AnalysisPillarsTab>
                 child: Text(
                   p.label,
                   style: TextStyle(
-                    color: isSelected ? p.accent : Colors.white60,
+                    color: isSelected ? p.accent : Colors.white70,
                     fontSize: 12,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0.4,

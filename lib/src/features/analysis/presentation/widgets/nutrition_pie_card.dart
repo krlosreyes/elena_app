@@ -64,7 +64,7 @@ class NutritionPieCard extends StatelessWidget {
             Text(
               dateRange,
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.50),
+                color: Colors.white.withValues(alpha: 0.7),
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
               ),
@@ -99,7 +99,7 @@ class NutritionPieCard extends StatelessWidget {
         child: Text(
           'Sin registros de comidas en este rango.',
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.45),
+            color: Colors.white.withValues(alpha: 0.7),
             fontSize: 13,
             fontStyle: FontStyle.italic,
           ),
@@ -119,7 +119,7 @@ class NutritionPieCard extends StatelessWidget {
             fontSize: 11,
             fontWeight: FontWeight.w700,
             letterSpacing: 0.6,
-            color: Colors.white.withValues(alpha: 0.50),
+            color: Colors.white.withValues(alpha: 0.7),
           ),
         ),
       ],
@@ -150,7 +150,7 @@ class NutritionPieCard extends StatelessWidget {
             Text(
               '%',
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.55),
+                color: Colors.white.withValues(alpha: 0.7),
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
               ),
@@ -161,7 +161,7 @@ class NutritionPieCard extends StatelessWidget {
         Text(
           'A-dominante',
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.50),
+            color: Colors.white.withValues(alpha: 0.7),
             fontSize: 11,
             fontWeight: FontWeight.w600,
             letterSpacing: 0.2,

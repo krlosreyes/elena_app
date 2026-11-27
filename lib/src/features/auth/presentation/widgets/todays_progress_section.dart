@@ -3,7 +3,7 @@
 // Carlos pidió que el usuario tenga claro qué le sugiere Elena Y cómo
 // va avanzando hoy contra eso. `ProfileGoalsSection` (que vive en esta
 // misma pantalla) ya cubre la primera parte — lista las metas
-// configuradas. Le faltaba la segunda: nunca mostraba cuánto llevás
+// configuradas. Le faltaba la segunda: nunca mostraba cuánto llevas
 // HOY. Esta sección la agrega, para los 5 pilares diarios (ayuno,
 // sueño, hidratación, ejercicio, nutrición) — deliberadamente NO
 // incluye peso/grasa corporal (son metas de composición corporal a
@@ -214,7 +214,7 @@ class TodaysProgressSection extends ConsumerWidget {
           Text(
             p.subtitle,
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.5),
+              color: Colors.white.withValues(alpha: 0.7),
               fontSize: 11.5,
               fontWeight: FontWeight.w500,
             ),

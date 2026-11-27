@@ -25,7 +25,8 @@ final biometricLockProvider = Provider<BiometricLockState>((ref) {
   final history = ref.watch(progressProvider.select((s) => s.biometricHistory));
   DateTime? fromHistory;
   for (final e in history) {
-    if (!BiometricLockService.countsAsMeasurement(e.source, notes: e.notes)) continue;
+    if (!BiometricLockService.countsAsMeasurement(e.source, notes: e.notes))
+      continue;
     final t = e.recordedAt ?? e.createdAt;
     if (fromHistory == null || t.isAfter(fromHistory)) fromHistory = t;
   }

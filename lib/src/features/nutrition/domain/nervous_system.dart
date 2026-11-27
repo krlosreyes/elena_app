@@ -48,8 +48,9 @@ enum NervousSystem {
   /// Se usa en la tarjeta de contexto del onboarding 3.B
   /// (§RF-137-08.C) y en el Perfil del usuario.
   String get label => switch (this) {
-        NervousSystem.passive => 'Pasivo',
-        NervousSystem.excited => 'Excitado',
+        // SPEC-309: etiquetas descriptivas, sin la jerga Pasivo/Excitado.
+        NervousSystem.passive => 'Ritmo tranquilo',
+        NervousSystem.excited => 'Ritmo acelerado',
         NervousSystem.unknown => 'Por conocer',
       };
 

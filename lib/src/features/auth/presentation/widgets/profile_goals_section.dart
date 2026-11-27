@@ -59,7 +59,7 @@ class ProfileGoalsSection extends ConsumerWidget {
           Text(
             'Elena tiene recomendaciones listas basadas en tus datos.',
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.55),
+              color: Colors.white.withValues(alpha: 0.7),
               fontSize: 13,
               height: 1.35,
             ),
@@ -203,7 +203,7 @@ class ProfileGoalsSection extends ConsumerWidget {
                   Text(
                     '${_formatGoalValue(goal)} ${goal.unit}',
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.55),
+                      color: Colors.white.withValues(alpha: 0.7),
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                     ),

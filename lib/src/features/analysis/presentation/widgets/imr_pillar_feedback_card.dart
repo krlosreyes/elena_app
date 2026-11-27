@@ -74,7 +74,7 @@ class ImrPillarFeedbackCard extends StatelessWidget {
                 child: Text(
                   'ANÁLISIS DE PILARES',
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.55),
+                    color: Colors.white.withValues(alpha: 0.7),
                     fontSize: 10,
                     letterSpacing: 1.4,
                     fontWeight: FontWeight.w800,

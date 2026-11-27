@@ -76,7 +76,7 @@ class TransformationCard extends StatelessWidget {
                   child: Text(
                     'HACE 30 DÍAS',
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.45),
+                      color: Colors.white.withValues(alpha: 0.7),
                       fontSize: 10,
                       letterSpacing: 1.4,
                       fontWeight: FontWeight.w800,
@@ -89,7 +89,7 @@ class TransformationCard extends StatelessWidget {
                   child: Text(
                     'HOY',
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.45),
+                      color: Colors.white.withValues(alpha: 0.7),
                       fontSize: 10,
                       letterSpacing: 1.4,
                       fontWeight: FontWeight.w800,
@@ -151,7 +151,7 @@ class _IndicatorRow extends StatelessWidget {
             child: Text(
               past == null ? '—' : _formatValue(past, delta.unit),
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.55),
+                color: Colors.white.withValues(alpha: 0.7),
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
                 fontFeatures: const [FontFeature.tabularFigures()],
@@ -239,7 +239,7 @@ class _NarrativeBlock extends StatelessWidget {
         Text(
           'TU INTERPRETACIÓN',
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.40),
+            color: Colors.white.withValues(alpha: 0.7),
             fontSize: 9.5,
             letterSpacing: 1.4,
             fontWeight: FontWeight.w800,
@@ -260,7 +260,7 @@ class _NarrativeBlock extends StatelessWidget {
           CitationLink(
             '· ${narrative.citation}',
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.45),
+              color: Colors.white.withValues(alpha: 0.7),
               fontSize: 11,
               fontWeight: FontWeight.w600,
               fontStyle: FontStyle.italic,

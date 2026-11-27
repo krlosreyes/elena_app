@@ -51,7 +51,7 @@ class AppTypography {
       ),
       bodySmall: GoogleFonts.inter(
         color: AppColors.textSecondary,
-        fontSize: 12,
+        fontSize: 13,
         fontWeight: FontWeight.w500,
       ),
 
@@ -64,12 +64,12 @@ class AppTypography {
       ),
       labelMedium: GoogleFonts.inter(
         color: AppColors.textSecondary,
-        fontSize: 12,
+        fontSize: 13,
         fontWeight: FontWeight.w600,
       ),
       labelSmall: GoogleFonts.inter(
         color: AppColors.textMuted,
-        fontSize: 11,
+        fontSize: 12.5,
         fontWeight: FontWeight.w700,
         letterSpacing: 1.98,
       ),

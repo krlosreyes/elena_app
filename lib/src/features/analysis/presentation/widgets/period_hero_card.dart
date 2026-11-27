@@ -81,7 +81,7 @@ class PeriodHeroCard extends StatelessWidget {
               Text(
                 'TU IMR · ${periodLabel.toUpperCase()}',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.55),
+                  color: Colors.white.withValues(alpha: 0.7),
                   fontSize: 10,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 1.2,
@@ -168,7 +168,7 @@ class PeriodHeroCard extends StatelessWidget {
             Text(
               'Registra tu día para ver tu IMR de hoy.',
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.45),
+                color: Colors.white.withValues(alpha: 0.7),
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
               ),
@@ -246,7 +246,7 @@ class _ImrRing extends StatelessWidget {
                 inactive ? '—' : '$score',
                 style: TextStyle(
                   color: inactive
-                      ? Colors.white.withValues(alpha: 0.40)
+                      ? Colors.white.withValues(alpha: 0.7)
                       : zoneColor,
                   fontSize: 38,
                   fontWeight: FontWeight.w900,
@@ -262,7 +262,7 @@ class _ImrRing extends StatelessWidget {
                 'HOY',
                 style: TextStyle(
                   color: inactive
-                      ? Colors.white.withValues(alpha: 0.40)
+                      ? Colors.white.withValues(alpha: 0.7)
                       : zoneColor,
                   fontSize: 10,
                   fontWeight: FontWeight.w900,
@@ -361,7 +361,7 @@ class _StatRow extends StatelessWidget {
             Text(
               label,
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.45),
+                color: Colors.white.withValues(alpha: 0.7),
                 fontSize: 9,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 1.0,
@@ -372,7 +372,7 @@ class _StatRow extends StatelessWidget {
               Text(
                 subtitle!,
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.40),
+                  color: Colors.white.withValues(alpha: 0.7),
                   fontSize: 10,
                   fontWeight: FontWeight.w600,
                 ),

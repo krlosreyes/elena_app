@@ -69,7 +69,7 @@ class WeeklyCoachingCard extends ConsumerWidget {
       child: Text(
         'No pudimos cargar tu semana.',
         style: TextStyle(
-          color: Colors.white.withValues(alpha: 0.55),
+          color: Colors.white.withValues(alpha: 0.7),
           fontSize: 12,
         ),
       ),
@@ -123,7 +123,7 @@ class WeeklyCoachingCard extends ConsumerWidget {
         Text(
           'TU SEMANA',
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.55),
+            color: Colors.white.withValues(alpha: 0.7),
             fontSize: 10,
             letterSpacing: 1.4,
             fontWeight: FontWeight.w900,
@@ -132,7 +132,7 @@ class WeeklyCoachingCard extends ConsumerWidget {
         Text(
           _formatRange(i.rangeStart, i.rangeEnd),
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.45),
+            color: Colors.white.withValues(alpha: 0.7),
             fontSize: 10,
             letterSpacing: 0.8,
             fontWeight: FontWeight.w800,
@@ -252,7 +252,7 @@ class WeeklyCoachingCard extends ConsumerWidget {
         '—',
         textAlign: TextAlign.left,
         style: TextStyle(
-          color: Colors.white.withValues(alpha: 0.25),
+          color: Colors.white.withValues(alpha: 0.7),
           fontSize: 11,
           fontWeight: FontWeight.w700,
         ),
@@ -264,7 +264,7 @@ class WeeklyCoachingCard extends ConsumerWidget {
         '=',
         textAlign: TextAlign.left,
         style: TextStyle(
-          color: Colors.white.withValues(alpha: 0.35),
+          color: Colors.white.withValues(alpha: 0.7),
           fontSize: 11,
           fontWeight: FontWeight.w900,
         ),
@@ -356,7 +356,7 @@ class WeeklyCoachingCard extends ConsumerWidget {
                     CitationLink(
                       weak.citation,
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.45),
+                        color: Colors.white.withValues(alpha: 0.7),
                         fontSize: 11,
                         fontStyle: FontStyle.italic,
                         fontWeight: FontWeight.w600,
@@ -436,7 +436,7 @@ class WeeklyCoachingCard extends ConsumerWidget {
         'Aún no tienes registros en los últimos 7 días.\nRegistra tus pilares y verás tu semana aquí.',
         textAlign: TextAlign.center,
         style: TextStyle(
-          color: Colors.white.withValues(alpha: 0.55),
+          color: Colors.white.withValues(alpha: 0.7),
           fontSize: 13,
           fontWeight: FontWeight.w500,
           height: 1.5,

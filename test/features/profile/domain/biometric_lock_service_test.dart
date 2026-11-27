@@ -6,8 +6,8 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   group('BiometricLockService.compute', () {
     test('sin mediciones → desbloqueado', () {
-      expect(BiometricLockService.compute(lastMeasuredAt: null).isLocked,
-          isFalse);
+      expect(
+          BiometricLockService.compute(lastMeasuredAt: null).isLocked, isFalse);
     });
 
     test('medir el lunes en la mañana bloquea toda la semana', () {

@@ -167,7 +167,7 @@ class _LineChartCardState extends State<LineChartCard> {
       return _emptyMessage('Sin datos en este rango.');
     }
     if (series.points.length < 2) {
-      return _emptyMessage('Necesitás 2+ semanas para ver tendencia.');
+      return _emptyMessage('Necesitas 2+ semanas para ver tendencia.');
     }
     return LayoutBuilder(
       builder: (context, c) {
@@ -232,7 +232,7 @@ class _LineChartCardState extends State<LineChartCard> {
       child: Text(
         msg,
         style: TextStyle(
-          color: Colors.white.withValues(alpha: 0.35),
+          color: Colors.white.withValues(alpha: 0.7),
           fontSize: 12,
           fontStyle: FontStyle.italic,
         ),
@@ -435,7 +435,7 @@ class _LinePainter extends CustomPainter {
       text: TextSpan(
         text: text,
         style: TextStyle(
-          color: Colors.white.withValues(alpha: 0.40),
+          color: Colors.white.withValues(alpha: 0.7),
           fontSize: 10,
           fontWeight: FontWeight.w600,
         ),
@@ -463,7 +463,7 @@ class _LinePainter extends CustomPainter {
         text: TextSpan(
           text: _fmtDate(dt),
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.45),
+            color: Colors.white.withValues(alpha: 0.7),
             fontSize: 10,
             fontWeight: FontWeight.w600,
           ),

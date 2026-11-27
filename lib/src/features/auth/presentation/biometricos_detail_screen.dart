@@ -154,7 +154,7 @@ class _Body extends ConsumerWidget {
                   fontWeight: FontWeight.w800,
                   fontSize: 15,
                   color: biometryLock.isLocked
-                      ? Colors.white.withValues(alpha: 0.6)
+                      ? Colors.white.withValues(alpha: 0.7)
                       : const Color(0xFF032A22),
                 ),
               ),
@@ -166,7 +166,7 @@ class _Body extends ConsumerWidget {
               'Peso, cintura y cuello se registran juntos una vez por semana, '
               'para que tu IMR refleje cambios reales y no variaciones del día.',
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.5),
+                color: Colors.white.withValues(alpha: 0.7),
                 fontSize: 12,
                 height: 1.4,
               ),
@@ -199,7 +199,8 @@ class _Body extends ConsumerWidget {
               // identidad — ver profile_identity_card.dart.
               ProfileDataRow.readonly(
                   'Condiciones', user.pathologies.join(' · ')),
-              ProfileDataRow.readonly('Peso', '${user.weight.toStringAsFixed(1)} kg'),
+              ProfileDataRow.readonly(
+                  'Peso', '${user.weight.toStringAsFixed(1)} kg'),
               ProfileDataRow.readonly(
                   'Cintura', '${user.waistCircumference?.toInt() ?? 0} cm'),
               ProfileDataRow.readonly(

@@ -60,7 +60,7 @@ class ChartHeroBlock extends StatelessWidget {
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0.6,
-                color: Colors.white.withValues(alpha: 0.50),
+                color: Colors.white.withValues(alpha: 0.7),
               ),
             ),
             // SPEC-168.3: achievement alineado a la derecha del label.
@@ -101,7 +101,7 @@ class ChartHeroBlock extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
-                  color: Colors.white.withValues(alpha: 0.50),
+                  color: Colors.white.withValues(alpha: 0.7),
                 ),
               ),
             ],
@@ -114,7 +114,7 @@ class ChartHeroBlock extends StatelessWidget {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w500,
-              color: Colors.white.withValues(alpha: 0.50),
+              color: Colors.white.withValues(alpha: 0.7),
             ),
           ),
         ],

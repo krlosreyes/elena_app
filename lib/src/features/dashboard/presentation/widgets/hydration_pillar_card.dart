@@ -41,7 +41,7 @@ class HydrationPillarCard extends ConsumerWidget {
               child: Text(
                 '/ ${state.goalFormatted} L',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.5),
+                  color: Colors.white.withValues(alpha: 0.7),
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                 ),

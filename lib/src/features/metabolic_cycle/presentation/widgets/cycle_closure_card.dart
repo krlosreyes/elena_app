@@ -147,7 +147,7 @@ class CycleClosureCardView extends StatelessWidget {
           child: Text(
             'TU CICLO METABÓLICO CERRÓ',
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.45),
+              color: Colors.white.withValues(alpha: 0.7),
               fontSize: 10,
               letterSpacing: 1.5,
               fontWeight: FontWeight.bold,
@@ -191,7 +191,7 @@ class CycleClosureCardView extends StatelessWidget {
           child: Text(
             '/100',
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.35),
+              color: Colors.white.withValues(alpha: 0.7),
               fontSize: 14,
               fontWeight: FontWeight.w600,
               fontFamily: 'monospace',
@@ -286,7 +286,7 @@ class CycleClosureCardView extends StatelessWidget {
                   CitationLink(
                     citation,
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.45),
+                      color: Colors.white.withValues(alpha: 0.7),
                       fontSize: 11,
                       fontStyle: FontStyle.italic,
                       fontWeight: FontWeight.w600,

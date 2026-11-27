@@ -124,7 +124,7 @@ class _CategoryCard extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: hasAny ? color : Colors.white.withValues(alpha: 0.35),
+                color: hasAny ? color : Colors.white.withValues(alpha: 0.7),
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
               ),
@@ -246,7 +246,7 @@ class _LevelTile extends StatelessWidget {
                   style: TextStyle(
                     color: earned
                         ? Colors.white
-                        : Colors.white.withValues(alpha: 0.45),
+                        : Colors.white.withValues(alpha: 0.7),
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
                   ),

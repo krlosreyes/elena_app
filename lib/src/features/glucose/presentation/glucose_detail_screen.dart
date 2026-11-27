@@ -57,7 +57,7 @@ class GlucoseDetailScreen extends ConsumerWidget {
           error: (_, __) => Center(
             child: Text(
               'No pudimos cargar tu historial. Intenta de nuevo más tarde.',
-              style: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
             ),
           ),
           data: (readings) {
@@ -85,7 +85,7 @@ class GlucoseDetailScreen extends ConsumerWidget {
                 Text(
                   'TU HISTÓRICO',
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.40),
+                    color: Colors.white.withValues(alpha: 0.7),
                     fontSize: 10.5,
                     letterSpacing: 1.2,
                     fontWeight: FontWeight.bold,
@@ -107,7 +107,7 @@ class GlucoseDetailScreen extends ConsumerWidget {
                 Text(
                   'CÓMO TUS HÁBITOS AFECTAN TU GLUCOSA',
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.40),
+                    color: Colors.white.withValues(alpha: 0.7),
                     fontSize: 10.5,
                     letterSpacing: 1.2,
                     fontWeight: FontWeight.bold,
@@ -244,7 +244,7 @@ class _StatTile extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.40),
+              color: Colors.white.withValues(alpha: 0.7),
               fontSize: 8.5,
               letterSpacing: 0.6,
               fontWeight: FontWeight.bold,
@@ -269,7 +269,7 @@ class _StatTile extends StatelessWidget {
                 Text(
                   unit,
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.5),
+                    color: Colors.white.withValues(alpha: 0.7),
                     fontSize: 10,
                   ),
                 ),
@@ -281,7 +281,7 @@ class _StatTile extends StatelessWidget {
             Text(
               caption,
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.55),
+                color: Colors.white.withValues(alpha: 0.7),
                 fontSize: 10.5,
                 fontWeight: FontWeight.w600,
               ),
@@ -364,7 +364,7 @@ class _EducationItem extends StatelessWidget {
         Text(
           body,
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.55),
+            color: Colors.white.withValues(alpha: 0.7),
             fontSize: 12,
             height: 1.5,
           ),
@@ -398,7 +398,7 @@ class _DisclaimerFooter extends StatelessWidget {
               'diagnóstico ni un reemplazo de tu HbA1c o el criterio de '
               'tu médico.',
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.45),
+                color: Colors.white.withValues(alpha: 0.7),
                 fontSize: 11,
                 height: 1.4,
               ),

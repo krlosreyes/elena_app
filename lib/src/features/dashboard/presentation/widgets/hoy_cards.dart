@@ -25,7 +25,8 @@ String bodyNowText(FastingPhase phase, {required bool goalReached}) {
         'proteína y verduras.';
   }
   return switch (phase) {
-    FastingPhase.none || FastingPhase.postAbsorption =>
+    FastingPhase.none ||
+    FastingPhase.postAbsorption =>
       'Estás terminando de digerir y tu insulina empieza a bajar. Agua, '
           'café o té sin azúcar no rompen el ayuno.',
     FastingPhase.transition =>
@@ -35,7 +36,8 @@ String bodyNowText(FastingPhase phase, {required bool goalReached}) {
     FastingPhase.fatBurning =>
       'Tu insulina está baja y tu cuerpo usa más grasa como energía. '
           'Mantente hidratado.',
-    FastingPhase.autophagy || FastingPhase.survival =>
+    FastingPhase.autophagy ||
+    FastingPhase.survival =>
       'Llevas un ayuno largo. Escucha a tu cuerpo: si sientes mareo, temblor '
           'o palpitaciones, termina el ayuno.',
   };
@@ -110,7 +112,7 @@ class BodyNowCard extends ConsumerWidget {
                 Text(
                   body,
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.62),
+                    color: Colors.white.withValues(alpha: 0.7),
                     fontSize: 13.5,
                     height: 1.45,
                   ),
@@ -160,8 +162,18 @@ class WeekDot {
 
 const _letras = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 const _meses = [
-  'ene', 'feb', 'mar', 'abr', 'may', 'jun',
-  'jul', 'ago', 'sep', 'oct', 'nov', 'dic',
+  'ene',
+  'feb',
+  'mar',
+  'abr',
+  'may',
+  'jun',
+  'jul',
+  'ago',
+  'sep',
+  'oct',
+  'nov',
+  'dic',
 ];
 
 DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
@@ -261,7 +273,7 @@ class WeekClosedCard extends ConsumerWidget {
                     Text(
                       weekRangeLabel(dots),
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.45),
+                        color: Colors.white.withValues(alpha: 0.7),
                         fontSize: 12,
                       ),
                     ),
@@ -273,7 +285,7 @@ class WeekClosedCard extends ConsumerWidget {
                   'Cerraste tú $byYou de $total '
                   '${total == 1 ? 'día' : 'días'}',
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.6),
+                    color: Colors.white.withValues(alpha: 0.7),
                     fontSize: 13,
                   ),
                 ),
@@ -306,8 +318,8 @@ class _WeekDayCell extends StatelessWidget {
       case WeekDayState.closedByYou:
         fill = AppColors.metabolicGreen;
         border = null;
-        icon = const Icon(Icons.check_rounded,
-            size: 16, color: Color(0xFF032A22));
+        icon =
+            const Icon(Icons.check_rounded, size: 16, color: Color(0xFF032A22));
       case WeekDayState.closedAuto:
         fill = Colors.white.withValues(alpha: 0.10);
         border = null;

@@ -76,6 +76,8 @@ class CanonicalToLegacyAdapter {
       if (waistCm != null) result['waistCircumference'] = waistCm;
       final neckCm = _toDouble(bioMap['neckCm']);
       if (neckCm != null) result['neckCircumference'] = neckCm;
+      final hipCm = _toDouble(bioMap['hipCm']);
+      if (hipCm != null) result['hipCircumference'] = hipCm;
       final bodyFatPct = _toDouble(bioMap['bodyFatPct']);
       if (bodyFatPct != null) result['bodyFatPercentage'] = bodyFatPct;
     }

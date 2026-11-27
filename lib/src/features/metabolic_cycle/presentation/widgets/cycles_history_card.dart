@@ -62,7 +62,7 @@ class CyclesHistoryCard extends ConsumerWidget {
       child: Text(
         'No pudimos cargar tus ciclos.',
         style: TextStyle(
-          color: Colors.white.withValues(alpha: 0.55),
+          color: Colors.white.withValues(alpha: 0.7),
           fontSize: 12,
         ),
       ),
@@ -114,7 +114,7 @@ class CyclesHistoryCard extends ConsumerWidget {
         Text(
           'TUS CICLOS RECIENTES',
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.55),
+            color: Colors.white.withValues(alpha: 0.7),
             fontSize: 10,
             letterSpacing: 1.4,
             fontWeight: FontWeight.w900,
@@ -124,7 +124,7 @@ class CyclesHistoryCard extends ConsumerWidget {
           Text(
             'últimos ${summary.visibleCycles.length}',
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.45),
+              color: Colors.white.withValues(alpha: 0.7),
               fontSize: 10,
               letterSpacing: 0.8,
               fontWeight: FontWeight.w800,
@@ -233,7 +233,7 @@ class CyclesHistoryCard extends ConsumerWidget {
               child: Text(
                 durationLabel,
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.50),
+                  color: Colors.white.withValues(alpha: 0.7),
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                 ),
@@ -331,7 +331,7 @@ class CyclesHistoryCard extends ConsumerWidget {
             CitationLink(
               feedback.citation!,
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.45),
+                color: Colors.white.withValues(alpha: 0.7),
                 fontSize: 10,
                 fontStyle: FontStyle.italic,
                 fontWeight: FontWeight.w600,

@@ -239,7 +239,7 @@ class _BigScoreRing extends StatelessWidget {
         Text(
           sublabel,
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.55),
+            color: Colors.white.withValues(alpha: 0.7),
             fontSize: 11,
             fontWeight: FontWeight.w600,
             height: 1.0,
@@ -395,7 +395,7 @@ class _StreakRing extends StatelessWidget {
           Text(
             _stateLabel,
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.55),
+              color: Colors.white.withValues(alpha: 0.7),
               fontSize: 11,
               fontWeight: FontWeight.w600,
               height: 1.0,

@@ -232,7 +232,7 @@ class _AnalysisPillarDetailScreenState
             'comparativas de corto vs. largo plazo y el análisis de hábito '
             'de este pilar.',
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.6),
+              color: Colors.white.withValues(alpha: 0.7),
               fontSize: 13,
               height: 1.45,
             ),

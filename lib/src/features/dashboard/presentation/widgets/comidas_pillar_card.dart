@@ -321,7 +321,7 @@ class _NextMealCard extends StatelessWidget {
           Text(
             meta,
             style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.55), fontSize: 12),
+                color: Colors.white.withValues(alpha: 0.7), fontSize: 12),
           ),
           const SizedBox(height: 8),
           Theme(
@@ -505,7 +505,7 @@ class _LastPlateCard extends StatelessWidget {
                 if (log.fat != null) 'G: ${log.fat!.round()}g',
               ].join(' · '),
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.45),
+                color: Colors.white.withValues(alpha: 0.7),
                 fontSize: 11,
               ),
             ),

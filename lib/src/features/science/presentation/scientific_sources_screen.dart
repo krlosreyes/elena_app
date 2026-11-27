@@ -58,8 +58,7 @@ class ScientificSourcesScreen extends StatelessWidget {
               height: 1.5,
             ),
           ),
-          for (final category in SourceCategory.values)
-            ..._section(category),
+          for (final category in SourceCategory.values) ..._section(category),
         ],
       ),
     );
@@ -91,8 +90,7 @@ class ScientificSourcesScreen extends StatelessWidget {
           children: [
             for (var i = 0; i < items.length; i++) ...[
               if (i > 0)
-                Divider(
-                    height: 1, color: Colors.white.withValues(alpha: 0.06)),
+                Divider(height: 1, color: Colors.white.withValues(alpha: 0.06)),
               SourceTile(source: items[i], showSupports: true),
             ],
           ],

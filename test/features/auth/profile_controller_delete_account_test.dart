@@ -263,7 +263,8 @@ void main() {
   });
 
   test('AuthProviderKind reconoce apple.com', () {
-    expect(AuthProviderKind.fromProviderId('apple.com'), AuthProviderKind.apple);
+    expect(
+        AuthProviderKind.fromProviderId('apple.com'), AuthProviderKind.apple);
   });
 }
 

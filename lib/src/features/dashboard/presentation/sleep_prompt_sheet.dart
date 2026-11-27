@@ -70,7 +70,7 @@ class _SleepPromptSheetState extends ConsumerState<SleepPromptSheet> {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 13,
-                  color: Colors.white.withValues(alpha: 0.6),
+                  color: Colors.white.withValues(alpha: 0.7),
                   height: 1.5,
                 ),
               ),

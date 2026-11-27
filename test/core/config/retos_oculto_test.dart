@@ -23,7 +23,8 @@ void main() {
   });
 
   test('las insignias de Retos no cuentan ni se muestran', () {
-    expect(BadgeCatalog.visibleCategories, isNot(contains(BadgeCategory.retos)));
+    expect(
+        BadgeCatalog.visibleCategories, isNot(contains(BadgeCategory.retos)));
     expect(BadgeCatalog.visible.where((d) => d.category == BadgeCategory.retos),
         isEmpty);
     expect(BadgeCatalog.visible.length, lessThan(BadgeCatalog.all.length));
@@ -37,16 +38,17 @@ void main() {
     expect(router, contains("kRetosEnabled ? null : '/analysis'"));
   });
 
-  test('ningún otro sitio de la app navega a /retos sin pasar por el flag',
-      () {
+  test('ningún otro sitio de la app navega a /retos sin pasar por el flag', () {
     final fallos = <String>[];
-    for (final f in Directory('lib').listSync(recursive: true).whereType<File>()) {
+    for (final f
+        in Directory('lib').listSync(recursive: true).whereType<File>()) {
       final ruta = f.path.replaceAll(r'\', '/');
       if (!ruta.endsWith('.dart')) continue;
       if (ruta.contains('/features/challenges/')) continue;
       if (ruta.endsWith('app_router.dart')) continue;
       final src = _sinComentarios(ruta);
-      final navega = RegExp(r"(push|go|pushReplacement)\('/retos").hasMatch(src);
+      final navega =
+          RegExp(r"(push|go|pushReplacement)\('/retos").hasMatch(src);
       if (navega && !src.contains('kRetosEnabled')) {
         fallos.add(ruta);
       }

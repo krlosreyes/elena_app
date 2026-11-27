@@ -154,7 +154,7 @@ class _MetricChip extends StatelessWidget {
           label,
           style: TextStyle(
             fontSize: 9,
-            color: Colors.white.withValues(alpha: 0.35),
+            color: Colors.white.withValues(alpha: 0.7),
           ),
         ),
       ],
@@ -189,7 +189,7 @@ class _CheckInHistory extends StatelessWidget {
                       c.date,
                       style: TextStyle(
                         fontSize: 10,
-                        color: Colors.white.withValues(alpha: 0.4),
+                        color: Colors.white.withValues(alpha: 0.7),
                         fontFamily: 'monospace',
                       ),
                     ),
@@ -208,7 +208,7 @@ class _CheckInHistory extends StatelessWidget {
                         '${c.bodyFatPercentage!.toStringAsFixed(0)}% grasa',
                         style: TextStyle(
                           fontSize: 11,
-                          color: Colors.white.withValues(alpha: 0.5),
+                          color: Colors.white.withValues(alpha: 0.7),
                         ),
                       ),
                     ],
@@ -281,7 +281,7 @@ class _EmptyBiometric extends StatelessWidget {
                     'Registra tu primer check-in para ver tu evolución corporal.',
                     style: TextStyle(
                       fontSize: 11,
-                      color: Colors.white.withValues(alpha: 0.45),
+                      color: Colors.white.withValues(alpha: 0.7),
                       height: 1.4,
                     ),
                   ),

@@ -17,6 +17,7 @@
 
 import 'dart:math' as math;
 
+import 'package:elena_app/src/core/engine/metabolic_formulas.dart';
 import 'package:elena_app/src/core/engine/metabolic_state.dart';
 import 'package:elena_app/src/core/rules/circadian_rules.dart';
 // SPEC-141 (2026-06-05): import del dominio de streak para
@@ -429,8 +430,7 @@ class ScoreEngine {
         (6.25 * user.height) -
         (5 * user.age) +
         (isMale ? 5 : -161);
-    final int metabolicAge =
-        _metabolicAgeFromStructure(user.age, structureBlock);
+    final int metabolicAge = _metabolicAgeFor(user, isMale, structureBlock);
 
     // SPEC-229: detecta datos poblacionales en bloque Estructura (50% del IMR).
     final bool isPartial =
@@ -507,8 +507,7 @@ class ScoreEngine {
         (6.25 * user.height) -
         (5 * user.age) +
         (isMale ? 5 : -161);
-    final int metabolicAge =
-        _metabolicAgeFromStructure(user.age, structureBlock);
+    final int metabolicAge = _metabolicAgeFor(user, isMale, structureBlock);
 
     // SPEC-229: baseline siempre es parcial (sin comportamiento Y posiblemente
     // sin biometrías reales). El 50% estructura ya usa defaults poblacionales.
@@ -636,6 +635,26 @@ class ScoreEngine {
   /// metabolicAge = age + 20 (clamp inferior: age - 10, superior:
   /// age + 25). Documentar en `IMR_BIBLIOGRAPHY.md` y refinar con
   /// data propia (SPEC futura).
+  /// SPEC-306: con % de grasa medido, la edad metabólica usa la misma
+  /// fórmula que la calculadora de metamorfosisvital.com.co
+  /// ([MetabolicFormulas.metabolicAge], motor spec-118-v1). Solo sin
+  /// % de grasa se usa la aproximación estructural (y el IMR va marcado
+  /// como parcial).
+  static int _metabolicAgeFor(
+      UserModel user, bool isMale, double structureBlock) {
+    final bf = user.bodyFatPercentage;
+    if (bf != null && bf > 0 && user.height > 0 && user.weight > 0) {
+      return MetabolicFormulas.metabolicAge(
+        age: user.age,
+        weightKg: user.weight,
+        heightCm: user.height,
+        bodyFatPct: bf,
+        isMale: isMale,
+      );
+    }
+    return _metabolicAgeFromStructure(user.age, structureBlock);
+  }
+
   static int _metabolicAgeFromStructure(int age, double structureBlock) {
     final int delta = (20 * (1 - structureBlock)).round();
     return (age + delta).clamp(age - 10, age + 25);

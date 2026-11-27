@@ -616,7 +616,7 @@ class _CoachCard extends StatelessWidget {
                         'Saltar',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.white.withValues(alpha: 0.40),
+                          color: Colors.white.withValues(alpha: 0.7),
                           fontWeight: FontWeight.w600,
                         ),
                       ),

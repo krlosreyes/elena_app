@@ -68,7 +68,7 @@ class GlucoseInsightCard extends StatelessWidget {
           Text(
             insight.mechanism,
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.60),
+              color: Colors.white.withValues(alpha: 0.7),
               fontSize: 12.5,
               height: 1.4,
             ),

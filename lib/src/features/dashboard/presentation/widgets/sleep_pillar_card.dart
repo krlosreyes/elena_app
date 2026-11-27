@@ -199,7 +199,7 @@ class SleepPillarCard extends ConsumerWidget {
                 Text(
                   'Nuevo día metabólico. El de anoche ya cerró.',
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.6),
+                    color: Colors.white.withValues(alpha: 0.7),
                     fontSize: 12.5,
                     height: 1.3,
                   ),
@@ -229,7 +229,7 @@ class SleepPillarCard extends ConsumerWidget {
       const SizedBox(height: 16),
       PillarCardUi.benefitChip(
         accent: accent,
-        text: 'Mientras descansás, tu cuerpo recorre sus fases: sueño ligero, '
+        text: 'Mientras descansas, tu cuerpo recorre sus fases: sueño ligero, '
             'profundo y REM. En el profundo repara músculo; en REM ordena '
             'memoria y hormonas.',
       ),

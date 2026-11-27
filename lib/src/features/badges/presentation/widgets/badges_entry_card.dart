@@ -66,7 +66,7 @@ class BadgesEntryCard extends ConsumerWidget {
                   Text(
                     '$earnedCount/$totalBadges ganadas · $streakLabel',
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.55),
+                      color: Colors.white.withValues(alpha: 0.7),
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
                     ),

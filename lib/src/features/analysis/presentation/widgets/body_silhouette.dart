@@ -33,7 +33,7 @@ class BodySilhouette extends StatelessWidget {
         Text(
           'TU ZONA',
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.50),
+            color: Colors.white.withValues(alpha: 0.7),
             fontSize: 11,
             fontWeight: FontWeight.w700,
             letterSpacing: 0.6,
@@ -59,7 +59,7 @@ class BodySilhouette extends StatelessWidget {
               Text(
                 '${bodyFatPct!.toStringAsFixed(1)} % grasa',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.55),
+                  color: Colors.white.withValues(alpha: 0.7),
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                 ),
@@ -70,7 +70,7 @@ class BodySilhouette extends StatelessWidget {
           Text(
             'Registra tu % de grasa',
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.55),
+              color: Colors.white.withValues(alpha: 0.7),
               fontSize: 16,
               fontWeight: FontWeight.w600,
             ),
@@ -82,7 +82,7 @@ class BodySilhouette extends StatelessWidget {
           'Rangos ACE ${isMale ? '(hombre)' : '(mujer)'} — '
           '${isMale ? 'Atlético <14, Fitness 14-17, Promedio 18-24, Alto >=25' : 'Atlético <21, Fitness 21-24, Promedio 25-31, Alto >=32'}',
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.40),
+            color: Colors.white.withValues(alpha: 0.7),
             fontSize: 10.5,
             height: 1.4,
           ),
@@ -229,7 +229,7 @@ class _ZoneGauge extends StatelessWidget {
                         _bounds[i].toStringAsFixed(0),
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.55),
+                          color: Colors.white.withValues(alpha: 0.7),
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
                         ),

@@ -620,7 +620,6 @@ class HealthSyncService {
   }
 }
 
-
 /// Consolida muestras de sueño en una sesión por noche.
 ///
 /// 2026-11-04 (auditoría Apple Salud). Antes la noche iba de la primera a
@@ -662,8 +661,7 @@ List<HealthSample> consolidateSleepByNight(List<HealthSample> raw) {
 
   return groups.map((group) {
     final start = group.first.start;
-    final end =
-        group.map((s) => s.end).reduce((a, b) => a.isAfter(b) ? a : b);
+    final end = group.map((s) => s.end).reduce((a, b) => a.isAfter(b) ? a : b);
 
     final byStage = <String, List<(DateTime, DateTime)>>{};
     for (final s in group) {

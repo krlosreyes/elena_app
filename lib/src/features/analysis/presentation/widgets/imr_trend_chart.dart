@@ -79,7 +79,7 @@ class ImrTrendChart extends StatelessWidget {
               Text(
                 title,
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.55),
+                  color: Colors.white.withValues(alpha: 0.7),
                   fontSize: 10,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 1.2,
@@ -264,7 +264,7 @@ class _LegendChip extends StatelessWidget {
                   Text(
                     label,
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.55),
+                      color: Colors.white.withValues(alpha: 0.7),
                       fontSize: 9,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 0.8,
@@ -334,7 +334,7 @@ class _ImrTrendPainter extends CustomPainter {
         'Sin datos del período aún',
         Offset(padLeft + plotW / 2 - 56, padTop + plotH / 2 - 7),
         TextStyle(
-          color: Colors.white.withValues(alpha: 0.45),
+          color: Colors.white.withValues(alpha: 0.7),
           fontSize: 12,
           fontWeight: FontWeight.w600,
         ),
@@ -411,7 +411,7 @@ class _ImrTrendPainter extends CustomPainter {
 
   void _drawYAxis(Canvas canvas, Rect plot) {
     final labelStyle = TextStyle(
-      color: Colors.white.withValues(alpha: 0.40),
+      color: Colors.white.withValues(alpha: 0.7),
       fontSize: 9,
       fontWeight: FontWeight.w700,
     );
@@ -539,7 +539,7 @@ class _ImrTrendPainter extends CustomPainter {
   void _drawXAxis(
       Canvas canvas, Rect plot, DateTime rangeStart, DateTime today) {
     final style = TextStyle(
-      color: Colors.white.withValues(alpha: 0.45),
+      color: Colors.white.withValues(alpha: 0.7),
       fontSize: 9,
       fontWeight: FontWeight.w700,
     );

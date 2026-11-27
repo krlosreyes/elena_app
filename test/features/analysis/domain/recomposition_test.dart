@@ -44,8 +44,10 @@ void main() {
     test('grasa baja y masa magra se mantiene → fatLostMuscleKept', () {
       // Antes: 80 kg, 30% → 24 grasa / 56 magra.
       // Hoy: 78 kg, 28% → 21,84 grasa / 56,16 magra.
-      final r = Recomposition.compute(
-          [_c(30, w: 80, bf: 30, waist: 100), _c(0, w: 78, bf: 28, waist: 97)])!;
+      final r = Recomposition.compute([
+        _c(30, w: 80, bf: 30, waist: 100),
+        _c(0, w: 78, bf: 28, waist: 97)
+      ])!;
       expect(r.verdict, RecompositionVerdict.fatLostMuscleKept);
       expect(r.fatDeltaKg, closeTo(-2.16, 0.01));
       expect(r.leanDeltaKg, closeTo(0.16, 0.01));
@@ -58,8 +60,8 @@ void main() {
 
     test('grasa y masa magra bajan → fatLostMuscleLost', () {
       // 80/30% → 24/56 ; 75/29% → 21,75/53,25
-      final r = Recomposition.compute(
-          [_c(30, w: 80, bf: 30), _c(0, w: 75, bf: 29)])!;
+      final r =
+          Recomposition.compute([_c(30, w: 80, bf: 30), _c(0, w: 75, bf: 29)])!;
       expect(r.verdict, RecompositionVerdict.fatLostMuscleLost);
       expect(r.benefits, isEmpty);
     });
@@ -74,8 +76,10 @@ void main() {
     });
 
     test('cambios dentro del ruido → noImprovement', () {
-      final r = Recomposition.compute(
-          [_c(14, w: 80, bf: 30, waist: 100), _c(0, w: 80, bf: 29.7, waist: 99.5)])!;
+      final r = Recomposition.compute([
+        _c(14, w: 80, bf: 30, waist: 100),
+        _c(0, w: 80, bf: 29.7, waist: 99.5)
+      ])!;
       expect(r.verdict, RecompositionVerdict.noImprovement);
       expect(r.weightNote, contains('hábito'));
     });

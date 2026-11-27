@@ -148,7 +148,8 @@ class MetabolicDayRingPainter extends CustomPainter {
       center.dy + radius * math.sin(angle),
     );
     final markerColor = pos > fastFrac ? windowColor : fastColor;
-    canvas.drawCircle(m, stroke * 0.72, Paint()..color = const Color(0xFF020617));
+    canvas.drawCircle(
+        m, stroke * 0.72, Paint()..color = const Color(0xFF020617));
     canvas.drawCircle(
       m,
       stroke * 0.72,

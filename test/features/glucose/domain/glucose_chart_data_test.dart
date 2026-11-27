@@ -89,8 +89,7 @@ void main() {
       expect(data.windowEnd, now);
     });
 
-    test('cuenta por zona, porcentaje en rango, promedio, mínimo y máximo',
-        () {
+    test('cuenta por zona, porcentaje en rango, promedio, mínimo y máximo', () {
       final data = GlucoseChartData.build(
         readings: [
           _r(65, now.subtract(const Duration(days: 4))),

@@ -126,7 +126,7 @@ class ObservationDetector {
         return 'Meté 10 minutos de movimiento hoy.';
       case 'nutrición':
       case 'nutrición a':
-        return 'Elige un plato Tipo A en tu próxima comida.';
+        return 'En tu próxima comida, que la mitad del plato sean verduras y proteína.';
       default:
         return null;
     }

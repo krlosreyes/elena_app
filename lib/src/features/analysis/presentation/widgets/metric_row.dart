@@ -70,7 +70,7 @@ class MetricRow extends StatelessWidget {
               Text(
                 '—',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.30),
+                  color: Colors.white.withValues(alpha: 0.7),
                   fontSize: 15,
                 ),
               ),
@@ -122,7 +122,7 @@ class _DeltaLabel extends StatelessWidget {
       return Text(
         'sin cambio',
         style: TextStyle(
-          color: Colors.white.withValues(alpha: 0.35),
+          color: Colors.white.withValues(alpha: 0.7),
           fontSize: 10,
           fontWeight: FontWeight.w700,
         ),

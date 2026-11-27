@@ -29,11 +29,12 @@ void main() {
     expect(value.requireValue.nutrition, 0);
   });
 
-  test('si el stream de ciclos falla, el provider queda en ERROR (no en '
+  test(
+      'si el stream de ciclos falla, el provider queda en ERROR (no en '
       'loading) para que la card muestre "Reintentar"', () async {
     final container = ProviderContainer(overrides: [
-      last14ClosedCyclesProvider.overrideWith(
-          (ref) => Stream.error(Exception('permission-denied'))),
+      last14ClosedCyclesProvider
+          .overrideWith((ref) => Stream.error(Exception('permission-denied'))),
     ]);
     addTearDown(container.dispose);
     final sub = container.listen(weeklyPillarDaysProvider, (_, __) {});

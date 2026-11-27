@@ -14,6 +14,8 @@ import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/features/profile/presentation/widgets/body_composition_card.dart';
 import 'package:elena_app/src/features/science/domain/scientific_source.dart';
 import 'package:elena_app/src/features/science/presentation/widgets/sources_footer.dart';
+import 'package:elena_app/src/core/engine/metabolic_formulas.dart';
+import 'package:elena_app/src/features/progress/presentation/biometric_checkin_sheet.dart';
 
 class BodyCompositionScreen extends ConsumerWidget {
   const BodyCompositionScreen({super.key});
@@ -58,7 +60,7 @@ class BodyCompositionScreen extends ConsumerWidget {
               if (user == null) {
                 return const Center(
                   child: Text('Sin datos',
-                      style: TextStyle(color: Colors.white54)),
+                      style: TextStyle(color: Colors.white70)),
                 );
               }
               return _BodyCompositionContent(user: user);
@@ -198,11 +200,19 @@ class _BodyCompositionContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool isMale = user.gender.toUpperCase() == 'M';
-    // SPEC-92: bodyFat nullable → fallback poblacional.
-    final double rawFat = user.bodyFatPercentage ?? (isMale ? 15.0 : 25.0);
-    final double fat = rawFat.clamp(1.0, 60.0);
+    // SPEC-306: sin medidas reales no se muestran cifras inventadas.
+    if (user.bodyFatPercentage == null ||
+        user.bodyFatPercentage! <= 0 ||
+        user.waistCircumference == null ||
+        user.waistCircumference! <= 0) {
+      return _MissingMeasures(
+        needsHip: MetabolicFormulas.needsHip(
+            isMale: isMale, hipCm: user.hipCircumference),
+      );
+    }
+    final double fat = user.bodyFatPercentage!.clamp(1.0, 60.0);
     final double lean = BodyCompositionCalc.leanMass(user.weight, fat);
-    final double wCm = user.waistCircumference ?? (user.weight * 0.48);
+    final double wCm = user.waistCircumference!;
     final double w = BodyCompositionCalc.whtr(wCm, user.height);
     final double f = BodyCompositionCalc.ffmi(lean, user.height);
 
@@ -288,6 +298,54 @@ class _BodyCompositionContent extends StatelessWidget {
   }
 }
 
+// ─── Sin medidas ───────────────────────────────────────────────────────────────
+
+class _MissingMeasures extends StatelessWidget {
+  const _MissingMeasures({required this.needsHip});
+  final bool needsHip;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Aún no tenemos tus medidas',
+            style: TextStyle(
+                color: Colors.white, fontSize: 20, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            needsHip
+                ? 'Para calcular tu % de grasa necesitamos tu cintura, tu '
+                    'cuello y tu cadera (la parte más ancha). Es la misma '
+                    'fórmula de la calculadora de metamorfosisvital.com.co.'
+                : 'Para calcular tu % de grasa necesitamos tu cintura y tu '
+                    'cuello. Es la misma fórmula de la calculadora de '
+                    'metamorfosisvital.com.co.',
+            style: const TextStyle(
+                color: AppColors.textSecondary, fontSize: 16, height: 1.45),
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: () => showBiometricCheckInSheet(context),
+              child: const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Text('Registrar mis medidas',
+                    style: TextStyle(fontSize: 16)),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 // ─── Hero de % grasa ──────────────────────────────────────────────────────────
 
 class _FatScoreHero extends StatelessWidget {
@@ -332,7 +390,7 @@ class _FatScoreHero extends StatelessWidget {
               fontSize: 10,
               fontWeight: FontWeight.w800,
               letterSpacing: 2,
-              color: Colors.white.withValues(alpha: 0.4),
+              color: Colors.white.withValues(alpha: 0.7),
             ),
           ),
           const SizedBox(height: 12),
@@ -426,10 +484,10 @@ class _FatZoneBar extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             _barLabel('Esencial'),
-            _barLabel('Atlético'),
+            _barLabel('Atletas'),
             _barLabel('Fitness'),
             _barLabel('Promedio'),
-            _barLabel('Alto'),
+            _barLabel('Obesidad'),
           ],
         ),
       ],
@@ -439,7 +497,7 @@ class _FatZoneBar extends StatelessWidget {
   Widget _barLabel(String t) => Text(
         t,
         style:
-            TextStyle(fontSize: 8, color: Colors.white.withValues(alpha: 0.3)),
+            TextStyle(fontSize: 8, color: Colors.white.withValues(alpha: 0.7)),
       );
 }
 
@@ -497,7 +555,7 @@ class _LeanMassContent extends StatelessWidget {
                 fontSize: 8,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 0.8,
-                color: Colors.white.withValues(alpha: 0.4),
+                color: Colors.white.withValues(alpha: 0.7),
               ),
             ),
             Text(
@@ -653,7 +711,7 @@ class _ImrImpactCard extends StatelessWidget {
                     fontSize: 9,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 1,
-                    color: Colors.white.withValues(alpha: 0.5),
+                    color: Colors.white.withValues(alpha: 0.7),
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -725,7 +783,7 @@ class _SectionCard extends StatelessWidget {
                       titleSub,
                       style: TextStyle(
                         fontSize: 10,
-                        color: Colors.white.withValues(alpha: 0.45),
+                        color: Colors.white.withValues(alpha: 0.7),
                       ),
                     ),
                   ],
@@ -791,7 +849,7 @@ class _StatBox extends StatelessWidget {
             style: TextStyle(
               fontSize: 9,
               fontWeight: FontWeight.w600,
-              color: Colors.white.withValues(alpha: 0.4),
+              color: Colors.white.withValues(alpha: 0.7),
             ),
           ),
         ],
@@ -810,7 +868,7 @@ class _ExplanationText extends StatelessWidget {
       text,
       style: TextStyle(
         fontSize: 11.5,
-        color: Colors.white.withValues(alpha: 0.5),
+        color: Colors.white.withValues(alpha: 0.7),
         height: 1.6,
       ),
     );

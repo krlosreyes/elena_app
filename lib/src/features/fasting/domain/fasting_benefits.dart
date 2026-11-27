@@ -20,43 +20,42 @@ class FastingBenefits {
       case FastingPhase.none:
         // Ayuno apenas iniciado. Reconocemos el cambio aunque sea mínimo.
         return const [
-          'Iniciaste el bloqueo de insulina',
+          'Empezó tu ayuno: la insulina empieza a bajar',
         ];
 
       case FastingPhase.postAbsorption:
         return const [
-          'Niveles de insulina descendieron a basal',
-          'Tu hígado está usando las reservas de glucógeno como combustible',
-          'Eliminaste el pico glucémico postprandial',
+          'La insulina va bajando hacia su nivel de reposo',
+          'Tu hígado usa sus reservas de glucógeno',
+          'No hubo nuevos picos de glucosa por comida',
         ];
 
       case FastingPhase.transition:
         return const [
-          'Iniciaste la gluconeogénesis hepática',
-          'Tu cuerpo cambió de combustible: ahora quema grasa, no glucosa',
-          'Adrenalina y GH subieron — preservan masa muscular',
+          'Tu cuerpo empieza a usar más grasa como energía',
+          'El cambio es gradual: glucosa y grasa se combinan',
+          'La hormona de crecimiento tiende a subir en ayunas',
         ];
 
       case FastingPhase.fatBurning:
         return const [
-          'Cetosis nutricional activa — produces cuerpos cetónicos',
-          'Lipólisis sostenida: estás quemando grasa real',
-          'Inflamación sistémica reducida',
-          'Sensibilidad a la insulina mejorada',
+          'Es probable que estés produciendo cuerpos cetónicos',
+          'La grasa es ya una fuente principal de energía',
+          'Ayunos así, repetidos, se asocian a mejor sensibilidad a la insulina',
         ];
 
       case FastingPhase.autophagy:
         return const [
-          'Autofagia activa — tus células reciclan organelas dañadas',
-          'IGF-1 a la baja: pausa de señales de crecimiento',
-          'Renovación mitocondrial en curso',
+          'Ayuno prolongado: en estudios se asocia a más autofagia',
+          'En personas no hay una hora exacta en que empiece',
+          'Hidrátate y escucha a tu cuerpo',
         ];
 
       case FastingPhase.survival:
         return const [
-          'Estado regenerativo profundo',
-          'Renovación celular avanzada',
-          'Mantén supervisión clínica activa',
+          'Ayuno muy prolongado',
+          'Hazlo solo con supervisión médica',
+          'Si te sientes mal, rompe el ayuno',
         ];
     }
   }
@@ -66,17 +65,17 @@ class FastingBenefits {
   static String milestoneLabel(FastingPhase phase) {
     switch (phase) {
       case FastingPhase.none:
-        return 'Bloqueo de insulina iniciado';
+        return 'Ayuno iniciado';
       case FastingPhase.postAbsorption:
         return 'Post-absorción';
       case FastingPhase.transition:
-        return 'Cetogénesis temprana';
+        return 'Transición a grasa';
       case FastingPhase.fatBurning:
-        return 'Quema de grasa activa';
+        return 'Más grasa como energía';
       case FastingPhase.autophagy:
-        return 'Autofagia activa';
+        return 'Ayuno prolongado';
       case FastingPhase.survival:
-        return 'Regeneración profunda';
+        return 'Ayuno muy prolongado';
     }
   }
 }

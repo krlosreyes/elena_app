@@ -139,7 +139,6 @@ abstract final class ScientificSources {
     matchTerms: ['shake', 'us navy', 'formula naval'],
   );
 
-
   static const ashwell2012 = ScientificSource(
     id: 'ashwell_2012',
     shortLabel: 'Ashwell et al., 2012',
@@ -403,7 +402,6 @@ abstract final class ScientificSources {
     matchTerms: ['petersen', 'shulman'],
   );
 
-
   // ── Sueño ───────────────────────────────────────────────────────────────
   static const watson2015 = ScientificSource(
     id: 'watson_2015',
@@ -477,7 +475,6 @@ abstract final class ScientificSources {
         'REM) según la edad.',
     matchTerms: ['ohayon'],
   );
-
 
   static const stamatakis2010 = ScientificSource(
     id: 'stamatakis_2010',

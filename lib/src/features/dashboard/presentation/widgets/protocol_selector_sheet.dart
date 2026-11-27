@@ -59,8 +59,7 @@ const List<_ProtocolInfo> _kProtocols = [
     code: '16:8',
     level: 'Intermedio',
     levelColor: AppColors.metabolicGreen,
-    description:
-        'Clásico. Promueve autofagia ligera y mejora sensibilidad a insulina '
+    description: 'Clásico. Se asocia a mejor sensibilidad a la insulina '
         '(Mattson 2017).',
   ),
   _ProtocolInfo(
@@ -68,7 +67,7 @@ const List<_ProtocolInfo> _kProtocols = [
     level: 'Intermedio',
     levelColor: AppColors.metabolicGreen,
     description:
-        'Ayuno moderado-intenso. Aumenta autofagia y cetosis nutricional sin '
+        'Ayuno moderado-intenso. Más horas usando grasa como energía, sin '
         'extremos.',
   ),
   _ProtocolInfo(
@@ -176,7 +175,7 @@ class ProtocolSelectorSheet extends StatelessWidget {
               'intestinal a las 22:00.',
               style: TextStyle(
                 fontSize: 12,
-                color: Colors.white.withValues(alpha: 0.55),
+                color: Colors.white.withValues(alpha: 0.7),
                 height: 1.4,
               ),
             ),

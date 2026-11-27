@@ -4,6 +4,8 @@
 // Navega a BodyCompositionScreen para el desglose completo.
 
 import 'dart:math' as math;
+
+import 'package:elena_app/src/core/engine/metabolic_formulas.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -26,21 +28,21 @@ class BodyCompositionCalc {
   }
 
   // ── WHTR ─────────────────────────────────────────────────────────────────
+  // SPEC-306: cortes NICE NG246, los mismos de la calculadora del sitio.
   static Color whtrColor(double w) {
-    if (w < 0.43) return Colors.blueAccent;
-    if (w < 0.50) return const Color(0xFF2D9B60); // verde óptimo
-    if (w < 0.56) return Colors.orangeAccent;
-    if (w < 0.63) return Colors.deepOrangeAccent;
-    return Colors.redAccent;
+    switch (MetabolicFormulas.whtrCategory(w)) {
+      case WhtrCategory.bajo:
+        return Colors.blueAccent;
+      case WhtrCategory.saludable:
+        return const Color(0xFF2D9B60);
+      case WhtrCategory.aumentado:
+        return Colors.orangeAccent;
+      case WhtrCategory.alto:
+        return Colors.redAccent;
+    }
   }
 
-  static String whtrLabel(double w) {
-    if (w < 0.43) return 'Muy bajo';
-    if (w < 0.50) return 'Óptimo';
-    if (w < 0.56) return 'Riesgo moderado';
-    if (w < 0.63) return 'Riesgo alto';
-    return 'Riesgo muy alto';
-  }
+  static String whtrLabel(double w) => MetabolicFormulas.whtrCategory(w).label;
 
   // ── FFMI ─────────────────────────────────────────────────────────────────
   static String ffmiLabel(double f, bool isMale) {
@@ -68,28 +70,16 @@ class BodyCompositionCalc {
   }
 
   // ── Grasa corporal ────────────────────────────────────────────────────────
-  static String fatZoneLabel(double pct, bool isMale) {
-    if (isMale) {
-      if (pct < 6) return 'Esencial';
-      if (pct < 14) return 'Atlético';
-      if (pct < 18) return 'Fitness';
-      if (pct < 25) return 'Promedio';
-      return 'Alto';
-    } else {
-      if (pct < 14) return 'Esencial';
-      if (pct < 21) return 'Atlético';
-      if (pct < 25) return 'Fitness';
-      if (pct < 32) return 'Promedio';
-      return 'Alto';
-    }
-  }
+  // SPEC-306: categorías del American Council on Exercise, iguales al sitio.
+  static String fatZoneLabel(double pct, bool isMale) =>
+      MetabolicFormulas.fatCategory(pct, isMale).label;
 
   static Color fatZoneColor(double pct, bool isMale) {
     final String zone = fatZoneLabel(pct, isMale);
     switch (zone) {
       case 'Esencial':
         return Colors.blueAccent;
-      case 'Atlético':
+      case 'Atletas':
         return const Color(0xFF2D9B60);
       case 'Fitness':
         return Colors.tealAccent;
@@ -105,7 +95,7 @@ class BodyCompositionCalc {
 /// riesgo se muestran con una etiqueta neutra. El cálculo no cambia y la
 /// pantalla de detalle conserva la clasificación completa.
 String _neutralLabel(String label) {
-  if (label == 'Alto' || label.startsWith('Riesgo')) return 'Por mejorar';
+  if (label == 'Obesidad' || label.startsWith('Riesgo')) return 'Por mejorar';
   return label;
 }
 
@@ -151,12 +141,16 @@ class _CardContent extends StatelessWidget {
     // null crash en este widget de detalle. Si en el futuro queremos
     // mostrar un placeholder "Sin medir" en vez de pintar el cálculo
     // con fallback, hacerlo en SPEC separada.
-    final double rawFat = user.bodyFatPercentage ?? (isMale ? 15.0 : 25.0);
-    final double fat = rawFat.clamp(1.0, 60.0);
+    // SPEC-306: sin medida no se muestra un número inventado.
+    final bool hasFat =
+        user.bodyFatPercentage != null && user.bodyFatPercentage! > 0;
+    final bool hasWaist =
+        user.waistCircumference != null && user.waistCircumference! > 0;
+    final double fat = hasFat ? user.bodyFatPercentage!.clamp(1.0, 60.0) : 0.0;
     final double lean = BodyCompositionCalc.leanMass(user.weight, fat);
-    final double wValue = user.waistCircumference ??
-        (user.weight * 0.48); // fallback si no hay cintura
-    final double w = BodyCompositionCalc.whtr(wValue, user.height);
+    final double w = hasWaist
+        ? BodyCompositionCalc.whtr(user.waistCircumference!, user.height)
+        : 0.0;
     final double f = BodyCompositionCalc.ffmi(lean, user.height);
 
     final Color fatColor = BodyCompositionCalc.fatZoneColor(fat, isMale);
@@ -183,7 +177,7 @@ class _CardContent extends StatelessWidget {
                         fontSize: 9,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 1.2,
-                        color: Colors.white.withValues(alpha: 0.5),
+                        color: Colors.white.withValues(alpha: 0.7),
                       ),
                     ),
                   ],
@@ -208,10 +202,15 @@ class _CardContent extends StatelessWidget {
                 Expanded(
                   child: _MetricTile(
                     label: '% GRASA',
-                    value: '${fat.toStringAsFixed(1)}%',
-                    sub: _neutralLabel(
-                        BodyCompositionCalc.fatZoneLabel(fat, isMale)),
-                    color: fatColor,
+                    value: hasFat ? '${fat.toStringAsFixed(1)}%' : '—',
+                    sub: hasFat
+                        ? _neutralLabel(
+                            BodyCompositionCalc.fatZoneLabel(fat, isMale))
+                        : (MetabolicFormulas.needsHip(
+                                isMale: isMale, hipCm: user.hipCircumference)
+                            ? 'Falta cadera'
+                            : 'Sin medir'),
+                    color: hasFat ? fatColor : Colors.white54,
                     icon: Icons.whatshot_rounded,
                   ),
                 ),
@@ -220,8 +219,10 @@ class _CardContent extends StatelessWidget {
                 Expanded(
                   child: _MetricTile(
                     label: 'MASA MAGRA',
-                    value: '${lean.toStringAsFixed(1)} kg',
-                    sub: BodyCompositionCalc.ffmiLabel(f, isMale),
+                    value: hasFat ? '${lean.toStringAsFixed(1)} kg' : '—',
+                    sub: hasFat
+                        ? BodyCompositionCalc.ffmiLabel(f, isMale)
+                        : 'Sin medir',
                     color: Colors.cyanAccent,
                     icon: Icons.fitness_center_rounded,
                   ),
@@ -231,9 +232,11 @@ class _CardContent extends StatelessWidget {
                 Expanded(
                   child: _MetricTile(
                     label: 'WHTR',
-                    value: w.toStringAsFixed(2),
-                    sub: _neutralLabel(BodyCompositionCalc.whtrLabel(w)),
-                    color: whtrColor,
+                    value: hasWaist ? w.toStringAsFixed(2) : '—',
+                    sub: hasWaist
+                        ? _neutralLabel(BodyCompositionCalc.whtrLabel(w))
+                        : 'Sin medir',
+                    color: hasWaist ? whtrColor : Colors.white54,
                     icon: Icons.straighten_rounded,
                   ),
                 ),
@@ -243,7 +246,7 @@ class _CardContent extends StatelessWidget {
             const SizedBox(height: 12),
 
             // ── Barra de riesgo WHTR ─────────────────────────────────────────
-            _WhtrBar(whtr: w),
+            if (hasWaist) _WhtrBar(whtr: w),
             // SPEC-305 (guía 1.4.1): fuentes de los cuatro cálculos.
             const SizedBox(height: 10),
             const CitationLink(
@@ -278,7 +281,7 @@ class _WhtrBar extends StatelessWidget {
             fontSize: 8,
             fontWeight: FontWeight.w800,
             letterSpacing: 0.8,
-            color: Colors.white.withValues(alpha: 0.35),
+            color: Colors.white.withValues(alpha: 0.7),
           ),
         ),
         const SizedBox(height: 6),
@@ -295,10 +298,10 @@ class _WhtrBar extends StatelessWidget {
                     Colors.blueAccent,
                     Color(0xFF2D9B60),
                     Colors.orangeAccent,
-                    Colors.deepOrangeAccent,
                     Colors.redAccent,
                   ],
-                  stops: [0.0, 0.25, 0.5, 0.7, 1.0],
+                  // 0,40 / 0,50 / 0,60 sobre la escala 0,35–0,70.
+                  stops: [0.14, 0.43, 0.71, 1.0],
                 ),
               ),
             ),
@@ -341,7 +344,7 @@ class _WhtrBar extends StatelessWidget {
 
   TextStyle get _barLabel => TextStyle(
         fontSize: 7.5,
-        color: Colors.white.withValues(alpha: 0.3),
+        color: Colors.white.withValues(alpha: 0.7),
         fontWeight: FontWeight.w600,
       );
 }
@@ -407,7 +410,7 @@ class _MetricTile extends StatelessWidget {
             fontSize: 7.5,
             fontWeight: FontWeight.w800,
             letterSpacing: 0.5,
-            color: Colors.white.withValues(alpha: 0.4),
+            color: Colors.white.withValues(alpha: 0.7),
           ),
         ),
         Text(

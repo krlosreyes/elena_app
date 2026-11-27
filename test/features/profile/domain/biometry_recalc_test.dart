@@ -52,7 +52,21 @@ void main() {
   });
 
   group('BiometryRecalc.recompute — mujer adulta típica', () {
-    test('aproximación WHTR funciona y devuelve coherente', () {
+    test('con cadera: Navy métrica, coherente (SPEC-306)', () {
+      final result = BiometryRecalc.recompute(
+        weightKg: 65,
+        heightCm: 165,
+        waistCm: 80,
+        neckCm: 33,
+        hipCm: 100,
+        gender: 'F',
+      );
+
+      expect(result.bodyFatPercentage, closeTo(31.89, 0.05));
+      expect(result.isCoherent, isTrue);
+    });
+
+    test('sin cadera: no calcula (BAJA) en vez de inventar', () {
       final result = BiometryRecalc.recompute(
         weightKg: 65,
         heightCm: 165,
@@ -61,10 +75,9 @@ void main() {
         gender: 'F',
       );
 
-      expect(result.bodyFatPercentage, isNotNull);
-      expect(result.bodyFatPercentage!, greaterThan(15));
-      expect(result.bodyFatPercentage!, lessThan(40));
-      expect(result.isCoherent, isTrue);
+      expect(result.bodyFatPercentage, isNull);
+      expect(result.confidenceLevel, 'BAJA');
+      expect(result.isCoherent, isFalse);
     });
   });
 
@@ -97,13 +110,7 @@ void main() {
       expect(result.isCoherent, isFalse);
     });
 
-    test(
-        'cintura ≤ cuello (incoherente físicamente) cae a default seguro y NO se marca como ALTA',
-        () {
-      // El BodyFatCalculator devuelve 15.0 como default masculino cuando
-      // waist - neck <= 0. BiometryRecalc lo deja pasar pero la confidence
-      // queda en MEDIA o el flag isCoherent en false porque la masa magra
-      // calculada con 15% sobre 50 kg / 180 cm sale fuera de rango realista.
+    test('cintura ≤ cuello: no calcula (SPEC-306, antes devolvía 15 %)', () {
       final result = BiometryRecalc.recompute(
         weightKg: 50,
         heightCm: 180,
@@ -111,14 +118,8 @@ void main() {
         neckCm: 38,
         gender: 'M',
       );
-
-      // bodyFat es 15.0 (fallback de BodyFatCalculator), pero el caller
-      // sabe que no es confiable por isCoherent o confidence.
-      // En este caso específico, 50 kg con 15% grasa = 42.5 kg lean —
-      // dentro de [20, 0.95*peso=47.5], así que isCoherent=true.
-      // Lo que sí queremos garantizar: el confidenceLevel no es 'BAJA'
-      // pero el dato sigue siendo cuestionable. El usuario lo verá en UI.
-      expect(result.bodyFatPercentage, isNotNull);
+      expect(result.bodyFatPercentage, isNull);
+      expect(result.confidenceLevel, 'BAJA');
     });
   });
 
@@ -134,17 +135,16 @@ void main() {
       expect(result.bodyFatPercentage, isNotNull);
     });
 
-    test('"Otro" trata como femenino (fórmula WHTR)', () {
+    test('"Otro" trata como femenino (necesita cadera)', () {
       final result = BiometryRecalc.recompute(
         weightKg: 65,
         heightCm: 165,
-        waistCm: 75,
-        neckCm: 32,
+        waistCm: 80,
+        neckCm: 33,
+        hipCm: 100,
         gender: 'Otro',
       );
-      // La fórmula femenina por WHTR para waist=75, height=165 → WHTR≈0.45 → 22%.
-      expect(result.bodyFatPercentage, isNotNull);
-      expect(result.bodyFatPercentage!, greaterThan(15));
+      expect(result.bodyFatPercentage, closeTo(31.89, 0.05));
     });
   });
 }

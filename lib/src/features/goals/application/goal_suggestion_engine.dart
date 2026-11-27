@@ -8,6 +8,7 @@
 //   · Sueño: 7–9 h (NIH / Huberman Lab)
 //   · Ejercicio: protocolo diferenciado por zona grasa + sistema nervioso (SPEC-244)
 
+import 'package:elena_app/src/core/engine/metabolic_formulas.dart';
 import 'package:elena_app/src/shared/domain/models/user_model.dart';
 import 'package:elena_app/src/features/goals/domain/user_goal.dart';
 import 'package:elena_app/src/features/streak/domain/fasting_schedule.dart';
@@ -133,10 +134,11 @@ class GoalSuggestionEngine {
     final bool outOfRange = bf > (isMale ? 18.0 : 25.0);
 
     String statusLabel;
-    if (currentWhtr > 0 && currentWhtr >= 0.56) {
-      statusLabel = 'Riesgo metabólico alto';
+    // SPEC-306: cortes NICE NG246 (0,50 aumentado; 0,60 alto), igual al sitio.
+    if (currentWhtr > 0 && currentWhtr >= 0.60) {
+      statusLabel = 'Riesgo alto';
     } else if (currentWhtr > 0 && currentWhtr >= 0.50) {
-      statusLabel = 'Riesgo moderado';
+      statusLabel = 'Riesgo aumentado';
     } else if (outOfRange) {
       statusLabel = 'Por encima del rango óptimo';
     } else {
@@ -160,9 +162,9 @@ class GoalSuggestionEngine {
 
   // ─── Grasa corporal objetivo ────────────────────────────────────────────────
   //
-  // Zonas ACSM:
-  //   Hombre: Atlético <14%, Fitness 14–17%, Promedio 18–24%, Alto ≥25%
-  //   Mujer:  Atlético <21%, Fitness 21–24%, Promedio 25–31%, Alto ≥32%
+  // Zonas ACE (iguales al sitio):
+  //   Hombre: Atletas 6–13%, Fitness 14–17%, Promedio 18–24%, Obesidad ≥25%
+  //   Mujer:  Atletas 14–20%, Fitness 21–24%, Promedio 25–31%, Obesidad ≥32%
   //
   // Sugerimos el techo de la zona inmediatamente mejor.
 
@@ -209,21 +211,8 @@ class GoalSuggestionEngine {
     }
   }
 
-  static String _fatZoneLabel(double bf, bool isMale) {
-    if (isMale) {
-      if (bf < 6) return 'Esencial';
-      if (bf < 14) return 'Atlético';
-      if (bf < 18) return 'Fitness';
-      if (bf < 25) return 'Promedio';
-      return 'Alto';
-    } else {
-      if (bf < 14) return 'Esencial';
-      if (bf < 21) return 'Atlético';
-      if (bf < 25) return 'Fitness';
-      if (bf < 32) return 'Promedio';
-      return 'Alto';
-    }
-  }
+  static String _fatZoneLabel(double bf, bool isMale) =>
+      MetabolicFormulas.fatCategory(bf, isMale).label;
 
   // ─── Días de ayuno por semana ───────────────────────────────────────────────
   //
@@ -342,7 +331,8 @@ class GoalSuggestionEngine {
     final double whtr = (user.waistCircumference != null && user.height > 0)
         ? user.waistCircumference! / user.height
         : 0.0;
-    final bool highVisceralRisk = whtr >= 0.56;
+    // SPEC-306: NICE NG246 — riesgo desde 0,50.
+    final bool highVisceralRisk = whtr >= 0.50;
 
     // Sistema nervioso: 'excitado' → bajar intensidad para no elevar cortisol.
     final String ns = user.nervousSystem.toLowerCase();
@@ -407,8 +397,7 @@ class GoalSuggestionEngine {
         return const _ExerciseProtocol(
           typeLabel: 'Cardio suave + Movilidad',
           minTarget: 30,
-          rationale:
-              'Tu zona de grasa (Alto) y sistema nervioso excitado piden '
+          rationale: 'Tu % de grasa y tu ritmo acelerado piden '
               'movimiento de baja intensidad para no elevar el cortisol, '
               'que frena la quema de grasa.\n\n'
               'Protocolo recomendado:\n'
@@ -447,8 +436,7 @@ class GoalSuggestionEngine {
         return const _ExerciseProtocol(
           typeLabel: 'Fuerza moderada + Cardio suave',
           minTarget: 35,
-          rationale:
-              'Zona Promedio con sistema nervioso excitado: recomposición '
+          rationale: 'Zona Promedio con ritmo acelerado: recomposición '
               'sin sobrecargar el eje cortisol-adrenalina.\n\n'
               'Protocolo recomendado:\n'
               '· 3 días — fuerza con pesos moderados: sentadillas, press, '
@@ -483,8 +471,7 @@ class GoalSuggestionEngine {
         return const _ExerciseProtocol(
           typeLabel: 'Fuerza progresiva + Cardio zona 2',
           minTarget: 35,
-          rationale:
-              'Zona Fitness con sistema nervioso excitado: mantén alta la '
+          rationale: 'Zona Fitness con ritmo acelerado: mantén alta la '
               'intensidad en fuerza pero sustituye el HIIT por cardio zona 2.\n\n'
               'Protocolo recomendado:\n'
               '· 3-4 días — fuerza progresiva con sobrecarga gradual (35-40 min)\n'
@@ -519,8 +506,7 @@ class GoalSuggestionEngine {
       return const _ExerciseProtocol(
         typeLabel: 'Fuerza + Recuperación activa',
         minTarget: 40,
-        rationale:
-            'Tu composición atlética con sistema nervioso excitado requiere '
+        rationale: 'Tu composición atlética con ritmo acelerado requiere '
             'gestionar la carga de entrenamiento para evitar sobreentrenamiento.\n\n'
             'Protocolo recomendado:\n'
             '· 3-4 días — fuerza periodizada: alterna semanas de volumen '

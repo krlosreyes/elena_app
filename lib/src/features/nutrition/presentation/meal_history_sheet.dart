@@ -136,7 +136,7 @@ class _Header extends StatelessWidget {
               Text(
                 'Día Metabólico activo',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.45),
+                  color: Colors.white.withValues(alpha: 0.7),
                   fontSize: 12,
                 ),
               ),
@@ -174,7 +174,7 @@ class _EmptyState extends StatelessWidget {
             Text(
               'Sin comidas registradas',
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.45),
+                color: Colors.white.withValues(alpha: 0.7),
                 fontSize: 15,
                 fontWeight: FontWeight.w500,
               ),
@@ -184,7 +184,7 @@ class _EmptyState extends StatelessWidget {
               'Registra tu primera comida del día\ndesde la tarjeta de Comidas.',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.30),
+                color: Colors.white.withValues(alpha: 0.7),
                 fontSize: 13,
                 height: 1.5,
               ),
@@ -290,7 +290,7 @@ class _FooterStat extends StatelessWidget {
         Text(
           label,
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.40),
+            color: Colors.white.withValues(alpha: 0.7),
             fontSize: 11,
           ),
         ),

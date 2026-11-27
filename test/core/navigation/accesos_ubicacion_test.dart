@@ -15,8 +15,10 @@ import 'package:go_router/go_router.dart';
 String _src(String path) => File(path).readAsStringSync();
 
 void main() {
-  const analysis = 'lib/src/features/analysis/presentation/analysis_screen.dart';
-  const dashboard = 'lib/src/features/dashboard/presentation/dashboard_screen.dart';
+  const analysis =
+      'lib/src/features/analysis/presentation/analysis_screen.dart';
+  const dashboard =
+      'lib/src/features/dashboard/presentation/dashboard_screen.dart';
   const profile = 'lib/src/features/auth/presentation/profile_screen.dart';
   const router = 'lib/src/router/app_router.dart';
 

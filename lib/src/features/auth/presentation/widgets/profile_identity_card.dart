@@ -67,7 +67,7 @@ class ProfileIdentityCard extends StatelessWidget {
                   'Tu perfil metabólico',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.white.withValues(alpha: 0.45),
+                    color: Colors.white.withValues(alpha: 0.7),
                     fontWeight: FontWeight.w500,
                   ),
                 ),

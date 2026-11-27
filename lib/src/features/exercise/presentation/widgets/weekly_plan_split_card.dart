@@ -46,7 +46,7 @@ class WeeklyPlanSplitCard extends ConsumerWidget {
               Text(
                 'TU PLAN DE LA SEMANA',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.55),
+                  color: Colors.white.withValues(alpha: 0.7),
                   fontSize: 10,
                   letterSpacing: 1.4,
                   fontWeight: FontWeight.w900,
@@ -55,7 +55,7 @@ class WeeklyPlanSplitCard extends ConsumerWidget {
               Text(
                 'Zona ${plan.zoneLabel}',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.45),
+                  color: Colors.white.withValues(alpha: 0.7),
                   fontSize: 10,
                   letterSpacing: 1.0,
                   fontWeight: FontWeight.w800,
@@ -132,7 +132,7 @@ class WeeklyPlanSplitCard extends ConsumerWidget {
             Text(
               _phaseWindowLabel(day.recommendedPhase!),
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.40),
+                color: Colors.white.withValues(alpha: 0.7),
                 fontSize: 10.5,
                 fontWeight: FontWeight.w700,
               ),

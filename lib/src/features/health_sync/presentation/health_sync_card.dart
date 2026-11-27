@@ -29,7 +29,6 @@ import 'package:elena_app/src/features/health_sync/domain/health_permission_stat
 import 'package:elena_app/src/features/health_sync/domain/health_sync_result.dart';
 import 'package:elena_app/src/shared/providers/user_provider.dart';
 
-
 /// Nombre de la fuente de salud de ESTA plataforma. En iOS nunca se nombra
 /// el ecosistema Android (App Store 2.3.10).
 String healthSourceName() =>
@@ -180,7 +179,7 @@ class _HealthSyncCardState extends ConsumerState<HealthSyncCard>
     if (perm is HealthPermissionUnavailable) {
       return Text(
         perm.reason ?? 'No disponible en este dispositivo.',
-        style: const TextStyle(fontSize: 13, color: Colors.white60),
+        style: const TextStyle(fontSize: 13, color: Colors.white70),
       );
     }
 
@@ -221,7 +220,7 @@ class _HealthSyncCardState extends ConsumerState<HealthSyncCard>
               'La sincronización automática en segundo plano es Premium.',
               style: TextStyle(
                 fontSize: 11.5,
-                color: Colors.white.withValues(alpha: 0.5),
+                color: Colors.white.withValues(alpha: 0.7),
               ),
             ),
           ),
@@ -315,13 +314,13 @@ class _HealthSyncCardState extends ConsumerState<HealthSyncCard>
       children: [
         Text(
           _formatLastRun(lastRun, isRunning),
-          style: const TextStyle(fontSize: 12, color: Colors.white60),
+          style: const TextStyle(fontSize: 12, color: Colors.white70),
         ),
         if (lastImport != null && lastImport.totalImported > 0) ...[
           const SizedBox(height: 4),
           Text(
             _formatImportSummary(lastImport),
-            style: const TextStyle(fontSize: 12, color: Colors.white60),
+            style: const TextStyle(fontSize: 12, color: Colors.white70),
           ),
         ] else if (lastResult != null &&
             lastImport != null &&
@@ -329,7 +328,7 @@ class _HealthSyncCardState extends ConsumerState<HealthSyncCard>
           const SizedBox(height: 4),
           Text(
             _formatNothingImported(lastResult, lastImport),
-            style: const TextStyle(fontSize: 12, color: Colors.white60),
+            style: const TextStyle(fontSize: 12, color: Colors.white70),
           ),
         ],
         if (lastResult != null && lastResult.hasErrors) ...[
@@ -425,7 +424,7 @@ class _HealthSyncCardState extends ConsumerState<HealthSyncCard>
           // Confirmación de lo que pasa al volver
           const Text(
             'Al volver, sincronizaremos automáticamente.',
-            style: TextStyle(fontSize: 11, color: Colors.white38),
+            style: TextStyle(fontSize: 11, color: Colors.white70),
           ),
         ],
       ),
@@ -647,7 +646,6 @@ class _HealthSyncCardState extends ConsumerState<HealthSyncCard>
   }
 }
 
-
 /// Fase 3 (2026-11-04): último dato recibido por métrica + aviso de permisos.
 ///
 /// iOS no informa si un permiso fue negado — la app solo ve "cero datos".
@@ -687,8 +685,11 @@ class HealthFreshnessPanel extends ConsumerWidget {
       for (final m in order)
         if (status.lastSeen[m] != null)
           (m == HealthMetric.weight && status.latestWeight != null)
-              ? ('Peso', '${status.latestWeight!.kg.toStringAsFixed(1)} kg · '
-                  '${_when(status.lastSeen[m]!, now)}')
+              ? (
+                  'Peso',
+                  '${status.latestWeight!.kg.toStringAsFixed(1)} kg · '
+                      '${_when(status.lastSeen[m]!, now)}'
+                )
               : (m.label, _when(status.lastSeen[m]!, now)),
     ];
     final stale = hasSynced ? status.staleMetrics(now) : const <HealthMetric>[];
@@ -715,11 +716,11 @@ class HealthFreshnessPanel extends ConsumerWidget {
                   Expanded(
                     child: Text(label,
                         style: const TextStyle(
-                            fontSize: 12, color: Colors.white60)),
+                            fontSize: 12, color: Colors.white70)),
                   ),
                   Text(value,
-                      style: const TextStyle(
-                          fontSize: 12, color: Colors.white70)),
+                      style:
+                          const TextStyle(fontSize: 12, color: Colors.white70)),
                 ],
               ),
             ),

@@ -56,7 +56,7 @@ class HydrationWeeklyCard extends ConsumerWidget {
       child: Text(
         'No pudimos cargar tu hidratación.',
         style: TextStyle(
-          color: Colors.white.withValues(alpha: 0.55),
+          color: Colors.white.withValues(alpha: 0.7),
           fontSize: 12,
         ),
       ),
@@ -89,7 +89,7 @@ class HydrationWeeklyCard extends ConsumerWidget {
         Text(
           'TU HIDRATACIÓN',
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.55),
+            color: Colors.white.withValues(alpha: 0.7),
             fontSize: 10,
             letterSpacing: 1.4,
             fontWeight: FontWeight.w900,
@@ -98,7 +98,7 @@ class HydrationWeeklyCard extends ConsumerWidget {
         Text(
           '7 DÍAS',
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.45),
+            color: Colors.white.withValues(alpha: 0.7),
             fontSize: 10,
             letterSpacing: 1.0,
             fontWeight: FontWeight.w800,
@@ -133,7 +133,7 @@ class HydrationWeeklyCard extends ConsumerWidget {
               child: Text(
                 'promedio',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.55),
+                  color: Colors.white.withValues(alpha: 0.7),
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                 ),
@@ -192,7 +192,7 @@ class HydrationWeeklyCard extends ConsumerWidget {
           Text(
             '$pct%',
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.50),
+              color: Colors.white.withValues(alpha: 0.7),
               fontSize: 11,
               fontWeight: FontWeight.w700,
               fontFeatures: const [FontFeature.tabularFigures()],
@@ -267,7 +267,7 @@ class HydrationWeeklyCard extends ConsumerWidget {
                 CitationLink(
                   m.citation,
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.45),
+                    color: Colors.white.withValues(alpha: 0.7),
                     fontSize: 11,
                     fontStyle: FontStyle.italic,
                     fontWeight: FontWeight.w600,
@@ -288,7 +288,7 @@ class HydrationWeeklyCard extends ConsumerWidget {
         'Registra tu hidratación para ver tu patrón semanal.',
         textAlign: TextAlign.center,
         style: TextStyle(
-          color: Colors.white.withValues(alpha: 0.55),
+          color: Colors.white.withValues(alpha: 0.7),
           fontSize: 13,
           height: 1.5,
           fontWeight: FontWeight.w500,

@@ -20,7 +20,8 @@ void main() {
           now: now,
         );
 
-    test('en ayuno desde las 8 p. m.: ventana 12 p. m., cierre 8:30 p. m., '
+    test(
+        'en ayuno desde las 8 p. m.: ventana 12 p. m., cierre 8:30 p. m., '
         'rescate 6:30 a. m. siguiente', () {
       final p = plan(
         isFasting: true,
@@ -32,7 +33,8 @@ void main() {
       expect(p.rescueAt, DateTime(2026, 11, 6, 6, 30));
     });
 
-    test('ventana abierta a las 11 a. m. (terminó ayuno antes): cierre 7:30 '
+    test(
+        'ventana abierta a las 11 a. m. (terminó ayuno antes): cierre 7:30 '
         'p. m., sin aviso de ventana', () {
       final p = plan(
         isFasting: false,

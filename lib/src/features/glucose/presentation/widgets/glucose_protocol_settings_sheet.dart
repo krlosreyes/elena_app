@@ -80,7 +80,7 @@ class _GlucoseProtocolSettingsSheetState
       description = 'Está en pausa: no vas a ver recordatorios ni la card '
           'en Progreso hasta que lo reanudes. Tu historial se conserva.';
     } else {
-      description = 'Podés activarlo aunque no lo tengas marcado como '
+      description = 'Puedes activarlo aunque no lo tengas marcado como '
           'condición médica en tu perfil. Es un complemento educativo — '
           'no reemplaza el criterio de tu médico ni diagnostica nada.';
     }
@@ -200,7 +200,7 @@ class _GlucoseProtocolSettingsSheetState
                 child: Text(
                   'Cerrar',
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.55),
+                    color: Colors.white.withValues(alpha: 0.7),
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),

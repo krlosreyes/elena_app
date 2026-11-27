@@ -132,6 +132,7 @@ class ProfileController extends StateNotifier<ProfileEditState> {
         heightCm: height,
         waistCm: currentUser.waistCircumference,
         neckCm: currentUser.neckCircumference,
+        hipCm: currentUser.hipCircumference,
         gender: gender,
       );
       if (recalc.isCoherent && recalc.bodyFatPercentage != null) {

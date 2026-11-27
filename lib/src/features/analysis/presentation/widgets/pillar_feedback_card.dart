@@ -76,7 +76,7 @@ class PillarFeedbackCard extends StatelessWidget {
             child: Text(
               headerLabel,
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.55),
+                color: Colors.white.withValues(alpha: 0.7),
                 fontSize: 10,
                 letterSpacing: 1.4,
                 fontWeight: FontWeight.w800,
@@ -106,7 +106,7 @@ class PillarFeedbackCard extends StatelessWidget {
               Text(
                 progressLeft,
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.35),
+                  color: Colors.white.withValues(alpha: 0.7),
                   fontSize: 9,
                   fontWeight: FontWeight.w600,
                 ),
@@ -149,7 +149,7 @@ class PillarFeedbackCard extends StatelessWidget {
               Text(
                 progressRight,
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.35),
+                  color: Colors.white.withValues(alpha: 0.7),
                   fontSize: 9,
                   fontWeight: FontWeight.w600,
                 ),
@@ -161,7 +161,7 @@ class PillarFeedbackCard extends StatelessWidget {
             Text(
               '│ $markerLabel',
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.40),
+                color: Colors.white.withValues(alpha: 0.7),
                 fontSize: 10,
                 fontWeight: FontWeight.w500,
               ),
@@ -245,7 +245,7 @@ class _MetricChip extends StatelessWidget {
             Text(
               label,
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.40),
+                color: Colors.white.withValues(alpha: 0.7),
                 fontSize: 8,
                 letterSpacing: 0.8,
                 fontWeight: FontWeight.w700,

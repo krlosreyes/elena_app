@@ -24,6 +24,7 @@ class OnboardingPrefill extends Equatable {
   final double? height; // cm
   final double? waistCircumference; // cm
   final double? neckCircumference; // cm
+  final double? hipCircumference; // cm (SPEC-307)
   final int? pantSize;
   final String? shirtSize; // 'S' | 'M' | 'L' | 'XL'
 
@@ -35,6 +36,7 @@ class OnboardingPrefill extends Equatable {
     this.height,
     this.waistCircumference,
     this.neckCircumference,
+    this.hipCircumference,
     this.pantSize,
     this.shirtSize,
   });
@@ -92,6 +94,12 @@ class OnboardingPrefill extends Equatable {
         min: 20.0,
         max: 80.0,
       ),
+      hipCircumference: _readBoundedDouble(
+        flat,
+        keys: const ['hipCircumference', 'hip', 'hipCm'],
+        min: 50.0,
+        max: 200.0,
+      ),
       pantSize: _readBoundedInt(
         flat,
         keys: const ['pantSize', 'trouserSize'],
@@ -128,6 +136,7 @@ class OnboardingPrefill extends Equatable {
       if (b['heightCm'] != null) out['height'] = b['heightCm'];
       if (b['waistCm'] != null) out['waistCircumference'] = b['waistCm'];
       if (b['neckCm'] != null) out['neckCircumference'] = b['neckCm'];
+      if (b['hipCm'] != null) out['hipCircumference'] = b['hipCm'];
     }
 
     // birthDate / birthYear ya los lee `_readBirthYear` desde la raíz
@@ -147,6 +156,7 @@ class OnboardingPrefill extends Equatable {
     if (height != null) n++;
     if (waistCircumference != null) n++;
     if (neckCircumference != null) n++;
+    if (hipCircumference != null) n++;
     if (pantSize != null) n++;
     if (shirtSize != null) n++;
     return n;
@@ -163,6 +173,7 @@ class OnboardingPrefill extends Equatable {
         height,
         waistCircumference,
         neckCircumference,
+        hipCircumference,
         pantSize,
         shirtSize,
       ];

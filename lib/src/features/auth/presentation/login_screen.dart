@@ -78,7 +78,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                   const SizedBox(height: 24),
                   Text(
-                    "Bienvenid@",
+                    "Hola de nuevo",
                     textAlign: TextAlign.center,
                     // Fix (2026-11-01): el tema no le daba color y salía
                     // negro sobre fondo oscuro (casi invisible).

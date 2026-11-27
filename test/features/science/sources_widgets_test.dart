@@ -69,9 +69,9 @@ void main() {
         tester,
         const SourcesFooter(sources: [ScientificSources.whoBmi]),
       );
-      final estilo =
-          tester.widget<Text>(find.text(ScientificSources.whoBmi.shortLabel))
-              .style!;
+      final estilo = tester
+          .widget<Text>(find.text(ScientificSources.whoBmi.shortLabel))
+          .style!;
       expect(estilo.fontSize, greaterThanOrEqualTo(13));
       expect(estilo.decoration, TextDecoration.underline);
     });
@@ -108,8 +108,10 @@ void main() {
       await tester.tap(find.byType(CitationLink));
       await tester.pumpAndSettle();
 
-      expect(find.text(ScientificSources.walker2017.shortLabel), findsOneWidget);
-      expect(find.text(ScientificSources.watson2015.shortLabel), findsOneWidget);
+      expect(
+          find.text(ScientificSources.walker2017.shortLabel), findsOneWidget);
+      expect(
+          find.text(ScientificSources.watson2015.shortLabel), findsOneWidget);
 
       await tester.tap(find.text(ScientificSources.watson2015.shortLabel));
       await tester.pumpAndSettle();
@@ -131,7 +133,8 @@ void main() {
 
     testWidgets('mantiene el texto exacto de la cita y se ve como enlace',
         (tester) async {
-      await _montar(tester, const CitationLink('· Cahill, 1966 — J Clin Invest'));
+      await _montar(
+          tester, const CitationLink('· Cahill, 1966 — J Clin Invest'));
       final texto = find.text('· Cahill, 1966 — J Clin Invest');
       expect(texto, findsOneWidget);
       expect(tester.widget<Text>(texto).style?.decoration,
@@ -144,8 +147,8 @@ void main() {
       tester.view.physicalSize = const Size(1179, 2556);
       tester.view.devicePixelRatio = 3.0;
       addTearDown(tester.view.reset);
-      await tester.pumpWidget(
-          const MaterialApp(home: ScientificSourcesScreen()));
+      await tester
+          .pumpWidget(const MaterialApp(home: ScientificSourcesScreen()));
 
       for (final s in ScientificSources.all) {
         final finder = find.byKey(ValueKey('source-tile-${s.id}'));
@@ -155,10 +158,11 @@ void main() {
       }
     });
 
-    testWidgets('aclara que el IMR es un índice propio y que no reemplaza al '
+    testWidgets(
+        'aclara que el IMR es un índice propio y que no reemplaza al '
         'médico', (tester) async {
-      await tester.pumpWidget(
-          const MaterialApp(home: ScientificSourcesScreen()));
+      await tester
+          .pumpWidget(const MaterialApp(home: ScientificSourcesScreen()));
       expect(find.textContaining('índice propio'), findsOneWidget);
       expect(find.textContaining('no reemplaza a tu médico'), findsOneWidget);
     });

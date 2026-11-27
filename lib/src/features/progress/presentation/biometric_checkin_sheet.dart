@@ -49,6 +49,7 @@ class _BiometricCheckInSheetState extends ConsumerState<BiometricCheckInSheet> {
   final _bfCtrl = TextEditingController();
   final _waistCtrl = TextEditingController();
   final _neckCtrl = TextEditingController();
+  final _hipCtrl = TextEditingController();
   final _noteCtrl = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
@@ -57,6 +58,7 @@ class _BiometricCheckInSheetState extends ConsumerState<BiometricCheckInSheet> {
   /// 2026-11-04: peso que marcó la báscula (Apple Salud) y se usó para
   /// prellenar. Null = el prellenado vino del perfil.
   HealthLatestWeight? _scaleWeight;
+  bool _isMale = true;
 
   @override
   void initState() {
@@ -76,6 +78,10 @@ class _BiometricCheckInSheetState extends ConsumerState<BiometricCheckInSheet> {
       }
       if (user.neckCircumference != null) {
         _neckCtrl.text = user.neckCircumference!.toStringAsFixed(0);
+      }
+      _isMale = user.gender.toUpperCase() == 'M';
+      if (user.hipCircumference != null) {
+        _hipCtrl.text = user.hipCircumference!.toStringAsFixed(0);
       }
     }
     // Si la báscula registró un peso en Apple Salud después de la última
@@ -97,6 +103,7 @@ class _BiometricCheckInSheetState extends ConsumerState<BiometricCheckInSheet> {
     _bfCtrl.dispose();
     _waistCtrl.dispose();
     _neckCtrl.dispose();
+    _hipCtrl.dispose();
     _noteCtrl.dispose();
     super.dispose();
   }
@@ -138,6 +145,11 @@ class _BiometricCheckInSheetState extends ConsumerState<BiometricCheckInSheet> {
         ? double.tryParse(_neckCtrl.text.replaceAll(',', '.'))
         : null;
     final double? neck = enteredNeck ?? user.neckCircumference;
+    final bool isMale = user.gender.toUpperCase() == 'M';
+    final double? enteredHip = _hipCtrl.text.isNotEmpty
+        ? double.tryParse(_hipCtrl.text.replaceAll(',', '.'))
+        : null;
+    final double? hip = isMale ? null : (enteredHip ?? user.hipCircumference);
     if (enteredWaist != null &&
         enteredWaist > 0 &&
         neck != null &&
@@ -147,7 +159,8 @@ class _BiometricCheckInSheetState extends ConsumerState<BiometricCheckInSheet> {
         waistCm: enteredWaist,
         neckCm: neck,
         heightCm: user.height,
-        isMale: user.gender.toUpperCase() == 'M',
+        isMale: isMale,
+        hipCm: hip,
       );
       if (computed > 0) bodyFat = computed;
     }
@@ -159,6 +172,7 @@ class _BiometricCheckInSheetState extends ConsumerState<BiometricCheckInSheet> {
       bodyFatPercentage: bodyFat,
       waistCircumference: enteredWaist,
       neckCircumference: neck,
+      hipCircumference: isMale ? null : enteredHip,
       imrScore: imrResult.totalScore,
       notes: _noteCtrl.text.isNotEmpty ? _noteCtrl.text.trim() : null,
       createdAt: today,
@@ -283,7 +297,7 @@ class _BiometricCheckInSheetState extends ConsumerState<BiometricCheckInSheet> {
                           'Una vez por semana · peso y medidas juntos',
                           style: TextStyle(
                             fontSize: 11,
-                            color: Colors.white.withValues(alpha: 0.4),
+                            color: Colors.white.withValues(alpha: 0.7),
                           ),
                         ),
                       ],
@@ -311,7 +325,7 @@ class _BiometricCheckInSheetState extends ConsumerState<BiometricCheckInSheet> {
                           'Corrígelo si no es de hoy.',
                           style: TextStyle(
                             fontSize: 11.5,
-                            color: Colors.white.withValues(alpha: 0.5),
+                            color: Colors.white.withValues(alpha: 0.7),
                           ),
                         ),
                       ],
@@ -382,6 +396,26 @@ class _BiometricCheckInSheetState extends ConsumerState<BiometricCheckInSheet> {
                         },
                       ),
                       const SizedBox(height: 18),
+
+                      // SPEC-306: cadera — necesaria en mujeres para el
+                      // % de grasa (US Navy), igual que en el sitio.
+                      if (!_isMale) ...[
+                        _FieldLabel('Cadera (cm)', required: false),
+                        const SizedBox(height: 6),
+                        _NumericField(
+                          controller: _hipCtrl,
+                          hint: 'Parte más ancha. Ej: 100',
+                          validator: (v) {
+                            if (v == null || v.isEmpty) return null;
+                            final n = double.tryParse(v.replaceAll(',', '.'));
+                            if (n == null || n < 50 || n > 200) {
+                              return 'Valor fuera de rango';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 18),
+                      ],
 
                       // Nota — opcional
                       _FieldLabel('Nota (opcional)', required: false),
@@ -464,7 +498,7 @@ class _FieldLabel extends StatelessWidget {
           style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w700,
-            color: Colors.white.withValues(alpha: 0.6),
+            color: Colors.white.withValues(alpha: 0.7),
             letterSpacing: 0.5,
           ),
         ),
@@ -512,7 +546,7 @@ class _NumericField extends StatelessWidget {
 InputDecoration _inputDecoration(String hint) => InputDecoration(
       hintText: hint,
       hintStyle:
-          TextStyle(color: Colors.white.withValues(alpha: 0.25), fontSize: 13),
+          TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 13),
       filled: true,
       fillColor: const Color(0xFF1E293B),
       border: OutlineInputBorder(
@@ -537,7 +571,6 @@ InputDecoration _inputDecoration(String hint) => InputDecoration(
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     );
-
 
 /// 2026-11-04: medidas ya registradas esta semana.
 class _LockedSheet extends StatelessWidget {
@@ -593,7 +626,7 @@ class _LockedSheet extends StatelessWidget {
               'IMR refleje cambios reales y no variaciones del día.',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.6),
+                color: Colors.white.withValues(alpha: 0.7),
                 fontSize: 13.5,
                 height: 1.45,
               ),

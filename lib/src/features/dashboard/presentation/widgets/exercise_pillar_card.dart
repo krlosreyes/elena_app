@@ -80,7 +80,7 @@ class ExercisePillarCard extends ConsumerWidget {
               child: Text(
                 '/ $goal min meta',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.5),
+                  color: Colors.white.withValues(alpha: 0.7),
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                 ),
@@ -222,7 +222,7 @@ class _WeeklyFuerzaStrip extends StatelessWidget {
           // chocaba con un día de cardio/HIIT. El plan es fuerza + cardio.
           'TU SEMANA DE ENTRENAMIENTO',
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.40),
+            color: Colors.white.withValues(alpha: 0.7),
             fontSize: 10,
             letterSpacing: 1.2,
             fontWeight: FontWeight.w800,
@@ -304,7 +304,7 @@ class _WeeklyFuerzaStrip extends StatelessWidget {
         const SizedBox(width: 5),
         Text(label,
             style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.55),
+                color: Colors.white.withValues(alpha: 0.7),
                 fontSize: 10.5,
                 fontWeight: FontWeight.w600)),
       ],
@@ -348,7 +348,7 @@ class _LastSessionRow extends StatelessWidget {
         Text(
           'Última: ${_label()} · ${session.durationMinutes} min',
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.6),
+            color: Colors.white.withValues(alpha: 0.7),
             fontSize: 12,
             fontWeight: FontWeight.w500,
           ),

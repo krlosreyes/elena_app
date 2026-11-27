@@ -1,71 +1,39 @@
-/// SPEC-25: Calculador de Porcentaje de Grasa Corporal
-/// Implementa fórmulas científicas validadas (US Navy)
-/// El usuario NUNCA ingresa % grasa — siempre se calcula
+/// SPEC-25 / SPEC-306: % de grasa corporal.
+///
+/// Desde SPEC-306 delega en [MetabolicFormulas.bodyFatNavy], la misma
+/// fórmula que usa metamorfosisvital.com.co (US Navy métrica, motor
+/// spec-118-v1). Antes:
+///   - hombres: coeficientes de la versión en pulgadas aplicados a
+///     centímetros (sobrestimaba ~6 puntos);
+///   - mujeres: una tabla fija por índice cintura-estatura que no era la
+///     fórmula Navy aunque la app la citara.
+/// El usuario NUNCA ingresa % grasa: siempre se calcula.
 library;
 
-import 'dart:math' as math;
+import 'package:elena_app/src/core/engine/metabolic_formulas.dart';
 
 class BodyFatCalculator {
-  /// Calcula % grasa corporal usando la fórmula US Navy
-  /// Para hombres: 86.010 × log10(C - N) - 70.041 × log10(A) + 36.76
-  /// Para mujeres: Requiere cadera (no soportado aún — usar fórmula simplificada)
+  /// % grasa por US Navy métrica. Devuelve 0.0 si las medidas no
+  /// permiten calcular (los callers tratan 0 como "sin dato").
+  ///
+  /// [hipCm] es obligatorio en mujeres: sin cadera devuelve 0.0 (sin
+  /// dato) en lugar de inventar un valor.
   static double calculateBodyFatPercentage({
     required double waistCm,
     required double neckCm,
     required double heightCm,
     required bool isMale,
+    double? hipCm,
   }) {
-    // Validar que tenemos las medidas mínimas
-    if (waistCm <= 0 || neckCm <= 0 || heightCm <= 0) {
-      return 0.0; // Fallback: sin datos
-    }
-
-    if (isMale) {
-      // Fórmula US Navy para hombres
-      return _calculateMaleBodyFat(waistCm, neckCm, heightCm);
-    } else {
-      // Fórmula simplificada para mujeres (requeriría cadera para precisión)
-      // Por ahora: aproximación basada en cintura/altura
-      return _calculateFemaleBodyFat(waistCm, neckCm, heightCm);
-    }
-  }
-
-  /// Fórmula US Navy para hombres
-  /// % Grasa = 86.010 × log10(Cintura - Cuello) - 70.041 × log10(Altura) + 36.76
-  static double _calculateMaleBodyFat(
-      double waistCm, double neckCm, double heightCm) {
-    final difference = waistCm - neckCm;
-
-    // Evitar log de números <= 0
-    if (difference <= 0 || heightCm <= 0) {
-      return 15.0; // Default masculino promedio
-    }
-
-    final log10Difference = math.log(difference) / math.log(10);
-    final log10Height = math.log(heightCm) / math.log(10);
-
-    final bodyFat = 86.010 * log10Difference - 70.041 * log10Height + 36.76;
-
-    // Clamp a rangos realistas (2-60%)
-    return bodyFat.clamp(2.0, 60.0);
-  }
-
-  /// Fórmula aproximada para mujeres (sin cadera)
-  /// Nota: La fórmula US Navy oficial para mujeres requiere cadera
-  /// Esta es una aproximación simplificada
-  static double _calculateFemaleBodyFat(
-      double waistCm, double neckCm, double heightCm) {
-    // Aproximación basada en cintura/altura ratio
-    final whtr = waistCm / heightCm;
-
-    // Convertir WHTR a % grasa aproximado para mujeres
-    // Rango típico: WHTR 0.40-0.55 → % grasa 20-35%
-    if (whtr < 0.40) return 18.0;
-    if (whtr < 0.45) return 22.0;
-    if (whtr < 0.50) return 26.0;
-    if (whtr < 0.55) return 30.0;
-    if (whtr < 0.60) return 34.0;
-    return 38.0;
+    final double? bf = MetabolicFormulas.bodyFatNavy(
+      heightCm: heightCm,
+      waistCm: waistCm,
+      neckCm: neckCm,
+      hipCm: hipCm,
+      isMale: isMale,
+    );
+    if (bf == null) return 0.0;
+    return bf.clamp(2.0, 60.0);
   }
 
   /// Valida que el % calculado sea coherente con peso/altura

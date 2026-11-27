@@ -112,7 +112,7 @@ Map<String, dynamic> userToCanonicalMirror(UserModel user) {
       'weightKg': user.weight,
       'waistCm': user.waistCircumference,
       'neckCm': user.neckCircumference,
-      'hipCm': null,
+      'hipCm': user.hipCircumference,
       // SPEC-92: si bodyFat es null, el sitio MR debe ver null también
       // — no inventar 20% poblacional como hacíamos antes.
       'bodyFatPct': user.bodyFatPercentage,

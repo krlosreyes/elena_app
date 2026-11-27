@@ -23,6 +23,9 @@ class BiometricDelta {
   /// Nueva circunferencia de cuello en cm.
   final double? neckCircumference;
 
+  /// Nueva circunferencia de cadera en cm (SPEC-306, mujeres).
+  final double? hipCircumference;
+
   /// Nuevo porcentaje de grasa corporal.
   final double? bodyFatPercentage;
 
@@ -33,6 +36,7 @@ class BiometricDelta {
     this.weight,
     this.waistCircumference,
     this.neckCircumference,
+    this.hipCircumference,
     this.bodyFatPercentage,
     this.isMeasurementEstimated,
   });
@@ -89,6 +93,10 @@ class BiometricDelta {
     // que antes no tenía.
     if (waistCircumference != null && baseWaist == null) return true;
     if (neckCircumference != null && baseNeck == null) return true;
+    if (hipCircumference != null &&
+        hipCircumference != baseline.hipCircumference) {
+      return true;
+    }
     if (bodyFatPercentage != null && baseBf == null) return true;
 
     return false;
@@ -99,6 +107,7 @@ class BiometricDelta {
       weight == null &&
       waistCircumference == null &&
       neckCircumference == null &&
+      hipCircumference == null &&
       bodyFatPercentage == null &&
       isMeasurementEstimated == null;
 
@@ -118,6 +127,10 @@ class BiometricDelta {
         neckCircumference != baseline.neckCircumference) {
       out['neckCircumference'] = baseline.neckCircumference;
     }
+    if (hipCircumference != null &&
+        hipCircumference != baseline.hipCircumference) {
+      out['hipCircumference'] = baseline.hipCircumference;
+    }
     if (bodyFatPercentage != null &&
         bodyFatPercentage != baseline.bodyFatPercentage) {
       out['bodyFatPercentage'] = baseline.bodyFatPercentage;
@@ -133,6 +146,7 @@ class BiometricDelta {
       weight: weight ?? baseline.weight,
       waistCircumference: waistCircumference ?? baseline.waistCircumference,
       neckCircumference: neckCircumference ?? baseline.neckCircumference,
+      hipCircumference: hipCircumference ?? baseline.hipCircumference,
       bodyFatPercentage: bodyFatPercentage ?? baseline.bodyFatPercentage,
       isMeasurementEstimated:
           isMeasurementEstimated ?? baseline.isMeasurementEstimated,

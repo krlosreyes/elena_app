@@ -80,7 +80,6 @@ final healthObserverSideEffectProvider = Provider<void>((ref) {
   AppLogger.debug('[HKObserver] observers nativos iniciados');
 });
 
-
 /// Espera a que [condition] sea verdadera, revisando cada 500 ms.
 Future<bool> _waitUntil(bool Function() condition,
     {required Duration timeout}) async {

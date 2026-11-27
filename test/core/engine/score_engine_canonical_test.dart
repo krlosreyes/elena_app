@@ -79,7 +79,9 @@ void main() {
       expect(result.whtr, 0);
     });
 
-    test('metabolicAge dentro de rango [age-10, age+25]', () {
+    test(
+        'metabolicAge con grasa medida: límite superior 80 (fórmula del sitio)',
+        () {
       // Escenario extremo: usuario con estructura muy degradada.
       final user = _testUser(
         gender: 'M',
@@ -89,15 +91,12 @@ void main() {
         waist: 130,
       );
       final result = ScoreEngine.calculateBaseline(user);
-      expect(result.metabolicAge, greaterThanOrEqualTo(40));
-      expect(result.metabolicAge, lessThanOrEqualTo(75));
+      expect(result.metabolicAge, 80);
     });
 
-    test('metabolicAge ≈ age cuando estructura es saludable', () {
-      // structureBlock ≈ 0.87 con estos inputs (s1=1.0 por WHtR óptimo,
-      // s2≈0.64 por FFMI 20.8 vs baseFFMI 17). delta = round(20 * 0.13)
-      // = 3, metabolicAge = 35 + 3 = 38. Tolerancia ±5 captura este
-      // caso y otros similares sin sobre-especificar.
+    test('metabolicAge = fórmula del sitio cuando hay % de grasa (SPEC-306)',
+        () {
+      // 35 + (10 − 17) + 0,6 × (23,15 − 22) = 28,7 → 29.
       final user = _testUser(
         gender: 'M',
         weight: 75,
@@ -107,8 +106,7 @@ void main() {
         bodyFat: 10,
       );
       final result = ScoreEngine.calculateBaseline(user);
-      expect(result.metabolicAge, lessThanOrEqualTo(user.age + 5));
-      expect(result.metabolicAge, greaterThanOrEqualTo(user.age - 5));
+      expect(result.metabolicAge, 29);
     });
   });
 

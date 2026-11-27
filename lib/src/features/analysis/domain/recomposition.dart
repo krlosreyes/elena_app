@@ -34,8 +34,7 @@ class BodyPoint {
   final double? bodyFatPct;
   final double? waistCm;
 
-  double? get fatKg =>
-      bodyFatPct == null ? null : weightKg * bodyFatPct! / 100;
+  double? get fatKg => bodyFatPct == null ? null : weightKg * bodyFatPct! / 100;
   double? get leanKg => fatKg == null ? null : weightKg - fatKg!;
 
   factory BodyPoint.fromCheckIn(BiometricCheckIn c) => BodyPoint(
@@ -161,7 +160,8 @@ class Recomposition {
   /// Redondea a 0,5 y formatea en español ("2", "1,5").
   static String half(double v) {
     final r = (v.abs() * 2).round() / 2;
-    final s = r == r.roundToDouble() ? r.toStringAsFixed(0) : r.toStringAsFixed(1);
+    final s =
+        r == r.roundToDouble() ? r.toStringAsFixed(0) : r.toStringAsFixed(1);
     return s.replaceAll('.', ',');
   }
 
@@ -233,13 +233,11 @@ class Recomposition {
 enum ProgressPillar { ayuno, sueno, agua, movimiento, comida }
 
 /// Acción concreta para el pilar más débil, orientada a la recomposición.
-String pillarTip(ProgressPillar p, {required bool muscleAtRisk}) =>
-    switch (p) {
+String pillarTip(ProgressPillar p, {required bool muscleAtRisk}) => switch (p) {
       ProgressPillar.movimiento => muscleAtRisk
           ? 'Para conservar tu músculo: haz 2 sesiones de fuerza esta semana.'
           : 'Muévete 20 minutos después de comer, 3 días esta semana.',
-      ProgressPillar.ayuno =>
-        'Completa tu ayuno al menos 5 días esta semana.',
+      ProgressPillar.ayuno => 'Completa tu ayuno al menos 5 días esta semana.',
       ProgressPillar.sueno =>
         'Duerme cerca de 7 horas: dormir poco empeora cómo usas la insulina.',
       ProgressPillar.agua =>

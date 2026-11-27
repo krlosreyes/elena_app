@@ -1,5 +1,5 @@
 // SPEC-168.4.4 (2026-06-03): zona de composición corporal según
-// rangos ACSM. Misma escala que GoalSuggestionEngine._fatZoneLabel
+// rangos del American Council on Exercise (ACE), iguales al sitio. Misma escala que GoalSuggestionEngine._fatZoneLabel
 // — extraída para reuso visual (silueta + badge).
 //
 // Pure Dart — sin Flutter ni Riverpod.
@@ -18,13 +18,13 @@ enum BodyZone {
       case BodyZone.esencial:
         return 'Esencial';
       case BodyZone.atletico:
-        return 'Atlético';
+        return 'Atletas';
       case BodyZone.fitness:
         return 'Fitness';
       case BodyZone.promedio:
         return 'Promedio';
       case BodyZone.alto:
-        return 'Alto';
+        return 'Obesidad';
     }
   }
 
@@ -47,10 +47,10 @@ enum BodyZone {
   }
 }
 
-/// Clasifica un % de grasa en una zona ACSM según el género.
+/// Clasifica un % de grasa en una zona ACE según el género.
 /// Devuelve null si la entrada es inválida.
 ///
-/// Rangos ACSM (igual que GoalSuggestionEngine):
+/// Rangos ACE (igual que el sitio y GoalSuggestionEngine):
 ///   Hombre: <6 esencial, <14 atlético, <18 fitness, <25 promedio, ≥25 alto
 ///   Mujer:  <14 esencial, <21 atlético, <25 fitness, <32 promedio, ≥32 alto
 BodyZone? bodyZoneFor(double? bf, bool isMale) {

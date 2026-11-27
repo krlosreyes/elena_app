@@ -30,7 +30,7 @@ const String kGlucoseConsentBody =
     'un reemplazo de tu HbA1c o el criterio de tu médico. Los glucómetros '
     'domésticos tienen un margen de error de hasta ±15-20% — tratá cada '
     'valor como una referencia, no como un dato de laboratorio exacto.\n\n'
-    'Podés pausar o desactivar este seguimiento cuando quieras desde tu '
+    'Puedes pausar o desactivar este seguimiento cuando quieras desde tu '
     'Perfil, sin perder tu historial. Tus lecturas de glucosa quedan '
     'guardadas de forma privada en tu cuenta — no se comparten con '
     'terceros ni con otros usuarios.';

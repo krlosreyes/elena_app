@@ -71,7 +71,7 @@ class GlucoseMorningReminderCard extends ConsumerWidget {
                     Text(
                       'En ayunas, antes de comer o beber algo',
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.60),
+                        color: Colors.white.withValues(alpha: 0.7),
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
                       ),

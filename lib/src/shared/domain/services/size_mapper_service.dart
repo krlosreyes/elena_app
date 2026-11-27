@@ -1,5 +1,7 @@
 import 'dart:math' as math;
 
+import 'package:elena_app/src/core/engine/metabolic_formulas.dart';
+
 class ProbabilisticMeasurement {
   final double mean;
   final double std;
@@ -83,24 +85,21 @@ class SizeMapperService {
     return ProbabilisticMeasurement(mean, 1.5);
   }
 
+  /// SPEC-306: delega en la fórmula única compartida con el sitio.
+  /// Devuelve 0.0 cuando no se puede calcular (en mujeres, sin cadera).
   static double calculateBodyFat(
       {required double waist,
       required double neck,
       required double height,
-      required String gender}) {
-    if (waist <= neck || height <= 0) return 20.0;
-    if (gender.toUpperCase() == 'M') {
-      return 495 /
-              (1.0324 -
-                  0.19077 * (math.log(waist - neck) / math.ln10) +
-                  0.15456 * (math.log(height) / math.ln10)) -
-          450;
-    } else {
-      return 495 /
-              (1.29579 -
-                  0.35004 * (math.log(waist + 15 - neck) / math.ln10) +
-                  0.22100 * (math.log(height) / math.ln10)) -
-          450;
-    }
+      required String gender,
+      double? hip}) {
+    return MetabolicFormulas.bodyFatNavy(
+          heightCm: height,
+          waistCm: waist,
+          neckCm: neck,
+          hipCm: hip,
+          isMale: gender.toUpperCase() == 'M',
+        ) ??
+        0.0;
   }
 }

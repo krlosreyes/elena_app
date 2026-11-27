@@ -138,7 +138,7 @@ class _PostReaderScreenState extends ConsumerState<PostReaderScreen> {
                   child: Text(
                     '• $r',
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.6),
+                      color: Colors.white.withValues(alpha: 0.7),
                       fontSize: 12.5,
                       height: 1.45,
                     ),

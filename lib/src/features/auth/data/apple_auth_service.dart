@@ -75,7 +75,8 @@ class AppleAuthService {
   /// Entra o registra con Apple. `false` si canceló.
   Future<bool> signIn() async {
     try {
-      final cred = await _auth.signInWithProvider(_provider()).timeout(_timeout);
+      final cred =
+          await _auth.signInWithProvider(_provider()).timeout(_timeout);
       _freshAuthorizationCode = cred.additionalUserInfo?.authorizationCode;
       return true;
     } on TimeoutException {

@@ -51,8 +51,8 @@ void main() {
       expect(dots.first.date, DateTime(2026, 10, 31));
       expect(dots.last.date, DateTime(2026, 11, 6));
       expect(dots.map((d) => d.label), ['S', 'D', 'L', 'M', 'M', 'J', 'Hoy']);
-      expect(dots.map((d) => d.dayNumber),
-          ['31', '1', '2', '3', '4', '5', '6']);
+      expect(
+          dots.map((d) => d.dayNumber), ['31', '1', '2', '3', '4', '5', '6']);
       expect(dots.last.isToday, isTrue);
     });
 
@@ -85,8 +85,8 @@ void main() {
     });
 
     test('ignora días fuera de la ventana', () {
-      final dots = buildWeekDots(
-          [_closed(20, ClosureReason.manualNextFasting)], now);
+      final dots =
+          buildWeekDots([_closed(20, ClosureReason.manualNextFasting)], now);
       expect(dots.where((d) => d.closedByYou), isEmpty);
     });
   });

@@ -63,7 +63,7 @@ class CircadianClockEntryCard extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.55),
+                        color: Colors.white.withValues(alpha: 0.7),
                         fontSize: 12.5,
                       ),
                     ),

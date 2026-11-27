@@ -61,6 +61,7 @@ class BiometryRecalc {
     required double? waistCm,
     required double? neckCm,
     required String gender,
+    double? hipCm,
   }) {
     // Sin medidas mínimas no hay cálculo posible.
     if (waistCm == null || neckCm == null) {
@@ -78,6 +79,7 @@ class BiometryRecalc {
       neckCm: neckCm,
       heightCm: heightCm,
       isMale: isMale,
+      hipCm: hipCm,
     );
 
     // La fórmula puede devolver 0.0 cuando las medidas son inválidas

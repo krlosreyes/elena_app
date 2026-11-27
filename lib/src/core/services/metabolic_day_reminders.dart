@@ -79,7 +79,8 @@ class MetabolicDayReminders {
     required DateTime now,
   }) {
     // Protocolo "Ninguno" (o sin dato): no hay ayuno → no hay avisos de ciclo.
-    if (anchor == null || targetHours <= 0) return MetabolicDayReminderPlan.empty;
+    if (anchor == null || targetHours <= 0)
+      return MetabolicDayReminderPlan.empty;
 
     DateTime? futureOrNull(DateTime? t) =>
         (t != null && t.isAfter(now)) ? t : null;

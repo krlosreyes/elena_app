@@ -40,8 +40,8 @@ class PrefillChip extends StatelessWidget {
           Expanded(
             child: Text(
               filledCount == 1
-                  ? 'Pre-llenamos 1 dato desde tu perfil de Metamorfosis Real.'
-                  : 'Pre-llenamos $filledCount datos desde tu perfil de Metamorfosis Real.',
+                  ? 'Ya completamos 1 dato con tu test de metamorfosisvital.com.co.'
+                  : 'Ya completamos $filledCount datos con tu test de metamorfosisvital.com.co.',
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,

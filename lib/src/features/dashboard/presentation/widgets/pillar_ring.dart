@@ -173,7 +173,7 @@ class PillarRing extends StatelessWidget {
             label,
             style: TextStyle(
               fontSize: 10,
-              color: isSelected ? color : Colors.white.withValues(alpha: 0.6),
+              color: isSelected ? color : Colors.white.withValues(alpha: 0.7),
               fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
             ),
           ),
@@ -183,8 +183,7 @@ class PillarRing extends StatelessWidget {
               '${(progress.clamp(0.0, 1.0) * 100).round()}%',
               style: TextStyle(
                 fontSize: 10,
-                color:
-                    isSelected ? color : Colors.white.withValues(alpha: 0.45),
+                color: isSelected ? color : Colors.white.withValues(alpha: 0.7),
                 fontWeight: FontWeight.w700,
                 fontFamily: 'monospace',
                 height: 1.0,

@@ -58,7 +58,7 @@ class ScoreTrendCard extends ConsumerWidget {
             Text(
               'SCORE · TU TENDENCIA',
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.55),
+                color: Colors.white.withValues(alpha: 0.7),
                 fontSize: 10,
                 letterSpacing: 1.4,
                 fontWeight: FontWeight.w900,
@@ -87,7 +87,7 @@ class ScoreTrendCard extends ConsumerWidget {
               child: Text(
                 'hoy',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.5),
+                  color: Colors.white.withValues(alpha: 0.7),
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                 ),
@@ -101,7 +101,7 @@ class ScoreTrendCard extends ConsumerWidget {
         Text(
           'Promedio del periodo: $avg',
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.5),
+            color: Colors.white.withValues(alpha: 0.7),
             fontSize: 12,
             fontWeight: FontWeight.w500,
           ),
@@ -153,7 +153,7 @@ class ScoreTrendCard extends ConsumerWidget {
         Text(
           'SCORE · TU TENDENCIA',
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.55),
+            color: Colors.white.withValues(alpha: 0.7),
             fontSize: 10,
             letterSpacing: 1.4,
             fontWeight: FontWeight.w900,
@@ -170,7 +170,7 @@ class ScoreTrendCard extends ConsumerWidget {
                 'Cierra tu día unos días más y aquí verás cómo evoluciona tu '
                 'Score en el tiempo.',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.6),
+                  color: Colors.white.withValues(alpha: 0.7),
                   fontSize: 13,
                   height: 1.4,
                 ),

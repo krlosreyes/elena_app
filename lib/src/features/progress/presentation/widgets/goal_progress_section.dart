@@ -155,7 +155,7 @@ class GoalProgressSection extends ConsumerWidget {
                       'Inicio: ${goal.startValue.toStringAsFixed(1)} ${goal.unit}',
                       style: TextStyle(
                           fontSize: 9,
-                          color: Colors.white.withValues(alpha: 0.3)),
+                          color: Colors.white.withValues(alpha: 0.7)),
                     ),
                     Text(
                       'Meta: ${goal.targetValue.toStringAsFixed(1)} ${goal.unit}',

@@ -183,7 +183,7 @@ class _DailyScoreDetailScreenState
                   'pilares. Es distinto del IMR, que mide tu estado '
                   'metabólico de fondo y se mueve en semanas.',
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.55),
+                    color: Colors.white.withValues(alpha: 0.7),
                     fontSize: 13,
                     height: 1.4,
                   ),
@@ -242,7 +242,7 @@ class _DailyScoreDetailScreenState
             'Ya ves tu semana. Con Premium desbloqueas meses de histórico '
             'y comparativas de corto vs. largo plazo de tu Score del Día.',
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.6),
+              color: Colors.white.withValues(alpha: 0.7),
               fontSize: 13,
               height: 1.45,
             ),

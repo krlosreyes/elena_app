@@ -59,7 +59,7 @@ class _MonthlyCalendarScreenState extends ConsumerState<MonthlyCalendarScreen> {
                   child: Text(
                     'No pudimos cargar el mes',
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.6),
+                      color: Colors.white.withValues(alpha: 0.7),
                     ),
                   ),
                 ),
@@ -123,7 +123,7 @@ class _MonthlyCalendarScreenState extends ConsumerState<MonthlyCalendarScreen> {
                   child: Text(
                     l,
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.40),
+                      color: Colors.white.withValues(alpha: 0.7),
                       fontSize: 11,
                       fontWeight: FontWeight.w900,
                       letterSpacing: 0.5,

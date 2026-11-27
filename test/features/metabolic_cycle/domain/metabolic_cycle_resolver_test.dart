@@ -208,7 +208,8 @@ void main() {
     });
 
     test('fallbackSleepDetected dispara con sueño + >=2h desde lastMeal', () {
-      final cycle = _openCycle(startedAt: DateTime(2026, 6, 1, 21, 0), protocol: kNoProtocol);
+      final cycle = _openCycle(
+          startedAt: DateTime(2026, 6, 1, 21, 0), protocol: kNoProtocol);
       final result = MetabolicCycleResolver.shouldClose(
         openCycle: cycle,
         now: DateTime(2026, 6, 2, 23, 0),
@@ -238,7 +239,8 @@ void main() {
     });
 
     test('fallback3hAfterWindow dispara cuando pasaron 3h desde ventana', () {
-      final cycle = _openCycle(startedAt: DateTime(2026, 6, 1, 21, 0), protocol: kNoProtocol);
+      final cycle = _openCycle(
+          startedAt: DateTime(2026, 6, 1, 21, 0), protocol: kNoProtocol);
       final result = MetabolicCycleResolver.shouldClose(
         openCycle: cycle,
         now: DateTime(2026, 6, 2, 22, 0),
@@ -385,7 +387,8 @@ void main() {
     });
 
     test('fallbackSleepDetected en EXACTAMENTE 2h desde lastMeal → cierra', () {
-      final cycle = _openCycle(startedAt: DateTime(2026, 6, 1, 21, 0), protocol: kNoProtocol);
+      final cycle = _openCycle(
+          startedAt: DateTime(2026, 6, 1, 21, 0), protocol: kNoProtocol);
       final result = MetabolicCycleResolver.shouldClose(
         openCycle: cycle,
         now: DateTime(2026, 6, 2, 22, 0),
@@ -432,7 +435,8 @@ void main() {
     // ── Precedencias faltantes ───────────────────────────────────────────────
     test('Prioridad: fallbackSleepDetected gana sobre fallback3hAfterWindow',
         () {
-      final cycle = _openCycle(startedAt: DateTime(2026, 6, 1, 21, 0), protocol: kNoProtocol);
+      final cycle = _openCycle(
+          startedAt: DateTime(2026, 6, 1, 21, 0), protocol: kNoProtocol);
       final result = MetabolicCycleResolver.shouldClose(
         openCycle: cycle,
         now: DateTime(2026, 6, 2, 23, 0),
@@ -451,7 +455,8 @@ void main() {
       // probando la precedencia real (orden 4<5) ambos triggers deben poder
       // dispararse a la vez. Ciclo de >50h Y >3h post-ventana: gana el de
       // la ventana.
-      final cycle = _openCycle(startedAt: DateTime(2026, 6, 1, 21, 0), protocol: kNoProtocol);
+      final cycle = _openCycle(
+          startedAt: DateTime(2026, 6, 1, 21, 0), protocol: kNoProtocol);
       final result = MetabolicCycleResolver.shouldClose(
         openCycle: cycle,
         now: DateTime(2026, 6, 4, 0, 0), // 51h desde start
@@ -504,7 +509,8 @@ void main() {
     test(
         'ventana TRE cerró 21:00; a las 00:30 (3.5h, cruzó medianoche) → cierra',
         () {
-      final cycle = _openCycle(startedAt: DateTime(2026, 6, 1, 12, 0), protocol: kNoProtocol);
+      final cycle = _openCycle(
+          startedAt: DateTime(2026, 6, 1, 12, 0), protocol: kNoProtocol);
       final result = MetabolicCycleResolver.shouldClose(
         openCycle: cycle,
         now: DateTime(

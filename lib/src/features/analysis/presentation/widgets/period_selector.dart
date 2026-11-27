@@ -45,7 +45,7 @@ class PeriodSelector extends StatelessWidget {
                   style: TextStyle(
                     color: isSelected
                         ? AppColors.metabolicGreen
-                        : Colors.white.withValues(alpha: 0.6),
+                        : Colors.white.withValues(alpha: 0.7),
                     fontSize: 13,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0.4,

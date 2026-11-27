@@ -24,7 +24,7 @@ void main() {
       // Ayuno + Sueño + Hidratación + Ejercicio + Nutrición + ventana temprana = 6.
       expect(feedback.achievements.length, 6);
       expect(
-        feedback.achievements.any((a) => a.contains('autofagia')),
+        feedback.achievements.any((a) => a.contains('protocolo cumplido')),
         isTrue,
       );
       expect(
@@ -60,7 +60,7 @@ void main() {
       expect(
         feedback.achievements.any((a) => a.contains('Ayuno')),
         isFalse,
-        reason: 'ayuno <12h no aporta autofagia',
+        reason: 'ayuno <12h no cuenta como logro',
       );
     });
   });
@@ -111,7 +111,7 @@ void main() {
   });
 
   group('SPEC-149 §8.2 — Insight adaptativo', () {
-    test('Ayuno alto + sueño bajo → insight de autofagia no consolidada', () {
+    test('Ayuno alto + sueño bajo → insight de sueño (SPEC-309)', () {
       final feedback = CycleFeedbackGenerator.generate(
         magnitudes: CycleMagnitudes(
           fastingMagnitude: 0.95,
@@ -124,7 +124,7 @@ void main() {
         feedingWindowHours: 6,
         windowClosedAt: DateTime(2026, 6, 1, 21, 0),
       );
-      expect(feedback.insight, contains('autofagia'));
+      expect(feedback.insight, contains('sueño'));
       expect(feedback.citation, contains('Mattson 2017'));
     });
 

@@ -120,7 +120,7 @@ class PillarOverviewTile extends StatelessWidget {
                               Text(
                                 unit,
                                 style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.55),
+                                  color: Colors.white.withValues(alpha: 0.7),
                                   fontSize: 12,
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -131,7 +131,7 @@ class PillarOverviewTile extends StatelessWidget {
                       : Text(
                           'Aún sin registros',
                           style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.40),
+                            color: Colors.white.withValues(alpha: 0.7),
                             fontSize: 12,
                             fontStyle: FontStyle.italic,
                           ),

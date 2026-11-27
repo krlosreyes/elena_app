@@ -119,7 +119,7 @@ class AchievementShowcaseCard extends ConsumerWidget {
                   ? '${badgeState.earned.length}/$totalBadges insignias · $streakLabel'
                   : 'Tus primeras insignias van a aparecer aquí',
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.55),
+                color: Colors.white.withValues(alpha: 0.7),
                 fontSize: 12.5,
                 fontWeight: FontWeight.w500,
               ),

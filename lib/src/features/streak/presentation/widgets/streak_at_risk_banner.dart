@@ -98,7 +98,7 @@ class StreakAtRiskBanner extends ConsumerWidget {
                       child: Text(
                         'Ahora no',
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.5),
+                          color: Colors.white.withValues(alpha: 0.7),
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                         ),

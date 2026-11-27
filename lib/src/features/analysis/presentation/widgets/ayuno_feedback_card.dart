@@ -66,7 +66,7 @@ class AyunoFeedbackCard extends StatelessWidget {
                 child: Text(
                   'ANÁLISIS DE AYUNO',
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.55),
+                    color: Colors.white.withValues(alpha: 0.7),
                     fontSize: 10,
                     letterSpacing: 1.4,
                     fontWeight: FontWeight.w800,
@@ -107,7 +107,7 @@ class AyunoFeedbackCard extends StatelessWidget {
               Text(
                 '0h',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.35),
+                  color: Colors.white.withValues(alpha: 0.7),
                   fontSize: 9,
                   fontWeight: FontWeight.w600,
                 ),
@@ -142,7 +142,7 @@ class AyunoFeedbackCard extends StatelessWidget {
               Text(
                 '${(targetHours * 1.5).round()}h',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.35),
+                  color: Colors.white.withValues(alpha: 0.7),
                   fontSize: 9,
                   fontWeight: FontWeight.w600,
                 ),
@@ -153,7 +153,7 @@ class AyunoFeedbackCard extends StatelessWidget {
           Text(
             '│ Objetivo: ${targetHours.round()}h',
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.40),
+              color: Colors.white.withValues(alpha: 0.7),
               fontSize: 10,
               fontWeight: FontWeight.w500,
             ),
@@ -235,8 +235,8 @@ class AyunoFeedbackCard extends StatelessWidget {
       case _Status.excellent:
         return 'Excelente consistencia. Estás cumpliendo tu protocolo de '
             '${targetHours.round()}h en la mayoría de los días. '
-            'Esto genera un déficit calórico sostenido y activa la '
-            'autofagia metabólica.';
+            'Esa constancia es lo que se asocia con mejor sensibilidad a la '
+            'insulina.';
       case _Status.progress:
         return 'Vas en buen camino. Tu promedio de ${avg.toStringAsFixed(1)}h '
             'está cerca del objetivo. Cada hora adicional de ayuno '
@@ -280,7 +280,7 @@ class _MetricChip extends StatelessWidget {
             Text(
               label,
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.40),
+                color: Colors.white.withValues(alpha: 0.7),
                 fontSize: 8,
                 letterSpacing: 0.8,
                 fontWeight: FontWeight.w700,
